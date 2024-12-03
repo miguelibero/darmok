@@ -75,7 +75,7 @@ namespace darmok
         _viewId = viewId;
         _cam->configureView(viewId, "Occlusion Culling");
 
-        auto vp = _cam->getCurrentViewport();
+        auto vp = _cam->getCombinedViewport();
         auto size = vp.origin + vp.size;
         if (!_frameBuffer || _frameBuffer->getSize() != size)
         {

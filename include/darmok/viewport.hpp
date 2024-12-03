@@ -1,10 +1,13 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/glm.hpp>
 #include <darmok/math.hpp>
+#include <darmok/glm.hpp>
+#include <darmok/glm_serialize.hpp>
+
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
+#include <cereal/cereal.hpp>
 
 namespace darmok
 {
@@ -21,8 +24,8 @@ namespace darmok
         bool operator==(const Viewport& other) const noexcept;
         bool operator!=(const Viewport& other) const noexcept;
 
-        Viewport operator*(const Viewport& other) const noexcept;
-        Viewport& operator*=(const Viewport& other) noexcept;
+        Viewport operator*(const glm::vec4& factor) const noexcept;
+        Viewport& operator*=(const glm::vec4& factor) noexcept;
 
         float getAspectRatio() const noexcept;
 
@@ -41,5 +44,14 @@ namespace darmok
         void configureView(bgfx::ViewId viewId) const noexcept;
 
         glm::mat4 ortho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) const noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(origin),
+                CEREAL_NVP(size)
+            );
+        }
     };
 }

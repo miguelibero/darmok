@@ -30,6 +30,7 @@ namespace darmok
         , _renderChain(*this)
         , _transformChanged(false)
         , _projData(CameraOrthoData{})
+        , _viewport(0.F, 0.F, 1.F, 1.F)
     {
     }
 
@@ -157,7 +158,7 @@ namespace darmok
         {
             return false;
         }
-        auto vp = getCurrentViewport();
+        auto vp = getCombinedViewport();
         auto ptr = &_projData;
         if (auto winPersp = std::get_if<CameraPerspectiveData>(ptr))
         {
@@ -304,7 +305,7 @@ namespace darmok
         {
             writeBuffer->configureView(viewId);
         }
-        auto vp = getCurrentViewport();
+        auto vp = getCombinedViewport();
         vp.configureView(viewId);
     }
 
@@ -458,36 +459,47 @@ namespace darmok
         return refs;
     }
 
-    void CameraImpl::setViewport(const std::optional<Viewport>& viewport) noexcept
+    void CameraImpl::setViewport(const glm::vec4& viewport) noexcept
     {
-        if(_viewport == viewport)
-        {
-            return;
-        }
         _viewport = viewport;
-        updateProjection();
     }
 
-    const std::optional<Viewport>& CameraImpl::getViewport() const noexcept
+    const glm::vec4& CameraImpl::getViewport() const noexcept
     {
         return _viewport;
     }
 
-    Viewport CameraImpl::getCurrentViewport() const noexcept
+    void CameraImpl::setBaseViewport(const std::optional<Viewport>& viewport) noexcept
     {
-        if (_viewport)
+        if(_baseViewport == viewport)
         {
-            return _viewport.value();
+            return;
+        }
+        _baseViewport = viewport;
+        updateProjection();
+    }
+
+    const std::optional<Viewport>& CameraImpl::getBaseViewport() const noexcept
+    {
+        return _baseViewport;
+    }
+
+    Viewport CameraImpl::getCombinedViewport() const noexcept
+    {
+        Viewport vp;
+        if (_baseViewport)
+        {
+            vp = _baseViewport.value();
         }
         else if (_scene)
         {
-            return _scene->getCurrentViewport();
+            vp = _scene->getCurrentViewport();
         }
         else if (_app)
         {
-            return Viewport(_app->getWindow().getPixelSize());
+            vp = Viewport(_app->getWindow().getPixelSize());
         }
-        return Viewport();
+        return vp * _viewport;
     }
 
     OptionalRef<Transform> CameraImpl::getTransform() const noexcept
@@ -532,7 +544,7 @@ namespace darmok
 
     Ray CameraImpl::screenPointToRay(const glm::vec3& point) const noexcept
     {
-        return Ray::unproject(point, getScreenViewMatrix(), _proj, getCurrentViewport());
+        return Ray::unproject(point, getScreenViewMatrix(), _proj, getCombinedViewport());
     }
 
     Ray CameraImpl::viewportPointToRay(const glm::vec3& point) const noexcept
@@ -542,7 +554,7 @@ namespace darmok
 
     glm::vec3 CameraImpl::worldToScreenPoint(const glm::vec3& point) const noexcept
     {
-        return glm::project(point, getScreenViewMatrix(), _proj, getCurrentViewport().getValues());
+        return glm::project(point, getScreenViewMatrix(), _proj, getCombinedViewport().getValues());
     }
 
     glm::vec3 CameraImpl::worldToViewportPoint(const glm::vec3& point) const noexcept
@@ -552,7 +564,7 @@ namespace darmok
 
     glm::vec3 CameraImpl::screenToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return glm::unProject(point, getScreenViewMatrix(), _proj, getCurrentViewport().getValues());
+        return glm::unProject(point, getScreenViewMatrix(), _proj, getCombinedViewport().getValues());
     }
 
     glm::vec3 CameraImpl::viewportToWorldPoint(const glm::vec3& point) const noexcept
@@ -563,14 +575,14 @@ namespace darmok
     glm::vec3 CameraImpl::viewportToScreenPoint(const glm::vec3& point) const noexcept
     {
         auto z = point.z;
-        auto p = getCurrentViewport().viewportToScreenPoint(point);
+        auto p = getCombinedViewport().viewportToScreenPoint(point);
         return glm::vec3(p, z);
     }
 
     glm::vec3 CameraImpl::screenToViewportPoint(const glm::vec3& point) const noexcept
     {
         auto z = point.z;
-        auto p = getCurrentViewport().screenToViewportPoint(point);
+        auto p = getCombinedViewport().screenToViewportPoint(point);
         return glm::vec3(p, z);
     }
 
@@ -582,7 +594,7 @@ namespace darmok
 
     Viewport CameraImpl::getRenderChainViewport() const noexcept
     {
-        return getCurrentViewport();
+        return getCombinedViewport();
     }
 
     OptionalRef<RenderChain> CameraImpl::getRenderChainParent() const noexcept
@@ -733,20 +745,31 @@ namespace darmok
         return setProjection(CameraOrthoData{ center, near, far });
     }
 
-    Camera& Camera::setViewport(const std::optional<Viewport>& viewport) noexcept
+    Camera& Camera::setViewport(const glm::vec4& viewport) noexcept
     {
         _impl->setViewport(viewport);
         return *this;
     }
 
-    const std::optional<Viewport>& Camera::getViewport() const noexcept
+    const glm::vec4& Camera::getViewport() const noexcept
     {
         return _impl->getViewport();
     }
 
-    Viewport Camera::getCurrentViewport() const noexcept
+    Camera& Camera::setBaseViewport(const std::optional<Viewport>& viewport) noexcept
     {
-        return _impl->getCurrentViewport();
+        _impl->setBaseViewport(viewport);
+        return *this;
+    }
+
+    const std::optional<Viewport>& Camera::getBaseViewport() const noexcept
+    {
+        return _impl->getBaseViewport();
+    }
+
+    Viewport Camera::getCombinedViewport() const noexcept
+    {
+        return _impl->getCombinedViewport();
     }
 
     bool Camera::isEnabled() const noexcept

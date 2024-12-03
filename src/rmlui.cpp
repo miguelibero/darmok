@@ -836,7 +836,7 @@ namespace darmok
         }
         if (auto cam = getCurrentCamera())
         {
-            return cam->getCurrentViewport().size;
+            return cam->getCombinedViewport().size;
         }
         return glm::uvec2(0);
     }
@@ -2041,7 +2041,7 @@ namespace darmok
             {
                 continue;
             }
-            auto vp = cam->getCurrentViewport();
+            auto vp = cam->getCombinedViewport();
 
             if (mode == RmluiCanvasMousePositionMode::Relative)
             {

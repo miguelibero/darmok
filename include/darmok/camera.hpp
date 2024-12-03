@@ -79,9 +79,11 @@ namespace darmok
         Camera& setPerspective(float fovy = 60.F, float near = Math::defaultPerspNear, float far = Math::defaultPerspFar) noexcept;
         Camera& setOrtho(const glm::vec2& center = glm::vec2(0.5f), float near = Math::defaultOrthoNear, float far = Math::defaultOrthoFar) noexcept;
 
-        Camera& setViewport(const std::optional<Viewport>& viewport) noexcept;
-        const std::optional<Viewport>& getViewport() const noexcept;
-        Viewport getCurrentViewport() const noexcept;
+        Camera& setViewport(const glm::vec4& vp) noexcept;
+        const glm::vec4& getViewport() const noexcept;
+        Camera& setBaseViewport(const std::optional<Viewport>& viewport) noexcept;
+        const std::optional<Viewport>& getBaseViewport() const noexcept;
+        Viewport getCombinedViewport() const noexcept;
 
         bool isEnabled() const noexcept;
         Camera& setEnabled(bool enabled) noexcept;

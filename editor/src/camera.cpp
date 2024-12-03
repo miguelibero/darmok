@@ -25,6 +25,7 @@ namespace darmok::editor
                 {
                     cam.setName(name);
                 }
+                ImGui::Spacing();
             }
 
             {
@@ -65,11 +66,13 @@ namespace darmok::editor
                 }
                 ImGui::EndGroup();
                 cam.setProjection(proj);
+                ImGui::Spacing();
             }
 
             {
                 auto vp = cam.getViewport();
-                ImGui::InputFloat4("Viewport", glm::value_ptr());
+                ImGui::InputFloat4("Viewport", glm::value_ptr(vp));
+                ImGui::Spacing();
             }
 
             if (_editors)

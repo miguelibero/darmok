@@ -87,7 +87,7 @@ namespace darmok::editor
         {
             auto& size = _sceneBuffer->getSize();
             cam.getRenderChain().setOutput(_sceneBuffer);
-            cam.setViewport(Viewport(size));
+            cam.setBaseViewport(Viewport(size));
             _app.requestRenderReset();
         }
         else
@@ -640,7 +640,7 @@ namespace darmok::editor
         _sceneBuffer = std::make_shared<FrameBuffer>(size);
         _editorCam->getRenderChain().setOutput(_sceneBuffer);
         _editorCam->setEnabled(true);
-        _editorCam->setViewport(Viewport(size));
+        _editorCam->setBaseViewport(Viewport(size));
         // TODO: maby a bit harsh
         _app.requestRenderReset();
     }

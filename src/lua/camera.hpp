@@ -37,8 +37,10 @@ namespace darmok
 		static Camera& setOrtho1(Camera& cam, const VarLuaTable<glm::vec2>& center) noexcept;
 		static Camera& setOrtho2(Camera& cam, const VarLuaTable<glm::vec2>& center, float near, float far) noexcept;
 
-		static std::optional<Viewport> getViewport(const Camera& cam) noexcept;
-		static void setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept;
+		static void setBaseViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept;
+		std::optional<Viewport> getBaseViewport(const Camera& cam) noexcept;
+		static void setViewport(Camera& cam, const VarLuaTable<glm::vec4>& viewport) noexcept;
+		glm::vec4 getViewport(const Camera& cam) noexcept;
 
 		static OptionalRef<Transform>::std_t getTransform(const Camera& cam) noexcept;
 

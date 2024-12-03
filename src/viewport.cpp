@@ -41,18 +41,19 @@ namespace darmok
         return !operator==(other);
     }
 
-
-    Viewport Viewport::operator*(const Viewport& other) const noexcept
+    Viewport Viewport::operator*(const glm::vec4& factor) const noexcept
     {
         Viewport vp(*this);
-        vp *= other;
+        vp *= factor;
         return vp;
     }
 
-    Viewport& Viewport::operator*=(const Viewport& other) noexcept
+    Viewport& Viewport::operator*=(const glm::vec4& factor) noexcept
     {
-        size = glm::min(size, other.size);
-        origin += other.origin;
+        glm::vec2 forigin(factor.x, factor.y);
+        glm::vec2 fsize(factor.z, factor.w);
+        origin += forigin * glm::vec2(size);
+        size *= fsize;
         return *this;
     }
 

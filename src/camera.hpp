@@ -65,9 +65,11 @@ namespace darmok
         const CameraProjectionData& getProjection() const noexcept;
         void setProjection(const CameraProjectionData& data) noexcept;
 
-        void setViewport(const std::optional<Viewport>& viewport) noexcept;
-        const std::optional<Viewport>& getViewport() const noexcept;
-        Viewport getCurrentViewport() const noexcept;
+        void setViewport(const glm::vec4& viewport) noexcept;
+        const glm::vec4& getViewport() const noexcept;
+        void setBaseViewport(const std::optional<Viewport>& viewport) noexcept;
+        const std::optional<Viewport>& getBaseViewport() const noexcept;
+        Viewport getCombinedViewport() const noexcept;
 
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
@@ -128,6 +130,7 @@ namespace darmok
                 CEREAL_NVP_("name", _name),
                 CEREAL_NVP_("enabled", _enabled),
                 CEREAL_NVP_("proj", _projData),
+                CEREAL_NVP_("viewport", _viewport),
                 CEREAL_NVP_("cullingFilter", _cullingFilter),
                 CEREAL_NVP_("renderChain", _renderChain),
                 CEREAL_NVP_("components", CameraComponentCerealListDelegate(_cam))
@@ -146,7 +149,8 @@ namespace darmok
 
         CameraProjectionData _projData;
 
-        std::optional<Viewport> _viewport;
+        std::optional<Viewport> _baseViewport;
+        glm::vec4 _viewport;
         EntityFilter _cullingFilter;
 
         using Components = std::vector<std::shared_ptr<ICameraComponent>>;

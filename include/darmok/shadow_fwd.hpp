@@ -6,6 +6,7 @@ namespace darmok
 	{
 		None,
         Hard,
-        Soft
+        Soft,
+		Count
 	};
 }

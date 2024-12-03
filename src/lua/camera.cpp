@@ -47,14 +47,24 @@ namespace darmok
 		return cam.setOrtho(LuaGlm::tableGet(center), near, far);
 	}
 
-	std::optional<Viewport> LuaCamera::getViewport(const Camera& cam) noexcept
+	void LuaCamera::setBaseViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept
 	{
-		return cam.getViewport();
+		cam.setBaseViewport(LuaViewport::tableGet(viewport));
 	}
 
-	void LuaCamera::setViewport(Camera& cam, std::optional<VarViewport> viewport) noexcept
+	std::optional<Viewport> LuaCamera::getBaseViewport(const Camera& cam) noexcept
 	{
-		cam.setViewport(LuaViewport::tableGet(viewport));
+		return cam.getBaseViewport();
+	}
+
+	void LuaCamera::setViewport(Camera& cam, const VarLuaTable<glm::vec4>& viewport) noexcept
+	{
+		cam.setViewport(LuaGlm::tableGet(viewport));
+	}
+
+	glm::vec4 LuaCamera::getViewport(const Camera& cam) noexcept
+	{
+		return cam.getViewport();
 	}
 
 	OptionalRef<Transform>::std_t LuaCamera::getTransform(const Camera& cam) noexcept
@@ -166,8 +176,9 @@ namespace darmok
 			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
 			"projection_matrix", sol::property(&Camera::getProjectionMatrix),
 			"projection_inverse", sol::property(&Camera::getProjectionInverse),
-			"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
-			"current_viewport", sol::property(&Camera::getCurrentViewport),
+			//"base_viewport", sol::property(&LuaCamera::getBaseViewport, &LuaCamera::setBaseViewport),
+			//"viewport", sol::property(&LuaCamera::getViewport, &LuaCamera::setViewport),
+			"combined_viewport", sol::property(&Camera::getCombinedViewport),
 			"transform", sol::property(&LuaCamera::getTransform),
 			"view_matrix", sol::property(&Camera::getViewMatrix),
 			"view_inverse", sol::property(&Camera::getViewInverse),
