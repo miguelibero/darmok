@@ -53,6 +53,15 @@ namespace darmok::editor
             return ref;
         }
 
+        template<typename Itr>
+        void render(Itr begin, Itr end)
+        {
+            for (auto itr = begin; itr != end; ++itr)
+            {
+                render(*itr);
+            }
+        }
+
         bool render(entt::meta_any& obj) const;
         void add(std::unique_ptr<IObjectEditor>&& editor);
         void init(EditorAppDelegate& app);

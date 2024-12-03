@@ -607,6 +607,12 @@ namespace darmok
         return glm::vec3(p, z);
     }
 
+    bool CameraImpl::isWorldPointVisible(const glm::vec3& point) const noexcept
+    {
+        auto screenPoint = worldToViewportPoint(point);
+        return screenPoint.x > 0.F && screenPoint.x < 1.F && screenPoint.y > 0.F && screenPoint.y < 1.F;
+    }
+
     Viewport CameraImpl::getRenderChainViewport() const noexcept
     {
         return getCurrentViewport();
@@ -914,6 +920,11 @@ namespace darmok
     glm::vec3 Camera::screenToViewportPoint(const glm::vec3& point) const noexcept
     {
         return _impl->screenToViewportPoint(point);
+    }
+
+    bool Camera::isWorldPointVisible(const glm::vec3& point) const noexcept
+    {
+        return _impl->isWorldPointVisible(point);
     }
 
     RenderChain& Camera::getRenderChain() noexcept

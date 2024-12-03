@@ -176,6 +176,11 @@ namespace darmok
 		return cam.screenToViewportPoint(LuaGlm::tableGet(point));
 	}
 
+	bool LuaCamera::isWorldPointVisible(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept
+	{
+		return cam.isWorldPointVisible(LuaGlm::tableGet(point));
+	}
+
 	Camera& LuaCamera::addEntityComponent(LuaEntity& entity) noexcept
 	{
 		return entity.addComponent<Camera>();
@@ -259,6 +264,7 @@ namespace darmok
 			"viewport_to_world_point", &LuaCamera::viewportToWorldPoint,
 			"viewport_to_screen_point", &LuaCamera::viewportToScreenPoint,
 			"screen_to_viewport_point", &LuaCamera::screenToViewportPoint,
+			"is_world_point_visible", &LuaCamera::isWorldPointVisible,
 			"render_chain", sol::property(
 				sol::resolve<RenderChain&()>(&Camera::getRenderChain)
 			),

@@ -2,6 +2,7 @@
 #include <darmok-editor/IconsMaterialDesign.h>
 #include <darmok-editor/transform.hpp>
 #include <darmok-editor/camera.hpp>
+#include <darmok-editor/light.hpp>
 #include <darmok/window.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/scene.hpp>
@@ -49,6 +50,8 @@ namespace darmok::editor
         , _scenePlaying(false)
         , _mainToolbarHeight(0.F)
         , _selectedEntity(entt::null)
+        , _selectedScene(false)
+        , _transGizmoMode(TransformGizmoMode::Translate)
     {
     }
 
@@ -133,6 +136,10 @@ namespace darmok::editor
         ReflectionUtils::bind();
         _inspectorEditors.add<TransformInspectorEditor>();
         _inspectorEditors.add<CameraInspectorEditor>();
+        _inspectorEditors.add<PointLightInspectorEditor>();
+        _inspectorEditors.add<DirectionalLightInspectorEditor>();
+        _inspectorEditors.add<SpotLightInspectorEditor>();
+        _inspectorEditors.add<AmbientLightInspectorEditor>();
         return std::nullopt;
     }
 
@@ -164,6 +171,7 @@ namespace darmok::editor
         _app.removeComponent<ImguiAppComponent>();
         _app.removeComponent<SceneAppComponent>();
         _selectedEntity = entt::null;
+        _selectedScene = false;
         _dockDownId = 0;
         _dockRightId = 0;
         _dockLeftId = 0;
@@ -436,42 +444,90 @@ namespace darmok::editor
         ImGui::Begin("Main Toolbar", nullptr, _fixedFlags | ImGuiWindowFlags_MenuBar);
         ImGui::PopStyleVar();
 
+        auto renderSeparator = []()
+        {
+            ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+            ImGui::SameLine();
+        };
+
         ImGui::PushFont(_symbolsFont);
-        if (ImGui::ButtonEx(ICON_MD_SAVE))
+
         {
-            saveScene();
-        }
-        ImGui::SameLine();
-        if (ImGui::ButtonEx(ICON_MD_FOLDER_OPEN))
-        {
-            openScene();
-        }
-        ImGui::SameLine();
-        if (_scenePlaying)
-        {
-            if (ImGui::Button(ICON_MD_STOP))
+            ImGui::BeginGroup();
+            if (ImGui::ButtonEx(ICON_MD_SAVE))
             {
-                stopScene();
+                saveScene();
             }
-        }
-        else
-        {
-            if (ImGui::Button(ICON_MD_PLAY_ARROW))
+            ImGui::SameLine();
+            if (ImGui::ButtonEx(ICON_MD_FOLDER_OPEN))
             {
-                playScene();
+                openScene();
             }
+            ImGui::EndGroup();
+            ImGui::SameLine();
         }
-        ImGui::SameLine();
-        if (ImGui::Button(ICON_MD_PAUSE))
+
+        renderSeparator();
+
         {
-            pauseScene();
+            ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_SingleSelect;
+            auto ms = ImGui::BeginMultiSelect(flags);
+
+            auto renderOption = [this](const char* label, TransformGizmoMode mode)
+            {
+                auto selected = _transGizmoMode == mode;
+                auto size = ImGui::CalcTextSize(label);
+                if (ImGui::Selectable(label, selected, 0, size))
+                {
+                    _transGizmoMode = mode;
+                }
+                ImGui::SameLine();
+            };
+
+            renderOption(ICON_MD_OPEN_WITH, TransformGizmoMode::Translate);
+            renderOption(ICON_MD_3D_ROTATION, TransformGizmoMode::Rotate);
+            renderOption(ICON_MD_SCALE, TransformGizmoMode::Scale);
+
+            ImGui::EndMultiSelect();
+            ImGui::SameLine();
         }
-        ImGui::SameLine();
+
+        renderSeparator();
+
+        {
+            ImGui::BeginGroup();
+            if (_scenePlaying)
+            {
+                if (ImGui::Button(ICON_MD_STOP))
+                {
+                    stopScene();
+                }
+            }
+            else
+            {
+                if (ImGui::Button(ICON_MD_PLAY_ARROW))
+                {
+                    playScene();
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_MD_PAUSE))
+            {
+                pauseScene();
+            }
+            ImGui::EndGroup();
+            ImGui::SameLine();
+        }
+
         ImGui::PopFont();
-
         _mainToolbarHeight = ImGui::GetWindowSize().y;
-
         ImGui::End();
+    }
+
+    void EditorAppDelegate::onSceneTreeSceneClicked()
+    {
+        _selectedScene = true;
+        _selectedEntity = entt::null;
     }
 
     void EditorAppDelegate::onSceneTreeTransformClicked(Transform& trans)
@@ -491,14 +547,24 @@ namespace darmok::editor
     void EditorAppDelegate::onEntitySelected(Entity entity) noexcept
     {
         _selectedEntity = entity;
+        _selectedScene = false;
     }
 
     void EditorAppDelegate::renderSceneTree()
     {
         if (ImGui::Begin(_sceneTreeWindowName))
         {
-            if (ImGui::TreeNode("Scene"))
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+            if (_selectedScene)
             {
+                flags |= ImGuiTreeNodeFlags_Selected;
+            }
+            if (ImGui::TreeNodeEx("Scene", flags))
+            {
+                if (ImGui::IsItemClicked())
+                {
+                    onSceneTreeSceneClicked();
+                }
                 _scene->forEachChild([this](auto entity, auto& trans) {
                     if (isEditorEntity(entity))
                     {
@@ -543,19 +609,20 @@ namespace darmok::editor
     {
         if (ImGui::Begin(_inspectorWindowName))
         {
-            if (_scene && _selectedEntity != entt::null)
+            if (_scene)
             {
-                auto entity = _selectedEntity;
-                for (auto [typeInfo, ptr] : _scene->getComponents(entity))
+                if (_selectedScene)
                 {
-                    auto type = entt::resolve(typeInfo);
-                    if (type)
-                    {
-                        auto comp = type.from_void(ptr);
-                        _inspectorEditors.render(comp);
-                    }
+                    auto comps = SceneReflectionUtils::getSceneComponents(*_scene);
+                    _inspectorEditors.render(comps.begin(), comps.end());
+                }
+                else if (_selectedEntity != entt::null)
+                {
+                    auto comps = SceneReflectionUtils::getEntityComponents(*_scene, _selectedEntity);
+                    _inspectorEditors.render(comps.begin(), comps.end());
                 }
             }
+
         }
         ImGui::End();
     }
@@ -634,7 +701,7 @@ namespace darmok::editor
         ImVec2 min = ImGui::GetItemRectMin();
         ImVec2 size = ImGui::GetItemRectSize();
         ImGuizmo::SetRect(min.x, min.y, size.x, size.y);
-
+        ImGuizmo::SetGizmoSizeClipSpace(0.2F);
         ImGuizmo::Enable(true);
 
         auto view = _editorCam->getViewMatrix();
@@ -648,19 +715,36 @@ namespace darmok::editor
             return;
         }
 
-        if (auto trans = _scene->getComponent<Transform>(_selectedEntity))
+        auto trans = _scene->getComponent<Transform>(_selectedEntity);
+        if (!trans)
         {
-            // view *= trans->getWorldMatrix();
+            return;
+        }
 
-            auto proj = _editorCam->getProjectionMatrix();
-            auto op = ImGuizmo::TRANSLATE;
-            auto mode = ImGuizmo::LOCAL;
-            auto mtx = trans->getLocalMatrix();
+        auto worldPos = trans->getWorldPosition();
+        if (!_editorCam->isWorldPointVisible(worldPos))
+        {
+            return;
+        }
 
-            if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), op, mode, glm::value_ptr(mtx)))
-            {
-                trans->setLocalMatrix(mtx);
-            }
+        auto proj = _editorCam->getProjectionMatrix();
+        auto op = ImGuizmo::TRANSLATE;
+        switch (_transGizmoMode)
+        {
+        case TransformGizmoMode::Rotate:
+            op = ImGuizmo::ROTATE;
+            break;
+        case TransformGizmoMode::Scale:
+            op = ImGuizmo::SCALE;
+            break;
+        }
+
+        auto mode = ImGuizmo::LOCAL;
+        auto mtx = trans->getLocalMatrix();
+
+        if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), op, mode, glm::value_ptr(mtx)))
+        {
+            trans->setLocalMatrix(mtx);
         }
     }
 

@@ -114,6 +114,7 @@ namespace darmok
         glm::vec3 viewportToWorldPoint(const glm::vec3& point) const noexcept;
         glm::vec3 viewportToScreenPoint(const glm::vec3& point) const noexcept;
         glm::vec3 screenToViewportPoint(const glm::vec3& point) const noexcept;
+        bool isWorldPointVisible(const glm::vec3& point) const noexcept;
 
         RenderChain& getRenderChain() noexcept;
         const RenderChain& getRenderChain() const noexcept;

@@ -25,6 +25,10 @@ namespace darmok
 		ReflectionSerializeUtils::bind();
         Transform::bindMeta();
 		Camera::bindMeta();
+		PointLight::bindMeta();
+		DirectionalLight::bindMeta();
+		SpotLight::bindMeta();
+		AmbientLight::bindMeta();
 
 		ShadowRenderer::bindMeta();
 		LightingRenderComponent::bindMeta();
@@ -151,6 +155,19 @@ namespace darmok
 				{
 					comps.push_back(type.from_void(&comp));
 				}
+			}
+		}
+		return comps;
+	}
+
+	std::vector<entt::meta_any> SceneReflectionUtils::getEntityComponents(Scene& scene, Entity entity)
+	{
+		std::vector<entt::meta_any> comps;
+		for (auto [typeInfo, ptr] : scene.getComponents(entity))
+		{
+			if (auto type = entt::resolve(typeInfo))
+			{
+				comps.push_back(type.from_void(ptr));
 			}
 		}
 		return comps;

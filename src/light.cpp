@@ -7,6 +7,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/scene_reflect.hpp>
 #include <darmok/reflect_serialize.hpp>
 #include <darmok/camera_reflect.hpp>
 #include <glm/gtx/matrix_operation.hpp>
@@ -70,6 +71,8 @@ namespace darmok
     void PointLight::bindMeta() noexcept
     {
         ReflectionSerializeUtils::metaSerialize<PointLight>();
+        SceneReflectionUtils::metaEntityComponent<PointLight>("PointLight")
+            .ctor();
     }
 
     DirectionalLight::DirectionalLight(float intensity) noexcept
@@ -115,6 +118,8 @@ namespace darmok
     void DirectionalLight::bindMeta() noexcept
     {
         ReflectionSerializeUtils::metaSerialize<DirectionalLight>();
+        SceneReflectionUtils::metaEntityComponent<DirectionalLight>("DirectionalLight")
+            .ctor();
     }
 
     AmbientLight::AmbientLight(float intensity) noexcept
@@ -148,6 +153,8 @@ namespace darmok
     void AmbientLight::bindMeta() noexcept
     {
         ReflectionSerializeUtils::metaSerialize<AmbientLight>();
+        SceneReflectionUtils::metaEntityComponent<AmbientLight>("AmbientLight")
+            .ctor();
     }
 
     SpotLight::SpotLight(float intensity, const Color3& color, float range) noexcept
@@ -229,6 +236,8 @@ namespace darmok
     void SpotLight::bindMeta() noexcept
     {
         ReflectionSerializeUtils::metaSerialize<SpotLight>();
+        SceneReflectionUtils::metaEntityComponent<SpotLight>("SpotLight")
+            .ctor();
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept

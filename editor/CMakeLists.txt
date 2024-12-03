@@ -16,6 +16,7 @@ set(EDITOR_HEADERS
   transform.hpp
   camera.hpp
   scene.hpp
+  light.hpp
 )
 
 set(EDITOR_SOURCES
@@ -25,6 +26,7 @@ set(EDITOR_SOURCES
   transform.cpp
   camera.cpp
   scene.cpp
+  light.cpp
 )
 
 set(EDITOR_ASSETS

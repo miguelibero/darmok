@@ -30,6 +30,13 @@ namespace darmok::editor
         Drag
     };
 
+    enum class TransformGizmoMode
+    {
+        Translate,
+        Rotate,
+        Scale
+    };
+
     class IObjectEditor;
 
     class EditorAppDelegate final : public darmok::IAppDelegate, public darmok::IImguiRenderer, darmok::ISceneDelegate
@@ -57,6 +64,7 @@ namespace darmok::editor
         std::shared_ptr<Scene> _scene;
         OptionalRef<ImguiAppComponent> _imgui;
         MouseSceneViewMode _mouseSceneViewMode;
+        TransformGizmoMode _transGizmoMode;
         bool _sceneViewFocused;
         bool _scenePlaying;
 
@@ -67,6 +75,7 @@ namespace darmok::editor
         std::shared_ptr<FrameBuffer> _sceneBuffer;
         OptionalRef<Camera> _editorCam;
         Entity _selectedEntity;
+        bool _selectedScene;
         std::optional<std::filesystem::path> _scenePath;
         ImFont* _symbolsFont;
         float _mainToolbarHeight;
@@ -93,6 +102,7 @@ namespace darmok::editor
 
         void updateSceneSize(const glm::uvec2& size) noexcept;
         void onSceneTreeTransformClicked(Transform& trans);
+        void onSceneTreeSceneClicked();
 
         bool isEditorEntity(Entity entity) const noexcept;
 

@@ -64,6 +64,7 @@ namespace darmok
 		static glm::vec3 viewportToWorldPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
 		static glm::vec3 viewportToScreenPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
 		static glm::vec3 screenToViewportPoint(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
+		static bool isWorldPointVisible(const Camera& cam, const VarLuaTable<glm::vec3>& point) noexcept;
 
 		static void setCullingFilter(Camera& cam, const sol::object& filter) noexcept;
 	};
