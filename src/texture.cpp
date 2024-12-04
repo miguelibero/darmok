@@ -6,6 +6,11 @@
 
 namespace darmok
 {
+	TextureDefinition TextureDefinition::fromImage(const Image& img, uint64_t loadFlags) noexcept
+	{
+		return { img.getData(), img.getTextureConfig(loadFlags), loadFlags };
+	}
+
 	Texture::Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept
 		: _handle(handle)
 		, _config(cfg)
@@ -65,6 +70,11 @@ namespace darmok
 			_handle = bgfx::createTexture3D(cfg.size.x, cfg.size.y, cfg.depth, cfg.mips, cfg.format, flags);
 			break;
 		}
+	}
+
+	Texture::Texture(const TextureDefinition& def) noexcept
+		: Texture(def.data, def.config, def.loadFlags)
+	{
 	}
 
 	Texture::Texture(Texture&& other) noexcept

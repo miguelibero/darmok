@@ -1,17 +1,10 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <iostream>
-#include <cereal/archives/binary.hpp>
-#include <bx/readerwriter.h>
 
-namespace cereal
-{
-    class XMLOutputArchive;
-    class XMLInputArchive;
-    class JSONOutputArchive;
-    class JSONInputArchive;
-}
+#include <iostream>
+
+#include <bx/readerwriter.h>
 
 namespace darmok
 {
@@ -28,14 +21,6 @@ namespace darmok
     {
     public:
         DataInputStream(const DataView& data) noexcept;
-
-        template<typename T>
-        static void read(const DataView& data, T& val)
-        {
-            DataInputStream stream(data);
-            cereal::BinaryInputArchive archive(stream);
-            archive(val);
-        }
     private:
         DataViewStreamBuffer _buffer;
     };
@@ -58,14 +43,6 @@ namespace darmok
     {
     public:
         DataOutputStream(Data& data) noexcept;
-
-        template<typename T>
-        static void write(Data& data, const T& val)
-        {
-            DataOutputStream stream(data);
-            cereal::BinaryOutputArchive archive(stream);
-            archive(val);
-        }
     private:
         DataStreamBuffer _buffer;
     };
@@ -79,14 +56,4 @@ namespace darmok
     private:
         Data& _data;
     };
-
-    DARMOK_EXPORT void save(cereal::BinaryOutputArchive& archive, const DataView& data);
-    DARMOK_EXPORT void save(cereal::BinaryOutputArchive& archive, const Data& data);
-    DARMOK_EXPORT void save(cereal::XMLOutputArchive& archive, const DataView& data);
-    DARMOK_EXPORT void save(cereal::XMLOutputArchive& archive, const Data& data);
-    DARMOK_EXPORT void save(cereal::JSONOutputArchive& archive, const DataView& data);
-    DARMOK_EXPORT void save(cereal::JSONOutputArchive& archive, const Data& data);
-    DARMOK_EXPORT void load(cereal::BinaryInputArchive& archive, Data& data);
-    DARMOK_EXPORT void load(cereal::XMLInputArchive& archive, Data& data);
-    DARMOK_EXPORT void load(cereal::JSONInputArchive& archive, Data& data);
 }

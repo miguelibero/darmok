@@ -61,8 +61,7 @@ namespace darmok
         const Scene& getScene() const;
 
         entt::id_type getId() const noexcept;
-        const std::string& getName() const noexcept;
-        Camera& setName(const std::string& name) noexcept;
+        std::string getName() const noexcept;
         std::string getViewName(const std::string& baseName) const noexcept;
         std::string toString() const noexcept;
 

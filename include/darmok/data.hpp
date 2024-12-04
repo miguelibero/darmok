@@ -1,17 +1,20 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/optional_ref.hpp>
+#include <darmok/glm.hpp>
+
 #include <vector>
 #include <memory>
 #include <string>
 #include <iostream>
 #include <filesystem>
-#include <darmok/optional_ref.hpp>
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
 
 namespace bx
 {
@@ -144,6 +147,62 @@ namespace darmok
         static void* malloc(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept;
     };
 
+    template <class Archive, 
+        cereal::traits::DisableIf<cereal::traits::is_output_serializable<cereal::BinaryData<uint8_t>, Archive>::value>
+        = cereal::traits::sfinae
+    >
+    std::string save_minimal(const Archive&, const DataView& dataView)
+    {
+        return dataView.toHex();
+    }
+
+    template <class Archive,
+        cereal::traits::DisableIf<cereal::traits::is_output_serializable<cereal::BinaryData<uint8_t>, Archive>::value>
+        = cereal::traits::sfinae>
+    std::string save_minimal(const Archive&, const Data& data)
+    {
+        return data.view().toHex();
+    }
+
+    template <class Archive,
+        cereal::traits::DisableIf<cereal::traits::is_input_serializable<cereal::BinaryData<uint8_t>, Archive>::value>
+        = cereal::traits::sfinae>
+    void load_minimal(const Archive&, Data& data, const std::string& hex)
+    {
+        data = std::move(Data::fromHex(hex));
+    }
+
+    template <class Archive,
+        cereal::traits::EnableIf<cereal::traits::is_output_serializable<cereal::BinaryData<uint8_t>, Archive>::value>
+        = cereal::traits::sfinae>
+    void save(Archive& archive, const DataView& dataView)
+    {
+        auto size = dataView.size();
+        archive(cereal::make_size_tag(size));
+        archive(cereal::binary_data(static_cast<const uint8_t*>(dataView.ptr()), size));
+    }
+
+    template <class Archive,
+        cereal::traits::EnableIf<cereal::traits::is_output_serializable<cereal::BinaryData<uint8_t>, Archive>::value>
+        = cereal::traits::sfinae>
+    void save(Archive& archive, const Data& data)
+    {
+        auto size = data.size();
+        archive(cereal::make_size_tag(size));
+        archive(cereal::binary_data(static_cast<const uint8_t*>(data.ptr()), size));
+    }
+
+    template <class Archive,
+        cereal::traits::EnableIf<cereal::traits::is_input_serializable<cereal::BinaryData<uint8_t>, Archive>::value>
+        = cereal::traits::sfinae>
+    void load(Archive& archive, Data& data)
+    {
+        auto size = data.size();
+        archive(cereal::make_size_tag(size));
+        data.resize(size);
+        archive(cereal::binary_data(static_cast<uint8_t*>(data.ptr()), size));
+    }
+
 	class DARMOK_EXPORT BX_NO_VTABLE IDataLoader
 	{
 	public:
@@ -165,3 +224,4 @@ namespace darmok
 }
 
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::DataView& data);
+DARMOK_EXPORT std::istream& operator>>(std::istream& in, darmok::Data& data);

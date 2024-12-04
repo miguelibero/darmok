@@ -130,6 +130,7 @@ set(CORE_SOURCES
   varying.cpp
   viewport.cpp
   program_core.cpp
+  material_core.cpp
   asset_core.cpp
   easing.cpp
   reflect.cpp
@@ -162,6 +163,7 @@ set(CORE_HEADERS
   collection.hpp
   viewport.hpp
   program_core.hpp
+  material_core.hpp
   asset_core.hpp
   loader.hpp
   easing_fwd.hpp
@@ -171,6 +173,7 @@ set(CORE_HEADERS
 set(SOURCES
   platform.cpp
   asset.cpp
+  asset_pack.cpp
 
   app.cpp
   window.cpp
@@ -194,6 +197,7 @@ set(SOURCES
   render_deferred.cpp
   render_chain.cpp
   render_debug.cpp
+  render_shape.cpp
   shadow.cpp
   freelook.cpp
   text.cpp
@@ -202,7 +206,8 @@ set(SOURCES
 
 set(HEADERS
   asset.hpp
-
+  asset_pack.hpp
+  
   app_fwd.hpp
   app.hpp
   input_fwd.hpp
@@ -235,6 +240,7 @@ set(HEADERS
   render_deferred.hpp
   render_chain.hpp
   render_debug.hpp
+  render_shape.hpp
   shadow_fwd.hpp
   shadow.hpp
   freelook.hpp

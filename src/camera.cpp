@@ -34,41 +34,23 @@ namespace darmok
     {
     }
 
-    const std::string& CameraImpl::getName() const noexcept
-    {
-        if (!_name.empty())
-        {
-            return _name;
-        }
-        if (auto trans = getTransform())
-        {
-            return trans->getName();
-        }
-        return _name;
-    }
-
-    void CameraImpl::setName(const std::string& name) noexcept
-    {
-        _name = name;
-    }
-
     entt::id_type CameraImpl::getId() const noexcept
     {
         return reinterpret_cast<uintptr_t>(static_cast<const void*>(this));
     }
 
-    std::string CameraImpl::getDescName() const noexcept
+    std::string CameraImpl::getName() const noexcept
     {
-        if (!_name.empty())
+        if (auto trans = getTransform())
         {
-            return _name;
+            return trans->getName();
         }
         return StringUtils::binToHex(getId());
     }
 
     std::string CameraImpl::toString() const noexcept
     {
-        return "Camera(" + getDescName() + ", " + glm::to_string(getProjectionMatrix()) + ")";
+        return "Camera(" + getName() + ", " + glm::to_string(getProjectionMatrix()) + ")";
     }
 
     Scene& CameraImpl::getScene()
@@ -287,7 +269,7 @@ namespace darmok
 
     std::string CameraImpl::getViewName(const std::string& baseName) const noexcept
     {
-        auto name = "Camera " + getDescName() + ": " + baseName;
+        auto name = "Camera " + getName() + ": " + baseName;
         if (_scene)
         {
             name = "Scene " + _scene->getImpl().getDescName() + ": " + name;
@@ -673,15 +655,9 @@ namespace darmok
         return _impl->getScene();
     }
 
-    const std::string& Camera::getName() const noexcept
+    std::string Camera::getName() const noexcept
     {
         return _impl->getName();
-    }
-
-    Camera& Camera::setName(const std::string& name) noexcept
-    {
-        _impl->setName(name);
-        return *this;
     }
 
     std::string Camera::getViewName(const std::string& baseName) const noexcept
@@ -943,7 +919,6 @@ namespace darmok
             .ctor()
             .func<&Camera::afterLoad>("afterLoad"_hs)
             .func<&Camera::getName>("getName"_hs)
-            .func<&Camera::setName, entt::as_void_t>("setName"_hs)
             .func<&Camera::isEnabled>("isEnabled"_hs)
             .func<&Camera::setEnabled, entt::as_void_t>("setEnabled"_hs)
             .func<&Camera::getProjectionMatrix>("getProjectionMatrix"_hs)

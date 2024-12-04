@@ -1,14 +1,20 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/glm.hpp>
+#include <darmok/glm_serialize.hpp>
+
 #include <unordered_map>
 #include <variant>
 #include <string>
 #include <optional>
-#include <darmok/glm.hpp>
+#include <random>
+
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <random>
+#include <cereal/cereal.hpp>
+#include <cereal/types/variant.hpp>
+#include <cereal/types/unordered_map.hpp>
 
 namespace darmok
 {
@@ -46,6 +52,17 @@ namespace darmok
 
         const Uniform& configure(bgfx::Encoder& encoder) const;
         Uniform& configure(bgfx::Encoder& encoder) noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP_("name", _name),
+                CEREAL_NVP_("value", _value),
+                CEREAL_NVP_("type", _type)
+            );
+        }
+
     private:
         std::string _name;
         Value _value;
@@ -67,6 +84,15 @@ namespace darmok
         UniformContainer& set(const std::string& name, std::optional<UniformValue> value) noexcept;
         const UniformContainer& configure(bgfx::Encoder& encoder) const;
         UniformContainer& configure(bgfx::Encoder& encoder) noexcept;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP_("uniforms", _uniforms)
+            );
+        }
+
     private:
         std::unordered_map<std::string, Uniform> _uniforms;
         bool _autoInit;

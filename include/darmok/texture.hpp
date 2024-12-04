@@ -6,6 +6,7 @@
 #include <darmok/image.hpp>
 #include <darmok/color.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/data.hpp>
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
@@ -44,8 +45,24 @@ namespace darmok
 		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
 	};
 
-	class Data;
-	class DataView;
+	struct DARMOK_EXPORT TextureDefinition final
+	{
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(data),
+				CEREAL_NVP(config),
+				CEREAL_NVP(loadFlags)
+			);
+		}
+
+		Data data;
+		TextureConfig config;
+		uint64_t loadFlags = defaultTextureLoadFlags;
+
+		static TextureDefinition fromImage(const Image& img, uint64_t loadFlags = defaultTextureLoadFlags) noexcept;
+	};
 
 	class DARMOK_EXPORT Texture final
 	{
@@ -58,6 +75,7 @@ namespace darmok
 		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		Texture(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		Texture(const TextureDefinition& definition) noexcept;
 		Texture(Texture&& other) noexcept;
 		Texture& operator=(Texture&& other) noexcept;
 
@@ -125,6 +143,15 @@ namespace darmok
 				return key.hash();
 			}
 		};
+
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(name),
+				CEREAL_NVP(stage)
+			);
+		}
 	};
 
 	class TextureUniform final

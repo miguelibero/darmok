@@ -16,6 +16,7 @@
 #include <darmok/shadow.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/render_shape.hpp>
 #include <darmok/culling.hpp>
 #include <darmok/input.hpp>
 #include <darmok/mesh.hpp>
@@ -51,7 +52,7 @@ namespace darmok::editor
         , _mainToolbarHeight(0.F)
         , _selectedEntity(entt::null)
         , _selectedScene(false)
-        , _transGizmoMode(TransformGizmoMode::Translate)
+        , _transGizmoMode(TransformGizmoMode::Grab)
     {
     }
 
@@ -152,6 +153,7 @@ namespace darmok::editor
         _imgui = _app.getOrAddComponent<ImguiAppComponent>(*this);
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
+        _proj.scenes.insert(_scene);
         
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
@@ -179,7 +181,7 @@ namespace darmok::editor
         _sceneViewFocused = false;
         _mouseSceneViewMode = MouseSceneViewMode::None;
         _symbolsFont = nullptr;
-        _scenePath.reset();
+        _projPath.reset();
         _mainToolbarHeight = 0.F;
     }
 
@@ -262,102 +264,98 @@ namespace darmok::editor
         "All Files", "*"
     };
 
-    void EditorAppDelegate::saveScene(bool forceNewPath)
+    void EditorAppDelegate::saveProject(bool forceNewPath)
     {
         if (!_scene)
         {
             return;
         }
-        if (!_scenePath || forceNewPath)
+        if (!_projPath || forceNewPath)
         {
             std::string initialPath(".");
-            if (_scenePath && std::filesystem::exists(_scenePath.value()))
+            if (_projPath && std::filesystem::exists(_projPath.value()))
             {
-                initialPath = _scenePath.value().string();
+                initialPath = _projPath.value().string();
             }
-            auto dialog = pfd::save_file("Save Scene", initialPath,
+            auto dialog = pfd::save_file("Save Project", initialPath,
                 _sceneDialogFilters, pfd::opt::force_path);
 
             while (!dialog.ready(1000))
             {
                 StreamUtils::logDebug("waiting for save dialog...");
             }
-            _scenePath = dialog.result();
+            _projPath = dialog.result();
         }
-        if(!_scenePath)
+        if(!_projPath)
         {
             return;
         }
 
         {
-            auto& scene = *_scene;
-            std::ofstream stream(_scenePath.value());
-            auto ext = _scenePath->extension();
+            std::ofstream stream(_projPath.value());
+            auto ext = _projPath->extension();
             if (ext == ".xml")
             {
                 cereal::XMLOutputArchive archive(stream);
-                save(archive, scene);
+                archive(_proj);
             }
             else if (ext == ".json")
             {
                 cereal::JSONOutputArchive archive(stream);
-                save(archive, scene);
+                archive(_proj);
             }
             else
             {
                 cereal::PortableBinaryOutputArchive archive(stream);
-                save(archive, scene);
+                archive(_proj);
             }
         }
     }
 
-    void EditorAppDelegate::openScene()
+    void EditorAppDelegate::openProject()
     {
         if (!_scene)
         {
             return;
         }
-        auto dialog = pfd::open_file("Open Scene", ".",
+        auto dialog = pfd::open_file("Open Project", ".",
             _sceneDialogFilters);
 
         while (!dialog.ready(1000))
         {
             StreamUtils::logDebug("waiting for open dialog...");
         }
-        std::filesystem::path scenePath = dialog.result()[0];
-        if (!std::filesystem::exists(scenePath))
+        std::filesystem::path projPath = dialog.result()[0];
+        if (!std::filesystem::exists(projPath))
         {
             return;
         }
 
         stopScene();
         _editorCam.reset();
-        _scene->destroyEntitiesImmediate();
-
-        auto& scene = *_scene;
+        _proj.clear();
 
         {
-            std::ifstream stream(scenePath);
-            auto ext = scenePath.extension();
+            std::ifstream stream(projPath);
+            auto ext = projPath.extension();
             if (ext == ".xml")
             {
                 cereal::XMLInputArchive archive(stream);
-                load(archive, scene);
+                archive(_proj);
             }
             else if (ext == ".json")
             {
                 cereal::JSONInputArchive archive(stream);
-                load(archive, scene);
+                archive(_proj);
             }
             else
             {
                 cereal::PortableBinaryInputArchive archive(stream);
-                load(archive, scene);
+                archive(_proj);
             }
         }
         
-        configureEditorScene(scene);
-        _scenePath = scenePath;
+        _projPath = projPath;
     }
 
     void EditorAppDelegate::playScene()
@@ -374,6 +372,14 @@ namespace darmok::editor
     {
     }
 
+    void EditorAppDelegate::addEntityComponent(const entt::meta_type& type)
+    {
+        if (_selectedEntity == entt::null)
+        {
+            return;
+        }
+    }
+
     void EditorAppDelegate::renderMainMenu()
     {
         if (ImGui::BeginMainMenuBar())
@@ -382,15 +388,15 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("Open...", "Ctrl+O"))
                 {
-                    openScene();
+                    openProject();
                 }
                 if (ImGui::MenuItem("Save", "Ctrl+S"))
                 {
-                    saveScene();
+                    saveProject();
                 }
                 if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
                 {
-                    saveScene(true);
+                    saveProject(true);
                 }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))
                 {
@@ -424,6 +430,21 @@ namespace darmok::editor
                     }
                     ImGui::EndMenu();
                 }
+                if (ImGui::BeginMenu("Light"))
+                {
+                    if (ImGui::MenuItem("Point Light"))
+                    {
+                    }
+                    if (ImGui::MenuItem("Directional Light"))
+                    {
+                    }
+                    if (ImGui::MenuItem("Spot Light"))
+                    {
+                    }
+                    if (ImGui::MenuItem("Ambient Light"))
+                    {
+                    }
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Help"))
@@ -456,12 +477,12 @@ namespace darmok::editor
             ImGui::BeginGroup();
             if (ImGui::ButtonEx(ICON_MD_SAVE))
             {
-                saveScene();
+                saveProject();
             }
             ImGui::SameLine();
             if (ImGui::ButtonEx(ICON_MD_FOLDER_OPEN))
             {
-                openScene();
+                openProject();
             }
             ImGui::EndGroup();
             ImGui::SameLine();
@@ -484,6 +505,7 @@ namespace darmok::editor
                 ImGui::SameLine();
             };
 
+            renderOption(ICON_MD_BACK_HAND, TransformGizmoMode::Grab);
             renderOption(ICON_MD_OPEN_WITH, TransformGizmoMode::Translate);
             renderOption(ICON_MD_3D_ROTATION, TransformGizmoMode::Rotate);
             renderOption(ICON_MD_SCALE, TransformGizmoMode::Scale);
@@ -559,7 +581,12 @@ namespace darmok::editor
             {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            if (ImGui::TreeNodeEx("Scene", flags))
+            auto sceneName = _scene->getName();
+            if (sceneName.empty())
+            {
+                sceneName = "Scene";
+            }
+            if (ImGui::TreeNodeEx(sceneName.c_str(), flags))
             {
                 if (ImGui::IsItemClicked())
                 {
@@ -613,6 +640,15 @@ namespace darmok::editor
             {
                 if (_selectedScene)
                 {
+                    {
+                        auto name = _scene->getName();
+                        if (ImGui::InputText("Name", &name))
+                        {
+                            _scene->setName(name);
+                        }
+                        ImGui::Spacing();
+                    }
+
                     auto comps = SceneReflectionUtils::getSceneComponents(*_scene);
                     _inspectorEditors.render(comps.begin(), comps.end());
                 }
@@ -662,7 +698,11 @@ namespace darmok::editor
             _sceneViewFocused = ImGui::IsWindowFocused();
             if (ImGui::IsWindowHovered())
             {
-                if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && _transGizmoMode == TransformGizmoMode::Grab)
+                {
+                    _mouseSceneViewMode = MouseSceneViewMode::Drag;
+                }
+                else if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
                 {
                     _mouseSceneViewMode = MouseSceneViewMode::Look;
                 }
@@ -763,6 +803,46 @@ namespace darmok::editor
 
     void EditorAppDelegate::update(float deltaTime)
     {
+        updateCamera(deltaTime);
+        updateInputEvents(deltaTime);
+    }
+
+    void EditorAppDelegate::updateInputEvents(float deltaTime)
+    {
+        static const InputEvents gizmoModeGrabEvents = {
+            KeyboardInputEvent{ KeyboardKey::KeyW }
+        };
+        static const InputEvents gizmoModeTranslateEvents = {
+            KeyboardInputEvent{ KeyboardKey::KeyW }
+        };
+        static const InputEvents gizmoModeRotateEvents = {
+            KeyboardInputEvent{ KeyboardKey::KeyE }
+        };
+        static const InputEvents gizmoModeScaleEvents = {
+            KeyboardInputEvent{ KeyboardKey::KeyR }
+        };
+
+        auto& input = _app.getInput();
+        if (input.checkEvents(gizmoModeGrabEvents))
+        {
+            _transGizmoMode = TransformGizmoMode::Grab;
+        }
+        else if (input.checkEvents(gizmoModeTranslateEvents))
+        {
+            _transGizmoMode = TransformGizmoMode::Translate;
+        }
+        else if (input.checkEvents(gizmoModeRotateEvents))
+        {
+            _transGizmoMode = TransformGizmoMode::Rotate;
+        }
+        else if (input.checkEvents(gizmoModeScaleEvents))
+        {
+            _transGizmoMode = TransformGizmoMode::Scale;
+        }
+    }
+
+    void EditorAppDelegate::updateCamera(float deltaTime)
+    {
         auto trans = _editorCam->getTransform();
         if (!trans)
         {
@@ -771,6 +851,7 @@ namespace darmok::editor
 
         auto& input = _app.getInput();
 
+        // TODO: could be configured
         static const std::array<InputAxis, 2> lookAxis = {
             InputAxis{
                 { MouseInputDir{ MouseAnalog::Position, InputDirType::Left } },
@@ -791,28 +872,36 @@ namespace darmok::editor
                 { KeyboardInputEvent{ KeyboardKey::Up }, MouseInputDir{ MouseAnalog::Scroll, InputDirType::Down } }
             }
         };
+        static const float lookSensitivity = 2.F;
+        static const float dragSensitivity = 0.2F;
+        static const float moveSensitivity = 0.05F;
 
         auto rot = trans->getRotation();
 
-        if (_mouseSceneViewMode != MouseSceneViewMode::None)
-        {
-            glm::vec2 look;
-            input.getAxis(look, lookAxis);
-            look.y = Math::clamp(look.y, -90.F, 90.F);
-            look = glm::radians(look);
+        glm::vec2 look;
+        input.getAxis(look, lookAxis);
+        look.y = Math::clamp(look.y, -90.F, 90.F);
+        look = glm::radians(look) * lookSensitivity;
 
-            if (_mouseSceneViewMode == MouseSceneViewMode::Look)
-            {
-                rot = glm::quat(glm::vec3(0, look.x, 0)) * rot * glm::quat(glm::vec3(look.y, 0, 0));
-                trans->setRotation(rot);
-            }
+        if (_mouseSceneViewMode == MouseSceneViewMode::Look)
+        {
+            rot = glm::quat(glm::vec3(0, look.x, 0)) * rot * glm::quat(glm::vec3(look.y, 0, 0));
+            trans->setRotation(rot);
+        }
+        if (_mouseSceneViewMode == MouseSceneViewMode::Drag)
+        {
+            glm::vec2 drag;
+            input.getAxis(drag, lookAxis);
+            drag *= dragSensitivity;
+            auto dir = rot * glm::vec3(-drag.x, -drag.y, 0.F);
+            trans->setPosition(trans->getPosition() + dir);
         }
 
         if (_sceneViewFocused)
         {
             glm::vec2 move;
             input.getAxis(move, moveAxis);
-            move *= 0.05; // sensitivity
+            move *= moveSensitivity;
             auto dir = rot * glm::vec3(move.x, 0.F, move.y);
             trans->setPosition(trans->getPosition() + dir);
         }

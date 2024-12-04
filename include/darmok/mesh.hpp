@@ -163,18 +163,6 @@ namespace darmok
     struct BoundingBox;
     struct Grid;
 
-    enum class RectangleMeshType
-    {
-        Full,
-        Outline
-    };
-
-    enum class LineMeshType
-    {
-        Line,
-        Arrow
-    };
-
     struct DARMOK_EXPORT MeshData final
     {
         using Vertex = MeshDataVertex;
@@ -183,6 +171,8 @@ namespace darmok
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
         MeshType type = MeshType::Static;
+
+        using Shape = std::variant<Cube, Sphere, Capsule, Rectangle, Plane, Ray, Line, Triangle, Polygon, Frustum, Grid>;
 
         MeshData(MeshType type = MeshType::Static) noexcept;
         MeshData(const Cube& Cube, RectangleMeshType type = RectangleMeshType::Full) noexcept;
@@ -237,5 +227,5 @@ namespace darmok
         bool doSubdivide(size_t i, float maxDistance = bx::kFloatInfinity) noexcept;
         static void doCreateIndices(std::vector<Index>& indices, size_t size) noexcept;
         void setupBasicRectangle() noexcept;
-    };
+    };    
 }

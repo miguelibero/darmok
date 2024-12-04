@@ -108,6 +108,8 @@ namespace darmok
     {
         SerializeContextStack<const Scene>::push(scene);
 
+        archive(CEREAL_NVP_("name", scene.getName()));
+
         SceneComponentCerealSaveListDelegate sceneComps(scene);
         archive(CEREAL_NVP_("sceneComponents", sceneComps));
 
@@ -258,6 +260,10 @@ namespace darmok
     void load(Archive& archive, Scene& scene)
     {
         SerializeContextStack<Scene>::push(scene);
+
+        std::string name;
+        archive(CEREAL_NVP_("name", name));
+        scene.setName(name);
 
         CerealSceneComponentLoadListDelegate sceneComps(scene);
         archive(CEREAL_NVP_("sceneComponents", sceneComps));

@@ -10,7 +10,7 @@ project(
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main
 add_executable(${TESTS_NAME}
-  
+  src/data_test.cpp
   src/optional_ref_test.cpp
   src/utf8char_test.cpp
   src/entity_filter_test.cpp

@@ -496,6 +496,12 @@ namespace darmok
 
 std::ostream& operator<<(std::ostream& out, const darmok::DataView& data)
 {
-    out.write((const char*)data.ptr(), data.size());
+    out.write(static_cast<const char*>(data.ptr()), data.size());
     return out;
+}
+
+std::istream& operator>>(std::istream& in, darmok::Data& data)
+{
+    in.read(static_cast<char*>(data.ptr()), data.size());
+    return in;
 }

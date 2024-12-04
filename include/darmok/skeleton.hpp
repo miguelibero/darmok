@@ -6,6 +6,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <darmok/easing.hpp>
 
 #include <memory>
@@ -16,6 +17,9 @@
 #include <bx/bx.h>
 #include <nlohmann/json.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64

@@ -4,6 +4,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/asset_pack.hpp>
 #include <darmok-editor/editor.hpp>
 
 #include <memory>
@@ -32,6 +33,7 @@ namespace darmok::editor
 
     enum class TransformGizmoMode
     {
+        Grab,
         Translate,
         Rotate,
         Scale
@@ -62,6 +64,7 @@ namespace darmok::editor
     private:
         App& _app;
         std::shared_ptr<Scene> _scene;
+        AssetPack _proj;
         OptionalRef<ImguiAppComponent> _imgui;
         MouseSceneViewMode _mouseSceneViewMode;
         TransformGizmoMode _transGizmoMode;
@@ -76,7 +79,7 @@ namespace darmok::editor
         OptionalRef<Camera> _editorCam;
         Entity _selectedEntity;
         bool _selectedScene;
-        std::optional<std::filesystem::path> _scenePath;
+        std::optional<std::filesystem::path> _projPath;
         ImFont* _symbolsFont;
         float _mainToolbarHeight;
         ObjectEditorContainer _inspectorEditors;
@@ -108,10 +111,14 @@ namespace darmok::editor
 
         void onEntitySelected(Entity entity) noexcept;
 
-        void saveScene(bool forceNewPath = false);
-        void openScene();
+        void saveProject(bool forceNewPath = false);
+        void openProject();
         void playScene();
         void stopScene();
         void pauseScene();
+
+        void updateCamera(float dt);
+        void updateInputEvents(float dt);
+        void addEntityComponent(const entt::meta_type& type);
     };
 }

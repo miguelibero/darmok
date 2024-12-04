@@ -22,7 +22,7 @@ namespace
 
         static void bindMeta() noexcept
         {
-            ReflectionUtils::metaEntityComponent<TestComponent>("TestComponent")
+            SceneReflectionUtils::metaEntityComponent<TestComponent>("TestComponent")
                 .ctor()
                 .data<&TestComponent::value, entt::as_ref_t>("value"_hs);
         }
@@ -34,7 +34,7 @@ namespace
 
         static void bindMeta() noexcept
         {
-            ReflectionUtils::metaEntityComponent<TestRefComponent>("TestRefComponent")
+            SceneReflectionUtils::metaEntityComponent<TestRefComponent>("TestRefComponent")
                 .ctor()
                 .data<&TestRefComponent::comp, entt::as_ref_t>("comp"_hs);
         }
@@ -56,7 +56,7 @@ namespace
                 .ctor()
                 .data<&TestStruct::value, entt::as_ref_t>("value"_hs)
                 .data<&TestStruct::str, entt::as_ref_t>("str"_hs);
-            ReflectionUtils::metaEntityComponent<TestStructComponent>("TestStructComponent")
+            SceneReflectionUtils::metaEntityComponent<TestStructComponent>("TestStructComponent")
                 .ctor()
                 .data<&TestStructComponent::value, entt::as_ref_t>("value"_hs);
         }

@@ -4,11 +4,17 @@
 #include <darmok/varying.hpp>
 #include <darmok/data.hpp>
 #include <darmok/collection.hpp>
+
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
+
 #include <nlohmann/json.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 
 namespace darmok
 {
@@ -57,13 +63,14 @@ namespace darmok
 
 		bool empty() const noexcept;
 
+		static Format getPathFormat(const std::filesystem::path& path) noexcept;
+
 		void read(const std::filesystem::path& path);
 		void write(const std::filesystem::path& path) const noexcept;
 		void read(std::istream& in, Format format = Format::Binary);
 		void write(std::ostream& out, Format format = Format::Binary) const noexcept;
 		void read(const nlohmann::ordered_json& json);
 		void write(nlohmann::ordered_json& json) const;
-		static Format getPathFormat(const std::filesystem::path& path) noexcept;
 
 		template<typename T>
 		void loadStaticMem(const T& mem)

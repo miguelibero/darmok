@@ -8,4 +8,16 @@ namespace darmok
         Dynamic,
         Transient
     };
+
+    enum class RectangleMeshType
+    {
+        Full,
+        Outline
+    };
+
+    enum class LineMeshType
+    {
+        Line,
+        Arrow
+    };
 }

@@ -217,7 +217,9 @@ namespace darmok
 
     void ProgramDefinition::load(DataView data)
     {
-        DataInputStream::read(data, *this);
+        DataInputStream stream(data);
+        cereal::BinaryInputArchive archive(stream);
+        archive(*this);
     }
 
     ShaderCompiler::ShaderCompiler() noexcept
@@ -828,7 +830,6 @@ namespace darmok
     ProgramImporter::ProgramImporter()
         : _impl(std::make_unique<ProgramImporterImpl>())
     {
-
     }
 
     ProgramImporter::~ProgramImporter() noexcept

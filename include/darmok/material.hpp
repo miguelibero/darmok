@@ -10,8 +10,8 @@
 #include <darmok/app.hpp>
 #include <darmok/uniform.hpp>
 #include <darmok/texture.hpp>
-
 #include <darmok/glm.hpp>
+
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 
@@ -169,5 +169,5 @@ namespace darmok
         using result_type = std::shared_ptr<Material>;
         virtual ~IMaterialLoader() = default;
         [[nodiscard]] virtual result_type operator()(std::string_view name) = 0;
-    };
+    };    
 }

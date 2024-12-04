@@ -46,8 +46,7 @@ namespace darmok
         CameraImpl(Camera& cam, const glm::mat4& projMatrix = {}) noexcept;
 
         entt::id_type getId() const noexcept;
-        const std::string& getName() const noexcept;
-        void setName(const std::string& name) noexcept;
+        std::string getName() const noexcept;
         std::string getViewName(const std::string& baseName) const noexcept;
         std::string toString() const noexcept;
 
@@ -127,7 +126,6 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
-                CEREAL_NVP_("name", _name),
                 CEREAL_NVP_("enabled", _enabled),
                 CEREAL_NVP_("proj", _projData),
                 CEREAL_NVP_("viewport", _viewport),
@@ -139,7 +137,6 @@ namespace darmok
 
     private:
         Camera& _cam;
-        std::string _name;
         bool _enabled;
         std::optional<bool> _updateEnabled;
         glm::mat4 _proj;
@@ -161,7 +158,6 @@ namespace darmok
 
         RenderChain _renderChain;
         
-        std::string getDescName() const noexcept;
         bool updateProjection() noexcept;
 
         Components::iterator findComponent(entt::id_type type) noexcept;

@@ -172,7 +172,7 @@ namespace darmok
 				&LuaCamera::setOrtho1,
 				&LuaCamera::setOrtho2
 			),
-			"name", sol::property(&Camera::getName, &Camera::setName),
+			"name", sol::property(&Camera::getName),
 			"enabled", sol::property(&Camera::isEnabled, &Camera::setEnabled),
 			"projection_matrix", sol::property(&Camera::getProjectionMatrix),
 			"projection_inverse", sol::property(&Camera::getProjectionInverse),

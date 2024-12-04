@@ -9,18 +9,9 @@
 #include <darmok/program.hpp>
 #include <darmok/skeleton.hpp>
 
-// to allow serialization
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/unordered_set.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/memory.hpp>
-#include <darmok/data_stream.hpp>
-#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {
@@ -451,7 +442,9 @@ namespace darmok
         auto data = _dataLoader(name);
         auto model = std::make_shared<Model>();
         // TODO: how to pass bx::AllocatorI to the serialization process?
-        DataInputStream::read(data, *model);
+        DataInputStream stream(data);
+        cereal::BinaryInputArchive archive(stream);
+        archive(*model);
         return model;
     }
 }

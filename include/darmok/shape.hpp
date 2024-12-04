@@ -469,6 +469,8 @@ namespace darmok
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::mat4 getOrtho() const noexcept;
 
+        void bindMeta();
+
         template<class Archive>
         void serialize(Archive& archive)
         {

@@ -1,6 +1,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
+#include <darmok/reflect_serialize.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/intersect.hpp>
@@ -931,6 +932,13 @@ namespace darmok
     bool BoundingBox::operator!=(const BoundingBox& other) const noexcept
     {
         return !operator==(other);
+    }
+
+    void BoundingBox::bindMeta()
+    {
+        ReflectionSerializeUtils::metaSerialize<BoundingBox>();
+        SceneReflectionUtils::metaEntityComponent<BoundingBox>("BoundingBox")
+            .ctor();
     }
 
     Frustum::Frustum(const glm::mat4& mtx, bool inverse) noexcept

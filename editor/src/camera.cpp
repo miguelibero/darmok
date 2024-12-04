@@ -20,15 +20,6 @@ namespace darmok::editor
         if (ImGui::CollapsingHeader("Camera"))
         {
             {
-                std::string name = cam.getName();
-                if (ImGui::InputText("Name", &name))
-                {
-                    cam.setName(name);
-                }
-                ImGui::Spacing();
-            }
-
-            {
                 static const char* perspLabel = "Perspective";
                 static const char* orthoLabel = "Orthographic";
 

@@ -53,6 +53,17 @@ namespace darmok
 		return v;
 	}
 
+	std::string StringUtils::binToHex(void* ptr, size_t size) noexcept
+	{
+		std::stringstream ss;
+		for (size_t i = 0; i < size; i++)
+		{
+			auto& v = ((uint8_t*)ptr)[i];
+			ss << binToHex(v);
+		}
+		return ss.str();
+	}
+
 	std::vector<std::string> StringUtils::splitWords(std::string_view sv) noexcept
 	{
 		std::vector<std::string> words;

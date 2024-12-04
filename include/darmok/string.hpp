@@ -19,6 +19,8 @@ namespace darmok
         [[nodiscard]] static bool endsWith(std::string_view sv, std::string_view end) noexcept;
         [[nodiscard]] static std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
 
+        static std::string binToHex(void* ptr, size_t size) noexcept;
+
         template<typename T>
         static std::string binToHex(T&& v) noexcept
         {

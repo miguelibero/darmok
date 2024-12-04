@@ -524,7 +524,17 @@ namespace darmok
         }
         else
         {
-            DataInputStream::read(data, config);
+            DataInputStream stream(data);
+            if (ext == ".xml")
+            {
+                cereal::XMLInputArchive archive(stream);
+                archive(config);
+            }
+            else
+            {
+                cereal::BinaryInputArchive archive(stream);
+                archive(config);
+            }
         }
         return config;
     }
