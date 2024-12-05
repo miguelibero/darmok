@@ -2,14 +2,7 @@
 
 #include <darmok-editor/editor.hpp>
 #include <darmok/optional_ref.hpp>
-
-namespace darmok
-{
-    class PointLight;
-    class DirectionalLight;
-    class SpotLight;
-    class AmbientLight;
-}
+#include <darmok/light.hpp>
 
 namespace darmok::editor
 {

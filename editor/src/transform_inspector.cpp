@@ -1,4 +1,4 @@
-#include <darmok-editor/transform.hpp>
+#include <darmok-editor/transform_inspector.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>

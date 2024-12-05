@@ -7,13 +7,12 @@
 namespace darmok::editor
 {
     class ObjectEditorContainer;
-    class EditorAppDelegate;
 
     class BX_NO_VTABLE IObjectEditor
     {
     public:
         virtual ~IObjectEditor() = default;
-        virtual void init(EditorAppDelegate& app, ObjectEditorContainer& container) { }
+        virtual void init(ObjectEditorContainer& container) { }
         virtual void shutdown() {}
         virtual entt::type_info getObjectType() const = 0;
         virtual bool tryRender(entt::meta_any& any) { return false; }
@@ -43,6 +42,7 @@ namespace darmok::editor
     class ObjectEditorContainer final
     {
     public:
+        ObjectEditorContainer();
 
         template<typename T, typename... A>
         T& add(A&&... args)
@@ -64,11 +64,11 @@ namespace darmok::editor
 
         bool render(entt::meta_any& obj) const;
         void add(std::unique_ptr<IObjectEditor>&& editor);
-        void init(EditorAppDelegate& app);
+        void init();
         void shutdown();
 
     private:
         std::unordered_map<entt::id_type, std::vector<std::unique_ptr<IObjectEditor>>> _editors;
-        OptionalRef<EditorAppDelegate> _app;
+        bool _running;
     };
 }

@@ -1,7 +1,6 @@
-#include <darmok-editor/camera.hpp>
+#include <darmok-editor/camera_inspector.hpp>
 #include <darmok-editor/app.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/camera.hpp>
 #include <darmok/camera_reflect.hpp>
 #include <darmok/render_scene.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -10,7 +9,7 @@
 
 namespace darmok::editor
 {
-    void CameraInspectorEditor::init(EditorAppDelegate& app, ObjectEditorContainer& editors) noexcept
+    void CameraInspectorEditor::init(ObjectEditorContainer& editors) noexcept
     {
         _editors = editors;
     }

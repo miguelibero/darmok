@@ -197,7 +197,6 @@ set(SOURCES
   render_deferred.cpp
   render_chain.cpp
   render_debug.cpp
-  render_shape.cpp
   shadow.cpp
   freelook.cpp
   text.cpp
@@ -240,7 +239,6 @@ set(HEADERS
   render_deferred.hpp
   render_chain.hpp
   render_debug.hpp
-  render_shape.hpp
   shadow_fwd.hpp
   shadow.hpp
   freelook.hpp

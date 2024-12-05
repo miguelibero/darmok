@@ -1,10 +1,12 @@
-#include <darmok-editor/scene.hpp>
+#include <darmok-editor/scene_inspector.hpp>
 #include <darmok-editor/app.hpp>
 #include <darmok/scene_reflect.hpp>
 
+#include <imgui_stdlib.h>
+
 namespace darmok::editor
 {
-    void SceneInspectorEditor::init(EditorAppDelegate& app, ObjectEditorContainer& editors) noexcept
+    void SceneInspectorEditor::init(ObjectEditorContainer& editors) noexcept
     {
         _editors = editors;
     }
@@ -17,6 +19,15 @@ namespace darmok::editor
         }
         if (ImGui::CollapsingHeader("Scene"))
         {
+            {
+                auto name = scene.getName();
+                if (ImGui::InputText("Name", &name))
+                {
+                    scene.setName(name);
+                }
+                ImGui::Spacing();
+            }
+
             auto comps = SceneReflectionUtils::getSceneComponents(scene);
             if (!comps.empty())
             {

@@ -8,6 +8,7 @@
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
 #include <darmok/skeleton.hpp>
+#include <darmok/data_stream.hpp>
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>

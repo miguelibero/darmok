@@ -1,11 +1,7 @@
 #pragma once
 
 #include <darmok-editor/editor.hpp>
-
-namespace darmok
-{
-    class Transform;
-}
+#include <darmok/transform.hpp>
 
 namespace darmok::editor
 {
