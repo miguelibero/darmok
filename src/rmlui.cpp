@@ -540,8 +540,8 @@ namespace darmok
         }
         catch(...)
         {
-            return (Rml::FileHandle)nullptr;
         }
+        return (Rml::FileHandle)nullptr;
     }
 
     OptionalRef<RmluiFileInterface::Element> RmluiFileInterface::find(Rml::FileHandle file) noexcept
@@ -624,17 +624,18 @@ namespace darmok
         return elm->data.size();
     }
 
-    bool RmluiFileInterface::LoadFile(const Rml::String& path, Rml::String& out_data) noexcept
+    bool RmluiFileInterface::LoadFile(const Rml::String& path, Rml::String& outData) noexcept
     {
         try
         {
-            out_data = _dataLoader.value()(path).stringView();
+            auto data = _dataLoader.value()(path);
+            outData = data.stringView();
             return true;
         }
         catch (...)
         {
-            return false;
         }
+        return false;
     }
 
     RmluiCanvasImpl::RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size)
@@ -1642,10 +1643,6 @@ namespace darmok
     bool RmluiPlugin::loadExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath)
     {
         auto data = _app.getAssets().getDataLoader()(sourcePath);
-        if (data.empty())
-        {
-            return false;
-        }
         return loadScript(doc, data.stringView(), sourcePath);
     }
 

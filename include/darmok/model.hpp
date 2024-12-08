@@ -12,6 +12,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/program_fwd.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/loader.hpp>
 
 #include <memory>
 #include <string_view>
@@ -298,15 +299,6 @@ namespace darmok
         }
 
         std::string toString() const noexcept;
-
-        using DataFormat = ModelDataFormat;
-
-        static DataFormat getFormat(const std::string& name) noexcept;
-        static DataFormat getExtensionFormat(const std::string& ext) noexcept;
-        static std::string getFormatExtension(DataFormat format) noexcept;
-        static std::string getFormatName(DataFormat format) noexcept;
-        void read(std::istream& in, DataFormat format);
-        void write(std::ostream& out, DataFormat format) const;
     };
 
     class AssetContext;
@@ -382,24 +374,14 @@ namespace darmok
         void configureEntity(const ModelAmbientLight& light, Entity entity) noexcept;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IModelLoader
+    class DARMOK_EXPORT BX_NO_VTABLE IModelLoader : public ILoader<Model>
 	{
-	public:
-        using result_type = std::shared_ptr<Model>;
-
-        virtual ~IModelLoader() = default;
-		[[nodiscard]] virtual result_type operator()(std::string_view name) = 0;
 	};
 
-    class IDataLoader;
-
-    class DARMOK_EXPORT BinaryModelLoader : public IModelLoader
+    class DARMOK_EXPORT ModelLoader : public CerealLoader<IModelLoader>
 	{
 	public:
-        BinaryModelLoader(IDataLoader& dataLoader) noexcept;
-        [[nodiscard]] result_type operator()(std::string_view name) override;
-    private:
-        IDataLoader& _dataLoader;
+        ModelLoader(IDataLoader& dataLoader) noexcept;
 	};
 }
 

@@ -156,7 +156,7 @@ namespace darmok
     {
     public:
         AssimpSkeletonLoaderImpl(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<Skeleton> operator()(std::string_view name);
+        std::shared_ptr<Skeleton> operator()(const std::filesystem::path& path);
     private:
         IDataLoader& _dataLoader;
         AssimpSceneLoader _sceneLoader;
@@ -166,7 +166,7 @@ namespace darmok
     {
     public:
         AssimpSkeletalAnimationLoaderImpl(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<SkeletalAnimation> operator()(std::string_view name);
+        std::shared_ptr<SkeletalAnimation> operator()(const std::filesystem::path& path);
     private:
         IDataLoader& _dataLoader;
         AssimpSceneLoader _sceneLoader;

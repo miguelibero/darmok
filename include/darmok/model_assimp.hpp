@@ -47,7 +47,7 @@ namespace darmok
         AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         ~AssimpModelLoader() noexcept;
         AssimpModelLoader& setConfig(const Config& config) noexcept;
-		result_type operator()(std::string_view name) override;
+		std::shared_ptr<Model> operator()(const std::filesystem::path& path) override;
     private:
         std::unique_ptr<AssimpModelLoaderImpl> _impl;
     };
@@ -58,7 +58,7 @@ namespace darmok
     {
     public:
         using LoadConfig = AssimpModelLoadConfig;
-        AssimpModelImporter();
+        AssimpModelImporter(bx::AllocatorI& alloc);
         ~AssimpModelImporter();
         AssimpModelImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
         bool startImport(const Input& input, bool dry = false) override;

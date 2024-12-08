@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,6 +10,7 @@
 #include <iostream>
 #include <filesystem>
 #include <unordered_set>
+
 #include <bx/bx.h>
 #include <nlohmann/json.hpp>
 

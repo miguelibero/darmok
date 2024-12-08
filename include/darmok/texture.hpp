@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <darmok/export.h>
@@ -7,6 +6,11 @@
 #include <darmok/color.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/data.hpp>
+#include <darmok/serialize.hpp>
+#include <darmok/loader.hpp>
+#include <darmok/asset_core.hpp>
+#include <darmok/glm_serialize.hpp>
+#include <darmok/utils.hpp>
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
@@ -17,7 +21,7 @@
 
 namespace darmok
 {
-	struct DARMOK_EXPORT TextureConfig final
+    struct DARMOK_EXPORT TextureConfig final
 	{
 		glm::uvec2 size = glm::uvec2(1);
 		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
@@ -53,23 +57,46 @@ namespace darmok
 			archive(
 				CEREAL_NVP(data),
 				CEREAL_NVP(config),
-				CEREAL_NVP(loadFlags)
+				CEREAL_NVP(flags)
 			);
 		}
 
+		bool empty() const noexcept;
+
 		Data data;
 		TextureConfig config;
-		uint64_t loadFlags = defaultTextureLoadFlags;
+		uint64_t flags = defaultTextureLoadFlags;
 
-		static TextureDefinition fromImage(const Image& img, uint64_t loadFlags = defaultTextureLoadFlags) noexcept;
+		static TextureDefinition fromImage(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<TextureDefinition>
+	{
+	};
+
+	class DARMOK_EXPORT TextureDefinitionLoader final : public CerealLoader<ITextureDefinitionLoader>
+	{
+	public:
+		TextureDefinitionLoader(IDataLoader& dataLoader) noexcept;
+	};
+
+
+	class DARMOK_EXPORT ImageTextureDefinitionLoader final : ITextureDefinitionLoader
+	{
+	public:
+		ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept;
+		bool supports(const std::filesystem::path& path) const noexcept;
+		ImageTextureDefinitionLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
+		[[nodiscard]] std::shared_ptr<TextureDefinition> operator()(const std::filesystem::path& path) override;
+	private:
+		IImageLoader& _imgLoader;
+		uint64_t _loadFlags;
 	};
 
 	class DARMOK_EXPORT Texture final
 	{
 	public:
 		using Config = TextureConfig;
-
-		// TODO: remove bgfx flags param and move options to texture config struct
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
 		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
@@ -102,112 +129,58 @@ namespace darmok
 
 		Texture& setName(std::string_view name) noexcept;
 
+		[[nodiscard]] static const std::string& getFormatName(bgfx::TextureFormat::Enum format) noexcept;
+		[[nodiscard]] static std::optional<bgfx::TextureFormat::Enum> readFormat(std::string_view name) noexcept;
+		[[nodiscard]] static const std::string& getTypeName(TextureType type) noexcept;
+		[[nodiscard]] static std::optional<TextureType> readType(std::string_view name) noexcept;
+
+		using FlagMap = std::unordered_map<std::string, uint64_t>;
+
+		[[nodiscard]] static const std::string& getTextureFlagName(uint64_t flag) noexcept;
+		[[nodiscard]] static std::optional<uint64_t> readTextureFlag(std::string_view name) noexcept;
+		[[nodiscard]] static const FlagMap& getTextureFlags() noexcept;
+		[[nodiscard]] static const std::string& getSamplerFlagName(uint64_t flag) noexcept;
+		[[nodiscard]] static std::optional<uint64_t> readSamplerFlag(std::string_view name) noexcept;
+		[[nodiscard]] static const FlagMap& getSamplerFlags() noexcept;
+		[[nodiscard]] static uint64_t getBorderColorFlag(const Color& color) noexcept;
+
 	private:
 		bgfx::TextureHandle _handle;
 		Config _config;
+		static const std::array<std::string, bgfx::TextureFormat::Count> _formatNames;
+		static const std::array<std::string, toUnderlying(TextureType::Count)> _typeNames;
+		static const FlagMap _textureFlags;
+		static const FlagMap _samplerFlags;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<Texture, TextureDefinition>
 	{
-	public:
-		using result_type = std::shared_ptr<Texture>;
-		virtual ~ITextureLoader() = default;
-		[[nodiscard]] virtual result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) = 0;
 	};
 
-	class IImageLoader;
-
-	class DARMOK_EXPORT ImageTextureLoader final : public ITextureLoader
+	class DARMOK_EXPORT TextureLoader final : public FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>
 	{
 	public:
-		ImageTextureLoader(IImageLoader& imgLoader) noexcept;
-		[[nodiscard]] result_type operator()(std::string_view name, uint64_t flags = defaultTextureLoadFlags) noexcept override;
+		TextureLoader(ITextureDefinitionLoader& defLoader) noexcept;
+	};
+
+	/*
+    class TextureImporterImpl;
+
+	class DARMOK_EXPORT TextureImporter final : public IAssetTypeImporter
+	{
+	public:
+		TextureImporter();
+		~TextureImporter() noexcept;
+
+		bool startImport(const Input& input, bool dry = false) override;
+		Outputs getOutputs(const Input& input) override;
+		Dependencies getDependencies(const Input& input) override;
+		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
+		void endImport(const Input& input) override;
+
+		const std::string& getName() const noexcept override;
 	private:
-		IImageLoader& _imgLoader;
+		std::unique_ptr<TextureImporterImpl> _impl;
 	};
-
-	struct TextureUniformKey final
-	{
-		std::string name;
-		uint8_t stage;
-
-		bool operator==(const TextureUniformKey& other) const noexcept;
-		bool operator!=(const TextureUniformKey& other) const noexcept;
-
-		size_t hash() const noexcept;
-
-		struct Hash final
-		{
-			size_t operator()(const TextureUniformKey& key) const noexcept
-			{
-				return key.hash();
-			}
-		};
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(name),
-				CEREAL_NVP(stage)
-			);
-		}
-	};
-
-	class TextureUniform final
-	{
-	public:
-		using Key = TextureUniformKey;
-
-		TextureUniform(const std::string& name, uint8_t stage, bool autoInit = true) noexcept;
-		TextureUniform(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
-		TextureUniform(const Key& key, bool autoInit = true) noexcept;
-		TextureUniform(const Key& key, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
-		~TextureUniform() noexcept;
-		TextureUniform(const TextureUniform& other) noexcept;
-		TextureUniform& operator=(const TextureUniform& other) noexcept;
-		TextureUniform(TextureUniform&& other) noexcept;
-		TextureUniform& operator=(TextureUniform&& other) noexcept;
-
-		void init() noexcept;
-		void shutdown() noexcept;
-
-		bool operator==(const TextureUniform& other) const noexcept;
-		bool operator!=(const TextureUniform& other) const noexcept;
-
-		TextureUniform& operator=(const std::shared_ptr<Texture>& tex) noexcept;
-		operator const std::shared_ptr<Texture>& () const noexcept;
-
-		TextureUniform& set(const std::shared_ptr<Texture>& texture) noexcept;
-		const std::shared_ptr<Texture>& get() const noexcept;
-
-		const TextureUniform& configure(bgfx::Encoder& encoder) const;
-		TextureUniform& configure(bgfx::Encoder& encoder) noexcept;
-	private:
-		Key _key;
-		std::shared_ptr<Texture> _texture;
-		bgfx::UniformHandle _handle;
-
-		void doConfigure(bgfx::Encoder& encoder) const noexcept;
-	};
-
-	class TextureUniformContainer final
-	{
-	public:
-		using Key = TextureUniformKey;
-		TextureUniformContainer(bool autoInit = true) noexcept;
-		~TextureUniformContainer() noexcept;
-
-		void init() noexcept;
-		void shutdown() noexcept;
-
-		TextureUniformContainer& set(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
-		const TextureUniformContainer& configure(bgfx::Encoder& encoder) const;
-		TextureUniformContainer& configure(bgfx::Encoder& encoder) noexcept;
-	private:
-		std::unordered_map<Key, TextureUniform, Key::Hash> _uniforms;
-		bool _autoInit;
-		bool _initialized;
-	};
+	*/
 }
-

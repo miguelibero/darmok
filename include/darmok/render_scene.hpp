@@ -5,12 +5,19 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/viewport.hpp>
+#include <darmok/asset.hpp>
+#include <darmok/material.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/serialize.hpp>
 #include <memory>
 #include <vector>
 #include <optional>
 #include <stdexcept>
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
+
+#include <cereal/cereal.hpp>
+#include <cereal/types/memory.hpp>
 
 namespace darmok
 {
@@ -65,6 +72,34 @@ namespace darmok
         Renderable& setEnabled(bool enabled) noexcept;
         bool valid() const noexcept;
         bool render(bgfx::Encoder& encoder) const;
+
+        static void bindMeta();
+
+        template<typename Archive>
+        void save(Archive& archive) const 
+        {
+            auto& assets = SerializeContextStack<AssetContext>::get();
+            auto meshDef = assets.getMeshLoader().getDefinition(_mesh);
+            archive(
+                CEREAL_NVP_("mesh", meshDef),
+                CEREAL_NVP_("material", _material),
+                CEREAL_NVP_("enabled", _enabled)
+            );
+        }
+
+        template<typename Archive>
+        void load(Archive& archive) 
+        {
+            std::shared_ptr<MeshDefinition> meshDef;
+            archive(
+                CEREAL_NVP_("mesh", meshDef),
+                CEREAL_NVP_("material", _material),
+                CEREAL_NVP_("enabled", _enabled)
+            );
+            auto& assets = SerializeContextStack<AssetContext>::get();
+            _mesh = assets.getMeshLoader().loadResource(meshDef);
+        }
+
     private:
         bool _enabled;
         std::shared_ptr<IMesh> _mesh;

@@ -20,6 +20,7 @@ set(EDITOR_HEADERS
   camera_inspector.hpp
   scene_inspector.hpp
   light_inspector.hpp
+  render_inspector.hpp
 )
 
 set(EDITOR_SOURCES
@@ -33,6 +34,7 @@ set(EDITOR_SOURCES
   camera_inspector.cpp
   scene_inspector.cpp
   light_inspector.cpp
+  render_inspector.cpp
 )
 
 set(EDITOR_ASSETS

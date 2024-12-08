@@ -18,7 +18,6 @@
 
 namespace bx
 {
-    struct FileReaderI;
     struct AllocatorI;
 }
 
@@ -136,8 +135,8 @@ namespace darmok
         void fill(const DataView& data) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
-        [[nodiscard]] static Data fromHex(std::string_view hex);
-        [[nodiscard]] static Data fromFile(const std::filesystem::path& path);
+        [[nodiscard]] static Data fromHex(std::string_view hex, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
+        [[nodiscard]] static Data fromFile(const std::filesystem::path& path, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
 
     private:
         void* _ptr;
@@ -203,23 +202,27 @@ namespace darmok
         archive(cereal::binary_data(static_cast<uint8_t*>(data.ptr()), size));
     }
 
-	class DARMOK_EXPORT BX_NO_VTABLE IDataLoader
-	{
-	public:
-        using result_type = Data;
-
+    class DARMOK_EXPORT BX_NO_VTABLE IDataLoader
+    {
+    public:
+        using Resource = Data;
         virtual ~IDataLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
-	};
+        [[nodiscard]] virtual Data operator()(const std::filesystem::path& path) = 0;
+    };
 
-    class DARMOK_EXPORT FileDataLoader final : public IDataLoader
+    class DARMOK_EXPORT DataLoader final : public IDataLoader
 	{
 	public:
-        FileDataLoader(bx::FileReaderI& fileReader, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
-        [[nodiscard]] IDataLoader::result_type operator()(std::string_view filePath) override;
+        using Resource = Data;
+        DataLoader(const OptionalRef<bx::AllocatorI>& alloc = nullptr);
+
+        DataLoader& addBasePath(const std::filesystem::path& basePath) noexcept;
+        bool removeBasePath(const std::filesystem::path& basePath) noexcept;
+
+        [[nodiscard]] Data operator()(const std::filesystem::path& path) noexcept override;
 	private:
-		bx::FileReaderI& _fileReader;
-		OptionalRef<bx::AllocatorI> _allocator;
+        std::vector<std::filesystem::path> _basePaths;
+		OptionalRef<bx::AllocatorI> _alloc;
 	};
 }
 

@@ -513,14 +513,14 @@ namespace darmok
     {
     }
 
-    SkeletalAnimatorConfig SkeletalAnimatorConfigLoader::operator()(std::string_view name)
+    std::shared_ptr<SkeletalAnimatorConfig> SkeletalAnimatorConfigLoader::operator()(const std::filesystem::path& path)
     {
-        auto data = _dataLoader(name);
-        SkeletalAnimatorConfig config;
-        auto ext = StringUtils::getFileExt(name);
+        auto data = _dataLoader(path);
+        auto config = std::make_shared<SkeletalAnimatorConfig>();
+        auto ext = StringUtils::getFileExt(path.string());
         if (ext == ".json")
         {
-            config.readJson(nlohmann::json::parse(data.stringView()));
+            config->readJson(nlohmann::json::parse(data.stringView()));
         }
         else
         {

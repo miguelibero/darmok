@@ -13,10 +13,6 @@ namespace darmok::editor
 
     bool SceneInspectorEditor::render(Scene& scene) noexcept
     {
-        if (!_editors)
-        {
-            return false;
-        }
         if (ImGui::CollapsingHeader("Scene"))
         {
             {
@@ -28,14 +24,17 @@ namespace darmok::editor
                 ImGui::Spacing();
             }
 
-            auto comps = SceneReflectionUtils::getSceneComponents(scene);
-            if (!comps.empty())
+            if (_editors)
             {
-                if (ImGui::CollapsingHeader("Components"))
+                auto comps = SceneReflectionUtils::getSceneComponents(scene);
+                if (!comps.empty())
                 {
-                    for (auto& comp : comps)
+                    if (ImGui::CollapsingHeader("Components"))
                     {
-                        _editors->render(comp);
+                        for (auto& comp : comps)
+                        {
+                            _editors->render(comp);
+                        }
                     }
                 }
             }

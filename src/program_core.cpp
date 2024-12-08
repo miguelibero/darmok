@@ -3,77 +3,13 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/string.hpp>
 #include <darmok/utils.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/unordered_set.hpp>
 #include <cereal/archives/xml.hpp>
-#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/archives/portable_binary.hpp>
 
 namespace darmok
 {
     namespace fs = std::filesystem;
-
-    void ProgramProfileDefinition::read(const nlohmann::json& json)
-    {
-        auto readMap = [](const nlohmann::json& json, Map& map)
-        {
-            for (auto& elm: json)
-            {
-                std::string data;
-                Defines defs;
-                if (elm.is_string())
-                {
-                    data = elm;
-                }
-                else if (elm.is_object())
-                {
-                    if (elm.contains("defines"))
-                    {
-                        defs = elm["defines"];
-                    }
-                    if (elm.contains("data"))
-                    {
-                        data = elm["data"];
-                    }
-                }
-                else if (elm.is_array())
-                {
-                    defs = elm[0];
-                    data = elm[1];
-                }
-                else
-                {
-                    continue;
-                }
-                map.emplace(defs, Data::fromHex(data));
-            }
-        };
-        if (json.contains("vertex"))
-        {
-            readMap(json["vertex"], vertexShaders);
-        }
-        if (json.contains("fragment"))
-        {
-            readMap(json["fragment"], fragmentShaders);
-        }
-    }
-
-    void ProgramProfileDefinition::write(nlohmann::json& json) const
-    {
-        auto writeMap = [](nlohmann::json& json, const Map& map)
-        {
-            for (auto& [defines, data] : map)
-            {
-                auto& elmJson = json.emplace_back();
-                elmJson["defines"] = defines;
-                elmJson["data"] = data.view().toHex();
-            }
-        };
-
-        writeMap(json["vertex"], vertexShaders);
-        writeMap(json["fragment"], fragmentShaders);
-    }
 
     const ProgramDefinition::RendererProfileMap& ProgramDefinition::getRendererProfiles() noexcept
     {
@@ -116,109 +52,10 @@ namespace darmok
         return vertexLayout.empty();
     }
 
-    ProgramDefinition::Format ProgramDefinition::getPathFormat(const std::filesystem::path& path) noexcept
-    {
-        auto ext = path.extension();
-        if (ext == ".json")
-        {
-            return Format::Json;
-        }
-        if (ext == ".xml")
-        {
-            return Format::Xml;
-        }
-        return Format::Binary;
-    }
-
-    void ProgramDefinition::read(const std::filesystem::path& path)
-    {
-        std::ifstream in(path);
-        read(in, getPathFormat(path));
-    }
-
-    void ProgramDefinition::write(const std::filesystem::path& path) const noexcept
-    {
-        std::ofstream out(path);
-        write(out, getPathFormat(path));
-    }
-
-    void ProgramDefinition::read(std::istream& in, Format format)
-    {
-        if (format == Format::Json)
-        {
-            auto json = nlohmann::ordered_json::parse(in);
-            read(json);
-        }
-        else if (format == Format::Xml)
-        {
-            cereal::XMLInputArchive archive(in);
-            archive(*this);
-        }
-        else
-        {
-            cereal::BinaryInputArchive archive(in);
-            archive(*this);
-        }
-    }
-
-    void ProgramDefinition::write(std::ostream& out, Format format) const noexcept
-    {
-        if (format == Format::Json)
-        {
-            auto json = nlohmann::ordered_json::object();
-            write(json);
-            out << json.dump(2);
-        }
-        else if (format == Format::Xml)
-        {
-            cereal::XMLOutputArchive archive(out);
-            archive(*this);
-        }
-        else
-        {
-            cereal::BinaryOutputArchive archive(out);
-            archive(*this);
-        }
-    }
-
-    void ProgramDefinition::read(const nlohmann::ordered_json& json)
-    {
-        if (json.contains("name"))
-        {
-            name = json["name"];
-        }
-        if (json.contains("vertexLayout"))
-        {
-            vertexLayout.read(json["vertexLayout"]);
-        }
-        if (json.contains("profiles"))
-        {
-            for (auto& [name, profileJson] : json["profiles"].items())
-            {
-                profiles[name].read(profileJson);
-            }
-        }
-    }
-
-    void ProgramDefinition::write(nlohmann::ordered_json& json) const
-    {
-        if (!name.empty())
-        {
-            json["name"] = name;
-        }
-        vertexLayout.write(json["vertexLayout"]);
-        nlohmann::json profilesJson;
-        for (auto& [name, profile] : profiles)
-        {
-            profile.write(profilesJson[name]);
-        }
-        json["profiles"] = profilesJson;
-    }
-
-    void ProgramDefinition::load(DataView data)
+    void ProgramDefinition::loadBinary(DataView data)
     {
         DataInputStream stream(data);
-        cereal::BinaryInputArchive archive(stream);
+        cereal::PortableBinaryInputArchive archive(stream);
         archive(*this);
     }
 
@@ -808,11 +645,30 @@ namespace darmok
             auto data = Data::fromFile(output.path);
             def.profiles[output.profile].fragmentShaders[output.defines] = std::move(data);
         }
-        auto format = ProgramDefinition::getPathFormat(_outputPath);
-        def.write(out, format);
-
+        writeDefinition(def);
         fs::remove(outputPath);
         fs::remove(varyingDefPath);
+    }
+
+    void ProgramImporterImpl::writeDefinition(const ProgramDefinition& def)
+    {
+        auto ext = _outputPath.extension();
+        std::ofstream stream(_outputPath);
+        if (ext == ".xml")
+        {
+            cereal::XMLOutputArchive archive(stream);
+            archive(def);
+        }
+        else if (ext == ".json")
+        {
+            cereal::JSONOutputArchive archive(stream);
+            archive(def);
+        }
+        else
+        {
+            cereal::PortableBinaryOutputArchive archive(stream);
+            archive(def);
+        }
     }
 
     void ProgramImporterImpl::endImport(const Input& input)
@@ -884,4 +740,8 @@ namespace darmok
         return _impl->endImport(input);
     }
 
+    ProgramDefinitionLoader::ProgramDefinitionLoader(IDataLoader& dataLoader) noexcept
+        : CerealLoader(dataLoader)
+    {
+    }
 }

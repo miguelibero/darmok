@@ -421,9 +421,9 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(std::string_view name)
+	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(const std::filesystem::path& path)
 	{
-		auto atlas = _atlasLoader(name);
+		auto atlas = _atlasLoader(path);
 		if (!atlas)
 		{
 			return nullptr;

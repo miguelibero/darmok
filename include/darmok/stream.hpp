@@ -1,9 +1,11 @@
 #pragma once
 
-#include <iostream>
 #include <darmok/optional_ref.hpp>
-#include <bx/readerwriter.h>
+
+#include <iostream>
 #include <filesystem>
+
+#include <bx/readerwriter.h>
 
 namespace darmok
 {

@@ -115,7 +115,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * asset loading progress (maybe implement progressive loading)
 * possible refactors
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
-    * loaders should return unique_ptr
     * move lua bindings to separate library?
     * C++ coroutines could be useful in some places (async asset loading)
 * custom UI module (rmlui is nice but slow)

@@ -2,10 +2,4 @@
 
 namespace darmok
 {
-    enum class ModelDataFormat
-    {
-        Binary,
-        Json,
-        Xml
-    };
 }

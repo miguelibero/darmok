@@ -183,19 +183,8 @@ namespace darmok
 		return _vertexLayout;
 	}
 
-	DataProgramLoader::DataProgramLoader(IDataLoader& dataLoader) noexcept
-		: _dataLoader(dataLoader)
-	{
-	}
-
-	std::shared_ptr<Program> DataProgramLoader::operator()(std::string_view name)
-	{
-        ProgramDefinition def;
-        def.load(_dataLoader(name));
-        if (def.name.empty())
-        {
-            def.name = name;
-        }
-		return std::make_shared<Program>(def);
-	}
+    ProgramLoader::ProgramLoader(IProgramDefinitionLoader& defLoader) noexcept
+        : FromDefinitionLoader(defLoader)
+    {
+    }
 }

@@ -78,7 +78,7 @@ namespace darmok
 		std::string boxNameFormat = "box-*";
 	};
 
-	struct DARMOK_EXPORT TextureAtlasData final
+	struct DARMOK_EXPORT TextureAtlasDefinition final
 	{
 		std::filesystem::path imagePath;
 		std::vector<TextureAtlasElement> elements;
@@ -114,9 +114,9 @@ namespace darmok
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader
 	{
 	public:
-		using result_type = std::shared_ptr<TextureAtlas>;
+		using Resource = TextureAtlas;
 		virtual ~ITextureAtlasLoader() = default;
-		virtual result_type operator()(std::string_view name, uint64_t textureFlags = defaultTextureLoadFlags) = 0;
+		[[nodiscard]] virtual std::shared_ptr<TextureAtlas> operator()(const std::filesystem::path& path) = 0;
 	};
 
 	class IDataLoader;
@@ -126,7 +126,7 @@ namespace darmok
 	{
 	public:
 		TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept;
-		std::shared_ptr<TextureAtlas> operator()(std::string_view name, uint64_t textureFlags = defaultTextureLoadFlags) override;
+		std::shared_ptr<TextureAtlas> operator()(const std::filesystem::path& path) override;
 	private:
 		IDataLoader& _dataLoader;
 		ITextureLoader& _textureLoader;

@@ -94,7 +94,7 @@ namespace darmok
             if (!config.programPath.empty())
             {
                 ProgramDefinition def;
-                def.read(config.programPath);
+                CerealUtils::load(def, config.programPath);
                 if (!def.empty())
                 {
                     config.vertexLayout = def.vertexLayout;
@@ -125,10 +125,10 @@ namespace darmok
         format = path.extension().string();
     }
 
-    bool AssimpSceneLoader::supports(std::string_view name) const noexcept
+    bool AssimpSceneLoader::supports(const std::filesystem::path& path) const noexcept
     {
         Assimp::Importer importer;
-        return importer.IsExtensionSupported(std::filesystem::path(name).extension().string());
+        return importer.IsExtensionSupported(path.extension().string());
     }
 
     unsigned int AssimpSceneLoader::getImporterFlags(const Config& config) noexcept
@@ -245,18 +245,19 @@ namespace darmok
         AssimpUtils::fixModelLoadConfig(_dataLoader, _config);
     }
 
-    bool AssimpModelLoaderImpl::supports(std::string_view name) const noexcept
+    bool AssimpModelLoaderImpl::supports(const std::filesystem::path& path) const noexcept
     {
-        return _sceneLoader.supports(name);
+        return _sceneLoader.supports(path);
     }
 
-    std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(std::string_view name)
+    std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(const std::filesystem::path& path)
     {
         AssimpSceneLoadConfig config;
-        config.setPath(name);
-        auto scene = _sceneLoader.loadFromMemory(_dataLoader(name), config);
+        config.setPath(path);
+        auto data = _dataLoader(path);
+        auto scene = _sceneLoader.loadFromMemory(data, config);
         auto model = std::make_shared<Model>();
-        auto basePath = std::filesystem::path(name).parent_path().string();
+        auto basePath = path.parent_path().string();
 
         AssimpModelConverter converter(*scene, basePath, _config, _allocator, _imgLoader);
         converter.update(*model);
@@ -982,14 +983,15 @@ namespace darmok
         return *this;
     }
 
-    AssimpModelLoader::result_type AssimpModelLoader::operator()(std::string_view name)
+    std::shared_ptr<Model> AssimpModelLoader::operator()(const std::filesystem::path& path)
     {
-        return (*_impl)(name);
+        return (*_impl)(path);
     }
 
-    AssimpModelImporterImpl::AssimpModelImporterImpl()
-        : _dataLoader(_fileReader, _allocator)
-        , _imgLoader(_dataLoader, _allocator)
+    AssimpModelImporterImpl::AssimpModelImporterImpl(bx::AllocatorI& alloc)
+        : _dataLoader(alloc)
+        , _imgLoader(_dataLoader, alloc)
+        , _alloc(alloc)
     {
     }
 
@@ -1089,11 +1091,11 @@ namespace darmok
         }
         if (json.contains(_outputFormatJsonKey))
         {
-            config.outputFormat = Model::getFormat(json[_outputFormatJsonKey]);
+            config.outputFormat = CerealUtils::getFormat(json[_outputFormatJsonKey]);
         }
         else if (!config.outputPath.empty())
         {
-            config.outputFormat = Model::getExtensionFormat(config.outputPath.extension().string());
+            config.outputFormat = CerealUtils::getExtensionFormat(config.outputPath.extension());
         }
     }
 
@@ -1118,7 +1120,7 @@ namespace darmok
             return false;
         }
         /*
-        if (!_assimpLoader.supports(input.path.string()))
+        if (!_assimpLoader.supports(input.path))
         {
             return false;
         }
@@ -1158,7 +1160,7 @@ namespace darmok
         if (outputPath.empty())
         {
             std::string stem = StringUtils::getFileStem(input.path.filename().string());
-            outputPath = stem + Model::getFormatExtension(_currentConfig->outputFormat);
+            outputPath = stem + CerealUtils::getFormatExtension(_currentConfig->outputFormat);
         }
         auto basePath = input.getRelativePath().parent_path();
         outputs.push_back(basePath / outputPath);
@@ -1184,13 +1186,7 @@ namespace darmok
     {
         Config config;
         loadConfig(input.config, input.basePath, config);
-        switch (config.outputFormat)
-        {
-        case OutputFormat::Binary:
-            return std::ofstream(path, std::ios::binary);
-        default:
-            return std::ofstream(path);
-        }
+        return CerealUtils::createSaveStream(config.outputFormat, path);
     }
 
     void AssimpModelImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
@@ -1202,10 +1198,10 @@ namespace darmok
         {
             imgLoader = nullptr;
         }
-        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _allocator, imgLoader);
+        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _alloc, imgLoader);
         converter.setConfig(input.config);
         converter.update(model);
-        model.write(out, _currentConfig->outputFormat);
+        CerealUtils::save(model, out, _currentConfig->outputFormat);
     }
 
     const std::string& AssimpModelImporterImpl::getName() const noexcept
@@ -1214,8 +1210,8 @@ namespace darmok
         return name;
     }
 
-    AssimpModelImporter::AssimpModelImporter()
-        : _impl(std::make_unique<AssimpModelImporterImpl>())
+    AssimpModelImporter::AssimpModelImporter(bx::AllocatorI& alloc)
+        : _impl(std::make_unique<AssimpModelImporterImpl>(alloc))
     {
     }
 

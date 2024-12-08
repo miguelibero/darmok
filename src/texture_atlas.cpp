@@ -426,7 +426,7 @@ namespace darmok
 		return frames;
 	}
 
-	bool TextureAtlasData::read(const pugi::xml_document& doc, const std::filesystem::path& basePath)
+	bool TextureAtlasDefinition::read(const pugi::xml_document& doc, const std::filesystem::path& basePath)
 	{
 		if (doc.empty())
 		{
@@ -435,7 +435,7 @@ namespace darmok
 		return read(doc.child("TextureAtlas"), basePath);
 	}
 
-	bool TextureAtlasData::read(const pugi::xml_node& atlasXml, const std::filesystem::path& basePath)
+	bool TextureAtlasDefinition::read(const pugi::xml_node& atlasXml, const std::filesystem::path& basePath)
 	{
 		if (atlasXml.empty())
 		{
@@ -458,7 +458,7 @@ namespace darmok
 		return true;
 	}
 
-	void TextureAtlasData::write(pugi::xml_document& doc) const noexcept
+	void TextureAtlasDefinition::write(pugi::xml_document& doc) const noexcept
 	{
 		pugi::xml_node decl = doc.prepend_child(pugi::node_declaration);
 		decl.append_attribute("version") = "1.0";
@@ -467,7 +467,7 @@ namespace darmok
 		write(node);
 	}
 
-	void TextureAtlasData::write(pugi::xml_node& xml) const noexcept
+	void TextureAtlasDefinition::write(pugi::xml_node& xml) const noexcept
 	{
 		xml.append_attribute("imagePath") = imagePath.string().c_str();
 		for (auto& elm : elements)
@@ -477,7 +477,7 @@ namespace darmok
 		}
 	}
 
-	void TextureAtlasData::writeRmlui(std::ostream& out, const RmluiConfig& config) const noexcept
+	void TextureAtlasDefinition::writeRmlui(std::ostream& out, const RmluiConfig& config) const noexcept
 	{
 		auto name = imagePath.stem().string();
 		if (!config.nameFormat.empty())
@@ -528,15 +528,11 @@ namespace darmok
 		: _dataLoader(dataLoader)
 		, _textureLoader(textureLoader)
 	{
-	}	
+	}
 
-	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(std::string_view name, uint64_t textureFlags)
+	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(const std::filesystem::path& path)
 	{
-		auto data = _dataLoader(name);
-		if (data.empty())
-		{
-			throw std::runtime_error("got empty data");
-		}
+		auto data = _dataLoader(path);
 
 		pugi::xml_document doc;
 		auto result = doc.load_buffer_inplace(data.ptr(), data.size());
@@ -544,14 +540,14 @@ namespace darmok
 		{
 			throw std::runtime_error(result.description());
 		}
-		TextureAtlasData atlasData;
-		if (!atlasData.read(doc, std::filesystem::path(name).parent_path()))
+		TextureAtlasDefinition atlasDef;
+		if (!atlasDef.read(doc, std::filesystem::path(path).parent_path()))
 		{
 			throw std::runtime_error("failed to read texture packer xml");
 		}
 
-		auto texture = _textureLoader(atlasData.imagePath.string(), textureFlags);
-		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, atlasData.elements });
+		auto texture = _textureLoader(atlasDef.imagePath);
+		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, atlasDef.elements });
 	}
 
 	TexturePackerTextureAtlasImporter::TexturePackerTextureAtlasImporter(const std::filesystem::path& exePath) noexcept
@@ -745,26 +741,25 @@ namespace darmok
 			{
 				throw std::runtime_error(result.description());
 			}
-			TextureAtlasData atlasData;
-			if (!atlasData.read(doc, basePath))
+			TextureAtlasDefinition atlasDef;
+			if (!atlasDef.read(doc, basePath))
 			{
 				throw std::runtime_error("failed to read texture packer xml");
 			}
-			atlasData.imagePath = std::filesystem::relative(_texturePath, basePath);
+			atlasDef.imagePath = std::filesystem::relative(_texturePath, basePath);
 			_sheetData.clear();
 			DataOutputStream out(_sheetData);
 			auto rmluiConfig = readRmluiConfig(input.config);
-			atlasData.writeRmlui(out, rmluiConfig);
+			atlasDef.writeRmlui(out, rmluiConfig);
 			_sheetData.resize(out.tellp());
 		}
-
 
 		return true;
 	}
 
 	TextureAtlasRmluiConfig TexturePackerTextureAtlasImporter::readRmluiConfig(const nlohmann::json& json) noexcept
 	{
-		TextureAtlasData::RmluiConfig config;
+		TextureAtlasDefinition::RmluiConfig config;
 		if (json.contains(_rmluiNameFormatOption))
 		{
 			config.nameFormat = json[_rmluiNameFormatOption];

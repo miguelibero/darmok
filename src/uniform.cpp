@@ -4,6 +4,12 @@
 
 namespace darmok
 {
+	Uniform::Uniform() noexcept
+		: _type(bgfx::UniformType::Vec4)
+		, _handle{ bgfx::kInvalidHandle }
+	{
+	}
+
 	Uniform::Uniform(const std::string& name, bgfx::UniformType::Enum type, bool autoInit) noexcept
 		: _name(name)
 		, _type(type)
@@ -192,7 +198,7 @@ namespace darmok
 		return *this;
 	}
 
-	Uniform& Uniform::set(const UniformValue& value) noexcept
+	Uniform& Uniform::set(const Value& value) noexcept
 	{
 		setType(getType(value));
 		_value = value;

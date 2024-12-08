@@ -30,7 +30,7 @@ namespace darmok
         ~FreetypeFontLoaderImpl();
         void init(App& app);
         void shutdown();
-        std::shared_ptr<IFont> operator()(std::string_view name);
+        std::shared_ptr<IFont> operator()(const std::filesystem::path& path);
     private:
         IDataLoader& _dataLoader;
         glm::uvec2 _defaultFontSize;

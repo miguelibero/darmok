@@ -1,13 +1,11 @@
 #include "asset_core.hpp"
-#include <darmok/asset_core.hpp>
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/image.hpp>
 #include <darmok/program_core.hpp>
-#include <bx/platform.h>
-#include <bx/commandline.h>
+
 #include <filesystem>
 #include <iostream>
 #include <fstream>
@@ -15,6 +13,9 @@
 #include <cstdlib>
 #include <algorithm>
 #include <chrono>
+
+#include <bx/platform.h>
+#include <bx/commandline.h>
 
 namespace darmok
 {

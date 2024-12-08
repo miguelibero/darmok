@@ -1,13 +1,14 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <bx/error.h>
+
 #include <type_traits>
 #include <vector>
 #include <string>
 #include <variant>
-#include <type_traits>
 #include <filesystem>
+
+#include <bx/error.h>
 #include <entt/entt.hpp>
 
 namespace darmok

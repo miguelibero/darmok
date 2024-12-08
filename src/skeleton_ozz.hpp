@@ -52,11 +52,19 @@ namespace darmok
 		DataView _data;
 	};
 
+
+	class BX_NO_VTABLE ISkeletalAnimationProvider
+	{
+	public:
+		virtual ~ISkeletalAnimationProvider() = default;
+		virtual std::shared_ptr<SkeletalAnimation> getAnimation(std::string_view name) = 0;
+	};
+
 	class OzzSkeletalAnimatorAnimationState final
 	{
 	public:
 		using Config = SkeletalAnimatorAnimationConfig;
-		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader);
+		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations);
 		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
 
 		void update(float deltaTime);
@@ -81,7 +89,7 @@ namespace darmok
 	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
 	{
 	public:
-		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept;
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations) noexcept;
 
 		void update(float deltaTime, const glm::vec2& blendPosition);
 		std::string_view getName() const noexcept override;
@@ -143,7 +151,7 @@ namespace darmok
 		float _normalizedTime;
 	};
 
-	class SkeletalAnimatorImpl final : public ISkeletalAnimationLoader
+	class SkeletalAnimatorImpl final : public ISkeletalAnimationProvider
 	{
 	public:
 		using Config = SkeletalAnimatorConfig;
@@ -181,7 +189,8 @@ namespace darmok
 		glm::mat4 getJointModelMatrix(const std::string& joint) const noexcept;
 		std::unordered_map<std::string, glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
-		std::shared_ptr<SkeletalAnimation> operator()(std::string_view name) override;
+		// ISkeletalAnimationProvider
+		std::shared_ptr<SkeletalAnimation> getAnimation(std::string_view name) noexcept override;
 	private:
 		using TransitionKey = std::pair<std::string, std::string>;
 		AnimationMap _animations;

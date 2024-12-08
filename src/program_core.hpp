@@ -112,5 +112,6 @@ namespace darmok
         static const std::string _configIncludeDirsKey;
         static const std::string _shadercPathKey;
         void addIncludes(const nlohmann::json& json, const std::filesystem::path& basePath) noexcept;
+        void writeDefinition(const ProgramDefinition& def);
     };
 }

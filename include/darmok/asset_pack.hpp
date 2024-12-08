@@ -3,7 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/scene.hpp>
 #include <darmok/program_core.hpp>
-#include <darmok/material_core.hpp>
+#include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/model.hpp>
 
@@ -28,7 +28,7 @@ namespace darmok
         }
         std::unordered_set<std::shared_ptr<ProgramDefinition>> programs;
         std::unordered_set<std::shared_ptr<TextureDefinition>> textures;
-        std::unordered_set<std::shared_ptr<MaterialDefinition>> materials;
+        std::unordered_set<std::shared_ptr<Material>> materials;
         std::unordered_set<std::shared_ptr<Model>> models;
         std::unordered_set<std::shared_ptr<Scene>> scenes;
         // TODO: skeleton & animations

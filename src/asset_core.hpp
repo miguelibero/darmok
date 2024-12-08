@@ -1,5 +1,8 @@
 #pragma once
 
+#include <darmok/asset_core.hpp>
+#include <darmok/optional_ref.hpp>
+
 #include <string>
 #include <vector>
 #include <iostream>
@@ -8,8 +11,6 @@
 #include <unordered_map>
 #include <regex>
 
-#include <darmok/asset_core.hpp>
-#include <darmok/optional_ref.hpp>
 #include <nlohmann/json.hpp>
 
 namespace bx

@@ -1,24 +1,25 @@
 #pragma once
 
-#include <bx/bx.h>
-#include <bgfx/bgfx.h>
+#include <darmok/export.h>
+#include <darmok/program_fwd.hpp>
+#include <darmok/program_core.hpp>
+#include <darmok/loader.hpp>
+#include <darmok/varying.hpp>
+#include <darmok/data.hpp>
+#include <darmok/collection.hpp>
+
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <optional>
-#include <darmok/export.h>
-#include <darmok/asset_core.hpp>
-#include <darmok/program_fwd.hpp>
-#include <darmok/varying.hpp>
-#include <darmok/data.hpp>
-#include <darmok/collection.hpp>
+
+#include <bx/bx.h>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
-	struct ProgramDefinition;
-	using ProgramDefines = std::unordered_set<std::string>;
-	
 	class DARMOK_EXPORT Program final
 	{
 	public:
@@ -57,24 +58,14 @@ namespace darmok
 		std::string _name;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, ProgramDefinition>
 	{
-	public:
-		using result_type = std::shared_ptr<Program>;
-
-		virtual ~IProgramLoader() = default;
-		[[nodiscard]] virtual result_type operator()(std::string_view name) = 0;
 	};
 
-	class IDataLoader;
-	class IVertexLayoutLoader;
-
-	class DARMOK_EXPORT DataProgramLoader final : public IProgramLoader
+	class DARMOK_EXPORT ProgramLoader final : public FromDefinitionLoader<IProgramLoader, IProgramDefinitionLoader>
 	{
 	public:
-		DataProgramLoader(IDataLoader& dataLoader) noexcept;
-		[[nodiscard]] std::shared_ptr<Program> operator()(std::string_view name) override;
-	private:
-		IDataLoader& _dataLoader;
-	};	
+		ProgramLoader(IProgramDefinitionLoader& loader) noexcept;
+	};
+
 }

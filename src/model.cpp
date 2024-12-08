@@ -10,7 +10,7 @@
 #include <darmok/skeleton.hpp>
 #include <darmok/data_stream.hpp>
 
-#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
 
@@ -75,122 +75,6 @@ namespace darmok
             }
         }
         return bb;
-    }
-
-    Model::DataFormat Model::getFormat(const std::string& name) noexcept
-    {
-        if (name == "xml")
-        {
-            return DataFormat::Xml;
-        }
-        if (name == "json")
-        {
-            return DataFormat::Json;
-        }
-        return DataFormat::Binary;
-    }
-
-    Model::DataFormat Model::getExtensionFormat(const std::string& ext) noexcept
-    {
-        if (ext == ".xml")
-        {
-            return DataFormat::Xml;
-        }
-        if (ext == ".json" || ext == ".js")
-        {
-            return DataFormat::Json;
-        }
-        return DataFormat::Binary;
-    }
-
-    std::string Model::getFormatExtension(DataFormat format) noexcept
-    {
-        switch (format)
-        {
-            case DataFormat::Binary:
-            {
-                return ".bin";
-            }
-            case DataFormat::Json:
-            {
-                return ".json";
-            }
-            case DataFormat::Xml:
-            {
-                return ".xml";
-            }
-        }
-        return "";
-    }
-
-    std::string Model::getFormatName(DataFormat format) noexcept
-    {
-        switch (format)
-        {
-            case DataFormat::Binary:
-            {
-                return "binary";
-            }
-            case DataFormat::Json:
-            {
-                return "json";
-            }
-            case DataFormat::Xml:
-            {
-                return "xml";
-            }
-        }
-        return "";
-    }
-
-    void Model::read(std::istream& in, DataFormat format)
-    {
-        switch (format)
-        {
-            case DataFormat::Binary:
-            {
-                cereal::BinaryInputArchive archive(in);
-                archive(*this);
-                break;
-            }
-            case DataFormat::Json:
-            {
-                cereal::JSONInputArchive archive(in);
-                archive(*this);
-                break;
-            }
-            case DataFormat::Xml:
-            {
-                cereal::XMLInputArchive archive(in);
-                archive(*this);
-                break;
-            }
-        }
-    }
-
-    void Model::write(std::ostream& out, DataFormat format) const
-    {
-        switch (format)
-        {
-            case DataFormat::Binary:
-            {
-                cereal::BinaryOutputArchive archive(out);
-                archive(*this);
-                break;
-            }
-            case DataFormat::Json:
-            {
-                cereal::JSONOutputArchive archive(out);
-                archive(*this);
-                break;
-            }
-            case DataFormat::Xml:
-            {
-                cereal::XMLOutputArchive archive(out);
-                archive(*this);
-                break;
-            }
-        }
     }
 
     ModelSceneConfigurer::ModelSceneConfigurer(Scene& scene, AssetContext& assets)
@@ -295,7 +179,7 @@ namespace darmok
         std::shared_ptr<Texture> tex;
         if (modelImg->data.empty())
         {
-            tex = _config.assets.getTextureLoader()(modelImg->name, _textureFlags);
+            tex = _config.assets.getTextureLoader()(modelImg->name);
         }
         else
         {
@@ -433,20 +317,9 @@ namespace darmok
             .setColor(light.color);
     }
 
-    BinaryModelLoader::BinaryModelLoader(IDataLoader& dataLoader) noexcept
-        : _dataLoader(dataLoader)
+    ModelLoader::ModelLoader(IDataLoader& dataLoader) noexcept
+        : CerealLoader(dataLoader)
     {
-    }
-
-    BinaryModelLoader::result_type BinaryModelLoader::operator()(std::string_view name)
-    {
-        auto data = _dataLoader(name);
-        auto model = std::make_shared<Model>();
-        // TODO: how to pass bx::AllocatorI to the serialization process?
-        DataInputStream stream(data);
-        cereal::BinaryInputArchive archive(stream);
-        archive(*model);
-        return model;
     }
 }
 

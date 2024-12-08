@@ -1,10 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include <optional>
-#include <variant>
-
 #include <darmok/export.h>
 #include <darmok/color.hpp>
 #include <darmok/data.hpp>
@@ -12,6 +7,14 @@
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/mesh_fwd.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/varying.hpp>
+#include <darmok/loader.hpp>
+
+#include <vector>
+#include <memory>
+#include <optional>
+#include <variant>
+
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <cereal/cereal.hpp>
@@ -43,6 +46,41 @@ namespace darmok
         void fix(uint32_t maxVertices, uint32_t maxIndices) noexcept;
     };
 
+    struct DARMOK_EXPORT MeshDefinition
+    {
+        MeshType type;
+        bgfx::VertexLayout layout;
+        Data vertices;
+        Data indices;
+        MeshConfig config;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(type),
+                CEREAL_NVP(layout),
+                CEREAL_NVP(vertices),
+                CEREAL_NVP(indices),
+                CEREAL_NVP(config)
+            );
+        }
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionLoader
+    {
+    public:
+        using Resource = MeshDefinition;
+        virtual ~IMeshDefinitionLoader() = default;
+        [[nodiscard]] virtual std::shared_ptr<MeshDefinition> operator()(const std::filesystem::path& path) = 0;
+    };
+
+    class MeshDefinitionLoader final : public CerealLoader<IMeshDefinitionLoader>
+    {
+    public:
+        MeshDefinitionLoader(IDataLoader& dataLoader) noexcept;
+    };
+
     class DARMOK_EXPORT BX_NO_VTABLE IMesh
     {
     public:
@@ -50,33 +88,34 @@ namespace darmok
         using RenderConfig = MeshRenderConfig;
 
         virtual ~IMesh() = default;
-         [[nodiscard]] virtual std::string toString() const noexcept = 0;
-         virtual bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
-         [[nodiscard]] virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
+        [[nodiscard]] virtual std::string toString() const noexcept = 0;
+        virtual bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
+        [[nodiscard]] virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
-         [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
-         [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
+        [[nodiscard]] static std::unique_ptr<IMesh> create(const MeshDefinition& def);
+        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
+        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
     };
 
     class DARMOK_EXPORT Mesh final : public IMesh
     {
     public:
         using Config = MeshConfig;
-         Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config = {}) noexcept;
-         Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
-         ~Mesh() noexcept;
-         Mesh(Mesh&& other) noexcept;
-         Mesh& operator=(Mesh&& other) noexcept;
+        Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config = {}) noexcept;
+        Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
+        ~Mesh() noexcept;
+        Mesh(Mesh&& other) noexcept;
+        Mesh& operator=(Mesh&& other) noexcept;
 
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
 
-         [[nodiscard]] bgfx::VertexBufferHandle getVertexHandle() const noexcept;
-         [[nodiscard]] bgfx::IndexBufferHandle getIndexHandle() const noexcept;
+        [[nodiscard]] bgfx::VertexBufferHandle getVertexHandle() const noexcept;
+        [[nodiscard]] bgfx::IndexBufferHandle getIndexHandle() const noexcept;
 
-         [[nodiscard]] std::string toString() const noexcept override;
-         bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
-         [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+        [[nodiscard]] std::string toString() const noexcept override;
+        bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
+        [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
     private:
         bgfx::VertexLayout _layout;
         bgfx::VertexBufferHandle _vertexBuffer;
@@ -227,5 +266,15 @@ namespace darmok
         bool doSubdivide(size_t i, float maxDistance = bx::kFloatInfinity) noexcept;
         static void doCreateIndices(std::vector<Index>& indices, size_t size) noexcept;
         void setupBasicRectangle() noexcept;
-    };    
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public IFromDefinitionLoader<IMesh, MeshDefinition>
+    {
+    };
+
+    class DARMOK_EXPORT MeshLoader final : public FromDefinitionLoader<IMeshLoader, IMeshDefinitionLoader>
+    {
+    public:
+        MeshLoader(IMeshDefinitionLoader& defLoader) noexcept;
+    };
 }

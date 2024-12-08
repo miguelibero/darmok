@@ -12,17 +12,15 @@ namespace darmok
 {
 	class App;
 	class AssetContextImpl;
+
 	class IDataLoader;
 	class IImageLoader;
 	class IProgramLoader;
+	class IMeshLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
-    class AssetContext;
 	class IModelLoader;
-
-#ifdef DARMOK_ASSIMP
 	class AssimpModelLoader;
-#endif
 
 #ifdef DARMOK_OZZ
 	class ISkeletonLoader;
@@ -49,6 +47,7 @@ namespace darmok
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
+		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
@@ -96,6 +95,7 @@ namespace darmok
 		std::vector<std::filesystem::path> getOutputs() const;
 		void operator()(std::ostream& log) const;
 	private:
+		bx::DefaultAllocator _alloc;
 		AssetImporter _importer;
 		ProgramImporter& _progImporter;
 	};

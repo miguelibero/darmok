@@ -64,13 +64,13 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<IFont> FreetypeFontLoaderImpl::operator()(std::string_view name)
+	std::shared_ptr<IFont> FreetypeFontLoaderImpl::operator()(const std::filesystem::path& path)
 	{
 		if (!_library)
 		{
 			throw std::runtime_error("freetype library not initialized");
 		}
-		auto data = _dataLoader(name);
+		auto data = _dataLoader(path);
 		FT_Face face = nullptr;
 
 		auto err = FT_New_Memory_Face(_library, (const FT_Byte*)data.ptr(), data.size(), 0, &face);
@@ -103,9 +103,9 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	std::shared_ptr<IFont> FreetypeFontLoader::operator()(std::string_view name)
+	std::shared_ptr<IFont> FreetypeFontLoader::operator()(const std::filesystem::path& path)
 	{
-		return (*_impl)(name);
+		return (*_impl)(path);
 	}
 
 	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept
@@ -415,14 +415,14 @@ namespace darmok
 			return;
 		}
 		auto relImagePath = std::filesystem::relative(_imagePath, _atlasPath.parent_path());
-		TextureAtlasData atlasData
+		TextureAtlasDefinition atlasDef
 		{
 			.imagePath = relImagePath,
 			.size = _atlas->image.getSize()
 		};
 		for (auto& [name, glyph] : _atlas->glyphs)
 		{
-			atlasData.elements.emplace_back(TextureAtlasElement{
+			atlasDef.elements.emplace_back(TextureAtlasElement{
 				.name = name,
 				.texturePosition = glyph.texturePosition,
 				.size = glyph.size,
@@ -432,7 +432,7 @@ namespace darmok
 		}
 
 		pugi::xml_document doc;
-		atlasData.write(doc);
+		atlasDef.write(doc);
 		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	}
 

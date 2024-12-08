@@ -108,6 +108,37 @@ namespace darmok
 
         static std::string toString(Entity entity) noexcept;
 
+        template<size_t S>
+        static const std::string& getEnumName(size_t idx, const std::array<std::string, S>& names) noexcept
+        {
+            if (idx >= names.size())
+            {
+                static const std::string empty;
+                return empty;
+            }
+            return names[idx];
+        }
+
+        template<typename T, size_t S>
+        static std::optional<T> readEnum(std::string_view name, const std::array<std::string, S>& names, const std::string prefix = "") noexcept
+        {
+            auto lowerName = StringUtils::toLower(name);
+            auto lowerPrefix = StringUtils::toLower(prefix);
+            if (!lowerPrefix.empty() && StringUtils::startsWith(lowerName, lowerPrefix))
+            {
+                lowerName = lowerName.substr(lowerPrefix.size());
+            }
+            for (auto i = 0; i < names.size(); i++)
+            {
+                auto keyName = StringUtils::toLower(names[i]);
+                if (keyName == lowerName)
+                {
+                    return (T)i;
+                }
+            }
+            return std::nullopt;
+        }
+
     private:
         [[nodiscard]] static std::string doJoin(std::string_view sep, const std::vector<std::string>& strs) noexcept;
 

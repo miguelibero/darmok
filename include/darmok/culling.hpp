@@ -4,11 +4,13 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_debug.hpp>
+
 #include <unordered_set>
 #include <unordered_map>
 #include <optional>
 #include <vector>
 #include <memory>
+
 #include <bgfx/bgfx.h>
 
 namespace darmok

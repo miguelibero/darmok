@@ -11,45 +11,16 @@
 
 namespace darmok
 {
-	static std::filesystem::path fixAssetFilePath(const bx::FilePath& filePath, const std::filesystem::path& basePath) noexcept
-	{
-		return basePath / std::filesystem::path(filePath.getCPtr());
-	}
-
-	void FileReader::addBasePath(const std::filesystem::path& basePath) noexcept
-	{
-		_basePaths.insert(_basePaths.begin(), basePath);
-	}
-
-	bool FileReader::removeBasePath(const std::filesystem::path& path) noexcept
-	{
-		auto itr = std::remove(_basePaths.begin(), _basePaths.end(), path);
-		if (itr == _basePaths.end())
-		{
-			return false;
-		}
-		_basePaths.erase(itr, _basePaths.end());
-		return true;
-	}
-
-	bool FileReader::open(const bx::FilePath& filePath, bx::Error* err)
-	{
-		for (auto& basePath : _basePaths)
-		{
-			auto path = fixAssetFilePath(filePath, basePath);
-			if (std::filesystem::exists(path))
-			{
-				return bx::FileReader::open(path.string().c_str(), err);
-			}
-		}
-		return false;
-	}
-
+	
 	AssetContextImpl::AssetContextImpl()
-		: _dataLoader(_fileReader, _allocator)
+		: _dataLoader(_allocator)
 		, _imageLoader(_dataLoader, _allocator)
-		, _programLoader(_dataLoader)
-		, _textureLoader(_imageLoader)
+		, _programDefLoader(_dataLoader)
+		, _textureDefLoader(_dataLoader)
+		, _meshDefLoader(_dataLoader)
+		, _programLoader(_programDefLoader)
+		, _textureLoader(_textureDefLoader)
+		, _meshLoader(_meshDefLoader)
 		, _textureAtlasLoader(_dataLoader, _textureLoader)
 		, _binModelLoader(_dataLoader)
 		, _textureAtlasFontLoader(_textureAtlasLoader)
@@ -57,12 +28,20 @@ namespace darmok
 		, _skeletalAnimatorConfigLoader(_dataLoader)
 		, _ozzSkeletonLoader(_dataLoader)
 		, _ozzSkeletalAnimationLoader(_dataLoader)
+		, _skeletonLoader(_ozzSkeletonLoader)
+		, _skeletalAnimationLoader(_ozzSkeletalAnimationLoader)
 #endif		
 #ifdef DARMOK_ASSIMP
 		, _assimpModelLoader(_dataLoader, _allocator, _imageLoader)
+		, _modelLoader(_assimpModelLoader)
+#else
+		, _modelLoader(_binModelLoader)
 #endif		
 #ifdef DARMOK_FREETYPE
 		, _freetypeFontLoader(_dataLoader, _allocator)
+		, _fontLoader(_freetypeFontLoader)
+#else
+		, _fontLoader(_textureAtlasFontLoader);
 #endif
 #ifdef DARMOK_MINIAUDIO
 		, _miniaudioSoundLoader(_dataLoader)
@@ -70,24 +49,8 @@ namespace darmok
 #endif
 	{
 		addBasePath("assets");
-
-#ifdef DARMOK_OZZ
-		_skeletonLoader.setDefaultLoader(_ozzSkeletonLoader);
-		_skeletalAnimationLoader.setDefaultLoader(_ozzSkeletalAnimationLoader);
-#endif
-
-		_modelLoader.setDefaultLoader(_binModelLoader);
 		_modelLoader.addLoader(".dml;.bin", _binModelLoader);
-
-#ifdef DARMOK_ASSIMP
-		_modelLoader.setDefaultLoader(_assimpModelLoader);
-#endif
-
-		_fontLoader.setDefaultLoader(_textureAtlasFontLoader);
 		_fontLoader.addLoader(".xml", _textureAtlasFontLoader);
-#ifdef DARMOK_FREETYPE
-		_fontLoader.setDefaultLoader(_freetypeFontLoader);
-#endif
 	}
 
 	bx::AllocatorI& AssetContextImpl::getAllocator() noexcept
@@ -118,6 +81,11 @@ namespace darmok
 	ITextureAtlasLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
 	{
 		return _textureAtlasLoader;
+	}
+
+	IMeshLoader& AssetContextImpl::getMeshLoader() noexcept
+	{
+		return _meshLoader;
 	}
 
 	IModelLoader& AssetContextImpl::getModelLoader() noexcept
@@ -170,12 +138,12 @@ namespace darmok
 
 	void AssetContextImpl::addBasePath(const std::filesystem::path& path) noexcept
 	{
-		_fileReader.addBasePath(path);
+		_dataLoader.addBasePath(path);
 	}
 
 	bool AssetContextImpl::removeBasePath(const std::filesystem::path& path) noexcept
 	{
-		return _fileReader.removeBasePath(path);
+		return _dataLoader.removeBasePath(path);
 	}
 
 	void AssetContextImpl::init(App& app)
@@ -219,6 +187,11 @@ namespace darmok
 	ITextureLoader& AssetContext::getTextureLoader() noexcept
 	{
 		return _impl->getTextureLoader();
+	}
+
+	IMeshLoader& AssetContext::getMeshLoader() noexcept
+	{
+		return _impl->getMeshLoader();
 	}
 
 	ITextureAtlasLoader& AssetContext::getTextureAtlasLoader() noexcept
@@ -326,7 +299,7 @@ namespace darmok
 		, _progImporter(_importer.addTypeImporter<ProgramImporter>())
 	{
 #ifdef DARMOK_ASSIMP
-		_importer.addTypeImporter<AssimpModelImporter>();
+		_importer.addTypeImporter<AssimpModelImporter>(_alloc);
 #ifdef DARMOK_OZZ
 		_importer.addTypeImporter<SkeletalAnimatorConfigImporter>();
 		_importer.addTypeImporter<AssimpSkeletonImporter>();

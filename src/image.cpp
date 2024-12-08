@@ -1,4 +1,3 @@
-#include <bimg/decode.h>
 #include <darmok/image.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/color.hpp>
@@ -7,8 +6,10 @@
 #include <darmok/stream.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/string.hpp>
+
 #include <stdexcept>
 #include <bx/readerwriter.h>
+#include <bimg/decode.h>
 
 namespace darmok
 {
@@ -480,16 +481,16 @@ namespace darmok
 		};
 	}
 
-	DataImageLoader::DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept
+	ImageLoader::ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept
 		: _dataLoader(dataLoader)
-		, _allocator(alloc)
+		, _alloc(alloc)
 	{
 	}
 
-	std::shared_ptr<Image> DataImageLoader::operator()(std::string_view name)
+	std::shared_ptr<Image> ImageLoader::operator()(const std::filesystem::path& path)
 	{
-		auto data = _dataLoader(name);
-		return std::make_shared<Image>(data, _allocator);
+		auto data = _dataLoader(path);
+		return std::make_shared<Image>(data, _alloc);
 	}
 
 	bool ImageImporter::startImport(const Input& input, bool dry)

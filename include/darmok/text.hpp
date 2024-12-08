@@ -47,13 +47,8 @@ namespace darmok
         virtual void update(const std::unordered_set<Utf8Char>& chars) {};
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IFontLoader
+    class DARMOK_EXPORT BX_NO_VTABLE IFontLoader : public ILoader<IFont>
     {
-    public:
-        using result_type = std::shared_ptr<IFont>;
-
-        virtual ~IFontLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
     };
 
     struct DARMOK_EXPORT TextRenderConfig
@@ -150,7 +145,7 @@ namespace darmok
     {
     public:
         TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept;
-        std::shared_ptr<IFont> operator()(std::string_view name) override;
+        std::shared_ptr<IFont> operator()(const std::filesystem::path& path) override;
     private:
         ITextureAtlasLoader& _atlasLoader;
     };

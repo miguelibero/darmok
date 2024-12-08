@@ -356,10 +356,10 @@ namespace darmok
         return view().toString();
     }
 
-    Data Data::fromHex(std::string_view hex)
+    Data Data::fromHex(std::string_view hex, const OptionalRef<bx::AllocatorI>& alloc)
     {
         static const size_t elmLen = 2;
-        Data data(hex.size() / elmLen);
+        Data data(hex.size() / elmLen, alloc);
         auto ptr = (uint8_t*)data.ptr();
         for (size_t i = 0; i < data.size(); i++)
         {
@@ -369,7 +369,7 @@ namespace darmok
         return data;
     }
 
-    Data Data::fromFile(const std::filesystem::path& path)
+    Data Data::fromFile(const std::filesystem::path& path, const OptionalRef<bx::AllocatorI>& alloc)
     {
         FILE* fh;
 #ifdef _MSC_VER        
@@ -390,7 +390,7 @@ namespace darmok
         fseek(fh, 0, SEEK_END);
         long size = ftell(fh);
         fseek(fh, 0, SEEK_SET);
-        Data data(size);
+        Data data(size, alloc);
         fread(data.ptr(), size, 1, fh);
         fclose(fh);
         return data;
@@ -465,32 +465,43 @@ namespace darmok
         return operator=(std::string_view(str));
     }
 
-    FileDataLoader::FileDataLoader(bx::FileReaderI& fileReader, const OptionalRef<bx::AllocatorI>& alloc)
-        : _fileReader(fileReader)
-        , _allocator(alloc)
+    DataLoader::DataLoader(const OptionalRef<bx::AllocatorI>& alloc)
+        : _alloc(alloc)
     {
     }
 
-    Data FileDataLoader::operator()(std::string_view filePath)
+    DataLoader& DataLoader::addBasePath(const std::filesystem::path& basePath) noexcept
     {
-        bx::StringView bxFilePath(filePath.data(), int32_t(filePath.size()));
-        if (!bx::open(&_fileReader, bxFilePath))
+        auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);
+        if (itr == _basePaths.end())
         {
-            throw std::runtime_error("failed to load data from file.");
+            _basePaths.push_back(basePath);
         }
-        try
+        return *this;
+    }
+
+    bool DataLoader::removeBasePath(const std::filesystem::path& basePath) noexcept
+    {
+        auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);
+        if (itr == _basePaths.end())
         {
-            auto size = bx::getSize(&_fileReader);
-            auto data = Data(size, _allocator);
-            bx::read(&_fileReader, data.ptr(), (int32_t)size, bx::ErrorAssert{});
-            bx::close(&_fileReader);
-            return data;
+            return false;
         }
-        catch(...)
+        _basePaths.erase(itr);
+        return true;
+    }
+
+    Data DataLoader::operator()(const std::filesystem::path& path) noexcept
+    {
+        for (auto& basePath : _basePaths)
         {
-            bx::close(&_fileReader);
-            throw;
+            auto combPath = basePath / path;
+            if (std::filesystem::exists(combPath))
+            {
+                return Data::fromFile(combPath, _alloc);
+            }
         }
+        return {};
     }
 }
 

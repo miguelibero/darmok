@@ -177,12 +177,12 @@ namespace darmok
     }
 
     template<typename T>
-    static std::optional<T> loadOzzObjectFromData(IDataLoader& loader, std::string_view name) noexcept
+    static std::optional<T> loadOzzObjectFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
     {
-        auto data = loader(name);
+        auto data = loader(path);
+        std::optional<T> obj;
         DataOzzStream stream(data);
         ozz::io::IArchive archive(&stream);
-        std::optional<T> obj;
         if (archive.TestTag<T>())
         {
             archive >> obj.emplace();
@@ -190,9 +190,9 @@ namespace darmok
         return obj;
     }
 
-    std::shared_ptr<Skeleton> OzzSkeletonLoader::operator()(std::string_view name)
+    std::shared_ptr<Skeleton> OzzSkeletonLoader::operator()(const std::filesystem::path& path)
     {
-        auto skel = loadOzzObjectFromData<ozz::animation::Skeleton>(_dataLoader, name);
+        auto skel = loadOzzObjectFromData<ozz::animation::Skeleton>(_dataLoader, path);
         if (!skel)
         {
             throw std::runtime_error("archive doesn't contain a skeleton");
@@ -206,9 +206,9 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<SkeletalAnimation> OzzSkeletalAnimationLoader::operator()(std::string_view name)
+    std::shared_ptr<SkeletalAnimation> OzzSkeletalAnimationLoader::operator()(const std::filesystem::path& path)
     {
-        auto anim = loadOzzObjectFromData<ozz::animation::Animation>(_dataLoader, name);
+        auto anim = loadOzzObjectFromData<ozz::animation::Animation>(_dataLoader, path);
         if (!anim)
         {
             throw std::runtime_error("archive doesn't contain an animation");
@@ -350,16 +350,16 @@ namespace darmok
         {
             return 0.F;
         }
-        State state(getOzz(), stateConfig.value(), (ISkeletalAnimationLoader&)*this);
+        State state(getOzz(), stateConfig.value(), (ISkeletalAnimationProvider&)*this);
         return state.getDuration();
     }
 
-    OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader)
+    OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations)
         : _config(config)
         , _normalizedTime(0.F)
         , _looped(false)
     {
-        _animation = loader(config.animation);
+        _animation = animations.getAnimation(config.animation);
         _sampling.Resize(skel.num_joints());
         _locals.resize(skel.num_soa_joints());
     }
@@ -453,7 +453,7 @@ namespace darmok
         return _config.blendPosition;
     }
 
-    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationLoader& loader) noexcept
+    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations) noexcept
         : _config(config)
         , _blendPos(0.F)
         , _oldBlendPos(0.F)
@@ -467,7 +467,7 @@ namespace darmok
         _animations.reserve(_config.animations.size());
         for (auto& animConfig : _config.animations)
         {
-            _animations.emplace_back(skel, animConfig, loader);
+            _animations.emplace_back(skel, animConfig, animations);
 
         }
         _layers.resize(_animations.size());
@@ -837,7 +837,7 @@ namespace darmok
         return PlaybackState::Playing;
     }
 
-    std::shared_ptr<SkeletalAnimation> SkeletalAnimatorImpl::operator()(std::string_view name)
+    std::shared_ptr<SkeletalAnimation> SkeletalAnimatorImpl::getAnimation(std::string_view name) noexcept
     {
         auto itr = _animations.find(std::string(name));
         if (itr == _animations.end())

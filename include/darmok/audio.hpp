@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
 #include <darmok/audio_fwd.hpp>
+#include <darmok/loader.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -65,19 +66,11 @@ namespace darmok
         std::unique_ptr<AudioSystemImpl> _impl;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISoundLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISoundLoader : public ILoader<Sound>
     {
-    public:
-        using result_type = std::shared_ptr<Sound>;
-        virtual ~ISoundLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMusicLoader
+    class DARMOK_EXPORT BX_NO_VTABLE IMusicLoader : public ILoader<Music>
     {
-    public:
-        using result_type = std::shared_ptr<Music>;
-        virtual ~IMusicLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
     };
 }

@@ -4,6 +4,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/texture_uniform.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/uniform.hpp>
 

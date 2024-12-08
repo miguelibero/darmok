@@ -12,18 +12,21 @@ namespace darmok
 		CubeMap,
 		Texture2D,
 		Texture3D,
+        Count
 	};
 
     enum class TextureSamplingType
     {
         Min, // minification
         Mag, // magnification
-        Mip  // mip level
+        Mip,  // mip level
+        Count
     };
 
     enum class TextureSamplingMode
     {
         Anisotropic,
-        Point
+        Point,
+        Count
     };
 }

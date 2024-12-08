@@ -5,15 +5,15 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/material_fwd.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/uniform.hpp>
+#include <darmok/texture_uniform.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/glm.hpp>
-
-#include <bgfx/bgfx.h>
-#include <bx/bx.h>
+#include <darmok/serialize.hpp>
 
 #include <vector>
 #include <string>
@@ -21,42 +21,18 @@
 #include <unordered_map>
 #include <array>
 
+#include <bgfx/bgfx.h>
+#include <bx/bx.h>
+
+#include <cereal/cereal.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/memory.hpp>
+
 namespace darmok
 {
     class Texture;
     class Program;
     class App;
-
-    class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>
-    {
-    public:
-        MaterialAppComponent() noexcept;
-        ~MaterialAppComponent() noexcept;
-        void init(App& app) override;
-        void update(float deltaTime) override;
-        void shutdown() override;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
-    private:
-        using TextureType = MaterialTextureType;
-
-        struct Sampler final
-        {
-            TextureType type;
-            bgfx::UniformHandle handle;
-            uint8_t stage;
-        };
-
-        std::vector<Sampler> _samplerUniforms;
-        bgfx::UniformHandle _albedoLutSamplerUniform;
-        bgfx::UniformHandle _baseColorUniform;
-        bgfx::UniformHandle _specularColorUniform;
-        bgfx::UniformHandle _metallicRoughnessNormalOcclusionUniform;
-        bgfx::UniformHandle _emissiveColorUniform;
-        bgfx::UniformHandle _hasTexturesUniform;
-        bgfx::UniformHandle _multipleScatteringUniform;
-        BasicUniforms _basicUniforms;
-        std::shared_ptr<Texture> _defaultTexture;
-    };    
 
     class DARMOK_EXPORT Material final
     {
@@ -135,6 +111,77 @@ namespace darmok
         uint16_t getShininess() const noexcept;
         Material& setShininess(uint16_t v) noexcept;
 
+        static void bindMeta();
+
+        template<typename Archive>
+        void save(Archive& archive) const
+        {
+            auto& assets = SerializeContextStack<AssetContext>::get();
+            auto progDef = assets.getProgramLoader().getDefinition(_program);
+
+            std::unordered_map<TextureType, std::shared_ptr<TextureDefinition>> textureDefs;
+            for (auto [type, tex] : _textures)
+            {
+                textureDefs[type] = assets.getTextureLoader().getDefinition(tex);
+            }
+
+            archive(
+                CEREAL_NVP_("program", progDef),
+                CEREAL_NVP_("programDefines", _programDefines),
+                CEREAL_NVP_("textures", textureDefs),
+                CEREAL_NVP_("baseColor", _baseColor),
+                CEREAL_NVP_("specularColor", _specularColor),
+                CEREAL_NVP_("metallicFactor", _metallicFactor),
+                CEREAL_NVP_("roughnessFactor", _roughnessFactor),
+                CEREAL_NVP_("normalScale", _normalScale),
+                CEREAL_NVP_("occlusionStrength", _occlusionStrength),
+                CEREAL_NVP_("emissiveColor", _emissiveColor),
+                CEREAL_NVP_("opacityType", _opacityType),
+                CEREAL_NVP_("shininess", _shininess),
+                CEREAL_NVP_("twoSided", _twoSided),
+                CEREAL_NVP_("multipleScattering", _multipleScattering),
+                CEREAL_NVP_("whiteFurnance", _whiteFurnance),
+                CEREAL_NVP_("primitive", _primitive),
+                CEREAL_NVP_("uniforms", _uniforms),
+                CEREAL_NVP_("textureUniforms", _textureUniforms)
+            );
+        }
+
+        template<typename Archive>
+        void load(Archive& archive)
+        {
+            std::shared_ptr<ProgramDefinition> progDef;
+            std::unordered_map<TextureType, std::shared_ptr<TextureDefinition>> textureDefs;
+
+            archive(
+                CEREAL_NVP_("program", progDef),
+                CEREAL_NVP_("programDefines", _programDefines),
+                CEREAL_NVP_("textures", textureDefs),
+                CEREAL_NVP_("baseColor", _baseColor),
+                CEREAL_NVP_("specularColor", _specularColor),
+                CEREAL_NVP_("metallicFactor", _metallicFactor),
+                CEREAL_NVP_("roughnessFactor", _roughnessFactor),
+                CEREAL_NVP_("normalScale", _normalScale),
+                CEREAL_NVP_("occlusionStrength", _occlusionStrength),
+                CEREAL_NVP_("emissiveColor", _emissiveColor),
+                CEREAL_NVP_("opacityType", _opacityType),
+                CEREAL_NVP_("shininess", _shininess),
+                CEREAL_NVP_("twoSided", _twoSided),
+                CEREAL_NVP_("multipleScattering", _multipleScattering),
+                CEREAL_NVP_("whiteFurnance", _whiteFurnance),
+                CEREAL_NVP_("primitive", _primitive),
+                CEREAL_NVP_("uniforms", _uniforms),
+                CEREAL_NVP_("textureUniforms", _textureUniforms)
+            );
+
+            auto& assets = SerializeContextStack<AssetContext>::get();
+            _program = assets.getProgramLoader().loadResource(progDef);
+            for (auto [type, texDef] : textureDefs)
+            {
+                _textures[type] = assets.getTextureLoader().loadResource(texDef);
+            }
+        }
+
     private:
         std::shared_ptr<Program> _program;
         ProgramDefines _programDefines;
@@ -163,11 +210,34 @@ namespace darmok
         static const std::array<std::string, toUnderlying(OpacityType::Count)> _opacityNames;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader
+    class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>
     {
     public:
-        using result_type = std::shared_ptr<Material>;
-        virtual ~IMaterialLoader() = default;
-        [[nodiscard]] virtual result_type operator()(std::string_view name) = 0;
-    };    
+        MaterialAppComponent() noexcept;
+        ~MaterialAppComponent() noexcept;
+        void init(App& app) override;
+        void update(float deltaTime) override;
+        void shutdown() override;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
+    private:
+        using TextureType = MaterialTextureType;
+
+        struct Sampler final
+        {
+            TextureType type;
+            bgfx::UniformHandle handle;
+            uint8_t stage;
+        };
+
+        std::vector<Sampler> _samplerUniforms;
+        bgfx::UniformHandle _albedoLutSamplerUniform;
+        bgfx::UniformHandle _baseColorUniform;
+        bgfx::UniformHandle _specularColorUniform;
+        bgfx::UniformHandle _metallicRoughnessNormalOcclusionUniform;
+        bgfx::UniformHandle _emissiveColorUniform;
+        bgfx::UniformHandle _hasTexturesUniform;
+        bgfx::UniformHandle _multipleScatteringUniform;
+        BasicUniforms _basicUniforms;
+        std::shared_ptr<Texture> _defaultTexture;
+    };
 }

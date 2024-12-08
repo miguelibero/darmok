@@ -1,15 +1,12 @@
 #pragma once
 
-#include <darmok/glm.hpp>
-#include <bimg/bimg.h>
-#include <bgfx/bgfx.h>
-#include <bx/bx.h>
-#include <bx/allocator.h>
 #include <darmok/export.h>
+#include <darmok/glm.hpp>
 #include <darmok/texture_fwd.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/image_fwd.hpp>
 #include <darmok/asset_core.hpp>
+#include <darmok/loader.hpp>
 
 #include <memory>
 #include <string_view>
@@ -17,6 +14,11 @@
 #include <iostream>
 #include <filesystem>
 #include <array>
+
+#include <bimg/bimg.h>
+#include <bgfx/bgfx.h>
+#include <bx/bx.h>
+#include <bx/allocator.h>
 
 namespace darmok
 {
@@ -66,24 +68,20 @@ namespace darmok
 		void copyContainer(const Image& other) noexcept;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IImageLoader
+	class DARMOK_EXPORT BX_NO_VTABLE IImageLoader : public ILoader<Image>
 	{
-	public:
-		using result_type = std::shared_ptr<Image>;
-		virtual ~IImageLoader() = default;
-		virtual result_type operator()(std::string_view name) = 0;
 	};
 
 	class IDataLoader;
 
-	class DARMOK_EXPORT DataImageLoader final : public IImageLoader
+	class DARMOK_EXPORT ImageLoader final : public IImageLoader
 	{
 	public:
-		DataImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept;
-		[[nodiscard]] std::shared_ptr<Image> operator()(std::string_view name) override;
+		ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept;
+		[[nodiscard]] std::shared_ptr<Image> operator()(const std::filesystem::path& path) override;
 	private:
 		IDataLoader& _dataLoader;
-		bx::AllocatorI& _allocator;
+		bx::AllocatorI& _alloc;
 	};
 
 	class DARMOK_EXPORT ImageImporter final : public IAssetTypeImporter

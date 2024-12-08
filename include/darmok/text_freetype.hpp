@@ -22,7 +22,7 @@ namespace darmok
         ~FreetypeFontLoader() noexcept;
         void init(App& app);
         void shutdown();
-        std::shared_ptr<IFont> operator()(std::string_view name) override;
+        std::shared_ptr<IFont> operator()(const std::filesystem::path& path) override;
     private:
         std::unique_ptr<FreetypeFontLoaderImpl> _impl;
     };

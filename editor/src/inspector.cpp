@@ -3,6 +3,7 @@
 #include <darmok-editor/camera_inspector.hpp>
 #include <darmok-editor/light_inspector.hpp>
 #include <darmok-editor/scene_inspector.hpp>
+#include <darmok-editor/render_inspector.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -25,6 +26,7 @@ namespace darmok::editor
         _editors.add<DirectionalLightInspectorEditor>();
         _editors.add<SpotLightInspectorEditor>();
         _editors.add<AmbientLightInspectorEditor>();
+        _editors.add<RenderableInspectorEditor>();
         _sceneEditor = _editors.add<SceneInspectorEditor>();
     }
 

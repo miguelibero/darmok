@@ -57,21 +57,12 @@ namespace darmok
         std::unique_ptr<SkeletalAnimationImpl> _impl;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletonLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletonLoader : public ILoader<Skeleton>
     {
-    public:
-        using result_type = std::shared_ptr<Skeleton>;
-
-        virtual ~ISkeletonLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimationLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimationLoader : public ILoader<SkeletalAnimation>
     {
-    public:
-        using result_type = std::shared_ptr<SkeletalAnimation>;
-        virtual ~ISkeletalAnimationLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
     };
 
     struct DARMOK_EXPORT SkeletalAnimatorAnimationConfig final
@@ -234,12 +225,8 @@ namespace darmok
         std::string getAnimationName(std::string_view key) const noexcept;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorConfigLoader
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorConfigLoader : public ILoader<SkeletalAnimatorConfig>
     {
-    public:
-        using result_type = SkeletalAnimatorConfig;
-        virtual ~ISkeletalAnimatorConfigLoader() = default;
-        virtual result_type operator()(std::string_view name) = 0;
     };
 
     class IDataLoader;
@@ -248,7 +235,7 @@ namespace darmok
     {
     public:
         SkeletalAnimatorConfigLoader(IDataLoader& dataLoader) noexcept;
-        SkeletalAnimatorConfig operator()(std::string_view name) override;
+        std::shared_ptr<SkeletalAnimatorConfig> operator()(const std::filesystem::path& path) override;
     private:
         IDataLoader& _dataLoader;
     };

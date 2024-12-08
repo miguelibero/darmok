@@ -5,8 +5,9 @@
 #include <darmok/program.hpp>
 #include <darmok/image.hpp>
 #include <darmok/app.hpp>
-#include <darmok/asset.hpp>
 #include <darmok/string.hpp>
+#include <darmok/reflect_serialize.hpp>
+
 #include <glm/gtc/type_ptr.hpp>
 #include "render_samplers.hpp"
 
@@ -331,6 +332,12 @@ namespace darmok
 			return empty;
 		}
 		return _opacityNames[idx];
+	}
+
+	void Material::bindMeta()
+	{
+		ReflectionSerializeUtils::metaSave<Material>();
+		ReflectionSerializeUtils::metaLoad<Material>();
 	}
 
 	MaterialAppComponent::MaterialAppComponent() noexcept

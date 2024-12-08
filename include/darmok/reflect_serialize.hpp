@@ -5,82 +5,24 @@
 #include <darmok/scene.hpp>
 #include <darmok/reflect.hpp>
 #include <darmok/scene_reflect.hpp>
+#include <darmok/serialize.hpp>
 #include <entt/entt.hpp>
+
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/unordered_map.hpp>
+
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/xml.hpp>
+
 #include <variant>
-#include <stack>
 #include <functional>
-
-#define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SERIALIZE(funcName)	                                    \
-template void funcName<cereal::BinaryOutputArchive>(cereal::BinaryOutputArchive&);                  \
-template void funcName<cereal::BinaryInputArchive>(cereal::BinaryInputArchive&);                    \
-template void funcName<cereal::PortableBinaryOutputArchive>(cereal::PortableBinaryOutputArchive&);  \
-template void funcName<cereal::PortableBinaryInputArchive>(cereal::PortableBinaryInputArchive&);    \
-template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
-template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
-template void funcName<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);                      \
-template void funcName<cereal::JSONInputArchive>(cereal::JSONInputArchive&);                        \
-template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
-template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
-
-#define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SAVE(funcName)	                                            \
-template void funcName<cereal::BinaryOutputArchive>(cereal::BinaryOutputArchive&);                  \
-template void funcName<cereal::PortableBinaryOutputArchive>(cereal::PortableBinaryOutputArchive&);  \
-template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
-template void funcName<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);                      \
-template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
-
-#define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_LOAD(funcName)	                                            \
-template void funcName<cereal::BinaryInputArchive>(cereal::BinaryInputArchive&);                    \
-template void funcName<cereal::PortableBinaryInputArchive>(cereal::PortableBinaryInputArchive&);    \
-template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
-template void funcName<cereal::JSONInputArchive>(cereal::JSONInputArchive&);                        \
-template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
 
 namespace darmok
 {
-    // using this instead of cereal::UserDataAdapter
-    // because it allows us to maintain the same archive during the serialization
-    template<typename T>
-    struct SerializeContextStack final
-    {
-        static void push(T& ctx)
-        {
-            _stack.emplace(ctx);
-        }
-
-        static T& get()
-        {
-            return _stack.top().get();
-        }
-
-        static OptionalRef<T> tryGet()
-        {
-            if (_stack.empty())
-            {
-                return nullptr;
-            }
-            return get();
-        }
-
-        static void pop()
-        {
-            _stack.pop();
-        }
-    private:
-        static thread_local std::stack<std::reference_wrapper<T>> _stack;
-    };
-
-    template<typename T>
-    thread_local std::stack<std::reference_wrapper<T>> SerializeContextStack<T>::_stack;    
-
     struct ReflectionSerializeUtils final
     {
         using OutputArchiveVariant = std::variant<

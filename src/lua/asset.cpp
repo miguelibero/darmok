@@ -17,66 +17,56 @@
 
 namespace darmok
 {	
-	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::string& name)
+	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getProgramLoader()(name);
+		return assets.getProgramLoader()(path);
 	}
 
-	std::shared_ptr<Texture> LuaAssets::loadTexture1(AssetContext& assets, const std::string& name)
+	std::shared_ptr<Texture> LuaAssets::loadTexture(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getTextureLoader()(name);
+		return assets.getTextureLoader()(path);
 	}
 
-	std::shared_ptr<Texture> LuaAssets::loadTexture2(AssetContext& assets, const std::string& name, uint64_t flags)
+	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getTextureLoader()(name, flags);
+		return assets.getTextureAtlasLoader()(path);
 	}
 
-	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas1(AssetContext& assets, const std::string& name)
+	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getTextureAtlasLoader()(name);
+		return assets.getSoundLoader()(path);
 	}
 
-	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas2(AssetContext& assets, const std::string& name, uint64_t textureFlags)
+	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getTextureAtlasLoader()(name, textureFlags);
+		return assets.getMusicLoader()(path);
 	}
 
-	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::string& name)
+	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getSoundLoader()(name);
+		return assets.getModelLoader()(path);
 	}
 
-	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::string& name)
-	{
-		return assets.getMusicLoader()(name);
-	}
-
-	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::string& name)
-	{
-		return assets.getModelLoader()(name);
-	}
-
-	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::string& name, const AssimpModelLoadConfig& config)
+	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::filesystem::path& path, const AssimpModelLoadConfig& config)
 	{
 		auto& loader = assets.getAssimpModelLoader();
 		loader.setConfig(config);
-		return loader(name);
+		return loader(path);
 	}
 
-	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::string& name)
+	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getSkeletonLoader()(name);
+		return assets.getSkeletonLoader()(path);
 	}
 
-	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::string& name)
+	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getSkeletalAnimationLoader()(name);
+		return assets.getSkeletalAnimationLoader()(path);
 	}
 
-	SkeletalAnimatorConfig LuaAssets::loadSkeletalAnimatorConfig(AssetContext& assets, const std::string& name)
+	std::shared_ptr<SkeletalAnimatorConfig> LuaAssets::loadSkeletalAnimatorConfig(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getSkeletalAnimatorConfigLoader()(name);
+		return assets.getSkeletalAnimatorConfigLoader()(path);
 	}
 
 	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorConfig& config)
@@ -100,8 +90,8 @@ namespace darmok
 				&LuaAssets::loadModel2
 			),
 			"load_program", &LuaAssets::loadProgram,
-			"load_texture", sol::overload(&LuaAssets::loadTexture1, &LuaAssets::loadTexture2),
-			"load_texture_atlas", sol::overload(&LuaAssets::loadTextureAtlas1, &LuaAssets::loadTextureAtlas2),
+			"load_texture", &LuaAssets::loadTexture,
+			"load_texture_atlas", &LuaAssets::loadTextureAtlas,
 			"load_sound", &LuaAssets::loadSound,
 			"load_music", &LuaAssets::loadMusic,
 			"load_skeleton", &LuaAssets::loadSkeleton,

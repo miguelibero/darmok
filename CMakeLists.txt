@@ -119,6 +119,7 @@ set(CORE_SOURCES
   data.cpp
   data_stream.cpp
   utils.cpp
+  serialize.cpp
   uniform.cpp
   math.cpp
   color.cpp
@@ -130,7 +131,6 @@ set(CORE_SOURCES
   varying.cpp
   viewport.cpp
   program_core.cpp
-  material_core.cpp
   asset_core.cpp
   easing.cpp
   reflect.cpp
@@ -139,6 +139,7 @@ set(CORE_SOURCES
 set(CORE_HEADERS
   glm.hpp
   utils.hpp
+  serialize.hpp
   reflect.hpp
   string.hpp
   utf8.hpp
@@ -163,7 +164,6 @@ set(CORE_HEADERS
   collection.hpp
   viewport.hpp
   program_core.hpp
-  material_core.hpp
   asset_core.hpp
   loader.hpp
   easing_fwd.hpp
@@ -181,6 +181,7 @@ set(SOURCES
   scene.cpp
   scene_filter.cpp
 
+  texture_uniform.cpp
   texture_atlas.cpp
   material.cpp
   model.cpp
@@ -220,6 +221,7 @@ set(HEADERS
   scene_reflect.hpp
   scene_serialize.hpp
 
+  texture_uniform.hpp
   texture_atlas.hpp
   anim.hpp
   material_fwd.hpp

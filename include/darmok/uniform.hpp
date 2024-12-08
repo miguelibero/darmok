@@ -24,9 +24,11 @@ namespace darmok
     {
     public:
         using Value = UniformValue;
+        Uniform() noexcept;
         Uniform(const std::string& name, const Value& value, bool autoInit = true) noexcept;
         Uniform(const std::string& name, bgfx::UniformType::Enum type, bool autoInit = true) noexcept;
         ~Uniform() noexcept;
+        
         Uniform(const Uniform& other) noexcept;
         Uniform& operator=(const Uniform& other) noexcept;
         Uniform(Uniform&& other) noexcept;
@@ -47,8 +49,8 @@ namespace darmok
         static bgfx::UniformType::Enum getType(const Value& value) noexcept;
 
         Uniform& setType(bgfx::UniformType::Enum type) noexcept;
-        Uniform& set(const UniformValue& value) noexcept;
-        const UniformValue& get() const noexcept;
+        Uniform& set(const Value& value) noexcept;
+        const Value& get() const noexcept;
 
         const Uniform& configure(bgfx::Encoder& encoder) const;
         Uniform& configure(bgfx::Encoder& encoder) noexcept;

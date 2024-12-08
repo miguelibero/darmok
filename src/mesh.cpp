@@ -33,6 +33,21 @@ namespace darmok
 		return getMeshIndexSize(index32);
 	}
 
+	MeshDefinitionLoader::MeshDefinitionLoader(IDataLoader& dataLoader) noexcept
+		: CerealLoader(dataLoader)
+	{
+	}
+
+	MeshLoader::MeshLoader(IMeshDefinitionLoader& defLoader) noexcept
+		: FromDefinitionLoader(defLoader)
+	{
+	}
+
+	std::unique_ptr<IMesh> IMesh::create(const MeshDefinition& def)
+	{
+		return create(def.type, def.layout, def.vertices, def.indices, def.config);
+	}
+
 	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
 	{
 		switch (type)

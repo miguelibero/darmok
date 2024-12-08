@@ -4,12 +4,13 @@
 #include <darmok/varying.hpp>
 #include <darmok/data.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/asset_core.hpp>
+#include <darmok/loader.hpp>
 
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
 
-#include <nlohmann/json.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/unordered_set.hpp>
@@ -22,22 +23,12 @@ namespace darmok
 
 	using ProgramDefines = std::unordered_set<std::string>;
 
-	enum class ProgramDefinitionFormat
-	{
-		Binary,
-		Json,
-		Xml
-	};
-
 	struct DARMOK_EXPORT ProgramProfileDefinition final
 	{
 		using Defines = ProgramDefines;
 		using Map = std::unordered_map<Defines, Data>;
 		Map vertexShaders;
 		Map fragmentShaders;
-
-		void read(const nlohmann::json& json);
-		void write(nlohmann::json& json) const;
 
 		template<class Archive>
 		void serialize(Archive& archive)
@@ -59,26 +50,15 @@ namespace darmok
 
 		const Profile& getCurrentProfile() const;
 
-		using Format = ProgramDefinitionFormat;
-
 		bool empty() const noexcept;
-
-		static Format getPathFormat(const std::filesystem::path& path) noexcept;
-
-		void read(const std::filesystem::path& path);
-		void write(const std::filesystem::path& path) const noexcept;
-		void read(std::istream& in, Format format = Format::Binary);
-		void write(std::ostream& out, Format format = Format::Binary) const noexcept;
-		void read(const nlohmann::ordered_json& json);
-		void write(nlohmann::ordered_json& json) const;
 
 		template<typename T>
 		void loadStaticMem(const T& mem)
 		{
-			load(DataView(mem, sizeof(mem)));
+			loadBinary(DataView(mem, sizeof(mem)));
 		}
 
-		void load(DataView data);
+		void loadBinary(DataView data);
 
 		template<class Archive>
 		void serialize(Archive& archive)
@@ -114,5 +94,15 @@ namespace darmok
 		const std::string& getName() const noexcept override;
 	private:
 		std::unique_ptr<ProgramImporterImpl> _impl;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<ProgramDefinition>
+	{
+	};
+
+	class DARMOK_EXPORT ProgramDefinitionLoader final : public CerealLoader<IProgramDefinitionLoader>
+	{
+	public:
+		ProgramDefinitionLoader(IDataLoader& dataLoader) noexcept;
 	};
 }

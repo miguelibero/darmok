@@ -62,7 +62,7 @@ namespace darmok
     public:
         using Config = AssimpSceneLoadConfig;
         using result_type = std::shared_ptr<aiScene>;
-        bool supports(std::string_view name) const noexcept;
+        bool supports(const std::filesystem::path& path) const noexcept;
         result_type loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
         result_type loadFromMemory(const DataView& data, const Config& config = {}) const;
     private:
@@ -127,8 +127,8 @@ namespace darmok
         using Config = AssimpModelLoadConfig;
         AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
-        bool supports(std::string_view name) const noexcept;
-        std::shared_ptr<Model> operator()(std::string_view name);
+        bool supports(const std::filesystem::path& path) const noexcept;
+        std::shared_ptr<Model> operator()(const std::filesystem::path& path);
 
     private:
         Config _config;
@@ -140,9 +140,9 @@ namespace darmok
 
     struct AssimpModelImportConfig
     {
-        using OutputFormat = ModelDataFormat;
+        using OutputFormat = CerealFormat;
         using LoadConfig = AssimpModelLoadConfig;
-        ModelDataFormat outputFormat = OutputFormat::Binary;
+        OutputFormat outputFormat = OutputFormat::Binary;
         std::filesystem::path outputPath;
         LoadConfig loadConfig;
     };
@@ -153,10 +153,10 @@ namespace darmok
         using Input = AssetTypeImporterInput;
         using Config = AssimpModelImportConfig;
         using LoadConfig = AssimpModelLoadConfig;
-        using OutputFormat = ModelDataFormat;
+        using OutputFormat = CerealFormat;
         using Dependencies = AssetImportDependencies;
 
-        AssimpModelImporterImpl();
+        AssimpModelImporterImpl(bx::AllocatorI& alloc);
         
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
@@ -166,10 +166,10 @@ namespace darmok
         void endImport(const Input& input);
         const std::string& getName() const noexcept;
     private:
-        bx::DefaultAllocator _allocator;
+        bx::AllocatorI& _alloc;
         bx::FileReader _fileReader;
-        FileDataLoader _dataLoader;
-        DataImageLoader _imgLoader;
+        DataLoader _dataLoader;
+        ImageLoader _imgLoader;
         AssimpSceneLoader _assimpLoader;
         std::optional<Config> _currentConfig;
         std::shared_ptr<aiScene> _currentScene;
