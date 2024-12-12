@@ -226,7 +226,6 @@ namespace darmok
 	private:
 		static const std::unordered_map<std::string, std::string> _textureFormatExts;
 		static const std::unordered_map<std::string, std::string> _sheetFormatExts;
-		static const std::string _outputPathOption;
 		static const std::string _outputFormatOption;
 		static const std::string _textureFormatOption;
 		static const std::string _rmluiResolutionOption;

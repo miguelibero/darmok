@@ -650,18 +650,9 @@ namespace darmok
         {
             return outputs;
         }
-        std::filesystem::path outputPath;
-        if (input.config.contains("outputPath"))
-        {
-            outputPath = input.config["outputPath"].get<std::string>();
-        }
-        else
-        {
-            auto stem = std::string(StringUtils::getFileStem(input.path.stem().string()));
-            outputPath = stem + ".ozz";
-        }
-        auto basePath = input.getRelativePath().parent_path();
-        outputs.push_back(basePath  / outputPath);
+
+        auto outputPath = input.getOutputPath(".ozz");
+        outputs.push_back(outputPath);
         return outputs;
     }
 

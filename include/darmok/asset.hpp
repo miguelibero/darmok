@@ -27,7 +27,7 @@ namespace darmok
 #ifdef DARMOK_OZZ
 	class ISkeletonLoader;
 	class ISkeletalAnimationLoader;
-	class ISkeletalAnimatorConfigLoader;
+	class ISkeletalAnimatorDefinitionLoader;
 #endif
 
 #ifdef DARMOK_MINIAUDIO
@@ -57,7 +57,7 @@ namespace darmok
 #ifdef DARMOK_OZZ
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
+		[[nodiscard]] ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept;
 #endif
 
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept;

@@ -550,28 +550,7 @@ namespace darmok
         }
 
         _config.emplace().load(input);
-
-        _outputPath = input.getRelativePath().parent_path();
-        if (input.config.contains("outputPath"))
-        {
-            _outputPath /= input.config["outputPath"].get<fs::path>();
-        }
-        else if (input.dirConfig.contains("outputPath"))
-        {
-            std::string v = input.dirConfig["outputPath"];
-            std::string name = _config->name;
-            if (name.empty())
-            {
-                name = StringUtils::getFileStem(input.getRelativePath().string());
-            }
-            StringUtils::replace(v, "*", name);
-            _outputPath /= v;
-        }
-        else
-        {
-            _outputPath /= input.path.stem().string() + ".bin";
-        }
-
+        _outputPath = input.getOutputPath(".bin");
         return true;
     }
 

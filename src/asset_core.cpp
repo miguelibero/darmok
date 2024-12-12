@@ -21,6 +21,38 @@ namespace darmok
 {
     namespace fs = std::filesystem;
 
+    std::filesystem::path AssetTypeImporterInput::getRelativePath() const
+    {
+        return std::filesystem::relative(path, basePath);
+    }
+
+    std::filesystem::path AssetTypeImporterInput::getOutputPath(const std::string& defaultExt) const
+    {
+        auto relPath = getRelativePath();
+        auto basePath = relPath.parent_path();
+        auto outputPath = basePath;
+        auto name = path.stem().string();
+        if (config.contains("outputPath"))
+        {
+            outputPath /= config["outputPath"].get<std::filesystem::path>();
+        }
+        else if (dirConfig.contains("outputPath"))
+        {
+            std::string v = dirConfig["outputPath"];
+            if (name.empty())
+            {
+                name = StringUtils::getFileStem(relPath.string());
+            }
+            StringUtils::replace(v, "*", name);
+            outputPath /= v;
+        }
+        else
+        {
+            outputPath /= name + defaultExt;
+        }
+        return outputPath;
+    }
+
     AssetImporterImpl::AssetImporterImpl(const fs::path& inputPath)
     {
         std::vector<fs::path> inputPaths;

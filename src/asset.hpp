@@ -50,7 +50,7 @@ namespace darmok
 #ifdef DARMOK_OZZ
 		ISkeletonLoader& getSkeletonLoader() noexcept;
 		ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
-		ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
+		ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept;
 #endif
 
 #ifdef DARMOK_ASSIMP
@@ -89,9 +89,9 @@ namespace darmok
 		ContainerLoader<IFontLoader> _fontLoader;
 
 #ifdef DARMOK_OZZ
-		ContainerLoader<ISkeletonLoader> _skeletonLoader;
-		ContainerLoader<ISkeletalAnimationLoader> _skeletalAnimationLoader;
-		SkeletalAnimatorConfigLoader _skeletalAnimatorConfigLoader;
+		ContainerLoader<ISkeletonLoader> _skelLoader;
+		ContainerLoader<ISkeletalAnimationLoader> _skelAnimLoader;
+		SkeletalAnimatorDefinitionLoader _skelAnimDefLoader;
 
 		OzzSkeletonLoader _ozzSkeletonLoader;
 		OzzSkeletalAnimationLoader _ozzSkeletalAnimationLoader;

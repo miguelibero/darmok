@@ -20,7 +20,7 @@ namespace darmok
 	class TextureAtlas;
 	class Skeleton;
 	class SkeletalAnimation;
-	struct SkeletalAnimatorConfig;
+	struct SkeletalAnimatorDefinition;
 	class Sound;
 	class Music;
 
@@ -44,7 +44,7 @@ namespace darmok
 
 		static std::shared_ptr<Skeleton> loadSkeleton(AssetContext& assets, const std::filesystem::path& pathe);
 		static std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(AssetContext& assets, const std::filesystem::path& path);
-		static std::shared_ptr<SkeletalAnimatorConfig> loadSkeletalAnimatorConfig(AssetContext& assets, const std::filesystem::path& path);
-		static SkeletalAnimationMap loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorConfig& config);
+		static std::shared_ptr<SkeletalAnimatorDefinition> loadSkeletalAnimatorDefinition(AssetContext& assets, const std::filesystem::path& path);
+		static SkeletalAnimationMap loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def);
 	};
 }

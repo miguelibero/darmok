@@ -3,6 +3,8 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
+#include <darmok/asset_core.hpp>
+#include <darmok/string.hpp>
 
 #include <stack>
 #include <filesystem>
@@ -163,5 +165,61 @@ namespace darmok
             save(obj, stream, format);
             return stream.tellp();
         }
+    };
+
+
+    template<typename Interface>
+    class DARMOK_EXPORT CerealLoaderImporter : public IAssetTypeImporter
+    {
+    private:
+        CerealLoaderImporter(Interface& loader, const std::string& name) noexcept
+            : _loader(loader)
+        {
+        }
+
+        bool startImport(const Input& input, bool dry = false) override
+        {
+            _outputPath = input.getOutputPath(".bin");
+            if (input.config.contains("outputFormat"))
+            {
+                _outputFormat = CerealUtils::getFormat(input.config["outputFormat"]);
+            }
+            else if (input.dirConfig.contains("outputFormat"))
+            {
+                _outputFormat = CerealUtils::getFormat(input.dirConfig["outputFormat"]);
+            }
+            else
+            {
+                _outputFormat = CerealUtils::getExtensionFormat(_outputPath.extension());
+            }
+            return !_outputPath.empty();
+        }
+
+        virtual Outputs getOutputs(const Input& input)
+        {
+            return { _outputPath };
+        }
+
+        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override
+        {
+            return CerealUtils::createSaveStream(_outputFormat);
+        }
+
+        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+        {
+            auto obj = _loader(input.path);
+            CerealUtils::save(*obj, out, _outputFormat);
+        }
+
+        const std::string& getName() const noexcept
+        {
+            return _name;
+        }
+
+    private:
+        Interface& _loader;
+        std::string _name;
+        std::filesystem::path _outputPath;
+        CerealFormat _outputFormat;
     };
 }

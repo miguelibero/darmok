@@ -217,12 +217,12 @@ namespace darmok
             std::make_unique<SkeletalAnimationImpl>(std::move(anim.value())));
     }
 
-    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept
+    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Definition& def) noexcept
         : _animator(animator)
         , _skeleton(skeleton)
         , _speed(1.F)
         , _paused(false)
-        , _config(config)
+        , _def(def)
         , _animations(animations)
         , _blendPosition(0)
     {
@@ -294,9 +294,9 @@ namespace darmok
         return _blendPosition;
     }
 
-    const SkeletalAnimatorImpl::Config& SkeletalAnimatorImpl::getConfig() const noexcept
+    const SkeletalAnimatorImpl::Definition& SkeletalAnimatorImpl::getDefinition() const noexcept
     {
-        return _config;
+        return _def;
     }
 
     OptionalRef<const ISkeletalAnimatorState> SkeletalAnimatorImpl::getCurrentState() const noexcept
@@ -345,7 +345,7 @@ namespace darmok
 
     float SkeletalAnimatorImpl::getStateDuration(const std::string& name) const noexcept
     {
-        auto stateConfig = _config.getState(name);
+        auto stateConfig = _def.getState(name);
         if (!stateConfig)
         {
             return 0.F;
@@ -354,18 +354,18 @@ namespace darmok
         return state.getDuration();
     }
 
-    OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations)
-        : _config(config)
+    OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations)
+        : _def(def)
         , _normalizedTime(0.F)
         , _looped(false)
     {
-        _animation = animations.getAnimation(config.animation);
+        _animation = animations.getAnimation(def.animation);
         _sampling.Resize(skel.num_joints());
         _locals.resize(skel.num_soa_joints());
     }
 
     OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept
-        : _config(std::move(other._config))
+        : _def(std::move(other._def))
         , _normalizedTime(other._normalizedTime)
         , _locals(std::move(other._locals))
         , _looped(other._looped)
@@ -397,12 +397,12 @@ namespace darmok
     float OzzSkeletalAnimatorAnimationState::getDuration() const noexcept
     {
         auto& anim = getOzz();
-        return anim.duration() / _config.speed;
+        return anim.duration() / _def.speed;
     }
 
     bool OzzSkeletalAnimatorAnimationState::hasFinished() const noexcept
     {
-        if (_looped && !_config.loop)
+        if (_looped && !_def.loop)
         {
             return true;
         }
@@ -450,22 +450,22 @@ namespace darmok
 
     const glm::vec2& OzzSkeletalAnimatorAnimationState::getBlendPosition() const noexcept
     {
-        return _config.blendPosition;
+        return _def.blendPosition;
     }
 
-    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations) noexcept
-        : _config(config)
+    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept
+        : _def(def)
         , _blendPos(0.F)
         , _oldBlendPos(0.F)
         , _normalizedTime(0.F)
         , _normalizedTweenTime(0.F)
         , _duration(0)
         , _looped(false)
-        , _speed(_config.speed)
+        , _speed(_def.speed)
     {
         _locals.resize(skel.num_soa_joints());
-        _animations.reserve(_config.animations.size());
-        for (auto& animConfig : _config.animations)
+        _animations.reserve(_def.animations.size());
+        for (auto& animConfig : _def.animations)
         {
             _animations.emplace_back(skel, animConfig, animations);
 
@@ -516,7 +516,7 @@ namespace darmok
 
     void OzzSkeletalAnimatorState::afterFinished() noexcept
     {
-        _speed = _config.speed;
+        _speed = _def.speed;
     }
 
     void OzzSkeletalAnimatorState::update(float deltaTime, const glm::vec2& blendPosition)
@@ -539,25 +539,25 @@ namespace darmok
         ozz::animation::BlendingJob blending;
         blending.layers = ozz::make_span(_layers);
         blending.output = ozz::make_span(_locals);
-        blending.threshold = _config.threshold;
+        blending.threshold = _def.threshold;
 
         if (_blendPos != blendPosition)
         {
-            auto blendFactor = _config.tween(_normalizedTweenTime);
+            auto blendFactor = _def.tween(_normalizedTweenTime);
             _oldBlendPos = getBlendedPosition(blendFactor);
             _normalizedTweenTime = 0.F;
             _blendPos = blendPosition;
         }
-        _normalizedTweenTime += deltaTime / _config.tween.duration;
+        _normalizedTweenTime += deltaTime / _def.tween.duration;
         if (_normalizedTweenTime >= 1.F)
         {
             _normalizedTweenTime = 1.F;
         }
-        auto blendFactor = _config.tween(_normalizedTweenTime);
+        auto blendFactor = _def.tween(_normalizedTweenTime);
         auto pos = getBlendedPosition(blendFactor);
 
         size_t i = 0;
-        auto weights = _config.calcBlendWeights(pos);
+        auto weights = _def.calcBlendWeights(pos);
         for (auto& anim : _animations)
         {
             if (anim.getBlendPosition() == glm::vec2(0))
@@ -591,7 +591,7 @@ namespace darmok
 
     std::string_view OzzSkeletalAnimatorState::getName() const noexcept
     {
-        return _config.name;
+        return _def.name;
     }
 
     const ozz::vector<ozz::math::SoaTransform>& OzzSkeletalAnimatorState::getLocals() const
@@ -632,11 +632,11 @@ namespace darmok
 
     const std::string& OzzSkeletalAnimatorState::getNextState() const noexcept
     {
-        return _config.nextState;
+        return _def.nextState;
     }
 
-    OzzSkeletalAnimatorTransition::OzzSkeletalAnimatorTransition(const Config& config, State&& currentState, State&& previousState) noexcept
-        : _config(config)
+    OzzSkeletalAnimatorTransition::OzzSkeletalAnimatorTransition(const Definition& def, State&& currentState, State&& previousState) noexcept
+        : _def(def)
         , _currentState(std::move(currentState))
         , _previousState(std::move(previousState))
         , _locals(_previousState.getLocals())
@@ -646,7 +646,7 @@ namespace darmok
 
     float OzzSkeletalAnimatorTransition::getDuration() const noexcept
     {
-        return _config.tween.duration;
+        return _def.tween.duration;
     }
 
     float OzzSkeletalAnimatorTransition::getNormalizedTime() const noexcept
@@ -671,11 +671,11 @@ namespace darmok
         auto currentStateDeltaTime = deltaTime;
         if (_normalizedTime == 0.F)
         {
-            currentStateDeltaTime += _config.offset;
+            currentStateDeltaTime += _def.offset;
         }
         _currentState.update(currentStateDeltaTime, blendPosition);
         _normalizedTime += deltaTime / getDuration();
-        auto v = _config.tween(_normalizedTime);
+        auto v = _def.tween(_normalizedTime);
 
         std::array<ozz::animation::BlendingJob::Layer, 2> layers;
         layers[0].weight = 1.F - v;
@@ -758,7 +758,7 @@ namespace darmok
             currState->setSpeed(stateSpeed);
             return false;
         }
-        auto stateConfig = _config.getState(name);
+        auto stateConfig = _def.getState(name);
         if (!stateConfig)
         {
             return false;
@@ -779,7 +779,7 @@ namespace darmok
 
         if (prevState)
         {
-            auto transConfig = _config.getTransition(prevState->getName(), name);
+            auto transConfig = _def.getTransition(prevState->getName(), name);
             if (transConfig)
             {
                 _transition.emplace(transConfig.value(),
@@ -985,8 +985,8 @@ namespace darmok
         }
     }
 
-    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
-        : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, anims, config))
+    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept
+        : _impl(std::make_unique<SkeletalAnimatorImpl>(*this, skel, anims, def))
     {
     }
 
@@ -1034,9 +1034,9 @@ namespace darmok
         return _impl->getBlendPosition();
     }
 
-    const SkeletalAnimator::Config& SkeletalAnimator::getConfig() const noexcept
+    const SkeletalAnimator::Definition& SkeletalAnimator::getDefinition() const noexcept
     {
-        return _impl->getConfig();
+        return _impl->getDefinition();
     }
 
     OptionalRef<const ISkeletalAnimatorState> SkeletalAnimator::getCurrentState() const noexcept

@@ -94,10 +94,10 @@ namespace
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
 
-			auto animConfig = _app.getAssets().getSkeletalAnimatorConfigLoader()("animator.json");
+			auto animDef = _app.getAssets().getSkeletalAnimatorDefinitionLoader()("animator.json");
 
-			auto anims = animConfig.loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
-			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animConfig);
+			auto anims = animDef->loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
+			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, *animDef);
 			_animator->play("run");
 			// _animator->setPlaybackSpeed(0.05);
 

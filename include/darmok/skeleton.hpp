@@ -20,6 +20,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/utility.hpp>
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -65,7 +66,7 @@ namespace darmok
     {
     };
 
-    struct DARMOK_EXPORT SkeletalAnimatorAnimationConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorAnimationDefinition final
     {
         std::string animation;
         glm::vec2 blendPosition = {};
@@ -109,11 +110,11 @@ namespace darmok
         }
     };
 
-    struct DARMOK_EXPORT SkeletalAnimatorStateConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorStateDefinition final
     {
-        using AnimationConfig = SkeletalAnimatorAnimationConfig;
+        using AnimationDefinition = SkeletalAnimatorAnimationDefinition;
         std::string name;
-        std::vector<AnimationConfig> animations;
+        std::vector<AnimationDefinition> animations;
         SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::Directional;
         float threshold = bx::kFloatSmallest;
         SkeletalAnimatorTweenConfig tween;
@@ -139,7 +140,7 @@ namespace darmok
         }
     };
 
-    struct DARMOK_EXPORT SkeletalAnimatorTransitionConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorTransitionDefinition final
     {
         SkeletalAnimatorTweenConfig tween;
         float offset = 0.F;
@@ -157,7 +158,7 @@ namespace darmok
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorState
     {
     public:
-        using Config = SkeletalAnimatorStateConfig;
+        using Definition = SkeletalAnimatorStateDefinition;
         virtual ~ISkeletalAnimatorState() = default;
         virtual float getNormalizedTime() const = 0;
         virtual float getDuration() const = 0;
@@ -167,7 +168,7 @@ namespace darmok
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorTransition
     {
     public:
-        using Config = SkeletalAnimatorTransitionConfig;
+        using Definition = SkeletalAnimatorTransitionDefinition;
         virtual ~ISkeletalAnimatorTransition() = default;
         virtual float getNormalizedTime() const = 0;
         virtual float getDuration() const = 0;
@@ -177,9 +178,9 @@ namespace darmok
 
     using SkeletalAnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
-    struct DARMOK_EXPORT SkeletalAnimatorConfig final
+    struct DARMOK_EXPORT SkeletalAnimatorDefinition final
     {
-        using StateConfig = SkeletalAnimatorStateConfig;
+        using StateDefinition = SkeletalAnimatorStateDefinition;
 
         using TransitionKey = std::pair<std::string, std::string>;
 
@@ -193,19 +194,19 @@ namespace darmok
             }
         };
 
-        using TransitionConfig = SkeletalAnimatorTransitionConfig;
+        using TransitionDefinition = SkeletalAnimatorTransitionDefinition;
 
         void readJson(const nlohmann::json& json);
 
         using AnimationMap = SkeletalAnimationMap;
         AnimationMap loadAnimations(ISkeletalAnimationLoader& loader) const;
 
-        SkeletalAnimatorConfig& addState(const StateConfig& config) noexcept;
-        SkeletalAnimatorConfig& addState(std::string_view animation, std::string_view name = "") noexcept;
-        SkeletalAnimatorConfig& addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept;
+        SkeletalAnimatorDefinition& addState(const StateDefinition& def) noexcept;
+        SkeletalAnimatorDefinition& addState(std::string_view animation, std::string_view name = "") noexcept;
+        SkeletalAnimatorDefinition& addTransition(std::string_view src, std::string_view dst, const TransitionDefinition& def) noexcept;
 
-        std::optional<const StateConfig> getState(std::string_view name) const noexcept;
-        std::optional<const TransitionConfig> getTransition(std::string_view src, std::string_view dst) const noexcept;
+        std::optional<const StateDefinition> getState(std::string_view name) const noexcept;
+        std::optional<const TransitionDefinition> getTransition(std::string_view src, std::string_view dst) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -219,23 +220,23 @@ namespace darmok
 
     private:
         std::string _animationPattern;
-        std::unordered_map<std::string, StateConfig> _states;
-        std::unordered_map<TransitionKey, TransitionConfig, TransitionKeyHash> _transitions;
+        std::unordered_map<std::string, StateDefinition> _states;
+        std::unordered_map<TransitionKey, TransitionDefinition, TransitionKeyHash> _transitions;
 
         std::string getAnimationName(std::string_view key) const noexcept;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorConfigLoader : public ILoader<SkeletalAnimatorConfig>
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorDefinitionLoader : public ILoader<SkeletalAnimatorDefinition>
     {
     };
 
     class IDataLoader;
 
-    class DARMOK_EXPORT SkeletalAnimatorConfigLoader final : public ISkeletalAnimatorConfigLoader
+    class DARMOK_EXPORT SkeletalAnimatorDefinitionLoader final : public ISkeletalAnimatorDefinitionLoader
     {
     public:
-        SkeletalAnimatorConfigLoader(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<SkeletalAnimatorConfig> operator()(const std::filesystem::path& path) override;
+        SkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept;
+        std::shared_ptr<SkeletalAnimatorDefinition> operator()(const std::filesystem::path& path) override;
     private:
         IDataLoader& _dataLoader;
     };
@@ -284,10 +285,10 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimator final
     {
     public:
-        using Config = SkeletalAnimatorConfig;
+        using Definition = SkeletalAnimatorDefinition;
         using AnimationMap = SkeletalAnimationMap;
         using PlaybackState = SkeletalAnimatorPlaybackState;
-        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
+        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept;
         ~SkeletalAnimator();
 
         SkeletalAnimator& addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
@@ -301,7 +302,7 @@ namespace darmok
         SkeletalAnimator& setBlendPosition(const glm::vec2& value) noexcept;
         const glm::vec2& getBlendPosition() const noexcept;
 
-        const Config& getConfig() const noexcept;
+        const Definition& getDefinition() const noexcept;
         OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;
         OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
         float getStateDuration(const std::string& name) const noexcept;
@@ -359,10 +360,10 @@ namespace darmok
         OptionalRef<SkeletalAnimator> getAnimator(Entity entity) const noexcept;
     };
 
-    class DARMOK_EXPORT SkeletalAnimatorConfigImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT SkeletalAnimatorDefinitionImporter final : public IAssetTypeImporter
     {
     public:
-        SkeletalAnimatorConfig read(const std::filesystem::path& path) const;
+        SkeletalAnimatorDefinition read(const std::filesystem::path& path) const;
         std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
@@ -395,13 +396,4 @@ namespace darmok
     private:
         std::shared_ptr<Armature> _armature;
     };
-}
-
-namespace std
-{
-    template<class Archive>
-    static void serialize(Archive& archive, darmok::SkeletalAnimatorConfig::TransitionKey& key)
-    {
-        archive(cereal::make_map_item(key.first, key.second));
-    }
 }

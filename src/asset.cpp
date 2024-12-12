@@ -30,11 +30,11 @@ namespace darmok
 		, _cerealModelLoader(_dataLoader)
 		, _textureAtlasFontLoader(_texAtlasLoader)
 #ifdef DARMOK_OZZ
-		, _skeletalAnimatorConfigLoader(_dataLoader)
+		, _skelAnimDefLoader(_dataLoader)
 		, _ozzSkeletonLoader(_dataLoader)
 		, _ozzSkeletalAnimationLoader(_dataLoader)
-		, _skeletonLoader(_ozzSkeletonLoader)
-		, _skeletalAnimationLoader(_ozzSkeletalAnimationLoader)
+		, _skelLoader(_ozzSkeletonLoader)
+		, _skelAnimLoader(_ozzSkeletalAnimationLoader)
 #endif		
 #ifdef DARMOK_ASSIMP
 		, _assimpModelLoader(_dataLoader, _allocator, _imageLoader)
@@ -116,17 +116,17 @@ namespace darmok
 #ifdef DARMOK_OZZ
 	ISkeletonLoader& AssetContextImpl::getSkeletonLoader() noexcept
 	{
-		return _skeletonLoader;
+		return _skelLoader;
 	}
 
 	ISkeletalAnimationLoader& AssetContextImpl::getSkeletalAnimationLoader() noexcept
 	{
-		return _skeletalAnimationLoader;
+		return _skelAnimLoader;
 	}
 
-	ISkeletalAnimatorConfigLoader& AssetContextImpl::getSkeletalAnimatorConfigLoader() noexcept
+	ISkeletalAnimatorDefinitionLoader& AssetContextImpl::getSkeletalAnimatorDefinitionLoader() noexcept
 	{
-		return _skeletalAnimatorConfigLoader;
+		return _skelAnimDefLoader;
 	}
 #endif
 
@@ -228,9 +228,9 @@ namespace darmok
 		return _impl->getSkeletalAnimationLoader();
 	}
 
-	ISkeletalAnimatorConfigLoader& AssetContext::getSkeletalAnimatorConfigLoader() noexcept
+	ISkeletalAnimatorDefinitionLoader& AssetContext::getSkeletalAnimatorDefinitionLoader() noexcept
 	{
-		return _impl->getSkeletalAnimatorConfigLoader();
+		return _impl->getSkeletalAnimatorDefinitionLoader();
 	}
 #endif
 
@@ -307,7 +307,7 @@ namespace darmok
 #ifdef DARMOK_ASSIMP
 		_importer.addTypeImporter<AssimpModelImporter>(_alloc);
 #ifdef DARMOK_OZZ
-		_importer.addTypeImporter<SkeletalAnimatorConfigImporter>();
+		_importer.addTypeImporter<SkeletalAnimatorDefinitionImporter>();
 		_importer.addTypeImporter<AssimpSkeletonImporter>();
 		_importer.addTypeImporter<AssimpSkeletalAnimationImporter>();
 #endif

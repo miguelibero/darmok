@@ -13,7 +13,7 @@ namespace darmok
 {
     class Skeleton;
     class SkeletalAnimation;
-    struct SkeletalAnimatorConfig;
+    struct SkeletalAnimatorDefinition;
     class SkeletalAnimator;
     class ISkeletalAnimatorState;
     class ISkeletalAnimatorTransition;
@@ -32,12 +32,12 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
 
-        using Config = SkeletalAnimatorConfig;
+        using Definition = SkeletalAnimatorDefinition;
         using AnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
         static void setBlendPosition(SkeletalAnimator& animator, const VarLuaVecTable<glm::vec2>& pos) noexcept;
 
-        static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept;
+        static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept;
         static OptionalRef<SkeletalAnimator>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         static std::optional<LuaEntity> getEntity(const SkeletalAnimator& animator, std::shared_ptr<Scene>& scene) noexcept;
         static bool play1(SkeletalAnimator& animator, const std::string& name) noexcept;

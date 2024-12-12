@@ -631,7 +631,6 @@ namespace darmok
 		return itr->second;
 	}
 
-	const std::string TexturePackerTextureAtlasImporter::_outputPathOption = "outputPath";
 	const std::string TexturePackerTextureAtlasImporter::_outputFormatOption = "outputFormat";
 	const std::string TexturePackerTextureAtlasImporter::_textureFormatOption = "textureFormat";
 	const std::string TexturePackerTextureAtlasImporter::_rmluiResolutionOption = "rmluiResolution";
@@ -654,11 +653,8 @@ namespace darmok
 		}
 		auto basePath = input.getRelativePath().parent_path();
 
-		if (input.config.contains(_outputPathOption))
-		{
-			_sheetPath = input.config[_outputPathOption].get<std::filesystem::path>();
-		}
-		else
+		_sheetPath = input.getOutputPath();
+		if(_sheetPath.empty())
 		{
 			auto sheetNode = _xmlDoc.select_node(
 				"//map[@type='GFileNameMap']/struct[@type='DataFile']"

@@ -26,10 +26,8 @@ namespace darmok
 
         std::vector<std::string> pathMatches;
 
-        std::filesystem::path getRelativePath() const
-        {
-            return std::filesystem::relative(path, basePath);
-        }
+        std::filesystem::path getRelativePath() const;
+        std::filesystem::path getOutputPath(const std::string& defaultExt = "") const;
     };
 
     using AssetImportDependencies = std::unordered_set<std::filesystem::path>;

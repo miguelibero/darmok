@@ -228,7 +228,7 @@ namespace darmok
         }
     }
 
-    void SkeletalAnimatorAnimationConfig::readJson(const nlohmann::json& json)
+    void SkeletalAnimatorAnimationDefinition::readJson(const nlohmann::json& json)
     {
         if (json.contains("value"))
         {
@@ -252,7 +252,7 @@ namespace darmok
         }
     }
 
-    float SkeletalAnimatorStateConfig::calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos)
+    float SkeletalAnimatorStateDefinition::calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos)
     {
         std::vector<std::pair<glm::vec2, glm::vec2>> parts;
         parts.reserve(animations.size());
@@ -292,7 +292,7 @@ namespace darmok
         return w;
     }
 
-    std::vector<float> SkeletalAnimatorStateConfig::calcBlendWeights(const glm::vec2& pos)
+    std::vector<float> SkeletalAnimatorStateDefinition::calcBlendWeights(const glm::vec2& pos)
     {
         // logic based on the Motion Interpolation explanation here
         // https://runevision.com/thesis/rune_skovbo_johansen_thesis.pdf
@@ -311,7 +311,7 @@ namespace darmok
         return weights;
     }
 
-    SkeletalAnimatorBlendType SkeletalAnimatorStateConfig::getBlendType(const std::string_view name) noexcept
+    SkeletalAnimatorBlendType SkeletalAnimatorStateDefinition::getBlendType(const std::string_view name) noexcept
     {
         if (name == "directional")
         {
@@ -324,20 +324,20 @@ namespace darmok
         return SkeletalAnimatorBlendType::Cartesian;
     }
 
-    void SkeletalAnimatorStateConfig::readJson(const nlohmann::json& json)
+    void SkeletalAnimatorStateDefinition::readJson(const nlohmann::json& json)
     {
         if (json.contains("elements"))
         {
             for (auto& elm : json["elements"])
             {
-                AnimationConfig config;
+                AnimationDefinition config;
                 config.readJson(elm);
                 animations.push_back(config);
             }
         }
         if (json.contains("animation"))
         {
-            AnimationConfig config;
+            AnimationDefinition config;
             config.readJson(json);
             animations.push_back(config);
         }
@@ -367,7 +367,7 @@ namespace darmok
         }
     }
 
-    std::pair<std::string, std::string> SkeletalAnimatorTransitionConfig::readJsonKey(std::string_view key)
+    std::pair<std::string, std::string> SkeletalAnimatorTransitionDefinition::readJsonKey(std::string_view key)
     {
         const char sep = '>';
         auto pos = key.find(sep);
@@ -378,7 +378,7 @@ namespace darmok
         return std::pair<std::string, std::string>(key.substr(0, pos), key.substr(pos + 1));
     }
 
-    void SkeletalAnimatorTransitionConfig::readJson(const nlohmann::json& json)
+    void SkeletalAnimatorTransitionDefinition::readJson(const nlohmann::json& json)
     {
         tween.readJson(json);
         if (json.contains("offset"))
@@ -387,7 +387,7 @@ namespace darmok
         }
     }
 
-    std::string SkeletalAnimatorConfig::getAnimationName(std::string_view key) const noexcept
+    std::string SkeletalAnimatorDefinition::getAnimationName(std::string_view key) const noexcept
     {
         if (_animationPattern.empty())
         {
@@ -398,7 +398,7 @@ namespace darmok
         return v;
     }
 
-    SkeletalAnimatorConfig::AnimationMap SkeletalAnimatorConfig::loadAnimations(ISkeletalAnimationLoader& loader) const
+    SkeletalAnimatorDefinition::AnimationMap SkeletalAnimatorDefinition::loadAnimations(ISkeletalAnimationLoader& loader) const
     {
         AnimationMap anims;
         for (auto& elm : _states)
@@ -411,7 +411,7 @@ namespace darmok
         return anims;
     }
 
-    void SkeletalAnimatorConfig::readJson(const nlohmann::json& json)
+    void SkeletalAnimatorDefinition::readJson(const nlohmann::json& json)
     {
         if (json.contains("animationNamePattern"))
         {
@@ -421,7 +421,7 @@ namespace darmok
         {
             for (auto& stateJson : json["states"].items())
             {
-                StateConfig config;
+                StateDefinition config;
                 config.name = stateJson.key();
                 config.readJson(stateJson.value());
                 addState(config);
@@ -431,19 +431,19 @@ namespace darmok
         {
             for (auto& transitionJson : json["transitions"].items())
             {
-                TransitionConfig config;
+                TransitionDefinition config;
                 config.readJson(transitionJson.value());
-                auto [src, dst] = TransitionConfig::readJsonKey(transitionJson.key());
+                auto [src, dst] = TransitionDefinition::readJsonKey(transitionJson.key());
                 addTransition(src, dst, config);
             }
         }
     }
 
-    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(const StateConfig& config) noexcept
+    SkeletalAnimatorDefinition& SkeletalAnimatorDefinition::addState(const StateDefinition& config) noexcept
     {
         if (config.name.empty())
         {
-            StateConfig fixedConfig = config;
+            StateDefinition fixedConfig = config;
             size_t i = 0;
             while (fixedConfig.name.empty() && i < fixedConfig.animations.size())
             {
@@ -460,19 +460,19 @@ namespace darmok
         return *this;
     }
 
-    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addState(std::string_view animation, std::string_view name) noexcept
+    SkeletalAnimatorDefinition& SkeletalAnimatorDefinition::addState(std::string_view animation, std::string_view name) noexcept
     {
-        return addState(StateConfig{ std::string(name), { { std::string(animation) } } });
+        return addState(StateDefinition{ std::string(name), { { std::string(animation) } } });
     }
 
-    SkeletalAnimatorConfig& SkeletalAnimatorConfig::addTransition(std::string_view src, std::string_view dst, const TransitionConfig& config) noexcept
+    SkeletalAnimatorDefinition& SkeletalAnimatorDefinition::addTransition(std::string_view src, std::string_view dst, const TransitionDefinition& config) noexcept
     {
         TransitionKey key(src, dst);
         _transitions.emplace(key, config);
         return *this;
     }
 
-    std::optional<const SkeletalAnimatorConfig::StateConfig> SkeletalAnimatorConfig::getState(std::string_view name) const noexcept
+    std::optional<const SkeletalAnimatorDefinition::StateDefinition> SkeletalAnimatorDefinition::getState(std::string_view name) const noexcept
     {
         auto itr = std::find_if(_states.begin(), _states.end(), [name](auto& elm) { return elm.first == name; });
         if (itr == _states.end())
@@ -482,7 +482,7 @@ namespace darmok
         return itr->second;
     }
 
-    std::optional<const SkeletalAnimatorConfig::TransitionConfig> SkeletalAnimatorConfig::getTransition(std::string_view src, std::string_view dst) const noexcept
+    std::optional<const SkeletalAnimatorDefinition::TransitionDefinition> SkeletalAnimatorDefinition::getTransition(std::string_view src, std::string_view dst) const noexcept
     {
         TransitionKey key(src, dst);
         auto itr = _transitions.find(key);
@@ -508,15 +508,15 @@ namespace darmok
         return itr->second;
     }
 
-    SkeletalAnimatorConfigLoader::SkeletalAnimatorConfigLoader(IDataLoader& dataLoader) noexcept
+    SkeletalAnimatorDefinitionLoader::SkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
     }
 
-    std::shared_ptr<SkeletalAnimatorConfig> SkeletalAnimatorConfigLoader::operator()(const std::filesystem::path& path)
+    std::shared_ptr<SkeletalAnimatorDefinition> SkeletalAnimatorDefinitionLoader::operator()(const std::filesystem::path& path)
     {
         auto data = _dataLoader(path);
-        auto config = std::make_shared<SkeletalAnimatorConfig>();
+        auto config = std::make_shared<SkeletalAnimatorDefinition>();
         auto ext = StringUtils::getFileExt(path.string());
         if (ext == ".json")
         {
@@ -539,7 +539,7 @@ namespace darmok
         return config;
     }
 
-    std::vector<std::filesystem::path> SkeletalAnimatorConfigImporter::getOutputs(const Input& input) noexcept
+    std::vector<std::filesystem::path> SkeletalAnimatorDefinitionImporter::getOutputs(const Input& input) noexcept
     {
         std::vector<std::filesystem::path> outputs;
         auto ext = StringUtils::getFileExt(input.path.filename().string());
@@ -550,18 +550,11 @@ namespace darmok
                 return outputs;
             }
         }
-        if (input.config.contains("outputPath"))
-        {
-            outputs.push_back(input.config["outputPath"]);
-            return outputs;
-        }
-
-        auto stem = std::string(StringUtils::getFileStem(input.path.filename().string()));
-        outputs.push_back(input.path.parent_path() / (stem + ".bin"));
-        return outputs;
+        auto outputPath = input.getOutputPath(".bin");
+        return { outputPath };
     }
 
-    std::ofstream SkeletalAnimatorConfigImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
+    std::ofstream SkeletalAnimatorDefinitionImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
     {
         auto ext = StringUtils::getFileExt(input.path.filename().string());
         if (ext == ".json")
@@ -572,9 +565,9 @@ namespace darmok
     }
 
 
-    SkeletalAnimatorConfig SkeletalAnimatorConfigImporter::read(const std::filesystem::path& path) const
+    SkeletalAnimatorDefinition SkeletalAnimatorDefinitionImporter::read(const std::filesystem::path& path) const
     {
-        SkeletalAnimatorConfig config;
+        SkeletalAnimatorDefinition config;
         auto ext = StringUtils::getFileExt(path.filename().string());
         if (ext == ".json")
         {
@@ -584,7 +577,7 @@ namespace darmok
         return config;
     }
 
-    void SkeletalAnimatorConfigImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void SkeletalAnimatorDefinitionImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         auto ext = StringUtils::getFileExt(input.path.filename().string());
         auto config = read(input.path);
@@ -596,7 +589,7 @@ namespace darmok
         archive(config);
     }
 
-    const std::string& SkeletalAnimatorConfigImporter::getName() const noexcept
+    const std::string& SkeletalAnimatorDefinitionImporter::getName() const noexcept
     {
         static const std::string name("animator");
         return name;

@@ -499,29 +499,7 @@ namespace darmok
 		{
 			return false;
 		}
-
-		auto basePath = input.getRelativePath().parent_path();
-		_outputPath = basePath;
-		auto name = input.path.stem().string();
-		if (input.config.contains("outputPath"))
-		{
-			_outputPath /= input.config["outputPath"].get<std::filesystem::path>();
-		}
-		else if (input.dirConfig.contains("outputPath"))
-		{
-			std::string v = input.dirConfig["outputPath"];
-			if (name.empty())
-			{
-				name = StringUtils::getFileStem(input.getRelativePath().string());
-			}
-			StringUtils::replace(v, "*", name);
-			_outputPath /= v;
-		}
-		else
-		{
-			_outputPath /= name + ".ktx";
-		}
-
+		_outputPath = input.getOutputPath(".ktx");
 		_outputEncoding = Image::getEncodingForPath(_outputPath);
 		if (_outputEncoding == ImageEncoding::Count)
 		{

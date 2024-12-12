@@ -63,8 +63,8 @@ namespace darmok
 	class OzzSkeletalAnimatorAnimationState final
 	{
 	public:
-		using Config = SkeletalAnimatorAnimationConfig;
-		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations);
+		using Definition = SkeletalAnimatorAnimationDefinition;
+		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations);
 		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
 
 		void update(float deltaTime);
@@ -76,7 +76,7 @@ namespace darmok
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
 		const glm::vec2& getBlendPosition() const noexcept;
 	private:
-		Config _config;
+		Definition _def;
 		std::shared_ptr<SkeletalAnimation> _animation;
 		float _normalizedTime;
 		bool _looped;
@@ -89,7 +89,7 @@ namespace darmok
 	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
 	{
 	public:
-		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Config& config, ISkeletalAnimationProvider& animations) noexcept;
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept;
 
 		void update(float deltaTime, const glm::vec2& blendPosition);
 		std::string_view getName() const noexcept override;
@@ -106,7 +106,7 @@ namespace darmok
 		float calcDuration() const noexcept;
 
 		using AnimationState = OzzSkeletalAnimatorAnimationState;
-		Config _config;
+		Definition _def;
 		std::vector<AnimationState> _animations;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 		ozz::vector<ozz::animation::BlendingJob::Layer> _layers;
@@ -124,7 +124,7 @@ namespace darmok
 	public:
 		using State = OzzSkeletalAnimatorState;
 
-		OzzSkeletalAnimatorTransition(const Config& config, State&& currentState, State&& previousState) noexcept;
+		OzzSkeletalAnimatorTransition(const Definition& def, State&& currentState, State&& previousState) noexcept;
 		void update(float deltaTime, const glm::vec2& blendPosition);
 		float getDuration() const noexcept override;
 		float getNormalizedTime() const noexcept override;
@@ -144,7 +144,7 @@ namespace darmok
 		ISkeletalAnimatorState& getCurrentState() noexcept;
 		ISkeletalAnimatorState& getPreviousState() noexcept;
 	private:
-		Config _config;
+		Definition _def;
 		State _currentState;
 		State _previousState;
 		ozz::vector<ozz::math::SoaTransform> _locals;
@@ -154,13 +154,13 @@ namespace darmok
 	class SkeletalAnimatorImpl final : public ISkeletalAnimationProvider
 	{
 	public:
-		using Config = SkeletalAnimatorConfig;
+		using Definition = SkeletalAnimatorDefinition;
 		using Transition = OzzSkeletalAnimatorTransition;
 		using State = OzzSkeletalAnimatorState;
 		using AnimationMap = SkeletalAnimationMap;
 		using PlaybackState = SkeletalAnimatorPlaybackState;
 
-		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Config& config) noexcept;
+		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Definition& def) noexcept;
 		~SkeletalAnimatorImpl();
 
 		void addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
@@ -174,7 +174,7 @@ namespace darmok
 		void setBlendPosition(const glm::vec2& value) noexcept;
 		const glm::vec2& getBlendPosition() const noexcept;
 
-		const Config& getConfig() const noexcept;
+		const Definition& getDefinition() const noexcept;
 		OptionalRef<const ISkeletalAnimatorState> getCurrentState() const noexcept;
 		OptionalRef<const ISkeletalAnimatorTransition> getCurrentTransition() const noexcept;
 		float getStateDuration(const std::string& name) const noexcept;
@@ -196,7 +196,7 @@ namespace darmok
 		AnimationMap _animations;
 		SkeletalAnimator& _animator;
 		std::shared_ptr<Skeleton> _skeleton;
-		Config _config;
+		Definition _def;
 		float _speed;
 		bool _paused;
 		glm::vec2 _blendPosition;

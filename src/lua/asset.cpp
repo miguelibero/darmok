@@ -64,14 +64,14 @@ namespace darmok
 		return assets.getSkeletalAnimationLoader()(path);
 	}
 
-	std::shared_ptr<SkeletalAnimatorConfig> LuaAssets::loadSkeletalAnimatorConfig(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssets::loadSkeletalAnimatorDefinition(AssetContext& assets, const std::filesystem::path& path)
 	{
-		return assets.getSkeletalAnimatorConfigLoader()(path);
+		return assets.getSkeletalAnimatorDefinitionLoader()(path);
 	}
 
-	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorConfig& config)
+	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def)
 	{
-		return config.loadAnimations(assets.getSkeletalAnimationLoader());
+		return def.loadAnimations(assets.getSkeletalAnimationLoader());
 	}
 
 	void LuaAssets::bind(sol::state_view& lua) noexcept
@@ -96,7 +96,7 @@ namespace darmok
 			"load_music", &LuaAssets::loadMusic,
 			"load_skeleton", &LuaAssets::loadSkeleton,
 			"load_skeletal_animation", &LuaAssets::loadSkeletalAnimation,
-			"load_skeletal_animator_config", &LuaAssets::loadSkeletalAnimatorConfig,
+			"load_skeletal_animator_definition", &LuaAssets::loadSkeletalAnimatorDefinition,
 			"load_skeletal_animations", &LuaAssets::loadSkeletalAnimations
 		);
 	}

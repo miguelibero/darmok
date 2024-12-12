@@ -23,9 +23,9 @@ namespace darmok
         );
     }
 
-    SkeletalAnimator& LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Config& config) noexcept
+    SkeletalAnimator& LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept
     {
-        return entity.addComponent<SkeletalAnimator>(skel, anims, config);
+        return entity.addComponent<SkeletalAnimator>(skel, anims, def);
     }
 
     OptionalRef<SkeletalAnimator>::std_t LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept
