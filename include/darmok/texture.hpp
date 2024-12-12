@@ -74,14 +74,13 @@ namespace darmok
 	{
 	};
 
-	class DARMOK_EXPORT TextureDefinitionLoader final : public CerealLoader<ITextureDefinitionLoader>
+	class DARMOK_EXPORT CerealTextureDefinitionLoader final : public CerealLoader<ITextureDefinitionLoader>
 	{
 	public:
-		TextureDefinitionLoader(IDataLoader& dataLoader) noexcept;
+		CerealTextureDefinitionLoader(IDataLoader& dataLoader) noexcept;
 	};
 
-
-	class DARMOK_EXPORT ImageTextureDefinitionLoader final : ITextureDefinitionLoader
+	class DARMOK_EXPORT ImageTextureDefinitionLoader final : public ITextureDefinitionLoader
 	{
 	public:
 		ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept;

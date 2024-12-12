@@ -199,7 +199,7 @@ namespace darmok
 		return true;
 	}
 
-	void TextureAtlasElement::read(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
+	void TextureAtlasElement::readTexturePacker(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
 	{
 		name = xml.attribute("n").value();
 
@@ -292,7 +292,7 @@ namespace darmok
 		rotated = std::string(xml.attribute("r").value()) == "y";
 	}
 
-	void TextureAtlasElement::write(pugi::xml_node& xml) const noexcept
+	void TextureAtlasElement::writeTexturePacker(pugi::xml_node& xml) const noexcept
 	{
 		xml.append_attribute("n") = name.c_str();
 		xml.append_attribute("x") = texturePosition.x;
@@ -426,16 +426,16 @@ namespace darmok
 		return frames;
 	}
 
-	bool TextureAtlasDefinition::read(const pugi::xml_document& doc, const std::filesystem::path& basePath)
+	bool TextureAtlasDefinition::readTexturePacker(const pugi::xml_document& doc, const std::filesystem::path& basePath)
 	{
 		if (doc.empty())
 		{
 			return false;
 		}
-		return read(doc.child("TextureAtlas"), basePath);
+		return readTexturePacker(doc.child("TextureAtlas"), basePath);
 	}
 
-	bool TextureAtlasDefinition::read(const pugi::xml_node& atlasXml, const std::filesystem::path& basePath)
+	bool TextureAtlasDefinition::readTexturePacker(const pugi::xml_node& atlasXml, const std::filesystem::path& basePath)
 	{
 		if (atlasXml.empty())
 		{
@@ -452,28 +452,28 @@ namespace darmok
 		static const char* spriteTag = "sprite";
 		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
 		{
-			elements.emplace_back().read(spriteXml, size);
+			elements.emplace_back().readTexturePacker(spriteXml, size);
 		}
 
 		return true;
 	}
 
-	void TextureAtlasDefinition::write(pugi::xml_document& doc) const noexcept
+	void TextureAtlasDefinition::writeTexturePacker(pugi::xml_document& doc) const noexcept
 	{
 		pugi::xml_node decl = doc.prepend_child(pugi::node_declaration);
 		decl.append_attribute("version") = "1.0";
 		decl.append_attribute("encoding") = "utf-8";
 		auto node = doc.append_child("TextureAtlas");
-		write(node);
+		writeTexturePacker(node);
 	}
 
-	void TextureAtlasDefinition::write(pugi::xml_node& xml) const noexcept
+	void TextureAtlasDefinition::writeTexturePacker(pugi::xml_node& xml) const noexcept
 	{
 		xml.append_attribute("imagePath") = imagePath.string().c_str();
 		for (auto& elm : elements)
 		{
 			auto sprite = xml.append_child("sprite");
-			elm.write(sprite);
+			elm.writeTexturePacker(sprite);
 		}
 	}
 
@@ -524,13 +524,13 @@ namespace darmok
 		}
 	}
 
-    TexturePackerTextureAtlasLoader::TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept
+	TexturePackerDefinitionLoader::TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texDefLoader) noexcept
 		: _dataLoader(dataLoader)
-		, _textureLoader(textureLoader)
+		, _texDefLoader(texDefLoader)
 	{
 	}
 
-	std::shared_ptr<TextureAtlas> TexturePackerTextureAtlasLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<TextureAtlasDefinition> TexturePackerDefinitionLoader::operator()(const std::filesystem::path& path)
 	{
 		auto data = _dataLoader(path);
 
@@ -540,14 +540,34 @@ namespace darmok
 		{
 			throw std::runtime_error(result.description());
 		}
-		TextureAtlasDefinition atlasDef;
-		if (!atlasDef.read(doc, std::filesystem::path(path).parent_path()))
+		auto atlasDef = std::make_shared<TextureAtlasDefinition>();
+		if (!atlasDef->readTexturePacker(doc, path.parent_path()))
 		{
 			throw std::runtime_error("failed to read texture packer xml");
 		}
+		atlasDef->texture = _texDefLoader(atlasDef->imagePath);
+		return atlasDef;
+	}
 
-		auto texture = _textureLoader(atlasDef.imagePath);
-		return std::make_shared<TextureAtlas>(TextureAtlas{ texture, atlasDef.elements });
+	TextureAtlasLoader::TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept
+		: FromDefinitionLoader(defLoader)
+		, _texLoader(texLoader)
+	{
+	}
+
+	std::shared_ptr<TextureAtlas> TextureAtlasLoader::create(const std::shared_ptr<TextureAtlasDefinition>& def)
+	{
+		auto atlas = std::make_shared<TextureAtlas>();
+		atlas->elements = def->elements;
+		if (def->texture)
+		{
+			atlas->texture = _texLoader.loadResource(def->texture);
+		}
+		else
+		{
+			atlas->texture = _texLoader(def->imagePath);
+		}
+		return atlas;
 	}
 
 	TexturePackerTextureAtlasImporter::TexturePackerTextureAtlasImporter(const std::filesystem::path& exePath) noexcept
@@ -742,7 +762,7 @@ namespace darmok
 				throw std::runtime_error(result.description());
 			}
 			TextureAtlasDefinition atlasDef;
-			if (!atlasDef.read(doc, basePath))
+			if (!atlasDef.readTexturePacker(doc, basePath))
 			{
 				throw std::runtime_error("failed to read texture packer xml");
 			}

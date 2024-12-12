@@ -432,7 +432,7 @@ namespace darmok
 		}
 
 		pugi::xml_document doc;
-		atlasDef.write(doc);
+		atlasDef.writeTexturePacker(doc);
 		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	}
 

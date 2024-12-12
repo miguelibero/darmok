@@ -1,14 +1,6 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <vector>
-#include <string>
-#include <memory>
-#include <filesystem>
-#include <bx/bx.h>
-#include <bgfx/bgfx.h>
-#include <pugixml.hpp>
-
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/color.hpp>
@@ -17,6 +9,22 @@
 #include <darmok/mesh_fwd.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/data.hpp>
+#include <darmok/glm_serialize.hpp>
+#include <darmok/loader.hpp>
+
+#include <vector>
+#include <string>
+#include <memory>
+#include <filesystem>
+
+#include <bx/bx.h>
+#include <bgfx/bgfx.h>
+#include <pugixml.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
+
 
 namespace darmok
 {
@@ -33,6 +41,18 @@ namespace darmok
 		Color color = Colors::white();
 		glm::uvec2 amount = glm::uvec2(1);
 		MeshType type = MeshType::Static;
+
+		template<typename Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(scale),
+				CEREAL_NVP(offset),
+				CEREAL_NVP(color),
+				CEREAL_NVP(amount),
+				CEREAL_NVP(type)
+			);
+		}
 	};
 
 	class IMesh;
@@ -58,8 +78,25 @@ namespace darmok
 
 		std::unique_ptr<IMesh> createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config = {}) const noexcept;
 		static TextureAtlasElement create(const TextureAtlasBounds& bounds) noexcept;
-		void read(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept;
-		void write(pugi::xml_node& xml) const noexcept;
+		void readTexturePacker(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept;
+		void writeTexturePacker(pugi::xml_node& xml) const noexcept;
+
+		template<typename Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(name),
+				CEREAL_NVP(positions),
+				CEREAL_NVP(texCoords),
+				CEREAL_NVP(indices),
+				CEREAL_NVP(texturePosition),
+				CEREAL_NVP(size),
+				CEREAL_NVP(offset),
+				CEREAL_NVP(originalSize),
+				CEREAL_NVP(pivot),
+				CEREAL_NVP(rotated)
+			);
+		}
 
 	private:
 		static std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept;
@@ -76,21 +113,46 @@ namespace darmok
 		float resolution = 1.F;
 		std::string spriteNameFormat;
 		std::string boxNameFormat = "box-*";
+
+		template<typename Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(nameFormat),
+				CEREAL_NVP(resolution),
+				CEREAL_NVP(spriteNameFormat),
+				CEREAL_NVP(boxNameFormat)
+			);
+		}
 	};
+
+	class ITextureLoader;
+	class TextureDefinition;
 
 	struct DARMOK_EXPORT TextureAtlasDefinition final
 	{
 		std::filesystem::path imagePath;
+		std::shared_ptr<TextureDefinition> texture;
 		std::vector<TextureAtlasElement> elements;
 		glm::uvec2 size;
 
-		bool read(const pugi::xml_document& doc, const std::filesystem::path& basePath = "");
-		bool read(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
-		void write(pugi::xml_document& doc) const noexcept;
-		void write(pugi::xml_node& node) const noexcept;
+		bool readTexturePacker(const pugi::xml_document& doc, const std::filesystem::path& basePath = "");
+		bool readTexturePacker(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
+		void writeTexturePacker(pugi::xml_document& doc) const noexcept;
+		void writeTexturePacker(pugi::xml_node& node) const noexcept;
 
 		using RmluiConfig = TextureAtlasRmluiConfig;
 		void writeRmlui(std::ostream& out, const RmluiConfig& config) const noexcept;
+
+		template<typename Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(texture),
+				CEREAL_NVP(elements),
+				CEREAL_NVP(size)
+			);
+		}
 	};
 
 	class Texture;
@@ -111,25 +173,35 @@ namespace darmok
 		std::vector<AnimationFrame> createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix = "", float frameDuration = 1.f / 30.f, const MeshConfig& config = {}) const noexcept;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasDefinitionLoader : public ILoader<TextureAtlasDefinition>
 	{
-	public:
-		using Resource = TextureAtlas;
-		virtual ~ITextureAtlasLoader() = default;
-		[[nodiscard]] virtual std::shared_ptr<TextureAtlas> operator()(const std::filesystem::path& path) = 0;
 	};
 
-	class IDataLoader;
-	class ITextureLoader;
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<TextureAtlas, TextureAtlasDefinition>
+	{
+	};
 
-	class DARMOK_EXPORT TexturePackerTextureAtlasLoader final : public ITextureAtlasLoader
+	class ITextureLoader;
+	class ITextureDefinitionLoader;
+
+	class DARMOK_EXPORT TexturePackerDefinitionLoader final : public ITextureAtlasDefinitionLoader
 	{
 	public:
-		TexturePackerTextureAtlasLoader(IDataLoader& dataLoader, ITextureLoader& textureLoader) noexcept;
-		std::shared_ptr<TextureAtlas> operator()(const std::filesystem::path& path) override;
+		TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texDefLoader) noexcept;
+		std::shared_ptr<TextureAtlasDefinition> operator()(const std::filesystem::path& path) override;
 	private:
 		IDataLoader& _dataLoader;
-		ITextureLoader& _textureLoader;
+		ITextureDefinitionLoader& _texDefLoader;
+	};
+
+	class DARMOK_EXPORT TextureAtlasLoader : public FromDefinitionLoader<ITextureAtlasLoader, ITextureAtlasDefinitionLoader>
+	{
+	public:
+		TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept;
+	protected:
+		std::shared_ptr<TextureAtlas> create(const std::shared_ptr<TextureAtlasDefinition>& def) override;
+	private:
+		ITextureLoader& _texLoader;
 	};
 
 	struct TextureAtlasRmluiConfig;

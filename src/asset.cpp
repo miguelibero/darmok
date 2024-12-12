@@ -16,12 +16,15 @@ namespace darmok
 		: _dataLoader(_allocator)
 		, _imageLoader(_dataLoader, _allocator)
 		, _programDefLoader(_dataLoader)
-		, _textureDefLoader(_dataLoader)
+		, _cerealTexDefLoader(_dataLoader)
+		, _imgTexDefLoader(_imageLoader)
+		, _texDefLoader{ _imgTexDefLoader, _cerealTexDefLoader }
 		, _meshDefLoader(_dataLoader)
 		, _programLoader(_programDefLoader)
-		, _textureLoader(_textureDefLoader)
+		, _textureLoader(_texDefLoader)
 		, _meshLoader(_meshDefLoader)
-		, _textureAtlasLoader(_dataLoader, _textureLoader)
+		, _texPackerDefLoader(_dataLoader, _texDefLoader)
+		, _textureAtlasLoader({ _texPackerDefLoader }, _textureLoader)
 		, _binModelLoader(_dataLoader)
 		, _textureAtlasFontLoader(_textureAtlasLoader)
 #ifdef DARMOK_OZZ

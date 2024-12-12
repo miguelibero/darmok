@@ -166,7 +166,9 @@ namespace
 
 		void createSpriteAnimation(Scene& scene)
 		{
-			auto texAtlas = _app.getAssets().getTextureAtlasLoader()("warrior-0.xml", BGFX_SAMPLER_MAG_POINT);
+			auto texAtlasDef = _app.getAssets().getTextureAtlasLoader().loadDefinition("warrior-0.xml");
+			texAtlasDef->texture->flags = BGFX_SAMPLER_MAG_POINT;
+			auto texAtlas = _app.getAssets().getTextureAtlasLoader().loadResource(texAtlasDef);
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = scene.createEntity();

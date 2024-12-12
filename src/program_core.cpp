@@ -645,28 +645,27 @@ namespace darmok
             auto data = Data::fromFile(output.path);
             def.profiles[output.profile].fragmentShaders[output.defines] = std::move(data);
         }
-        writeDefinition(def);
+        writeDefinition(def, out);
         fs::remove(outputPath);
         fs::remove(varyingDefPath);
     }
 
-    void ProgramImporterImpl::writeDefinition(const ProgramDefinition& def)
+    void ProgramImporterImpl::writeDefinition(const ProgramDefinition& def, std::ostream& out)
     {
         auto ext = _outputPath.extension();
-        std::ofstream stream(_outputPath);
         if (ext == ".xml")
         {
-            cereal::XMLOutputArchive archive(stream);
+            cereal::XMLOutputArchive archive(out);
             archive(def);
         }
         else if (ext == ".json")
         {
-            cereal::JSONOutputArchive archive(stream);
+            cereal::JSONOutputArchive archive(out);
             archive(def);
         }
         else
         {
-            cereal::PortableBinaryOutputArchive archive(stream);
+            cereal::PortableBinaryOutputArchive archive(out);
             archive(def);
         }
     }

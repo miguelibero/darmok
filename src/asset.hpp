@@ -32,11 +32,6 @@
 
 namespace darmok
 {
-	using ModelExtLoader = ExtensionLoader<IModelLoader>;
-	using SkeletonExtLoader = ExtensionLoader<ISkeletonLoader>;
-	using SkeletalAnimationExtLoader = ExtensionLoader<ISkeletalAnimationLoader>;
-	using FontExtLoader = ExtensionLoader<IFontLoader>;
-
 	class AssetContextImpl final
 	{
 	public:
@@ -80,19 +75,22 @@ namespace darmok
 		ImageLoader _imageLoader;
 		ProgramDefinitionLoader _programDefLoader;
 		ProgramLoader _programLoader;
-		TextureDefinitionLoader _textureDefLoader;
+		CerealTextureDefinitionLoader _cerealTexDefLoader;
+		ImageTextureDefinitionLoader _imgTexDefLoader;
+		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
 		TextureLoader _textureLoader;
 		MeshDefinitionLoader _meshDefLoader;
 		MeshLoader _meshLoader;
-		TexturePackerTextureAtlasLoader _textureAtlasLoader;
-		ModelExtLoader _modelLoader;
+		TexturePackerDefinitionLoader _texPackerDefLoader;
+		TextureAtlasLoader _textureAtlasLoader;
+		ContainerLoader<IModelLoader> _modelLoader;
 		ModelLoader _binModelLoader;
 		TextureAtlasFontLoader _textureAtlasFontLoader;
-		FontExtLoader _fontLoader;
+		ContainerLoader<IFontLoader> _fontLoader;
 
 #ifdef DARMOK_OZZ
-		SkeletonExtLoader _skeletonLoader;
-		SkeletalAnimationExtLoader _skeletalAnimationLoader;
+		ContainerLoader<ISkeletonLoader> _skeletonLoader;
+		ContainerLoader<ISkeletalAnimationLoader> _skeletalAnimationLoader;
 		SkeletalAnimatorConfigLoader _skeletalAnimatorConfigLoader;
 
 		OzzSkeletonLoader _ozzSkeletonLoader;

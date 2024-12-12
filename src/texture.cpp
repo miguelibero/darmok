@@ -40,7 +40,7 @@ namespace darmok
 		return info;
 	}
 
-	TextureDefinitionLoader::TextureDefinitionLoader(IDataLoader& dataLoader) noexcept
+	CerealTextureDefinitionLoader::CerealTextureDefinitionLoader(IDataLoader& dataLoader) noexcept
 		: CerealLoader(dataLoader)
 	{
 	}
@@ -64,6 +64,10 @@ namespace darmok
 
 	std::shared_ptr<TextureDefinition> ImageTextureDefinitionLoader::operator()(const std::filesystem::path& path)
 	{
+		if (!supports(path))
+		{
+			return nullptr;
+		}
 		if (auto img = _imgLoader(path))
 		{
 			return std::make_shared<TextureDefinition>(TextureDefinition::fromImage(*img, _loadFlags));
