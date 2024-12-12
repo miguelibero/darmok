@@ -177,8 +177,10 @@ namespace darmok
 	{
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<TextureAtlas, TextureAtlasDefinition>
+	class DARMOK_EXPORT CerealTextureAtlasDefinitionLoader final : public CerealLoader<ITextureAtlasDefinitionLoader>
 	{
+	public:
+		CerealTextureAtlasDefinitionLoader(IDataLoader& dataLoader) noexcept;
 	};
 
 	class ITextureLoader;
@@ -192,6 +194,10 @@ namespace darmok
 	private:
 		IDataLoader& _dataLoader;
 		ITextureDefinitionLoader& _texDefLoader;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<TextureAtlas, TextureAtlasDefinition>
+	{
 	};
 
 	class DARMOK_EXPORT TextureAtlasLoader : public FromDefinitionLoader<ITextureAtlasLoader, ITextureAtlasDefinitionLoader>

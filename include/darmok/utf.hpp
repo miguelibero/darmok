@@ -8,27 +8,27 @@
 
 namespace darmok
 {
-    struct Utf8Char;
+    struct UtfChar;
 
-    using Utf8Vector = std::vector<Utf8Char>;
+    using UtfVector = std::vector<UtfChar>;
 
-    struct DARMOK_EXPORT Utf8Char final
+    struct DARMOK_EXPORT UtfChar final
     {
         uint32_t code;
 
         static const uint32_t invalidCode;
 
-        Utf8Char(uint32_t code = invalidCode) noexcept;
+        UtfChar(uint32_t code = invalidCode) noexcept;
 
-        Utf8Char(std::string_view str);
-        Utf8Char(std::u8string_view str);
+        UtfChar(std::string_view str);
+        UtfChar(std::u8string_view str);
 
-        [[nodiscard]] static Utf8Char read(std::string_view& str);
-        static size_t read(std::string_view str, Utf8Vector& chars);
-        [[nodiscard]] static Utf8Char read(std::u8string_view& str);
-        static size_t read(std::u8string_view str, Utf8Vector& chars);
-        static std::string toString(const Utf8Vector& chars);
-        static std::u8string toUtf8String(const Utf8Vector& chars);
+        [[nodiscard]] static UtfChar read(std::string_view& str);
+        static size_t read(std::string_view str, UtfVector& chars);
+        [[nodiscard]] static UtfChar read(std::u8string_view& str);
+        static size_t read(std::u8string_view str, UtfVector& chars);
+        static std::string toString(const UtfVector& chars);
+        static std::u8string toUtfString(const UtfVector& chars);
 
         operator bool() const noexcept;
         operator std::string() const;
@@ -38,14 +38,14 @@ namespace darmok
         uint8_t length() const noexcept;
         std::string toString() const;
         std::u8string toUtf8String() const;
-        bool operator==(const Utf8Char& other) const noexcept;
-        bool operator!=(const Utf8Char& other) const noexcept;
-        bool operator<(const Utf8Char& other) const noexcept;
+        bool operator==(const UtfChar& other) const noexcept;
+        bool operator!=(const UtfChar& other) const noexcept;
+        bool operator<(const UtfChar& other) const noexcept;
 
     private:
 
         template<typename T>
-        static std::basic_string<T> vectorToString(const Utf8Vector& chars)
+        static std::basic_string<T> vectorToString(const UtfVector& chars)
         {
             std::basic_string<T> str;
             for (auto& chr : chars)
@@ -56,7 +56,7 @@ namespace darmok
         }
 
         template<typename T>
-        static size_t doRead(std::basic_string_view<T> str, Utf8Vector& chars)
+        static size_t doRead(std::basic_string_view<T> str, UtfVector& chars)
         {
             size_t count = 0;
             while (!str.empty())
@@ -160,9 +160,9 @@ namespace std
     struct hash;
 }
 
-template<> struct std::hash<darmok::Utf8Char>
+template<> struct std::hash<darmok::UtfChar>
 {
-    std::size_t operator()(const darmok::Utf8Char& key) const noexcept
+    std::size_t operator()(const darmok::UtfChar& key) const noexcept
     {
         return key.code;
     }

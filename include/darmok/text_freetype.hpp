@@ -3,6 +3,10 @@
 #include <darmok/export.h>
 #include <darmok/text.hpp>
 #include <darmok/asset_core.hpp>
+#include <darmok/glm_serialize.hpp>
+#include <darmok/data.hpp>
+
+#include <cereal/cereal.hpp>
 
 namespace bx
 {
@@ -15,14 +19,53 @@ namespace darmok
     class FreetypeFontLoaderImpl;
     class App;
 
-    class DARMOK_EXPORT FreetypeFontLoader final : public IFontLoader
+    struct FreetypeFontDefinition final
+    {
+        Data data;
+        glm::uvec2 fontSize = glm::uvec2(48, 48);
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(data),
+                CEREAL_NVP(fontSize)
+            );
+        }
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IFreetypeFontDefinitionLoader : public ILoader<FreetypeFontDefinition>
+    {
+    };
+
+    class DARMOK_EXPORT DataFreetypeFontDefinitionLoader : public IFreetypeFontDefinitionLoader
     {
     public:
-        FreetypeFontLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc);
+        DataFreetypeFontDefinitionLoader(IDataLoader& dataLoader, bool skipInvalid = true) noexcept;
+        [[nodiscard]] std::shared_ptr<FreetypeFontDefinition> operator()(const std::filesystem::path& path) override;
+        static std::string checkFontData(const DataView& data) noexcept;
+    private:
+        IDataLoader& _dataLoader;
+        bool _skipInvalid;
+    };
+
+    class DARMOK_EXPORT CerealFreetypeFontDefinitionLoader final : public CerealLoader<IFreetypeFontDefinitionLoader>
+    {
+    public:
+        CerealFreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept;
+    };
+
+    class DARMOK_EXPORT FreetypeFontLoader final : public FromDefinitionLoader<IFontLoader, IFreetypeFontDefinitionLoader>
+    {
+    public:
+        FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc);
         ~FreetypeFontLoader() noexcept;
+
         void init(App& app);
         void shutdown();
-        std::shared_ptr<IFont> operator()(const std::filesystem::path& path) override;
+
+    protected:
+        std::shared_ptr<IFont> create(const std::shared_ptr<FreetypeFontDefinition>& def) override;
     private:
         std::unique_ptr<FreetypeFontLoaderImpl> _impl;
     };

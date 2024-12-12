@@ -983,6 +983,11 @@ namespace darmok
         return *this;
     }
 
+    bool AssimpModelLoader::supports(const std::filesystem::path& path) const noexcept
+    {
+        return _impl->supports(path);
+    }
+
     std::shared_ptr<Model> AssimpModelLoader::operator()(const std::filesystem::path& path)
     {
         return (*_impl)(path);

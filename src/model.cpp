@@ -317,7 +317,7 @@ namespace darmok
             .setColor(light.color);
     }
 
-    ModelLoader::ModelLoader(IDataLoader& dataLoader) noexcept
+    CerealModelLoader::CerealModelLoader(IDataLoader& dataLoader) noexcept
         : CerealLoader(dataLoader)
     {
     }

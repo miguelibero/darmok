@@ -1989,7 +1989,7 @@ namespace darmok
         }
     }
 
-    void RmluiSceneComponentImpl::onKeyboardChar(const Utf8Char& chr) noexcept
+    void RmluiSceneComponentImpl::onKeyboardChar(const UtfChar& chr) noexcept
     {
         if (!_scene)
         {

@@ -13,14 +13,14 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/utf8.hpp>
+#include <darmok/utf.hpp>
 #include <bx/bx.h>
 
 namespace darmok
 {
 	using KeyboardKeys = std::unordered_set<KeyboardKey>;
 	using KeyboardModifiers = std::unordered_set<KeyboardModifier>;
-	using KeyboardChars = Utf8Vector;
+	using KeyboardChars = UtfVector;
 	class KeyboardImpl;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IKeyboardListener
@@ -29,7 +29,7 @@ namespace darmok
 		virtual ~IKeyboardListener() = default;
 		virtual entt::id_type getKeyboardListenerType() const noexcept { return 0; };
 		virtual void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) {};
-		virtual void onKeyboardChar(const Utf8Char& chr) {};
+		virtual void onKeyboardChar(const UtfChar& chr) {};
 	};
 
 	template<typename T>

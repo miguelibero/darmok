@@ -21,12 +21,14 @@ namespace darmok
 		, _texDefLoader{ _imgTexDefLoader, _cerealTexDefLoader }
 		, _meshDefLoader(_dataLoader)
 		, _programLoader(_programDefLoader)
-		, _textureLoader(_texDefLoader)
+		, _texLoader(_texDefLoader)
 		, _meshLoader(_meshDefLoader)
+		, _cerealTexAtlasDefLoader(_dataLoader)
 		, _texPackerDefLoader(_dataLoader, _texDefLoader)
-		, _textureAtlasLoader({ _texPackerDefLoader }, _textureLoader)
-		, _binModelLoader(_dataLoader)
-		, _textureAtlasFontLoader(_textureAtlasLoader)
+		, _texAtlasDefLoader{ _texPackerDefLoader, _cerealTexAtlasDefLoader }
+		, _texAtlasLoader({ _texPackerDefLoader }, _texLoader)
+		, _cerealModelLoader(_dataLoader)
+		, _textureAtlasFontLoader(_texAtlasLoader)
 #ifdef DARMOK_OZZ
 		, _skeletalAnimatorConfigLoader(_dataLoader)
 		, _ozzSkeletonLoader(_dataLoader)
@@ -38,10 +40,13 @@ namespace darmok
 		, _assimpModelLoader(_dataLoader, _allocator, _imageLoader)
 		, _modelLoader(_assimpModelLoader)
 #else
-		, _modelLoader(_binModelLoader)
+		, _modelLoader(_cerealModelLoader)
 #endif		
 #ifdef DARMOK_FREETYPE
-		, _freetypeFontLoader(_dataLoader, _allocator)
+		, _dataFreetypeFontDefLoader(_dataLoader)
+		, _cerealFreetypeFontDefLoader(_dataLoader)
+		, _freetypeFontDefLoader({ _dataFreetypeFontDefLoader, _cerealFreetypeFontDefLoader })
+		, _freetypeFontLoader(_freetypeFontDefLoader, _allocator)
 		, _fontLoader(_freetypeFontLoader)
 #else
 		, _fontLoader(_textureAtlasFontLoader);
@@ -52,8 +57,8 @@ namespace darmok
 #endif
 	{
 		addBasePath("assets");
-		_modelLoader.addLoader(".dml;.bin", _binModelLoader);
-		_fontLoader.addLoader(".xml", _textureAtlasFontLoader);
+		_modelLoader.addFront(_cerealModelLoader, ".dml;.bin");
+		_fontLoader.addFront(_textureAtlasFontLoader, ".xml");
 	}
 
 	bx::AllocatorI& AssetContextImpl::getAllocator() noexcept
@@ -78,12 +83,12 @@ namespace darmok
 
 	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept
 	{
-		return _textureLoader;
+		return _texLoader;
 	}
 
 	ITextureAtlasLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
 	{
-		return _textureAtlasLoader;
+		return _texAtlasLoader;
 	}
 
 	IMeshLoader& AssetContextImpl::getMeshLoader() noexcept
@@ -94,6 +99,11 @@ namespace darmok
 	IModelLoader& AssetContextImpl::getModelLoader() noexcept
 	{
 		return _modelLoader;
+	}
+
+	IFontLoader& AssetContextImpl::getFontLoader() noexcept
+	{
+		return _fontLoader;
 	}
 
 #ifdef DARMOK_ASSIMP
@@ -117,13 +127,6 @@ namespace darmok
 	ISkeletalAnimatorConfigLoader& AssetContextImpl::getSkeletalAnimatorConfigLoader() noexcept
 	{
 		return _skeletalAnimatorConfigLoader;
-	}
-#endif
-
-#ifdef DARMOK_FREETYPE
-	IFontLoader& AssetContextImpl::getFontLoader() noexcept
-	{
-		return _fontLoader;
 	}
 #endif
 

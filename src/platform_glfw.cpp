@@ -711,7 +711,7 @@ namespace darmok
 	void PlatformImpl::charCallback(GLFWwindow* window, uint32_t scancode) noexcept
 	{
 		BX_UNUSED(window);
-		Utf8Char chr(scancode);
+		UtfChar chr(scancode);
 		if (!chr)
 		{
 			return;

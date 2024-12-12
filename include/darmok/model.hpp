@@ -378,10 +378,10 @@ namespace darmok
 	{
 	};
 
-    class DARMOK_EXPORT ModelLoader : public CerealLoader<IModelLoader>
+    class DARMOK_EXPORT CerealModelLoader : public CerealLoader<IModelLoader>
 	{
 	public:
-        ModelLoader(IDataLoader& dataLoader) noexcept;
+        CerealModelLoader(IDataLoader& dataLoader) noexcept;
 	};
 }
 

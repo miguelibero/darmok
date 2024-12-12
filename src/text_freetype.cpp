@@ -6,7 +6,7 @@
 #include <darmok/data.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/program.hpp>
-#include <darmok/utf8.hpp>
+#include <darmok/utf.hpp>
 #include "text_freetype.hpp"
 #include <stdexcept>
 #include <pugixml.hpp>
@@ -22,6 +22,10 @@ namespace darmok
 #define FT_ERROR_START_LIST     switch (err) {
 #define FT_ERROR_END_LIST       }
 #include FT_ERRORS_H
+			if (!err)
+			{
+				return "";
+			}
 			return "(Unknown error)";
 		}
 
@@ -29,15 +33,70 @@ namespace darmok
 		{
 			if (err)
 			{
-				throw std::runtime_error(getErrorMessage(err));
+				auto msg = getErrorMessage(err);
+				throw std::runtime_error(msg);
 			}
 		}
 	};
 
-	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& alloc, const glm::uvec2& defaultFontSize)
+	DataFreetypeFontDefinitionLoader::DataFreetypeFontDefinitionLoader(IDataLoader& dataLoader, bool skipInvalid) noexcept
 		: _dataLoader(dataLoader)
-		, _defaultFontSize(defaultFontSize)
-		, _library(nullptr)
+		, _skipInvalid(skipInvalid)
+	{
+	}
+
+	std::string DataFreetypeFontDefinitionLoader::checkFontData(const DataView& data) noexcept
+	{
+		FT_Library library;
+		auto err = FT_Init_FreeType(&library);
+		if (err)
+		{
+			return FreetypeUtils::getErrorMessage(err);
+		}
+
+		FT_Face face;
+		FT_Open_Args args;
+		FT_StreamRec stream;
+
+		stream.base = (unsigned char*)data.ptr();
+		stream.size = data.size();
+		stream.pos = 0;
+		stream.read = NULL;
+		stream.close = NULL;
+		stream.descriptor.pointer = NULL;
+
+		args.flags = FT_OPEN_STREAM;
+		args.stream = &stream;
+		err = FT_Open_Face(library, &args, 0, &face);
+		if (!err)
+		{
+			FT_Done_Face(face);
+		}
+		FT_Done_FreeType(library);
+		if (err)
+		{
+			return FreetypeUtils::getErrorMessage(err);
+		}
+		return "";
+	}
+
+	std::shared_ptr<FreetypeFontDefinition> DataFreetypeFontDefinitionLoader::operator()(const std::filesystem::path& path)
+	{
+		auto data = _dataLoader(path);
+		if (_skipInvalid && !checkFontData(data).empty())
+		{
+			return nullptr;
+		}
+		return std::make_shared<FreetypeFontDefinition>(std::move(data));
+	}
+
+	CerealFreetypeFontDefinitionLoader::CerealFreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept
+		: CerealLoader(dataLoader)
+	{
+	}
+
+	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(bx::AllocatorI& alloc)
+		: _library(nullptr)
 		, _alloc(alloc)
 	{
 	}
@@ -64,27 +123,31 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<IFont> FreetypeFontLoaderImpl::operator()(const std::filesystem::path& path)
+	std::shared_ptr<IFont> FreetypeFontLoaderImpl::create(const std::shared_ptr<FreetypeFontDefinition>& def)
 	{
+		if (!def)
+		{
+			return nullptr;
+		}
 		if (!_library)
 		{
 			throw std::runtime_error("freetype library not initialized");
 		}
-		auto data = _dataLoader(path);
 		FT_Face face = nullptr;
 
-		auto err = FT_New_Memory_Face(_library, (const FT_Byte*)data.ptr(), data.size(), 0, &face);
+		auto err = FT_New_Memory_Face(_library, (const FT_Byte*)def->data.ptr(), def->data.size(), 0, &face);
 		FreetypeUtils::checkError(err);
-		err = FT_Set_Pixel_Sizes(face, _defaultFontSize.x, _defaultFontSize.y);
+		err = FT_Set_Pixel_Sizes(face, def->fontSize.x, def->fontSize.y);
 		FreetypeUtils::checkError(err);
 		err = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 		FreetypeUtils::checkError(err);
 
-		return std::make_shared<FreetypeFont>(face, std::move(data), _library, _alloc);
+		return std::make_shared<FreetypeFont>(def, face, _library, _alloc);
 	}
 
-	FreetypeFontLoader::FreetypeFontLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc)
-		: _impl(std::make_unique<FreetypeFontLoaderImpl>(dataLoader, alloc))
+	FreetypeFontLoader::FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc)
+		: FromDefinitionLoader(defLoader)
+		, _impl(std::make_unique<FreetypeFontLoaderImpl>(alloc))
 	{
 	}
 
@@ -103,14 +166,14 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	std::shared_ptr<IFont> FreetypeFontLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<IFont> FreetypeFontLoader::create(const std::shared_ptr<FreetypeFontDefinition>& def)
 	{
-		return (*_impl)(path);
+		return _impl->create(def);
 	}
 
-	FreetypeFont::FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept
-		: _face(face)
-		, _data(std::move(data))
+	FreetypeFont::FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept
+		: _def(def)
+		, _face(face)
 		, _library(library)
 		, _alloc(alloc)
 	{
@@ -121,7 +184,7 @@ namespace darmok
 		FT_Done_Face(_face);
 	}
 
-	std::optional<Glyph> FreetypeFont::getGlyph(const Utf8Char& chr) const noexcept
+	std::optional<Glyph> FreetypeFont::getGlyph(const UtfChar& chr) const noexcept
 	{
 		auto itr = _glyphs.find(chr);
 		if (itr == _glyphs.end())
@@ -146,7 +209,7 @@ namespace darmok
 		return _texture;
 	}
 
-	void FreetypeFont::update(const std::unordered_set<Utf8Char>& chars)
+	void FreetypeFont::update(const std::unordered_set<UtfChar>& chars)
 	{
 		if (_renderedChars == chars || chars.empty())
 		{
@@ -154,7 +217,7 @@ namespace darmok
 		}
 		FreetypeFontAtlasGenerator generator(_face, _library, _alloc);
 		generator.setImageFormat(bimg::TextureFormat::RGBA8);
-		auto atlas = generator(Utf8Vector(chars.begin(), chars.end()));
+		auto atlas = generator(UtfVector(chars.begin(), chars.end()));
 
 		if (!_texture || _texture->getSize() != atlas.image.getSize())
 		{
@@ -194,7 +257,7 @@ namespace darmok
 		return *this;
 	}
 
-	glm::uvec2 FreetypeFontAtlasGenerator::calcSpace(const Utf8Vector& chars) noexcept
+	glm::uvec2 FreetypeFontAtlasGenerator::calcSpace(const UtfVector& chars) noexcept
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
@@ -211,16 +274,16 @@ namespace darmok
 		return pos;
 	}
 
-	std::map<Utf8Char, FT_UInt> FreetypeFontAtlasGenerator::getIndices(const Utf8Vector& chars) const
+	std::map<UtfChar, FT_UInt> FreetypeFontAtlasGenerator::getIndices(const UtfVector& chars) const
 	{
-		std::map<Utf8Char, FT_UInt> indices;
+		std::map<UtfChar, FT_UInt> indices;
 		if (chars.empty())
 		{
 			FT_UInt idx;
 			auto code = FT_Get_First_Char(_face, &idx);
 			while (idx != 0)
 			{
-				auto chr = Utf8Char(code);
+				auto chr = UtfChar(code);
 				if (chr)
 				{
 					indices.emplace(chr, idx);
@@ -251,7 +314,7 @@ namespace darmok
 		return _face->glyph->bitmap;
 	}
 
-	FontAtlas FreetypeFontAtlasGenerator::operator()(const Utf8Vector& chars)
+	FontAtlas FreetypeFontAtlasGenerator::operator()(const UtfVector& chars)
 	{
 		glm::uvec2 pos(0);
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
@@ -296,8 +359,8 @@ namespace darmok
 
 	FontAtlas FreetypeFontAtlasGenerator::operator()(std::string_view str)
 	{
-		Utf8Vector chars;
-		Utf8Char::read(str, chars);
+		UtfVector chars;
+		UtfChar::read(str, chars);
 		return (*this)(chars);
 	}
 

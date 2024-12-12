@@ -26,7 +26,7 @@ namespace darmok
 		_keyDelegate(_table, modifiers, down);
 	}
 
-	void LuaKeyboardListener::onKeyboardChar(const Utf8Char& chr)
+	void LuaKeyboardListener::onKeyboardChar(const UtfChar& chr)
 	{
 		_charDelegate(_table, chr.toString());
 	}

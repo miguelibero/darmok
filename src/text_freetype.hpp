@@ -14,7 +14,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-
 struct FT_FaceRec_;
 typedef struct FT_FaceRec_* FT_Face;
 
@@ -26,14 +25,12 @@ namespace darmok
     class FreetypeFontLoaderImpl final
     {
     public:
-        FreetypeFontLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& alloc, const glm::uvec2& defaultFontSize = glm::uvec2(48, 48));
+        FreetypeFontLoaderImpl(bx::AllocatorI& alloc);
         ~FreetypeFontLoaderImpl();
         void init(App& app);
         void shutdown();
-        std::shared_ptr<IFont> operator()(const std::filesystem::path& path);
+        std::shared_ptr<IFont> create(const std::shared_ptr<FreetypeFontDefinition>& def);
     private:
-        IDataLoader& _dataLoader;
-        glm::uvec2 _defaultFontSize;
         FT_Library _library;
         bx::AllocatorI& _alloc;
     };
@@ -41,28 +38,29 @@ namespace darmok
     class FreetypeFont final : public IFont
     {
     public:
-        FreetypeFont(FT_Face face, Data&& data, FT_Library library, bx::AllocatorI& alloc) noexcept;
+        using Definition = FreetypeFontDefinition;
+        FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
 
-        std::optional<Glyph> getGlyph(const Utf8Char& chr) const noexcept override;
+        std::optional<Glyph> getGlyph(const UtfChar& chr) const noexcept override;
         float getLineSize() const noexcept override;
         std::shared_ptr<Texture> getTexture() const override;
-        void update(const std::unordered_set<Utf8Char>& chars) override;
+        void update(const std::unordered_set<UtfChar>& chars) override;
         FT_Face getFace() const noexcept;
     private:
         std::shared_ptr<Texture> _texture;
-        std::map<Utf8Char, Glyph> _glyphs;
+        std::map<UtfChar, Glyph> _glyphs;
+        std::shared_ptr<Definition> _def;
         FT_Face _face;
-        Data _data;
         FT_Library _library;
+        std::unordered_set<UtfChar> _renderedChars;
         bx::AllocatorI& _alloc;
-        std::unordered_set<Utf8Char> _renderedChars;
     };
 
     struct FontAtlas
     {
         Image image;
-        std::map<Utf8Char, Glyph> glyphs;
+        std::map<UtfChar, Glyph> glyphs;
     };
 
     class FreetypeFontAtlasGenerator final
@@ -72,8 +70,8 @@ namespace darmok
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
         FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
         FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
-        glm::uvec2 calcSpace(const Utf8Vector& chars) noexcept;
-        FontAtlas operator()(const Utf8Vector& chars);
+        glm::uvec2 calcSpace(const UtfVector& chars) noexcept;
+        FontAtlas operator()(const UtfVector& chars);
         FontAtlas operator()(std::string_view str);
     private:
         FT_Face _face;
@@ -83,7 +81,7 @@ namespace darmok
         FT_Render_Mode _renderMode;
         bimg::TextureFormat::Enum _imageFormat;
 
-        std::map<Utf8Char, FT_UInt> getIndices(const Utf8Vector& chars) const;
+        std::map<UtfChar, FT_UInt> getIndices(const UtfVector& chars) const;
         const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 

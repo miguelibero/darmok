@@ -58,15 +58,15 @@ namespace darmok
         {
         }
 
-        ContainerLoader& addLoader(const std::string& exts, Interface& loader) noexcept
+        ContainerLoader& addFront(Interface& loader, const std::string& exts = "") noexcept
         {
-            _loaders.emplace_back(loader, StringUtils::split(exts, ";"));
+            _loaders.emplace(_loaders.begin(), loader, StringUtils::split(exts, ";"));
             return *this;
         }
 
-        ContainerLoader& addLoader(Interface& loader) noexcept
+        ContainerLoader& addBack(Interface& loader, const std::string& exts = "") noexcept
         {
-            _loaders.emplace_back(loader);
+            _loaders.emplace_back(loader, StringUtils::split(exts, ";"));
             return *this;
         }
 

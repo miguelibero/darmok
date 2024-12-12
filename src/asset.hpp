@@ -43,6 +43,8 @@ namespace darmok
 		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		IMeshLoader& getMeshLoader() noexcept;
 		IModelLoader& getModelLoader() noexcept;
+		IFontLoader& getFontLoader() noexcept;
+
 		bx::AllocatorI& getAllocator() noexcept;
 
 #ifdef DARMOK_OZZ
@@ -53,10 +55,6 @@ namespace darmok
 
 #ifdef DARMOK_ASSIMP
 		AssimpModelLoader& getAssimpModelLoader() noexcept;
-#endif
-
-#ifdef DARMOK_FREETYPE
-		IFontLoader& getFontLoader() noexcept;
 #endif
 
 #ifdef DARMOK_MINIAUDIO
@@ -78,13 +76,15 @@ namespace darmok
 		CerealTextureDefinitionLoader _cerealTexDefLoader;
 		ImageTextureDefinitionLoader _imgTexDefLoader;
 		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
-		TextureLoader _textureLoader;
+		TextureLoader _texLoader;
 		MeshDefinitionLoader _meshDefLoader;
 		MeshLoader _meshLoader;
+		CerealTextureAtlasDefinitionLoader _cerealTexAtlasDefLoader;
 		TexturePackerDefinitionLoader _texPackerDefLoader;
-		TextureAtlasLoader _textureAtlasLoader;
+		ContainerLoader<ITextureAtlasDefinitionLoader> _texAtlasDefLoader;
+		TextureAtlasLoader _texAtlasLoader;
 		ContainerLoader<IModelLoader> _modelLoader;
-		ModelLoader _binModelLoader;
+		CerealModelLoader _cerealModelLoader;
 		TextureAtlasFontLoader _textureAtlasFontLoader;
 		ContainerLoader<IFontLoader> _fontLoader;
 
@@ -102,6 +102,9 @@ namespace darmok
 #endif
 
 #ifdef DARMOK_FREETYPE
+		DataFreetypeFontDefinitionLoader _dataFreetypeFontDefLoader;
+		CerealFreetypeFontDefinitionLoader _cerealFreetypeFontDefLoader;
+		ContainerLoader<IFreetypeFontDefinitionLoader> _freetypeFontDefLoader;
 		FreetypeFontLoader _freetypeFontLoader;
 #endif
 

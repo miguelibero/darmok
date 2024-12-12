@@ -56,7 +56,7 @@ namespace darmok
 		}
 	}
 
-	void KeyboardImpl::pushChar(const Utf8Char& data) noexcept
+	void KeyboardImpl::pushChar(const UtfChar& data) noexcept
 	{
 		_chars[_charsWrite] = data;
 		_charsWrite = (_charsWrite + 1) % _chars.size();
@@ -76,7 +76,7 @@ namespace darmok
 		return _keys;
 	}
 
-	Utf8Char KeyboardImpl::popChar() noexcept
+	UtfChar KeyboardImpl::popChar() noexcept
 	{
 		if (_charsRead == _charsWrite)
 		{
@@ -105,7 +105,7 @@ namespace darmok
 	void KeyboardImpl::afterUpdate() noexcept
 	{
 		_updateChars.clear();
-		Utf8Char c;
+		UtfChar c;
 		while (true)
 		{
 			c = popChar();

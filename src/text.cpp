@@ -96,10 +96,10 @@ namespace darmok
 
 	std::string Text::getContentString() const
 	{
-		return Utf8Char::toString(_content);
+		return UtfChar::toString(_content);
 	}
 
-	const Utf8Vector& Text::getContent() const noexcept
+	const UtfVector& Text::getContent() const noexcept
 	{
 		return _content;
 	}
@@ -107,7 +107,7 @@ namespace darmok
 	Text& Text::setContent(const std::string& str)
 	{
 		_content.clear();
-		Utf8Char::read(str, _content);
+		UtfChar::read(str, _content);
 		_changed = true;
 		return *this;
 	}
@@ -115,12 +115,12 @@ namespace darmok
 	Text& Text::setContent(const std::u8string& str)
 	{
 		_content.clear();
-		Utf8Char::read(str, _content);
+		UtfChar::read(str, _content);
 		_changed = true;
 		return *this;
 	}
 
-	Text& Text::setContent(const Utf8Vector& content)
+	Text& Text::setContent(const UtfVector& content)
 	{
 		_content = content;
 		_changed = true;
@@ -225,7 +225,7 @@ namespace darmok
 
 	}
 
-	MeshData Text::createMeshData(const Utf8Vector& content, const IFont& font, const RenderConfig& config)
+	MeshData Text::createMeshData(const UtfVector& content, const IFont& font, const RenderConfig& config)
 	{
 		glm::vec2 pos(0);
 		MeshData meshData;
@@ -311,7 +311,7 @@ namespace darmok
 			return;
 		}
 		auto entities = _cam->getEntities<Text>();
-		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<Utf8Char>> fontChars;
+		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<UtfChar>> fontChars;
 		for (auto entity : entities)
 		{
 			auto& text = _scene->getComponent<Text>(entity).value();
@@ -379,7 +379,7 @@ namespace darmok
 		return _atlas->texture;
 	}
 
-	std::optional<Glyph> TextureAtlasFont::getGlyph(const Utf8Char& chr) const noexcept
+	std::optional<Glyph> TextureAtlasFont::getGlyph(const UtfChar& chr) const noexcept
 	{
 		auto elm = _atlas->getElement(chr.toString());
 		if (!elm)

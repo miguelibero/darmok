@@ -25,7 +25,7 @@ namespace darmok
 		kb.setKey(_key, _modifiers, _down);
 	}
 
-	KeyboardCharEvent::KeyboardCharEvent(const Utf8Char& data) noexcept
+	KeyboardCharEvent::KeyboardCharEvent(const UtfChar& data) noexcept
 		: PlatformEvent(Type::KeyboardChar)
 		, _data(data)
 	{

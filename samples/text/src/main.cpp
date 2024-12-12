@@ -7,6 +7,7 @@
 #include <darmok/texture_atlas.hpp>
 #include <darmok/text.hpp>
 #include <darmok/camera.hpp>
+#include <darmok/transform.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/string.hpp>
@@ -44,7 +45,7 @@ namespace
 				cam.setViewportPerspective(60, 0.3, 1000);
 			*/
 
-			cam.setViewportOrtho();
+			cam.setOrtho();
 
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<TextRenderer>();

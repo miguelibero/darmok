@@ -20,16 +20,14 @@ namespace darmok
 	class ITextureLoader;
 	class ITextureAtlasLoader;
 	class IModelLoader;
+	class IFontLoader;
+
 	class AssimpModelLoader;
 
 #ifdef DARMOK_OZZ
 	class ISkeletonLoader;
 	class ISkeletalAnimationLoader;
 	class ISkeletalAnimatorConfigLoader;
-#endif
-
-#ifdef DARMOK_FREETYPE
-	class IFontLoader;
 #endif
 
 #ifdef DARMOK_MINIAUDIO
@@ -62,9 +60,7 @@ namespace darmok
 		[[nodiscard]] ISkeletalAnimatorConfigLoader& getSkeletalAnimatorConfigLoader() noexcept;
 #endif
 
-#ifdef DARMOK_FREETYPE
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
-#endif
 
 #ifdef DARMOK_MINIAUDIO
 		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept;

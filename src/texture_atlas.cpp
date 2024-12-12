@@ -524,6 +524,11 @@ namespace darmok
 		}
 	}
 
+	CerealTextureAtlasDefinitionLoader::CerealTextureAtlasDefinitionLoader(IDataLoader& dataLoader) noexcept
+		: CerealLoader(dataLoader)
+	{
+	}
+
 	TexturePackerDefinitionLoader::TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texDefLoader) noexcept
 		: _dataLoader(dataLoader)
 		, _texDefLoader(texDefLoader)

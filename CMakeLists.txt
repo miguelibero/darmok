@@ -114,7 +114,7 @@ set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
 set(CORE_SOURCES
   string.cpp
-  utf8.cpp
+  utf.cpp
   stream.cpp
   data.cpp
   data_stream.cpp
@@ -142,7 +142,7 @@ set(CORE_HEADERS
   serialize.hpp
   reflect.hpp
   string.hpp
-  utf8.hpp
+  utf.hpp
   stream.hpp
   optional_ref.hpp
   collection.hpp

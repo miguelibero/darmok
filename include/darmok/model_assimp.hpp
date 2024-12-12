@@ -47,6 +47,7 @@ namespace darmok
         AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         ~AssimpModelLoader() noexcept;
         AssimpModelLoader& setConfig(const Config& config) noexcept;
+        bool supports(const std::filesystem::path& path) const noexcept;
 		std::shared_ptr<Model> operator()(const std::filesystem::path& path) override;
     private:
         std::unique_ptr<AssimpModelLoaderImpl> _impl;
