@@ -24,6 +24,7 @@ namespace darmok::editor
         std::shared_ptr<Scene> getScene();
         OptionalRef<Camera> getCamera();
         std::unordered_set<std::shared_ptr<Material>>& getMaterials();
+        std::shared_ptr<Material> addMaterial(const std::string& name = "New Material");
     
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;

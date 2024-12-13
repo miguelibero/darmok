@@ -11,7 +11,7 @@ namespace darmok::editor
 		if (ImGui::CollapsingHeader("Renderable"))
 		{
             auto mat = renderable.getMaterial();
-            if(ImguiAssetReference("Material", mat, "MATERIAL"))
+            if(ImguiUtils::drawAssetReference("Material", mat, "MATERIAL"))
 			{
 				renderable.setMaterial(mat);
             }

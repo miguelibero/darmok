@@ -1,4 +1,5 @@
 ﻿#include <darmok-editor/app.hpp>
+#include <darmok-editor/utils.hpp>
 #include <darmok-editor/IconsMaterialDesign.h>
 
 #include <darmok/window.hpp>
@@ -114,6 +115,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
             ImGui::DockBuilderDockWindow(_materialsWindowName, _dockDownId);
+            ImGui::DockBuilderDockWindow(_programsWindowName, _dockDownId);
         }
     }   
 
@@ -327,7 +329,8 @@ namespace darmok::editor
     }
 
     const char* EditorAppDelegate::_sceneTreeWindowName = "Scene Tree";
-    const char* EditorAppDelegate::_materialsWindowName = "Materials";    
+    const char* EditorAppDelegate::_materialsWindowName = "Materials";   
+    const char* EditorAppDelegate::_programsWindowName = "Programs";
 
     void EditorAppDelegate::renderSceneTree()
     {
@@ -397,15 +400,34 @@ namespace darmok::editor
     {
         if (ImGui::Begin(_materialsWindowName))
         {
-            for (auto mat : _proj.getMaterials())
+            auto winSize = ImGui::GetWindowSize();
+            int cols = winSize.x / ImguiUtils::getAssetSize().x;
+            if (cols > 0)
             {
-                if (ImGui::Button(mat->getName().c_str()))
+                ImGui::Columns(cols, "Materials");
+                auto selectedMat = _inspectorView.getSelectedMaterial();
+                for (auto mat : _proj.getMaterials())
                 {
-                    onObjectSelected(mat);
+                    auto selected = mat == selectedMat;
+                    if (ImguiUtils::drawAsset(mat, selected, "MATERIAL"))
+                    {
+                        onObjectSelected(mat);
+                    }
+                    ImGui::NextColumn();
                 }
+                if (ImguiUtils::drawAsset("+"))
+                {
+                    _proj.addMaterial();
+                }
+                ImGui::EndColumns();
             }
         }
         ImGui::End();
+    }
+
+    void EditorAppDelegate::renderPrograms()
+    {
+
     }
 
     void EditorAppDelegate::imguiRender()

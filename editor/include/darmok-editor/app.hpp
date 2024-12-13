@@ -55,12 +55,14 @@ namespace darmok::editor
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
         static const char* _materialsWindowName;
+        static const char* _programsWindowName;
 
         void renderMainMenu();
         void renderMainToolbar();
         void renderDockspace();
         void renderSceneTree();
         void renderMaterials();
+        void renderPrograms();
 
         void onSceneTreeTransformClicked(Transform& trans);
         void onSceneTreeSceneClicked();

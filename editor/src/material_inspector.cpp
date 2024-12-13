@@ -61,14 +61,14 @@ namespace darmok::editor
 			}
 			{
 				auto prim = mat.getPrimitiveType();
-				if (ImguiEnumCombo("Primitive Type", prim, Material::getPrimitiveTypeName))
+				if (ImguiUtils::drawEnumCombo("Primitive Type", prim, Material::getPrimitiveTypeName))
 				{
 					mat.setPrimitiveType(prim);
 				}
 			}
 			{
 				auto opacity = mat.getOpacityType();
-				if (ImguiEnumCombo("Opacity Type", opacity, Material::getOpacityTypeName))
+				if (ImguiUtils::drawEnumCombo("Opacity Type", opacity, Material::getOpacityTypeName))
 				{
 					mat.setOpacityType(opacity);
 				}

@@ -28,6 +28,7 @@ set(EDITOR_HEADERS
 set(EDITOR_SOURCES
   main.cpp
   app.cpp
+  utils.cpp
   project.cpp
   scene_view.cpp
   editor.cpp

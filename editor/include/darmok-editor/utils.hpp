@@ -7,54 +7,81 @@
 
 namespace darmok::editor
 {
-    template<typename T, typename Callback>
-    bool ImguiEnumCombo(const char* label, T& value, Callback callback, size_t size = toUnderlying(T::Count))
+    struct ImguiUtils final
     {
-        auto selectedIdx = toUnderlying(value);
-        bool changed = false;
-        if (ImGui::BeginCombo(label, callback(value).c_str()))
+        template<typename T, typename Callback>
+        static bool drawEnumCombo(const char* label, T& value, Callback callback, size_t size = toUnderlying(T::Count))
         {
-            for (size_t i = 0; i < size; ++i)
+            auto selectedIdx = toUnderlying(value);
+            bool changed = false;
+            if (ImGui::BeginCombo(label, callback(value).c_str()))
             {
-                bool selected = (selectedIdx == i);
-                auto item = (T)i;
-                if (ImGui::Selectable(callback(item).c_str(), selected))
+                for (size_t i = 0; i < size; ++i)
                 {
-                    selected = true;
-                    value = item;
+                    bool selected = (selectedIdx == i);
+                    auto item = (T)i;
+                    if (ImGui::Selectable(callback(item).c_str(), selected))
+                    {
+                        selected = true;
+                        value = item;
+                        changed = true;
+                    }
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            return changed;
+        }
+
+
+        template<typename T>
+        static bool drawAssetReference(const char* label, std::shared_ptr<T>& value, const char* dragType = nullptr)
+        {
+            auto name = value->getName();
+            ImGui::BeginDisabled(true);
+            ImGui::InputText(label, &name);
+            ImGui::EndDisabled();
+
+            dragType = dragType == nullptr ? label : dragType;
+            bool changed = false;
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+                {
+                    IM_ASSERT(payload->DataSize == sizeof(std::shared_ptr<T>));
+                    value = *(std::shared_ptr<T>*)payload->Data;
                     changed = true;
                 }
-                if (selected)
-                {
-                    ImGui::SetItemDefaultFocus();
-                }
+                ImGui::EndDragDropTarget();
             }
-            ImGui::EndCombo();
+
+            return changed;
         }
-        return changed;
-    }
 
-    template<typename T>
-    bool ImguiAssetReference(const char* label, std::shared_ptr<T>& value, const char* type = nullptr)
-    {
-        auto name = value->getName();
-        ImGui::BeginDisabled(true);
-        ImGui::InputText(label, &name);
-        ImGui::EndDisabled();
+        static const ImVec2& getAssetSize();
 
-        type = type == nullptr ? label : type;
-        bool changed = false;
-        if (ImGui::BeginDragDropTarget())
+        static bool drawAsset(const char* label, bool selected = false);
+
+        template<typename T>
+        static bool drawAsset(const std::shared_ptr<T>& value, bool selected = false, const char* dragType = nullptr)
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(type))
+            auto name = value->getName();
+            if (drawAsset(name.c_str(), selected))
             {
-                IM_ASSERT(payload->DataSize == sizeof(std::shared_ptr<T>));
-                value = *(std::shared_ptr<T>*)payload->Data;
-                changed = true;
+                selected = !selected;
             }
-            ImGui::EndDragDropTarget();
-        }
 
-        return changed;
-    }
+            if (dragType != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                auto accepted = ImGui::SetDragDropPayload(dragType, &value, sizeof(std::shared_ptr<T>));
+                drawAsset(name.c_str(), accepted);
+                ImGui::EndDragDropSource();
+            }
+
+            return selected;
+        }
+    };
 }

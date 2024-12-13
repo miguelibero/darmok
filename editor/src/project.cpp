@@ -119,6 +119,14 @@ namespace darmok::editor
         return _assetPack.materials;
     }
 
+    std::shared_ptr<Material> EditorProject::addMaterial(const std::string& name)
+    {
+        auto mat = std::make_shared<Material>();
+        mat->setName(name);
+        _assetPack.materials.insert(mat);
+        return mat;
+    }
+
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept
     {
         return _cam.ptr() == &cam;
