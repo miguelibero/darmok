@@ -33,16 +33,6 @@ namespace darmok
 		return getMeshIndexSize(index32);
 	}
 
-	MeshDefinitionLoader::MeshDefinitionLoader(IDataLoader& dataLoader) noexcept
-		: CerealLoader(dataLoader)
-	{
-	}
-
-	MeshLoader::MeshLoader(IMeshDefinitionLoader& defLoader) noexcept
-		: FromDefinitionLoader(defLoader)
-	{
-	}
-
 	std::unique_ptr<IMesh> IMesh::create(const MeshDefinition& def)
 	{
 		return create(def.type, def.layout, def.vertices, def.indices, def.config);
@@ -415,6 +405,16 @@ namespace darmok
 		return _layout;
 	}
 
+	MeshLoader::MeshLoader(IMeshDefinitionLoader& defLoader) noexcept
+		: BasicFromDefinitionLoader(defLoader)
+	{
+	}
+
+	std::shared_ptr<IMesh> MeshLoader::create(const std::shared_ptr<Definition>& def)
+	{
+		return IMesh::create(*def);
+	}
+
 	MeshData::MeshData(MeshType type) noexcept
 		: type(type)
 	{
@@ -467,11 +467,22 @@ namespace darmok
 		indexData = DataView(indices);
 	}
 
+	MeshDefinition MeshData::createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
+	{
+		MeshDefinition def
+		{
+			.type = type,
+			.config = meshConfig,
+			.layout = vertexLayout,
+		};
+		exportData(vertexLayout, def.vertices, def.indices);
+		return def;
+	}
+
 	std::unique_ptr<IMesh> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
-		Data vertexData, indexData;
-		exportData(vertexLayout, vertexData, indexData);
-		return IMesh::create(type, vertexLayout, vertexData, indexData, meshConfig);
+		auto def = createMeshDefinition(vertexLayout, meshConfig);
+		return IMesh::create(def);
 	}
 
 	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices

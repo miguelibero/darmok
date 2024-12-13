@@ -8,6 +8,7 @@
 #include <darmok/light.hpp>
 #include <darmok/culling.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/render_scene.hpp>
 
 namespace darmok
 {
@@ -29,6 +30,7 @@ namespace darmok
 		DirectionalLight::bindMeta();
 		SpotLight::bindMeta();
 		AmbientLight::bindMeta();
+		Renderable::bindMeta();
 
 		ShadowRenderer::bindMeta();
 		LightingRenderComponent::bindMeta();

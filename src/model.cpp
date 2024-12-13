@@ -207,7 +207,7 @@ namespace darmok
         }
         else
         {
-            prog = std::make_shared<Program>(modelMat->standardProgram);
+            prog = StandardProgramLoader::load(modelMat->standardProgram);
         }
         auto mat = std::make_shared<Material>(prog);
         for (auto& [type, modelTex] : modelMat->textures)
@@ -315,11 +315,6 @@ namespace darmok
         _config.scene.addComponent<AmbientLight>(entity)
             .setIntensity(light.intensity)
             .setColor(light.color);
-    }
-
-    CerealModelLoader::CerealModelLoader(IDataLoader& dataLoader) noexcept
-        : CerealLoader(dataLoader)
-    {
     }
 }
 

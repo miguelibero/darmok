@@ -4,6 +4,7 @@
 #include <darmok-editor/light_inspector.hpp>
 #include <darmok-editor/scene_inspector.hpp>
 #include <darmok-editor/render_inspector.hpp>
+#include <darmok-editor/material_inspector.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -14,7 +15,7 @@ namespace darmok::editor
     const std::string EditorInspectorView::_windowName = "Inspector";
 
     EditorInspectorView::EditorInspectorView()
-    : _selectedEntity(entt::null)
+    : _selected(Entity(entt::null))
     {
     }
 
@@ -28,25 +29,47 @@ namespace darmok::editor
         _editors.add<AmbientLightInspectorEditor>();
         _editors.add<RenderableInspectorEditor>();
         _sceneEditor = _editors.add<SceneInspectorEditor>();
+        _materialEditor = _editors.add<MaterialInspectorEditor>();
     }
 
-    void EditorInspectorView::init(const std::shared_ptr<Scene>& scene)
+    void EditorInspectorView::init()
     {
-        _scene = scene;
         _editors.init();
     }
 
     void EditorInspectorView::shutdown()
     {
-        _scene.reset();
         _editors.shutdown();
         _sceneEditor.reset();
     }
 
-    EditorInspectorView& EditorInspectorView::selectEntity(Entity entity)
+    EditorInspectorView& EditorInspectorView::selectObject(SelectedObject obj, const std::shared_ptr<Scene>& scene)
     {
-        _selectedEntity = entity;
+        _selected = obj;
+        _scene = scene;
         return *this;
+    }
+
+    std::shared_ptr<Scene> EditorInspectorView::getSelectedScene() const noexcept
+    {
+        auto ptr = std::get_if<Entity>(&_selected);
+        if (ptr != nullptr && *ptr == entt::null)
+        {
+            return _scene;
+        }
+        return nullptr;
+    }
+
+    std::shared_ptr<Material> EditorInspectorView::getSelectedMaterial() const noexcept
+    {
+        auto ptr = std::get_if<std::shared_ptr<Material>>(&_selected);
+        return ptr == nullptr ? nullptr : *ptr;
+    }
+
+    Entity EditorInspectorView::getSelectedEntity() const noexcept
+    {
+        auto ptr = std::get_if<Entity>(&_selected);
+        return ptr == nullptr ? entt::null : *ptr;
     }
 
     const std::string& EditorInspectorView::getWindowName()
@@ -56,20 +79,21 @@ namespace darmok::editor
 
     void EditorInspectorView::render()
     {
-        if(!_scene)
-        {
-            return;
-        }
         if (ImGui::Begin(_windowName.c_str()))
         {
-            if (_selectedEntity != entt::null)
+            auto entity = getSelectedEntity();
+            if (entity != entt::null)
             {
-                auto comps = SceneReflectionUtils::getEntityComponents(*_scene, _selectedEntity);
+                auto comps = SceneReflectionUtils::getEntityComponents(*_scene, entity);
                 _editors.render(comps.begin(), comps.end());
             }
-            else if(_sceneEditor)
+            else if(auto scene = getSelectedScene())
             {
-                _sceneEditor->render(*_scene);
+                _sceneEditor->render(*scene);
+            }
+            else if (auto mat = getSelectedMaterial())
+            {
+                _materialEditor->render(*mat);
             }
         }
         ImGui::End();

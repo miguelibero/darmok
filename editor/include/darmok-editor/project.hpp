@@ -1,10 +1,12 @@
 #pragma once
 
 #include <darmok/scene.hpp>
-#include <cereal/cereal.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/asset_pack.hpp>
 
 #include <filesystem>
+
+#include <cereal/cereal.hpp>
 
 namespace darmok::editor
 {
@@ -21,6 +23,7 @@ namespace darmok::editor
 
         std::shared_ptr<Scene> getScene();
         OptionalRef<Camera> getCamera();
+        std::unordered_set<std::shared_ptr<Material>>& getMaterials();
     
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;
@@ -38,6 +41,7 @@ namespace darmok::editor
         App& _app;
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
+        AssetPack _assetPack;
         std::optional<std::filesystem::path> _path;
         static const std::vector<std::string> _dialogFilters;
 

@@ -15,20 +15,20 @@ namespace darmok
 	AssetContextImpl::AssetContextImpl()
 		: _dataLoader(_allocator)
 		, _imageLoader(_dataLoader, _allocator)
-		, _programDefLoader(_dataLoader)
+		, _cerealProgDefLoader(_dataLoader)
 		, _cerealTexDefLoader(_dataLoader)
 		, _imgTexDefLoader(_imageLoader)
 		, _texDefLoader{ _imgTexDefLoader, _cerealTexDefLoader }
-		, _meshDefLoader(_dataLoader)
-		, _programLoader(_programDefLoader)
+		, _cerealMeshDefLoader(_dataLoader)
+		, _progLoader(_cerealProgDefLoader)
 		, _texLoader(_texDefLoader)
-		, _meshLoader(_meshDefLoader)
+		, _meshLoader(_cerealMeshDefLoader)
 		, _cerealTexAtlasDefLoader(_dataLoader)
 		, _texPackerDefLoader(_dataLoader, _texDefLoader)
 		, _texAtlasDefLoader{ _texPackerDefLoader, _cerealTexAtlasDefLoader }
 		, _texAtlasLoader({ _texPackerDefLoader }, _texLoader)
 		, _cerealModelLoader(_dataLoader)
-		, _textureAtlasFontLoader(_texAtlasLoader)
+		, _texAtlasFontLoader(_texAtlasLoader)
 #ifdef DARMOK_OZZ
 		, _skelAnimDefLoader(_dataLoader)
 		, _ozzSkeletonLoader(_dataLoader)
@@ -58,7 +58,7 @@ namespace darmok
 	{
 		addBasePath("assets");
 		_modelLoader.addFront(_cerealModelLoader, ".dml;.bin");
-		_fontLoader.addFront(_textureAtlasFontLoader, ".xml");
+		_fontLoader.addFront(_texAtlasFontLoader, ".xml");
 	}
 
 	bx::AllocatorI& AssetContextImpl::getAllocator() noexcept
@@ -78,7 +78,7 @@ namespace darmok
 
 	IProgramLoader& AssetContextImpl::getProgramLoader() noexcept
 	{
-		return _programLoader;
+		return _progLoader;
 	}
 
 	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept

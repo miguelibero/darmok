@@ -207,7 +207,7 @@ set(SOURCES
 set(HEADERS
   asset.hpp
   asset_pack.hpp
-  
+  asset_serialize.hpp
   app_fwd.hpp
   app.hpp
   input_fwd.hpp

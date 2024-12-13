@@ -40,11 +40,6 @@ namespace darmok
 		return info;
 	}
 
-	CerealTextureDefinitionLoader::CerealTextureDefinitionLoader(IDataLoader& dataLoader) noexcept
-		: CerealLoader(dataLoader)
-	{
-	}
-
 	ImageTextureDefinitionLoader::ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept
 		: _imgLoader(imgLoader)
 		, _loadFlags(defaultTextureLoadFlags)
@@ -62,7 +57,7 @@ namespace darmok
 		return *this;
 	}
 
-	std::shared_ptr<TextureDefinition> ImageTextureDefinitionLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<TextureDefinition> ImageTextureDefinitionLoader::operator()(std::filesystem::path path)
 	{
 		if (!supports(path))
 		{
@@ -73,11 +68,6 @@ namespace darmok
 			return std::make_shared<TextureDefinition>(TextureDefinition::fromImage(*img, _loadFlags));
 		}
 		return nullptr;
-	}
-
-	TextureLoader::TextureLoader(ITextureDefinitionLoader& defLoader) noexcept
-		: FromDefinitionLoader(defLoader)
-	{
 	}
 
 	const std::array<std::string, toUnderlying(bgfx::TextureFormat::Count)> Texture::_formatNames =

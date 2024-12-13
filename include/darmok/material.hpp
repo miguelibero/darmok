@@ -14,6 +14,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/serialize.hpp>
+#include <darmok/asset_serialize.hpp>
 
 #include <vector>
 #include <string>
@@ -45,10 +46,19 @@ namespace darmok
         Material(const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
         Material(const std::shared_ptr<Program>& program, const Color& color) noexcept;
 
-        static std::optional<OpacityType> readOpacity(std::string_view name) noexcept;
-        static const std::string& getOpacityName(OpacityType opacity) noexcept;
+        static std::optional<OpacityType> readOpacityType(std::string_view name) noexcept;
+        static const std::string& getOpacityTypeName(OpacityType opacity) noexcept;
+
+        static std::optional<PrimitiveType> readPrimitiveType(std::string_view name) noexcept;
+        static const std::string& getPrimitiveTypeName(PrimitiveType prim) noexcept;
+
+        static std::optional<TextureType> readTextureType(std::string_view name) noexcept;
+        static const std::string& getTextureTypeName(TextureType tex) noexcept;
 
         bool valid() const noexcept;
+
+        const std::string& getName() const noexcept;
+        Material& setName(const std::string& name) noexcept;
 
         const ProgramDefines& getProgramDefines() noexcept;
         Material& setProgramDefines(const ProgramDefines& defines) noexcept;
@@ -114,21 +124,13 @@ namespace darmok
         static void bindMeta();
 
         template<typename Archive>
-        void save(Archive& archive) const
+        void serialize(Archive& archive)
         {
-            auto& assets = SerializeContextStack<AssetContext>::get();
-            auto progDef = assets.getProgramLoader().getDefinition(_program);
-
-            std::unordered_map<TextureType, std::shared_ptr<TextureDefinition>> textureDefs;
-            for (auto [type, tex] : _textures)
-            {
-                textureDefs[type] = assets.getTextureLoader().getDefinition(tex);
-            }
-
             archive(
-                CEREAL_NVP_("program", progDef),
+                CEREAL_NVP_("name", _name),
+                CEREAL_NVP_("program", _program),
                 CEREAL_NVP_("programDefines", _programDefines),
-                CEREAL_NVP_("textures", textureDefs),
+                CEREAL_NVP_("textures", _textures),
                 CEREAL_NVP_("baseColor", _baseColor),
                 CEREAL_NVP_("specularColor", _specularColor),
                 CEREAL_NVP_("metallicFactor", _metallicFactor),
@@ -145,44 +147,10 @@ namespace darmok
                 CEREAL_NVP_("uniforms", _uniforms),
                 CEREAL_NVP_("textureUniforms", _textureUniforms)
             );
-        }
-
-        template<typename Archive>
-        void load(Archive& archive)
-        {
-            std::shared_ptr<ProgramDefinition> progDef;
-            std::unordered_map<TextureType, std::shared_ptr<TextureDefinition>> textureDefs;
-
-            archive(
-                CEREAL_NVP_("program", progDef),
-                CEREAL_NVP_("programDefines", _programDefines),
-                CEREAL_NVP_("textures", textureDefs),
-                CEREAL_NVP_("baseColor", _baseColor),
-                CEREAL_NVP_("specularColor", _specularColor),
-                CEREAL_NVP_("metallicFactor", _metallicFactor),
-                CEREAL_NVP_("roughnessFactor", _roughnessFactor),
-                CEREAL_NVP_("normalScale", _normalScale),
-                CEREAL_NVP_("occlusionStrength", _occlusionStrength),
-                CEREAL_NVP_("emissiveColor", _emissiveColor),
-                CEREAL_NVP_("opacityType", _opacityType),
-                CEREAL_NVP_("shininess", _shininess),
-                CEREAL_NVP_("twoSided", _twoSided),
-                CEREAL_NVP_("multipleScattering", _multipleScattering),
-                CEREAL_NVP_("whiteFurnance", _whiteFurnance),
-                CEREAL_NVP_("primitive", _primitive),
-                CEREAL_NVP_("uniforms", _uniforms),
-                CEREAL_NVP_("textureUniforms", _textureUniforms)
-            );
-
-            auto& assets = SerializeContextStack<AssetContext>::get();
-            _program = assets.getProgramLoader().loadResource(progDef);
-            for (auto [type, texDef] : textureDefs)
-            {
-                _textures[type] = assets.getTextureLoader().loadResource(texDef);
-            }
         }
 
     private:
+        std::string _name;
         std::shared_ptr<Program> _program;
         ProgramDefines _programDefines;
 
@@ -208,6 +176,8 @@ namespace darmok
         TextureUniformContainer _textureUniforms;
 
         static const std::array<std::string, toUnderlying(OpacityType::Count)> _opacityNames;
+        static const std::array<std::string, toUnderlying(PrimitiveType::Count)> _primitiveTypeNames;
+        static const std::array<std::string, toUnderlying(TextureType::Count)> _texTypeNames;
     };
 
     class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>

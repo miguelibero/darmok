@@ -524,18 +524,13 @@ namespace darmok
 		}
 	}
 
-	CerealTextureAtlasDefinitionLoader::CerealTextureAtlasDefinitionLoader(IDataLoader& dataLoader) noexcept
-		: CerealLoader(dataLoader)
-	{
-	}
-
 	TexturePackerDefinitionLoader::TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texDefLoader) noexcept
 		: _dataLoader(dataLoader)
 		, _texDefLoader(texDefLoader)
 	{
 	}
 
-	std::shared_ptr<TextureAtlasDefinition> TexturePackerDefinitionLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<TextureAtlasDefinition> TexturePackerDefinitionLoader::operator()(std::filesystem::path path)
 	{
 		auto data = _dataLoader(path);
 
@@ -555,7 +550,7 @@ namespace darmok
 	}
 
 	TextureAtlasLoader::TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept
-		: FromDefinitionLoader(defLoader)
+		: BasicFromDefinitionLoader(defLoader)
 		, _texLoader(texLoader)
 	{
 	}

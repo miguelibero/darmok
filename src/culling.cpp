@@ -50,7 +50,7 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _prog = std::make_unique<Program>(StandardProgramType::Unlit);
+        _prog = StandardProgramLoader::load(StandardProgramType::Unlit);
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
     }
 

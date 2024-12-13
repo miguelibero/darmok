@@ -8,7 +8,7 @@
 #include <map>
 #include <cereal/types/vector.hpp>
 #include <cereal/archives/xml.hpp>
-#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 
 namespace darmok
 {
@@ -447,7 +447,7 @@ namespace darmok
 		}
 		else
 		{
-			cereal::BinaryInputArchive archive(in);
+			cereal::PortableBinaryInputArchive archive(in);
 			archive(*this);
 		}
 	}
@@ -467,7 +467,7 @@ namespace darmok
 		}
 		else
 		{
-			cereal::BinaryOutputArchive archive(out);
+			cereal::PortableBinaryOutputArchive archive(out);
 			archive(*this);
 		}
 	}
@@ -667,7 +667,7 @@ namespace darmok
 		}
 		else
 		{
-			cereal::BinaryInputArchive archive(in);
+			cereal::PortableBinaryInputArchive archive(in);
 			archive(*this);
 		}
 	}
@@ -687,7 +687,7 @@ namespace darmok
 		}
 		else
 		{
-			cereal::BinaryOutputArchive archive(out);
+			cereal::PortableBinaryOutputArchive archive(out);
 			archive(*this);
 		}
 	}
@@ -801,7 +801,7 @@ namespace darmok
 		}
 		else
 		{
-			cereal::BinaryInputArchive archive(in);
+			cereal::PortableBinaryInputArchive archive(in);
 			archive(*this);
 		}
 	}
@@ -821,7 +821,7 @@ namespace darmok
 		}
 		else
 		{
-			cereal::BinaryOutputArchive archive(out);
+			cereal::PortableBinaryOutputArchive archive(out);
 			archive(*this);
 		}
 	}

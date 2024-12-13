@@ -43,56 +43,6 @@ namespace darmok
         return handle;
     }
 
-    const std::unordered_map<StandardProgramType, std::string> Program::_standardTypes = {
-        { StandardProgramType::Gui, "gui" },
-        { StandardProgramType::Unlit, "unlit" },
-        { StandardProgramType::Forward, "forward" },
-        { StandardProgramType::ForwardBasic, "forward_basic" },
-        { StandardProgramType::Tonemap, "tonemap" },
-    };
-
-    std::optional<StandardProgramType> Program::getStandardType(std::string_view val) noexcept
-    {
-        auto lower = StringUtils::toLower(val);
-
-        auto itr = std::find_if(_standardTypes.begin(), _standardTypes.end(), [lower](auto& elm) { return elm.second == lower; });
-        if (itr != _standardTypes.end())
-        {
-            return itr->first;
-        }
-        
-        return std::nullopt;
-    }
-
-    Program::Definition Program::getStandardDefinition(StandardProgramType type) noexcept
-    {
-        Definition def;
-        switch (type)
-        {
-        case StandardProgramType::Gui:
-            def.loadStaticMem(gui_program);
-            break;
-        case StandardProgramType::Unlit:
-            def.loadStaticMem(unlit_program);
-            break;
-        case StandardProgramType::Forward:
-            def.loadStaticMem(forward_program);
-            break;
-        case StandardProgramType::ForwardBasic:
-            def.loadStaticMem(forward_basic_program);
-            break;
-        case StandardProgramType::Tonemap:
-            def.loadStaticMem(tonemap_program);
-            break;
-        }
-        return def;
-    }
-
-    Program::Program(StandardProgramType type)
-        : Program(getStandardDefinition(type))
-    {
-    }
-
 	Program::Program(const Definition& def)
         : _vertexLayout(def.vertexLayout)
         , _name(def.name)
@@ -183,8 +133,91 @@ namespace darmok
 		return _vertexLayout;
 	}
 
-    ProgramLoader::ProgramLoader(IProgramDefinitionLoader& defLoader) noexcept
-        : FromDefinitionLoader(defLoader)
+    const std::unordered_map<StandardProgramType, std::string> StandardProgramLoader::_typeNames =
     {
+        { StandardProgramType::Gui, "gui" },
+        { StandardProgramType::Unlit, "unlit" },
+        { StandardProgramType::Forward, "forward" },
+        { StandardProgramType::ForwardBasic, "forward_basic" },
+        { StandardProgramType::Tonemap, "tonemap" },
+    };
+
+    const StandardProgramLoader::TypeNames& StandardProgramLoader::getTypeNames() noexcept
+    {
+        return _typeNames;
     }
+
+    std::optional<StandardProgramType> StandardProgramLoader::readType(std::string_view val) noexcept
+    {
+        auto lower = StringUtils::toLower(val);
+        auto itr = std::find_if(_typeNames.begin(), _typeNames.end(),
+            [lower](auto& elm) { return elm.second == lower; });
+        if (itr != _typeNames.end())
+        {
+            return itr->first;
+        }
+        return std::nullopt;
+    }
+
+    void StandardProgramLoader::loadDefinition(ProgramDefinition& def, StandardProgramType type)
+    {
+        switch (type)
+        {
+        case StandardProgramType::Gui:
+            def.loadStaticMem(gui_program);
+            break;
+        case StandardProgramType::Unlit:
+            def.loadStaticMem(unlit_program);
+            break;
+        case StandardProgramType::Forward:
+            def.loadStaticMem(forward_program);
+            break;
+        case StandardProgramType::ForwardBasic:
+            def.loadStaticMem(forward_basic_program);
+            break;
+        case StandardProgramType::Tonemap:
+            def.loadStaticMem(tonemap_program);
+            break;
+        }
+    }
+
+    std::shared_ptr<ProgramDefinition> StandardProgramLoader::loadDefinition(StandardProgramType type)
+    {
+        auto itr = _defCache.find(type);
+        if (itr != _defCache.end())
+        {
+            if (auto def = itr->second.lock())
+            {
+                return def;
+            }
+        }
+
+        auto def = std::make_shared<ProgramDefinition>();
+        loadDefinition(*def, type);
+        _defCache[type] = def;
+        return def;
+    }
+
+    std::shared_ptr<Program> StandardProgramLoader::load(StandardProgramType type)
+    {
+        auto itr = _cache.find(type);
+        if (itr != _cache.end())
+        {
+            if (auto prog = itr->second.lock())
+            {
+                return prog;
+            }
+        }
+        auto def = loadDefinition(type);
+        if (!def)
+        {
+            return nullptr;
+        }
+        auto prog = std::make_shared<Program>(*def);
+        _cache[type] = prog;
+        return prog;
+    }
+
+    std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> StandardProgramLoader::_defCache;
+    std::unordered_map<StandardProgramType, std::weak_ptr<Program>> StandardProgramLoader::_cache;
 }

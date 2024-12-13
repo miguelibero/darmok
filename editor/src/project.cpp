@@ -43,6 +43,7 @@ namespace darmok::editor
     {
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
+        _assetPack.scenes.insert(_scene);
 
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
@@ -75,29 +76,9 @@ namespace darmok::editor
             }
             _path = dialog.result();
         }
-        if (!_path)
+        if (_path)
         {
-            return;
-        }
-
-        {
-            std::ofstream stream(_path.value());
-            auto ext = _path->extension();
-            if (ext == ".xml")
-            {
-                cereal::XMLOutputArchive archive(stream);
-                archive(*this);
-            }
-            else if (ext == ".json")
-            {
-                cereal::JSONOutputArchive archive(stream);
-                archive(*this);
-            }
-            else
-            {
-                cereal::PortableBinaryOutputArchive archive(stream);
-                archive(*this);
-            }
+            CerealUtils::save(*this, _path.value());
         }
     }
 
@@ -119,27 +100,7 @@ namespace darmok::editor
         {
             return;
         }
-
-        {
-            std::ifstream stream(path);
-            auto ext = path.extension();
-            if (ext == ".xml")
-            {
-                cereal::XMLInputArchive archive(stream);
-                archive(*this);
-            }
-            else if (ext == ".json")
-            {
-                cereal::JSONInputArchive archive(stream);
-                archive(*this);
-            }
-            else
-            {
-                cereal::PortableBinaryInputArchive archive(stream);
-                archive(*this);
-            }
-        }
-
+        CerealUtils::load(*this, path);
         _path = path;
     }
 
@@ -151,6 +112,11 @@ namespace darmok::editor
     OptionalRef<Camera> EditorProject::getCamera()
     {
         return _cam;
+    }
+
+    std::unordered_set<std::shared_ptr<Material>>& EditorProject::getMaterials()
+    {
+        return _assetPack.materials;
     }
 
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept
@@ -220,13 +186,22 @@ namespace darmok::editor
 
         auto cubeEntity = scene.createEntity();
 
-        // TODO: need to find a way to serialize the mesh and the material in the scene
-        auto prog = std::make_shared<Program>(StandardProgramType::Forward);
-        auto mesh = MeshData(Cube()).createMesh(prog->getVertexLayout());
+        auto& assets = _app.getAssets();
+
+        auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
+
+        auto meshDef = std::make_shared<MeshDefinition>(
+            MeshData(Cube()).createMeshDefinition(prog->getVertexLayout())
+        );
+        auto mesh = assets.getMeshLoader().loadResource(meshDef);
+        _assetPack.meshes.insert(meshDef);
+
         auto mat = std::make_shared<Material>(prog);
+        mat->setName("Default");
+        _assetPack.materials.insert(mat);
         mat->setBaseColor(Colors::white());
 
-        scene.addComponent<Renderable>(cubeEntity, std::move(mesh), mat);
+        scene.addComponent<Renderable>(cubeEntity, mesh, mat);
         scene.addComponent<Transform>(cubeEntity)
             .setName("Cube");
     }

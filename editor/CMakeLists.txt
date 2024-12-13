@@ -13,6 +13,7 @@ set(EDITOR_INCLUDE_DIR ${EDITOR_INCLUDE_BASE_DIR}/darmok-editor)
 set(EDITOR_HEADERS
   app.hpp
   project.hpp
+  utils.hpp
   scene_view.hpp
   editor.hpp
   inspector.hpp
@@ -21,6 +22,7 @@ set(EDITOR_HEADERS
   scene_inspector.hpp
   light_inspector.hpp
   render_inspector.hpp
+  material_inspector.hpp
 )
 
 set(EDITOR_SOURCES
@@ -35,6 +37,7 @@ set(EDITOR_SOURCES
   scene_inspector.cpp
   light_inspector.cpp
   render_inspector.cpp
+  material_inspector.cpp
 )
 
 set(EDITOR_ASSETS

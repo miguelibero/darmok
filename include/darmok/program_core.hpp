@@ -100,9 +100,5 @@ namespace darmok
 	{
 	};
 
-	class DARMOK_EXPORT ProgramDefinitionLoader final : public CerealLoader<IProgramDefinitionLoader>
-	{
-	public:
-		ProgramDefinitionLoader(IDataLoader& dataLoader) noexcept;
-	};
+	using CerealProgramDefinitionLoader = CerealLoader<IProgramDefinitionLoader>;
 }

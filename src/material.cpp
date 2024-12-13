@@ -33,7 +33,7 @@ namespace darmok
 	{
 		if (_program == nullptr)
 		{
-			_program = std::make_shared<Program>(StandardProgramType::Unlit);
+			_program = StandardProgramLoader::load(StandardProgramType::Unlit);
 		}
 	}
 
@@ -60,6 +60,17 @@ namespace darmok
 	bool Material::valid() const noexcept
 	{
 		return isValid(_program->getHandle(_programDefines));
+	}
+
+	const std::string& Material::getName() const noexcept
+	{
+		return _name;
+	}
+
+	Material& Material::setName(const std::string& name) noexcept
+	{
+		_name = name;
+		return *this;
 	}
 
 	const ProgramDefines& Material::getProgramDefines() noexcept
@@ -309,35 +320,55 @@ namespace darmok
 		"Transparent",
 	};
 
-	std::optional<OpacityType> Material::readOpacity(std::string_view name) noexcept
+	const std::array<std::string, toUnderlying(Material::PrimitiveType::Count)> Material::_primitiveTypeNames
 	{
-		auto lowerName = StringUtils::toLower(name);
-		for (auto i = 0; i < _opacityNames.size(); i++)
-		{
-			auto keyName = StringUtils::toLower(_opacityNames[i]);
-			if (keyName == lowerName)
-			{
-				return (OpacityType)i;
-			}
-		}
-		return std::nullopt;
+		"Triangle",
+		"Line",
+	};
+
+	const std::array<std::string, toUnderlying(Material::TextureType::Count)> Material::_texTypeNames
+	{
+		"BaseColor",
+		"Specular",
+		"MetallicRoughness",
+		"Normal",
+		"Occlusion",
+		"Emissive",
+	};
+
+	std::optional<OpacityType> Material::readOpacityType(std::string_view name) noexcept
+	{
+		return StringUtils::readEnum<OpacityType>(name, _opacityNames);
 	}
 
-	const std::string& Material::getOpacityName(OpacityType opacity) noexcept
+	const std::string& Material::getOpacityTypeName(OpacityType opacity) noexcept
 	{
-		auto idx = toUnderlying(opacity);
-		if (idx >= _opacityNames.size())
-		{
-			static const std::string empty;
-			return empty;
-		}
-		return _opacityNames[idx];
+		return StringUtils::getEnumName(toUnderlying(opacity), _opacityNames);
+	}
+
+	std::optional<Material::PrimitiveType> Material::readPrimitiveType(std::string_view name) noexcept
+	{
+		return StringUtils::readEnum<PrimitiveType>(name, _primitiveTypeNames);
+	}
+
+	const std::string& Material::getPrimitiveTypeName(PrimitiveType prim) noexcept
+	{
+		return StringUtils::getEnumName(toUnderlying(prim), _primitiveTypeNames);
+	}
+
+	std::optional<Material::TextureType> Material::readTextureType(std::string_view name) noexcept
+	{
+		return StringUtils::readEnum<TextureType>(name, _texTypeNames);
+	}
+
+	const std::string& Material::getTextureTypeName(TextureType tex) noexcept
+	{
+		return StringUtils::getEnumName(toUnderlying(tex), _texTypeNames);
 	}
 
 	void Material::bindMeta()
 	{
-		ReflectionSerializeUtils::metaSave<Material>();
-		ReflectionSerializeUtils::metaLoad<Material>();
+		ReflectionSerializeUtils::metaSerialize<Material>();
 	}
 
 	MaterialAppComponent::MaterialAppComponent() noexcept

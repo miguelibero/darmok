@@ -17,14 +17,17 @@
 
 namespace darmok
 {
-    template<typename Type>
-    class DARMOK_EXPORT BX_NO_VTABLE ILoader
+    template<typename Type, typename Arg>
+    class DARMOK_EXPORT BX_NO_VTABLE IBasicLoader
     {
     public:
         using Resource = Type;
-        virtual ~ILoader() = default;
-        [[nodiscard]] virtual std::shared_ptr<Resource> operator()(const std::filesystem::path& path) = 0;
+        virtual ~IBasicLoader() = default;
+        [[nodiscard]] virtual std::shared_ptr<Resource> operator()(Arg arg) = 0;
     };
+
+    template<typename Type>
+    using ILoader = IBasicLoader<Type, std::filesystem::path>;
 
     template<typename Interface>
     class DARMOK_EXPORT ContainerLoader final : public Interface
@@ -58,19 +61,17 @@ namespace darmok
         {
         }
 
-        ContainerLoader& addFront(Interface& loader, const std::string& exts = "") noexcept
+        void addFront(Interface& loader, const std::string& exts = "") noexcept
         {
             _loaders.emplace(_loaders.begin(), loader, StringUtils::split(exts, ";"));
-            return *this;
         }
 
-        ContainerLoader& addBack(Interface& loader, const std::string& exts = "") noexcept
+        void addBack(Interface& loader, const std::string& exts = "") noexcept
         {
             _loaders.emplace_back(loader, StringUtils::split(exts, ";"));
-            return *this;
         }
 
-        std::shared_ptr<Resource> operator()(const std::filesystem::path& path) override
+        std::shared_ptr<Resource> operator()(std::filesystem::path path) override
         {
             auto ext = path.extension();
             for (auto& [loader, exts] : _loaders)
@@ -95,32 +96,35 @@ namespace darmok
         Elements _loaders;
     };
 
-    template<typename Type>
-    class DARMOK_EXPORT BX_NO_VTABLE ICachedLoader : public ILoader<Type>
+    template<typename Type, typename Arg>
+    class DARMOK_EXPORT BX_NO_VTABLE IBasicCachedLoader : public IBasicLoader<Type, Arg>
     {
-        virtual std::shared_ptr<Type> forceLoad(const std::filesystem::path& path) = 0;
+        virtual std::shared_ptr<Type> forceLoad(Arg arg) = 0;
 
-        virtual bool clearCache(const std::filesystem::path& path) = 0;
+        virtual bool clearCache(Arg arg) = 0;
         virtual void clearCache() = 0;
         virtual void pruneCache() = 0;
     };
 
     template<typename Type>
-    class DARMOK_EXPORT CachedLoader final : public ICachedLoader<Type>
+    using ICachedLoader = IBasicCachedLoader<Type, std::filesystem::path>;
+
+    template<typename Type, typename Arg>
+    class DARMOK_EXPORT BasicCachedLoader : public IBasicCachedLoader<Type, Arg>
     {
     public:
         using Resource = Type;
 
-        std::shared_ptr<Resource> forceLoad(const std::filesystem::path& path) override
+        std::shared_ptr<Resource> forceLoad(Arg arg) override
         {
-            auto res = doLoad(path);
-            _cache[path] = res;
+            auto res = doLoad(arg);
+            _cache[arg] = res;
             return res;
         }
 
-        std::shared_ptr<Resource> operator()(const std::filesystem::path& path)
+        std::shared_ptr<Resource> operator()(Arg arg)
         {
-            auto itr = _cache.find(path);
+            auto itr = _cache.find(arg);
             if (itr != _cache.end())
             {
                 if (auto res = itr->second.lock())
@@ -128,12 +132,12 @@ namespace darmok
                     return res;
                 }
             }
-            return forceLoad(path);
+            return forceLoad(arg);
         }
 
-        bool clearCache(const std::filesystem::path& path) override
+        bool clearCache(Arg arg) override
         {
-            auto itr = _cache.find(path);
+            auto itr = _cache.find(arg);
             if (itr == _cache.end())
             {
                 return false;
@@ -162,59 +166,65 @@ namespace darmok
             }
         }
     protected:
-        virtual std::shared_ptr<Resource> doLoad(const std::filesystem::path& path) = 0;
+        virtual std::shared_ptr<Resource> doLoad(Arg arg) = 0;
     private:
-        std::unordered_map<std::filesystem::path, std::weak_ptr<Resource>> _cache;
+        std::unordered_map<Arg, std::weak_ptr<Resource>> _cache;
     };
 
-    template<typename Type, typename DefinitionType>
-    class DARMOK_EXPORT BX_NO_VTABLE IFromDefinitionLoader : public ICachedLoader<Type>
+    template<typename Type>
+    using CachedLoader = BasicCachedLoader<Type, std::filesystem::path>;
+
+    template<typename Type, typename DefinitionType, typename Arg>
+    class DARMOK_EXPORT BX_NO_VTABLE IBasicFromDefinitionLoader : public IBasicCachedLoader<Type, Arg>
     {
     public:
         using Resource = Type;
         using Definition = DefinitionType;
         virtual std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) = 0;
         virtual std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
-        virtual std::shared_ptr<Definition> loadDefinition(const std::filesystem::path& path, bool force = false) = 0;
+        virtual std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false) = 0;
     };
 
-    template<typename Interface, typename DefinitionLoader>
-    class DARMOK_EXPORT FromDefinitionLoader : public Interface
+    template<typename Type, typename DefinitionType>
+    using IFromDefinitionLoader = IBasicFromDefinitionLoader<Type, DefinitionType, std::filesystem::path>;
+
+    template<typename Interface, typename DefinitionLoader, typename Arg>
+    class DARMOK_EXPORT BasicFromDefinitionLoader : public Interface
     {
     public:
         using Resource = Interface::Resource;
         using Definition = DefinitionLoader::Resource;
 
-        FromDefinitionLoader(DefinitionLoader& defLoader)
+        BasicFromDefinitionLoader(DefinitionLoader& defLoader) noexcept
             : _defLoader(defLoader)
         {
         }
 
-        std::shared_ptr<Resource> operator()(const std::filesystem::path& path)
+        std::shared_ptr<Resource> operator()(Arg arg)
         {
-            auto def = loadDefinition(path);
+            auto def = loadDefinition(arg);
             return loadResource(def);
         }
 
-        std::shared_ptr<Resource> forceLoad(const std::filesystem::path& path)
+        std::shared_ptr<Resource> forceLoad(Arg arg)
         {
-            auto def = loadDefinition(path, true);
+            auto def = loadDefinition(arg, true);
             return loadResource(def, true);
         }
 
-        std::shared_ptr<Definition> loadDefinition(const std::filesystem::path& path, bool force = false)
+        std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false)
         {
             if (!force)
             {
-                auto itr = _defCache.find(path);
+                auto itr = _defCache.find(arg);
                 if (itr != _defCache.end())
                 {
                     return itr->second;
                 }
             }
-            if (auto def = _defLoader(path))
+            if (auto def = _defLoader(arg))
             {
-                _defCache[path] = def;
+                _defCache[arg] = def;
                 return def;
             }
             return nullptr;
@@ -251,9 +261,9 @@ namespace darmok
             return nullptr;
         }
 
-        bool clearCache(const std::filesystem::path& path) noexcept
+        bool clearCache(Arg arg) noexcept
         {
-            auto itr = _defCache.find(path);
+            auto itr = _defCache.find(arg);
             if (itr == _defCache.end())
             {
                 return false;
@@ -309,16 +319,20 @@ namespace darmok
             {
                 return std::make_shared<Resource>(def);
             }
+            // TODO: check for static Resource::create methods
             return nullptr;
         }
     private:
         DefinitionLoader& _defLoader;
-        std::unordered_map<std::filesystem::path, std::shared_ptr<Definition>> _defCache;
+        std::unordered_map<Arg, std::shared_ptr<Definition>> _defCache;
         std::unordered_map<std::shared_ptr<Definition>, std::weak_ptr<Resource>> _resCache;
     };
 
+    template<typename Type, typename DefinitionLoader>
+    using FromDefinitionLoader = BasicFromDefinitionLoader<Type, DefinitionLoader, std::filesystem::path>;
+
     template<typename Interface>
-    class DARMOK_EXPORT CerealLoader : public Interface
+    class DARMOK_EXPORT CerealLoader final : public Interface
     {
     public:
         using Resource = Interface::Resource;
@@ -328,7 +342,7 @@ namespace darmok
         {
         }
 
-        virtual std::shared_ptr<Resource> operator()(const std::filesystem::path& path)
+        std::shared_ptr<Resource> operator()(std::filesystem::path path) override
         {
             auto data = _dataLoader(path);
             auto format = CerealUtils::getExtensionFormat(path.extension());

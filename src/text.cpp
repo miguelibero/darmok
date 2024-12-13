@@ -276,7 +276,7 @@ namespace darmok
 	{
 		if (_prog == nullptr)
 		{
-			_prog = std::make_shared<Program>(StandardProgramType::Gui);
+			_prog = StandardProgramLoader::load(StandardProgramType::Gui);
 		}
 	}
 
@@ -421,7 +421,7 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(std::filesystem::path path)
 	{
 		auto atlas = _atlasLoader(path);
 		if (!atlas)

@@ -16,7 +16,7 @@
 
 // to allow serialization
 #include <darmok/glm_serialize.hpp>
-#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/string.hpp>
@@ -513,7 +513,7 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<SkeletalAnimatorDefinition> SkeletalAnimatorDefinitionLoader::operator()(const std::filesystem::path& path)
+    std::shared_ptr<SkeletalAnimatorDefinition> SkeletalAnimatorDefinitionLoader::operator()(std::filesystem::path path)
     {
         auto data = _dataLoader(path);
         auto config = std::make_shared<SkeletalAnimatorDefinition>();
@@ -532,7 +532,7 @@ namespace darmok
             }
             else
             {
-                cereal::BinaryInputArchive archive(stream);
+                cereal::PortableBinaryInputArchive archive(stream);
                 archive(config);
             }
         }

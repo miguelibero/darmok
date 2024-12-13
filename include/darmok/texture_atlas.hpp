@@ -177,11 +177,7 @@ namespace darmok
 	{
 	};
 
-	class DARMOK_EXPORT CerealTextureAtlasDefinitionLoader final : public CerealLoader<ITextureAtlasDefinitionLoader>
-	{
-	public:
-		CerealTextureAtlasDefinitionLoader(IDataLoader& dataLoader) noexcept;
-	};
+	using CerealTextureAtlasDefinitionLoader = CerealLoader<ITextureAtlasDefinitionLoader>;
 
 	class ITextureLoader;
 	class ITextureDefinitionLoader;
@@ -190,7 +186,7 @@ namespace darmok
 	{
 	public:
 		TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texDefLoader) noexcept;
-		std::shared_ptr<TextureAtlasDefinition> operator()(const std::filesystem::path& path) override;
+		std::shared_ptr<TextureAtlasDefinition> operator()(std::filesystem::path path) override;
 	private:
 		IDataLoader& _dataLoader;
 		ITextureDefinitionLoader& _texDefLoader;

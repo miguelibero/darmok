@@ -33,7 +33,7 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         std::optional<bgfx::ViewId> _viewId;
-        std::unique_ptr<Program> _prog;
+        std::shared_ptr<Program> _prog;
         std::unique_ptr<FrameBuffer> _frameBuffer;
         std::unordered_map<Entity, bgfx::OcclusionQueryHandle> _queries;
         std::vector<bgfx::OcclusionQueryHandle> _freeQueries;

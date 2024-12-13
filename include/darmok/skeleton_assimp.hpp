@@ -13,7 +13,7 @@ namespace darmok
     public:
         AssimpSkeletonLoader(IDataLoader& dataLoader) noexcept;
         ~AssimpSkeletonLoader() noexcept;
-        std::shared_ptr<Skeleton> operator()(const std::filesystem::path& path) override;
+        std::shared_ptr<Skeleton> operator()(std::filesystem::path path) override;
     private:
         std::unique_ptr<AssimpSkeletonLoaderImpl> _impl;
     };

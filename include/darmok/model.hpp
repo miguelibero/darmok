@@ -378,11 +378,7 @@ namespace darmok
 	{
 	};
 
-    class DARMOK_EXPORT CerealModelLoader : public CerealLoader<IModelLoader>
-	{
-	public:
-        CerealModelLoader(IDataLoader& dataLoader) noexcept;
-	};
+    using CerealModelLoader = CerealLoader<IModelLoader>;
 }
 
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelMaterial& material);

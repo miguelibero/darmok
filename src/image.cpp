@@ -487,7 +487,7 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<Image> ImageLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<Image> ImageLoader::operator()(std::filesystem::path path)
 	{
 		auto data = _dataLoader(path);
 		return std::make_shared<Image>(data, _alloc);

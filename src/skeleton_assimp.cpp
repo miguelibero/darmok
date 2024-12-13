@@ -615,7 +615,7 @@ namespace darmok
         // empty on purpose
     }
 
-    std::shared_ptr<Skeleton> AssimpSkeletonLoader::operator()(const std::filesystem::path& path)
+    std::shared_ptr<Skeleton> AssimpSkeletonLoader::operator()(std::filesystem::path path)
     {
         return (*_impl)(path);
     }

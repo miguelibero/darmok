@@ -29,8 +29,7 @@ namespace darmok
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = ProgramDefinition;
 
-		Program(StandardProgramType type);
-		Program(const Definition& definition);
+		Program(const Definition& def);
 		~Program() noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
@@ -40,11 +39,7 @@ namespace darmok
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const VertexLayout& getVertexLayout() const noexcept;
 
-		static std::optional<StandardProgramType> getStandardType(std::string_view val) noexcept;
-		static Definition getStandardDefinition(StandardProgramType type) noexcept;
-
 	private:
-		static const std::unordered_map<StandardProgramType, std::string> _standardTypes;
 
 		static ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
 		static bgfx::ShaderHandle findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept;
@@ -58,14 +53,25 @@ namespace darmok
 		std::string _name;
 	};
 
+	class DARMOK_EXPORT StandardProgramLoader final
+	{
+	public:
+		using TypeNames = std::unordered_map<StandardProgramType, std::string>;
+		static std::optional<StandardProgramType> readType(std::string_view val) noexcept;
+		static const TypeNames& getTypeNames() noexcept;
+		static std::shared_ptr<Program> load(StandardProgramType type);
+		static std::shared_ptr<ProgramDefinition> loadDefinition(StandardProgramType type);
+	private:
+		static std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> _defCache;
+		static std::unordered_map<StandardProgramType, std::weak_ptr<Program>> _cache;
+		static const TypeNames _typeNames;
+
+		static void loadDefinition(ProgramDefinition& def, StandardProgramType type);
+	};
+
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, ProgramDefinition>
 	{
 	};
 
-	class DARMOK_EXPORT ProgramLoader final : public FromDefinitionLoader<IProgramLoader, IProgramDefinitionLoader>
-	{
-	public:
-		ProgramLoader(IProgramDefinitionLoader& loader) noexcept;
-	};
-
+	using ProgramLoader = FromDefinitionLoader<IProgramLoader, IProgramDefinitionLoader>;
 }

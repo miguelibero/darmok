@@ -717,9 +717,4 @@ namespace darmok
     {
         return _impl->endImport(input);
     }
-
-    ProgramDefinitionLoader::ProgramDefinitionLoader(IDataLoader& dataLoader) noexcept
-        : CerealLoader(dataLoader)
-    {
-    }
 }

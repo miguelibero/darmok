@@ -78,7 +78,7 @@ namespace darmok
 	{
 	public:
 		ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept;
-		[[nodiscard]] std::shared_ptr<Image> operator()(const std::filesystem::path& path) override;
+		[[nodiscard]] std::shared_ptr<Image> operator()(std::filesystem::path path) override;
 	private:
 		IDataLoader& _dataLoader;
 		bx::AllocatorI& _alloc;

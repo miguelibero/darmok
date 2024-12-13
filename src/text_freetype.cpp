@@ -80,7 +80,7 @@ namespace darmok
 		return "";
 	}
 
-	std::shared_ptr<FreetypeFontDefinition> DataFreetypeFontDefinitionLoader::operator()(const std::filesystem::path& path)
+	std::shared_ptr<FreetypeFontDefinition> DataFreetypeFontDefinitionLoader::operator()(std::filesystem::path path)
 	{
 		auto data = _dataLoader(path);
 		if (_skipInvalid && !checkFontData(data).empty())
@@ -88,11 +88,6 @@ namespace darmok
 			return nullptr;
 		}
 		return std::make_shared<FreetypeFontDefinition>(std::move(data));
-	}
-
-	CerealFreetypeFontDefinitionLoader::CerealFreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept
-		: CerealLoader(dataLoader)
-	{
 	}
 
 	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(bx::AllocatorI& alloc)
@@ -146,7 +141,7 @@ namespace darmok
 	}
 
 	FreetypeFontLoader::FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc)
-		: FromDefinitionLoader(defLoader)
+		: BasicFromDefinitionLoader(defLoader)
 		, _impl(std::make_unique<FreetypeFontLoaderImpl>(alloc))
 	{
 	}

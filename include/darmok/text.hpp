@@ -141,7 +141,7 @@ namespace darmok
     struct TextureAtlas;
     class Program;
 
-    class TextureAtlasFont final : public IFont
+    class DARMOK_EXPORT TextureAtlasFont final : public IFont
     {
     public:
         TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
@@ -155,11 +155,11 @@ namespace darmok
     class ITextureAtlasLoader;
     class App;
 
-    class TextureAtlasFontLoader final : public IFontLoader
+    class DARMOK_EXPORT TextureAtlasFontLoader final : public IFontLoader
     {
     public:
         TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept;
-        std::shared_ptr<IFont> operator()(const std::filesystem::path& path) override;
+        std::shared_ptr<IFont> operator()(std::filesystem::path path) override;
     private:
         ITextureAtlasLoader& _atlasLoader;
     };

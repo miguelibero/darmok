@@ -21,6 +21,20 @@ namespace darmok
             // convert from right-handed (ozz) to left-handed (bgfx)
             return Math::flipHandedness((const glm::mat4&)v);
         }
+
+        template<typename T>
+        static std::optional<T> loadFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
+        {
+            auto data = loader(path);
+            std::optional<T> obj;
+            DataOzzStream stream(data);
+            ozz::io::IArchive archive(&stream);
+            if (archive.TestTag<T>())
+            {
+                archive >> obj.emplace();
+            }
+            return obj;
+        }
     };
 
     Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
@@ -176,23 +190,9 @@ namespace darmok
     {
     }
 
-    template<typename T>
-    static std::optional<T> loadOzzObjectFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
+    std::shared_ptr<Skeleton> OzzSkeletonLoader::operator()(std::filesystem::path path)
     {
-        auto data = loader(path);
-        std::optional<T> obj;
-        DataOzzStream stream(data);
-        ozz::io::IArchive archive(&stream);
-        if (archive.TestTag<T>())
-        {
-            archive >> obj.emplace();
-        }
-        return obj;
-    }
-
-    std::shared_ptr<Skeleton> OzzSkeletonLoader::operator()(const std::filesystem::path& path)
-    {
-        auto skel = loadOzzObjectFromData<ozz::animation::Skeleton>(_dataLoader, path);
+        auto skel = OzzUtils::loadFromData<ozz::animation::Skeleton>(_dataLoader, path);
         if (!skel)
         {
             throw std::runtime_error("archive doesn't contain a skeleton");
@@ -206,9 +206,9 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<SkeletalAnimation> OzzSkeletalAnimationLoader::operator()(const std::filesystem::path& path)
+    std::shared_ptr<SkeletalAnimation> OzzSkeletalAnimationLoader::operator()(std::filesystem::path path)
     {
-        auto anim = loadOzzObjectFromData<ozz::animation::Animation>(_dataLoader, path);
+        auto anim = OzzUtils::loadFromData<ozz::animation::Animation>(_dataLoader, path);
         if (!anim)
         {
             throw std::runtime_error("archive doesn't contain an animation");

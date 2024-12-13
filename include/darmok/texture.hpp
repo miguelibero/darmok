@@ -74,11 +74,7 @@ namespace darmok
 	{
 	};
 
-	class DARMOK_EXPORT CerealTextureDefinitionLoader final : public CerealLoader<ITextureDefinitionLoader>
-	{
-	public:
-		CerealTextureDefinitionLoader(IDataLoader& dataLoader) noexcept;
-	};
+	using CerealTextureDefinitionLoader = CerealLoader<ITextureDefinitionLoader>;
 
 	class DARMOK_EXPORT ImageTextureDefinitionLoader final : public ITextureDefinitionLoader
 	{
@@ -86,7 +82,7 @@ namespace darmok
 		ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept;
 		bool supports(const std::filesystem::path& path) const noexcept;
 		ImageTextureDefinitionLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
-		[[nodiscard]] std::shared_ptr<TextureDefinition> operator()(const std::filesystem::path& path) override;
+		[[nodiscard]] std::shared_ptr<TextureDefinition> operator()(std::filesystem::path path) override;
 	private:
 		IImageLoader& _imgLoader;
 		uint64_t _loadFlags;
@@ -156,11 +152,7 @@ namespace darmok
 	{
 	};
 
-	class DARMOK_EXPORT TextureLoader final : public FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>
-	{
-	public:
-		TextureLoader(ITextureDefinitionLoader& defLoader) noexcept;
-	};
+	using TextureLoader = FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>;
 
 	/*
     class TextureImporterImpl;

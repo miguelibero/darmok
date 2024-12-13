@@ -71,13 +71,13 @@ namespace darmok
 		bx::DefaultAllocator _allocator;
 		DataLoader _dataLoader;
 		ImageLoader _imageLoader;
-		ProgramDefinitionLoader _programDefLoader;
-		ProgramLoader _programLoader;
+		CerealProgramDefinitionLoader _cerealProgDefLoader;
+		ProgramLoader _progLoader;
 		CerealTextureDefinitionLoader _cerealTexDefLoader;
 		ImageTextureDefinitionLoader _imgTexDefLoader;
 		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
 		TextureLoader _texLoader;
-		MeshDefinitionLoader _meshDefLoader;
+		CerealMeshDefinitionLoader _cerealMeshDefLoader;
 		MeshLoader _meshLoader;
 		CerealTextureAtlasDefinitionLoader _cerealTexAtlasDefLoader;
 		TexturePackerDefinitionLoader _texPackerDefLoader;
@@ -85,7 +85,7 @@ namespace darmok
 		TextureAtlasLoader _texAtlasLoader;
 		ContainerLoader<IModelLoader> _modelLoader;
 		CerealModelLoader _cerealModelLoader;
-		TextureAtlasFontLoader _textureAtlasFontLoader;
+		TextureAtlasFontLoader _texAtlasFontLoader;
 		ContainerLoader<IFontLoader> _fontLoader;
 
 #ifdef DARMOK_OZZ

@@ -1,5 +1,6 @@
 #include "material.hpp"
 #include "glm.hpp"
+#include "utils.hpp"
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
@@ -8,19 +9,9 @@ namespace darmok
 {
 	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_enum<MaterialPrimitiveType>("MaterialPrimitiveType", {
-			{ "Triangle", MaterialPrimitiveType::Triangle },
-			{ "Line", MaterialPrimitiveType::Line }
-		});
-
-		lua.new_enum<MaterialTextureType>("MaterialTextureType", {
-			{ "BaseColor", MaterialTextureType::BaseColor },
-			{ "Specular", MaterialTextureType::Specular },
-			{ "MetallicRoughness", MaterialTextureType::MetallicRoughness },
-			{ "Normal", MaterialTextureType::Normal },
-			{ "Occlusion", MaterialTextureType::Occlusion },
-			{ "Emissive", MaterialTextureType::Emissive },
-		});
+		LuaUtils::newEnumFunc(lua, "MaterialPrimitiveType", MaterialPrimitiveType::Count, &Material::getPrimitiveTypeName);
+		LuaUtils::newEnumFunc(lua, "MaterialTextureType", MaterialTextureType::Count, &Material::getTextureTypeName);
+		LuaUtils::newEnumFunc(lua, "OpacityType", OpacityType::Count, &Material::getOpacityTypeName);
 
 		lua.new_usertype<Material>("Material",
 			sol::factories(

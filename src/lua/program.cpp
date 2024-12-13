@@ -7,7 +7,7 @@ namespace darmok
 	{
 		lua.new_usertype<Program>("Program", 
 			sol::factories(
-				[](StandardProgramType type) { return std::make_shared<Program>(type); }
+				[](const ProgramDefinition& def) { return std::make_shared<Program>(def); }
 			),
 			"vertex_layout", sol::property([](const Program& prog) { return prog.getVertexLayout().getBgfx(); })
 		);
@@ -17,6 +17,10 @@ namespace darmok
 			{ "Forward",		StandardProgramType::Forward },
 			{ "ForwardBasic",	StandardProgramType::ForwardBasic }
 		});
+		lua.new_usertype<StandardProgramLoader>("StandardProgramLoader", sol::no_constructor,
+			"readType", &StandardProgramLoader::readType,
+			"load", &StandardProgramLoader::load
+		);
 	}
 
 }

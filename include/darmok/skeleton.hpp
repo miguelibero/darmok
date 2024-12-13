@@ -236,7 +236,7 @@ namespace darmok
     {
     public:
         SkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<SkeletalAnimatorDefinition> operator()(const std::filesystem::path& path) override;
+        std::shared_ptr<SkeletalAnimatorDefinition> operator()(std::filesystem::path path) override;
     private:
         IDataLoader& _dataLoader;
     };

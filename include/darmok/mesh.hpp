@@ -48,38 +48,32 @@ namespace darmok
 
     struct DARMOK_EXPORT MeshDefinition
     {
+        std::string name;
         MeshType type;
+        MeshConfig config;
         bgfx::VertexLayout layout;
         Data vertices;
         Data indices;
-        MeshConfig config;
 
         template<typename Archive>
         void serialize(Archive& archive)
         {
             archive(
+                CEREAL_NVP(name),
                 CEREAL_NVP(type),
+                CEREAL_NVP(config),
                 CEREAL_NVP(layout),
                 CEREAL_NVP(vertices),
-                CEREAL_NVP(indices),
-                CEREAL_NVP(config)
+                CEREAL_NVP(indices)
             );
         }
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionLoader
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionLoader : public ILoader<MeshDefinition>
     {
-    public:
-        using Resource = MeshDefinition;
-        virtual ~IMeshDefinitionLoader() = default;
-        [[nodiscard]] virtual std::shared_ptr<MeshDefinition> operator()(const std::filesystem::path& path) = 0;
     };
 
-    class MeshDefinitionLoader final : public CerealLoader<IMeshDefinitionLoader>
-    {
-    public:
-        MeshDefinitionLoader(IDataLoader& dataLoader) noexcept;
-    };
+    using CerealMeshDefinitionLoader = CerealLoader<IMeshDefinitionLoader>;
 
     class DARMOK_EXPORT BX_NO_VTABLE IMesh
     {
@@ -252,6 +246,7 @@ namespace darmok
         void clear() noexcept;
 
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
+        [[nodiscard]] MeshDefinition createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
@@ -276,5 +271,7 @@ namespace darmok
     {
     public:
         MeshLoader(IMeshDefinitionLoader& defLoader) noexcept;
+    protected:
+        std::shared_ptr<IMesh> create(const std::shared_ptr<Definition>& def) override;
     };
 }

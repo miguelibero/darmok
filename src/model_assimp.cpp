@@ -112,8 +112,8 @@ namespace darmok
             }
             if (config.vertexLayout.getStride() == 0)
             {
-                auto def = Program::getStandardDefinition(config.standardProgram);
-                config.vertexLayout = def.vertexLayout;
+                auto def = StandardProgramLoader::loadDefinition(config.standardProgram);
+                config.vertexLayout = def->vertexLayout;
             }
             return true;
         }
@@ -988,7 +988,7 @@ namespace darmok
         return _impl->supports(path);
     }
 
-    std::shared_ptr<Model> AssimpModelLoader::operator()(const std::filesystem::path& path)
+    std::shared_ptr<Model> AssimpModelLoader::operator()(std::filesystem::path path)
     {
         return (*_impl)(path);
     }
@@ -1017,6 +1017,7 @@ namespace darmok
 
     void AssimpModelImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
     {
+        // TODO: maybe load material json?
         if (json.contains(_vertexLayoutJsonKey))
         {
             config.vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
@@ -1028,7 +1029,7 @@ namespace darmok
         if (json.contains(_programJsonKey))
         {
             std::string val = json[_programJsonKey];
-            auto standard = Program::getStandardType(val);
+            auto standard = StandardProgramLoader::readType(val);
             if (standard)
             {
                 config.standardProgram = standard.value();
@@ -1056,7 +1057,7 @@ namespace darmok
         }
         if (json.contains(_opacityJsonKey))
         {
-            config.opacity = Material::readOpacity(json[_opacityJsonKey]);
+            config.opacity = Material::readOpacityType(json[_opacityJsonKey]);
         }
 
         auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)

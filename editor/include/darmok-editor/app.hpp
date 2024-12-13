@@ -48,30 +48,32 @@ namespace darmok::editor
         ImGuiID _dockRightId;
         ImGuiID _dockLeftId;
         ImGuiID _dockCenterId;
-        Entity _selectedEntity;
+
         ImFont* _symbolsFont;
         float _mainToolbarHeight;
 
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
-        static const char* _projectWindowName;
+        static const char* _materialsWindowName;
 
         void renderMainMenu();
         void renderMainToolbar();
         void renderDockspace();
         void renderSceneTree();
-        void renderProject();
+        void renderMaterials();
 
         void onSceneTreeTransformClicked(Transform& trans);
         void onSceneTreeSceneClicked();
 
-        void onEntitySelected(Entity entity) noexcept;
-
+        using SelectedObject = EditorInspectorView::SelectedObject;
+        void onObjectSelected(SelectedObject obj) noexcept;
 
         void playScene();
         void stopScene();
         void pauseScene();
 
         void addEntityComponent(const entt::meta_type& type);
+
+
     };
 }

@@ -42,28 +42,22 @@ namespace darmok
     {
     public:
         DataFreetypeFontDefinitionLoader(IDataLoader& dataLoader, bool skipInvalid = true) noexcept;
-        [[nodiscard]] std::shared_ptr<FreetypeFontDefinition> operator()(const std::filesystem::path& path) override;
+        [[nodiscard]] std::shared_ptr<FreetypeFontDefinition> operator()(std::filesystem::path path) override;
         static std::string checkFontData(const DataView& data) noexcept;
     private:
         IDataLoader& _dataLoader;
         bool _skipInvalid;
     };
 
-    class DARMOK_EXPORT CerealFreetypeFontDefinitionLoader final : public CerealLoader<IFreetypeFontDefinitionLoader>
-    {
-    public:
-        CerealFreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept;
-    };
+    using CerealFreetypeFontDefinitionLoader = CerealLoader<IFreetypeFontDefinitionLoader>;
 
     class DARMOK_EXPORT FreetypeFontLoader final : public FromDefinitionLoader<IFontLoader, IFreetypeFontDefinitionLoader>
     {
     public:
         FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc);
         ~FreetypeFontLoader() noexcept;
-
         void init(App& app);
         void shutdown();
-
     protected:
         std::shared_ptr<IFont> create(const std::shared_ptr<FreetypeFontDefinition>& def) override;
     private:
