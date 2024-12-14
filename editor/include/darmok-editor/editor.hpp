@@ -4,15 +4,21 @@
 #include <entt/entt.hpp>
 #include <darmok/optional_ref.hpp>
 
+namespace darmok
+{
+    class AssetContext;
+}
+
 namespace darmok::editor
 {
     class ObjectEditorContainer;
+    class EditorProject;
 
     class BX_NO_VTABLE IObjectEditor
     {
     public:
         virtual ~IObjectEditor() = default;
-        virtual void init(ObjectEditorContainer& container) { }
+        virtual void init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container) {}
         virtual void shutdown() {}
         virtual entt::type_info getObjectType() const = 0;
         virtual bool tryRender(entt::meta_any& any) { return false; }
@@ -64,11 +70,12 @@ namespace darmok::editor
 
         bool render(entt::meta_any& obj) const;
         void add(std::unique_ptr<IObjectEditor>&& editor);
-        void init();
+        void init(AssetContext& assets, EditorProject& proj);
         void shutdown();
 
     private:
+        OptionalRef<AssetContext> _assets;
+        OptionalRef<EditorProject> _proj;
         std::unordered_map<entt::id_type, std::vector<std::unique_ptr<IObjectEditor>>> _editors;
-        bool _running;
     };
 }

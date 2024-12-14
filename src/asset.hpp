@@ -6,6 +6,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program.hpp>
+#include <darmok/material.hpp>
 #include <darmok/data.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/text.hpp>
@@ -41,6 +42,7 @@ namespace darmok
 		IProgramLoader& getProgramLoader() noexcept;
 		ITextureLoader& getTextureLoader() noexcept;
 		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
+		IMaterialLoader& getMaterialLoader() noexcept;
 		IMeshLoader& getMeshLoader() noexcept;
 		IModelLoader& getModelLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
@@ -77,6 +79,7 @@ namespace darmok
 		ImageTextureDefinitionLoader _imgTexDefLoader;
 		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
 		TextureLoader _texLoader;
+		CerealMaterialLoader _cerealMaterialLoader;
 		CerealMeshDefinitionLoader _cerealMeshDefLoader;
 		MeshLoader _meshLoader;
 		CerealTextureAtlasDefinitionLoader _cerealTexAtlasDefLoader;

@@ -3,7 +3,15 @@
 #include <darmok/utils.hpp>
 
 #include <imgui.h>
-#include <imgui_stdlib.h>
+
+namespace darmok
+{
+    class Material;
+    class Program;
+    class IMesh;
+    class IProgramLoader;
+    class IMeshLoader;
+}
 
 namespace darmok::editor
 {
@@ -36,13 +44,21 @@ namespace darmok::editor
             return changed;
         }
 
+        static const ImVec2& getAssetSize();
+
+        static bool drawAsset(const char* label, bool selected = false);
+
+        static bool drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
+        static bool drawProgramReference(const char* label, std::shared_ptr<Program>& prog, IProgramLoader& loader);
+        static bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader);
+
+    private:
 
         template<typename T>
-        static bool drawAssetReference(const char* label, std::shared_ptr<T>& value, const char* dragType = nullptr)
+        static bool drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)
         {
-            auto name = value->getName();
             ImGui::BeginDisabled(true);
-            ImGui::InputText(label, &name);
+            ImGui::InputText(label, (char*)name.c_str(), name.size());
             ImGui::EndDisabled();
 
             dragType = dragType == nullptr ? label : dragType;
@@ -51,37 +67,14 @@ namespace darmok::editor
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
                 {
-                    IM_ASSERT(payload->DataSize == sizeof(std::shared_ptr<T>));
-                    value = *(std::shared_ptr<T>*)payload->Data;
+                    IM_ASSERT(payload->DataSize == sizeof(T));
+                    value = *(T*)payload->Data;
                     changed = true;
                 }
                 ImGui::EndDragDropTarget();
             }
 
             return changed;
-        }
-
-        static const ImVec2& getAssetSize();
-
-        static bool drawAsset(const char* label, bool selected = false);
-
-        template<typename T>
-        static bool drawAsset(const std::shared_ptr<T>& value, bool selected = false, const char* dragType = nullptr)
-        {
-            auto name = value->getName();
-            if (drawAsset(name.c_str(), selected))
-            {
-                selected = !selected;
-            }
-
-            if (dragType != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-            {
-                auto accepted = ImGui::SetDragDropPayload(dragType, &value, sizeof(std::shared_ptr<T>));
-                drawAsset(name.c_str(), accepted);
-                ImGui::EndDragDropSource();
-            }
-
-            return selected;
         }
     };
 }

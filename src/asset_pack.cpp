@@ -4,7 +4,7 @@ namespace darmok
 {
 	void AssetPack::clear() noexcept
 	{
-		materials.clear();
+		textures.clear();
 		meshes.clear();
 		models.clear();
 		scenes.clear();

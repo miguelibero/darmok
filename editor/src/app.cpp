@@ -13,6 +13,8 @@ namespace darmok::editor
     EditorAppDelegate::EditorAppDelegate(App& app) noexcept
         : _app(app)
         , _sceneView(app)
+        , _materialAssetsView("Materials", "MATERIAL")
+        , _programAssetsView("Programs", "PROGRAM")
         , _proj(app)
         , _dockLeftId(0)
         , _dockRightId(0)
@@ -46,15 +48,19 @@ namespace darmok::editor
         
         _proj.init();
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
-        _inspectorView.init();
+        _inspectorView.init(_app.getAssets(), _proj);
+        _materialAssetsView.init(*this);
+        _programAssetsView.init(*this);
     }
 
     void EditorAppDelegate::shutdown()
     {
         stopScene();
         _inspectorView.shutdown();
-        _proj.shutdown();
+        _materialAssetsView.shutdown();
+        _programAssetsView.shutdown();
         _sceneView.shutdown();
+        _proj.shutdown();
         _imgui.reset();
         _app.removeComponent<ImguiAppComponent>();
         _app.removeComponent<SceneAppComponent>();
@@ -114,8 +120,8 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
-            ImGui::DockBuilderDockWindow(_materialsWindowName, _dockDownId);
-            ImGui::DockBuilderDockWindow(_programsWindowName, _dockDownId);
+            ImGui::DockBuilderDockWindow(_materialAssetsView.getName(), _dockDownId);
+            ImGui::DockBuilderDockWindow(_programAssetsView.getName(), _dockDownId);
         }
     }   
 
@@ -313,7 +319,7 @@ namespace darmok::editor
         onObjectSelected(Entity(entt::null));
     }
 
-    void EditorAppDelegate::onObjectSelected(SelectedObject obj) noexcept
+    void EditorAppDelegate::onObjectSelected(const SelectableObject& obj) noexcept
     {
         _inspectorView.selectObject(obj, _proj.getScene());
         auto entity = _inspectorView.getSelectedEntity();
@@ -329,8 +335,6 @@ namespace darmok::editor
     }
 
     const char* EditorAppDelegate::_sceneTreeWindowName = "Scene Tree";
-    const char* EditorAppDelegate::_materialsWindowName = "Materials";   
-    const char* EditorAppDelegate::_programsWindowName = "Programs";
 
     void EditorAppDelegate::renderSceneTree()
     {
@@ -396,40 +400,6 @@ namespace darmok::editor
         ImGui::End();
     }
 
-    void EditorAppDelegate::renderMaterials()
-    {
-        if (ImGui::Begin(_materialsWindowName))
-        {
-            auto winSize = ImGui::GetWindowSize();
-            int cols = winSize.x / ImguiUtils::getAssetSize().x;
-            if (cols > 0)
-            {
-                ImGui::Columns(cols, "Materials");
-                auto selectedMat = _inspectorView.getSelectedMaterial();
-                for (auto mat : _proj.getMaterials())
-                {
-                    auto selected = mat == selectedMat;
-                    if (ImguiUtils::drawAsset(mat, selected, "MATERIAL"))
-                    {
-                        onObjectSelected(mat);
-                    }
-                    ImGui::NextColumn();
-                }
-                if (ImguiUtils::drawAsset("+"))
-                {
-                    _proj.addMaterial();
-                }
-                ImGui::EndColumns();
-            }
-        }
-        ImGui::End();
-    }
-
-    void EditorAppDelegate::renderPrograms()
-    {
-
-    }
-
     void EditorAppDelegate::imguiRender()
     {
         _sceneView.beforeRender();
@@ -439,7 +409,8 @@ namespace darmok::editor
         renderSceneTree();
         _inspectorView.render();
         _sceneView.render();
-        renderMaterials();
+        _materialAssetsView.render();
+        _programAssetsView.render();
     }
 
     void EditorAppDelegate::update(float deltaTime)
@@ -447,5 +418,82 @@ namespace darmok::editor
         _sceneView.update(deltaTime);
     }
 
-    
+    std::vector<MaterialAsset> EditorAppDelegate::getAssets(std::type_identity<MaterialAsset>) const
+    {
+        return _proj.getMaterials();
+    }
+
+    std::optional<MaterialAsset> EditorAppDelegate::getSelectedAsset(std::type_identity<MaterialAsset>) const
+    {
+        return _inspectorView.getSelectedObject<MaterialAsset>();
+    }
+
+    void EditorAppDelegate::onAssetSelected(const MaterialAsset& asset)
+    {
+        onObjectSelected(asset);
+    }
+
+    std::string EditorAppDelegate::getAssetName(const MaterialAsset& asset) const
+    {
+        return asset->getName();
+    }
+
+    void EditorAppDelegate::addAsset(std::type_identity<MaterialAsset>)
+    {
+        auto mat = std::make_shared<Material>();
+        mat->setName("New Material");
+        _proj.getMaterials().push_back(mat);
+    }
+
+    std::vector<ProgramAsset> EditorAppDelegate::getAssets(std::type_identity<ProgramAsset>) const
+    {
+        std::vector<ProgramAsset> progs;
+        auto& typeNames = StandardProgramLoader::getTypeNames();
+        auto& projProgs = _proj.getPrograms();
+        progs.reserve(typeNames.size() + projProgs.size());
+        for (auto& [type, name] : typeNames)
+        {
+            progs.emplace_back(type);
+        }
+        progs.insert(progs.end(), projProgs.begin(), projProgs.end());
+        return progs;
+    }
+
+    std::optional<ProgramAsset> EditorAppDelegate::getSelectedAsset(std::type_identity<ProgramAsset>) const
+    {
+        return _inspectorView.getSelectedObject<ProgramAsset>();
+    }
+
+    void EditorAppDelegate::onAssetSelected(const ProgramAsset& asset)
+    {
+        onObjectSelected(asset);
+    }
+
+    std::string EditorAppDelegate::getAssetName(const ProgramAsset& asset) const
+    {
+        if (auto standard = std::get_if<StandardProgramType>(&asset))
+        {
+            return StandardProgramLoader::getTypeName(*standard);
+        }
+        auto ptr = std::get<std::shared_ptr<ProgramSource>>(asset);
+        return ptr ? ptr->name : "";
+    }
+
+    void EditorAppDelegate::addAsset(std::type_identity<ProgramAsset>) 
+    {
+        auto src = std::make_shared<ProgramSource>();
+        src->name = "New Program";
+        _proj.getPrograms().push_back(src);
+    }
+
+    DataView EditorAppDelegate::getAssetDropPayload(const ProgramAsset& asset)
+    {
+        if (auto standard = std::get_if<StandardProgramType>(&asset))
+        {
+            auto def = StandardProgramLoader::loadDefinition(*standard);
+            return DataView::fromStatic(def);
+        }
+        return {};
+    }
+
 }

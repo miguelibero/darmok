@@ -9,12 +9,6 @@
 
 #include <portable-file-dialogs.h>
 
-// serialize
-#include <cereal/cereal.hpp>
-#include <cereal/archives/portable_binary.hpp>
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/xml.hpp>
-
 // default scene
 #include <darmok/transform.hpp>
 #include <darmok/environment.hpp>
@@ -43,7 +37,7 @@ namespace darmok::editor
     {
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
-        _assetPack.scenes.insert(_scene);
+        _scenes.push_back(_scene);
 
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
@@ -114,17 +108,24 @@ namespace darmok::editor
         return _cam;
     }
 
-    std::unordered_set<std::shared_ptr<Material>>& EditorProject::getMaterials()
+    EditorProject::Materials& EditorProject::getMaterials()
     {
-        return _assetPack.materials;
+        return _materials;
     }
 
-    std::shared_ptr<Material> EditorProject::addMaterial(const std::string& name)
+    const EditorProject::Materials& EditorProject::getMaterials() const
     {
-        auto mat = std::make_shared<Material>();
-        mat->setName(name);
-        _assetPack.materials.insert(mat);
-        return mat;
+        return _materials;
+    }
+
+    EditorProject::Programs& EditorProject::getPrograms()
+    {
+        return _programs;
+    }
+
+    const EditorProject::Programs& EditorProject::getPrograms() const
+    {
+        return _programs;
     }
 
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept
@@ -202,12 +203,11 @@ namespace darmok::editor
             MeshData(Cube()).createMeshDefinition(prog->getVertexLayout())
         );
         auto mesh = assets.getMeshLoader().loadResource(meshDef);
-        _assetPack.meshes.insert(meshDef);
 
         auto mat = std::make_shared<Material>(prog);
         mat->setName("Default");
-        _assetPack.materials.insert(mat);
         mat->setBaseColor(Colors::white());
+        _materials.push_back(mat);
 
         scene.addComponent<Renderable>(cubeEntity, mesh, mat);
         scene.addComponent<Transform>(cubeEntity)

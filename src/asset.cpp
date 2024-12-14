@@ -22,6 +22,7 @@ namespace darmok
 		, _cerealMeshDefLoader(_dataLoader)
 		, _progLoader(_cerealProgDefLoader)
 		, _texLoader(_texDefLoader)
+		, _cerealMaterialLoader(_dataLoader)
 		, _meshLoader(_cerealMeshDefLoader)
 		, _cerealTexAtlasDefLoader(_dataLoader)
 		, _texPackerDefLoader(_dataLoader, _texDefLoader)
@@ -89,6 +90,11 @@ namespace darmok
 	ITextureAtlasLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
 	{
 		return _texAtlasLoader;
+	}
+
+	IMaterialLoader& AssetContextImpl::getMaterialLoader() noexcept
+	{
+		return _cerealMaterialLoader;
 	}
 
 	IMeshLoader& AssetContextImpl::getMeshLoader() noexcept
@@ -203,6 +209,11 @@ namespace darmok
 	ITextureAtlasLoader& AssetContext::getTextureAtlasLoader() noexcept
 	{
 		return _impl->getTextureAtlasLoader();
+	}
+
+	IMaterialLoader& AssetContext::getMaterialLoader() noexcept
+	{
+		return _impl->getMaterialLoader();
 	}
 
 	IModelLoader& AssetContext::getModelLoader() noexcept

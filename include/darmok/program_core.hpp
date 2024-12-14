@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <string>
 
+#include <nlohmann/json.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/unordered_set.hpp>
@@ -72,6 +73,37 @@ namespace darmok
 
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
 		static const RendererProfileMap& getRendererProfiles() noexcept;
+	};
+
+	class ProgramCompilerImpl;
+
+	struct ProgramSource final
+	{
+		std::string name;
+		Data vertexShader;
+		Data fragmentShader;
+		VaryingDefinition varying;
+
+		void read(const nlohmann::ordered_json& json, std::filesystem::path basePath);
+
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(name),
+				CEREAL_NVP(vertexShader),
+				CEREAL_NVP(fragmentShader),
+				CEREAL_NVP(varying)
+			);
+		}
+	};
+
+	class DARMOK_EXPORT ProgramCompiler final
+	{
+	public:
+		ProgramDefinition operator()(const ProgramSource& src);
+	private:
+		std::unique_ptr<ProgramCompilerImpl> _impl;
 	};
 
 	class ProgramImporterImpl;

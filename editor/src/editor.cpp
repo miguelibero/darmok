@@ -3,7 +3,6 @@
 namespace darmok::editor
 {
     ObjectEditorContainer::ObjectEditorContainer()
-        : _running(false)
     {
     }
 
@@ -27,29 +26,29 @@ namespace darmok::editor
     void ObjectEditorContainer::add(std::unique_ptr<IObjectEditor>&& editor)
     {
         auto type = editor->getObjectType();
-        if (_running)
+        if (_assets && _proj)
         {
-            editor->init(*this);
+            editor->init(_assets.value(), _proj.value(), *this);
         }
         auto& vec = _editors[type.hash()];
         vec.push_back(std::move(editor));
     }
 
-    void ObjectEditorContainer::init()
+    void ObjectEditorContainer::init(AssetContext& assets, EditorProject& proj)
     {
         for (auto& [type, editors] : _editors)
         {
             for (auto& editor : editors)
             {
-                editor->init(*this);
+                editor->init(assets, proj, *this);
             }
         }
-        _running = true;
+        _assets = assets;
+        _proj = proj;
     }
 
     void ObjectEditorContainer::shutdown()
     {
-        _running = false;
         for (auto& [type, editors] : _editors)
         {
             for (auto& editor : editors)
@@ -57,5 +56,7 @@ namespace darmok::editor
                 editor->shutdown();
             }
         }
+        _assets.reset();
+        _proj.reset();
     }
 }

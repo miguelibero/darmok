@@ -59,8 +59,11 @@ namespace darmok
 		using TypeNames = std::unordered_map<StandardProgramType, std::string>;
 		static std::optional<StandardProgramType> readType(std::string_view val) noexcept;
 		static const TypeNames& getTypeNames() noexcept;
+		static const std::string& getTypeName(StandardProgramType type) noexcept;
 		static std::shared_ptr<Program> load(StandardProgramType type);
 		static std::shared_ptr<ProgramDefinition> loadDefinition(StandardProgramType type);
+		static std::optional<StandardProgramType> getType(const std::shared_ptr<Program>& prog) noexcept;
+		static std::optional<StandardProgramType> getType(const std::shared_ptr<ProgramDefinition>& def) noexcept;
 	private:
 		static std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> _defCache;
 		static std::unordered_map<StandardProgramType, std::weak_ptr<Program>> _cache;

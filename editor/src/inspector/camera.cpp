@@ -1,15 +1,16 @@
-#include <darmok-editor/camera_inspector.hpp>
+#include <darmok-editor/inspector/camera.hpp>
 #include <darmok-editor/app.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/camera_reflect.hpp>
 #include <darmok/render_scene.hpp>
+
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
-    void CameraInspectorEditor::init(ObjectEditorContainer& editors) noexcept
+    void CameraInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& editors) noexcept
     {
         _editors = editors;
     }

@@ -147,6 +147,17 @@ namespace darmok
         return _typeNames;
     }
 
+    const std::string& StandardProgramLoader::getTypeName(StandardProgramType type) noexcept
+    {
+        auto itr = _typeNames.find(type);
+        if (itr != _typeNames.end())
+        {
+            return itr->second;
+        }
+        static const std::string empty;
+        return empty;
+    }
+
     std::optional<StandardProgramType> StandardProgramLoader::readType(std::string_view val) noexcept
     {
         auto lower = StringUtils::toLower(val);
@@ -216,6 +227,28 @@ namespace darmok
         auto prog = std::make_shared<Program>(*def);
         _cache[type] = prog;
         return prog;
+    }
+
+    std::optional<StandardProgramType> StandardProgramLoader::getType(const std::shared_ptr<Program>& prog) noexcept
+    {
+        auto itr = std::find_if(_cache.begin(), _cache.end(),
+            [prog](auto& elm) { return elm.second.lock() == prog; });
+        if (itr != _cache.end())
+        {
+            return itr->first;
+        }
+        return std::nullopt;
+    }
+
+    std::optional<StandardProgramType> StandardProgramLoader::getType(const std::shared_ptr<ProgramDefinition>& def) noexcept
+    {
+        auto itr = std::find_if(_defCache.begin(), _defCache.end(),
+            [def](auto& elm) { return elm.second.lock() == def; });
+        if (itr != _defCache.end())
+        {
+            return itr->first;
+        }
+        return std::nullopt;
     }
 
     std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> StandardProgramLoader::_defCache;

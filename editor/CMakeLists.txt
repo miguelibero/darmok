@@ -17,12 +17,14 @@ set(EDITOR_HEADERS
   scene_view.hpp
   editor.hpp
   inspector.hpp
-  transform_inspector.hpp
-  camera_inspector.hpp
-  scene_inspector.hpp
-  light_inspector.hpp
-  render_inspector.hpp
-  material_inspector.hpp
+  assets_view.hpp
+  inspector/transform.hpp
+  inspector/camera.hpp
+  inspector/scene.hpp
+  inspector/light.hpp
+  inspector/render.hpp
+  inspector/material.hpp
+  inspector/program.hpp
 )
 
 set(EDITOR_SOURCES
@@ -33,12 +35,13 @@ set(EDITOR_SOURCES
   scene_view.cpp
   editor.cpp
   inspector.cpp
-  transform_inspector.cpp
-  camera_inspector.cpp
-  scene_inspector.cpp
-  light_inspector.cpp
-  render_inspector.cpp
-  material_inspector.cpp
+  inspector/transform.cpp
+  inspector/camera.cpp
+  inspector/scene.cpp
+  inspector/light.cpp
+  inspector/render.cpp
+  inspector/material.cpp
+  inspector/program.cpp
 )
 
 set(EDITOR_ASSETS

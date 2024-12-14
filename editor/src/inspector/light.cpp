@@ -1,4 +1,4 @@
-#include <darmok-editor/light_inspector.hpp>
+#include <darmok-editor/inspector/light.hpp>
 #include <darmok/light.hpp>
 #include <darmok/utils.hpp>
 #include <imgui.h>

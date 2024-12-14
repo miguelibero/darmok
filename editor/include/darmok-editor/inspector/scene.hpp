@@ -9,7 +9,7 @@ namespace darmok::editor
     class SceneInspectorEditor final : public ITypeObjectEditor<Scene>
     {
     public:
-        void init(ObjectEditorContainer& editors) noexcept override;
+        void init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& editors) noexcept override;
         bool render(Scene& scene) noexcept override;
     private:
         OptionalRef<ObjectEditorContainer> _editors;

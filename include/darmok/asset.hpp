@@ -19,6 +19,7 @@ namespace darmok
 	class IMeshLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
+	class IMaterialLoader;
 	class IModelLoader;
 	class IFontLoader;
 
@@ -46,6 +47,7 @@ namespace darmok
 		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept;
+		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;

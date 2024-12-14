@@ -9,7 +9,7 @@ namespace darmok::editor
     class CameraInspectorEditor final : public ITypeObjectEditor<Camera>
     {
     public:
-        void init(ObjectEditorContainer& editors) noexcept override;
+        void init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& editors) noexcept override;
         bool render(Camera& cam) noexcept override;
     private:
         OptionalRef<ObjectEditorContainer> _editors;

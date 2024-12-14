@@ -1,12 +1,12 @@
-#include <darmok-editor/scene_inspector.hpp>
-#include <darmok-editor/app.hpp>
+#include <darmok-editor/inspector/scene.hpp>
 #include <darmok/scene_reflect.hpp>
 
+#include <imgui.h>
 #include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
-    void SceneInspectorEditor::init(ObjectEditorContainer& editors) noexcept
+    void SceneInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& editors) noexcept
     {
         _editors = editors;
     }

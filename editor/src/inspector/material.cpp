@@ -1,4 +1,4 @@
-#include <darmok-editor/material_inspector.hpp>
+#include <darmok-editor/inspector/material.hpp>
 #include <darmok-editor/utils.hpp>
 
 #include <imgui.h>
@@ -6,6 +6,16 @@
 
 namespace darmok::editor
 {
+	void MaterialInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container)
+	{
+		_assets = assets;
+	}
+
+	void MaterialInspectorEditor::shutdown()
+	{
+		_assets.reset();
+	}
+
 	bool MaterialInspectorEditor::render(Material& mat) noexcept
 	{
 		if (ImGui::CollapsingHeader("Material"))
@@ -15,6 +25,15 @@ namespace darmok::editor
 				if (ImGui::InputText("Name", &name))
 				{
 					mat.setName(name);
+				}
+			}
+			if (_assets)
+			{
+				
+				auto prog = mat.getProgram();
+				if (ImguiUtils::drawProgramReference("Program", prog, _assets->getProgramLoader()))
+				{
+					mat.setProgram(prog);
 				}
 			}
 			{

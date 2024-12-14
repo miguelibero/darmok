@@ -15,6 +15,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/serialize.hpp>
 #include <darmok/asset_serialize.hpp>
+#include <darmok/loader.hpp>
 
 #include <vector>
 #include <string>
@@ -210,4 +211,10 @@ namespace darmok
         BasicUniforms _basicUniforms;
         std::shared_ptr<Texture> _defaultTexture;
     };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public ILoader<Material>
+    {
+    };
+
+    using CerealMaterialLoader = CerealLoader<IMaterialLoader>;
 }

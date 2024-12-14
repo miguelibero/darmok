@@ -6,6 +6,8 @@
 #include <darmok-editor/project.hpp>
 #include <darmok-editor/scene_view.hpp>
 #include <darmok-editor/inspector.hpp>
+#include <darmok-editor/assets_view.hpp>
+#include <darmok-editor/asset_fwd.hpp>
 
 #include <imgui.h>
 
@@ -15,25 +17,45 @@ namespace darmok
     class ImguiAppComponent;
     class Camera;
     class Transform;
+    class Material;
+    class ProgramDefinition;
 }
 
 namespace darmok::editor
 {
-    class EditorAppDelegate final : public darmok::IAppDelegate, public darmok::IImguiRenderer
+    class EditorAppDelegate final : 
+        public IAppDelegate, public IImguiRenderer,
+        public IEditorAssetsViewDelegate<MaterialAsset>,
+        public IEditorAssetsViewDelegate<ProgramAsset>
     {
     public:
 		EditorAppDelegate(App& app) noexcept;
         ~EditorAppDelegate() noexcept;
 
-        // darmok::IAppDelegate
+        // IAppDelegate
         std::optional<int32_t> setup(const std::vector<std::string>& args) noexcept;
         void init() override;
 		void shutdown() override;
 		void update(float deltaTime) override;
 
-        // darmok::IImguiRenderer
+        // IImguiRenderer
         void imguiSetup() override;
         void imguiRender() override;
+
+        // IEditorAssetsViewDelegate<MaterialAsset>
+        std::vector<MaterialAsset> getAssets(std::type_identity<MaterialAsset>)  const override;
+        std::optional<MaterialAsset> getSelectedAsset(std::type_identity<MaterialAsset>) const override;
+        std::string getAssetName(const MaterialAsset& asset) const override;
+        void onAssetSelected(const MaterialAsset& asset) override;
+        void addAsset(std::type_identity<MaterialAsset>) override;
+
+        // IEditorAssetsViewDelegate<ProgramAsset>
+        std::vector<ProgramAsset> getAssets(std::type_identity<ProgramAsset>) const override;
+        std::optional<ProgramAsset> getSelectedAsset(std::type_identity<ProgramAsset>) const override;
+        std::string getAssetName(const ProgramAsset& asset) const override;
+        void onAssetSelected(const ProgramAsset& asset) override;
+        void addAsset(std::type_identity<ProgramAsset>) override;
+        DataView getAssetDropPayload(const ProgramAsset& asset) override;
 
     private:
         App& _app;
@@ -42,6 +64,8 @@ namespace darmok::editor
         EditorProject _proj;
         EditorSceneView _sceneView;
         EditorInspectorView _inspectorView;
+        EditorAssetsView<std::shared_ptr<Material>> _materialAssetsView;
+        EditorAssetsView<ProgramAsset> _programAssetsView;
         bool _scenePlaying;
 
         ImGuiID _dockDownId;
@@ -54,21 +78,16 @@ namespace darmok::editor
 
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
-        static const char* _materialsWindowName;
-        static const char* _programsWindowName;
 
         void renderMainMenu();
         void renderMainToolbar();
         void renderDockspace();
         void renderSceneTree();
-        void renderMaterials();
-        void renderPrograms();
 
         void onSceneTreeTransformClicked(Transform& trans);
         void onSceneTreeSceneClicked();
 
-        using SelectedObject = EditorInspectorView::SelectedObject;
-        void onObjectSelected(SelectedObject obj) noexcept;
+        void onObjectSelected(const SelectableObject& obj) noexcept;
 
         void playScene();
         void stopScene();

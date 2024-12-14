@@ -1,10 +1,11 @@
 #include <darmok-editor/inspector.hpp>
-#include <darmok-editor/transform_inspector.hpp>
-#include <darmok-editor/camera_inspector.hpp>
-#include <darmok-editor/light_inspector.hpp>
-#include <darmok-editor/scene_inspector.hpp>
-#include <darmok-editor/render_inspector.hpp>
-#include <darmok-editor/material_inspector.hpp>
+#include <darmok-editor/inspector/transform.hpp>
+#include <darmok-editor/inspector/camera.hpp>
+#include <darmok-editor/inspector/light.hpp>
+#include <darmok-editor/inspector/scene.hpp>
+#include <darmok-editor/inspector/render.hpp>
+#include <darmok-editor/inspector/material.hpp>
+#include <darmok-editor/inspector/program.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -30,11 +31,12 @@ namespace darmok::editor
         _editors.add<RenderableInspectorEditor>();
         _sceneEditor = _editors.add<SceneInspectorEditor>();
         _materialEditor = _editors.add<MaterialInspectorEditor>();
+        _programEditor = _editors.add<ProgramInspectorEditor>();
     }
 
-    void EditorInspectorView::init()
+    void EditorInspectorView::init(AssetContext& assets, EditorProject& proj)
     {
-        _editors.init();
+        _editors.init(assets, proj);
     }
 
     void EditorInspectorView::shutdown()
@@ -43,11 +45,10 @@ namespace darmok::editor
         _sceneEditor.reset();
     }
 
-    EditorInspectorView& EditorInspectorView::selectObject(SelectedObject obj, const std::shared_ptr<Scene>& scene)
+    void EditorInspectorView::selectObject(const SelectableObject& obj, const std::shared_ptr<Scene>& scene)
     {
         _selected = obj;
         _scene = scene;
-        return *this;
     }
 
     std::shared_ptr<Scene> EditorInspectorView::getSelectedScene() const noexcept
@@ -58,12 +59,6 @@ namespace darmok::editor
             return _scene;
         }
         return nullptr;
-    }
-
-    std::shared_ptr<Material> EditorInspectorView::getSelectedMaterial() const noexcept
-    {
-        auto ptr = std::get_if<std::shared_ptr<Material>>(&_selected);
-        return ptr == nullptr ? nullptr : *ptr;
     }
 
     Entity EditorInspectorView::getSelectedEntity() const noexcept
@@ -91,9 +86,16 @@ namespace darmok::editor
             {
                 _sceneEditor->render(*scene);
             }
-            else if (auto mat = getSelectedMaterial())
+            else if (auto mat = getSelectedObject<MaterialAsset>())
             {
-                _materialEditor->render(*mat);
+                _materialEditor->render(*mat.value());
+            }
+            else if (auto prog = getSelectedObject<ProgramAsset>())
+            {
+                if (auto ptr = std::get_if<std::shared_ptr<ProgramSource>>(&prog.value()))
+                {
+                    _programEditor->render(**ptr);
+                }
             }
         }
         ImGui::End();
