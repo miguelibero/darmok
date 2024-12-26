@@ -16,7 +16,7 @@
 
 namespace darmok
 {
-    struct DARMOK_EXPORT AssetTypeImporterInput final
+    struct DARMOK_EXPORT FileTypeImporterInput final
     {
         std::filesystem::path path;
         std::filesystem::path basePath;
@@ -30,16 +30,16 @@ namespace darmok
         std::filesystem::path getOutputPath(const std::string& defaultExt = "") const;
     };
 
-    using AssetImportDependencies = std::unordered_set<std::filesystem::path>;
+    using FileTypeImportDependencies = std::unordered_set<std::filesystem::path>;
 
-    class DARMOK_EXPORT BX_NO_VTABLE IAssetTypeImporter
+    class DARMOK_EXPORT BX_NO_VTABLE IFileTypeImporter
     {
     public:
-        using Input = AssetTypeImporterInput;
-        using Dependencies = AssetImportDependencies;
+        using Input = FileTypeImporterInput;
+        using Dependencies = FileTypeImportDependencies;
         using Outputs = std::vector<std::filesystem::path>;
 
-        virtual ~IAssetTypeImporter() = default;
+        virtual ~IFileTypeImporter() = default;
         virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept {};
 
         virtual bool startImport(const Input& input, bool dry = false) { return true; };
@@ -58,9 +58,9 @@ namespace darmok
         virtual const std::string& getName() const noexcept = 0;
     };
 
-    class CommandLineAssetImporterImpl;
+    class CommandLineFileImporterImpl;
 
-    struct CommandLineAssetImporterConfig
+    struct CommandLineFileImporterConfig
     {
         std::filesystem::path inputPath;
         std::filesystem::path outputPath;
@@ -69,68 +69,68 @@ namespace darmok
         std::vector<std::filesystem::path> shaderIncludePaths;
     };
 
-    class DARMOK_EXPORT BaseCommandLineAssetImporter
+    class DARMOK_EXPORT BaseCommandLineFileImporter
     {
     public:
-        using Config = CommandLineAssetImporterConfig;
-        BaseCommandLineAssetImporter() noexcept;
-        virtual ~BaseCommandLineAssetImporter() noexcept;
+        using Config = CommandLineFileImporterConfig;
+        BaseCommandLineFileImporter() noexcept;
+        virtual ~BaseCommandLineFileImporter() noexcept;
         int operator()(int argc, const char* argv[]) noexcept;
     protected:
         virtual std::vector<std::filesystem::path> getOutputs(const Config& config) const = 0;
         virtual void import(const Config & config, std::ostream& log) const = 0;
     private:
-        friend class CommandLineAssetImporterImpl;
-        std::unique_ptr<CommandLineAssetImporterImpl> _impl;
+        friend class CommandLineFileImporterImpl;
+        std::unique_ptr<CommandLineFileImporterImpl> _impl;
     };
 
-    class AssetImporterImpl;
+    class FileImporterImpl;
 
-    class DARMOK_EXPORT AssetImporter final
+    class DARMOK_EXPORT FileImporter final
     {
     public:
-		AssetImporter(const std::filesystem::path& inputPath);
-		~AssetImporter() noexcept;
-        AssetImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
-        AssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        AssetImporter& addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& processor) noexcept;
+        FileImporter(const std::filesystem::path& inputPath);
+		~FileImporter() noexcept;
+        FileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
+        FileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
+        FileImporter& addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept;
 
         template<typename T, typename... A>
         T& addTypeImporter(A&&... args) noexcept
         {
             auto ptr = new T(std::forward<A>(args)...);
-            addTypeImporter(std::unique_ptr<IAssetTypeImporter>(ptr));
+            addTypeImporter(std::unique_ptr<IFileTypeImporter>(ptr));
             return *ptr;
         }
 
         std::vector<std::filesystem::path> getOutputs() const noexcept;
 		void operator()(std::ostream& log) const;
 	private:
-		std::unique_ptr<AssetImporterImpl> _impl;
+		std::unique_ptr<FileImporterImpl> _impl;
     };
 
-    class ProgramImporter;
+    class ProgramFileImporter;
 
-    class DARMOK_EXPORT DarmokCoreAssetImporter final
+    class DARMOK_EXPORT DarmokCoreAssetFileImporter final
     {
     public:
-        DarmokCoreAssetImporter(const CommandLineAssetImporterConfig& config);
-        DarmokCoreAssetImporter(const std::filesystem::path& inputPath);
-        DarmokCoreAssetImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
-        DarmokCoreAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        DarmokCoreAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-        DarmokCoreAssetImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetFileImporter(const CommandLineFileImporterConfig& config);
+        DarmokCoreAssetFileImporter(const std::filesystem::path& inputPath);
+        DarmokCoreAssetFileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
+        DarmokCoreAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
+        DarmokCoreAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
         std::vector<std::filesystem::path> getOutputs() const;
         void operator()(std::ostream& log) const;
     private:
-        AssetImporter _importer;
-        ProgramImporter& _progImporter;
+        FileImporter _importer;
+        ProgramFileImporter& _progImporter;
     };
 
-    class DARMOK_EXPORT CopyAssetImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT CopyFileImporter final : public IFileTypeImporter
     {
     public:
-        CopyAssetImporter(size_t bufferSize = 4096) noexcept;
+        CopyFileImporter(size_t bufferSize = 4096) noexcept;
 
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;

@@ -85,12 +85,12 @@ namespace darmok
         const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 
-    class FreetypeFontAtlasImporterImpl final
+    class FreetypeFontAtlasFileImporterImpl final
     {
     public:
-        using Input = AssetTypeImporterInput;
-        FreetypeFontAtlasImporterImpl();
-        ~FreetypeFontAtlasImporterImpl();
+        using Input = FileTypeImporterInput;
+        FreetypeFontAtlasFileImporterImpl();
+        ~FreetypeFontAtlasFileImporterImpl();
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);

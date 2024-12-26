@@ -172,15 +172,13 @@ namespace darmok
         AssimpSceneLoader _sceneLoader;
     };
 
-    struct AssetTypeImporterInput;
-
-    class AssimpSkeletonImporterImpl final
+    class AssimpSkeletonFileImporterImpl final
     {
     public:
-        using Input = AssetTypeImporterInput;
+        using Input = FileTypeImporterInput;
         using OzzSkeleton = ozz::animation::Skeleton;
 
-        AssimpSkeletonImporterImpl(size_t bufferSize = 4096) noexcept;
+        AssimpSkeletonFileImporterImpl(size_t bufferSize = 4096) noexcept;
         OzzSkeleton read(const std::filesystem::path& path, const nlohmann::json& config);
         std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
@@ -191,15 +189,15 @@ namespace darmok
         AssimpSceneLoader _sceneLoader;
     };
 
-    class AssimpSkeletalAnimationImporterImpl final
+    class AssimpSkeletalAnimationFileImporterImpl final
     {
     public:
-        using Input = AssetTypeImporterInput;
+        using Input = FileTypeImporterInput;
         using OzzAnimation = ozz::animation::Animation;
         using OzzSkeleton = ozz::animation::Skeleton;
         using OptimizationSettings = AssimpOzzAnimationConverter::OptimizationSettings;
 
-        AssimpSkeletalAnimationImporterImpl(size_t bufferSize = 4096) noexcept;
+        AssimpSkeletalAnimationFileImporterImpl(size_t bufferSize = 4096) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
         bool startImport(const Input& input, bool dry);

@@ -14,7 +14,7 @@ namespace darmok
 		std::filesystem::path image;
 		uint64_t loadFlags = defaultTextureLoadFlags;
 
-		void load(const AssetTypeImporterInput& input);
+		void load(const FileTypeImporterInput& input);
 	private:
 		void read(const nlohmann::json& json, std::filesystem::path basePath);
 	};

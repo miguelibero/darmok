@@ -2,21 +2,21 @@
 
 using namespace darmok;
 
-class CommandLineAssetImporter final : public BaseCommandLineAssetImporter
+class CommandLineFileImporter final : public BaseCommandLineFileImporter
 {
 protected:
 	std::vector<std::filesystem::path> getOutputs(const Config& config) const override
 	{
-		return DarmokCoreAssetImporter(config).getOutputs();
+		return DarmokCoreAssetFileImporter(config).getOutputs();
 	}
 
 	void import(const Config& config, std::ostream & log) const override
 	{
-		return DarmokCoreAssetImporter(config)(log);
+		return DarmokCoreAssetFileImporter(config)(log);
 	}
 };
 
 int main(int argc, const char* argv[])
 {
-	return CommandLineAssetImporter()(argc, argv);
+	return CommandLineFileImporter()(argc, argv);
 }

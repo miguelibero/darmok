@@ -72,6 +72,28 @@ namespace darmok
         return toHex();
     }
 
+    void DataView::write(const std::filesystem::path& path) const
+    {
+        FILE* fh;
+#ifdef _MSC_VER        
+        auto err = fopen_s(&fh, path.string().c_str(), "wb");
+#else
+        fh = fopen(path.string().c_str(), "wb");
+        int err = 0;
+        if (fh == nullptr)
+        {
+            err = errno;
+        }
+#endif
+        if (err)
+        {
+            std::string error = strerror(err);
+            throw std::runtime_error("failed to open file: " + error);
+        }
+        fwrite(_ptr, sizeof(uint8_t), _size, fh);
+        fclose(fh);
+    }
+
     std::string DataView::toHex(size_t offset, size_t size) const noexcept
     {
         void* ptr;

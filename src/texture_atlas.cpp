@@ -570,7 +570,7 @@ namespace darmok
 		return atlas;
 	}
 
-	TexturePackerTextureAtlasImporter::TexturePackerTextureAtlasImporter(const std::filesystem::path& exePath) noexcept
+	TexturePackerAtlasFileImporter::TexturePackerAtlasFileImporter(const std::filesystem::path& exePath) noexcept
 		: _exePath(exePath)
 	{
 		if (_exePath.empty())
@@ -582,18 +582,18 @@ namespace darmok
 #endif
 	}
 
-	void TexturePackerTextureAtlasImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+	void TexturePackerAtlasFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
 	{
 		_log = log;
 	}
 
-	const std::string& TexturePackerTextureAtlasImporter::getName() const noexcept
+	const std::string& TexturePackerAtlasFileImporter::getName() const noexcept
 	{
 		static const std::string name("texture_packer");
 		return name;
 	}
 
-	const std::unordered_map<std::string, std::string> TexturePackerTextureAtlasImporter::_textureFormatExts = {
+	const std::unordered_map<std::string, std::string> TexturePackerAtlasFileImporter::_textureFormatExts = {
 		{ "png8", ".png"},
 		{ "pvr3", ".pvr"},
 		{ "pvr3gz", ".pvr.gz"},
@@ -601,7 +601,7 @@ namespace darmok
 		{ "pvr3ccz", ".pvr.ccz"},
 	};
 
-	std::string TexturePackerTextureAtlasImporter::getTextureFormatExt(const std::string& format) noexcept
+	std::string TexturePackerAtlasFileImporter::getTextureFormatExt(const std::string& format) noexcept
 	{
 		auto itr = _textureFormatExts.find(format);
 		if (itr == _textureFormatExts.end())
@@ -611,12 +611,12 @@ namespace darmok
 		return itr->second;
 	}
 
-	const std::unordered_map<std::string, std::string> TexturePackerTextureAtlasImporter::_sheetFormatExts = {
+	const std::unordered_map<std::string, std::string> TexturePackerAtlasFileImporter::_sheetFormatExts = {
 		{ "rmlui", ".rcss"},
 		{ "libRocket", ".rcss"},
 	};
 
-	std::string TexturePackerTextureAtlasImporter::getSheetFormatExt(const std::string& format) noexcept
+	std::string TexturePackerAtlasFileImporter::getSheetFormatExt(const std::string& format) noexcept
 	{
 		auto itr = _sheetFormatExts.find(format);
 		if (itr == _sheetFormatExts.end())
@@ -626,14 +626,14 @@ namespace darmok
 		return itr->second;
 	}
 
-	const std::string TexturePackerTextureAtlasImporter::_outputFormatOption = "outputFormat";
-	const std::string TexturePackerTextureAtlasImporter::_textureFormatOption = "textureFormat";
-	const std::string TexturePackerTextureAtlasImporter::_rmluiResolutionOption = "rmluiResolution";
-	const std::string TexturePackerTextureAtlasImporter::_rmluiNameFormatOption = "rmluiNameFormat";
-	const std::string TexturePackerTextureAtlasImporter::_rmluiSpriteNameFormatOption = "rmluiSpriteNameFormat";
-	const std::string TexturePackerTextureAtlasImporter::_rmluiBoxNameFormatOption = "rmluiBoxNameFormat";
+	const std::string TexturePackerAtlasFileImporter::_outputFormatOption = "outputFormat";
+	const std::string TexturePackerAtlasFileImporter::_textureFormatOption = "textureFormat";
+	const std::string TexturePackerAtlasFileImporter::_rmluiResolutionOption = "rmluiResolution";
+	const std::string TexturePackerAtlasFileImporter::_rmluiNameFormatOption = "rmluiNameFormat";
+	const std::string TexturePackerAtlasFileImporter::_rmluiSpriteNameFormatOption = "rmluiSpriteNameFormat";
+	const std::string TexturePackerAtlasFileImporter::_rmluiBoxNameFormatOption = "rmluiBoxNameFormat";
 
-	bool TexturePackerTextureAtlasImporter::startImport(const Input& input, bool dry)
+	bool TexturePackerAtlasFileImporter::startImport(const Input& input, bool dry)
 	{
 		if (input.config.is_null())
 		{
@@ -773,7 +773,7 @@ namespace darmok
 		return true;
 	}
 
-	TextureAtlasRmluiConfig TexturePackerTextureAtlasImporter::readRmluiConfig(const nlohmann::json& json) noexcept
+	TextureAtlasRmluiConfig TexturePackerAtlasFileImporter::readRmluiConfig(const nlohmann::json& json) noexcept
 	{
 		TextureAtlasDefinition::RmluiConfig config;
 		if (json.contains(_rmluiNameFormatOption))
@@ -795,7 +795,7 @@ namespace darmok
 		return config;
 	}
 
-	void TexturePackerTextureAtlasImporter::endImport(const Input& input)
+	void TexturePackerAtlasFileImporter::endImport(const Input& input)
 	{
 		_xmlDoc.reset();
 		_sheetPath.clear();
@@ -804,12 +804,12 @@ namespace darmok
 		_textureData.clear();
 	}
 
-	TexturePackerTextureAtlasImporter::Outputs TexturePackerTextureAtlasImporter::getOutputs(const Input& input)
+	TexturePackerAtlasFileImporter::Outputs TexturePackerAtlasFileImporter::getOutputs(const Input& input)
 	{
 		return { _sheetPath, _texturePath };
 	}
 
-	TexturePackerTextureAtlasImporter::Dependencies TexturePackerTextureAtlasImporter::getDependencies(const Input& input)
+	TexturePackerAtlasFileImporter::Dependencies TexturePackerAtlasFileImporter::getDependencies(const Input& input)
 	{
 		Dependencies deps;
 
@@ -827,7 +827,7 @@ namespace darmok
 		return deps;
 	}
 
-	void TexturePackerTextureAtlasImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	void TexturePackerAtlasFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
 		if (outputIndex == 0)
 		{

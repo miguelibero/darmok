@@ -472,6 +472,11 @@ namespace darmok
 		}
 	}
 
+	bool VaryingDefinition::empty() const noexcept
+	{
+		return vertex.empty() && fragment.empty();
+	}
+
 	std::string VaryingDefinition::getBgfxTypeName(bgfx::Attrib::Enum val) noexcept
 	{
 		if (val == bgfx::Attrib::Indices)
@@ -552,6 +557,12 @@ namespace darmok
 		AttribGroups disabledGroups;
 		AttribUtils::getDisabledGroups(defines, disabledGroups);
 		writeBgfx(out, disabledGroups);
+	}
+
+	void VaryingDefinition::writeBgfx(const std::filesystem::path& path) const noexcept
+	{
+		std::ofstream out(path);
+		writeBgfx(out);
 	}
 
 	VertexLayout::VertexLayout(const std::vector<VertexAttribute>& attribs) noexcept

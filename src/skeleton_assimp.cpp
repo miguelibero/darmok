@@ -620,12 +620,12 @@ namespace darmok
         return (*_impl)(path);
     }
 
-    AssimpSkeletonImporterImpl::AssimpSkeletonImporterImpl(size_t bufferSize) noexcept
+    AssimpSkeletonFileImporterImpl::AssimpSkeletonFileImporterImpl(size_t bufferSize) noexcept
         : _bufferSize(bufferSize)
     {
     }
 
-    AssimpSkeletonImporterImpl::OzzSkeleton AssimpSkeletonImporterImpl::read(const std::filesystem::path& path, const nlohmann::json& config)
+    AssimpSkeletonFileImporterImpl::OzzSkeleton AssimpSkeletonFileImporterImpl::read(const std::filesystem::path& path, const nlohmann::json& config)
     {
         AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
@@ -639,7 +639,7 @@ namespace darmok
         return converter.createSkeleton();
     }
 
-    std::vector<std::filesystem::path> AssimpSkeletonImporterImpl::getOutputs(const Input& input) noexcept
+    std::vector<std::filesystem::path> AssimpSkeletonFileImporterImpl::getOutputs(const Input& input) noexcept
     {
         std::vector<std::filesystem::path> outputs;
         if (input.config.is_null())
@@ -656,64 +656,64 @@ namespace darmok
         return outputs;
     }
 
-    std::ofstream AssimpSkeletonImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpSkeletonFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return std::ofstream(path, std::ios::binary);
     }
 
-    void AssimpSkeletonImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void AssimpSkeletonFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         auto skel = read(input.path, input.config);
         AssimpOzzUtils::writeToStream(skel, out, _bufferSize);
     }
 
-    const std::string& AssimpSkeletonImporterImpl::getName() const noexcept
+    const std::string& AssimpSkeletonFileImporterImpl::getName() const noexcept
     {
         static const std::string name("skeleton");
         return name;
     }
 
-    AssimpSkeletonImporter::AssimpSkeletonImporter() noexcept
-        : _impl(std::make_unique<AssimpSkeletonImporterImpl>())
+    AssimpSkeletonFileImporter::AssimpSkeletonFileImporter() noexcept
+        : _impl(std::make_unique<AssimpSkeletonFileImporterImpl>())
     {
     }
 
-    AssimpSkeletonImporter::~AssimpSkeletonImporter() noexcept
+    AssimpSkeletonFileImporter::~AssimpSkeletonFileImporter() noexcept
     {
         // empty on purpose
     }
 
-    std::vector<std::filesystem::path> AssimpSkeletonImporter::getOutputs(const Input& input)
+    std::vector<std::filesystem::path> AssimpSkeletonFileImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
     }
 
-    std::ofstream AssimpSkeletonImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpSkeletonFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(input, outputIndex, path);
     }
 
-    void AssimpSkeletonImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void AssimpSkeletonFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    const std::string& AssimpSkeletonImporter::getName() const noexcept
+    const std::string& AssimpSkeletonFileImporter::getName() const noexcept
     {
         return _impl->getName();
     }
 
-    AssimpSkeletalAnimationImporterImpl::AssimpSkeletalAnimationImporterImpl(size_t bufferSize) noexcept
+    AssimpSkeletalAnimationFileImporterImpl::AssimpSkeletalAnimationFileImporterImpl(size_t bufferSize) noexcept
         : _bufferSize(bufferSize)
     {
     }
 
-    void AssimpSkeletalAnimationImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    void AssimpSkeletalAnimationFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
     {
         _log = log;
     }
 
-    std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept
+    std::filesystem::path AssimpSkeletalAnimationFileImporterImpl::getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept
     {
         auto fanimName = animName;
 
@@ -739,7 +739,7 @@ namespace darmok
         return input.getRelativePath().parent_path() / animOutputPath;
     }
 
-    std::filesystem::path AssimpSkeletalAnimationImporterImpl::getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept
+    std::filesystem::path AssimpSkeletalAnimationFileImporterImpl::getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept
     {
         std::string fixedOutputPath = outputPath;
         if (animConfig.contains("outputPath"))
@@ -749,7 +749,7 @@ namespace darmok
         return getOutputPath(input, animName, fixedOutputPath);
     }
 
-    AssimpSkeletalAnimationImporterImpl::OzzSkeleton AssimpSkeletalAnimationImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
+    AssimpSkeletalAnimationFileImporterImpl::OzzSkeleton AssimpSkeletalAnimationFileImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
     {
         AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         loadConfig.populateArmature = true;
@@ -759,17 +759,17 @@ namespace darmok
         return converter.createSkeleton();
     }
 
-    const std::string AssimpSkeletalAnimationImporterImpl::_skeletonJsonKey = "skeleton";
-    const std::string AssimpSkeletalAnimationImporterImpl::_outputPathJsonKey = "outputPath";
-    const std::string AssimpSkeletalAnimationImporterImpl::_animationsJsonKey = "animations";
-    const std::string AssimpSkeletalAnimationImporterImpl::_useFileMatchAsNameJsonKey = "useFileMatchAsName";
-    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationJsonKey = "optimization";
-    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationToleranceJsonKey = "tolerance";
-    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationDistanceJsonKey = "distance";
-    const std::string AssimpSkeletalAnimationImporterImpl::_optimizationJointsJsonKey = "joints";
-    const std::string AssimpSkeletalAnimationImporterImpl::_minKeyframeDurationJsonKey = "minKeyframeDuration";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_skeletonJsonKey = "skeleton";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_outputPathJsonKey = "outputPath";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_animationsJsonKey = "animations";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_useFileMatchAsNameJsonKey = "useFileMatchAsName";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_optimizationJsonKey = "optimization";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_optimizationToleranceJsonKey = "tolerance";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_optimizationDistanceJsonKey = "distance";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_optimizationJointsJsonKey = "joints";
+    const std::string AssimpSkeletalAnimationFileImporterImpl::_minKeyframeDurationJsonKey = "minKeyframeDuration";
 
-    bool AssimpSkeletalAnimationImporterImpl::startImport(const Input& input, bool dry)
+    bool AssimpSkeletalAnimationFileImporterImpl::startImport(const Input& input, bool dry)
     {
         if (input.config.is_null())
         {
@@ -827,7 +827,7 @@ namespace darmok
         return true;
     }
 
-    AssimpSkeletalAnimationImporterImpl::OptimizationSettings AssimpSkeletalAnimationImporterImpl::loadOptimizationSettings(const nlohmann::json& config) noexcept
+    AssimpSkeletalAnimationFileImporterImpl::OptimizationSettings AssimpSkeletalAnimationFileImporterImpl::loadOptimizationSettings(const nlohmann::json& config) noexcept
     {
         auto readElement = [](const nlohmann::json& config)
         {
@@ -855,7 +855,7 @@ namespace darmok
         return settings;
     }
 
-    std::vector<std::filesystem::path> AssimpSkeletalAnimationImporterImpl::getOutputs(const Input& input)
+    std::vector<std::filesystem::path> AssimpSkeletalAnimationFileImporterImpl::getOutputs(const Input& input)
     {
         std::vector<std::filesystem::path> outputs;
 
@@ -902,7 +902,7 @@ namespace darmok
         return outputs;
     }
 
-    void AssimpSkeletalAnimationImporterImpl::endImport(const Input& input) noexcept
+    void AssimpSkeletalAnimationFileImporterImpl::endImport(const Input& input) noexcept
     {
         _currentInput = Input{};
         _currentScene.reset();
@@ -912,12 +912,12 @@ namespace darmok
         _currentAnimationNames.clear();
     }
 
-    std::ofstream AssimpSkeletalAnimationImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpSkeletalAnimationFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return std::ofstream(path, std::ios::binary);
     }
 
-    AssimpSkeletalAnimationImporterImpl::OzzAnimation AssimpSkeletalAnimationImporterImpl::read(const std::filesystem::path& path, const std::string& animationName)
+    AssimpSkeletalAnimationFileImporterImpl::OzzAnimation AssimpSkeletalAnimationFileImporterImpl::read(const std::filesystem::path& path, const std::string& animationName)
     {
         AssimpOzzAnimationConverter converter(*_currentScene, _log);
         if (_currentSkeleton)
@@ -935,7 +935,7 @@ namespace darmok
         return converter.createAnimation(animationName);
     }
 
-    void AssimpSkeletalAnimationImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void AssimpSkeletalAnimationFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         nlohmann::json optimize;
         if (input.dirConfig.contains(_optimizationJsonKey))
@@ -952,53 +952,53 @@ namespace darmok
         AssimpOzzUtils::writeToStream(anim, out, _bufferSize);
     }
 
-    const std::string& AssimpSkeletalAnimationImporterImpl::getName() const noexcept
+    const std::string& AssimpSkeletalAnimationFileImporterImpl::getName() const noexcept
     {
         static const std::string name("skeletal_animation");
         return name;
     }
 
-    AssimpSkeletalAnimationImporter::AssimpSkeletalAnimationImporter() noexcept
-        : _impl(std::make_unique<AssimpSkeletalAnimationImporterImpl>())
+    AssimpSkeletalAnimationFileImporter::AssimpSkeletalAnimationFileImporter() noexcept
+        : _impl(std::make_unique<AssimpSkeletalAnimationFileImporterImpl>())
     {
     }
 
-    AssimpSkeletalAnimationImporter::~AssimpSkeletalAnimationImporter() noexcept
+    AssimpSkeletalAnimationFileImporter::~AssimpSkeletalAnimationFileImporter() noexcept
     {
         // empty on purpose
     }
 
-    void AssimpSkeletalAnimationImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    void AssimpSkeletalAnimationFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
     {
         _impl->setLogOutput(log);
     }
 
-    bool AssimpSkeletalAnimationImporter::startImport(const Input& input, bool dry)
+    bool AssimpSkeletalAnimationFileImporter::startImport(const Input& input, bool dry)
     {
         return _impl->startImport(input, dry);
     }
 
-    void AssimpSkeletalAnimationImporter::endImport(const Input& input)
+    void AssimpSkeletalAnimationFileImporter::endImport(const Input& input)
     {
         return _impl->endImport(input);
     }
 
-    std::vector<std::filesystem::path> AssimpSkeletalAnimationImporter::getOutputs(const Input& input)
+    std::vector<std::filesystem::path> AssimpSkeletalAnimationFileImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
     }
 
-    std::ofstream AssimpSkeletalAnimationImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpSkeletalAnimationFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(input, outputIndex, path);
     }
 
-    void AssimpSkeletalAnimationImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void AssimpSkeletalAnimationFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         _impl->writeOutput(input, outputIndex, out);
     }
 
-    const std::string& AssimpSkeletalAnimationImporter::getName() const noexcept
+    const std::string& AssimpSkeletalAnimationFileImporter::getName() const noexcept
     {
         return _impl->getName();
     }

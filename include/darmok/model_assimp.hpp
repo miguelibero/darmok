@@ -53,15 +53,15 @@ namespace darmok
         std::unique_ptr<AssimpModelLoaderImpl> _impl;
     };
 
-    class AssimpModelImporterImpl;
+    class AssimpModelFileImporterImpl;
 
-    class DARMOK_EXPORT AssimpModelImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT AssimpModelFileImporter final : public IFileTypeImporter
     {
     public:
         using LoadConfig = AssimpModelLoadConfig;
-        AssimpModelImporter(bx::AllocatorI& alloc);
-        ~AssimpModelImporter();
-        AssimpModelImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
+        AssimpModelFileImporter(bx::AllocatorI& alloc);
+        ~AssimpModelFileImporter();
+        AssimpModelFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
         bool startImport(const Input& input, bool dry = false) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         Dependencies getDependencies(const Input& input) override;
@@ -70,6 +70,6 @@ namespace darmok
         void endImport(const Input& input);
         const std::string& getName() const noexcept override;
     private:
-        std::unique_ptr<AssimpModelImporterImpl> _impl;
+        std::unique_ptr<AssimpModelFileImporterImpl> _impl;
     };
 }

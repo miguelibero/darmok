@@ -147,16 +147,16 @@ namespace darmok
         LoadConfig loadConfig;
     };
 
-    class AssimpModelImporterImpl final
+    class AssimpModelFileImporterImpl final
     {
     public:
-        using Input = AssetTypeImporterInput;
+        using Input = FileTypeImporterInput;
         using Config = AssimpModelImportConfig;
         using LoadConfig = AssimpModelLoadConfig;
         using OutputFormat = CerealFormat;
-        using Dependencies = AssetImportDependencies;
+        using Dependencies = FileTypeImportDependencies;
 
-        AssimpModelImporterImpl(bx::AllocatorI& alloc);
+        AssimpModelFileImporterImpl(bx::AllocatorI& alloc);
         
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);

@@ -18,28 +18,28 @@ namespace darmok
         std::unique_ptr<AssimpSkeletonLoaderImpl> _impl;
     };
 
-    class AssimpSkeletonImporterImpl;
+    class AssimpSkeletonFileImporterImpl;
 
-    class DARMOK_EXPORT AssimpSkeletonImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT AssimpSkeletonFileImporter final : public IFileTypeImporter
     {
     public:
-        AssimpSkeletonImporter() noexcept;
-        ~AssimpSkeletonImporter() noexcept;
+        AssimpSkeletonFileImporter() noexcept;
+        ~AssimpSkeletonFileImporter() noexcept;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
     private:
-        std::unique_ptr<AssimpSkeletonImporterImpl> _impl;
+        std::unique_ptr<AssimpSkeletonFileImporterImpl> _impl;
     };
 
-    class AssimpSkeletalAnimationImporterImpl;
+    class AssimpSkeletalAnimationFileImporterImpl;
 
-    class DARMOK_EXPORT AssimpSkeletalAnimationImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT AssimpSkeletalAnimationFileImporter final : public IFileTypeImporter
     {
     public:
-        AssimpSkeletalAnimationImporter() noexcept;
-        ~AssimpSkeletalAnimationImporter() noexcept;
+        AssimpSkeletalAnimationFileImporter() noexcept;
+        ~AssimpSkeletalAnimationFileImporter() noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
         bool startImport(const Input& input, bool dry) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
@@ -48,6 +48,6 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
     private:
-        std::unique_ptr<AssimpSkeletalAnimationImporterImpl> _impl;
+        std::unique_ptr<AssimpSkeletalAnimationFileImporterImpl> _impl;
     };
 }

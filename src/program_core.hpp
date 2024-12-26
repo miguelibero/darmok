@@ -17,43 +17,46 @@ namespace darmok
         Compute,
     };
 
-    struct ShaderCompilerOutput
+    struct ShaderCompilerConfig final
     {
+        ProgramCompilerConfig programConfig;
         std::filesystem::path path;
-        std::string profile;
-        ShaderDefines defines;
+        std::filesystem::path varyingPath;
+        ShaderType type;
     };
 
-    class ShaderCompiler final
+    struct ShaderCompilerOperation final
+    {
+        std::string profile;
+        ShaderDefines defines;
+        std::filesystem::path outputPath;
+    };
+
+    class ShaderParser final
     {
     public:
+        using IncludePaths = std::unordered_set<std::filesystem::path>;
+        using Dependencies = FileTypeImportDependencies;
         using Defines = ShaderDefines;
-        using Output = ShaderCompilerOutput;
-        using Dependencies = AssetImportDependencies;
-        ShaderCompiler() noexcept;
-        void reset() noexcept;
-        ShaderCompiler& setShadercPath(const std::filesystem::path& path) noexcept;
-        ShaderCompiler& setIncludePaths(const std::vector<std::filesystem::path>& paths) noexcept;
-        ShaderCompiler& addIncludePath(const std::filesystem::path& path) noexcept;
-        ShaderCompiler& setVaryingDef(const std::filesystem::path& path) noexcept;
-        ShaderCompiler& setShaderType(ShaderType type) noexcept;
-        ShaderCompiler& setShaderType(const std::string& type);
-        ShaderCompiler& setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        ShaderCompiler& setDefines(const Defines& defines) noexcept;
-        ShaderCompiler& setDefines(const std::filesystem::path& shaderPath) noexcept;
+        using CompilerConfig = ShaderCompilerConfig;
+        using CompilerOperation = ShaderCompilerOperation;
 
-        void operator()(const std::filesystem::path& input, const Output& output) const;
+        ShaderParser(const IncludePaths& includePaths) noexcept;
+
         size_t getDependencies(std::istream& in, Dependencies& deps) const noexcept;
         size_t getDefines(std::istream& in, Defines& defines) const noexcept;
-        std::vector<Output> getOutputs(const std::filesystem::path& basePath = "") const noexcept;
+        static std::string getDefinesArgument(const Defines& defines) noexcept;
+
+        static ShaderType getType(const std::string& name) noexcept;
+        static ShaderType getType(const std::filesystem::path& path) noexcept;
+        static std::string getTypeName(ShaderType type);
+
+        static std::filesystem::path getDefaultOutputFile(const CompilerConfig& config, const CompilerOperation& op) noexcept;
+        std::vector<CompilerOperation> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
+        static std::vector<CompilerOperation> getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath = "") noexcept;
     private:
-        std::filesystem::path _shadercPath;
-        std::filesystem::path _varyingDef;
-        std::vector<std::filesystem::path> _includes;
-        Defines _defines;
-        OptionalRef<std::ostream> _log;
-        ShaderType _shaderType;
-        
+        IncludePaths _includePaths;
+
         static const std::regex _includeRegex;
         static const std::regex _ifdefRegex;
         static const std::string _definePrefix;
@@ -61,39 +64,52 @@ namespace darmok
         static const std::string _binExt;
         static const std::string _enableDefineSuffix;
 
-        std::filesystem::path getOutputPath(const std::filesystem::path& path, const std::string& profileExt, const Defines& defines) const noexcept;
-        static ShaderType getShaderType(const std::string& name) noexcept;
-        ShaderType getShaderType(const std::filesystem::path& path) const noexcept;
-        static std::string getShaderTypeName(ShaderType type);
-        static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
-
         size_t getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
-        std::optional<std::string> readDefine(const std::string& line) const noexcept;
+        static std::optional<std::string> readDefine(const std::string& line) noexcept;
         size_t getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
         std::optional<std::filesystem::path> readDependency(const std::string& line) const noexcept;
+        static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
+
+        std::filesystem::path getCompilerProfileOutputPath(const CompilerConfig& config, const std::filesystem::path& basePath, const std::string& profileExt) const noexcept;
     };
 
-    struct ProgramImportConfig final
-    {
-        std::string name;
-        std::filesystem::path vertexShader;
-        std::filesystem::path fragmentShader;
-        VaryingDefinition varying;
-
-        void load(const AssetTypeImporterInput& input);
-    private:
-        void read(const nlohmann::ordered_json& json, std::filesystem::path basePath);
-    };
-
-    class ProgramImporterImpl final
+    class ShaderCompiler final
     {
     public:
-        using Input = AssetTypeImporterInput;
-        using Dependencies = AssetImportDependencies;
-        using Config = ProgramImportConfig;
-        ProgramImporterImpl(size_t bufferSize = 4096) noexcept;
+        using Config = ShaderCompilerConfig;
+        using Operation = ShaderCompilerOperation;
+
+        ShaderCompiler(const Config& config) noexcept;
+        void operator()(const Operation& op) const;
+
+    private:
+        Config _config;
+    };
+
+    class ProgramCompilerImpl final
+    {
+    public:
+        using Config = ProgramCompilerConfig;
+        ProgramCompilerImpl(const Config& config) noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
+        ProgramDefinition operator()(const ProgramSource& src);
+    private:
+        Config _config;
+        OptionalRef<std::ostream> _log;
+    };
+
+    class ProgramFileImporterImpl final
+    {
+    public:
+        using Input = FileTypeImporterInput;
+        using Dependencies = FileTypeImportDependencies;
+        using Config = ProgramCompilerConfig;
+        using Source = ProgramSource;
+        ProgramFileImporterImpl(size_t defaultBufferSize = 4096) noexcept;
+
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
+
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
@@ -103,15 +119,14 @@ namespace darmok
 
         const std::string& getName() const noexcept;
     private:
-        size_t _bufferSize;
-        std::optional<Config> _config;
-        std::filesystem::path _outputPath;
-        ShaderCompiler _compiler;
-        std::vector<std::filesystem::path> _includes;
+        Config _defaultConfig;
+        OptionalRef<std::ostream> _log;
 
-        static const std::string _configIncludeDirsKey;
-        static const std::string _shadercPathKey;
-        void addIncludes(const nlohmann::json& json, const std::filesystem::path& basePath) noexcept;
+        std::optional<Config> _config;
+        std::optional<Source> _src;
+        std::filesystem::path _outputPath;
+
         void writeDefinition(const ProgramDefinition& def, std::ostream& out);
+        ProgramSource readSource(const Input& input);
     };
 }

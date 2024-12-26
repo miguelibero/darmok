@@ -529,7 +529,7 @@ namespace darmok
 		{
 			outputPath = _defaultAssetOutputPath.c_str();
 		}
-		DarmokAssetImporter importer(inputPath);
+		DarmokAssetFileImporter importer(inputPath);
 		importer.setOutputPath(outputPath);
 		const char* cachePath = nullptr;
 		cmdLine.hasArg(cachePath, 'c', "asset-cache");

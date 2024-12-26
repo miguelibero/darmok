@@ -539,7 +539,7 @@ namespace darmok
         return config;
     }
 
-    std::vector<std::filesystem::path> SkeletalAnimatorDefinitionImporter::getOutputs(const Input& input) noexcept
+    std::vector<std::filesystem::path> SkeletalAnimatorDefinitionFileImporter::getOutputs(const Input& input) noexcept
     {
         std::vector<std::filesystem::path> outputs;
         auto ext = StringUtils::getFileExt(input.path.filename().string());
@@ -554,7 +554,7 @@ namespace darmok
         return { outputPath };
     }
 
-    std::ofstream SkeletalAnimatorDefinitionImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
+    std::ofstream SkeletalAnimatorDefinitionFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
     {
         auto ext = StringUtils::getFileExt(input.path.filename().string());
         if (ext == ".json")
@@ -565,7 +565,7 @@ namespace darmok
     }
 
 
-    SkeletalAnimatorDefinition SkeletalAnimatorDefinitionImporter::read(const std::filesystem::path& path) const
+    SkeletalAnimatorDefinition SkeletalAnimatorDefinitionFileImporter::read(const std::filesystem::path& path) const
     {
         SkeletalAnimatorDefinition config;
         auto ext = StringUtils::getFileExt(path.filename().string());
@@ -577,7 +577,7 @@ namespace darmok
         return config;
     }
 
-    void SkeletalAnimatorDefinitionImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void SkeletalAnimatorDefinitionFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         auto ext = StringUtils::getFileExt(input.path.filename().string());
         auto config = read(input.path);
@@ -589,7 +589,7 @@ namespace darmok
         archive(config);
     }
 
-    const std::string& SkeletalAnimatorDefinitionImporter::getName() const noexcept
+    const std::string& SkeletalAnimatorDefinitionFileImporter::getName() const noexcept
     {
         static const std::string name("animator");
         return name;

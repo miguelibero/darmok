@@ -359,7 +359,7 @@ namespace darmok
 		return (*this)(chars);
 	}
 
-	FreetypeFontAtlasImporterImpl::FreetypeFontAtlasImporterImpl()
+	FreetypeFontAtlasFileImporterImpl::FreetypeFontAtlasFileImporterImpl()
 		: _library(nullptr)
 		, _face(nullptr)
 	{
@@ -367,13 +367,13 @@ namespace darmok
 		FreetypeUtils::checkError(err);
 	}
 
-	FreetypeFontAtlasImporterImpl::~FreetypeFontAtlasImporterImpl()
+	FreetypeFontAtlasFileImporterImpl::~FreetypeFontAtlasFileImporterImpl()
 	{
 		auto err = FT_Done_FreeType(_library);
 		FreetypeUtils::checkError(err);
 	}
 
-	bool FreetypeFontAtlasImporterImpl::startImport(const Input& input, bool dry)
+	bool FreetypeFontAtlasFileImporterImpl::startImport(const Input& input, bool dry)
 	{
 		if (input.config.is_null())
 		{
@@ -443,19 +443,19 @@ namespace darmok
 		return true;
 	}
 
-	void FreetypeFontAtlasImporterImpl::endImport(const Input& input)
+	void FreetypeFontAtlasFileImporterImpl::endImport(const Input& input)
 	{
 		FT_Done_Face(_face);
 		_face = nullptr;
 		_atlas.reset();
 	}
 
-	std::vector<std::filesystem::path> FreetypeFontAtlasImporterImpl::getOutputs(const Input& input)
+	std::vector<std::filesystem::path> FreetypeFontAtlasFileImporterImpl::getOutputs(const Input& input)
 	{
 		return { _imagePath, _atlasPath };
 	}
 
-	std::ofstream FreetypeFontAtlasImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+	std::ofstream FreetypeFontAtlasFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
 	{
 		if (outputIndex == 0)
 		{
@@ -464,7 +464,7 @@ namespace darmok
 		return std::ofstream(path);
 	}
 
-	void FreetypeFontAtlasImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	void FreetypeFontAtlasFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
 		if (outputIndex == 0)
 		{
@@ -494,48 +494,48 @@ namespace darmok
 		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	}
 
-	const std::string& FreetypeFontAtlasImporterImpl::getName() const noexcept
+	const std::string& FreetypeFontAtlasFileImporterImpl::getName() const noexcept
 	{
 		static const std::string name("font_atlas");
 		return name;
 	}
 
-	FreetypeFontAtlasImporter::FreetypeFontAtlasImporter() noexcept
-		: _impl(std::make_unique<FreetypeFontAtlasImporterImpl>())
+	FreetypeFontAtlasFileImporter::FreetypeFontAtlasFileImporter() noexcept
+		: _impl(std::make_unique<FreetypeFontAtlasFileImporterImpl>())
 	{
 	}
 
-	FreetypeFontAtlasImporter::~FreetypeFontAtlasImporter() noexcept
+	FreetypeFontAtlasFileImporter::~FreetypeFontAtlasFileImporter() noexcept
 	{
 		// intentionally left blank
 	}
 
-	std::vector<std::filesystem::path> FreetypeFontAtlasImporter::getOutputs(const Input& input)
+	std::vector<std::filesystem::path> FreetypeFontAtlasFileImporter::getOutputs(const Input& input)
 	{
 		return _impl->getOutputs(input);
 	}
 
-	std::ofstream FreetypeFontAtlasImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+	std::ofstream FreetypeFontAtlasFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
 	{
 		return _impl->createOutputStream(input, outputIndex, path);
 	}
 
-	void FreetypeFontAtlasImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	void FreetypeFontAtlasFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
 		_impl->writeOutput(input, outputIndex, out);
 	}
 
-	const std::string& FreetypeFontAtlasImporter::getName() const noexcept
+	const std::string& FreetypeFontAtlasFileImporter::getName() const noexcept
 	{
 		return _impl->getName();
 	}
 
-	bool FreetypeFontAtlasImporter::startImport(const Input& input, bool dry)
+	bool FreetypeFontAtlasFileImporter::startImport(const Input& input, bool dry)
 	{
 		return _impl->startImport(input, dry);
 	}
 
-	void FreetypeFontAtlasImporter::endImport(const Input& input)
+	void FreetypeFontAtlasFileImporter::endImport(const Input& input)
 	{
 		_impl->endImport(input);
 	}

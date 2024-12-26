@@ -560,7 +560,7 @@ namespace darmok
 	{
 	}
 
-	void TextureImportConfig::load(const AssetTypeImporterInput& input)
+	void TextureImportConfig::load(const FileTypeImporterInput& input)
 	{
 		auto basePath = input.path.parent_path();
 		auto fileName = input.path.filename();

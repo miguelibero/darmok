@@ -84,7 +84,7 @@ namespace darmok
 		bx::AllocatorI& _alloc;
 	};
 
-	class DARMOK_EXPORT ImageImporter final : public IAssetTypeImporter
+	class DARMOK_EXPORT ImageFileImporter final : public IFileTypeImporter
 	{
 	public:
 		bool startImport(const Input& input, bool dry = false) override;

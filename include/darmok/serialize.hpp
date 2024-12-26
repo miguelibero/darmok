@@ -169,10 +169,10 @@ namespace darmok
 
 
     template<typename Interface>
-    class DARMOK_EXPORT CerealLoaderImporter : public IAssetTypeImporter
+    class DARMOK_EXPORT CerealFileImporter : public IFileTypeImporter
     {
     private:
-        CerealLoaderImporter(Interface& loader, const std::string& name) noexcept
+        CerealFileImporter(Interface& loader, const std::string& name) noexcept
             : _loader(loader)
         {
         }

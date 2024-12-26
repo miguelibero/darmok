@@ -290,8 +290,8 @@ namespace darmok
 		return _impl->removeBasePath(path);
 	}
 
-	DarmokAssetImporter::DarmokAssetImporter(const CommandLineAssetImporterConfig& config)
-		: DarmokAssetImporter(config.inputPath)
+	DarmokAssetFileImporter::DarmokAssetFileImporter(const CommandLineFileImporterConfig& config)
+		: DarmokAssetFileImporter(config.inputPath)
 	{
 		if (!config.cachePath.empty())
 		{
@@ -311,56 +311,56 @@ namespace darmok
 		}
 	}
 
-	DarmokAssetImporter::DarmokAssetImporter(const std::filesystem::path& inputPath)
+	DarmokAssetFileImporter::DarmokAssetFileImporter(const std::filesystem::path& inputPath)
 		: _importer(inputPath)
-		, _progImporter(_importer.addTypeImporter<ProgramImporter>())
+		, _progImporter(_importer.addTypeImporter<ProgramFileImporter>())
 	{
 #ifdef DARMOK_ASSIMP
-		_importer.addTypeImporter<AssimpModelImporter>(_alloc);
+		_importer.addTypeImporter<AssimpModelFileImporter>(_alloc);
 #ifdef DARMOK_OZZ
-		_importer.addTypeImporter<SkeletalAnimatorDefinitionImporter>();
-		_importer.addTypeImporter<AssimpSkeletonImporter>();
-		_importer.addTypeImporter<AssimpSkeletalAnimationImporter>();
+		_importer.addTypeImporter<SkeletalAnimatorDefinitionFileImporter>();
+		_importer.addTypeImporter<AssimpSkeletonFileImporter>();
+		_importer.addTypeImporter<AssimpSkeletalAnimationFileImporter>();
 #endif
 #endif
 #ifdef DARMOK_FREETYPE
-		_importer.addTypeImporter<FreetypeFontAtlasImporter>();
+		_importer.addTypeImporter<FreetypeFontAtlasFileImporter>();
 #endif
-		_importer.addTypeImporter<CopyAssetImporter>();
-		_importer.addTypeImporter<TexturePackerTextureAtlasImporter>();
-		_importer.addTypeImporter<ImageImporter>();
+		_importer.addTypeImporter<CopyFileImporter>();
+		_importer.addTypeImporter<TexturePackerAtlasFileImporter>();
+		_importer.addTypeImporter<ImageFileImporter>();
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::setCachePath(const std::filesystem::path& cachePath) noexcept
+	DarmokAssetFileImporter& DarmokAssetFileImporter::setCachePath(const std::filesystem::path& cachePath) noexcept
 	{
 		_importer.setCachePath(cachePath);
 		return *this;
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
+	DarmokAssetFileImporter& DarmokAssetFileImporter::setOutputPath(const std::filesystem::path& outputPath) noexcept
 	{
 		_importer.setOutputPath(outputPath);
 		return *this;
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::setShadercPath(const std::filesystem::path& path) noexcept
+	DarmokAssetFileImporter& DarmokAssetFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.setShadercPath(path);
 		return *this;
 	}
 
-	DarmokAssetImporter& DarmokAssetImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+	DarmokAssetFileImporter& DarmokAssetFileImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.addIncludePath(path);
 		return *this;
 	}
 
-	std::vector<std::filesystem::path> DarmokAssetImporter::getOutputs() const
+	std::vector<std::filesystem::path> DarmokAssetFileImporter::getOutputs() const
 	{
 		return _importer.getOutputs();
 	}
 
-	void DarmokAssetImporter::operator()(std::ostream& log) const
+	void DarmokAssetFileImporter::operator()(std::ostream& log) const
 	{
 		return _importer(log);
 	}

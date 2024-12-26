@@ -360,7 +360,7 @@ namespace darmok
         OptionalRef<SkeletalAnimator> getAnimator(Entity entity) const noexcept;
     };
 
-    class DARMOK_EXPORT SkeletalAnimatorDefinitionImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT SkeletalAnimatorDefinitionFileImporter final : public IFileTypeImporter
     {
     public:
         SkeletalAnimatorDefinition read(const std::filesystem::path& path) const;

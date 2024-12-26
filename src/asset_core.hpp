@@ -20,17 +20,17 @@ namespace bx
 
 namespace darmok
 {
-    class AssetImporterImpl final
+    class FileImporterImpl final
     {
     public:
-        using Input = AssetTypeImporterInput;
-        using Dependencies = AssetImportDependencies;
+        using Input = FileTypeImporterInput;
+        using Dependencies = FileTypeImportDependencies;
 
-        AssetImporterImpl(const std::filesystem::path& inputPath);
+        FileImporterImpl(const std::filesystem::path& inputPath);
         void setCachePath(const std::filesystem::path& cachePath) noexcept;
         void setOutputPath(const std::filesystem::path& outputPath) noexcept;
         std::vector<std::filesystem::path> getOutputs() const;
-        void addTypeImporter(std::unique_ptr<IAssetTypeImporter>&& importer) noexcept;
+        void addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept;
         void operator()(std::ostream& log) const;
 	private:
         std::filesystem::path _inputPath;
@@ -61,7 +61,7 @@ namespace darmok
 
         struct Operation final
         {
-            IAssetTypeImporter& importer;
+            IFileTypeImporter& importer;
             Input input;
             HeaderConfig headerConfig;
             std::filesystem::path outputPath;
@@ -114,7 +114,7 @@ namespace darmok
         };
 
         std::unordered_map<std::filesystem::path, FileConfig> _files;
-        std::unordered_map<std::string, std::unique_ptr<IAssetTypeImporter>> _importers;
+        std::unordered_map<std::string, std::unique_ptr<IFileTypeImporter>> _importers;
 
         std::vector<Operation> getOperations() const;
         static void mergeConfig(nlohmann::json& json, const nlohmann::json& other);
@@ -149,16 +149,16 @@ namespace darmok
         bool writeCache() const;
     };
 
-    class BaseCommandLineAssetImporter;
+    class BaseCommandLineFileImporter;
 
-    class CommandLineAssetImporterImpl final
+    class CommandLineFileImporterImpl final
     {
     public:
-        using Config = CommandLineAssetImporterConfig;
-        CommandLineAssetImporterImpl(BaseCommandLineAssetImporter& importer) noexcept;
+        using Config = CommandLineFileImporterConfig;
+        CommandLineFileImporterImpl(BaseCommandLineFileImporter& importer) noexcept;
         int operator()(int argc, const char* argv[]) noexcept;
     private:
-        BaseCommandLineAssetImporter& _importer;
+        BaseCommandLineFileImporter& _importer;
         void version(const std::string& name) noexcept;
         void help(const std::string& name, const char* error = nullptr) noexcept;
         int run(const std::string& name, const bx::CommandLine cmdLine);

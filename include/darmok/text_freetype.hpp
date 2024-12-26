@@ -64,13 +64,13 @@ namespace darmok
         std::unique_ptr<FreetypeFontLoaderImpl> _impl;
     };
 
-    class FreetypeFontAtlasImporterImpl;
+    class FreetypeFontAtlasFileImporterImpl;
 
-    class DARMOK_EXPORT FreetypeFontAtlasImporter final : public IAssetTypeImporter
+    class DARMOK_EXPORT FreetypeFontAtlasFileImporter final : public IFileTypeImporter
     {
     public:
-        FreetypeFontAtlasImporter() noexcept;
-        ~FreetypeFontAtlasImporter() noexcept;
+        FreetypeFontAtlasFileImporter() noexcept;
+        ~FreetypeFontAtlasFileImporter() noexcept;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         bool startImport(const Input& input, bool dry = false) override;
@@ -78,6 +78,6 @@ namespace darmok
         const std::string& getName() const noexcept override;
         void endImport(const Input& input) override;
     private:
-        std::unique_ptr<FreetypeFontAtlasImporterImpl> _impl;
+        std::unique_ptr<FreetypeFontAtlasFileImporterImpl> _impl;
     };
 }

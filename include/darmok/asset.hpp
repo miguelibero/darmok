@@ -79,22 +79,22 @@ namespace darmok
 		std::unique_ptr<AssetContextImpl> _impl;
 	};
 
-	class ProgramImporter;
+	class ProgramFileImporter;
 
-	class DARMOK_EXPORT DarmokAssetImporter final
+	class DARMOK_EXPORT DarmokAssetFileImporter final
 	{
 	public:
-		DarmokAssetImporter(const CommandLineAssetImporterConfig& config);
-		DarmokAssetImporter(const std::filesystem::path& inputPath);
-		DarmokAssetImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
-		DarmokAssetImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-		DarmokAssetImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-		DarmokAssetImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
+		DarmokAssetFileImporter(const CommandLineFileImporterConfig& config);
+		DarmokAssetFileImporter(const std::filesystem::path& inputPath);
+		DarmokAssetFileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
+		DarmokAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
+		DarmokAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+		DarmokAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
 		std::vector<std::filesystem::path> getOutputs() const;
 		void operator()(std::ostream& log) const;
 	private:
 		bx::DefaultAllocator _alloc;
-		AssetImporter _importer;
-		ProgramImporter& _progImporter;
+		FileImporter _importer;
+		ProgramFileImporter& _progImporter;
 	};
 }

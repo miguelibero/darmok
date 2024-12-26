@@ -75,8 +75,6 @@ namespace darmok
 		static const RendererProfileMap& getRendererProfiles() noexcept;
 	};
 
-	class ProgramCompilerImpl;
-
 	struct ProgramSource final
 	{
 		std::string name;
@@ -84,7 +82,7 @@ namespace darmok
 		Data fragmentShader;
 		VaryingDefinition varying;
 
-		void read(const nlohmann::ordered_json& json, std::filesystem::path basePath);
+		void read(const nlohmann::ordered_json& json, std::filesystem::path path = "");
 
 		template<class Archive>
 		void serialize(Archive& archive)
@@ -98,23 +96,46 @@ namespace darmok
 		}
 	};
 
+	struct ProgramCompilerConfig final
+	{
+		size_t bufferSize = 4096;
+		std::filesystem::path shadercPath;
+		using IncludePaths = std::unordered_set<std::filesystem::path>;
+		IncludePaths includePaths;
+		OptionalRef<std::ostream> log;
+
+		void read(const nlohmann::json& json, std::filesystem::path basePath);
+
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(bufferSize),
+				CEREAL_NVP(shadercPath),
+				CEREAL_NVP(includePaths)
+			);
+		}
+	};
+
 	class DARMOK_EXPORT ProgramCompiler final
 	{
 	public:
+		using Config = ProgramCompilerConfig;
+		ProgramCompiler(const Config& config) noexcept;
 		ProgramDefinition operator()(const ProgramSource& src);
 	private:
-		std::unique_ptr<ProgramCompilerImpl> _impl;
+		Config _config;
 	};
 
-	class ProgramImporterImpl;
+	class ProgramFileImporterImpl;
 
-	class DARMOK_EXPORT ProgramImporter final : public IAssetTypeImporter
+	class DARMOK_EXPORT ProgramFileImporter final : public IFileTypeImporter
 	{
 	public:
-		ProgramImporter();
-		~ProgramImporter() noexcept;
-		ProgramImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-		ProgramImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+		ProgramFileImporter();
+		~ProgramFileImporter() noexcept;
+		ProgramFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+		ProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
 
 		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
 		bool startImport(const Input& input, bool dry = false) override;
@@ -125,7 +146,7 @@ namespace darmok
 
 		const std::string& getName() const noexcept override;
 	private:
-		std::unique_ptr<ProgramImporterImpl> _impl;
+		std::unique_ptr<ProgramFileImporterImpl> _impl;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<ProgramDefinition>

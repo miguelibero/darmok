@@ -493,7 +493,7 @@ namespace darmok
 		return std::make_shared<Image>(data, _alloc);
 	}
 
-	bool ImageImporter::startImport(const Input& input, bool dry)
+	bool ImageFileImporter::startImport(const Input& input, bool dry)
 	{
 		if (input.config.is_null())
 		{
@@ -522,12 +522,12 @@ namespace darmok
 		return true;
 	}
 
-	ImageImporter::Outputs ImageImporter::getOutputs(const Input& input) noexcept
+	ImageFileImporter::Outputs ImageFileImporter::getOutputs(const Input& input) noexcept
 	{
 		return { _outputPath };
 	}
 
-	ImageImporter::Dependencies ImageImporter::getDependencies(const Input& input) noexcept
+	ImageFileImporter::Dependencies ImageFileImporter::getDependencies(const Input& input) noexcept
 	{
 		if (_cubemapFaces)
 		{
@@ -536,7 +536,7 @@ namespace darmok
 		return Dependencies();
 	}
 
-	void ImageImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out) noexcept
+	void ImageFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out) noexcept
 	{
 		std::string formatStr;
 		if (input.config.contains("outputFormat"))
@@ -570,13 +570,13 @@ namespace darmok
 		}
 	}
 
-	void ImageImporter::endImport(const Input& input) noexcept
+	void ImageFileImporter::endImport(const Input& input) noexcept
 	{
 		_outputPath = "";
 		_cubemapFaces.reset();
 	}
 
-	const std::string& ImageImporter::getName() const noexcept
+	const std::string& ImageFileImporter::getName() const noexcept
 	{
 		static const std::string name = "image";
 		return name;

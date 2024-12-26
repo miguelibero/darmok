@@ -59,60 +59,12 @@ namespace darmok
         archive(*this);
     }
 
-    ShaderCompiler::ShaderCompiler() noexcept
-        : _shadercPath("shaderc")
-        , _shaderType(ShaderType::Unknown)
+    ShaderParser::ShaderParser(const IncludePaths& includePaths) noexcept
+        : _includePaths(includePaths)
     {
-#if BX_PLATFORM_WINDOWS
-        _shadercPath += ".exe";
-#endif
     }
 
-    void ShaderCompiler::reset() noexcept
-    {
-        _includes.clear();
-        _defines.clear();
-        _varyingDef = "";
-        _shaderType = ShaderType::Unknown;
-    }
-
-    ShaderCompiler& ShaderCompiler::setShadercPath(const fs::path& path) noexcept
-    {
-        _shadercPath = path;
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::setIncludePaths(const std::vector<fs::path>& paths) noexcept
-    {
-        _includes = paths;
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::addIncludePath(const fs::path& path) noexcept
-    {
-        _includes.push_back(path);
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::setVaryingDef(const fs::path& path) noexcept
-    {
-        _varyingDef = path;
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::setShaderType(ShaderType type) noexcept
-    {
-        _shaderType = type;
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::setShaderType(const std::string& type)
-    {
-        _shaderType = getShaderType(type);
-        return *this;
-    }
-
-    ShaderType ShaderCompiler::getShaderType(const std::string& name) noexcept
+    ShaderType ShaderParser::getType(const std::string& name) noexcept
     {
         auto lowerName = StringUtils::toLower(name);
         if (lowerName == "vertex")
@@ -130,7 +82,7 @@ namespace darmok
         return ShaderType::Unknown;
     }
 
-    std::string ShaderCompiler::getShaderTypeName(ShaderType type)
+    std::string ShaderParser::getTypeName(ShaderType type)
     {
         switch (type)
         {
@@ -145,27 +97,7 @@ namespace darmok
         }
     }
 
-    ShaderCompiler& ShaderCompiler::setLogOutput(OptionalRef<std::ostream> log) noexcept
-    {
-        _log = log;
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::setDefines(const Defines& defines) noexcept
-    {
-        _defines = defines;
-        return *this;
-    }
-
-    ShaderCompiler& ShaderCompiler::setDefines(const std::filesystem::path& shaderPath) noexcept
-    {
-        std::ifstream in(shaderPath);
-        _defines.clear();
-        getDefines(in, _defines);
-        return *this;
-    }
-
-    const std::unordered_map<bgfx::RendererType::Enum, std::string> ShaderCompiler::_rendererExtensions{
+    const std::unordered_map<bgfx::RendererType::Enum, std::string> ShaderParser::_rendererExtensions{
 
         { bgfx::RendererType::Direct3D11,   ".dx11" },
         { bgfx::RendererType::Direct3D12,   ".dx12" },
@@ -175,71 +107,10 @@ namespace darmok
         { bgfx::RendererType::Vulkan,       ".spv" },
     };
 
-    void ShaderCompiler::operator()(const fs::path& input, const Output& output) const
-    {
-        if (!fs::exists(_shadercPath))
-        {
-            throw std::runtime_error("could not find shaderc.exe");
-        }
-        fs::path varyingDef = _varyingDef;
-        if (varyingDef.empty())
-        {
-            varyingDef = input.parent_path() / (StringUtils::getFileStem(input.string()) + ".varyingdef");
-        }
-        auto shaderType = getShaderType(input);
-        std::vector<Exec::Arg> args{
-            _shadercPath,
-            "-p", output.profile,
-            "-f", input,
-            "-o", output.path,
-            "--type", getShaderTypeName(shaderType),
-            "--varyingdef", varyingDef
-        };
-#ifdef _DEBUG
-        args.push_back("--debug");
-#endif
-        if (!output.defines.empty())
-        {
-            args.emplace_back("--define");
-            std::vector<std::string> realDefines;
-            realDefines.reserve(output.defines.size());
-            for (auto& define : output.defines)
-            {
-                realDefines.push_back(_definePrefix + define);
-            }
-            args.emplace_back(StringUtils::join(",", realDefines));
-        }
 
-        auto inputDir = input.parent_path();
-        if (!inputDir.empty())
-        {
-            args.push_back("-i");
-            args.push_back(inputDir);
-        }
+    const std::regex ShaderParser::_includeRegex = std::regex("#include <([^>]+)>");
 
-        for (auto& include : _includes)
-        {
-            args.push_back("-i");
-            args.push_back(include);
-        }
-
-        auto r = Exec::run(args);
-        if (r.returnCode != 0 || r.out.contains("Failed to build shader."))
-        {
-            if (_log)
-            {
-                *_log << "shaderc output:" << std::endl;
-                *_log << r.out;
-                *_log << "shaderc error output:" << std::endl;
-                *_log << r.err;
-            }
-            throw std::runtime_error("failed to build shader");
-        }
-    }
-
-    const std::regex ShaderCompiler::_includeRegex = std::regex("#include <([^>]+)>");
-
-    std::optional<std::filesystem::path> ShaderCompiler::readDependency(const std::string& line) const noexcept
+    std::optional<std::filesystem::path> ShaderParser::readDependency(const std::string& line) const noexcept
     {
         std::smatch match;
         if (!std::regex_search(line, match, _includeRegex))
@@ -247,7 +118,7 @@ namespace darmok
             return std::nullopt;
         }
         auto name = match[1].str();
-        for (auto& include : _includes)
+        for (auto& include : _includePaths)
         {
             auto path = include / name;
             if (fs::exists(path))
@@ -258,13 +129,13 @@ namespace darmok
         return std::nullopt;
     }
 
-    size_t ShaderCompiler::getDependencies(std::istream& in, Dependencies& deps) const noexcept
+    size_t ShaderParser::getDependencies(std::istream& in, Dependencies& deps) const noexcept
     {
         std::unordered_set<std::filesystem::path> checkedPaths;
         return getDependencies(in, deps, checkedPaths);
     }
 
-    size_t ShaderCompiler::getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept
+    size_t ShaderParser::getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept
     {
         std::string line;
         size_t count = 0;
@@ -291,10 +162,10 @@ namespace darmok
         return count;
     }
 
-    const std::regex ShaderCompiler::_ifdefRegex = std::regex("#(if|ifdef|ifndef) !?([^\\s]+)");
-    const std::string ShaderCompiler::_definePrefix = "DARMOK_VARIANT_";
+    const std::regex ShaderParser::_ifdefRegex = std::regex("#(if|ifdef|ifndef) !?([^\\s]+)");
+    const std::string ShaderParser::_definePrefix = "DARMOK_VARIANT_";
 
-    std::optional<std::string> ShaderCompiler::readDefine(const std::string& line) const noexcept
+    std::optional<std::string> ShaderParser::readDefine(const std::string& line) noexcept
     {
         std::smatch match;
         if (!std::regex_search(line, match, _ifdefRegex))
@@ -309,13 +180,13 @@ namespace darmok
         return define.substr(_definePrefix.size());
     }
 
-    size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines) const noexcept
+    size_t ShaderParser::getDefines(std::istream& in, Defines& defines) const noexcept
     {
         std::unordered_set<std::filesystem::path> checkedPaths;
         return getDefines(in, defines, checkedPaths);
     }
 
-    size_t ShaderCompiler::getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept
+    size_t ShaderParser::getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept
     {
         std::string line;
         size_t count = 0;
@@ -348,19 +219,26 @@ namespace darmok
         return count;
     }
 
-    const std::string ShaderCompiler::_binExt = ".bin";
-    const std::string ShaderCompiler::_enableDefineSuffix = "_enabled";
-
-    ShaderType ShaderCompiler::getShaderType(const fs::path& path) const noexcept
+    std::string ShaderParser::getDefinesArgument(const Defines& defines) noexcept
     {
-        if (_shaderType != ShaderType::Unknown)
+        std::vector<std::string> realDefines;
+        realDefines.reserve(defines.size());
+        for (auto& define : defines)
         {
-            return _shaderType;
+            realDefines.push_back(_definePrefix + define);
         }
+        return StringUtils::join(",", realDefines);
+    }
+
+    const std::string ShaderParser::_binExt = ".bin";
+    const std::string ShaderParser::_enableDefineSuffix = "_enabled";
+
+    ShaderType ShaderParser::getType(const fs::path& path) noexcept
+    {
         auto exts = StringUtils::split(StringUtils::getFileExt(path.filename().string()), ".");
         for (auto& ext : exts)
         {
-            auto type = getShaderType(ext);
+            auto type = getType(ext);
             if (type != ShaderType::Unknown)
             {
                 return type;
@@ -369,27 +247,7 @@ namespace darmok
         return ShaderType::Unknown;
     }
 
-    fs::path ShaderCompiler::getOutputPath(const fs::path& path, const std::string& profileExt, const Defines& defines) const noexcept
-    {
-        auto suffix = StringUtils::join("-", defines.begin(), defines.end(), [](std::string define) {
-            define = StringUtils::toLower(define);
-            if (StringUtils::endsWith(define, _enableDefineSuffix))
-            {
-                define = define.substr(0, define.size() - _enableDefineSuffix.size());
-            }
-            return define;
-            });
-        if (!suffix.empty())
-        {
-            suffix = "-" + suffix;
-        }
-        auto stem = StringUtils::getFileStem(path.string());
-        auto shaderType = getShaderType(path);
-        auto type = "." + getShaderTypeName(shaderType);
-        return path.parent_path() / (stem + suffix + type + profileExt + _binExt);
-    }
-
-    const std::vector<bgfx::RendererType::Enum>& ShaderCompiler::getSupportedRenderers() noexcept
+    const std::vector<bgfx::RendererType::Enum>& ShaderParser::getSupportedRenderers() noexcept
     {
         static const std::vector<bgfx::RendererType::Enum> renderers
         {
@@ -404,13 +262,33 @@ namespace darmok
         return renderers;
     }
 
-    std::vector<ShaderCompiler::Output> ShaderCompiler::getOutputs(const fs::path& basePath) const noexcept
+    std::vector<ShaderParser::CompilerOperation> ShaderParser::prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath) const noexcept
     {
-        auto defineCombs = CollectionUtils::combinations(_defines);
-        std::vector<Output> outputs;
+        shader.write(config.path);
+        ShaderDefines defines;
+        DataInputStream in(shader);
+        getDefines(in, defines);
+        return getCompilerOperations(config, defines, baseOutputPath);
+    }
+
+    std::vector<ShaderParser::CompilerOperation> ShaderParser::getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath) noexcept
+    {
+        auto defineCombs = CollectionUtils::combinations(defines);
+        std::vector<CompilerOperation> ops;
 
         auto& rendererProfiles = ProgramDefinition::getRendererProfiles();
         auto& renderers = getSupportedRenderers();
+
+        auto fixBaseOutputPath = baseOutputPath;
+        if (fixBaseOutputPath.empty())
+        {
+            fixBaseOutputPath = config.path.parent_path().string();
+        }
+        std::string baseOutputStr = fixBaseOutputPath.string();
+        if (fixBaseOutputPath.has_filename())
+        {
+            baseOutputStr += ".";
+        }
 
         for (auto& renderer : renderers)
         {
@@ -424,103 +302,315 @@ namespace darmok
                 }
                 for (auto& defines : defineCombs)
                 {
-                    outputs.push_back(Output{
-                        .path = getOutputPath(basePath, profileExt, defines),
+                    CompilerOperation op{
                         .profile = profile,
                         .defines = defines,
-                    });
+                    };
+                    op.outputPath = baseOutputStr + getDefaultOutputFile(config, op).string();
+                    ops.push_back(op);
                 }
             }
         }
-        return outputs;
+        return ops;
     }
 
-    void ProgramImportConfig::read(const nlohmann::ordered_json& json, fs::path basePath)
+    std::filesystem::path ShaderParser::getDefaultOutputFile(const CompilerConfig& config, const CompilerOperation& op) noexcept
     {
-        if (json.contains("name"))
+        auto suffix = StringUtils::join("-", op.defines.begin(), op.defines.end(), [](std::string define) {
+            define = StringUtils::toLower(define);
+            if (StringUtils::endsWith(define, _enableDefineSuffix))
+            {
+                define = define.substr(0, define.size() - _enableDefineSuffix.size());
+            }
+            return define;
+            });        
+        if (!suffix.empty())
         {
-            name = json["name"];
+            suffix = "-" + suffix;
         }
-        if (json.contains("vertexShader"))
+        auto shaderType = config.type;
+        if (shaderType != ShaderType::Unknown)
         {
-            vertexShader = basePath / json["vertexShader"].get<std::string>();
+            shaderType = getType(config.path);
         }
-        if (json.contains("fragmentShader"))
+        auto type = getTypeName(shaderType);
+        if (!type.empty())
         {
-            fragmentShader = basePath / json["fragmentShader"].get<std::string>();
+            if (!suffix.empty())
+            {
+                type = "." + type;
+            }
+            if (!op.profile.empty())
+            {
+                type += ".";
+            }
         }
-        if (json.contains("varyingDef"))
+        return suffix + type + op.profile + _binExt;
+    }
+
+    ShaderCompiler::ShaderCompiler(const Config& config) noexcept
+        : _config(config)
+    {
+    }
+
+    void ShaderCompiler::operator()(const Operation& op) const
+    {
+        if (!fs::exists(_config.programConfig.shadercPath))
         {
-            fs::path varyingPath = basePath / json["varyingDef"].get<std::string>();
-            varying.read(varyingPath);
+            throw std::runtime_error("could not find shaderc.exe");
         }
-        else
+        fs::path varyingPath = _config.varyingPath;
+        auto inputDir = _config.path.parent_path();
+        if (varyingPath.empty())
         {
-            varying.read(json);
+            varyingPath = inputDir / (StringUtils::getFileStem(_config.path.string()) + ".varyingdef");
+        }
+        auto shaderType = _config.type;
+        if (shaderType == ShaderType::Unknown)
+        {
+            shaderType = ShaderParser::getType(_config.path);
+        }
+        auto outputPath = op.outputPath;
+        if (outputPath.empty())
+        {
+            outputPath = _config.path.parent_path() / ShaderParser::getDefaultOutputFile(_config, op);
+        }
+        std::vector<Exec::Arg> args{
+            _config.programConfig.shadercPath,
+            "-p", op.profile,
+            "-f", _config.path,
+            "-o", outputPath,
+            "--type", ShaderParser::getTypeName(shaderType),
+            "--varyingdef", varyingPath
+        };
+#ifdef _DEBUG
+        args.push_back("--debug");
+#endif
+        if (!op.defines.empty())
+        {
+            args.emplace_back("--define");
+            args.emplace_back(ShaderParser::getDefinesArgument(op.defines));
+        }
+
+        if (!inputDir.empty())
+        {
+            args.push_back("-i");
+            args.push_back(inputDir);
+        }
+
+        for (auto& include : _config.programConfig.includePaths)
+        {
+            args.push_back("-i");
+            args.push_back(include);
+        }
+
+        auto r = Exec::run(args);
+        if (r.returnCode != 0 || r.out.contains("Failed to build shader."))
+        {
+            if (auto log = _config.programConfig.log)
+            {
+                *log << "shaderc output:" << std::endl;
+                *log << r.out;
+                *log << "shaderc error output:" << std::endl;
+                *log << r.err;
+            }
+            throw std::runtime_error("failed to build shader");
         }
     }
 
-    void ProgramImportConfig::load(const AssetTypeImporterInput& input)
+    void ProgramSource::read(const nlohmann::ordered_json& json, fs::path path)
     {
-        auto basePath = input.path.parent_path();
-        auto fileName = input.path.filename();
-        auto stem = StringUtils::getFileStem(fileName.string());
-        vertexShader = basePath / (stem + ".vertex.sc");
-        fragmentShader = basePath / (stem + ".fragment.sc");
-        name = stem;
+        auto basePath = path.parent_path();
+        auto readJson = [this, &basePath](const nlohmann::ordered_json& json)
+            {
+                if (json.contains("name"))
+                {
+                    name = json["name"];
+                }
+                if (json.contains("vertexShader"))
+                {
+                    auto vertPath = basePath / json["vertexShader"].get<std::string>();
+                    vertexShader = Data::fromFile(vertPath);
+                }
+                if (json.contains("fragmentShader"))
+                {
+                    auto fragPath = basePath / json["fragmentShader"].get<std::string>();
+                    fragmentShader = Data::fromFile(fragPath);
+                }
+                if (json.contains("varyingDef"))
+                {
+                    auto def = json["varyingDef"];
+                    if (def.is_string())
+                    {
+                        fs::path varyingPath = basePath / json["varyingDef"].get<std::string>();
+                        varying.read(varyingPath);
+                    }
+                    else
+                    {
+                        varying.read(def);
+                    }
+                }
+                else
+                {
+                    varying.read(json);
+                }
+            };
 
+        if (fs::is_regular_file(path) && path.extension() == ".json")
+        {
+            auto pathJson = nlohmann::json::parse(std::ifstream(path));
+            readJson(pathJson);
+        }
+
+        readJson(json);
+        
+        if (!path.empty())
+        {
+            auto fileName = path.filename();
+            auto stem = StringUtils::getFileStem(fileName.string());
+
+            auto basePath = path.parent_path();
+            if (vertexShader.empty())
+            {
+                auto vertPath = basePath / (stem + ".vertex.sc");
+                vertexShader = Data::fromFile(vertPath);
+            }
+            if (fragmentShader.empty())
+            {
+                auto fragPath = basePath / (stem + ".fragment.sc");
+                fragmentShader = Data::fromFile(fragPath);
+            }
+            if (varying.empty())
+            {
+                auto varyingPath = basePath / (stem + ".varyingdef");
+                varying.read(varyingPath);
+            }
+        }
+    }
+
+    void ProgramCompilerConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
+    {
+        if (json.contains("includeDirs"))
+        {
+            auto paths = json["includeDirs"].get<IncludePaths>();
+            includePaths.insert(paths.begin(), paths.end());
+        }
+        includePaths.insert(basePath);
+
+        if (json.contains("shadercPath"))
+        {
+            shadercPath = basePath / json["shadercPath"];
+        }
+    }
+    
+    ProgramCompiler::ProgramCompiler(const Config& config) noexcept
+        : _config(config)
+    {
+    }
+
+    ProgramDefinition ProgramCompiler::operator()(const ProgramSource& src)
+    {
+        ProgramDefinition def
+        {
+            .name = src.name,
+            .vertexLayout = src.varying.vertex,
+        };
+        auto varyingDefPath = getTempPath("-darmok.varyingdef");
+        src.varying.writeBgfx(varyingDefPath);
+
+        ShaderCompilerConfig shaderConfig
+        {
+            .programConfig = _config,
+            .varyingPath = varyingDefPath,
+        };
+        ShaderParser shaderParser(_config.includePaths);
+
+        {
+            shaderConfig.type = ShaderType::Fragment;
+            shaderConfig.path = getTempPath("-darmok.fragment.sc");
+            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, src.fragmentShader);
+            ShaderCompiler shaderCompiler(shaderConfig);
+            for (auto& op : ops)
+            {
+                shaderCompiler(op);
+                auto data = Data::fromFile(op.outputPath);
+                def.profiles[op.profile].fragmentShaders[op.defines] = std::move(data);
+                fs::remove(op.outputPath);
+            }
+            fs::remove(shaderConfig.path);
+        }
+
+        {
+            shaderConfig.type = ShaderType::Vertex;
+            shaderConfig.path = getTempPath("-darmok.vertex.sc");
+            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, src.vertexShader);
+            ShaderCompiler shaderCompiler(shaderConfig);
+            for (auto& op : ops)
+            {
+                shaderCompiler(op);
+                auto data = Data::fromFile(op.outputPath);
+                def.profiles[op.profile].vertexShaders[op.defines] = std::move(data);
+                fs::remove(op.outputPath);
+            }
+            fs::remove(shaderConfig.path);
+        }
+
+        // TODO: remove files in case of exception?
+        fs::remove(varyingDefPath);
+        
+        return def;
+    }
+
+    ProgramFileImporterImpl::ProgramFileImporterImpl(size_t defaultBufferSize) noexcept
+        : _defaultConfig{ defaultBufferSize }
+    {
+    }
+
+    void ProgramFileImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _defaultConfig.shadercPath = path;
+    }
+
+    void ProgramFileImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _defaultConfig.includePaths.insert(path);
+    }
+
+    ProgramSource ProgramFileImporterImpl::readSource(const Input& input)
+    {
+        ProgramSource src;
         if (input.config.is_object())
         {
-            read(input.config, input.basePath);
+            src.read(input.config, input.path);
         }
         if (fs::exists(input.path))
         {
             std::ifstream is(input.path);
             auto fileJson = nlohmann::ordered_json::parse(is);
-            read(fileJson, input.path.parent_path());
+            src.read(fileJson, input.path);
         }
-        if (!fs::exists(vertexShader))
+        
+        if (src.vertexShader.empty())
         {
-            throw std::runtime_error(std::string("missing vertex shader: ") + vertexShader.string());
+            throw std::runtime_error("missing vertex shader");
         }
-        if (!fs::exists(fragmentShader))
+        if (src.fragmentShader.empty())
         {
-            throw std::runtime_error(std::string("missing fragment shader: ") + fragmentShader.string());
+            throw std::runtime_error("missing fragment shader");
         }
-    }
-
-    ProgramImporterImpl::ProgramImporterImpl(size_t bufferSize) noexcept
-        : _bufferSize(bufferSize)
-    {
-    }
-
-    void ProgramImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
-    {
-        _compiler.setShadercPath(path);
-    }
-
-    void ProgramImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
-    {
-        _includes.push_back(path);
-    }
-
-    void ProgramImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
-    {
-        _compiler.setLogOutput(log);
-    }
-
-    void ProgramImporterImpl::addIncludes(const nlohmann::json& json, const fs::path& basePath) noexcept
-    {
-        for (auto& elm : json)
+        if (src.varying.empty())
         {
-            _compiler.addIncludePath(basePath / elm.get<std::string>());
+            throw std::runtime_error("missing varying definition");
         }
+        return src;
     }
 
-    const std::string ProgramImporterImpl::_configIncludeDirsKey = "includeDirs";
-    const std::string ProgramImporterImpl::_shadercPathKey = "shadercPath";
+    void ProgramFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _log = log;
+    }
 
-    bool ProgramImporterImpl::startImport(const Input& input, bool dry)
+    bool ProgramFileImporterImpl::startImport(const Input& input, bool dry)
     {
         if (input.config.is_null())
         {
@@ -531,105 +621,57 @@ namespace darmok
             }
         }
 
-        _compiler.reset();
-        _compiler.setIncludePaths(_includes);
-        if (input.config.contains(_configIncludeDirsKey))
-        {
-            addIncludes(input.config[_configIncludeDirsKey], input.basePath);
-        }
-        if (input.dirConfig.contains(_configIncludeDirsKey))
-        {
-            addIncludes(input.dirConfig[_configIncludeDirsKey], input.basePath);
-        }
-        _compiler.addIncludePath(input.path.parent_path());
+        _config = _defaultConfig;
+        _config->read(input.dirConfig, input.basePath);
+        _config->read(input.config, input.basePath);
 
-        if (input.dirConfig.contains(_shadercPathKey))
-        {
-            fs::path shadercPath = input.dirConfig[_shadercPathKey];
-            _compiler.setShadercPath(input.basePath / shadercPath);
-        }
+        _src.emplace();
+        _src->read(input.config, input.path);
 
-        _config.emplace().load(input);
         _outputPath = input.getOutputPath(".bin");
         return true;
     }
 
-    std::vector<fs::path> ProgramImporterImpl::getOutputs(const Input& input)
+    std::vector<fs::path> ProgramFileImporterImpl::getOutputs(const Input& input)
     {
         return { _outputPath };
     }
 
-    ProgramImporterImpl::Dependencies ProgramImporterImpl::getDependencies(const Input& input)
+    ProgramFileImporterImpl::Dependencies ProgramFileImporterImpl::getDependencies(const Input& input)
     {
         Dependencies deps;
-        if (!_config)
+        if (!_src)
         {
             return deps;
         }
-
-        auto addShaderDeps = [this, &deps](const fs::path& path)
+        ShaderParser parser(_config ? _config->includePaths : ShaderParser::IncludePaths{});
         {
-            deps.insert(path);
-            std::ifstream is(path);
-            _compiler.getDependencies(is, deps);
-        };
+            DataInputStream in(_src->vertexShader);
+            parser.getDependencies(in, deps);
+        }
+        {
+            DataInputStream in(_src->fragmentShader);
+            parser.getDependencies(in, deps);
+        }
 
-        auto& config = _config.value();
-        addShaderDeps(config.vertexShader);
-        addShaderDeps(config.fragmentShader);
         return deps;
     }
 
-    void ProgramImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void ProgramFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        if (!_config)
+        if (!_src || !_config)
         {
             return;
         }
+
         auto& config = _config.value();
-        ProgramDefinition def
-        {
-            .name = config.name,
-            .vertexLayout = config.varying.vertex,
-        };
-        auto ext = _outputPath.extension().string();
-        auto outputPath = getTempPath("-darmok.program" + ext);
-        auto varyingDefPath = getTempPath("-darmok.varyingdef");
-        _compiler.setVaryingDef(varyingDefPath);
-
-        _compiler.setDefines(config.vertexShader);
-        _compiler.setShaderType(ShaderType::Vertex);
-        for (ShaderCompilerOutput output : _compiler.getOutputs())
-        {
-            {
-                std::ofstream out(varyingDefPath);
-                config.varying.writeBgfx(out, output.defines);
-            }
-            output.path = outputPath;
-            _compiler(config.vertexShader, output);
-            auto data = Data::fromFile(output.path);
-            def.profiles[output.profile].vertexShaders[output.defines] = std::move(data);
-        }
-
-        _compiler.setDefines(config.fragmentShader);
-        _compiler.setShaderType(ShaderType::Fragment);
-        for (ShaderCompilerOutput output : _compiler.getOutputs())
-        {
-            {
-                std::ofstream out(varyingDefPath);
-                config.varying.writeBgfx(out, output.defines);
-            }
-            output.path = outputPath;
-            _compiler(config.fragmentShader, output);
-            auto data = Data::fromFile(output.path);
-            def.profiles[output.profile].fragmentShaders[output.defines] = std::move(data);
-        }
+        config.log = _log;
+        ProgramCompiler compiler(config);
+        auto def = compiler(_src.value());
         writeDefinition(def, out);
-        fs::remove(outputPath);
-        fs::remove(varyingDefPath);
     }
 
-    void ProgramImporterImpl::writeDefinition(const ProgramDefinition& def, std::ostream& out)
+    void ProgramFileImporterImpl::writeDefinition(const ProgramDefinition& def, std::ostream& out)
     {
         auto ext = _outputPath.extension();
         if (ext == ".xml")
@@ -649,71 +691,71 @@ namespace darmok
         }
     }
 
-    void ProgramImporterImpl::endImport(const Input& input)
+    void ProgramFileImporterImpl::endImport(const Input& input)
     {
         _config.reset();
         _outputPath = "";
     }
 
-    const std::string& ProgramImporterImpl::getName() const noexcept
+    const std::string& ProgramFileImporterImpl::getName() const noexcept
     {
         static const std::string name("program");
         return name;
     }
 
-    ProgramImporter::ProgramImporter()
-        : _impl(std::make_unique<ProgramImporterImpl>())
+    ProgramFileImporter::ProgramFileImporter()
+        : _impl(std::make_unique<ProgramFileImporterImpl>())
     {
     }
 
-    ProgramImporter::~ProgramImporter() noexcept
+    ProgramFileImporter::~ProgramFileImporter() noexcept
     {
         // empty on purpose
     }
 
-    ProgramImporter& ProgramImporter::setShadercPath(const fs::path& path) noexcept
+    ProgramFileImporter& ProgramFileImporter::setShadercPath(const fs::path& path) noexcept
     {
         _impl->setShadercPath(path);
         return *this;
     }
 
-    ProgramImporter& ProgramImporter::addIncludePath(const fs::path& path) noexcept
+    ProgramFileImporter& ProgramFileImporter::addIncludePath(const fs::path& path) noexcept
     {
         _impl->addIncludePath(path);
         return *this;
     }
 
-    void ProgramImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    void ProgramFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
     {
         _impl->setLogOutput(log);
     }
 
-    bool ProgramImporter::startImport(const Input& input, bool dry)
+    bool ProgramFileImporter::startImport(const Input& input, bool dry)
     {
         return _impl->startImport(input, dry);
     }
 
-    ProgramImporter::Outputs ProgramImporter::getOutputs(const Input& input)
+    ProgramFileImporter::Outputs ProgramFileImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
     }
 
-    ProgramImporter::Dependencies ProgramImporter::getDependencies(const Input& input)
+    ProgramFileImporter::Dependencies ProgramFileImporter::getDependencies(const Input& input)
     {
         return _impl->getDependencies(input);
     }
 
-    void ProgramImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void ProgramFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         _impl->writeOutput(input, outputIndex, out);
     }
 
-    const std::string& ProgramImporter::getName() const noexcept
+    const std::string& ProgramFileImporter::getName() const noexcept
     {
         return _impl->getName();
     }
 
-    void ProgramImporter::endImport(const Input& input)
+    void ProgramFileImporter::endImport(const Input& input)
     {
         return _impl->endImport(input);
     }

@@ -111,7 +111,7 @@ namespace
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<FrameAnimationUpdater>();
 
-			_prog = std::make_shared<Program>(StandardProgramType::Unlit);
+			_prog = StandardProgramLoader::load(StandardProgramType::Unlit);
 
 			auto cam3d = scene.createEntity();
 			scene.addComponent<Transform>(cam3d)

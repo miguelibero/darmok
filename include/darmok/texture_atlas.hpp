@@ -208,10 +208,10 @@ namespace darmok
 
 	struct TextureAtlasRmluiConfig;
 
-	class DARMOK_EXPORT TexturePackerTextureAtlasImporter final : public IAssetTypeImporter
+	class DARMOK_EXPORT TexturePackerAtlasFileImporter final : public IFileTypeImporter
 	{
 	public:
-		TexturePackerTextureAtlasImporter(const std::filesystem::path& exePath = "") noexcept;
+		TexturePackerAtlasFileImporter(const std::filesystem::path& exePath = "") noexcept;
 		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
 		bool startImport(const Input& input, bool dry) override;
 		Outputs getOutputs(const Input& input) override;

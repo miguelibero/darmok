@@ -65,6 +65,7 @@ namespace darmok
         [[nodiscard]] std::string toHex(size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] std::string toHeader(std::string_view varName, size_t offset = 0, size_t size = -1) const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
+        void write(const std::filesystem::path& path) const;
 
         template<typename T>
         [[nodiscard]] static DataView fromStatic(const T& data) noexcept

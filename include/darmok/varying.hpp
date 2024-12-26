@@ -180,6 +180,7 @@ namespace darmok
 
         void read(const nlohmann::ordered_json& json);
         void write(nlohmann::ordered_json& json) const noexcept;
+        bool empty() const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -197,6 +198,7 @@ namespace darmok
 
         void writeBgfx(std::ostream& out, const AttribGroups& disabledGroups = {}) const noexcept;
         void writeBgfx(std::ostream& out, const AttribDefines& defines) const noexcept;
+        void writeBgfx(const std::filesystem::path& path) const noexcept;
     private:
         static const std::string _vertexJsonKey;
         static const std::string _fragmentJsonKey;
