@@ -74,7 +74,7 @@ namespace darmok
     {
     public:
         using Config = AssimpModelLoadConfig;
-        AssimpModelConverter(const aiScene& scene, const std::string& basePath, const Config& config,
+        AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
             bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         AssimpModelConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
@@ -85,7 +85,7 @@ namespace darmok
         bx::AllocatorI& _allocator;
         OptionalRef<IImageLoader> _imgLoader;
         const aiScene& _scene;
-        std::string _basePath;
+        std::filesystem::path _basePath;
         Config _config;
         std::unordered_map<std::string, std::string> _boneNames;
 

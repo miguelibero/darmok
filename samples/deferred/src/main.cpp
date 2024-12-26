@@ -72,7 +72,7 @@ namespace
 			freelook.addListener(*this);
 
 			scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
-				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
+				StandardProgramLoader::load(StandardProgramType::Tonemap), "Tonemap");
 
 			auto lightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);
@@ -84,7 +84,7 @@ namespace
 			dirLight.setShadowType(ShadowType::Soft);
 			scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
-			auto prog = std::make_shared<Program>(StandardProgramType::ForwardBasic);
+			auto prog = StandardProgramLoader::load(StandardProgramType::ForwardBasic);
 			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
 			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 

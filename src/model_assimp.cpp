@@ -264,7 +264,7 @@ namespace darmok
         return model;
     }
 
-    AssimpModelConverter::AssimpModelConverter(const aiScene& scene, const std::string& basePath, const Config& config,
+    AssimpModelConverter::AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
         bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader) noexcept
         : _scene(scene)
         , _basePath(basePath)
@@ -1198,15 +1198,17 @@ namespace darmok
     void AssimpModelFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         Model model;
-        auto basePath = input.path.parent_path().string();
+        auto basePath = input.getRelativePath().parent_path();
         OptionalRef<IImageLoader> imgLoader = _imgLoader;
         if (_currentConfig && !_currentConfig->loadConfig.embedTextures)
         {
             imgLoader = nullptr;
         }
+        _dataLoader.addBasePath(input.basePath);
         AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _alloc, imgLoader);
         converter.setConfig(input.config);
         converter.update(model);
+        _dataLoader.removeBasePath(input.basePath);
         CerealUtils::save(model, out, _currentConfig->outputFormat);
     }
 

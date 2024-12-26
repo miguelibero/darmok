@@ -92,8 +92,8 @@ namespace
 			_app.setResetFlag(BGFX_RESET_VSYNC);
 
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
-			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
-			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
+			auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
+			auto unlitProg = StandardProgramLoader::load(StandardProgramType::Unlit);
 			auto& layout = prog->getVertexLayout();
 
 			_cam = createCamera(scene);
@@ -103,7 +103,7 @@ namespace
 			_freelook->addListener(*this);
 
 			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
-				std::make_shared<Program>(StandardProgramType::Tonemap), "Tonemap");
+				StandardProgramLoader::load(StandardProgramType::Tonemap), "Tonemap");
 
 			MeshData debugArrowMeshData(Line(), LineMeshType::Arrow);
 			std::shared_ptr<IMesh> debugArrowMesh = debugArrowMeshData.createMesh(unlitProg->getVertexLayout());
@@ -187,8 +187,8 @@ namespace
 				return;
 			}
 			glm::vec3 dir(0);
-			dir.x = _app.getInput().getAxis(_moveRight, _moveLeft);
-			dir.z = _app.getInput().getAxis(_moveForward, _moveBackward);
+			dir.x = _app.getInput().getAxis(_moveLeft, _moveRight);
+			dir.z = _app.getInput().getAxis(_moveBackward, _moveForward);
 
 			auto pos = _trans->getPosition();
 			_trans->setPosition(pos + (dir * deltaTime));

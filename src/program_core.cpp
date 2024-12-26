@@ -420,6 +420,7 @@ namespace darmok
 
     void ProgramSource::read(const nlohmann::ordered_json& json, fs::path path)
     {
+        // maybe switch to arrays to avoid ordered_json
         auto basePath = path.parent_path();
         auto readJson = [this, &basePath](const nlohmann::ordered_json& json)
             {
@@ -458,7 +459,7 @@ namespace darmok
 
         if (fs::is_regular_file(path) && path.extension() == ".json")
         {
-            auto pathJson = nlohmann::json::parse(std::ifstream(path));
+            auto pathJson = nlohmann::ordered_json::parse(std::ifstream(path));
             readJson(pathJson);
         }
 
