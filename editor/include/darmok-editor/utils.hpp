@@ -9,12 +9,20 @@ namespace darmok
     class Material;
     class Program;
     class IMesh;
-    class IProgramLoader;
     class IMeshLoader;
 }
 
 namespace darmok::editor
 {
+    class EditorProject;
+
+    enum class ReferenceInputAction
+    {
+        None,
+        Changed,
+        Visit
+    };
+
     struct ImguiUtils final
     {
         template<typename T, typename Callback>
@@ -48,33 +56,38 @@ namespace darmok::editor
 
         static bool drawAsset(const char* label, bool selected = false);
 
-        static bool drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
-        static bool drawProgramReference(const char* label, std::shared_ptr<Program>& prog, IProgramLoader& loader);
-        static bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader);
+        static ReferenceInputAction drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
+        static ReferenceInputAction drawProgramReference(const char* label, std::shared_ptr<Program>& prog, EditorProject& proj);
+        static ReferenceInputAction drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader);
 
     private:
 
         template<typename T>
-        static bool drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)
+        static ReferenceInputAction drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)
         {
             ImGui::BeginDisabled(true);
             ImGui::InputText(label, (char*)name.c_str(), name.size());
-            ImGui::EndDisabled();
 
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            {
+                return ReferenceInputAction::Visit;
+            }
+
+            ImGui::EndDisabled();
+            auto action = ReferenceInputAction::None;
             dragType = dragType == nullptr ? label : dragType;
-            bool changed = false;
             if (ImGui::BeginDragDropTarget())
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
                 {
                     IM_ASSERT(payload->DataSize == sizeof(T));
                     value = *(T*)payload->Data;
-                    changed = true;
+                    action = ReferenceInputAction::Changed;
                 }
                 ImGui::EndDragDropTarget();
             }
 
-            return changed;
+            return action;
         }
     };
 }

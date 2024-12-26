@@ -78,7 +78,7 @@ namespace darmok
         int operator()(int argc, const char* argv[]) noexcept;
     protected:
         virtual std::vector<std::filesystem::path> getOutputs(const Config& config) const = 0;
-        virtual void import(const Config & config, std::ostream& log) const = 0;
+        virtual void import(const Config& config, std::ostream& log) const = 0;
     private:
         friend class CommandLineFileImporterImpl;
         std::unique_ptr<CommandLineFileImporterImpl> _impl;

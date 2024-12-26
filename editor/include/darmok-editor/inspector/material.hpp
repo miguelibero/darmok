@@ -12,6 +12,6 @@ namespace darmok::editor
         void shutdown() override;
         bool render(Material& mat) noexcept override;
     private:
-        OptionalRef<AssetContext> _assets;
+        OptionalRef<EditorProject> _proj;
     };
 }

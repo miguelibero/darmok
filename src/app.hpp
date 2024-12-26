@@ -105,7 +105,7 @@ namespace darmok
 	{
 	public:
 		AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept;
-		std::optional<int32_t> setup(const std::vector<std::string>& args);
+		std::optional<int32_t> setup(const CmdArgs& args);
 		void init();
 		void update(float deltaTime);
 		void render() const;
@@ -234,13 +234,13 @@ namespace darmok
 	class AppRunner final : public IPlatformRunnable
 	{
 	public:
-		AppRunner(std::unique_ptr<App>&& app, const std::vector<std::string>& args) noexcept;
+		AppRunner(std::unique_ptr<App>&& app, const CmdArgs& args) noexcept;
 		std::optional<int32_t> setup() noexcept;
 		int32_t operator()() noexcept override;
 	private:
 		bool _setupDone;
 		std::unique_ptr<App> _app;
-		std::vector<std::string> _args;
+		CmdArgs _args;
 		bool init() noexcept;
 		AppRunResult run() noexcept;
 		bool shutdown() noexcept;

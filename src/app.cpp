@@ -23,14 +23,10 @@
 
 namespace darmok
 {
-	int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<IAppDelegateFactory>&& factory)
+	int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory>&& factory)
 	{
 		auto app = std::make_unique<App>(std::move(factory));
-		std::vector<std::string> args(argc);
-		for (int i = 0; i < argc; ++i)
-		{
-			args[i] = argv[i];
-		}
+		CmdArgs args(argv, argc);
 		auto runner = std::make_unique<AppRunner>(std::move(app), args);
 		if (auto r = runner->setup())
 		{
@@ -39,7 +35,7 @@ namespace darmok
 		return Platform::get().run(std::move(runner));
 	}
 
-	AppRunner::AppRunner(std::unique_ptr<App>&& app, const std::vector<std::string>& args) noexcept
+	AppRunner::AppRunner(std::unique_ptr<App>&& app, const CmdArgs& args) noexcept
 		: _app(std::move(app))
 		, _args(args)
 		, _setupDone(false)
@@ -296,7 +292,7 @@ namespace darmok
 		return _updaters.eraseIf(filter);
 	}
 
-	std::optional<int32_t> AppImpl::setup(const std::vector<std::string>& args)
+	std::optional<int32_t> AppImpl::setup(const CmdArgs& args)
 	{
 		if (_delegateFactory)
 		{
@@ -841,7 +837,7 @@ namespace darmok
 		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
 	}
 
-	std::optional<int32_t> App::setup(const std::vector<std::string>& args)
+	std::optional<int32_t> App::setup(const CmdArgs& args)
 	{
 		return _impl->setup(args);
 	}

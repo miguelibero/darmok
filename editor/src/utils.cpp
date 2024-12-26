@@ -1,7 +1,9 @@
 #include <darmok-editor/utils.hpp>
+#include <darmok-editor/project.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
+#include <darmok/asset.hpp>
 
 namespace darmok::editor
 {
@@ -30,43 +32,32 @@ namespace darmok::editor
         return selected;
     }
 
-    bool ImguiUtils::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
+    ReferenceInputAction ImguiUtils::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
     {
         return ImguiUtils::drawAssetReference(label, mat, mat->getName(), "MATERIAL");
     }
 
-    bool ImguiUtils::drawProgramReference(const char* label, std::shared_ptr<Program>& prog, IProgramLoader& loader)
+    ReferenceInputAction ImguiUtils::drawProgramReference(const char* label, std::shared_ptr<Program>& prog, EditorProject& proj)
     {
-        auto def = loader.getDefinition(prog);
-        std::string name;
-        if (!def)
+        auto name = proj.getProgramName(prog);
+        ProgramAsset asset;
+        auto action = drawAssetReference(label, asset, name, "PROGRAM");
+        if (action == ReferenceInputAction::Changed)
         {
-            if (auto standard = StandardProgramLoader::getType(prog))
-            {
-                name = StandardProgramLoader::getTypeName(standard.value());
-            }
+            prog = proj.loadProgram(asset);
         }
-        else
-        {
-            name = def->name;
-        }
-        if (drawAssetReference(label, def, name, "PROGRAM"))
-        {
-            prog = loader.loadResource(def);
-            return true;
-        }
-        return false;
+        return action;
     }
 
-    bool ImguiUtils::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader)
+    ReferenceInputAction ImguiUtils::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader)
     {
         auto def = loader.getDefinition(mesh);
         std::string name = def ? def->name : "";
-        if (drawAssetReference(label, def, name, "MESH"))
+        auto action = drawAssetReference(label, def, name, "MESH");
+        if (action == ReferenceInputAction::Changed)
         {
             mesh = loader.loadResource(def);
-            return true;
         }
-        return false;
+        return action;
     }
 }

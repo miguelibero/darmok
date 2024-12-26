@@ -27,6 +27,7 @@ currently using:
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
 * [mikktspace](http://www.mikktspace.com/) - to calculate tangents
 * [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
+* [cli11](https://github.com/CLIUtils/CLI11) - command line parser
 
 planned to use:
 

@@ -33,7 +33,7 @@ namespace darmok::editor
         ~EditorAppDelegate() noexcept;
 
         // IAppDelegate
-        std::optional<int32_t> setup(const std::vector<std::string>& args) noexcept;
+        std::optional<int32_t> setup(const CmdArgs& args) noexcept;
         void init() override;
 		void shutdown() override;
 		void update(float deltaTime) override;
@@ -55,10 +55,10 @@ namespace darmok::editor
         std::string getAssetName(const ProgramAsset& asset) const override;
         void onAssetSelected(const ProgramAsset& asset) override;
         void addAsset(std::type_identity<ProgramAsset>) override;
-        DataView getAssetDropPayload(const ProgramAsset& asset) override;
 
     private:
         App& _app;
+        ProgramCompilerConfig _progCompConfig;
 
         OptionalRef<ImguiAppComponent> _imgui;
         EditorProject _proj;

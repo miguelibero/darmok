@@ -33,7 +33,7 @@ namespace darmok::editor
     {
     }
 
-    void EditorProject::init()
+    void EditorProject::init(const ProgramCompilerConfig& progCompilerConfig)
     {
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
@@ -41,6 +41,8 @@ namespace darmok::editor
 
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
+
+        _progCompiler.emplace(progCompilerConfig);
     }
 
     void EditorProject::shutdown()
@@ -126,6 +128,43 @@ namespace darmok::editor
     const EditorProject::Programs& EditorProject::getPrograms() const
     {
         return _programs;
+    }
+
+    std::string EditorProject::getProgramName(const std::shared_ptr<Program>& prog) const
+    {
+        auto def = _app.getAssets().getProgramLoader().getDefinition(prog);
+        std::string name;
+        if (def)
+        {
+            return def->name;
+        }
+        if (auto standard = StandardProgramLoader::getType(prog))
+        {
+            return StandardProgramLoader::getTypeName(standard.value());
+        }
+        return "Unnamed Program";
+    }
+
+    std::shared_ptr<Program> EditorProject::loadProgram(const ProgramAsset& asset)
+    {
+        if (!_progCompiler)
+        {
+            return nullptr;
+        }
+
+        if (auto standard = std::get_if<StandardProgramType>(&asset))
+        {
+            return StandardProgramLoader::load(*standard);
+        }
+        auto src = std::get<std::shared_ptr<ProgramSource>>(asset);
+        auto itr = std::find(_programs.begin(), _programs.end(), src);
+        if (itr == _programs.end())
+        {
+            _programs.push_back(src);
+        }
+        auto def = std::make_shared<ProgramDefinition>((*_progCompiler)(*src));
+        auto& loader = _app.getAssets().getProgramLoader();
+        return loader.loadResource(def);
     }
 
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept

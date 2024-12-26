@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok-editor/asset_fwd.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/scene_serialize.hpp>
 #include <darmok/program_core.hpp>
@@ -24,7 +25,7 @@ namespace darmok::editor
 
         EditorProject(App& app);
 
-        void init();
+        void init(const ProgramCompilerConfig& progCompilerConfig);
         void shutdown();
 
         void save(bool forceNewPath = false);
@@ -38,6 +39,9 @@ namespace darmok::editor
 
         Programs& getPrograms();
         const Programs& getPrograms() const;
+
+        std::string getProgramName(const std::shared_ptr<Program>& prog) const;
+        std::shared_ptr<Program> loadProgram(const ProgramAsset& asset);
     
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;
@@ -59,6 +63,7 @@ namespace darmok::editor
         App& _app;
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
+        std::optional<ProgramCompiler> _progCompiler;
 
         Materials _materials;
         Scenes _scenes;

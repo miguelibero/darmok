@@ -11,7 +11,6 @@
 
 namespace darmok
 {
-	
 	AssetContextImpl::AssetContextImpl()
 		: _dataLoader(_allocator)
 		, _imageLoader(_dataLoader, _allocator)
@@ -165,6 +164,13 @@ namespace darmok
 
 	void AssetContextImpl::update()
 	{
+		_progLoader.pruneCache();
+		_texLoader.pruneCache();
+		_meshLoader.pruneCache();
+		_texAtlasLoader.pruneCache();
+#ifdef DARMOK_FREETYPE
+		_freetypeFontLoader.pruneCache();
+#endif
 	}
 
 	void AssetContextImpl::shutdown()

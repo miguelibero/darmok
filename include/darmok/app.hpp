@@ -32,7 +32,7 @@
 #define DARMOK_RUN_APP(appDlgClass, ...)								    \
     DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ##__VA_ARGS__)	        \
 																		    \
-	int main(int argc, const char* const* argv)							    \
+	int main(int argc, const char* argv[])							    \
 	{																	    \
 		return darmok::main(argc, argv,									    \
 			std::make_unique<appDlgClass##Factory>());				        \
@@ -59,7 +59,7 @@ namespace darmok
 	class AssetContext;
 	class RenderChain;
 
-	DARMOK_EXPORT int32_t main(int32_t argc, const char* const* argv, std::unique_ptr<IAppDelegateFactory>&& factory);
+	DARMOK_EXPORT int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory>&& factory);
 
 	struct DARMOK_EXPORT AppUpdateConfig
 	{
@@ -68,13 +68,15 @@ namespace darmok
 		int maxInstant = getDefaultConfig().maxInstant;
 	};
 
+	using CmdArgs = std::span<const char*>;
+
 	class DARMOK_EXPORT BX_NO_VTABLE IAppDelegate
 	{
 	public:
 		virtual ~IAppDelegate() = default;
 
 		// return unix exit code for early exit
-		virtual std::optional<int32_t> setup(const std::vector<std::string>& args) { return std::nullopt; }
+		virtual std::optional<int32_t> setup(const CmdArgs& args) { return std::nullopt; }
 		virtual void init() {}
 		virtual void earlyShutdown() {}
 		virtual void shutdown() {}
@@ -142,7 +144,7 @@ namespace darmok
 	public:
 		App(std::unique_ptr<IAppDelegateFactory>&& delegateFactory) noexcept;
 		~App() noexcept;
-		std::optional<int32_t> setup(const std::vector<std::string>& args);
+		std::optional<int32_t> setup(const CmdArgs& args);
 		void init();
 		void requestRenderReset();
 		void shutdown();

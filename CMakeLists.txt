@@ -599,6 +599,10 @@ set(GLM_DEFINES GLM_ENABLE_EXPERIMENTAL GLM_FORCE_LEFT_HANDED GLM_FORCE_DEPTH_ZE
 target_compile_definitions(glm::glm-header-only INTERFACE ${GLM_DEFINES})
 target_link_libraries(${CORE_LIB_NAME} PUBLIC glm::glm-header-only)
 
+# cli11
+find_package(CLI11 CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE CLI11::CLI11)
+
 # tiny-process
 find_package(tiny-process-library CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE tiny-process-library::tiny-process-library)

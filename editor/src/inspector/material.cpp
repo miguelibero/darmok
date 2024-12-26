@@ -8,12 +8,12 @@ namespace darmok::editor
 {
 	void MaterialInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container)
 	{
-		_assets = assets;
+		_proj = proj;
 	}
 
 	void MaterialInspectorEditor::shutdown()
 	{
-		_assets.reset();
+		_proj.reset();
 	}
 
 	bool MaterialInspectorEditor::render(Material& mat) noexcept
@@ -27,11 +27,11 @@ namespace darmok::editor
 					mat.setName(name);
 				}
 			}
-			if (_assets)
+			if (_proj)
 			{
 				
 				auto prog = mat.getProgram();
-				if (ImguiUtils::drawProgramReference("Program", prog, _assets->getProgramLoader()))
+				if (ImguiUtils::drawProgramReference("Program", prog, _proj.value()))
 				{
 					mat.setProgram(prog);
 				}

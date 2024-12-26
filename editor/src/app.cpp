@@ -7,6 +7,8 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <bx/commandline.h>
+#include <CLI/CLI.hpp>
 
 namespace darmok::editor
 {
@@ -31,10 +33,25 @@ namespace darmok::editor
         // empty on purpose
     }    
 
-    std::optional<int32_t> EditorAppDelegate::setup(const std::vector<std::string>& args) noexcept
+    std::optional<int32_t> EditorAppDelegate::setup(const CmdArgs& args) noexcept
     {
         ReflectionUtils::bind();
         _inspectorView.setup();
+
+        CLI::App cli{ "darmok editor" };
+
+        auto& subCli = *cli.group("Program Compiler");
+        subCli.add_option("--bgfx-shaderc", _progCompConfig.shadercPath, "path to the shaderc executable");
+        std::vector<std::string> shaderIncludePaths;
+        subCli.add_option("--bgfx-shader-include", shaderIncludePaths, "paths to shader files to be included");
+            
+        CLI11_PARSE(cli, args.size(), args.data());
+
+        for (auto& path : shaderIncludePaths)
+        {
+            _progCompConfig.includePaths.emplace(path);
+        }
+
         return std::nullopt;
     }
 
@@ -46,7 +63,7 @@ namespace darmok::editor
 
         _imgui = _app.getOrAddComponent<ImguiAppComponent>(*this);
         
-        _proj.init();
+        _proj.init(_progCompConfig);
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(_app.getAssets(), _proj);
         _materialAssetsView.init(*this);
@@ -485,15 +502,4 @@ namespace darmok::editor
         src->name = "New Program";
         _proj.getPrograms().push_back(src);
     }
-
-    DataView EditorAppDelegate::getAssetDropPayload(const ProgramAsset& asset)
-    {
-        if (auto standard = std::get_if<StandardProgramType>(&asset))
-        {
-            auto def = StandardProgramLoader::loadDefinition(*standard);
-            return DataView::fromStatic(def);
-        }
-        return {};
-    }
-
 }

@@ -212,6 +212,25 @@ namespace darmok
             return loadResource(def, true);
         }
 
+        bool isCached(const std::shared_ptr<Definition>& def) const noexcept
+        {
+            auto itr = _resCache.find(def);
+            return itr != _resCache.end();
+        }
+
+        bool isCached(Arg arg) const noexcept
+        {
+            auto itr = _defCache.find(arg);
+            return itr != _defCache.end();
+        }
+
+        bool isCached(const std::shared_ptr<Resource>& res) const noexcept
+        {
+            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+                [res](auto& elm) { return elm.second.lock() == res; });
+            return itr != _resCache.end();
+        }
+
         std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false)
         {
             if (!force)

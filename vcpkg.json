@@ -52,6 +52,7 @@
     "tiny-process-library",
     "mikktspace",
     "imguizmo",
-    "portable-file-dialogs"
+    "portable-file-dialogs",
+    "cli11"
   ]
 }
