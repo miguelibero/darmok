@@ -7,11 +7,12 @@
 #include <darmok/material.hpp>
 
 #include <filesystem>
-#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <cereal/cereal.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/vector.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/memory.hpp>
 
 namespace darmok::editor
@@ -19,9 +20,10 @@ namespace darmok::editor
     class EditorProject final : darmok::ISceneDelegate
     {
     public:
-        using Materials = std::vector<std::shared_ptr<Material>>;
-        using Programs = std::vector<std::shared_ptr<ProgramSource>>;
-        using Scenes = std::vector<std::shared_ptr<Scene>>;
+        using Materials = std::unordered_set<std::shared_ptr<Material>>;
+        using Programs = std::unordered_map<std::shared_ptr<ProgramSource>, std::shared_ptr<ProgramDefinition>>;
+        using Meshes = std::unordered_map<std::shared_ptr<MeshSource>, std::shared_ptr<MeshData>>;
+        using Scenes = std::unordered_set<std::shared_ptr<Scene>>;
 
         EditorProject(App& app);
 
@@ -34,15 +36,21 @@ namespace darmok::editor
         std::shared_ptr<Scene> getScene();
         OptionalRef<Camera> getCamera();
 
-        Materials& getMaterials();
         const Materials& getMaterials() const;
-
-        Programs& getPrograms();
+        std::shared_ptr<Material> addMaterial();
+        
         const Programs& getPrograms() const;
-
+        bool removeProgram(ProgramSource& src) noexcept;
         std::string getProgramName(const std::shared_ptr<Program>& prog) const;
+        bool isProgramCached(const ProgramAsset& asset) const noexcept;
+        std::shared_ptr<ProgramSource> addProgram();
         std::shared_ptr<Program> loadProgram(const ProgramAsset& asset);
-    
+
+        const Meshes& getMeshes() const;
+        std::string getMeshName(const std::shared_ptr<IMesh>& mesh) const;
+        std::shared_ptr<IMesh> loadMesh(const MeshAsset& asset);
+        std::shared_ptr<MeshSource> addMesh();
+
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;
         bool shouldEntityBeSerialized(Entity entity) const noexcept override;
@@ -55,7 +63,8 @@ namespace darmok::editor
             archive(
                 CEREAL_NVP_("scenes", _scenes),
                 CEREAL_NVP_("materials", _materials),
-                CEREAL_NVP_("programs", _programs)
+                CEREAL_NVP_("programs", _programs),
+                CEREAL_NVP_("meshes", _meshes)
             );
         }
 
@@ -68,6 +77,7 @@ namespace darmok::editor
         Materials _materials;
         Scenes _scenes;
         Programs _programs;
+        Meshes _meshes;
 
         std::optional<std::filesystem::path> _path;
         static const std::vector<std::string> _dialogFilters;

@@ -16,7 +16,7 @@ namespace darmok
 
 namespace darmok::editor
 {
-    class EditorProject;
+    class EditorApp;
     class SceneInspectorEditor;
     class MaterialInspectorEditor;
     class ProgramInspectorEditor;
@@ -27,7 +27,7 @@ namespace darmok::editor
 
         EditorInspectorView();
         void setup();
-        void init(AssetContext& assets, EditorProject& proj);
+        void init(EditorApp& app);
         void shutdown();
         void render();
 

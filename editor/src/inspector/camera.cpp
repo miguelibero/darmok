@@ -10,7 +10,7 @@
 
 namespace darmok::editor
 {
-    void CameraInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& editors) noexcept
+    void CameraInspectorEditor::init(EditorApp& app, ObjectEditorContainer& editors) noexcept
     {
         _editors = editors;
     }

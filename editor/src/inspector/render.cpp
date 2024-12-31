@@ -1,21 +1,23 @@
 #include <darmok-editor/inspector/render.hpp>
 #include <darmok-editor/utils.hpp>
+#include <darmok-editor/app.hpp>
 #include <darmok/program.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/app.hpp>
 
 #include <imgui.h>
 
 namespace darmok::editor
 {
-	void RenderableInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container)
+	void RenderableInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
 	{
-		_assets = assets;
+		_app = app;
 	}
 
 	void RenderableInspectorEditor::shutdown()
 	{
-		_assets.reset();
+		_app.reset();
 	}
 
 	bool RenderableInspectorEditor::render(Renderable& renderable) noexcept
@@ -23,14 +25,14 @@ namespace darmok::editor
 		if (ImGui::CollapsingHeader("Renderable"))
 		{
             auto mat = renderable.getMaterial();
-            if(ImguiUtils::drawMaterialReference("Material", mat))
+            if(_app->drawMaterialReference("Material", mat))
 			{
 				renderable.setMaterial(mat);
             }
-			if (_assets)
+			if (_app)
 			{
 				auto mesh = renderable.getMesh();
-				if (ImguiUtils::drawMeshReference("Mesh", mesh, _assets->getMeshLoader()))
+				if (_app->drawMeshReference("Mesh", mesh))
 				{
 					renderable.setMesh(mesh);
 				}

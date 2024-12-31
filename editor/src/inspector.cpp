@@ -6,6 +6,7 @@
 #include <darmok-editor/inspector/render.hpp>
 #include <darmok-editor/inspector/material.hpp>
 #include <darmok-editor/inspector/program.hpp>
+#include <darmok-editor/inspector/shape.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -29,14 +30,16 @@ namespace darmok::editor
         _editors.add<SpotLightInspectorEditor>();
         _editors.add<AmbientLightInspectorEditor>();
         _editors.add<RenderableInspectorEditor>();
+        _editors.add<CubeInspectorEditor>();
+        _editors.add<SphereInspectorEditor>();
         _sceneEditor = _editors.add<SceneInspectorEditor>();
         _materialEditor = _editors.add<MaterialInspectorEditor>();
         _programEditor = _editors.add<ProgramInspectorEditor>();
     }
 
-    void EditorInspectorView::init(AssetContext& assets, EditorProject& proj)
+    void EditorInspectorView::init(EditorApp& app)
     {
-        _editors.init(assets, proj);
+        _editors.init(app);
     }
 
     void EditorInspectorView::shutdown()

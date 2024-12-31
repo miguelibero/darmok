@@ -14,7 +14,7 @@ namespace darmok
 
 namespace darmok::editor
 {
-    class EditorProject;
+    class EditorApp;
 
     enum class ReferenceInputAction
     {
@@ -55,12 +55,6 @@ namespace darmok::editor
         static const ImVec2& getAssetSize();
 
         static bool drawAsset(const char* label, bool selected = false);
-
-        static ReferenceInputAction drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
-        static ReferenceInputAction drawProgramReference(const char* label, std::shared_ptr<Program>& prog, EditorProject& proj);
-        static ReferenceInputAction drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader);
-
-    private:
 
         template<typename T>
         static ReferenceInputAction drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)

@@ -1,5 +1,5 @@
 #include <darmok-editor/utils.hpp>
-#include <darmok-editor/project.hpp>
+#include <darmok-editor/app.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
@@ -30,34 +30,5 @@ namespace darmok::editor
         auto drawList = ImGui::GetWindowDrawList();
         drawList->AddRect(min, max, borderColor, 0.0f, 0, 2.0f);
         return selected;
-    }
-
-    ReferenceInputAction ImguiUtils::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
-    {
-        return ImguiUtils::drawAssetReference(label, mat, mat->getName(), "MATERIAL");
-    }
-
-    ReferenceInputAction ImguiUtils::drawProgramReference(const char* label, std::shared_ptr<Program>& prog, EditorProject& proj)
-    {
-        auto name = proj.getProgramName(prog);
-        ProgramAsset asset;
-        auto action = drawAssetReference(label, asset, name, "PROGRAM");
-        if (action == ReferenceInputAction::Changed)
-        {
-            prog = proj.loadProgram(asset);
-        }
-        return action;
-    }
-
-    ReferenceInputAction ImguiUtils::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, IMeshLoader& loader)
-    {
-        auto def = loader.getDefinition(mesh);
-        std::string name = def ? def->name : "";
-        auto action = drawAssetReference(label, def, name, "MESH");
-        if (action == ReferenceInputAction::Changed)
-        {
-            mesh = loader.loadResource(def);
-        }
-        return action;
     }
 }

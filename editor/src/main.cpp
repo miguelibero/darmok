@@ -2,4 +2,4 @@
 
 using namespace darmok::editor;
 
-DARMOK_RUN_APP(EditorAppDelegate);
+DARMOK_RUN_APP(EditorApp);

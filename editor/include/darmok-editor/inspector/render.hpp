@@ -9,10 +9,10 @@ namespace darmok::editor
     class RenderableInspectorEditor final : public ITypeObjectEditor<Renderable>
     {
     public:
-        void init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container) override;
+        void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
         bool render(Renderable& renderable) noexcept override;
     private:
-        OptionalRef<AssetContext> _assets;
+        OptionalRef<EditorApp> _app;
     };
 }

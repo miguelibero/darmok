@@ -151,6 +151,7 @@ set(CORE_HEADERS
   shape.hpp
   mesh_fwd.hpp
   mesh.hpp
+  mesh_shape.hpp
   color_fwd.hpp
   color.hpp
   image_fwd.hpp

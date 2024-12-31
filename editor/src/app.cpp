@@ -12,11 +12,12 @@
 
 namespace darmok::editor
 {
-    EditorAppDelegate::EditorAppDelegate(App& app) noexcept
+    EditorApp::EditorApp(App& app) noexcept
         : _app(app)
         , _sceneView(app)
         , _materialAssetsView("Materials", "MATERIAL")
         , _programAssetsView("Programs", "PROGRAM")
+        , _meshAssetsView("Meshes", "MESH")
         , _proj(app)
         , _dockLeftId(0)
         , _dockRightId(0)
@@ -28,12 +29,12 @@ namespace darmok::editor
     {
     }
 
-    EditorAppDelegate::~EditorAppDelegate() noexcept
+    EditorApp::~EditorApp() noexcept
     {
         // empty on purpose
     }    
 
-    std::optional<int32_t> EditorAppDelegate::setup(const CmdArgs& args) noexcept
+    std::optional<int32_t> EditorApp::setup(const CmdArgs& args) noexcept
     {
         ReflectionUtils::bind();
         _inspectorView.setup();
@@ -55,7 +56,7 @@ namespace darmok::editor
         return std::nullopt;
     }
 
-    void EditorAppDelegate::init()
+    void EditorApp::init()
     {
         auto& win = _app.getWindow();
         win.requestTitle("darmok editor");
@@ -65,17 +66,19 @@ namespace darmok::editor
         
         _proj.init(_progCompConfig);
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
-        _inspectorView.init(_app.getAssets(), _proj);
+        _inspectorView.init(*this);
         _materialAssetsView.init(*this);
         _programAssetsView.init(*this);
+        _meshAssetsView.init(*this);
     }
 
-    void EditorAppDelegate::shutdown()
+    void EditorApp::shutdown()
     {
         stopScene();
         _inspectorView.shutdown();
         _materialAssetsView.shutdown();
         _programAssetsView.shutdown();
+        _meshAssetsView.shutdown();
         _sceneView.shutdown();
         _proj.shutdown();
         _imgui.reset();
@@ -89,7 +92,7 @@ namespace darmok::editor
         _mainToolbarHeight = 0.F;
     }
 
-    void EditorAppDelegate::imguiSetup()
+    void EditorApp::imguiSetup()
     {
         ImGuiIO& io = ImGui::GetIO();
 
@@ -106,11 +109,11 @@ namespace darmok::editor
         io.Fonts->Build();
     }
 
-    const ImGuiWindowFlags EditorAppDelegate::_fixedFlags = ImGuiWindowFlags_NoDocking
+    const ImGuiWindowFlags EditorApp::_fixedFlags = ImGuiWindowFlags_NoDocking
         | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
         | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-    void EditorAppDelegate::renderDockspace()
+    void EditorApp::renderDockspace()
     {
         ImGui::SetNextWindowPos(ImVec2(0, _mainToolbarHeight));
         auto size = ImGui::GetIO().DisplaySize;
@@ -142,21 +145,21 @@ namespace darmok::editor
         }
     }   
 
-    void EditorAppDelegate::playScene()
+    void EditorApp::playScene()
     {
         _scenePlaying = true;
     }
 
-    void EditorAppDelegate::stopScene()
+    void EditorApp::stopScene()
     {
         _scenePlaying = false;
     }
 
-    void EditorAppDelegate::pauseScene()
+    void EditorApp::pauseScene()
     {
     }
 
-    void EditorAppDelegate::addEntityComponent(const entt::meta_type& type)
+    void EditorApp::addEntityComponent(const entt::meta_type& type)
     {
         auto entity = _inspectorView.getSelectedEntity();
         if (entity == entt::null)
@@ -165,7 +168,7 @@ namespace darmok::editor
         }
     }
 
-    void EditorAppDelegate::renderMainMenu()
+    void EditorApp::renderMainMenu()
     {
         if (ImGui::BeginMainMenuBar())
         {
@@ -243,7 +246,7 @@ namespace darmok::editor
         }
     }
 
-    void EditorAppDelegate::renderMainToolbar()
+    void EditorApp::renderMainToolbar()
     {
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
@@ -331,19 +334,19 @@ namespace darmok::editor
         ImGui::End();
     }
 
-    void EditorAppDelegate::onSceneTreeSceneClicked()
+    void EditorApp::onSceneTreeSceneClicked()
     {
         onObjectSelected(Entity(entt::null));
     }
 
-    void EditorAppDelegate::onObjectSelected(const SelectableObject& obj) noexcept
+    void EditorApp::onObjectSelected(const SelectableObject& obj) noexcept
     {
         _inspectorView.selectObject(obj, _proj.getScene());
         auto entity = _inspectorView.getSelectedEntity();
         _sceneView.selectEntity(entity);
     }
 
-    void EditorAppDelegate::onSceneTreeTransformClicked(Transform& trans)
+    void EditorApp::onSceneTreeTransformClicked(Transform& trans)
     {
         if (auto scene = _proj.getScene())
         {
@@ -351,9 +354,9 @@ namespace darmok::editor
         }
     }
 
-    const char* EditorAppDelegate::_sceneTreeWindowName = "Scene Tree";
+    const char* EditorApp::_sceneTreeWindowName = "Scene Tree";
 
-    void EditorAppDelegate::renderSceneTree()
+    void EditorApp::renderSceneTree()
     {
         auto selectedScene = _inspectorView.getSelectedScene();
         auto selectedEntity = _inspectorView.getSelectedEntity();
@@ -417,7 +420,7 @@ namespace darmok::editor
         ImGui::End();
     }
 
-    void EditorAppDelegate::imguiRender()
+    void EditorApp::imguiRender()
     {
         _sceneView.beforeRender();
         renderMainMenu();
@@ -428,41 +431,108 @@ namespace darmok::editor
         _sceneView.render();
         _materialAssetsView.render();
         _programAssetsView.render();
+        _meshAssetsView.render();
     }
 
-    void EditorAppDelegate::update(float deltaTime)
+    void EditorApp::update(float deltaTime)
     {
         _sceneView.update(deltaTime);
     }
 
-    std::vector<MaterialAsset> EditorAppDelegate::getAssets(std::type_identity<MaterialAsset>) const
+    EditorProject& EditorApp::getProject() noexcept
     {
-        return _proj.getMaterials();
+        return _proj;
     }
 
-    std::optional<MaterialAsset> EditorAppDelegate::getSelectedAsset(std::type_identity<MaterialAsset>) const
+    const EditorProject& EditorApp::getProject() const noexcept
+    {
+        return _proj;
+    }
+
+    AssetContext& EditorApp::getAssets() noexcept
+    {
+        return _app.getAssets();
+    }
+
+    const AssetContext& EditorApp::getAssets() const noexcept
+    {
+        return _app.getAssets();
+    }
+
+    bool EditorApp::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
+    {
+        auto action = ImguiUtils::drawAssetReference(label, mat, mat->getName(), "MATERIAL");
+        if (action == ReferenceInputAction::Changed)
+        {
+            return true;
+        }
+        if (action == ReferenceInputAction::Visit)
+        {
+            onAssetSelected(mat);
+        }
+        return false;
+    }
+
+    bool EditorApp::drawProgramReference(const char* label, std::shared_ptr<Program>& prog)
+    {
+        auto name = _proj.getProgramName(prog);
+        ProgramAsset asset;
+        auto action = ImguiUtils::drawAssetReference(label, asset, name, "PROGRAM");
+        if (action == ReferenceInputAction::Changed)
+        {
+            prog = _proj.loadProgram(asset);
+            return true;
+        }
+        if (action == ReferenceInputAction::Visit)
+        {
+            onAssetSelected(asset);
+        }
+        return false;
+    }
+
+    bool EditorApp::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh)
+    {
+        auto name = _proj.getMeshName(mesh);
+        MeshAsset asset;
+        auto action = ImguiUtils::drawAssetReference(label, asset, name, "MESH");
+        if (action == ReferenceInputAction::Changed)
+        {
+            mesh = _proj.loadMesh(asset);
+            return true;
+        }
+        if (action == ReferenceInputAction::Visit)
+        {
+            onAssetSelected(asset);
+        }
+        return false;
+    }
+
+    std::vector<MaterialAsset> EditorApp::getAssets(std::type_identity<MaterialAsset>) const
+    {
+        return std::vector<MaterialAsset>(_proj.getMaterials().begin(), _proj.getMaterials().end());
+    }
+
+    std::optional<MaterialAsset> EditorApp::getSelectedAsset(std::type_identity<MaterialAsset>) const
     {
         return _inspectorView.getSelectedObject<MaterialAsset>();
     }
 
-    void EditorAppDelegate::onAssetSelected(const MaterialAsset& asset)
+    void EditorApp::onAssetSelected(const MaterialAsset& asset)
     {
         onObjectSelected(asset);
     }
 
-    std::string EditorAppDelegate::getAssetName(const MaterialAsset& asset) const
+    std::string EditorApp::getAssetName(const MaterialAsset& asset) const
     {
         return asset->getName();
     }
 
-    void EditorAppDelegate::addAsset(std::type_identity<MaterialAsset>)
+    void EditorApp::addAsset(std::type_identity<MaterialAsset>)
     {
-        auto mat = std::make_shared<Material>();
-        mat->setName("New Material");
-        _proj.getMaterials().push_back(mat);
+        _proj.addMaterial();
     }
 
-    std::vector<ProgramAsset> EditorAppDelegate::getAssets(std::type_identity<ProgramAsset>) const
+    std::vector<ProgramAsset> EditorApp::getAssets(std::type_identity<ProgramAsset>) const
     {
         std::vector<ProgramAsset> progs;
         auto& typeNames = StandardProgramLoader::getTypeNames();
@@ -472,21 +542,24 @@ namespace darmok::editor
         {
             progs.emplace_back(type);
         }
-        progs.insert(progs.end(), projProgs.begin(), projProgs.end());
+        for (auto& [src, def] : projProgs)
+        {
+            progs.push_back(src);
+        }
         return progs;
     }
 
-    std::optional<ProgramAsset> EditorAppDelegate::getSelectedAsset(std::type_identity<ProgramAsset>) const
+    std::optional<ProgramAsset> EditorApp::getSelectedAsset(std::type_identity<ProgramAsset>) const
     {
         return _inspectorView.getSelectedObject<ProgramAsset>();
     }
 
-    void EditorAppDelegate::onAssetSelected(const ProgramAsset& asset)
+    void EditorApp::onAssetSelected(const ProgramAsset& asset)
     {
         onObjectSelected(asset);
     }
 
-    std::string EditorAppDelegate::getAssetName(const ProgramAsset& asset) const
+    std::string EditorApp::getAssetName(const ProgramAsset& asset) const
     {
         if (auto standard = std::get_if<StandardProgramType>(&asset))
         {
@@ -496,10 +569,34 @@ namespace darmok::editor
         return ptr ? ptr->name : "";
     }
 
-    void EditorAppDelegate::addAsset(std::type_identity<ProgramAsset>) 
+    void EditorApp::addAsset(std::type_identity<ProgramAsset>) 
     {
-        auto src = std::make_shared<ProgramSource>();
-        src->name = "New Program";
-        _proj.getPrograms().push_back(src);
+        _proj.addProgram();
+    }
+
+    std::vector<MeshAsset> EditorApp::getAssets(std::type_identity<MeshAsset>) const
+    {
+        std::vector<MeshAsset> meshes;
+        return meshes;
+    }
+
+    std::optional<MeshAsset> EditorApp::getSelectedAsset(std::type_identity<MeshAsset>) const
+    {
+        return _inspectorView.getSelectedObject<MeshAsset>();
+    }
+
+    std::string EditorApp::getAssetName(const MeshAsset& asset) const
+    {
+        return "";
+    }
+
+    void EditorApp::onAssetSelected(const MeshAsset& asset)
+    {
+        onObjectSelected(asset);
+    }
+
+    void EditorApp::addAsset(std::type_identity<MeshAsset>)
+    {
+        _proj.addMesh();
     }
 }

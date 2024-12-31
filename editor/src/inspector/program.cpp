@@ -1,5 +1,5 @@
 #include <darmok-editor/inspector/program.hpp>
-#include <darmok-editor/project.hpp>
+#include <darmok-editor/app.hpp>
 #include <darmok/program.hpp>
 #include <darmok/asset.hpp>
 
@@ -8,16 +8,14 @@
 
 namespace darmok::editor
 {
-    void ProgramInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container)
+    void ProgramInspectorEditor::init(EditorApp& editor, ObjectEditorContainer& container)
     {
-        _assets = assets;
-        _proj = proj;
+        _editor = editor;
     }
 
     void ProgramInspectorEditor::shutdown()
     {
-        _assets.reset();
-        _proj.reset();
+        _editor.reset();
     }
 
     bool ProgramInspectorEditor::render(ProgramSource& src) noexcept
@@ -28,13 +26,7 @@ namespace darmok::editor
 
             if (ImGui::Button("Delete"))
             {
-                auto& progs = _proj->getPrograms();
-                auto ptr = &src;
-                auto itr = std::find_if(progs.begin(), progs.end(), [ptr](auto& elm) { return elm.get() == ptr; });
-                if (itr != progs.end())
-                {
-                    progs.erase(itr);
-                }
+                _editor->getProject().removeProgram(src);
             }
         }
         return true;

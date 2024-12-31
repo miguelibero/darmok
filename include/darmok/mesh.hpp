@@ -9,6 +9,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/varying.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include <vector>
 #include <memory>
@@ -18,6 +19,7 @@
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 #include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
 
 namespace darmok
 {
@@ -180,6 +182,18 @@ namespace darmok
         glm::vec3 normal = glm::vec3(0, 1, 0);
         glm::vec3 tangent = glm::vec3(0, 0, 0);
         Color color = Colors::white();
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(position),
+                CEREAL_NVP(texCoord),
+                CEREAL_NVP(normal),
+                CEREAL_NVP(tangent),
+                CEREAL_NVP(color)
+            );
+        }
     };
 
     class Texture;
@@ -195,6 +209,8 @@ namespace darmok
     struct Frustum;
     struct BoundingBox;
     struct Grid;
+    struct MeshSource;
+
 
     struct DARMOK_EXPORT MeshData final
     {
@@ -204,8 +220,6 @@ namespace darmok
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
         MeshType type = MeshType::Static;
-
-        using Shape = std::variant<Cube, Sphere, Capsule, Rectangle, Plane, Ray, Line, Triangle, Polygon, Frustum, Grid>;
 
         MeshData(MeshType type = MeshType::Static) noexcept;
         MeshData(const Cube& Cube, RectangleMeshType type = RectangleMeshType::Full) noexcept;
@@ -255,6 +269,16 @@ namespace darmok
         size_t subdivideDensity(float maxDistance) noexcept;
 
         static Vertex mix(const Vertex& v1, const Vertex& v2, float f) noexcept;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(vertices),
+                CEREAL_NVP(indices),
+                CEREAL_NVP(type)
+            );
+        }
     private:
         static const std::vector<Index> _cuboidTriangleIndices;
 

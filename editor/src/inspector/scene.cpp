@@ -6,7 +6,7 @@
 
 namespace darmok::editor
 {
-    void SceneInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& editors) noexcept
+    void SceneInspectorEditor::init(EditorApp& app, ObjectEditorContainer& editors) noexcept
     {
         _editors = editors;
     }

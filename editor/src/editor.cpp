@@ -26,25 +26,24 @@ namespace darmok::editor
     void ObjectEditorContainer::add(std::unique_ptr<IObjectEditor>&& editor)
     {
         auto type = editor->getObjectType();
-        if (_assets && _proj)
+        if (_app)
         {
-            editor->init(_assets.value(), _proj.value(), *this);
+            editor->init(_app.value(), *this);
         }
         auto& vec = _editors[type.hash()];
         vec.push_back(std::move(editor));
     }
 
-    void ObjectEditorContainer::init(AssetContext& assets, EditorProject& proj)
+    void ObjectEditorContainer::init(EditorApp& app)
     {
         for (auto& [type, editors] : _editors)
         {
             for (auto& editor : editors)
             {
-                editor->init(assets, proj, *this);
+                editor->init(app, *this);
             }
         }
-        _assets = assets;
-        _proj = proj;
+        _app = app;
     }
 
     void ObjectEditorContainer::shutdown()
@@ -56,7 +55,6 @@ namespace darmok::editor
                 editor->shutdown();
             }
         }
-        _assets.reset();
-        _proj.reset();
+        _app.reset();
     }
 }

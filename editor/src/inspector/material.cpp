@@ -1,19 +1,20 @@
 #include <darmok-editor/inspector/material.hpp>
 #include <darmok-editor/utils.hpp>
+#include <darmok-editor/app.hpp>
 
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
-	void MaterialInspectorEditor::init(AssetContext& assets, EditorProject& proj, ObjectEditorContainer& container)
+	void MaterialInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
 	{
-		_proj = proj;
+		_app = app;
 	}
 
 	void MaterialInspectorEditor::shutdown()
 	{
-		_proj.reset();
+		_app.reset();
 	}
 
 	bool MaterialInspectorEditor::render(Material& mat) noexcept
@@ -27,11 +28,11 @@ namespace darmok::editor
 					mat.setName(name);
 				}
 			}
-			if (_proj)
+			if (_app)
 			{
 				
 				auto prog = mat.getProgram();
-				if (ImguiUtils::drawProgramReference("Program", prog, _proj.value()))
+				if (_app->drawProgramReference("Program", prog))
 				{
 					mat.setProgram(prog);
 				}

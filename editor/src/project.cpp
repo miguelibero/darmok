@@ -6,6 +6,7 @@
 #include <darmok/stream.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
+#include <darmok/mesh_shape.hpp>
 
 #include <portable-file-dialogs.h>
 
@@ -37,7 +38,7 @@ namespace darmok::editor
     {
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
-        _scenes.push_back(_scene);
+        _scenes.insert(_scene);
 
         configureEditorScene(*_scene);
         configureDefaultScene(*_scene);
@@ -110,24 +111,34 @@ namespace darmok::editor
         return _cam;
     }
 
-    EditorProject::Materials& EditorProject::getMaterials()
-    {
-        return _materials;
-    }
-
     const EditorProject::Materials& EditorProject::getMaterials() const
     {
         return _materials;
     }
 
-    EditorProject::Programs& EditorProject::getPrograms()
+    std::shared_ptr<Material> EditorProject::addMaterial()
     {
-        return _programs;
+        auto mat = *_materials.emplace().first;
+        mat->setName("New Material");
+        return mat;
     }
 
     const EditorProject::Programs& EditorProject::getPrograms() const
     {
         return _programs;
+    }
+
+    bool EditorProject::removeProgram(ProgramSource& src) noexcept
+    {
+        auto ptr = &src;
+        auto itr = std::find_if(_programs.begin(), _programs.end(),
+            [ptr](auto& elm) { return elm.first.get() == ptr; });
+        if (itr != _programs.end())
+        {
+            _programs.erase(itr);
+            return true;
+        }
+        return false;
     }
 
     std::string EditorProject::getProgramName(const std::shared_ptr<Program>& prog) const
@@ -145,26 +156,74 @@ namespace darmok::editor
         return "Unnamed Program";
     }
 
+    bool EditorProject::isProgramCached(const ProgramAsset& asset) const noexcept
+    {
+        if (std::holds_alternative<StandardProgramType>(asset))
+        {
+            return true;
+        }
+        auto src = std::get<std::shared_ptr<ProgramSource>>(asset);
+        auto itr = _programs.find(src);
+        return itr != _programs.end() && itr->second != nullptr;
+    }
+
+    std::shared_ptr<ProgramSource> EditorProject::addProgram()
+    {
+        auto src = std::make_shared<ProgramSource>();
+        src->name = "New Program";
+        _programs[src] = nullptr;
+        return src;
+    }
+
     std::shared_ptr<Program> EditorProject::loadProgram(const ProgramAsset& asset)
     {
-        if (!_progCompiler)
-        {
-            return nullptr;
-        }
-
         if (auto standard = std::get_if<StandardProgramType>(&asset))
         {
             return StandardProgramLoader::load(*standard);
         }
         auto src = std::get<std::shared_ptr<ProgramSource>>(asset);
-        auto itr = std::find(_programs.begin(), _programs.end(), src);
-        if (itr == _programs.end())
+        auto itr = _programs.find(src);
+        std::shared_ptr<ProgramDefinition> def;
+        if (itr != _programs.end())
         {
-            _programs.push_back(src);
+            def = itr->second;
         }
-        auto def = std::make_shared<ProgramDefinition>((*_progCompiler)(*src));
+        if(def == nullptr)
+        {
+            if (!_progCompiler)
+            {
+                return nullptr;
+            }
+            def = std::make_shared<ProgramDefinition>((*_progCompiler)(*src));
+        }
         auto& loader = _app.getAssets().getProgramLoader();
         return loader.loadResource(def);
+    }
+
+    const EditorProject::Meshes& EditorProject::getMeshes() const
+    {
+        return _meshes;
+    }
+
+    std::string EditorProject::getMeshName(const std::shared_ptr<IMesh>& mesh) const
+    {
+        auto& loader = _app.getAssets().getMeshLoader();
+        auto def = loader.getDefinition(mesh);
+        return def ? def->name : "";
+    }
+
+    std::shared_ptr<IMesh> EditorProject::loadMesh(const MeshAsset& asset)
+    {
+        return nullptr;
+    }
+
+    std::shared_ptr<MeshSource> EditorProject::addMesh()
+    {
+        auto src = std::make_shared<MeshSource>();
+        src->name = "New Mesh";
+        src->shape.emplace<SphereMeshSource>();
+        _meshes[src] = nullptr;
+        return src;
     }
 
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept
@@ -246,7 +305,7 @@ namespace darmok::editor
         auto mat = std::make_shared<Material>(prog);
         mat->setName("Default");
         mat->setBaseColor(Colors::white());
-        _materials.push_back(mat);
+        _materials.insert(mat);
 
         scene.addComponent<Renderable>(cubeEntity, mesh, mat);
         scene.addComponent<Transform>(cubeEntity)
