@@ -10,7 +10,7 @@ namespace darmok::editor
     public:
         void init(EditorApp& editor, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool render(ProgramSource& src) noexcept override;
+        bool renderType(ProgramSource& src) noexcept override;
     private:
         OptionalRef<EditorApp> _editor;
     };

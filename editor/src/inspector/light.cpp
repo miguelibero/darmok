@@ -42,100 +42,117 @@ namespace darmok::editor
         "Soft Shadows"
     };
 
-    bool PointLightInspectorEditor::render(PointLight& light) noexcept
+    bool PointLightInspectorEditor::renderType(PointLight& light) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Point Light"))
         {
             float intensity = light.getIntensity();
             if (ImGui::InputFloat("Intensity", &intensity))
             {
                 light.setIntensity(intensity);
+                changed = true;
             }
             float range = light.getRange();
             if (ImGui::InputFloat("Range", &range))
             {
                 light.setRange(range);
+                changed = true;
             }
             auto color = Colors::normalize(light.getColor());
             if (ImGui::ColorEdit3("Color", glm::value_ptr(color)))
             {
                 light.setColor(Colors::denormalize(color));
+                changed = true;
             }
             auto shadowType = light.getShadowType();
             if (LightEditorUtils::renderShadowTypeInput(shadowType))
             {
                 light.setShadowType(shadowType);
+                changed = true;
             }
         }
-        return true;
+        return changed;
     }
 
-    bool DirectionalLightInspectorEditor::render(DirectionalLight& light) noexcept
+    bool DirectionalLightInspectorEditor::renderType(DirectionalLight& light) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Directional Light"))
         {
             float intensity = light.getIntensity();
             if (ImGui::InputFloat("Intensity", &intensity))
             {
                 light.setIntensity(intensity);
+                changed = true;
             }
             auto color = Colors::normalize(light.getColor());
             if (ImGui::ColorEdit3("Color", glm::value_ptr(color)))
             {
                 light.setColor(Colors::denormalize(color));
+                changed = true;
             }
             auto shadowType = light.getShadowType();
             if (LightEditorUtils::renderShadowTypeInput(shadowType))
             {
                 light.setShadowType(shadowType);
+                changed = true;
             }
         }
-        return true;
+        return changed;
     }
 
-    bool SpotLightInspectorEditor::render(SpotLight& light) noexcept
+    bool SpotLightInspectorEditor::renderType(SpotLight& light) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Spot Light"))
         {
             float intensity = light.getIntensity();
             if (ImGui::InputFloat("Intensity", &intensity))
             {
                 light.setIntensity(intensity);
+                changed = true;
             }
             float range = light.getRange();
             if (ImGui::InputFloat("Range", &range))
             {
                 light.setRange(range);
+                changed = true;
             }
             auto color = Colors::normalize(light.getColor());
             if (ImGui::ColorEdit3("Color", glm::value_ptr(color)))
             {
                 light.setColor(Colors::denormalize(color));
+                changed = true;
             }
             auto shadowType = light.getShadowType();
             if (LightEditorUtils::renderShadowTypeInput(shadowType))
             {
                 light.setShadowType(shadowType);
+                changed = true;
             }
         }
-        return true;
+        return changed;
     }
 
-    bool AmbientLightInspectorEditor::render(AmbientLight& light) noexcept
+    bool AmbientLightInspectorEditor::renderType(AmbientLight& light) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Ambient Light"))
         {
             float intensity = light.getIntensity();
             if (ImGui::InputFloat("Intensity", &intensity))
             {
                 light.setIntensity(intensity);
+                changed = true;
             }
             auto color = Colors::normalize(light.getColor());
             if (ImGui::ColorEdit3("Color", glm::value_ptr(color)))
             {
                 light.setColor(Colors::denormalize(color));
+                changed = true;
             }
         }
-        return true;
+        return changed;
     }
 }

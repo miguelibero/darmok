@@ -20,14 +20,16 @@ namespace darmok::editor
 		_app.reset();
 	}
 
-	bool RenderableInspectorEditor::render(Renderable& renderable) noexcept
+	bool RenderableInspectorEditor::renderType(Renderable& renderable) noexcept
 	{
+		auto changed = false;
 		if (ImGui::CollapsingHeader("Renderable"))
 		{
             auto mat = renderable.getMaterial();
             if(_app->drawMaterialReference("Material", mat))
 			{
 				renderable.setMaterial(mat);
+				changed = true;
             }
 			if (_app)
 			{
@@ -35,14 +37,16 @@ namespace darmok::editor
 				if (_app->drawMeshReference("Mesh", mesh, renderable.getVertexLayout()))
 				{
 					renderable.setMesh(mesh);
+					changed = true;
 				}
 			}
 			auto enabled = renderable.isEnabled();
 			if (ImGui::Checkbox("Enabled", &enabled))
 			{
 				renderable.setEnabled(enabled);
+				changed = true;
 			}
 		}
-		return true;
+		return changed;
 	}
 }

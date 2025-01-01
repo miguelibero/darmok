@@ -291,6 +291,10 @@ namespace darmok::editor
         if (def == nullptr)
         {
             def = src->createDefinition(layout);
+            if (def == nullptr)
+            {
+                return nullptr;
+            }
             _meshes[src].push_back(def);
         }
         auto& loader = _app.getAssets().getMeshLoader();

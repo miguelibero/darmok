@@ -15,9 +15,9 @@ namespace darmok::editor
         }
         for (auto& editor : itr->second)
         {
-            if (editor->tryRender(obj))
+            if (editor->canRender(obj))
             {
-                return true;
+                return editor->render(obj);
             }
         }
         return false;

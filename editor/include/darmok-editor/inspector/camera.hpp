@@ -10,7 +10,7 @@ namespace darmok::editor
     {
     public:
         void init(EditorApp& app, ObjectEditorContainer& editors) noexcept override;
-        bool render(Camera& cam) noexcept override;
+        bool renderType(Camera& cam) noexcept override;
     private:
         OptionalRef<ObjectEditorContainer> _editors;
     };

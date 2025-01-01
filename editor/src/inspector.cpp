@@ -89,22 +89,31 @@ namespace darmok::editor
             }
             else if(auto scene = getSelectedScene())
             {
-                _sceneEditor->render(*scene);
+                _sceneEditor->renderType(*scene);
             }
-            else if (auto mat = getSelectedObject<MaterialAsset>())
+            else if (auto optMat = getSelectedObject<MaterialAsset>())
             {
-                _materialEditor->render(*mat.value());
-            }
-            else if (auto prog = getSelectedObject<ProgramAsset>())
-            {
-                if (auto ptr = std::get_if<std::shared_ptr<ProgramSource>>(&prog.value()))
+                if (auto mat = optMat.value())
                 {
-                    _programEditor->render(**ptr);
+                    _materialEditor->renderType(*mat);
                 }
             }
-            else if (auto mesh = getSelectedObject<MeshAsset>())
+            else if (auto optProg = getSelectedObject<ProgramAsset>())
             {
-                _meshEditor->render(*mesh.value());
+                if (auto ptr = std::get_if<std::shared_ptr<ProgramSource>>(&optProg.value()))
+                {
+                    if (auto src = *ptr)
+                    {
+                        _programEditor->renderType(*src);
+                    }
+                }
+            }
+            else if (auto optMesh = getSelectedObject<MeshAsset>())
+            {
+                if (auto mesh = optMesh.value())
+                {
+                    _meshEditor->renderType(*mesh);
+                }
             }
         }
         ImGui::End();

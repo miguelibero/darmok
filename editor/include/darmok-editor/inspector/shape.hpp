@@ -8,12 +8,12 @@ namespace darmok::editor
     class CubeInspectorEditor final : public ITypeObjectEditor<Cube>
     {
     public:
-        bool render(Cube& cube) noexcept override;
+        bool renderType(Cube& cube) noexcept override;
     };
 
     class SphereInspectorEditor final : public ITypeObjectEditor<Sphere>
     {
     public:
-        bool render(Sphere& sphere) noexcept override;
+        bool renderType(Sphere& sphere) noexcept override;
     };
 }

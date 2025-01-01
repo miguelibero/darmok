@@ -112,9 +112,11 @@ namespace darmok::editor
                 return selected;
             }
             auto name = _delegate->getAssetName(asset);
+            auto selectionChanged = false;
             if (ImguiUtils::drawAsset(name.c_str(), selected))
             {
                 selected = !selected;
+                selectionChanged = true;
             }
             if (_dragType != nullptr && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
@@ -126,7 +128,7 @@ namespace darmok::editor
                 }
                 ImGui::EndDragDropSource();
             }
-            if (selected)
+            if (selectionChanged && selected)
             {
                 onAssetSelected(asset);
             }

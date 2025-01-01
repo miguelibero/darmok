@@ -15,8 +15,9 @@ namespace darmok::editor
         _editors = editors;
     }
 
-    bool CameraInspectorEditor::render(Camera& cam) noexcept
+    bool CameraInspectorEditor::renderType(Camera& cam) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Camera"))
         {
             {
@@ -42,27 +43,52 @@ namespace darmok::editor
                     }
                     ImGui::EndCombo();
                 }
-                ImGui::BeginGroup();
+                ImGui::BeginChild("Projection");
                 if (auto persp = std::get_if<CameraPerspectiveData>(&proj))
                 {
-                    ImGui::SliderFloat("Field Of View", &persp->fovy, 0.F, 360.F);
-                    ImGui::InputFloat("Near Plane", &persp->near);
-                    ImGui::InputFloat("Far Plane", &persp->far);
+                    if (ImGui::SliderFloat("Field Of View", &persp->fovy, 0.F, 360.F))
+                    {
+                        changed = true;
+                    }
+                    if (ImGui::InputFloat("Near Plane", &persp->near))
+                    {
+                        changed = true;
+                    }
+                    if (ImGui::InputFloat("Far Plane", &persp->far))
+                    {
+                        changed = true;
+                    }
                 }
                 else if (auto ortho = std::get_if<CameraOrthoData>(&proj))
                 {
-                    ImGui::InputFloat2("Center", glm::value_ptr(ortho->center));
-                    ImGui::InputFloat("Near Plane", &ortho->near);
-                    ImGui::InputFloat("Far Plane", &ortho->far);
+                    if (ImGui::InputFloat2("Center", glm::value_ptr(ortho->center)))
+                    {
+                        changed = true;
+                    }
+                    if (ImGui::InputFloat("Near Plane", &ortho->near))
+                    {
+                        changed = true;
+                    }
+                    if (ImGui::InputFloat("Far Plane", &ortho->far))
+                    {
+                        changed = true;
+                    }
                 }
-                ImGui::EndGroup();
-                cam.setProjection(proj);
+                ImGui::EndChild();
+                if (changed)
+                {
+                    cam.setProjection(proj);
+
+                }
                 ImGui::Spacing();
             }
 
             {
                 auto vp = cam.getViewport();
-                ImGui::InputFloat4("Viewport", glm::value_ptr(vp));
+                if (ImGui::InputFloat4("Viewport", glm::value_ptr(vp)))
+                {
+                    changed = true;
+                }
                 ImGui::Spacing();
             }
 
@@ -75,12 +101,15 @@ namespace darmok::editor
                     {
                         for (auto& comp : comps)
                         {
-                            _editors->render(comp);
+                            if (_editors->render(comp))
+                            {
+                                changed = true;
+                            }
                         }
                     }
                 }
             }
         }
-        return true;
+        return changed;
     }
 }

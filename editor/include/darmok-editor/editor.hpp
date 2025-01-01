@@ -16,25 +16,31 @@ namespace darmok::editor
         virtual void init(EditorApp& app, ObjectEditorContainer& container) {}
         virtual void shutdown() {}
         virtual entt::type_info getObjectType() const = 0;
-        virtual bool tryRender(entt::meta_any& any) { return false; }
+        virtual bool canRender(entt::meta_any& any) const = 0;
+        virtual bool render(entt::meta_any& any) { return false; }
     };
 
     template<typename T>
     class BX_NO_VTABLE ITypeObjectEditor : public IObjectEditor
     {
     public:
-        virtual bool render(T& obj) = 0;
+        virtual bool renderType(T& obj) = 0;
 
         entt::type_info getObjectType() const override
         {
             return entt::type_id<T>();
         }
 
-        bool tryRender(entt::meta_any& any) override
+        bool canRender(entt::meta_any& any) const override
+        {
+            return any.type().info() == getObjectType();
+        }
+
+        bool render(entt::meta_any& any) override
         {
             if (auto ptr = any.try_cast<T>())
             {
-                return render(*ptr);
+                return renderType(*ptr);
             }
             return false;
         }

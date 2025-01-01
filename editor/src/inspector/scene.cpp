@@ -11,8 +11,10 @@ namespace darmok::editor
         _editors = editors;
     }
 
-    bool SceneInspectorEditor::render(Scene& scene) noexcept
+    bool SceneInspectorEditor::renderType(Scene& scene) noexcept
     {
+        auto changed = false;
+
         if (ImGui::CollapsingHeader("Scene"))
         {
             {
@@ -20,6 +22,7 @@ namespace darmok::editor
                 if (ImGui::InputText("Name", &name))
                 {
                     scene.setName(name);
+                    changed = true;
                 }
                 ImGui::Spacing();
             }
@@ -33,7 +36,10 @@ namespace darmok::editor
                     {
                         for (auto& comp : comps)
                         {
-                            _editors->render(comp);
+                            if (_editors->render(comp))
+                            {
+                                changed = true;
+                            }
                         }
                     }
                 }

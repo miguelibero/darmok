@@ -11,7 +11,7 @@ namespace darmok::editor
     public:
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool render(Renderable& renderable) noexcept override;
+        bool renderType(Renderable& renderable) noexcept override;
     private:
         OptionalRef<EditorApp> _app;
     };

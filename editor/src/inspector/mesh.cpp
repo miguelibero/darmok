@@ -27,11 +27,15 @@ namespace darmok::editor
         "Plane",
     };
 
-    bool MeshSourceInspectorEditor::render(MeshSource& src) noexcept
+    bool MeshSourceInspectorEditor::renderType(MeshSource& src) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Mesh"))
         {
-            ImGui::InputText("Name", &src.name);
+            if (ImGui::InputText("Name", &src.name))
+            {
+                changed = true;
+            }
 
             {
                 auto currentType = src.content.index();
@@ -42,7 +46,7 @@ namespace darmok::editor
                         auto selected = currentType == i;
                         if (ImGui::Selectable(_typeLabels[i].c_str(), selected))
                         {
-                           
+                            changed = true;
                         }
                         if (selected)
                         {
@@ -56,20 +60,23 @@ namespace darmok::editor
             if (auto cubeContent = std::get_if<CubeMeshSource>(&src.content))
             {
                 auto any = entt::forward_as_meta(cubeContent->cube);
-                _container->render(any);
+                if (_container->render(any))
+                {
+                    changed = true;
+                }
             }
 
-            auto index32 = src.config.index32;
-            if (ImGui::Checkbox("32bit indices", &index32))
+            if (ImGui::Checkbox("32bit indices", &src.config.index32))
             {
-                src.config.index32 = index32;
+                changed = true;
             }
 
             if (ImGui::Button("Delete"))
             {
                 _editor->getProject().removeMesh(src);
+                changed = true;
             }
         }
-        return true;
+        return changed;
     }
 }

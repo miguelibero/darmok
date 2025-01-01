@@ -12,7 +12,7 @@ namespace darmok::editor
     public:
         void init(EditorApp& editor, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool render(MeshSource& src) noexcept override;
+        bool renderType(MeshSource& src) noexcept override;
     private:
         OptionalRef<EditorApp> _editor;
         OptionalRef<ObjectEditorContainer> _container;

@@ -18,17 +18,22 @@ namespace darmok::editor
         _editor.reset();
     }
 
-    bool ProgramSourceInspectorEditor::render(ProgramSource& src) noexcept
+    bool ProgramSourceInspectorEditor::renderType(ProgramSource& src) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Program"))
         {
-            ImGui::InputText("Name", &src.name);
+            if (ImGui::InputText("Name", &src.name))
+            {
+                changed = true;
+            }
 
             if (ImGui::Button("Delete"))
             {
                 _editor->getProject().removeProgram(src);
+                changed = true;
             }
         }
-        return true;
+        return changed;
     }
 }

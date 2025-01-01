@@ -17,8 +17,9 @@ namespace darmok::editor
 		_app.reset();
 	}
 
-	bool MaterialInspectorEditor::render(Material& mat) noexcept
+	bool MaterialInspectorEditor::renderType(Material& mat) noexcept
 	{
+		auto changed = true;
 		if (ImGui::CollapsingHeader("Material"))
 		{
 			{
@@ -26,6 +27,7 @@ namespace darmok::editor
 				if (ImGui::InputText("Name", &name))
 				{
 					mat.setName(name);
+					changed = true;
 				}
 			}
 			if (_app)
@@ -35,6 +37,7 @@ namespace darmok::editor
 				if (_app->drawProgramReference("Program", prog))
 				{
 					mat.setProgram(prog);
+					changed = true;
 				}
 			}
 			{
@@ -42,6 +45,7 @@ namespace darmok::editor
 				if (ImGui::ColorEdit4("Base Color", glm::value_ptr(color)))
 				{
 					mat.setBaseColor(Colors::denormalize(color));
+					changed = true;
 				}
 			}
 			{
@@ -49,6 +53,7 @@ namespace darmok::editor
 				if (ImGui::SliderFloat("Metallic Factor", &f, 0.F, 1.F))
 				{
 					mat.setMetallicFactor(f);
+					changed = true;
 				}
 			}
 			{
@@ -56,6 +61,7 @@ namespace darmok::editor
 				if (ImGui::SliderFloat("Roughness Factor", &f, 0.F, 1.F))
 				{
 					mat.setRoughnessFactor(f);
+					changed = true;
 				}
 			}
 			{
@@ -63,6 +69,7 @@ namespace darmok::editor
 				if (ImGui::SliderFloat("Normal Scale", &f, 0.F, 1.F))
 				{
 					mat.setNormalScale(f);
+					changed = true;
 				}
 			}
 			{
@@ -70,6 +77,7 @@ namespace darmok::editor
 				if (ImGui::SliderFloat("Occlusion Strength", &f, 0.F, 1.F))
 				{
 					mat.setOcclusionStrength(f);
+					changed = true;
 				}
 			}
 			{
@@ -77,6 +85,7 @@ namespace darmok::editor
 				if (ImGui::ColorEdit3("Emissive Color", glm::value_ptr(color)))
 				{
 					mat.setEmissiveColor(Colors::denormalize(color));
+					changed = true;
 				}
 			}
 			{
@@ -84,6 +93,7 @@ namespace darmok::editor
 				if (ImguiUtils::drawEnumCombo("Primitive Type", prim, Material::getPrimitiveTypeName))
 				{
 					mat.setPrimitiveType(prim);
+					changed = true;
 				}
 			}
 			{
@@ -91,6 +101,7 @@ namespace darmok::editor
 				if (ImguiUtils::drawEnumCombo("Opacity Type", opacity, Material::getOpacityTypeName))
 				{
 					mat.setOpacityType(opacity);
+					changed = true;
 				}
 			}
 			{
@@ -98,6 +109,7 @@ namespace darmok::editor
 				if (ImGui::Checkbox("Two Sided", &twoSided))
 				{
 					mat.setTwoSided(twoSided);
+					changed = true;
 				}
 			}
 			// phong lighting: specular + shininess
@@ -108,6 +120,7 @@ namespace darmok::editor
 				if (ImGui::ColorEdit3("Specular Color", glm::value_ptr(color)))
 				{
 					mat.setSpecularColor(Colors::denormalize(color));
+					changed = true;
 				}
 			}
 			{
@@ -115,10 +128,11 @@ namespace darmok::editor
 				if (ImGui::SliderInt("Shininess", &v, 0, 256))
 				{
 					mat.setShininess(v);
+					changed = true;
 				}
 			}
 			ImGui::EndChild();
 		}
-		return true;
+		return changed;
 	}
 }

@@ -9,8 +9,9 @@
 
 namespace darmok::editor
 {
-    bool TransformInspectorEditor::render(Transform& trans) noexcept
+    bool TransformInspectorEditor::renderType(Transform& trans) noexcept
     {
+        auto changed = false;
         if (ImGui::CollapsingHeader("Transform"))
         {
             {
@@ -18,6 +19,7 @@ namespace darmok::editor
                 if (ImGui::InputText("Name", &name))
                 {
                     trans.setName(name);
+                    changed = true;
                 }
             }
 
@@ -26,6 +28,7 @@ namespace darmok::editor
                 if (ImguiUtils::drawPositionInput("Position", pos))
                 {
                     trans.setPosition(pos);
+                    changed = true;
                 }
             }
             {
@@ -33,6 +36,7 @@ namespace darmok::editor
                 if (ImguiUtils::drawRotationInput("Rotation", rot))
                 {
                     trans.setRotation(rot);
+                    changed = true;
                 }
             }
             {
@@ -40,9 +44,10 @@ namespace darmok::editor
                 if (ImguiUtils::drawScaleInput("Scale", scale))
                 {
                     trans.setScale(scale);
+                    changed = true;
                 }
             }
         }
-        return true;
+        return changed;
     }
 }
