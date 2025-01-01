@@ -286,6 +286,21 @@ namespace darmok
 		return false;
 	}
 
+	bool VertexAttribute::operator==(const VertexAttribute& other) const noexcept
+	{
+		return attrib == other.attrib
+			&& type == other.type
+			&& num == other.num
+			&& normalize == other.normalize
+			&& asInt == other.asInt
+			;
+	}
+
+	bool VertexAttribute::operator!=(const VertexAttribute& other) const noexcept
+	{
+		return !operator==(other);
+	}
+
 	bool FragmentAttribute::inGroup(AttribGroup group) const noexcept
 	{
 		return AttribUtils::getGroup(attrib) == group;
@@ -395,6 +410,20 @@ namespace darmok
 			json["default"] = defaultValue;
 		}
 		return AttribUtils::getBgfxName(attrib);
+	}
+
+	bool FragmentAttribute::operator==(const FragmentAttribute& other) const noexcept
+	{
+		return attrib == other.attrib
+			&& num == other.num
+			&& name == other.name
+			&& defaultValue == other.defaultValue
+			;
+	}
+
+	bool FragmentAttribute::operator!=(const FragmentAttribute& other) const noexcept
+	{
+		return !operator==(other);
 	}
 
 	const std::string VaryingDefinition::_vertexJsonKey = "vertex";
@@ -563,6 +592,19 @@ namespace darmok
 	{
 		std::ofstream out(path);
 		writeBgfx(out);
+	}
+
+	bool VaryingDefinition::operator==(const VaryingDefinition& other) const noexcept
+	{
+		return vertex == other.vertex
+			&& fragment == other.fragment
+			&& instanceAttribs == other.instanceAttribs
+			;
+	}
+
+	bool VaryingDefinition::operator!=(const VaryingDefinition& other) const noexcept
+	{
+		return !operator==(other);
 	}
 
 	VertexLayout::VertexLayout(const std::vector<VertexAttribute>& attribs) noexcept
@@ -742,6 +784,16 @@ namespace darmok
 		}
 	}
 
+	bool VertexLayout::operator==(const VertexLayout& other) const noexcept
+	{
+		return _attributes == other._attributes;
+	}
+
+	bool VertexLayout::operator!=(const VertexLayout& other) const noexcept
+	{
+		return !operator==(other);
+	}
+
 	FragmentLayout::FragmentLayout(const std::vector<Attribute>& attribs) noexcept
 		: _attributes(attribs)
 	{
@@ -880,16 +932,36 @@ namespace darmok
 			json.emplace(key, attrJson);
 		}
 	}
+
+	bool FragmentLayout::operator==(const FragmentLayout& other) const noexcept
+	{
+		return _attributes == other._attributes;
+	}
+
+	bool FragmentLayout::operator!=(const FragmentLayout& other) const noexcept
+	{
+		return !operator==(other);
+	}
+}
+
+namespace bgfx
+{
+	bool operator==(const VertexLayout& a, const VertexLayout& b) noexcept
+	{
+		return a.m_hash == b.m_hash;
+	}
+
+	bool operator!=(const VertexLayout& a, const VertexLayout& b) noexcept
+	{
+		return !operator==(a, b);
+	}
 }
 
 std::string to_string(const bgfx::VertexLayout& layout) noexcept
 {
 	nlohmann::ordered_json json;
 	darmok::VertexLayout(layout).write(json);
-	std::stringstream ss;
-	ss << "VertexLayout:" << std::endl;
-	ss << json.dump(2) << std::endl;
-	return ss.str();
+	return std::string("VertexLayout:\n") + json.dump(2);
 }
 
 std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) noexcept

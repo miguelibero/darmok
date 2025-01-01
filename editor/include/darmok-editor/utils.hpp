@@ -3,6 +3,7 @@
 #include <darmok/utils.hpp>
 
 #include <imgui.h>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {
@@ -61,13 +62,12 @@ namespace darmok::editor
         {
             ImGui::BeginDisabled(true);
             ImGui::InputText(label, (char*)name.c_str(), name.size());
-
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            ImGui::EndDisabled();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
             {
                 return ReferenceInputAction::Visit;
             }
 
-            ImGui::EndDisabled();
             auto action = ReferenceInputAction::None;
             dragType = dragType == nullptr ? label : dragType;
             if (ImGui::BeginDragDropTarget())
@@ -83,5 +83,10 @@ namespace darmok::editor
 
             return action;
         }
+
+        static bool drawSizeInput(const char* label, glm::vec3& v) noexcept;
+        static bool drawPositionInput(const char* label, glm::vec3& v) noexcept;
+        static bool drawRotationInput(const char* label, glm::quat& v) noexcept;
+        static bool drawScaleInput(const char* label, glm::vec3& v) noexcept;
     };
 }

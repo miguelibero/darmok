@@ -32,7 +32,7 @@ namespace darmok::editor
 			if (_app)
 			{
 				auto mesh = renderable.getMesh();
-				if (_app->drawMeshReference("Mesh", mesh))
+				if (_app->drawMeshReference("Mesh", mesh, renderable.getVertexLayout()))
 				{
 					renderable.setMesh(mesh);
 				}

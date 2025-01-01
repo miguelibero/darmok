@@ -1,7 +1,9 @@
 #include <darmok-editor/inspector/transform.hpp>
+#include <darmok-editor/utils.hpp>
+
 #include <darmok/glm.hpp>
 #include <darmok/transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
@@ -21,21 +23,21 @@ namespace darmok::editor
 
             {
                 auto pos = trans.getPosition();
-                if (ImGui::InputFloat3("Position", glm::value_ptr(pos)))
+                if (ImguiUtils::drawPositionInput("Position", pos))
                 {
                     trans.setPosition(pos);
                 }
             }
             {
-                auto rot = trans.getEulerAngles();
-                if (ImGui::InputFloat3("Rotation", glm::value_ptr(rot)))
+                auto rot = trans.getRotation();
+                if (ImguiUtils::drawRotationInput("Rotation", rot))
                 {
-                    trans.setEulerAngles(rot);
+                    trans.setRotation(rot);
                 }
             }
             {
                 auto scale = trans.getScale();
-                if (ImGui::InputFloat3("Scale", glm::value_ptr(scale)))
+                if (ImguiUtils::drawScaleInput("Scale", scale))
                 {
                     trans.setScale(scale);
                 }

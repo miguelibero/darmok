@@ -20,11 +20,6 @@ namespace darmok::editor
     class EditorProject final : darmok::ISceneDelegate
     {
     public:
-        using Materials = std::unordered_set<std::shared_ptr<Material>>;
-        using Programs = std::unordered_map<std::shared_ptr<ProgramSource>, std::shared_ptr<ProgramDefinition>>;
-        using Meshes = std::unordered_map<std::shared_ptr<MeshSource>, std::shared_ptr<MeshData>>;
-        using Scenes = std::unordered_set<std::shared_ptr<Scene>>;
-
         EditorProject(App& app);
 
         void init(const ProgramCompilerConfig& progCompilerConfig);
@@ -36,20 +31,24 @@ namespace darmok::editor
         std::shared_ptr<Scene> getScene();
         OptionalRef<Camera> getCamera();
 
-        const Materials& getMaterials() const;
+        std::vector<MaterialAsset> getMaterials() const;
         std::shared_ptr<Material> addMaterial();
         
-        const Programs& getPrograms() const;
+        std::vector<ProgramAsset> getPrograms() const;
         bool removeProgram(ProgramSource& src) noexcept;
         std::string getProgramName(const std::shared_ptr<Program>& prog) const;
         bool isProgramCached(const ProgramAsset& asset) const noexcept;
         std::shared_ptr<ProgramSource> addProgram();
         std::shared_ptr<Program> loadProgram(const ProgramAsset& asset);
+        ProgramAsset findProgram(const std::shared_ptr<Program>& prog) const;
 
-        const Meshes& getMeshes() const;
+        std::vector<MeshAsset> getMeshes() const;
         std::string getMeshName(const std::shared_ptr<IMesh>& mesh) const;
-        std::shared_ptr<IMesh> loadMesh(const MeshAsset& asset);
+        bool isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept;
+        std::shared_ptr<IMesh> loadMesh(const MeshAsset& asset, const bgfx::VertexLayout& layout);
         std::shared_ptr<MeshSource> addMesh();
+        bool removeMesh(MeshSource& src) noexcept;
+        MeshAsset findMesh(const std::shared_ptr<IMesh>& mesh) const;
 
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;
@@ -73,6 +72,11 @@ namespace darmok::editor
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
         std::optional<ProgramCompiler> _progCompiler;
+
+        using Materials = std::unordered_set<std::shared_ptr<Material>>;
+        using Programs = std::unordered_map<std::shared_ptr<ProgramSource>, std::shared_ptr<ProgramDefinition>>;
+        using Meshes = std::unordered_map<std::shared_ptr<MeshSource>, std::vector<std::shared_ptr<MeshDefinition>>> ;
+        using Scenes = std::unordered_set<std::shared_ptr<Scene>>;
 
         Materials _materials;
         Scenes _scenes;

@@ -59,6 +59,11 @@ namespace darmok::editor
             _delegate.reset();
         }
 
+        void focus() noexcept
+        {
+            ImGui::SetWindowFocus(_name);
+        }
+
         void render() noexcept
         {
             static const ImVec2 cellPadding(10.0f, 10.0f);

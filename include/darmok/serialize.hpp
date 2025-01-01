@@ -72,6 +72,7 @@ namespace darmok
         {
             _stack.pop();
         }
+
     private:
         static thread_local std::stack<std::reference_wrapper<T>> _stack;
     };

@@ -7,6 +7,7 @@
 #include <darmok-editor/inspector/material.hpp>
 #include <darmok-editor/inspector/program.hpp>
 #include <darmok-editor/inspector/shape.hpp>
+#include <darmok-editor/inspector/mesh.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -34,7 +35,8 @@ namespace darmok::editor
         _editors.add<SphereInspectorEditor>();
         _sceneEditor = _editors.add<SceneInspectorEditor>();
         _materialEditor = _editors.add<MaterialInspectorEditor>();
-        _programEditor = _editors.add<ProgramInspectorEditor>();
+        _programEditor = _editors.add<ProgramSourceInspectorEditor>();
+        _meshEditor = _editors.add<MeshSourceInspectorEditor>();
     }
 
     void EditorInspectorView::init(EditorApp& app)
@@ -99,6 +101,10 @@ namespace darmok::editor
                 {
                     _programEditor->render(**ptr);
                 }
+            }
+            else if (auto mesh = getSelectedObject<MeshAsset>())
+            {
+                _meshEditor->render(*mesh.value());
             }
         }
         ImGui::End();

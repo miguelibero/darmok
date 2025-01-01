@@ -125,6 +125,7 @@ set(CORE_SOURCES
   shape.cpp
   texture.cpp
   mesh.cpp
+  mesh_source.cpp
   vertex.cpp
   varying.cpp
   viewport.cpp
@@ -151,7 +152,7 @@ set(CORE_HEADERS
   shape.hpp
   mesh_fwd.hpp
   mesh.hpp
-  mesh_shape.hpp
+  mesh_source.hpp
   color_fwd.hpp
   color.hpp
   image_fwd.hpp

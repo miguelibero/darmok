@@ -101,6 +101,8 @@ namespace darmok::editor
 				}
 			}
 			// phong lighting: specular + shininess
+
+			ImGui::BeginChild("Basic");
 			{
 				auto color = Colors::normalize(mat.getSpecularColor());
 				if (ImGui::ColorEdit3("Specular Color", glm::value_ptr(color)))
@@ -115,6 +117,7 @@ namespace darmok::editor
 					mat.setShininess(v);
 				}
 			}
+			ImGui::EndChild();
 		}
 		return true;
 	}

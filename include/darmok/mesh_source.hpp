@@ -1,6 +1,6 @@
 #pragma once
 
-#include <darmok/mesh_fwd.hpp>
+#include <darmok/mesh.hpp>
 #include <darmok/shape.hpp>
 
 #include <string>
@@ -72,16 +72,32 @@ namespace darmok
         }
     };
 
+    class MeshDefinition;
+
     struct DARMOK_EXPORT MeshSource final
     {
         std::string name;
-        using Shape = std::variant<CubeMeshSource, SphereMeshSource, CapsuleMeshSource, RectangleMeshSource, PlaneMeshSource>;
-        Shape shape;
+        MeshConfig config;
+
+        using Content = std::variant<
+            CubeMeshSource,
+            SphereMeshSource,
+            CapsuleMeshSource,
+            RectangleMeshSource,
+            PlaneMeshSource
+        >;
+        Content content;
+
+        std::shared_ptr<MeshDefinition> createDefinition(const bgfx::VertexLayout& layout);
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(name), CEREAL_NVP(shape));
+            archive(
+                CEREAL_NVP(name),
+                CEREAL_NVP(config),
+                CEREAL_NVP(content)
+            );
         }
     };
 }

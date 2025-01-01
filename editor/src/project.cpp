@@ -6,7 +6,7 @@
 #include <darmok/stream.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
-#include <darmok/mesh_shape.hpp>
+#include <darmok/mesh_source.hpp>
 
 #include <portable-file-dialogs.h>
 
@@ -73,10 +73,14 @@ namespace darmok::editor
             }
             _path = dialog.result();
         }
-        if (_path)
+        if (!_path)
         {
-            CerealUtils::save(*this, _path.value());
+            return;
         }
+
+        SerializeContextStack<AssetContext>::push(_app.getAssets());
+        CerealUtils::save(*this, _path.value());
+        SerializeContextStack<AssetContext>::pop();
     }
 
     void EditorProject::open()
@@ -97,7 +101,9 @@ namespace darmok::editor
         {
             return;
         }
+        SerializeContextStack<AssetContext>::push(_app.getAssets());
         CerealUtils::load(*this, path);
+        SerializeContextStack<AssetContext>::pop();
         _path = path;
     }
 
@@ -111,21 +117,33 @@ namespace darmok::editor
         return _cam;
     }
 
-    const EditorProject::Materials& EditorProject::getMaterials() const
+    std::vector<MaterialAsset> EditorProject::getMaterials() const
     {
-        return _materials;
+        return std::vector<MaterialAsset>(_materials.begin(), _materials.end());
     }
 
     std::shared_ptr<Material> EditorProject::addMaterial()
     {
-        auto mat = *_materials.emplace().first;
+        auto mat = std::make_shared<Material>();
         mat->setName("New Material");
+        _materials.insert(mat);
         return mat;
     }
 
-    const EditorProject::Programs& EditorProject::getPrograms() const
+    std::vector<ProgramAsset> EditorProject::getPrograms() const
     {
-        return _programs;
+        std::vector<ProgramAsset> progs;
+        auto& typeNames = StandardProgramLoader::getTypeNames();
+        progs.reserve(typeNames.size() + _programs.size());
+        for (auto& [type, name] : typeNames)
+        {
+            progs.emplace_back(type);
+        }
+        for (auto& [src, def] : _programs)
+        {
+            progs.push_back(src);
+        }
+        return progs;
     }
 
     bool EditorProject::removeProgram(ProgramSource& src) noexcept
@@ -200,9 +218,35 @@ namespace darmok::editor
         return loader.loadResource(def);
     }
 
-    const EditorProject::Meshes& EditorProject::getMeshes() const
+    ProgramAsset EditorProject::findProgram(const std::shared_ptr<Program>& prog) const
     {
-        return _meshes;
+        if (auto standard = StandardProgramLoader::getType(prog))
+        {
+            return standard.value();
+        }
+        auto& loader = _app.getAssets().getProgramLoader();
+        auto def = loader.getDefinition(prog);
+        if (def)
+        {
+            auto itr = std::find_if(_programs.begin(), _programs.end(),
+                [def](auto& elm) { return elm.second == def; });
+            if (itr != _programs.end())
+            {
+                return itr->first;
+            }
+        }
+        return nullptr;
+    }
+
+    std::vector<MeshAsset> EditorProject::getMeshes() const
+    {
+        std::vector<MeshAsset> meshes;
+        meshes.reserve(_meshes.size());
+        for (auto& [src, def] : _meshes)
+        {
+            meshes.push_back(src);
+        }
+        return meshes;
     }
 
     std::string EditorProject::getMeshName(const std::shared_ptr<IMesh>& mesh) const
@@ -212,18 +256,87 @@ namespace darmok::editor
         return def ? def->name : "";
     }
 
-    std::shared_ptr<IMesh> EditorProject::loadMesh(const MeshAsset& asset)
+    bool EditorProject::isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept
     {
-        return nullptr;
+        auto itr = _meshes.find(asset);
+        if (itr == _meshes.end())
+        {
+            return false;
+        }
+        auto& defs = itr->second;
+        auto itr2 = std::find_if(defs.begin(), defs.end(),
+            [&layout](auto& def) {
+                return def->layout == layout;
+            });
+        return itr2 != defs.end();
+    }
+
+    std::shared_ptr<IMesh> EditorProject::loadMesh(const MeshAsset& asset, const bgfx::VertexLayout& layout)
+    {
+        auto& src = asset;
+        auto itr = _meshes.find(src);
+        std::shared_ptr<MeshDefinition> def;
+        if (itr != _meshes.end())
+        {
+            auto& defs = itr->second;
+            auto itr = std::find_if(defs.begin(), defs.end(),
+                [&layout](auto& def) {
+                    return def->layout == layout;
+                });
+            if (itr != defs.end())
+            {
+                def = *itr;
+            }
+        }
+        if (def == nullptr)
+        {
+            def = src->createDefinition(layout);
+            _meshes[src].push_back(def);
+        }
+        auto& loader = _app.getAssets().getMeshLoader();
+        return loader.loadResource(def);
     }
 
     std::shared_ptr<MeshSource> EditorProject::addMesh()
     {
         auto src = std::make_shared<MeshSource>();
         src->name = "New Mesh";
-        src->shape.emplace<SphereMeshSource>();
-        _meshes[src] = nullptr;
+        src->content.emplace<SphereMeshSource>();
+        _meshes[src] = {};
         return src;
+    }
+
+    bool EditorProject::removeMesh(MeshSource& src) noexcept
+    {
+        auto ptr = &src;
+        auto itr = std::find_if(_meshes.begin(), _meshes.end(),
+            [ptr](auto& elm) { return elm.first.get() == ptr; });
+        if (itr != _meshes.end())
+        {
+            _meshes.erase(itr);
+            return true;
+        }
+        return false;
+    }
+
+    MeshAsset EditorProject::findMesh(const std::shared_ptr<IMesh>& mesh) const
+    {
+        auto& loader = _app.getAssets().getMeshLoader();
+        auto def = loader.getDefinition(mesh);
+        if (!def)
+        {
+            return nullptr;
+        }
+        auto itr = std::find_if(_meshes.begin(), _meshes.end(),
+            [def](auto& elm) {
+                auto& defs = elm.second;
+                return std::find(defs.begin(), defs.end(), def) != defs.end();
+            });
+        if (itr != _meshes.end())
+        {
+            return itr->first;
+        }
+        return nullptr;
     }
 
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept
@@ -291,22 +404,19 @@ namespace darmok::editor
             .setEulerAngles(glm::vec3(50.F, -30.F, 0.F))
             .setName("Directional Light");
 
-        auto cubeEntity = scene.createEntity();
-
-        auto& assets = _app.getAssets();
-
         auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
 
-        auto meshDef = std::make_shared<MeshDefinition>(
-            MeshData(Cube()).createMeshDefinition(prog->getVertexLayout())
-        );
-        auto mesh = assets.getMeshLoader().loadResource(meshDef);
+        auto meshAsset = addMesh();
+        meshAsset->name = "Default Cube";
+        meshAsset->content.emplace<CubeMeshSource>();
+        auto mesh = loadMesh(meshAsset, prog->getVertexLayout());
 
-        auto mat = std::make_shared<Material>(prog);
+        auto mat = addMaterial();
+        mat->setProgram(prog);
         mat->setName("Default");
         mat->setBaseColor(Colors::white());
-        _materials.insert(mat);
 
+        auto cubeEntity = scene.createEntity();
         scene.addComponent<Renderable>(cubeEntity, mesh, mat);
         scene.addComponent<Transform>(cubeEntity)
             .setName("Cube");

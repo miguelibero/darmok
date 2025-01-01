@@ -19,7 +19,8 @@ namespace darmok::editor
     class EditorApp;
     class SceneInspectorEditor;
     class MaterialInspectorEditor;
-    class ProgramInspectorEditor;
+    class ProgramSourceInspectorEditor;
+    class MeshSourceInspectorEditor;
 
     class EditorInspectorView final
     {
@@ -51,7 +52,8 @@ namespace darmok::editor
     private:
         OptionalRef<SceneInspectorEditor> _sceneEditor;
         OptionalRef<MaterialInspectorEditor> _materialEditor;
-        OptionalRef<ProgramInspectorEditor> _programEditor;
+        OptionalRef<ProgramSourceInspectorEditor> _programEditor;
+        OptionalRef<MeshSourceInspectorEditor> _meshEditor;
         ObjectEditorContainer _editors;
         static const std::string _windowName;
         SelectableObject _selected;

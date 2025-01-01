@@ -4,6 +4,7 @@
 
 #include <darmok/window.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/mesh_source.hpp>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -142,6 +143,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
             ImGui::DockBuilderDockWindow(_materialAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_programAssetsView.getName(), _dockDownId);
+            ImGui::DockBuilderDockWindow(_meshAssetsView.getName(), _dockDownId);
         }
     }   
 
@@ -476,10 +478,11 @@ namespace darmok::editor
     bool EditorApp::drawProgramReference(const char* label, std::shared_ptr<Program>& prog)
     {
         auto name = _proj.getProgramName(prog);
-        ProgramAsset asset;
+        auto asset = _proj.findProgram(prog);
         auto action = ImguiUtils::drawAssetReference(label, asset, name, "PROGRAM");
         if (action == ReferenceInputAction::Changed)
         {
+            // TODO: show progress when compiling program
             prog = _proj.loadProgram(asset);
             return true;
         }
@@ -490,14 +493,15 @@ namespace darmok::editor
         return false;
     }
 
-    bool EditorApp::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh)
+    bool EditorApp::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, const bgfx::VertexLayout& layout)
     {
         auto name = _proj.getMeshName(mesh);
-        MeshAsset asset;
+        auto asset = _proj.findMesh(mesh);
         auto action = ImguiUtils::drawAssetReference(label, asset, name, "MESH");
         if (action == ReferenceInputAction::Changed)
         {
-            mesh = _proj.loadMesh(asset);
+            // TODO: show progress when loading mesh
+            mesh = _proj.loadMesh(asset, layout);
             return true;
         }
         if (action == ReferenceInputAction::Visit)
@@ -509,7 +513,7 @@ namespace darmok::editor
 
     std::vector<MaterialAsset> EditorApp::getAssets(std::type_identity<MaterialAsset>) const
     {
-        return std::vector<MaterialAsset>(_proj.getMaterials().begin(), _proj.getMaterials().end());
+        return _proj.getMaterials();
     }
 
     std::optional<MaterialAsset> EditorApp::getSelectedAsset(std::type_identity<MaterialAsset>) const
@@ -520,6 +524,7 @@ namespace darmok::editor
     void EditorApp::onAssetSelected(const MaterialAsset& asset)
     {
         onObjectSelected(asset);
+        _materialAssetsView.focus();
     }
 
     std::string EditorApp::getAssetName(const MaterialAsset& asset) const
@@ -534,19 +539,7 @@ namespace darmok::editor
 
     std::vector<ProgramAsset> EditorApp::getAssets(std::type_identity<ProgramAsset>) const
     {
-        std::vector<ProgramAsset> progs;
-        auto& typeNames = StandardProgramLoader::getTypeNames();
-        auto& projProgs = _proj.getPrograms();
-        progs.reserve(typeNames.size() + projProgs.size());
-        for (auto& [type, name] : typeNames)
-        {
-            progs.emplace_back(type);
-        }
-        for (auto& [src, def] : projProgs)
-        {
-            progs.push_back(src);
-        }
-        return progs;
+        return _proj.getPrograms();
     }
 
     std::optional<ProgramAsset> EditorApp::getSelectedAsset(std::type_identity<ProgramAsset>) const
@@ -557,6 +550,7 @@ namespace darmok::editor
     void EditorApp::onAssetSelected(const ProgramAsset& asset)
     {
         onObjectSelected(asset);
+        _programAssetsView.focus();
     }
 
     std::string EditorApp::getAssetName(const ProgramAsset& asset) const
@@ -576,8 +570,7 @@ namespace darmok::editor
 
     std::vector<MeshAsset> EditorApp::getAssets(std::type_identity<MeshAsset>) const
     {
-        std::vector<MeshAsset> meshes;
-        return meshes;
+        return _proj.getMeshes();
     }
 
     std::optional<MeshAsset> EditorApp::getSelectedAsset(std::type_identity<MeshAsset>) const
@@ -587,12 +580,13 @@ namespace darmok::editor
 
     std::string EditorApp::getAssetName(const MeshAsset& asset) const
     {
-        return "";
+        return asset->name;
     }
 
     void EditorApp::onAssetSelected(const MeshAsset& asset)
     {
         onObjectSelected(asset);
+        _meshAssetsView.focus();
     }
 
     void EditorApp::addAsset(std::type_identity<MeshAsset>)

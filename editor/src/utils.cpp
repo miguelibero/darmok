@@ -31,4 +31,31 @@ namespace darmok::editor
         drawList->AddRect(min, max, borderColor, 0.0f, 0, 2.0f);
         return selected;
     }
+
+
+    bool ImguiUtils::drawSizeInput(const char* label, glm::vec3& v) noexcept
+    {
+        return ImGui::InputFloat3(label, glm::value_ptr(v));
+    }
+
+    bool ImguiUtils::drawPositionInput(const char* label, glm::vec3& v) noexcept
+    {
+        return ImGui::InputFloat3(label, glm::value_ptr(v));
+    }
+
+    bool ImguiUtils::drawRotationInput(const char* label, glm::quat& v) noexcept
+    {
+        auto angles = glm::degrees(glm::eulerAngles(v));
+        if (ImGui::InputFloat3(label, glm::value_ptr(angles)))
+        {
+            v = glm::quat(glm::radians(angles));
+            return true;
+        }
+        return false;
+    }
+
+    bool ImguiUtils::drawScaleInput(const char* label, glm::vec3& v) noexcept
+    {
+        return ImGui::InputFloat3(label, glm::value_ptr(v));
+    }
 }

@@ -70,6 +70,8 @@ namespace darmok
         Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
         bool isEnabled() const noexcept;
         Renderable& setEnabled(bool enabled) noexcept;
+        bgfx::VertexLayout getVertexLayout() const noexcept;
+
         bool valid() const noexcept;
         bool render(bgfx::Encoder& encoder) const;
 

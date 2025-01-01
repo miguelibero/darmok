@@ -46,7 +46,7 @@ namespace darmok::editor
 
         bool drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
         bool drawProgramReference(const char* label, std::shared_ptr<Program>& prog);
-        bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh);
+        bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, const bgfx::VertexLayout& layout);
 
         // IImguiRenderer
         void imguiSetup() override;

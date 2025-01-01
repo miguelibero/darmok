@@ -66,6 +66,20 @@ namespace darmok
 		return *this;
 	}
 
+	bgfx::VertexLayout Renderable::getVertexLayout() const noexcept
+	{
+		if (!_material)
+		{
+			return {};
+		}
+		auto prog = _material->getProgram();
+		if (!prog)
+		{
+			return {};
+		}
+		return prog->getVertexLayout();
+	}
+
 	bool Renderable::valid() const noexcept
 	{
 		return _mesh != nullptr && _material != nullptr && _material->valid();

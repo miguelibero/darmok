@@ -5,7 +5,7 @@
 
 namespace darmok::editor
 {
-    class ProgramInspectorEditor final : public ITypeObjectEditor<ProgramSource>
+    class ProgramSourceInspectorEditor final : public ITypeObjectEditor<ProgramSource>
     {
     public:
         void init(EditorApp& editor, ObjectEditorContainer& container) override;

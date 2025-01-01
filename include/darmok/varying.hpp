@@ -66,6 +66,9 @@ namespace darmok
         bool inGroup(AttribGroup group) const noexcept;
         bool inGroups(const AttribGroups& groups) const noexcept;
 
+        bool operator==(const VertexAttribute& other) const noexcept;
+        bool operator!=(const VertexAttribute& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -91,6 +94,9 @@ namespace darmok
         std::string write(nlohmann::json& json) const noexcept;
         bool inGroup(AttribGroup group) const noexcept;
         bool inGroups(const AttribGroups& groups) const noexcept;
+
+        bool operator==(const FragmentAttribute& other) const noexcept;
+        bool operator!=(const FragmentAttribute& other) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -131,6 +137,9 @@ namespace darmok
         void read(const nlohmann::ordered_json& json);
         void write(nlohmann::ordered_json& json) const noexcept;
 
+        bool operator==(const VertexLayout& other) const noexcept;
+        bool operator!=(const VertexLayout& other) const noexcept;
+
         template<class Archive>
         void serialize(Archive& archive)
         {
@@ -160,6 +169,9 @@ namespace darmok
         void write(std::ostream& out, Format format = Format::Binary) const noexcept;
         void read(const nlohmann::ordered_json& json);
         void write(nlohmann::ordered_json& json) const noexcept;
+
+        bool operator==(const FragmentLayout& other) const noexcept;
+        bool operator!=(const FragmentLayout& other) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -199,6 +211,10 @@ namespace darmok
         void writeBgfx(std::ostream& out, const AttribGroups& disabledGroups = {}) const noexcept;
         void writeBgfx(std::ostream& out, const AttribDefines& defines) const noexcept;
         void writeBgfx(const std::filesystem::path& path) const noexcept;
+
+        bool operator==(const VaryingDefinition& other) const noexcept;
+        bool operator!=(const VaryingDefinition& other) const noexcept;
+
     private:
         static const std::string _vertexJsonKey;
         static const std::string _fragmentJsonKey;
@@ -224,6 +240,9 @@ namespace bgfx
             CEREAL_NVP_("attributes", layout.m_attributes)
         );
     }
+
+    DARMOK_EXPORT bool operator==(const VertexLayout& a, const VertexLayout& b) noexcept;
+    DARMOK_EXPORT bool operator!=(const VertexLayout& a, const VertexLayout& b) noexcept;
 }
 
 DARMOK_EXPORT std::string to_string(const bgfx::VertexLayout& layout) noexcept;

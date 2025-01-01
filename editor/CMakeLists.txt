@@ -26,6 +26,7 @@ set(EDITOR_HEADERS
   inspector/material.hpp
   inspector/program.hpp
   inspector/shape.hpp
+  inspector/mesh.hpp
 )
 
 set(EDITOR_SOURCES
@@ -44,6 +45,7 @@ set(EDITOR_SOURCES
   inspector/material.cpp
   inspector/program.cpp
   inspector/shape.cpp
+  inspector/mesh.cpp
 )
 
 set(EDITOR_ASSETS

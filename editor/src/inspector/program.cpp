@@ -8,17 +8,17 @@
 
 namespace darmok::editor
 {
-    void ProgramInspectorEditor::init(EditorApp& editor, ObjectEditorContainer& container)
+    void ProgramSourceInspectorEditor::init(EditorApp& editor, ObjectEditorContainer& container)
     {
         _editor = editor;
     }
 
-    void ProgramInspectorEditor::shutdown()
+    void ProgramSourceInspectorEditor::shutdown()
     {
         _editor.reset();
     }
 
-    bool ProgramInspectorEditor::render(ProgramSource& src) noexcept
+    bool ProgramSourceInspectorEditor::render(ProgramSource& src) noexcept
     {
         if (ImGui::CollapsingHeader("Program"))
         {
