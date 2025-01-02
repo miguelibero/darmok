@@ -247,3 +247,14 @@ namespace bgfx
 
 DARMOK_EXPORT std::string to_string(const bgfx::VertexLayout& layout) noexcept;
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) noexcept;
+
+namespace std
+{
+    template<typename T>
+    struct hash;
+
+    template<> struct hash<bgfx::VertexLayout>
+    {
+        std::size_t operator()(const bgfx::VertexLayout& key) const noexcept;
+    };
+}

@@ -37,24 +37,41 @@ namespace darmok::editor
                 changed = true;
             }
 
+            auto currentType = src.content.index();
+            if (ImGui::BeginCombo("Type", _typeLabels[currentType].c_str()))
             {
-                auto currentType = src.content.index();
-                if (ImGui::BeginCombo("Type", _typeLabels[currentType].c_str()))
+                for (size_t i = 0; i < _typeLabels.size(); ++i)
                 {
-                    for (size_t i = 0; i < _typeLabels.size(); ++i)
+                    auto selected = currentType == i;
+                    if (ImGui::Selectable(_typeLabels[i].c_str(), selected))
                     {
-                        auto selected = currentType == i;
-                        if (ImGui::Selectable(_typeLabels[i].c_str(), selected))
+                        changed = true;
+                        selected = true;
+                        switch (i)
                         {
-                            changed = true;
-                        }
-                        if (selected)
-                        {
-                            ImGui::SetItemDefaultFocus();
-                        }
+                        case 0:
+                            src.content.emplace<CubeMeshSource>();
+                            break;
+                        case 1:
+                            src.content.emplace<SphereMeshSource>();
+                            break;
+                        case 2:
+                            src.content.emplace<CapsuleMeshSource>();
+                            break;
+                        case 3:
+                            src.content.emplace<RectangleMeshSource>();
+                            break;
+                        case 4:
+                            src.content.emplace<PlaneMeshSource>();
+                            break;
+                        };
                     }
-                    ImGui::EndCombo();
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
                 }
+                ImGui::EndCombo();
             }
 
             if (auto cubeContent = std::get_if<CubeMeshSource>(&src.content))
@@ -71,9 +88,16 @@ namespace darmok::editor
                 changed = true;
             }
 
+            auto proj = _editor->getProject();
+
+            if (ImGui::Button("Apply Changes"))
+            {
+                proj.reloadMesh(src);
+            }
+
             if (ImGui::Button("Delete"))
             {
-                _editor->getProject().removeMesh(src);
+                proj.removeMesh(src);
                 changed = true;
             }
         }

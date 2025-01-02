@@ -158,12 +158,9 @@ namespace std
 {
     template<typename T>
     struct hash;
-}
 
-template<> struct std::hash<darmok::UtfChar>
-{
-    std::size_t operator()(const darmok::UtfChar& key) const noexcept
+    template<> struct hash<darmok::UtfChar>
     {
-        return key.code;
-    }
-};
+        std::size_t operator()(const darmok::UtfChar& key) const noexcept;
+    };
+}

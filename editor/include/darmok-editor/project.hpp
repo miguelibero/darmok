@@ -35,20 +35,22 @@ namespace darmok::editor
         std::shared_ptr<Material> addMaterial();
         
         std::vector<ProgramAsset> getPrograms() const;
-        bool removeProgram(ProgramSource& src) noexcept;
         std::string getProgramName(const std::shared_ptr<Program>& prog) const;
         bool isProgramCached(const ProgramAsset& asset) const noexcept;
         std::shared_ptr<ProgramSource> addProgram();
         std::shared_ptr<Program> loadProgram(const ProgramAsset& asset);
         ProgramAsset findProgram(const std::shared_ptr<Program>& prog) const;
+        bool removeProgram(ProgramSource& src) noexcept;
+        bool reloadProgram(ProgramSource& src);
 
         std::vector<MeshAsset> getMeshes() const;
         std::string getMeshName(const std::shared_ptr<IMesh>& mesh) const;
         bool isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept;
         std::shared_ptr<IMesh> loadMesh(const MeshAsset& asset, const bgfx::VertexLayout& layout);
         std::shared_ptr<MeshSource> addMesh();
-        bool removeMesh(MeshSource& src) noexcept;
         MeshAsset findMesh(const std::shared_ptr<IMesh>& mesh) const;
+        bool removeMesh(MeshSource& src) noexcept;
+        bool reloadMesh(MeshSource& src);
 
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;
@@ -88,5 +90,8 @@ namespace darmok::editor
 
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(Scene& scene);
+
+        Programs::iterator findProgramSource(ProgramSource& src);
+        Meshes::iterator findMeshSource(MeshSource& src);
     };
 }

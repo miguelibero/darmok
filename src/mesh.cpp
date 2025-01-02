@@ -464,6 +464,8 @@ namespace darmok
 		}
 
 		vertexData = writer.finish();
+		
+		// TODO: support int32 indices
 		indexData = DataView(indices);
 	}
 

@@ -181,6 +181,7 @@ namespace darmok
         using Resource = Type;
         using Definition = DefinitionType;
         virtual std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) = 0;
+        virtual std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) = 0;
         virtual std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
         virtual std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false) = 0;
     };
@@ -249,17 +250,26 @@ namespace darmok
             return nullptr;
         }
 
+        std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def)
+        {
+            auto itr = _resCache.find(def);
+            if (itr != _resCache.end())
+            {
+                if (auto res = itr->second.lock())
+                {
+                    return res;
+                }
+            }
+            return nullptr;
+        }
+
         std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false)
         {
             if (!force)
             {
-                auto itr = _resCache.find(def);
-                if (itr != _resCache.end())
+                if (auto res = getResource(def))
                 {
-                    if (auto res = itr->second.lock())
-                    {
-                        return res;
-                    }
+                    return res;
                 }
             }
             auto res = create(def);

@@ -7,6 +7,8 @@
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
 #include <darmok/mesh_source.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/varying.hpp>
 
 #include <portable-file-dialogs.h>
 
@@ -146,11 +148,16 @@ namespace darmok::editor
         return progs;
     }
 
-    bool EditorProject::removeProgram(ProgramSource& src) noexcept
+    EditorProject::Programs::iterator EditorProject::findProgramSource(ProgramSource& src)
     {
         auto ptr = &src;
-        auto itr = std::find_if(_programs.begin(), _programs.end(),
+        return std::find_if(_programs.begin(), _programs.end(),
             [ptr](auto& elm) { return elm.first.get() == ptr; });
+    }
+
+    bool EditorProject::removeProgram(ProgramSource& src) noexcept
+    {
+        auto itr = findProgramSource(src);
         if (itr != _programs.end())
         {
             _programs.erase(itr);
@@ -158,6 +165,39 @@ namespace darmok::editor
         }
         return false;
     }
+
+    bool EditorProject::reloadProgram(ProgramSource& src)
+    {
+        if (!_progCompiler)
+        {
+            return false;
+        }
+        auto itr = findProgramSource(src);
+        if (itr == _programs.end())
+        {
+            return false;
+        }
+        auto oldDef = itr->second;
+        auto newDef = std::make_shared<ProgramDefinition>((*_progCompiler)(src));
+        itr->second = newDef;
+        auto& loader = _app.getAssets().getProgramLoader();
+        auto oldProg = loader.getResource(oldDef);
+        auto newProg = loader.loadResource(newDef);
+        if (oldProg)
+        {
+            for (auto& entity : _scene->getComponents<Renderable>())
+            {
+                auto& render = _scene->getComponent<Renderable>(entity).value();
+                auto mat = render.getMaterial();
+                if (mat->getProgram() == oldProg)
+                {
+                    mat->setProgram(newProg);
+                }
+            }
+        }
+        return true;
+    }
+
 
     std::string EditorProject::getProgramName(const std::shared_ptr<Program>& prog) const
     {
@@ -310,17 +350,72 @@ namespace darmok::editor
         return src;
     }
 
-    bool EditorProject::removeMesh(MeshSource& src) noexcept
+    EditorProject::Meshes::iterator EditorProject::findMeshSource(MeshSource& src)
     {
         auto ptr = &src;
-        auto itr = std::find_if(_meshes.begin(), _meshes.end(),
+        return std::find_if(_meshes.begin(), _meshes.end(),
             [ptr](auto& elm) { return elm.first.get() == ptr; });
+    }
+
+    bool EditorProject::removeMesh(MeshSource& src) noexcept
+    {
+        auto itr = findMeshSource(src);
         if (itr != _meshes.end())
         {
             _meshes.erase(itr);
             return true;
         }
         return false;
+    }
+
+    bool EditorProject::reloadMesh(MeshSource& src)
+    {
+        auto itr = findMeshSource(src);
+        if (itr == _meshes.end())
+        {
+            return false;
+        }
+        auto& defs = itr->second;
+        auto& loader = _app.getAssets().getMeshLoader();
+        using MeshMap = std::unordered_map<bgfx::VertexLayout, std::shared_ptr<IMesh>>;
+        MeshMap oldMeshes;
+        MeshMap newMeshes;
+        oldMeshes.reserve(defs.size());
+        newMeshes.reserve(defs.size());
+        for (auto& def : defs)
+        {
+            if (auto mesh = loader.getResource(def))
+            {
+                oldMeshes[def->layout] = mesh;
+            }
+        }
+        defs.clear();
+        for (auto& entity : _scene->getComponents<Renderable>())
+        {
+            auto& render = _scene->getComponent<Renderable>(entity).value();
+            auto oldMesh = render.getMesh();
+            if (!oldMesh)
+            {
+                continue;
+            }
+
+            auto layout = render.getVertexLayout();
+            auto itr = newMeshes.find(layout);
+            if (itr != newMeshes.end())
+            {
+                render.setMesh(itr->second);
+            }
+            else
+            {
+                auto def = src.createDefinition(layout);
+                defs.push_back(def);
+                auto newMesh = loader.loadResource(def);
+                newMeshes[layout] = newMesh;
+                render.setMesh(newMesh);
+            }
+        }
+
+        return true;
     }
 
     MeshAsset EditorProject::findMesh(const std::shared_ptr<IMesh>& mesh) const

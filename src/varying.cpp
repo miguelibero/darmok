@@ -968,3 +968,11 @@ std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) no
 {
 	return out << to_string(layout);
 }
+
+namespace std
+{
+	std::size_t std::hash<bgfx::VertexLayout>::operator()(const bgfx::VertexLayout& key) const noexcept
+	{
+		return key.m_hash;
+	}
+}

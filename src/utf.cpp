@@ -124,3 +124,11 @@ namespace darmok
 		return doRead(str, chars);
 	}
 }
+
+namespace std
+{
+	std::size_t std::hash<darmok::UtfChar>::operator()(const darmok::UtfChar& key) const noexcept
+	{
+		return key.code;
+	}
+};

@@ -21,6 +21,10 @@ namespace darmok
         {
             data += MeshData(rectContent->rectangle, rectContent->type);
         }
+        else if (auto planeContent = std::get_if<PlaneMeshSource>(&content))
+        {
+            data += MeshData(planeContent->plane, planeContent->type);
+        }
         else
         {
             return nullptr;
