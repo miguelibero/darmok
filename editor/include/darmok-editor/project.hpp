@@ -33,6 +33,7 @@ namespace darmok::editor
 
         std::vector<MaterialAsset> getMaterials() const;
         std::shared_ptr<Material> addMaterial();
+        std::string getMaterialName(const std::shared_ptr<Material>& mat) const;
         
         std::vector<ProgramAsset> getPrograms() const;
         std::string getProgramName(const std::shared_ptr<Program>& prog) const;
@@ -85,7 +86,7 @@ namespace darmok::editor
         Programs _programs;
         Meshes _meshes;
 
-        std::optional<std::filesystem::path> _path;
+        std::filesystem::path _path;
         static const std::vector<std::string> _dialogFilters;
 
         void configureEditorScene(Scene& scene);

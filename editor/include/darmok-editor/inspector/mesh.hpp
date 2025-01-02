@@ -16,6 +16,6 @@ namespace darmok::editor
     private:
         OptionalRef<EditorApp> _editor;
         OptionalRef<ObjectEditorContainer> _container;
-        static const std::array<std::string, std::variant_size_v<MeshSource::Content>> _typeLabels;
+        static const std::array<std::string, std::variant_size_v<MeshSource::Content>> _contentOptions;
     };
 }

@@ -69,6 +69,13 @@ namespace darmok::editor
             }
         }
 
+        template<typename T>
+        bool renderType(T& obj)
+        {
+            auto any = entt::forward_as_meta(obj);
+            return render(any);
+        }
+
         bool render(entt::meta_any& obj) const;
         void add(std::unique_ptr<IObjectEditor>&& editor);
         void init(EditorApp& app);

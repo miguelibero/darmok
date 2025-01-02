@@ -2,6 +2,8 @@
 
 #include <darmok/utils.hpp>
 
+#include <stack>
+
 #include <imgui.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -53,6 +55,31 @@ namespace darmok::editor
             return changed;
         }
 
+        template<size_t Size>
+        static bool drawArrayCombo(const char* label, size_t& current, const std::array<std::string, Size>& options) noexcept
+        {
+            auto changed = false;
+            if (ImGui::BeginCombo(label, options[current].c_str()))
+            {
+                for (size_t i = 0; i < options.size(); ++i)
+                {
+                    auto selected = current == i;
+                    if (ImGui::Selectable(options[i].c_str(), selected))
+                    {
+                        changed = true;
+                        selected = true;
+                        current = i;
+                    }
+                    if (selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+            return changed;
+        }
+
         static const ImVec2& getAssetSize();
 
         static bool drawAsset(const char* label, bool selected = false);
@@ -88,5 +115,18 @@ namespace darmok::editor
         static bool drawPositionInput(const char* label, glm::vec3& v) noexcept;
         static bool drawRotationInput(const char* label, glm::quat& v) noexcept;
         static bool drawScaleInput(const char* label, glm::vec3& v) noexcept;
+
+        static void beginFrame(const char* name);
+        static void endFrame();
+
+    private:
+
+        struct FrameData final
+        {
+            ImVec2 start;
+            ImVec2 end;
+        };
+
+        static std::stack<FrameData> _frames;
     };
 }

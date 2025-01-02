@@ -371,7 +371,7 @@ namespace darmok
     {
         auto mtx = glm::mat4(1);
         mtx = glm::translate(mtx, getOrigin());
-        mtx *= glm::mat4_cast(Math::quatLookAt(normal, up));
+        mtx *= glm::mat4_cast(Math::quatLookAt(-normal, up));
         return mtx;
     }
 

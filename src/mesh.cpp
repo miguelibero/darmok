@@ -584,23 +584,16 @@ namespace darmok
 		*this *= trans;
 	}
 
-	MeshData::MeshData(const Plane& plane, RectangleMeshType type) noexcept
+	MeshData::MeshData(const Plane& plane, RectangleMeshType type, float scale) noexcept
 	{
 		setupBasicRectangle();
 
 		if (type == RectangleMeshType::Outline)
 		{
 			convertQuadIndicesToLine();
+		}
 
-			indices.push_back(vertices.size());
-			vertices.push_back({ { 0, 0, 0 }, { 0, 0 }, { 0, 0, 1 }, { 1, 0, 0} });
-			indices.push_back(vertices.size());
-			vertices.push_back({ { 0, 0, 1 }, { 0, 0 }, { 0, 0, 1 }, { 1, 0, 0} });
-		}
-		else if (type == RectangleMeshType::Full)
-		{
-			*this += MeshData(Ray());
-		}
+		scalePositions(glm::vec3(scale));
 
 		*this *= plane.getTransform();
 	}

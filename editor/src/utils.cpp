@@ -58,4 +58,27 @@ namespace darmok::editor
     {
         return ImGui::InputFloat3(label, glm::value_ptr(v));
     }
+
+    void ImguiUtils::beginFrame(const char* name)
+    {
+        ImVec2 start = ImGui::GetCursorScreenPos();
+        _frames.emplace(start);
+        ImGui::BeginGroup();
+        ImGui::Text(name);
+    }
+
+    void ImguiUtils::endFrame()
+    {
+        ImGui::EndGroup();
+        if (_frames.empty())
+        {
+            return;
+        }
+        auto frame = _frames.top();
+        _frames.pop();
+        frame.end = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddRect(frame.start, frame.end, IM_COL32(255, 0, 0, 255));
+    }
+
+    std::stack<ImguiUtils::FrameData> ImguiUtils::_frames;
 }

@@ -39,6 +39,10 @@ namespace darmok::editor
 		void shutdown() override;
 		void update(float deltaTime) override;
 
+        // IImguiRenderer
+        void imguiSetup() override;
+        void imguiRender() override;
+
         EditorProject& getProject() noexcept;
         const EditorProject& getProject() const noexcept;
         AssetContext& getAssets() noexcept;
@@ -48,9 +52,23 @@ namespace darmok::editor
         bool drawProgramReference(const char* label, std::shared_ptr<Program>& prog);
         bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, const bgfx::VertexLayout& layout);
 
-        // IImguiRenderer
-        void imguiSetup() override;
-        void imguiRender() override;
+        Entity addEntity() noexcept;
+
+        template<typename T, typename... A>
+        OptionalRef<T> addEntityComponent(A&&... args) noexcept
+        {
+            auto scene = _proj.getScene();
+            if (!scene)
+            {
+                return nullptr;
+            }
+            auto entity = _inspectorView.getSelectedEntity();
+            if (entity == entt::null)
+            {
+                return nullptr;
+            }
+            return scene->addComponent<T>(entity, std::forward<A>(args)...);
+        }
 
     private:
         App& _app;
@@ -111,8 +129,28 @@ namespace darmok::editor
         void stopScene();
         void pauseScene();
 
-        void addEntityComponent(const entt::meta_type& type);
+        Entity getSelectedEntity() noexcept;
 
+        template<typename T, typename... A>
+        void drawEntityComponentMenu(const char* name, A&&... args) noexcept
+        {
+            auto scene = _proj.getScene();
+            auto disabled = true;
+            if (scene)
+            {
+                auto entity = _inspectorView.getSelectedEntity();
+                if (entity != entt::null && !scene->hasComponent<T>(entity))
+                {
+                    disabled = false;
+                }
+            }
+            ImGui::BeginDisabled(disabled);
+            if (ImGui::MenuItem(name))
+            {
+                addEntityComponent<T>(std::forward<A>(args)...);
+            }
+            ImGui::EndDisabled();
+        }
 
     };
 }

@@ -18,7 +18,7 @@ namespace darmok::editor
         _container.reset();
     }
 
-    const std::array<std::string, std::variant_size_v<MeshSource::Content>> MeshSourceInspectorEditor::_typeLabels =
+    const std::array<std::string, std::variant_size_v<MeshSource::Content>> MeshSourceInspectorEditor::_contentOptions =
     {
         "Cube",
         "Sphere",
@@ -37,47 +37,40 @@ namespace darmok::editor
                 changed = true;
             }
 
-            auto currentType = src.content.index();
-            if (ImGui::BeginCombo("Type", _typeLabels[currentType].c_str()))
+            auto currentContent = src.content.index();
+            if (ImguiUtils::drawArrayCombo("Type", currentContent, _contentOptions))
             {
-                for (size_t i = 0; i < _typeLabels.size(); ++i)
+                switch (currentContent)
                 {
-                    auto selected = currentType == i;
-                    if (ImGui::Selectable(_typeLabels[i].c_str(), selected))
-                    {
-                        changed = true;
-                        selected = true;
-                        switch (i)
-                        {
-                        case 0:
-                            src.content.emplace<CubeMeshSource>();
-                            break;
-                        case 1:
-                            src.content.emplace<SphereMeshSource>();
-                            break;
-                        case 2:
-                            src.content.emplace<CapsuleMeshSource>();
-                            break;
-                        case 3:
-                            src.content.emplace<RectangleMeshSource>();
-                            break;
-                        case 4:
-                            src.content.emplace<PlaneMeshSource>();
-                            break;
-                        };
-                    }
-                    if (selected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
+                case 0:
+                    src.content.emplace<CubeMeshSource>();
+                    break;
+                case 1:
+                    src.content.emplace<SphereMeshSource>();
+                    break;
+                case 2:
+                    src.content.emplace<CapsuleMeshSource>();
+                    break;
+                case 3:
+                    src.content.emplace<RectangleMeshSource>();
+                    break;
+                case 4:
+                    src.content.emplace<PlaneMeshSource>();
+                    break;
+                };
+                changed = true;
             }
 
             if (auto cubeContent = std::get_if<CubeMeshSource>(&src.content))
             {
-                auto any = entt::forward_as_meta(cubeContent->cube);
-                if (_container->render(any))
+                if (_container->renderType(cubeContent->cube))
+                {
+                    changed = true;
+                }
+            }
+            else if (auto sphereContent = std::get_if<SphereMeshSource>(&src.content))
+            {
+                if (_container->renderType(sphereContent->sphere))
                 {
                     changed = true;
                 }

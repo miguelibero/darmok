@@ -4,6 +4,8 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/camera.hpp>
 
+#include <array>
+
 namespace darmok::editor
 {
     class CameraInspectorEditor final : public ITypeObjectEditor<Camera>
@@ -13,5 +15,6 @@ namespace darmok::editor
         bool renderType(Camera& cam) noexcept override;
     private:
         OptionalRef<ObjectEditorContainer> _editors;
+        static const std::array<std::string, 2> _projOptions;
     };
 }

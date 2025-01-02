@@ -226,7 +226,7 @@ namespace darmok
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
         MeshData(const Rectangle& rect, RectangleMeshType type = RectangleMeshType::Full) noexcept;
-        MeshData(const Plane& plane, RectangleMeshType type = RectangleMeshType::Full) noexcept;
+        MeshData(const Plane& plane, RectangleMeshType type = RectangleMeshType::Full, float scale = 100.F) noexcept;
         MeshData(const Ray& ray) noexcept;
         MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;

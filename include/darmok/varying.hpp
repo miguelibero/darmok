@@ -9,10 +9,12 @@
 #include <unordered_set>
 #include <filesystem>
 #include <vector>
+#include <array>
 
 #include <bgfx/bgfx.h>
 #include <nlohmann/json.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
 
 namespace darmok
 {
@@ -230,15 +232,60 @@ namespace bgfx
     // https://github.com/bkaradzic/bgfx/blob/master/src/vertexlayout.h#L39
     // instead of creating custom serialization
 
-    template<typename Archive>
-    void serialize(Archive& archive, VertexLayout& layout)
+    struct VertexLayoutElement final
     {
+        size_t position;
+        uint16_t offset;
+        uint16_t attr;
+
+        template<typename Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(position),
+                CEREAL_NVP(offset),
+                CEREAL_NVP(attr)
+            );
+        }
+    };
+
+    using VertexLayoutElements = std::vector<VertexLayoutElement>;
+
+    template<typename Archive>
+    void save(Archive& archive, const VertexLayout& layout)
+    {
+        VertexLayoutElements elms;
+        for (auto i = 0; i < bgfx::Attrib::Count; ++i)
+        {
+            auto& offset = layout.m_offset[i];
+            auto& attr = layout.m_attributes[i];
+            if (offset == 0 && attr == 65535)
+            {
+                continue;
+            }
+            elms.emplace_back(i, offset, attr);
+        }
         archive(
             CEREAL_NVP_("hash", layout.m_hash),
             CEREAL_NVP_("stride", layout.m_stride),
-            CEREAL_NVP_("offset", layout.m_offset),
-            CEREAL_NVP_("attributes", layout.m_attributes)
+            CEREAL_NVP_("elements", elms)
         );
+    }
+
+    template<typename Archive>
+    void load(Archive& archive, VertexLayout& layout)
+    {
+        VertexLayoutElements elms;
+        archive(
+            CEREAL_NVP_("hash", layout.m_hash),
+            CEREAL_NVP_("stride", layout.m_stride),
+            CEREAL_NVP_("elements", elms)
+        );
+        for (auto& elm : elms)
+        {
+            layout.m_offset[elm.position] = elm.offset;
+            layout.m_attributes[elm.position] = elm.attr;
+        }
     }
 
     DARMOK_EXPORT bool operator==(const VertexLayout& a, const VertexLayout& b) noexcept;

@@ -50,7 +50,7 @@ namespace darmok::editor
 
     void EditorProject::shutdown()
     {
-        _path.reset();
+        _path = "";
     }
 
     void EditorProject::save(bool forceNewPath)
@@ -59,12 +59,12 @@ namespace darmok::editor
         {
             return;
         }
-        if (!_path || forceNewPath)
+        if (_path.empty() || forceNewPath)
         {
             std::string initialPath(".");
-            if (_path && std::filesystem::exists(_path.value()))
+            if (!_path.empty() && std::filesystem::exists(_path))
             {
-                initialPath = _path.value().string();
+                initialPath = _path.string();
             }
             auto dialog = pfd::save_file("Save Project", initialPath,
                 _dialogFilters, pfd::opt::force_path);
@@ -75,13 +75,13 @@ namespace darmok::editor
             }
             _path = dialog.result();
         }
-        if (!_path)
+        if (_path.empty())
         {
             return;
         }
 
         SerializeContextStack<AssetContext>::push(_app.getAssets());
-        CerealUtils::save(*this, _path.value());
+        CerealUtils::save(*this, _path);
         SerializeContextStack<AssetContext>::pop();
     }
 
@@ -130,6 +130,15 @@ namespace darmok::editor
         mat->setName("New Material");
         _materials.insert(mat);
         return mat;
+    }
+
+    std::string EditorProject::getMaterialName(const std::shared_ptr<Material>& mat) const
+    {
+        if (!mat)
+        {
+            return "";
+        }
+        return mat->getName();
     }
 
     std::vector<ProgramAsset> EditorProject::getPrograms() const
@@ -201,6 +210,10 @@ namespace darmok::editor
 
     std::string EditorProject::getProgramName(const std::shared_ptr<Program>& prog) const
     {
+        if (!prog)
+        {
+            return "";
+        }
         auto def = _app.getAssets().getProgramLoader().getDefinition(prog);
         std::string name;
         if (def)
@@ -291,9 +304,13 @@ namespace darmok::editor
 
     std::string EditorProject::getMeshName(const std::shared_ptr<IMesh>& mesh) const
     {
+        if (!mesh)
+        {
+            return "";
+        }
         auto& loader = _app.getAssets().getMeshLoader();
         auto def = loader.getDefinition(mesh);
-        return def ? def->name : "";
+        return def ? def->name : "Unnamed Mesh";
     }
 
     bool EditorProject::isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept

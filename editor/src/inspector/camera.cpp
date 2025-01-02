@@ -15,35 +15,34 @@ namespace darmok::editor
         _editors = editors;
     }
 
+    const std::array<std::string, 2> CameraInspectorEditor::_projOptions =
+    {
+        "Perspective",
+        "Orthographic"
+    };
+
     bool CameraInspectorEditor::renderType(Camera& cam) noexcept
     {
         auto changed = false;
         if (ImGui::CollapsingHeader("Camera"))
         {
             {
-                static const char* perspLabel = "Perspective";
-                static const char* orthoLabel = "Orthographic";
-
                 auto proj = cam.getProjection();
-                const char* label = perspLabel;
-                auto isOrtho = std::holds_alternative<CameraOrthoData>(proj);
-                if(isOrtho)
+                size_t currentProj = std::holds_alternative<CameraOrthoData>(proj) ? 1 : 0;
+                if (ImguiUtils::drawArrayCombo("Projection", currentProj, _projOptions))
                 {
-                    label = orthoLabel;
-                }
-                if (ImGui::BeginCombo("Projection", label))
-                {
-                    if (ImGui::Selectable(perspLabel, !isOrtho) && isOrtho)
+                    switch (currentProj)
                     {
+                    case 0:
                         proj = CameraPerspectiveData{};
-                    }
-                    if (ImGui::Selectable(orthoLabel, isOrtho) && !isOrtho)
-                    {
+                        break;
+                    case 1:
                         proj = CameraOrthoData{};
+                        break;
                     }
-                    ImGui::EndCombo();
+                    changed = true;
                 }
-                ImGui::BeginChild("Projection");
+                ImguiUtils::beginFrame("Projection Data");
                 if (auto persp = std::get_if<CameraPerspectiveData>(&proj))
                 {
                     if (ImGui::SliderFloat("Field Of View", &persp->fovy, 0.F, 360.F))
@@ -74,13 +73,11 @@ namespace darmok::editor
                         changed = true;
                     }
                 }
-                ImGui::EndChild();
+                ImguiUtils::endFrame();
                 if (changed)
                 {
                     cam.setProjection(proj);
-
                 }
-                ImGui::Spacing();
             }
 
             {

@@ -6,6 +6,10 @@
 #include <darmok/transform.hpp>
 #include <darmok/mesh_source.hpp>
 
+#include <darmok/camera.hpp>
+#include <darmok/light.hpp>
+#include <darmok/render_scene.hpp>
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <bx/commandline.h>
@@ -161,13 +165,34 @@ namespace darmok::editor
     {
     }
 
-    void EditorApp::addEntityComponent(const entt::meta_type& type)
+    Entity EditorApp::getSelectedEntity() noexcept
     {
-        auto entity = _inspectorView.getSelectedEntity();
-        if (entity == entt::null)
+        auto scene = _proj.getScene();
+        if (!scene)
         {
-            return;
+            return entt::null;
         }
+        return _inspectorView.getSelectedEntity();
+    }
+
+    Entity EditorApp::addEntity() noexcept
+    {
+        auto scene = _proj.getScene();
+        if (!scene)
+        {
+            return entt::null;
+        }
+        auto entity = scene->createEntity();
+        auto& trans = scene->addComponent<Transform>(entity);
+        trans.setName("New Entity");
+
+        auto parentEntity = _inspectorView.getSelectedEntity();
+        if (auto parentTrans = scene->getComponent<Transform>(parentEntity))
+        {
+            trans.setParent(parentTrans);
+        }
+
+        return entity;
     }
 
     void EditorApp::renderMainMenu()
@@ -200,41 +225,31 @@ namespace darmok::editor
             }
             if (ImGui::BeginMenu("Edit"))
             {
+                if (ImGui::MenuItem("Add Entity"))
+                {
+                    addEntity();
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Component"))
             {
-                if (ImGui::BeginMenu("Shape"))
+                auto disabled = getSelectedEntity() == entt::null;
+                ImGui::BeginDisabled(disabled);
+                if (ImGui::BeginMenu("Add"))
                 {
-                    if (ImGui::MenuItem("Cube"))
+                    drawEntityComponentMenu<Renderable>("Renderable");
+                    drawEntityComponentMenu<Camera>("Camera");
+                    if (ImGui::BeginMenu("Light"))
                     {
-                    }
-                    if (ImGui::MenuItem("Sphere"))
-                    {
-                    }
-                    if (ImGui::MenuItem("Plane"))
-                    {
-                    }
-                    if (ImGui::MenuItem("Capsule"))
-                    {
+                        drawEntityComponentMenu<PointLight>("Point Light");
+                        drawEntityComponentMenu<DirectionalLight>("Directional Light");
+                        drawEntityComponentMenu<SpotLight>("Spot Light");
+                        drawEntityComponentMenu<AmbientLight>("Ambient Light");
+                        ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Light"))
-                {
-                    if (ImGui::MenuItem("Point Light"))
-                    {
-                    }
-                    if (ImGui::MenuItem("Directional Light"))
-                    {
-                    }
-                    if (ImGui::MenuItem("Spot Light"))
-                    {
-                    }
-                    if (ImGui::MenuItem("Ambient Light"))
-                    {
-                    }
-                }
+                ImGui::EndDisabled();
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Help"))
@@ -463,7 +478,8 @@ namespace darmok::editor
 
     bool EditorApp::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
     {
-        auto action = ImguiUtils::drawAssetReference(label, mat, mat->getName(), "MATERIAL");
+        auto name = _proj.getMaterialName(mat);
+        auto action = ImguiUtils::drawAssetReference(label, mat, name, "MATERIAL");
         if (action == ReferenceInputAction::Changed)
         {
             return true;
