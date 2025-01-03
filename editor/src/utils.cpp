@@ -59,26 +59,51 @@ namespace darmok::editor
         return ImGui::InputFloat3(label, glm::value_ptr(v));
     }
 
-    void ImguiUtils::beginFrame(const char* name)
+    ImVec2 ImguiUtils::addCursorPos(const ImVec2& delta) noexcept
     {
-        ImVec2 start = ImGui::GetCursorScreenPos();
-        _frames.emplace(start);
+        auto pos = ImGui::GetCursorPos();
+        pos = ImVec2(pos.x + delta.x, pos.y + delta.y);
+        ImGui::SetCursorPos(pos);
+        return pos;
+    }
+
+    ImVec2 ImguiUtils::addFrameSpacing(const ImVec2& delta) noexcept
+    {
+        auto pos = addCursorPos(delta);
+        auto size = ImGui::GetContentRegionAvail();
+        size.x -= delta.x * 2.F;
+        ImGui::SetNextItemWidth(size.x);
+        return pos;
+    }
+
+    const ImVec2 ImguiUtils::_frameMargin = { 0.F, 10.F };
+    const ImVec2 ImguiUtils::_framePadding = { 10.F, 10.F };
+
+    void ImguiUtils::beginFrame(const char* name) noexcept
+    {
+        addFrameSpacing(_frameMargin);
+        addFrameSpacing(_framePadding);
+
         ImGui::BeginGroup();
+
         ImGui::Text(name);
     }
 
-    void ImguiUtils::endFrame()
+    void ImguiUtils::endFrame() noexcept
     {
         ImGui::EndGroup();
-        if (_frames.empty())
-        {
-            return;
-        }
-        auto frame = _frames.top();
-        _frames.pop();
-        frame.end = ImGui::GetCursorScreenPos();
-        ImGui::GetWindowDrawList()->AddRect(frame.start, frame.end, IM_COL32(255, 0, 0, 255));
-    }
 
-    std::stack<ImguiUtils::FrameData> ImguiUtils::_frames;
+        auto start = ImGui::GetItemRectMin();
+        start.x -= _framePadding.x;
+        start.y -= _framePadding.y;
+
+        auto end = ImGui::GetItemRectMax();
+        end.x += _framePadding.x;
+        end.y += _framePadding.y;
+
+        ImGui::GetWindowDrawList()->AddRect(start, end, IM_COL32(40, 40, 40, 255));
+
+        addCursorPos(ImVec2{ 0, _framePadding.y });
+        addCursorPos(ImVec2{ 0, _frameMargin.y });
+    }
 }

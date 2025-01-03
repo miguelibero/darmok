@@ -4,6 +4,10 @@ namespace darmok
 {
     std::shared_ptr<MeshDefinition> MeshSource::createDefinition(const bgfx::VertexLayout& layout)
     {
+        if (layout.getStride() == 0)
+        {
+            return nullptr;
+        }
         MeshData data;
         if (auto cubeContent = std::get_if<CubeMeshSource>(&content))
         {

@@ -116,17 +116,15 @@ namespace darmok::editor
         static bool drawRotationInput(const char* label, glm::quat& v) noexcept;
         static bool drawScaleInput(const char* label, glm::vec3& v) noexcept;
 
-        static void beginFrame(const char* name);
-        static void endFrame();
+        static void beginFrame(const char* name) noexcept;
+        static void endFrame() noexcept;
+
+        static ImVec2 addCursorPos(const ImVec2& delta) noexcept;
+        static ImVec2 addFrameSpacing(const ImVec2& delta) noexcept;
 
     private:
 
-        struct FrameData final
-        {
-            ImVec2 start;
-            ImVec2 end;
-        };
-
-        static std::stack<FrameData> _frames;
+        static const ImVec2 _frameMargin;
+        static const ImVec2 _framePadding;
     };
 }

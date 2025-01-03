@@ -25,7 +25,7 @@ namespace darmok
             archive(cereal::make_size_tag(entities.size()));
             for (auto entity : entities)
             {
-                archive(CEREAL_NVP_("entity", static_cast<ENTT_ID_TYPE>(entity)));
+                archive(CEREAL_NVP_("entity", entity));
             }
         }
     };
@@ -150,8 +150,8 @@ namespace darmok
             storage.reserve(size);
             for (size_t i = 0; i < size; ++i)
             {
-                darmok::Entity entity;
-                archive(CEREAL_NVP_("entity", entity));
+                Entity entity;
+                archive(entity);
                 if (entity != entt::null)
                 {
                     storage.emplace(entity);
@@ -217,7 +217,7 @@ namespace darmok
             assert(size == components.size());
             for (auto& comp : components)
             {
-                archive(CEREAL_NVP_("component", comp));
+                archive(comp);
             }
         }
     };
@@ -302,13 +302,21 @@ namespace darmok
         SerializeContextStack<Scene>::pop();
     }
 
-    template<class Archive, class T>
-    void save(Archive& archive, const OptionalRef<T>& v)
+    template<class Archive>
+    ENTT_ID_TYPE save_minimal(Archive& archive, const Entity& v)
     {
-        if (!ReflectionUtils::isEntityComponentType<T>())
-        {
-            return;
-        }
+        return static_cast<ENTT_ID_TYPE>(v);
+    }
+
+    template<class Archive, class T>
+    void load_minimal(Archive& archive, Entity& v, const ENTT_ID_TYPE& entityId)
+    {
+        v = entityId;
+    }
+
+    template<class Archive, class T>
+    ENTT_ID_TYPE save_minimal(Archive& archive, const OptionalRef<T>& v)
+    {
         Entity entity = entt::null;
         if (v)
         {
@@ -317,23 +325,17 @@ namespace darmok
                 entity = scene->getEntity<T>(v.value());
             }
         }
-        archive(static_cast<ENTT_ID_TYPE>(entity));
+        return static_cast<ENTT_ID_TYPE>(entity);
     }
 
     template<class Archive, class T>
-    void load(Archive& archive, OptionalRef<T>& v)
+    void load_minimal(Archive& archive, OptionalRef<T>& v, const ENTT_ID_TYPE& entityId)
     {
-        if (!ReflectionUtils::isEntityComponentType<T>())
-        {
-            return;
-        }
-        Entity entity = entt::null;
-        archive(entity);
-        if (entity != entt::null)
+        if (entityId != entt::null)
         {
             if (auto scene = SerializeContextStack<Scene>::tryGet())
             {
-                v = scene->getComponent<T>(entity);
+                v = scene->getComponent<T>(static_cast<darmok::Entity>(entityId));
             }
         }
     }
@@ -342,37 +344,26 @@ namespace darmok
 namespace std
 {
     template<class Archive, class T>
-    void save(Archive& archive, const std::reference_wrapper<T>& v)
+    ENTT_ID_TYPE save_minimal(Archive& archive, const reference_wrapper<T>& v)
     {
-        if (!darmok::ReflectionUtils::isEntityComponentType<T>())
-        {
-            return;
-        }
         darmok::Entity entity = entt::null;
         if (auto scene = darmok::SerializeContextStack<const darmok::Scene>::tryGet())
         {
             entity = scene->getEntity<T>(v.get());
         }
-        archive(static_cast<ENTT_ID_TYPE>(entity));
+        return static_cast<ENTT_ID_TYPE>(entity);
     }
 
     template<class Archive, class T>
-    void load(Archive& archive, std::reference_wrapper<T>& v)
+    void load_minimal(Archive& archive, reference_wrapper<T>& v, const ENTT_ID_TYPE& entityId)
     {
-        if (!darmok::ReflectionUtils::isEntityComponentType<T>())
-        {
-            return;
-        }
-        darmok::Entity entity = entt::null;
-        archive(entity);
-        
-        if (entity != entt::null)
+        if (entityId != entt::null)
         {
             if (auto scene = darmok::SerializeContextStack<darmok::Scene>::tryGet())
             {
-                if (auto optRef = scene->getComponent<T>(entity))
+                if (auto optRef = scene->getComponent<T>(static_cast<darmok::Entity>(entityId)))
                 {
-                    v = optRef;
+                    v = optRef.value();
                 }
             }
         }
