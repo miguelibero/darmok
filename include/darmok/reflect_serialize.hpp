@@ -161,7 +161,15 @@ namespace darmok
             {
                 return true;
             }
-            return isType<std::string>(type);
+            if (isType<std::string>(type))
+            {
+                return true;
+            }
+            if (isType<Entity>(type))
+            {
+                return true;
+            }
+            return false;
         }
 
         template<std::size_t Index = 0>
@@ -265,7 +273,6 @@ namespace entt
             }
             return;
         }
-        // TODO: maybe not needed since the optional ref is already registered, need to check
         if (auto refType = darmok::SceneReflectionUtils::getEntityComponentRefType(type))
         {
             darmok::Entity entity = entt::null;
@@ -278,7 +285,17 @@ namespace entt
                     entity = scene->getEntity(typeHash, ptr);
                 }
             }
-            save(archive, static_cast<ENTT_ID_TYPE>(entity));
+            if (entity == entt::null)
+            {
+                archive(CEREAL_NVP_("entity_ref_null", true));
+            }
+            else
+            {
+                archive(
+                    CEREAL_NVP_("entity_ref_null", false),
+                    CEREAL_NVP_("entity_ref", entity)
+                );
+            }
             return;
         }
 
@@ -346,15 +363,24 @@ namespace entt
 
         if (auto refType = darmok::SceneReflectionUtils::getEntityComponentRefType(type))
         {
-            darmok::Entity entity;
-            archive(entity);
-            if (entity != entt::null)
+            bool isNull = false;
+            archive(CEREAL_NVP_("entity_ref_null", isNull));
+            if (isNull)
             {
-                if (auto scene = darmok::SerializeContextStack<darmok::Scene>::tryGet())
+                darmok::ReflectionUtils::setRef(v, nullptr);
+            }
+            else
+            {
+                darmok::Entity entity = entt::null;
+                archive(CEREAL_NVP_("entity_ref", entity));
+                if (entity != entt::null)
                 {
-                    if (auto ptr = scene->getComponent(entity, refType.info().hash()))
+                    if (auto scene = darmok::SerializeContextStack<darmok::Scene>::tryGet())
                     {
-                        darmok::ReflectionUtils::setRef(v, ptr);
+                        if (auto ptr = scene->getComponent(entity, refType.info().hash()))
+                        {
+                            darmok::ReflectionUtils::setRef(v, ptr);
+                        }
                     }
                 }
             }
@@ -404,14 +430,25 @@ namespace entt
     {
         archive(cereal::make_size_tag(v.size()));
         auto valType = v.mapped_type();
+        auto keyType = v.key_type();
+        auto hasStrKeys = darmok::ReflectionSerializeUtils::isType<std::string>(keyType);
+        auto hasValType = (bool)valType;
         for (auto [key, val] : v)
         {
-            // hack fix for unordered_set where the value_type == key_type but the returned values are empty
-            if (!val.type())
+            if (!hasValType)
             {
-                val = valType.construct();
+                // set & unordered_set where the returned values are empty
+                archive(key);
             }
-            archive(cereal::make_map_item(key, val));
+            else if (hasStrKeys)
+            {
+                auto strKey = key.cast<std::string>();
+                archive(cereal::make_map_item(strKey, val));
+            }
+            else
+            {
+                archive(std::make_pair(key, val));
+            }
         }
     }
 
@@ -427,11 +464,27 @@ namespace entt
         v.reserve(size);
         auto keyType = v.key_type();
         auto valType = v.mapped_type();
+        auto hasStrKeys = darmok::ReflectionSerializeUtils::isType<std::string>(keyType);
+        auto hasValType = (bool)valType;
         for (size_t i = 0; i < size; ++i)
         {
             auto key = keyType.construct();
             auto val = valType.construct();
-            archive(cereal::make_map_item(key, val));
+            if (!hasValType)
+            {
+                archive(key);
+                val = key;
+            }
+            else if (hasStrKeys)
+            {
+                std::string strKey;
+                archive(cereal::make_map_item(strKey, val));
+                key = strKey;
+            }
+            else
+            {
+                archive(std::make_pair(key, val));
+            }
             v.insert(key, val);
         }
     }

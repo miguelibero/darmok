@@ -55,9 +55,9 @@ namespace darmok
 
         void destroyEntities() noexcept;
         void destroyEntities(const EntityFilter& filter);
-        void destroyEntity(Entity entity) noexcept;
+        void destroyEntity(Entity entity, bool destroyChildren = false) noexcept;
 
-        void destroyEntityImmediate(Entity entity) noexcept;
+        void destroyEntityImmediate(Entity entity, bool destroyChildren = false) noexcept;
         void destroyEntitiesImmediate() noexcept;
         void destroyEntitiesImmediate(const EntityFilter& filter) noexcept;
 
@@ -83,7 +83,7 @@ namespace darmok
     private:
         using Components = std::vector<std::shared_ptr<ISceneComponent>>;
 
-        std::vector<Entity> _pendingDestroy;
+        std::unordered_set<Entity> _pendingDestroy;
         bool _pendingDestroyAll;
         EntityFilter _pendingDestroyFilter;
         std::string _name;

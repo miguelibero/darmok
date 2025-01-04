@@ -315,7 +315,7 @@ namespace darmok
     }
 
     template<class Archive, class T>
-    ENTT_ID_TYPE save_minimal(Archive& archive, const OptionalRef<T>& v)
+    void save(Archive& archive, const OptionalRef<T>& v)
     {
         Entity entity = entt::null;
         if (v)
@@ -325,17 +325,36 @@ namespace darmok
                 entity = scene->getEntity<T>(v.value());
             }
         }
-        return static_cast<ENTT_ID_TYPE>(entity);
+        if (entity == entt::null)
+        {
+            archive(CEREAL_NVP_("entity_ref_null", true));
+        }
+        else
+        {
+            archive(
+                CEREAL_NVP_("entity_ref_null", false),
+                CEREAL_NVP_("entity_ref", entity)
+            );
+        }
     }
 
     template<class Archive, class T>
-    void load_minimal(Archive& archive, OptionalRef<T>& v, const ENTT_ID_TYPE& entityId)
+    void load(Archive& archive, OptionalRef<T>& v)
     {
-        if (entityId != entt::null)
+        bool isNull = false;
+        archive(CEREAL_NVP_("entity_ref_null", isNull));
+        if (isNull)
+        {
+            v.reset();
+            return;
+        }
+        Entity entity = entt::null;
+        archive(CEREAL_NVP_("entity_ref", entity));
+        if (entity != entt::null)
         {
             if (auto scene = SerializeContextStack<Scene>::tryGet())
             {
-                v = scene->getComponent<T>(static_cast<darmok::Entity>(entityId));
+                v = scene->getComponent<T>(entity);
             }
         }
     }
@@ -344,24 +363,44 @@ namespace darmok
 namespace std
 {
     template<class Archive, class T>
-    ENTT_ID_TYPE save_minimal(Archive& archive, const reference_wrapper<T>& v)
+    void save(Archive& archive, const reference_wrapper<T>& v)
     {
         darmok::Entity entity = entt::null;
         if (auto scene = darmok::SerializeContextStack<const darmok::Scene>::tryGet())
         {
             entity = scene->getEntity<T>(v.get());
         }
-        return static_cast<ENTT_ID_TYPE>(entity);
+        if (entity == entt::null)
+        {
+            archive(CEREAL_NVP_("entity_ref_null", true));
+        }
+        else
+        {
+            archive(
+                CEREAL_NVP_("entity_ref_null", false),
+                CEREAL_NVP_("entity_ref", entity)
+            );
+        }
     }
 
     template<class Archive, class T>
-    void load_minimal(Archive& archive, reference_wrapper<T>& v, const ENTT_ID_TYPE& entityId)
+    void load(Archive& archive, reference_wrapper<T>& v)
     {
-        if (entityId != entt::null)
+        bool isNull = false;
+        archive(CEREAL_NVP_("entity_ref_null", isNull));
+        if (isNull)
+        {
+            v.reset();
+            return;
+        }
+
+        darmok::Entity entity = entt::null;
+        archive(CEREAL_NVP_("entity_ref", entity));
+        if (entity != entt::null)
         {
             if (auto scene = darmok::SerializeContextStack<darmok::Scene>::tryGet())
             {
-                if (auto optRef = scene->getComponent<T>(static_cast<darmok::Entity>(entityId)))
+                if (auto optRef = scene->getComponent<T>(entity))
                 {
                     v = optRef.value();
                 }

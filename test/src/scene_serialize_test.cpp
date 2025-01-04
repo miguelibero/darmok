@@ -109,7 +109,7 @@ namespace
     }
 }
 
-TEST_CASE( "scene can be serialized", "[scene-serialize]" )
+TEST_CASE("scene can be serialized", "[scene-serialize]")
 {
     Scene scene;
     auto entity = scene.createEntity();

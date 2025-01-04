@@ -391,9 +391,25 @@ namespace darmok
         return viewId;
     }
 
-    void SceneImpl::destroyEntityImmediate(Entity entity) noexcept
+    void SceneImpl::destroyEntityImmediate(Entity entity, bool destroyChildren) noexcept
     {
-        _registry.destroy(entity);
+        std::vector<Entity> entities;
+        if (destroyChildren)
+        {
+            _scene.forEachChild(entity, [&entities](auto entity, auto& trans)
+            {
+                entities.push_back(entity);
+                return false;
+            });
+        }
+        else
+        {
+            entities.push_back(entity);
+        }
+        for (auto& entity : entities)
+        {
+            _registry.destroy(entity);
+        }
     }
 
     void SceneImpl::destroyEntitiesImmediate() noexcept
@@ -426,7 +442,7 @@ namespace darmok
         }
         if(!_pendingDestroy.empty())
         {
-            std::vector<Entity> entities(_pendingDestroy);
+            auto entities(_pendingDestroy);
             _pendingDestroy.clear();
             for (auto entity : entities)
             {
@@ -470,14 +486,17 @@ namespace darmok
         _pendingDestroyFilter |= filter;
     }
 
-    void SceneImpl::destroyEntity(Entity entity) noexcept
+    void SceneImpl::destroyEntity(Entity entity, bool destroyChildren) noexcept
     {
-        auto itr = std::find(_pendingDestroy.begin(), _pendingDestroy.end(), entity);
-        if (itr != _pendingDestroy.end())
+        _pendingDestroy.insert(entity);
+        if (destroyChildren)
         {
-            return;
+            _scene.forEachChild(entity, [this](auto entity, auto& trans)
+            {
+                _pendingDestroy.insert(entity);
+                return false;
+            });
         }
-        _pendingDestroy.push_back(entity);
     }
 
     bool SceneImpl::removeComponent(Entity entity, entt::id_type typeId) noexcept
@@ -556,14 +575,14 @@ namespace darmok
         return _impl->destroyEntities(filter);
     }
 
-    void Scene::destroyEntity(Entity entity) noexcept
+    void Scene::destroyEntity(Entity entity, bool destroyChildren) noexcept
     {
-        return _impl->destroyEntity(entity);
+        return _impl->destroyEntity(entity, destroyChildren);
     }
 
-    void Scene::destroyEntityImmediate(Entity entity) noexcept
+    void Scene::destroyEntityImmediate(Entity entity, bool destroyChildren) noexcept
     {
-        return _impl->destroyEntityImmediate(entity);
+        return _impl->destroyEntityImmediate(entity, destroyChildren);
     }
 
     void Scene::destroyEntitiesImmediate() noexcept

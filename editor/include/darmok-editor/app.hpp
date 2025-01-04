@@ -119,6 +119,7 @@ namespace darmok::editor
         void renderMainToolbar();
         void renderDockspace();
         void renderSceneTree();
+        void renderSceneTreeBranch(Transform& trans);
 
         void onSceneTreeTransformClicked(Transform& trans);
         void onSceneTreeSceneClicked();

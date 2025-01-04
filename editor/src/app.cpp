@@ -375,12 +375,15 @@ namespace darmok::editor
 
     void EditorApp::renderSceneTree()
     {
-        auto selectedScene = _inspectorView.getSelectedScene();
-        auto selectedEntity = _inspectorView.getSelectedEntity();
         auto scene = _proj.getScene();
-        if (ImGui::Begin(_sceneTreeWindowName) && scene)
+        if (!scene)
+        {
+            return;
+        }
+        if (ImGui::Begin(_sceneTreeWindowName))
         {
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+            auto selectedScene = _inspectorView.getSelectedScene();
             if (selectedScene == scene)
             {
                 flags |= ImGuiTreeNodeFlags_Selected;
@@ -396,45 +399,54 @@ namespace darmok::editor
                 {
                     onSceneTreeSceneClicked();
                 }
-                scene->forEachChild([this, selectedEntity](auto entity, auto& trans) {
-                    if (_proj.isEditorEntity(entity))
-                    {
-                        return false;
-                    }
-                    std::string name = trans.getName();
-                    if (name.empty())
-                    {
-                        name = "Entity";
-                    }
-                    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-                    if (trans.getChildren().empty())
-                    {
-                        flags |= ImGuiTreeNodeFlags_Leaf;
-                    }
-                    if (selectedEntity == entity)
-                    {
-                        flags |= ImGuiTreeNodeFlags_Selected;
-                    }
-                    if (ImGui::TreeNodeEx(name.c_str(), flags))
-                    {
-                        if (ImGui::IsItemClicked())
-                        {
-                            onSceneTreeTransformClicked(trans);
-                        }
-                        ImGui::TreePop();
-                    }
-                    return false;
-                });
+                for (auto& entity : scene->getRootEntities())
+                {
+                    auto& trans = scene->getComponent<Transform>(entity).value();
+                    renderSceneTreeBranch(trans);
+                }
                 ImGui::TreePop();
             }
             if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete))
             {
                 auto entity = _inspectorView.getSelectedEntity();
-                scene->destroyEntityImmediate(entity);
+                scene->destroyEntityImmediate(entity, true);
                 onObjectSelected(Entity(entt::null));
             }
         }
         ImGui::End();
+    }
+
+    void EditorApp::renderSceneTreeBranch(Transform& trans)
+    {
+        std::string name = trans.getName();
+        if (name.empty())
+        {
+            name = "Entity";
+        }
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+        auto children = trans.getChildren();
+        if (children.empty())
+        {
+            flags |= ImGuiTreeNodeFlags_Leaf;
+        }
+        auto selectedEntity = _inspectorView.getSelectedEntity();
+        auto entity = _proj.getScene()->getEntity(trans);
+        if (selectedEntity == entity)
+        {
+            flags |= ImGuiTreeNodeFlags_Selected;
+        }
+        if (ImGui::TreeNodeEx(name.c_str(), flags))
+        {
+            if (ImGui::IsItemClicked())
+            {
+                onSceneTreeTransformClicked(trans);
+            }
+            for (auto& child : children)
+            {
+                renderSceneTreeBranch(child.get());
+            }
+            ImGui::TreePop();
+        }
     }
 
     void EditorApp::imguiRender()

@@ -252,6 +252,10 @@ namespace darmok
 
         std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def)
         {
+            if (!def)
+            {
+                return nullptr;
+            }
             auto itr = _resCache.find(def);
             if (itr != _resCache.end())
             {
@@ -265,6 +269,10 @@ namespace darmok
 
         std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false)
         {
+            if (!def)
+            {
+                return nullptr;
+            }
             if (!force)
             {
                 if (auto res = getResource(def))
@@ -279,6 +287,10 @@ namespace darmok
 
         std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) noexcept
         {
+            if (!res)
+            {
+                return nullptr;
+            }
             auto itr = std::find_if(_resCache.begin(), _resCache.end(),
                 [res](auto& elm) {
                     return elm.second.lock() == res;
