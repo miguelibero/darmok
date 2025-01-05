@@ -61,7 +61,7 @@ namespace
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
-			auto prog = std::make_shared<Program>(StandardProgramType::Forward);
+			auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
 			
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
@@ -75,7 +75,7 @@ namespace
 			cam.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
-			auto unlitProg = std::make_shared<Program>(StandardProgramType::Unlit);
+			auto unlitProg = StandardProgramLoader::load(StandardProgramType::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
 			auto lightRootEntity = scene.createEntity();
