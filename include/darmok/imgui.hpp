@@ -7,7 +7,7 @@
 #include <bx/bx.h>
 
 struct ImGuiContext;
-typedef void* ImTextureID;
+typedef unsigned long long ImTextureID;
 
 namespace darmok
 {
