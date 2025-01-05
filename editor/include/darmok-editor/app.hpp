@@ -27,7 +27,8 @@ namespace darmok::editor
         public IAppDelegate, public IImguiRenderer,
         IEditorAssetsViewDelegate<MaterialAsset>,
         IEditorAssetsViewDelegate<ProgramAsset>,
-        IEditorAssetsViewDelegate<MeshAsset>
+        IEditorAssetsViewDelegate<MeshAsset>,
+        IEditorAssetsViewDelegate<SceneAsset>
     {
     public:
 		EditorApp(App& app) noexcept;
@@ -81,6 +82,7 @@ namespace darmok::editor
         EditorAssetsView<MaterialAsset> _materialAssetsView;
         EditorAssetsView<ProgramAsset> _programAssetsView;
         EditorAssetsView<MeshAsset> _meshAssetsView;
+        EditorAssetsView<SceneAsset> _sceneAssetsView;
         bool _scenePlaying;
 
         ImGuiID _dockDownId;
@@ -114,6 +116,13 @@ namespace darmok::editor
         std::string getAssetName(const MeshAsset& asset) const override;
         void onAssetSelected(const MeshAsset& asset) override;
         void addAsset(std::type_identity<MeshAsset>) override;
+
+        // IEditorAssetsViewDelegate<SceneAsset>
+        std::vector<SceneAsset> getAssets(std::type_identity<SceneAsset>) const override;
+        std::optional<SceneAsset> getSelectedAsset(std::type_identity<SceneAsset>) const override;
+        std::string getAssetName(const SceneAsset& asset) const override;
+        void onAssetSelected(const SceneAsset& asset) override;
+        void addAsset(std::type_identity<SceneAsset>) override;
 
         void renderMainMenu();
         void renderMainToolbar();

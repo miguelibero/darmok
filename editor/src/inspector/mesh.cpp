@@ -88,6 +88,8 @@ namespace darmok::editor
                 proj.reloadMesh(src);
             }
 
+            ImGui::SameLine();
+
             if (ImGui::Button("Delete"))
             {
                 proj.removeMesh(src);

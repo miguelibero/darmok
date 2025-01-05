@@ -63,6 +63,10 @@ namespace darmok::editor
         {
             return _scene;
         }
+        if (auto scene = std::get_if<SceneAsset>(&_selected))
+        {
+            return *scene;
+        }
         return nullptr;
     }
 

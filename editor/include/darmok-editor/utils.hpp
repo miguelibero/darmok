@@ -26,6 +26,13 @@ namespace darmok::editor
         Visit
     };
 
+    enum class ConfirmPopupAction
+    {
+        None,
+        Ok,
+        Cancel
+    };
+
     struct ImguiUtils final
     {
         template<typename T, typename Callback>
@@ -121,6 +128,7 @@ namespace darmok::editor
 
         static ImVec2 addCursorPos(const ImVec2& delta) noexcept;
         static ImVec2 addFrameSpacing(const ImVec2& delta) noexcept;
+        static ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
 
     private:
 

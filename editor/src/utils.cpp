@@ -59,6 +59,34 @@ namespace darmok::editor
         return ImGui::InputFloat3(label, glm::value_ptr(v));
     }
 
+    ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* name, const char* text) noexcept
+    {
+        auto action = ConfirmPopupAction::None;
+
+        if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text(text);
+            ImGui::Separator();
+
+            if (ImGui::Button("Ok"))
+            {
+                ImGui::CloseCurrentPopup();
+                action = ConfirmPopupAction::Ok;
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+                action = ConfirmPopupAction::Cancel;
+            }
+
+            ImGui::EndPopup();
+        }
+        return action;
+    }
+
     ImVec2 ImguiUtils::addCursorPos(const ImVec2& delta) noexcept
     {
         auto pos = ImGui::GetCursorPos();

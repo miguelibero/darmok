@@ -1,4 +1,5 @@
 #include <darmok-editor/project.hpp>
+#include <darmok-editor/utils.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/texture.hpp>
@@ -33,24 +34,21 @@ namespace darmok::editor
 
     EditorProject::EditorProject(App& app)
         : _app(app)
+        , _tryReset(false)
     {
     }
 
     void EditorProject::init(const ProgramCompilerConfig& progCompilerConfig)
     {
-        auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
-        _scene = scenes.getScene();
-        _scenes.insert(_scene);
-
-        configureEditorScene(*_scene);
-        configureDefaultScene(*_scene);
-
+        doReset();
         _progCompiler.emplace(progCompilerConfig);
+        _tryReset = false;
     }
 
     void EditorProject::shutdown()
     {
         _path = "";
+        _tryReset = false;
     }
 
     void EditorProject::save(bool forceNewPath)
@@ -83,6 +81,42 @@ namespace darmok::editor
         SerializeContextStack<AssetContext>::push(_app.getAssets());
         CerealUtils::save(*this, _path);
         SerializeContextStack<AssetContext>::pop();
+    }
+
+    void EditorProject::render()
+    {
+        if (_tryReset)
+        {
+            _tryReset = false;
+            ImGui::OpenPopup(_confirmNewPopup);
+        }
+
+        auto action = ImguiUtils::drawConfirmPopup(_confirmNewPopup, "Are you sure you want to create a new project?");
+        if (action == ConfirmPopupAction::Ok)
+        {
+            doReset();
+        }
+    }
+
+    const char* EditorProject::_confirmNewPopup = "Confirm New Project";
+
+    void EditorProject::reset()
+    {
+        _tryReset = true;
+    }
+
+    void EditorProject::doReset()
+    {
+        _path = "";
+
+        auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
+        _scene = scenes.getScene();
+        _scenes.clear();
+        _scenes.insert(_scene);
+
+        _scene->destroyEntitiesImmediate();
+        configureEditorScene(*_scene);
+        configureDefaultScene(*_scene);
     }
 
     void EditorProject::open()
@@ -119,6 +153,33 @@ namespace darmok::editor
         return _cam;
     }
 
+    std::vector<SceneAsset> EditorProject::getScenes() const
+    {
+        return std::vector<SceneAsset>(_scenes.begin(), _scenes.end());
+    }
+
+    std::shared_ptr<Scene> EditorProject::addScene()
+    {
+        auto scene = std::make_shared<Scene>();
+        scene->setName("New Scene");
+        _scenes.insert(scene);
+        return scene;
+    }
+
+    std::string EditorProject::getSceneName(const std::shared_ptr<Scene>& scene) const
+    {
+        if (scene == nullptr)
+        {
+            return "";
+        }
+        auto name = scene->getName();
+        if (name.empty())
+        {
+            name = "Unnamed Scene";
+        }
+        return name;
+    }
+
     std::vector<MaterialAsset> EditorProject::getMaterials() const
     {
         return std::vector<MaterialAsset>(_materials.begin(), _materials.end());
@@ -138,7 +199,12 @@ namespace darmok::editor
         {
             return "";
         }
-        return mat->getName();
+        auto name = mat->getName();
+        if (name.empty())
+        {
+            name = "Unnamed Material";
+        }
+        return name;
     }
 
     std::vector<ProgramAsset> EditorProject::getPrograms() const
@@ -207,7 +273,6 @@ namespace darmok::editor
         return true;
     }
 
-
     std::string EditorProject::getProgramName(const std::shared_ptr<Program>& prog) const
     {
         if (!prog)
@@ -218,13 +283,36 @@ namespace darmok::editor
         std::string name;
         if (def)
         {
-            return def->name;
+            name = def->name;
         }
-        if (auto standard = StandardProgramLoader::getType(prog))
+        else if (auto standard = StandardProgramLoader::getType(prog))
         {
-            return StandardProgramLoader::getTypeName(standard.value());
+            name = StandardProgramLoader::getTypeName(standard.value());
         }
-        return "Unnamed Program";
+        if (name.empty())
+        {
+            name = "Unnamed Program";
+        }
+        return name;
+    }
+
+    std::string EditorProject::getProgramName(const ProgramAsset& asset) const
+    {
+        if (auto standard = std::get_if<StandardProgramType>(&asset))
+        {
+            return StandardProgramLoader::getTypeName(*standard);
+        }
+        auto ptr = std::get<std::shared_ptr<ProgramSource>>(asset);
+        if (!ptr)
+        {
+            return "";
+        }
+        auto name = ptr->name;
+        if (name.empty())
+        {
+            name = "Unnamed Program";
+        }
+        return name;
     }
 
     bool EditorProject::isProgramCached(const ProgramAsset& asset) const noexcept
@@ -302,6 +390,20 @@ namespace darmok::editor
         return meshes;
     }
 
+    std::string EditorProject::getMeshName(const MeshAsset& asset) const
+    {
+        if (asset == nullptr)
+        {
+            return "";
+        }
+        auto name = asset->name;
+        if (name.empty())
+        {
+            name = "Unnamed Mesh";
+        }
+        return name;
+    }
+
     std::string EditorProject::getMeshName(const std::shared_ptr<IMesh>& mesh) const
     {
         if (!mesh)
@@ -310,7 +412,16 @@ namespace darmok::editor
         }
         auto& loader = _app.getAssets().getMeshLoader();
         auto def = loader.getDefinition(mesh);
-        return def ? def->name : "Unnamed Mesh";
+        if (!def)
+        {
+            return "";
+        }
+        auto name = def->name;
+        if (name.empty())
+        {
+            name = "Unnamed Mesh";
+        }
+        return name;
     }
 
     bool EditorProject::isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept
@@ -501,6 +612,8 @@ namespace darmok::editor
 
     void EditorProject::configureDefaultScene(Scene& scene)
     {
+        scene.setName("Scene");
+
         ShadowRendererConfig shadowConfig;
         shadowConfig.cascadeAmount = 3;
 

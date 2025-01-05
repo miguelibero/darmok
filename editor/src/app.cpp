@@ -23,6 +23,7 @@ namespace darmok::editor
         , _materialAssetsView("Materials", "MATERIAL")
         , _programAssetsView("Programs", "PROGRAM")
         , _meshAssetsView("Meshes", "MESH")
+        , _sceneAssetsView("Scenes", "SCENE")
         , _proj(app)
         , _dockLeftId(0)
         , _dockRightId(0)
@@ -72,6 +73,7 @@ namespace darmok::editor
         _proj.init(_progCompConfig);
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(*this);
+        _sceneAssetsView.init(*this);
         _materialAssetsView.init(*this);
         _programAssetsView.init(*this);
         _meshAssetsView.init(*this);
@@ -81,6 +83,7 @@ namespace darmok::editor
     {
         stopScene();
         _inspectorView.shutdown();
+        _sceneAssetsView.shutdown();
         _materialAssetsView.shutdown();
         _programAssetsView.shutdown();
         _meshAssetsView.shutdown();
@@ -145,6 +148,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
+            ImGui::DockBuilderDockWindow(_sceneAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_materialAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_programAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_meshAssetsView.getName(), _dockDownId);
@@ -201,6 +205,10 @@ namespace darmok::editor
         {
             if (ImGui::BeginMenu("File"))
             {
+                if (ImGui::MenuItem("New", "Ctrl+N"))
+                {
+                    _proj.reset();
+                }
                 if (ImGui::MenuItem("Open...", "Ctrl+O"))
                 {
                     _proj.open();
@@ -458,9 +466,11 @@ namespace darmok::editor
         renderSceneTree();
         _inspectorView.render();
         _sceneView.render();
+        _sceneAssetsView.render();
         _materialAssetsView.render();
         _programAssetsView.render();
         _meshAssetsView.render();
+        _proj.render();
     }
 
     void EditorApp::update(float deltaTime)
@@ -557,7 +567,7 @@ namespace darmok::editor
 
     std::string EditorApp::getAssetName(const MaterialAsset& asset) const
     {
-        return asset->getName();
+        return _proj.getMaterialName(asset);
     }
 
     void EditorApp::addAsset(std::type_identity<MaterialAsset>)
@@ -583,12 +593,7 @@ namespace darmok::editor
 
     std::string EditorApp::getAssetName(const ProgramAsset& asset) const
     {
-        if (auto standard = std::get_if<StandardProgramType>(&asset))
-        {
-            return StandardProgramLoader::getTypeName(*standard);
-        }
-        auto ptr = std::get<std::shared_ptr<ProgramSource>>(asset);
-        return ptr ? ptr->name : "";
+        return _proj.getProgramName(asset);
     }
 
     void EditorApp::addAsset(std::type_identity<ProgramAsset>) 
@@ -608,7 +613,7 @@ namespace darmok::editor
 
     std::string EditorApp::getAssetName(const MeshAsset& asset) const
     {
-        return asset->name;
+        return _proj.getMeshName(asset);
     }
 
     void EditorApp::onAssetSelected(const MeshAsset& asset)
@@ -620,5 +625,30 @@ namespace darmok::editor
     void EditorApp::addAsset(std::type_identity<MeshAsset>)
     {
         _proj.addMesh();
+    }
+
+    std::vector<SceneAsset> EditorApp::getAssets(std::type_identity<SceneAsset>) const
+    {
+        return _proj.getScenes();
+    }
+
+    std::optional<SceneAsset> EditorApp::getSelectedAsset(std::type_identity<SceneAsset>) const
+    {
+        return _inspectorView.getSelectedObject<SceneAsset>();
+    }
+
+    std::string EditorApp::getAssetName(const SceneAsset& asset) const
+    {
+        return _proj.getSceneName(asset);
+    }
+
+    void EditorApp::onAssetSelected(const SceneAsset& asset)
+    {
+        onObjectSelected(asset);
+    }
+
+    void EditorApp::addAsset(std::type_identity<SceneAsset>)
+    {
+        _proj.addScene();
     }
 }

@@ -27,9 +27,16 @@ namespace darmok::editor
 
         void save(bool forceNewPath = false);
         void open();
+        void reset();
+
+        void render();
 
         std::shared_ptr<Scene> getScene();
         OptionalRef<Camera> getCamera();
+
+        std::vector<SceneAsset> getScenes() const;
+        std::shared_ptr<Scene> addScene();
+        std::string getSceneName(const std::shared_ptr<Scene>& scene) const;
 
         std::vector<MaterialAsset> getMaterials() const;
         std::shared_ptr<Material> addMaterial();
@@ -37,6 +44,7 @@ namespace darmok::editor
         
         std::vector<ProgramAsset> getPrograms() const;
         std::string getProgramName(const std::shared_ptr<Program>& prog) const;
+        std::string getProgramName(const ProgramAsset& asset) const;
         bool isProgramCached(const ProgramAsset& asset) const noexcept;
         std::shared_ptr<ProgramSource> addProgram();
         std::shared_ptr<Program> loadProgram(const ProgramAsset& asset);
@@ -46,6 +54,7 @@ namespace darmok::editor
 
         std::vector<MeshAsset> getMeshes() const;
         std::string getMeshName(const std::shared_ptr<IMesh>& mesh) const;
+        std::string getMeshName(const MeshAsset& asset) const;
         bool isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept;
         std::shared_ptr<IMesh> loadMesh(const MeshAsset& asset, const bgfx::VertexLayout& layout);
         std::shared_ptr<MeshSource> addMesh();
@@ -75,6 +84,7 @@ namespace darmok::editor
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
         std::optional<ProgramCompiler> _progCompiler;
+        bool _tryReset;
 
         using Materials = std::unordered_set<std::shared_ptr<Material>>;
         using Programs = std::unordered_map<std::shared_ptr<ProgramSource>, std::shared_ptr<ProgramDefinition>>;
@@ -88,11 +98,13 @@ namespace darmok::editor
 
         std::filesystem::path _path;
         static const std::vector<std::string> _dialogFilters;
+        static const char* _confirmNewPopup;
 
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(Scene& scene);
 
         Programs::iterator findProgramSource(ProgramSource& src);
         Meshes::iterator findMeshSource(MeshSource& src);
+        void doReset();
     };
 }
