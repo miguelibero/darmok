@@ -20,6 +20,7 @@ namespace darmok::editor
     EditorApp::EditorApp(App& app) noexcept
         : _app(app)
         , _sceneView(app)
+        , _textureAssetsView("Textures", "TEXTURE")
         , _materialAssetsView("Materials", "MATERIAL")
         , _programAssetsView("Programs", "PROGRAM")
         , _meshAssetsView("Meshes", "MESH")
@@ -74,6 +75,7 @@ namespace darmok::editor
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(*this);
         _sceneAssetsView.init(*this);
+        _textureAssetsView.init(*this);
         _materialAssetsView.init(*this);
         _programAssetsView.init(*this);
         _meshAssetsView.init(*this);
@@ -84,6 +86,7 @@ namespace darmok::editor
         stopScene();
         _inspectorView.shutdown();
         _sceneAssetsView.shutdown();
+        _textureAssetsView.shutdown();
         _materialAssetsView.shutdown();
         _programAssetsView.shutdown();
         _meshAssetsView.shutdown();
@@ -149,6 +152,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
             ImGui::DockBuilderDockWindow(_sceneAssetsView.getName(), _dockDownId);
+            ImGui::DockBuilderDockWindow(_textureAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_materialAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_programAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_meshAssetsView.getName(), _dockDownId);
@@ -220,6 +224,10 @@ namespace darmok::editor
                 if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
                 {
                     _proj.save(true);
+                }
+                if (ImGui::MenuItem("Export Asset Pack..."))
+                {
+                    _proj.exportAssetPack();
                 }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))
                 {
@@ -467,6 +475,7 @@ namespace darmok::editor
         _inspectorView.render();
         _sceneView.render();
         _sceneAssetsView.render();
+        _textureAssetsView.render();
         _materialAssetsView.render();
         _programAssetsView.render();
         _meshAssetsView.render();
@@ -496,6 +505,38 @@ namespace darmok::editor
     const AssetContext& EditorApp::getAssets() const noexcept
     {
         return _app.getAssets();
+    }
+
+    bool EditorApp::drawSceneReference(const char* label, std::shared_ptr<Scene>& scene)
+    {
+        auto name = _proj.getSceneName(scene);
+        auto action = ImguiUtils::drawAssetReference(label, scene, name, "SCENE");
+        if (action == ReferenceInputAction::Changed)
+        {
+            return true;
+        }
+        if (action == ReferenceInputAction::Visit)
+        {
+            onAssetSelected(scene);
+        }
+        return false;
+    }
+
+    bool EditorApp::drawTextureReference(const char* label, std::shared_ptr<Texture>& tex)
+    {
+        auto asset = _proj.findTexture(tex);
+        auto name = _proj.getTextureName(asset);
+        auto action = ImguiUtils::drawAssetReference(label, asset, name, "TEXTURE");
+        if (action == ReferenceInputAction::Changed)
+        {
+            tex = _proj.loadTexture(asset);
+            return true;
+        }
+        if (action == ReferenceInputAction::Visit)
+        {
+            onAssetSelected(asset);
+        }
+        return false;
     }
 
     bool EditorApp::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
@@ -547,6 +588,31 @@ namespace darmok::editor
             onAssetSelected(asset);
         }
         return false;
+    }
+
+    std::vector<TextureAsset> EditorApp::getAssets(std::type_identity<TextureAsset>) const
+    {
+        return _proj.getTextures();
+    }
+
+    std::optional<TextureAsset> EditorApp::getSelectedAsset(std::type_identity<TextureAsset>) const
+    {
+        return _inspectorView.getSelectedObject<TextureAsset>();
+    }
+
+    std::string EditorApp::getAssetName(const TextureAsset& asset) const
+    {
+        return _proj.getTextureName(asset);
+    }
+
+    void EditorApp::onAssetSelected(const TextureAsset& asset)
+    {
+        onObjectSelected(asset);
+    }
+
+    void EditorApp::addAsset(std::type_identity<TextureAsset>)
+    {
+        _proj.addTexture();
     }
 
     std::vector<MaterialAsset> EditorApp::getAssets(std::type_identity<MaterialAsset>) const

@@ -25,6 +25,7 @@ namespace darmok::editor
 {
     class EditorApp final : 
         public IAppDelegate, public IImguiRenderer,
+        IEditorAssetsViewDelegate<TextureAsset>,
         IEditorAssetsViewDelegate<MaterialAsset>,
         IEditorAssetsViewDelegate<ProgramAsset>,
         IEditorAssetsViewDelegate<MeshAsset>,
@@ -49,6 +50,8 @@ namespace darmok::editor
         AssetContext& getAssets() noexcept;
         const AssetContext& getAssets() const noexcept;
 
+        bool drawSceneReference(const char* label, std::shared_ptr<Scene>& scene);
+        bool drawTextureReference(const char* label, std::shared_ptr<Texture>& tex);
         bool drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
         bool drawProgramReference(const char* label, std::shared_ptr<Program>& prog);
         bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, const bgfx::VertexLayout& layout);
@@ -79,6 +82,7 @@ namespace darmok::editor
         EditorProject _proj;
         EditorSceneView _sceneView;
         EditorInspectorView _inspectorView;
+        EditorAssetsView<TextureAsset> _textureAssetsView;
         EditorAssetsView<MaterialAsset> _materialAssetsView;
         EditorAssetsView<ProgramAsset> _programAssetsView;
         EditorAssetsView<MeshAsset> _meshAssetsView;
@@ -95,6 +99,13 @@ namespace darmok::editor
 
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
+
+        // IEditorAssetsViewDelegate<TextureAsset>
+        std::vector<TextureAsset> getAssets(std::type_identity<TextureAsset>) const override;
+        std::optional<TextureAsset> getSelectedAsset(std::type_identity<TextureAsset>) const override;
+        std::string getAssetName(const TextureAsset& asset) const override;
+        void onAssetSelected(const TextureAsset& asset) override;
+        void addAsset(std::type_identity<TextureAsset>) override;
 
         // IEditorAssetsViewDelegate<MaterialAsset>
         std::vector<MaterialAsset> getAssets(std::type_identity<MaterialAsset>) const override;

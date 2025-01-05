@@ -6,15 +6,15 @@
 
 namespace darmok::editor
 {
-    void MeshSourceInspectorEditor::init(EditorApp& editor, ObjectEditorContainer& container)
+    void MeshSourceInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
     {
-        _editor = editor;
+        _app = app;
         _container = container;
     }
 
     void MeshSourceInspectorEditor::shutdown()
     {
-        _editor.reset();
+        _app.reset();
         _container.reset();
     }
 
@@ -81,7 +81,7 @@ namespace darmok::editor
                 changed = true;
             }
 
-            auto proj = _editor->getProject();
+            auto proj = _app->getProject();
 
             if (ImGui::Button("Apply Changes"))
             {

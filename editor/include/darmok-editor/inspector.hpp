@@ -21,6 +21,7 @@ namespace darmok::editor
     class MaterialInspectorEditor;
     class ProgramSourceInspectorEditor;
     class MeshSourceInspectorEditor;
+    class TextureDefinitionInspectorEditor;
 
     class EditorInspectorView final
     {
@@ -54,6 +55,7 @@ namespace darmok::editor
         OptionalRef<MaterialInspectorEditor> _materialEditor;
         OptionalRef<ProgramSourceInspectorEditor> _programEditor;
         OptionalRef<MeshSourceInspectorEditor> _meshEditor;
+        OptionalRef<TextureDefinitionInspectorEditor> _textureEditor;
         ObjectEditorContainer _editors;
         static const std::string _windowName;
         SelectableObject _selected;

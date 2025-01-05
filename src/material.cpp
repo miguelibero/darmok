@@ -117,6 +117,11 @@ namespace darmok
 		return _program->getHandle(_programDefines);
 	}
 
+	const Material::Textures& Material::getTextures() const noexcept
+	{
+		return _textures;
+	}
+
 	std::shared_ptr<Texture> Material::getTexture(TextureType type) const noexcept
 	{
 		auto itr = _textures.find(type);

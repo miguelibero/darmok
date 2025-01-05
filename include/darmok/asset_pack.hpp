@@ -5,6 +5,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/model.hpp>
+#include <darmok/program_core.hpp>
 
 #include <cereal/cereal.hpp>
 #include <cereal/types/memory.hpp>
@@ -14,6 +15,7 @@ namespace darmok
 {
     struct DARMOK_EXPORT AssetPack final
     {
+        std::unordered_set<std::shared_ptr<ProgramDefinition>> programs;
         std::unordered_set<std::shared_ptr<TextureDefinition>> textures;
         std::unordered_set<std::shared_ptr<MeshDefinition>> meshes;
         std::unordered_set<std::shared_ptr<Model>> models;
@@ -26,6 +28,7 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
+                CEREAL_NVP(programs),
                 CEREAL_NVP(textures),
                 CEREAL_NVP(meshes),
                 CEREAL_NVP(models),

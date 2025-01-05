@@ -55,6 +55,7 @@ namespace darmok
 		void serialize(Archive& archive)
 		{
 			archive(
+				CEREAL_NVP(name),
 				CEREAL_NVP(data),
 				CEREAL_NVP(config),
 				CEREAL_NVP(flags)
@@ -63,6 +64,7 @@ namespace darmok
 
 		bool empty() const noexcept;
 
+		std::string name;
 		Data data;
 		TextureConfig config;
 		uint64_t flags = defaultTextureLoadFlags;

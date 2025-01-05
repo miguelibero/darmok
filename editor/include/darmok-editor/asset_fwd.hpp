@@ -13,13 +13,15 @@ namespace darmok
     struct MeshSource;
     class Material;
     class Scene;
+    struct TextureDefinition;
 }
 
 namespace darmok::editor
 {
+    using TextureAsset = std::shared_ptr<TextureDefinition>;
     using ProgramAsset = std::variant<StandardProgramType, std::shared_ptr<ProgramSource>>;
     using MaterialAsset = std::shared_ptr<Material>;
     using MeshAsset = std::shared_ptr<MeshSource>;
     using SceneAsset = std::shared_ptr<Scene>;
-    using SelectableObject = std::variant<Entity, SceneAsset, ProgramAsset, MaterialAsset, MeshAsset>;
+    using SelectableObject = std::variant<Entity, SceneAsset, TextureAsset, ProgramAsset, MaterialAsset, MeshAsset>;
 }

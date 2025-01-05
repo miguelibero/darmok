@@ -41,6 +41,7 @@ namespace darmok
     public:
         using TextureType = MaterialTextureType;
         using PrimitiveType = MaterialPrimitiveType;
+        using Textures = std::unordered_map<TextureType, std::shared_ptr<Texture>>;
 
         Material(const std::shared_ptr<Texture>& texture = nullptr) noexcept;
         Material(const std::shared_ptr<Program>& program) noexcept;
@@ -72,6 +73,7 @@ namespace darmok
         PrimitiveType getPrimitiveType() const noexcept;
         Material& setPrimitiveType(PrimitiveType type) noexcept;
 
+        const Textures& getTextures() const noexcept;
         std::shared_ptr<Texture> getTexture(TextureType type) const noexcept;
         Material& setTexture(const std::shared_ptr<Texture>& texture) noexcept;
         Material& setTexture(TextureType type, const std::shared_ptr<Texture>& texture) noexcept;
@@ -155,7 +157,7 @@ namespace darmok
         std::shared_ptr<Program> _program;
         ProgramDefines _programDefines;
 
-        std::unordered_map<TextureType, std::shared_ptr<Texture>> _textures;
+        Textures _textures;
 
         Color _baseColor;
         Color3 _specularColor;

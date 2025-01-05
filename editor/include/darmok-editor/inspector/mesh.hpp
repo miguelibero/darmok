@@ -10,11 +10,11 @@ namespace darmok::editor
     class MeshSourceInspectorEditor final : public ITypeObjectEditor<MeshSource>
     {
     public:
-        void init(EditorApp& editor, ObjectEditorContainer& container) override;
+        void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
         bool renderType(MeshSource& src) noexcept override;
     private:
-        OptionalRef<EditorApp> _editor;
+        OptionalRef<EditorApp> _app;
         OptionalRef<ObjectEditorContainer> _container;
         static const std::array<std::string, std::variant_size_v<MeshSource::Content>> _contentOptions;
     };

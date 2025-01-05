@@ -13,7 +13,7 @@ namespace darmok
 
 	TextureDefinition TextureDefinition::fromImage(const Image& img, uint64_t loadFlags) noexcept
 	{
-		return { img.getData(), img.getTextureConfig(loadFlags), loadFlags };
+		return { "", img.getData(), img.getTextureConfig(loadFlags), loadFlags};
 	}
 
 	const TextureConfig& TextureConfig::getEmpty() noexcept

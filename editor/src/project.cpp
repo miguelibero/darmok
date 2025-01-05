@@ -143,6 +143,10 @@ namespace darmok::editor
         _path = path;
     }
 
+    void EditorProject::exportAssetPack(bool forceNewPath)
+    {
+    }
+
     std::shared_ptr<Scene> EditorProject::getScene()
     {
         return _scene;
@@ -180,6 +184,109 @@ namespace darmok::editor
         return name;
     }
 
+    bool EditorProject::removeScene(Scene& scene) noexcept
+    {
+        auto ptr = &scene;
+        auto itr = std::find_if(_scenes.begin(), _scenes.end(),
+            [ptr](auto& elm) { return elm.get() == ptr; });
+        if (itr != _scenes.end())
+        {
+            _scenes.erase(itr);
+            return true;
+        }
+        return false;
+    }
+
+    std::vector<TextureAsset> EditorProject::getTextures() const
+    {
+        return std::vector<TextureAsset>(_textures.begin(), _textures.end());
+    }
+
+    std::shared_ptr<TextureDefinition> EditorProject::addTexture()
+    {
+        auto tex = std::make_shared<TextureDefinition>();
+        tex->name = "New Texture";
+        _textures.insert(tex);
+        return tex;
+    }
+
+    std::string EditorProject::getTextureName(const std::shared_ptr<TextureDefinition>& tex) const
+    {
+        if (!tex)
+        {
+            return "";
+        }
+        auto name = tex->name;
+        if (name.empty())
+        {
+            name = "Unnamed Texture";
+        }
+        return name;
+    }
+
+    TextureAsset EditorProject::findTexture(const std::shared_ptr<Texture>& tex) const
+    {
+        auto& loader = _app.getAssets().getTextureLoader();
+        return loader.getDefinition(tex);
+    }
+
+    std::shared_ptr<Texture> EditorProject::loadTexture(const TextureAsset& asset)
+    {
+        auto& loader = _app.getAssets().getTextureLoader();
+        return loader.loadResource(asset);
+    }
+
+    EditorProject::Textures::iterator EditorProject::findTextureDefinition(TextureDefinition& def)
+    {
+        auto ptr = &def;
+        return std::find_if(_textures.begin(), _textures.end(),
+            [ptr](auto& elm) { return elm.get() == ptr; });
+    }
+
+    bool EditorProject::removeTexture(TextureDefinition& def) noexcept
+    {
+        auto itr = findTextureDefinition(def);
+        if (itr != _textures.end())
+        {
+            _textures.erase(itr);
+            return true;
+        }
+    }
+
+    bool EditorProject::reloadTexture(TextureDefinition& def)
+    {
+        auto itr = findTextureDefinition(def);
+        if (itr == _textures.end())
+        {
+            return false;
+        }
+        auto defPtr = *itr;
+        auto& loader = _app.getAssets().getTextureLoader();
+        auto oldTex = loader.getResource(defPtr);
+        if (oldTex == nullptr)
+        {
+            return false;
+        }
+        auto tex = loader.loadResource(defPtr, true);
+        for (auto renderRef : getRenderables())
+        {
+            auto mat = renderRef.get().getMaterial();
+            if (!mat)
+            {
+                continue;
+            }
+            auto textures = mat->getTextures();
+            for (auto& [texType, matTex] : textures)
+            {
+                if (matTex == oldTex)
+                {
+                    mat->setTexture(texType, tex);
+                }
+            }
+        }
+        return true;
+    }
+
     std::vector<MaterialAsset> EditorProject::getMaterials() const
     {
         return std::vector<MaterialAsset>(_materials.begin(), _materials.end());
@@ -205,6 +312,19 @@ namespace darmok::editor
             name = "Unnamed Material";
         }
         return name;
+    }
+
+    bool EditorProject::removeMaterial(Material& mat) noexcept
+    {
+        auto ptr = &mat;
+        auto itr = std::find_if(_materials.begin(), _materials.end(),
+            [ptr](auto& elm) { return elm.get() == ptr; });
+        if (itr != _materials.end())
+        {
+            _materials.erase(itr);
+            return true;
+        }
+        return false;
     }
 
     std::vector<ProgramAsset> EditorProject::getPrograms() const
@@ -260,11 +380,11 @@ namespace darmok::editor
         auto newProg = loader.loadResource(newDef);
         if (oldProg)
         {
-            for (auto& entity : _scene->getComponents<Renderable>())
+            for (auto renderRef : getRenderables())
             {
-                auto& render = _scene->getComponent<Renderable>(entity).value();
+                auto& render = renderRef.get();
                 auto mat = render.getMaterial();
-                if (mat->getProgram() == oldProg)
+                if (mat && mat->getProgram() == oldProg)
                 {
                     mat->setProgram(newProg);
                 }
@@ -496,6 +616,20 @@ namespace darmok::editor
         return false;
     }
 
+    std::vector<std::reference_wrapper<Renderable>> EditorProject::getRenderables()
+    {
+        std::vector<std::reference_wrapper<Renderable>> renderables;
+        for (auto scene : _scenes)
+        {
+            for (auto& entity : scene->getComponents<Renderable>())
+            {
+                auto& comp = scene->getComponent<Renderable>(entity).value();
+                renderables.emplace_back(comp);
+            }
+        }
+        return renderables;
+    }
+
     bool EditorProject::reloadMesh(MeshSource& src)
     {
         auto itr = findMeshSource(src);
@@ -518,9 +652,9 @@ namespace darmok::editor
             }
         }
         defs.clear();
-        for (auto& entity : _scene->getComponents<Renderable>())
+        for (auto renderRef : getRenderables())
         {
-            auto& render = _scene->getComponent<Renderable>(entity).value();
+            auto& render = renderRef.get();
             auto oldMesh = render.getMesh();
             if (!oldMesh)
             {
@@ -542,6 +676,7 @@ namespace darmok::editor
                 render.setMesh(newMesh);
             }
         }
+        
 
         return true;
     }

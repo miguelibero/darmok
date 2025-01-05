@@ -28,6 +28,7 @@ namespace darmok::editor
         void save(bool forceNewPath = false);
         void open();
         void reset();
+        void exportAssetPack(bool forceNewPath = false);
 
         void render();
 
@@ -37,11 +38,21 @@ namespace darmok::editor
         std::vector<SceneAsset> getScenes() const;
         std::shared_ptr<Scene> addScene();
         std::string getSceneName(const std::shared_ptr<Scene>& scene) const;
+        bool removeScene(Scene& scene) noexcept;
+
+        std::vector<TextureAsset> getTextures() const;
+        std::shared_ptr<TextureDefinition> addTexture();
+        std::string getTextureName(const std::shared_ptr<TextureDefinition>& tex) const;
+        TextureAsset findTexture(const std::shared_ptr<Texture>& tex) const;
+        std::shared_ptr<Texture> loadTexture(const TextureAsset& asset);
+        bool removeTexture(TextureDefinition& def) noexcept;
+        bool reloadTexture(TextureDefinition& def);
 
         std::vector<MaterialAsset> getMaterials() const;
         std::shared_ptr<Material> addMaterial();
         std::string getMaterialName(const std::shared_ptr<Material>& mat) const;
-        
+        bool removeMaterial(Material& mat) noexcept;
+
         std::vector<ProgramAsset> getPrograms() const;
         std::string getProgramName(const std::shared_ptr<Program>& prog) const;
         std::string getProgramName(const ProgramAsset& asset) const;
@@ -73,6 +84,7 @@ namespace darmok::editor
         {
             archive(
                 CEREAL_NVP_("scenes", _scenes),
+                CEREAL_NVP_("textures", _textures),
                 CEREAL_NVP_("materials", _materials),
                 CEREAL_NVP_("programs", _programs),
                 CEREAL_NVP_("meshes", _meshes)
@@ -86,17 +98,20 @@ namespace darmok::editor
         std::optional<ProgramCompiler> _progCompiler;
         bool _tryReset;
 
-        using Materials = std::unordered_set<std::shared_ptr<Material>>;
         using Programs = std::unordered_map<std::shared_ptr<ProgramSource>, std::shared_ptr<ProgramDefinition>>;
+        using Textures = std::unordered_set<std::shared_ptr<TextureDefinition>>;
+        using Materials = std::unordered_set<std::shared_ptr<Material>>;
         using Meshes = std::unordered_map<std::shared_ptr<MeshSource>, std::vector<std::shared_ptr<MeshDefinition>>> ;
         using Scenes = std::unordered_set<std::shared_ptr<Scene>>;
 
+        Textures _textures;
         Materials _materials;
         Scenes _scenes;
         Programs _programs;
         Meshes _meshes;
 
         std::filesystem::path _path;
+        std::filesystem::path _exportPath;
         static const std::vector<std::string> _dialogFilters;
         static const char* _confirmNewPopup;
 
@@ -105,6 +120,10 @@ namespace darmok::editor
 
         Programs::iterator findProgramSource(ProgramSource& src);
         Meshes::iterator findMeshSource(MeshSource& src);
+        Textures::iterator findTextureDefinition(TextureDefinition& def);
+
+        std::vector<std::reference_wrapper<Renderable>> getRenderables();
+
         void doReset();
     };
 }

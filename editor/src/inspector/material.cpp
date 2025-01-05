@@ -32,7 +32,6 @@ namespace darmok::editor
 			}
 			if (_app)
 			{
-				
 				auto prog = mat.getProgram();
 				if (_app->drawProgramReference("Program", prog))
 				{
@@ -46,6 +45,13 @@ namespace darmok::editor
 				{
 					mat.setBaseColor(Colors::denormalize(color));
 					changed = true;
+				}
+			}
+			{
+				auto tex = mat.getTexture(MaterialTextureType::BaseColor);
+				if (_app->drawTextureReference("Base Texture", tex))
+				{
+					mat.setTexture(MaterialTextureType::BaseColor, tex);
 				}
 			}
 			{
@@ -132,6 +138,14 @@ namespace darmok::editor
 				}
 			}
 			ImGui::EndChild();
+
+			auto proj = _app->getProject();
+
+			if (ImGui::Button("Delete"))
+			{
+				proj.removeMaterial(mat);
+				changed = true;
+			}
 		}
 		return changed;
 	}

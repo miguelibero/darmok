@@ -8,6 +8,7 @@
 #include <darmok-editor/inspector/program.hpp>
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/inspector/mesh.hpp>
+#include <darmok-editor/inspector/texture.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -37,6 +38,7 @@ namespace darmok::editor
         _materialEditor = _editors.add<MaterialInspectorEditor>();
         _programEditor = _editors.add<ProgramSourceInspectorEditor>();
         _meshEditor = _editors.add<MeshSourceInspectorEditor>();
+        _textureEditor = _editors.add<TextureDefinitionInspectorEditor>();
     }
 
     void EditorInspectorView::init(EditorApp& app)
@@ -94,6 +96,13 @@ namespace darmok::editor
             else if(auto scene = getSelectedScene())
             {
                 _sceneEditor->renderType(*scene);
+            }
+            else if (auto optTex = getSelectedObject<TextureAsset>())
+            {
+                if (auto tex = optTex.value())
+                {
+                    _textureEditor->renderType(*tex);
+                }
             }
             else if (auto optMat = getSelectedObject<MaterialAsset>())
             {
