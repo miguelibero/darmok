@@ -93,18 +93,9 @@ namespace darmok
             }
             if (!config.programPath.empty())
             {
-                ProgramDefinition def;
-                CerealUtils::load(def, config.programPath);
-                if (!def.empty())
-                {
-                    config.vertexLayout = def.vertexLayout;
-                }
-                else
-                {
-                    VaryingDefinition def;
-                    def.read(config.programPath);
-                    config.vertexLayout = def.vertex;
-                }
+                ProgramSource src;
+                src.read(config.programPath);
+                config.vertexLayout = src.varying.vertex;
                 if (config.vertexLayout.getStride() == 0)
                 {
                     throw std::runtime_error("failed to load vertex layout from program path");

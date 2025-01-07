@@ -17,54 +17,54 @@
 
 namespace darmok
 {	
-	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::string& path)
 	{
 		return assets.getProgramLoader()(path);
 	}
 
-	std::shared_ptr<Texture> LuaAssets::loadTexture(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<Texture> LuaAssets::loadTexture(AssetContext& assets, const std::string& path)
 	{
 		return assets.getTextureLoader()(path);
 	}
 
-	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas(AssetContext& assets, const std::string& path)
 	{
 		return assets.getTextureAtlasLoader()(path);
 	}
 
-	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::string& path)
 	{
 		return assets.getSoundLoader()(path);
 	}
 
-	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::string& path)
 	{
 		return assets.getMusicLoader()(path);
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::string& path)
 	{
 		return assets.getModelLoader()(path);
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::filesystem::path& path, const AssimpModelLoadConfig& config)
+	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::string& path, const AssimpModelLoadConfig& config)
 	{
 		auto& loader = assets.getAssimpModelLoader();
 		loader.setConfig(config);
 		return loader(path);
 	}
 
-	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::string& path)
 	{
 		return assets.getSkeletonLoader()(path);
 	}
 
-	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::string& path)
 	{
 		return assets.getSkeletalAnimationLoader()(path);
 	}
 
-	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssets::loadSkeletalAnimatorDefinition(AssetContext& assets, const std::filesystem::path& path)
+	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssets::loadSkeletalAnimatorDefinition(AssetContext& assets, const std::string& path)
 	{
 		return assets.getSkeletalAnimatorDefinitionLoader()(path);
 	}

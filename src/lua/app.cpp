@@ -8,8 +8,7 @@
 #include <darmok/window.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/data.hpp>
-#include <filesystem>
-#include <bx/commandline.h>
+
 #include "asset.hpp"
 #include "input.hpp"
 #include "audio.hpp"
@@ -35,6 +34,9 @@
 #include "rmlui_debug.hpp"
 #endif
 #endif
+
+#include <filesystem>
+#include <CLI/CLI.hpp>
 
 namespace darmok
 {	
@@ -240,7 +242,7 @@ namespace darmok
 		// intentionally left blank for the unique_ptr<LuaAppDelegateImpl> forward declaration
 	}
 
-	std::optional<int32_t> LuaAppDelegate::setup(const std::vector<std::string>& args)
+	std::optional<int32_t> LuaAppDelegate::setup(const CmdArgs& args)
 	{
 		return _impl->setup(args);
 	}
@@ -285,45 +287,52 @@ namespace darmok
 		_dbgTexts.emplace_back(pos, msg);
 	}
 
-	std::optional<int> LuaAppDelegateImpl::setup(const std::vector<std::string>& args)
+	std::optional<int32_t> LuaAppDelegateImpl::setup(const CmdArgs& args)
 	{
-		std::vector<const char*> argv;
-		argv.reserve(args.size());
-		for (auto& arg : args)
-		{
-			argv.push_back(arg.c_str());
-		}
-		bx::CommandLine cmdLine(args.size(), &argv.front());
-		auto cmdPath = std::string(cmdLine.get(0));
-		auto cmdName = std::filesystem::path(cmdPath).filename().string();
-		if (cmdLine.hasArg('h', "help"))
-		{
-			help(cmdName);
-			return 0;
-		}
+		CLI::App cli{ "darmok lua" };
 
-		if (cmdLine.hasArg('v', "version"))
-		{
-			version(cmdName);
-			return 0;
-		}
+		CliConfig cfg;
 
-		if (!importAssets(cmdName, cmdLine))
+		cli.add_option("-m,--main-lua", cfg.mainPath, "Path to the main lua file (dir will be taken as package path).");
+		cli.add_option("-i,--asset-input", cfg.assetInputPath, "Asset input file path.");
+		cli.add_option("-o,--asset-output", cfg.assetOutputPath, "Asset output file path.");
+		auto cacheOpt = cli.add_option("-c, --asset-cache", cfg.assetCachePath, "Asset cache file path (directory that keeps the timestamps of the inputs).")
+			->expected(0, 1);
+		cli.add_flag("-d, --dry", cfg.dry, "Do not process assets, just print output files.");
+		
+		auto& subCli = *cli.group("Program Compiler");
+		subCli.add_option("--bgfx-shaderc", cfg.shadercPath, "path to the shaderc executable");
+		subCli.add_option("--bgfx-shader-include", cfg.shaderIncludePaths, "paths to shader files to be included");
+
+		try
 		{
-			return -3;
+			cli.parse(args.size(), args.data());
+			if (!cacheOpt->results().empty() && cfg.assetCachePath.empty())
+			{
+				// passing --aset-cache without parameter sets default asset cache path
+				cfg.assetCachePath = _defaultAssetCachePath;
+			}
+			if (!importAssets(cfg))
+			{
+				return -3;
+			}
+			auto mainPath = findMainLua(cfg.mainPath);
+			if (!mainPath)
+			{
+				return -2;
+			}
+			_mainLuaPath = mainPath.value();
+			auto result = loadLua(_mainLuaPath);
+			if (result)
+			{
+				unloadLua();
+			}
+			return result;
 		}
-		auto mainPath = findMainLua(cmdName, cmdLine);
-		if (!mainPath)
+		catch (const CLI::Error& e)
 		{
-			return -2;
+			return cli.exit(e);                                                                                          \
 		}
-		_mainLuaPath = mainPath.value();
-		auto result = loadLua(_mainLuaPath);
-		if (result)
-		{
-			unloadLua();
-		}
-		return result;
 	}
 
 	std::optional<int32_t> LuaAppDelegateImpl::loadLua(const std::filesystem::path& mainPath)
@@ -413,7 +422,7 @@ namespace darmok
 		_lua.reset();
 	}
 
-	std::optional<std::filesystem::path> LuaAppDelegateImpl::findMainLua(const std::string& cmdName, const bx::CommandLine& cmdLine) noexcept
+	std::optional<std::filesystem::path> LuaAppDelegateImpl::findMainLua(const std::filesystem::path& mainPath)
 	{
 		static const std::vector<std::filesystem::path> possiblePaths = {
 			"main.lua",
@@ -421,11 +430,8 @@ namespace darmok
 			"assets/main.lua"
 		};
 
-		std::string mainPath;
-		const char* mainPathArg;
-		if (cmdLine.hasArg(mainPathArg, 'm', "main-lua"))
+		if (!mainPath.empty())
 		{
-			mainPath = mainPathArg;
 			if (std::filesystem::is_directory(mainPath))
 			{
 				for (std::filesystem::path path : possiblePaths)
@@ -441,8 +447,7 @@ namespace darmok
 			{
 				return mainPath;
 			}
-			help(cmdName, "could not find specified main lua script");
-			return std::nullopt;
+			throw CLI::ValidationError("could not find specified main lua script");
 		}
 		for (auto& path : possiblePaths)
 		{
@@ -451,7 +456,7 @@ namespace darmok
 				return path;
 			}
 		}
-		help(cmdName, "could not find main lua script");
+		throw CLI::ValidationError("could not find main lua script");
 		return std::nullopt;
 	}
 
@@ -511,38 +516,36 @@ namespace darmok
 	std::string LuaAppDelegateImpl::_defaultAssetOutputPath = "runtime_assets";
 	std::string LuaAppDelegateImpl::_defaultAssetCachePath = "asset_cache";
 
-	bool LuaAppDelegateImpl::importAssets(const std::string& cmdName, const bx::CommandLine& cmdLine)
+	bool LuaAppDelegateImpl::importAssets(const CliConfig& cfg)
 	{
-		const char* inputPath = nullptr;
-		cmdLine.hasArg(inputPath, 'i', "asset-input");
-		if (inputPath == nullptr && std::filesystem::exists(_defaultAssetInputPath))
+		auto inputPath = cfg.assetInputPath;
+		if (inputPath.empty() && std::filesystem::exists(_defaultAssetInputPath))
 		{
 			inputPath = _defaultAssetInputPath.c_str();
 		}
-		if (inputPath == nullptr)
+		if (inputPath.empty())
 		{
 			return true;
 		}
-		const char* outputPath = nullptr;
-		cmdLine.hasArg(outputPath, 'o', "asset-output");
-		if (outputPath == nullptr)
+		auto outputPath = cfg.assetOutputPath;
+		if (outputPath.empty())
 		{
 			outputPath = _defaultAssetOutputPath.c_str();
 		}
+		auto cachePath = cfg.assetCachePath;
+		if (cachePath.empty() && std::filesystem::exists(_defaultAssetCachePath))
+		{
+			cachePath = _defaultAssetCachePath;
+		}
 		DarmokAssetFileImporter importer(inputPath);
 		importer.setOutputPath(outputPath);
-		const char* cachePath = nullptr;
-		cmdLine.hasArg(cachePath, 'c', "asset-cache");
-		if (cachePath == nullptr && (cmdLine.hasArg('c', "asset-cache") || std::filesystem::is_directory(_defaultAssetCachePath)))
+		importer.setCachePath(cachePath);
+		importer.setShadercPath(cfg.shadercPath);
+		for (auto& path : cfg.shaderIncludePaths)
 		{
-			cachePath = _defaultAssetCachePath.c_str();
+			importer.addShaderIncludePath(path);
 		}
-		if (cachePath != nullptr)
-		{
-			importer.setCachePath(cachePath);
-		}
-
-		if (cmdLine.hasArg('d', "dry"))
+		if (cfg.dry)
 		{
 			for (auto& output : importer.getOutputs())
 			{
@@ -559,32 +562,6 @@ namespace darmok
 		}
 
 		return true;
-	}
-
-	void LuaAppDelegateImpl::version(const std::string& name) noexcept
-	{
-		std::cout << name << ": darmok lua runner." << std::endl;
-	}
-
-	void LuaAppDelegateImpl::help(const std::string& name, const char* error) noexcept
-	{
-		if (error)
-		{
-			std::cerr << "Error:" << std::endl << error << std::endl << std::endl;
-		}
-		version(name);
-		std::cout << "Usage: " << name << " -m <main lua> -i <in> -o <out>" << std::endl;
-		std::cout << std::endl;
-		std::cout << "Options:" << std::endl;
-		std::cout << "  -h, --help                  this help and exit." << std::endl;
-		std::cout << "  -v, --version               Output version information and exit." << std::endl;
-		std::cout << "  -m, --main-lua <path>       Path to the main lua file (dir will be taken as package path)." << std::endl;
-		std::cout << "  -i, --asset-input <path>    Asset input file path." << std::endl;
-		std::cout << "  -o, --asset-output <path>   Asset output file path." << std::endl;
-		std::cout << "  -c, --asset-cache <path>    Asset cache file path (directory that keeps the timestamps of the inputs)." << std::endl;
-		std::cout << "  -d, --dry                   Do not process assets, just print output files." << std::endl;
-		std::cout << "  --bgfx-shaderc              Path of the bgfx shaderc executable (used to process bgfx shaders)." << std::endl;
-		std::cout << "  --bgfx-shader-include       Path of the bgfx shader include dir (used to process bgfx shaders)." << std::endl;
 	}
 
 	void LuaAppDelegateImpl::render() noexcept

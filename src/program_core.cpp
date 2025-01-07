@@ -489,12 +489,35 @@ namespace darmok
         }
     }
 
+    void ProgramSource::read(const std::filesystem::path& path)
+    {
+        auto ext = path.extension();
+        std::ifstream is(path);
+        if (ext == ".json")
+        {
+            auto fileJson = nlohmann::ordered_json::parse(is);
+            read(fileJson, path);
+        }
+        else if (ext == ".xml")
+        {
+            cereal::XMLInputArchive archive(is);
+            archive(*this);
+        }
+        else
+        {
+            cereal::PortableBinaryInputArchive archive(is);
+            archive(*this);
+        }
+    }
+
     void ProgramCompilerConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
     {
         if (json.contains("includeDirs"))
         {
-            auto paths = json["includeDirs"].get<IncludePaths>();
-            includePaths.insert(paths.begin(), paths.end());
+            for (fs::path path : json["includeDirs"])
+            {
+                includePaths.insert(basePath / path);
+            }
         }
         includePaths.insert(basePath);
 
@@ -586,9 +609,7 @@ namespace darmok
         }
         if (fs::exists(input.path))
         {
-            std::ifstream is(input.path);
-            auto fileJson = nlohmann::ordered_json::parse(is);
-            src.read(fileJson, input.path);
+            src.read(input.path);
         }
         
         if (src.vertexShader.empty())

@@ -153,7 +153,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 ```lua
 function init()
-    local program = Program.new(StandardProgramType.Forward)
+    local program = StandardProgramLoader.load(StandardProgramType.Forward)
 
     local scenes = app:add_component(SceneAppComponent)
     local scene = scenes.scene

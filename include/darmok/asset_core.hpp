@@ -26,8 +26,8 @@ namespace darmok
 
         std::vector<std::string> pathMatches;
 
-        std::filesystem::path getRelativePath() const;
-        std::filesystem::path getOutputPath(const std::string& defaultExt = "") const;
+        std::filesystem::path getRelativePath() const noexcept;
+        std::filesystem::path getOutputPath(const std::string& defaultExt = "") const noexcept;
     };
 
     using FileTypeImportDependencies = std::unordered_set<std::filesystem::path>;

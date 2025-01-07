@@ -21,12 +21,12 @@ namespace darmok
 {
     namespace fs = std::filesystem;
 
-    std::filesystem::path FileTypeImporterInput::getRelativePath() const
+    std::filesystem::path FileTypeImporterInput::getRelativePath() const noexcept
     {
         return std::filesystem::relative(path, basePath);
     }
 
-    std::filesystem::path FileTypeImporterInput::getOutputPath(const std::string& defaultExt) const
+    std::filesystem::path FileTypeImporterInput::getOutputPath(const std::string& defaultExt) const noexcept
     {
         auto relPath = getRelativePath();
         auto basePath = relPath.parent_path();
@@ -45,6 +45,11 @@ namespace darmok
             }
             StringUtils::replace(v, "*", name);
             outputPath /= v;
+        }
+        else if (defaultExt.empty())
+        {
+            // defaultExt == "" means we dont want a default output path
+            outputPath = "";
         }
         else
         {

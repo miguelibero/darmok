@@ -13,7 +13,7 @@ namespace darmok
     public:
         LuaAppDelegate(App& app) noexcept;
         ~LuaAppDelegate() noexcept;
-        std::optional<int32_t> setup(const std::vector<std::string>& args);
+        std::optional<int32_t> setup(const CmdArgs& args) override;
         void init() override;
         void earlyShutdown() override;
         void shutdown() override;

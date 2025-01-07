@@ -83,6 +83,7 @@ namespace darmok
 		VaryingDefinition varying;
 
 		void read(const nlohmann::ordered_json& json, std::filesystem::path path = "");
+		void read(const std::filesystem::path& path);
 
 		template<class Archive>
 		void serialize(Archive& archive)

@@ -580,6 +580,7 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 
 # bgfx
 target_link_libraries(${CORE_LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
+set(BGFX_SHADERC_TARGET bgfx::shaderc)
 
 # pugixml
 find_package(pugixml CONFIG REQUIRED)
@@ -756,6 +757,19 @@ if(DARMOK_BUILD_LUA_EXE)
     PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-" "ozz_.*\\.dll"
     POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"    
   )
+
+  set(LUA_EXE_ARGS
+    --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
+    --bgfx-shader-include
+      ${BGFX_SHADER_INCLUDE_PATH}
+      ${PROJECT_SOURCE_DIR}/assets/core
+  )
+
+  set_target_properties(${LUA_EXE_NAME}
+    PROPERTIES FOLDER ${TOOLS_FOLDER}
+    VS_DEBUGGER_COMMAND_ARGUMENTS "${LUA_EXE_ARGS}"
+  )
+
 endif()
 
 # ozz

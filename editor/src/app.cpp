@@ -12,7 +12,6 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <bx/commandline.h>
 #include <CLI/CLI.hpp>
 
 namespace darmok::editor
