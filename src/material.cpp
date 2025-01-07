@@ -19,7 +19,7 @@ namespace darmok
 		, _baseColor(Colors::white())
 		, _specularColor(Colors::black3())
 		, _metallicFactor(0.F)
-		, _roughnessFactor(0.F)
+		, _roughnessFactor(0.5F)
 		, _normalScale(1.F)
 		, _occlusionStrength(0.F)
 		, _emissiveColor(Colors::black3())
@@ -460,7 +460,7 @@ namespace darmok
 			auto tex = mat.getTexture(def.type);
 			if (tex)
 			{
-				hasTextures.x += 1 << i;
+				hasTextures.x += 1 << (int)def.type;
 			}
 			else
 			{

@@ -132,6 +132,10 @@ namespace darmok::editor
         {
             StreamUtils::logDebug("waiting for open dialog...");
         }
+        if (dialog.result().empty())
+        {
+            return;
+        }
         std::filesystem::path path = dialog.result()[0];
         if (!std::filesystem::exists(path))
         {
@@ -230,13 +234,23 @@ namespace darmok::editor
         return loader.getDefinition(tex);
     }
 
+    TextureAsset EditorProject::findTexture(const TextureDefinition& def) const
+    {
+        auto itr = findTextureDefinition(def);
+        if (itr == _textures.end())
+        {
+            return nullptr;
+        }
+        return *itr;
+    }
+
     std::shared_ptr<Texture> EditorProject::loadTexture(const TextureAsset& asset)
     {
         auto& loader = _app.getAssets().getTextureLoader();
         return loader.loadResource(asset);
     }
 
-    EditorProject::Textures::iterator EditorProject::findTextureDefinition(TextureDefinition& def)
+    EditorProject::Textures::iterator EditorProject::findTextureDefinition(const TextureDefinition& def) const
     {
         auto ptr = &def;
         return std::find_if(_textures.begin(), _textures.end(),
@@ -343,7 +357,14 @@ namespace darmok::editor
         return progs;
     }
 
-    EditorProject::Programs::iterator EditorProject::findProgramSource(ProgramSource& src)
+    EditorProject::Programs::const_iterator EditorProject::findProgramSource(const ProgramSource& src) const
+    {
+        auto ptr = &src;
+        return std::find_if(_programs.begin(), _programs.end(),
+            [ptr](auto& elm) { return elm.first.get() == ptr; });
+    }
+
+    EditorProject::Programs::iterator EditorProject::findProgramSource(const ProgramSource& src)
     {
         auto ptr = &src;
         return std::find_if(_programs.begin(), _programs.end(),
@@ -598,7 +619,14 @@ namespace darmok::editor
         return src;
     }
 
-    EditorProject::Meshes::iterator EditorProject::findMeshSource(MeshSource& src)
+    EditorProject::Meshes::const_iterator EditorProject::findMeshSource(const MeshSource& src) const
+    {
+        auto ptr = &src;
+        return std::find_if(_meshes.begin(), _meshes.end(),
+            [ptr](auto& elm) { return elm.first.get() == ptr; });
+    }
+
+    EditorProject::Meshes::iterator EditorProject::findMeshSource(const MeshSource& src)
     {
         auto ptr = &src;
         return std::find_if(_meshes.begin(), _meshes.end(),
@@ -730,10 +758,10 @@ namespace darmok::editor
         auto& cam = scene.addComponent<Camera>(camEntity);
 
         scene.addComponent<Transform>(camEntity)
-            .setPosition(glm::vec3(10, 5, -10))
+            .setPosition(glm::vec3(2, 1, -2))
             .lookAt(glm::vec3(0))
             .setName(name);
-        cam.setPerspective(60.F, 0.3F, 10000.F);
+        cam.setPerspective(60.F, 0.3F, 1000.F);
         cam.addComponent<SkyboxRenderer>(skyboxTex);
         cam.addComponent<GridRenderer>();
         cam.addComponent<LightingRenderComponent>();
@@ -762,27 +790,34 @@ namespace darmok::editor
 
         scene.addComponent<Transform>(camEntity, glm::vec3(0.F, 1.F, -10.F))
             .setName("Main Camera");
-        auto lightEntity = scene.createEntity();
-        auto& light = scene.addComponent<DirectionalLight>(lightEntity);
-        scene.addComponent<Transform>(lightEntity, glm::vec3(0.F, 3.F, 0.F))
+        
+        auto ambLightEntity = scene.createEntity();
+        scene.addComponent<AmbientLight>(ambLightEntity, 0.2F);
+        scene.addComponent<Transform>(ambLightEntity)
+            .setName("Ambient Light");
+        
+        auto dirLightEntity = scene.createEntity();
+        scene.addComponent<DirectionalLight>(dirLightEntity, 3.F);
+        scene.addComponent<Transform>(dirLightEntity, glm::vec3(0.F, 3.F, 0.F))
             .setEulerAngles(glm::vec3(50.F, -30.F, 0.F))
             .setName("Directional Light");
 
         auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
 
         auto meshAsset = addMesh();
-        meshAsset->name = "Default Cube";
-        meshAsset->content.emplace<CubeMeshSource>();
+        meshAsset->name = "Default Shape";
+        meshAsset->content.emplace<SphereMeshSource>();
         auto mesh = loadMesh(meshAsset, prog->getVertexLayout());
 
         auto mat = addMaterial();
         mat->setProgram(prog);
         mat->setName("Default");
         mat->setBaseColor(Colors::white());
+        mat->setOpacityType(OpacityType::Opaque);
 
         auto cubeEntity = scene.createEntity();
         scene.addComponent<Renderable>(cubeEntity, mesh, mat);
         scene.addComponent<Transform>(cubeEntity)
-            .setName("Cube");
+            .setName("Sphere");
     }
 }

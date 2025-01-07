@@ -245,7 +245,14 @@ namespace darmok
 
 						encoder.setState(state);
 						encoder.setTexture(0, _textureUniform, tex);
-						mesh->render(encoder);
+						MeshRenderConfig renderConfig
+						{
+							.startVertex = cmd->VtxOffset,
+							.startIndex = cmd->IdxOffset,
+							.numIndices = cmd->ElemCount
+						};
+
+						mesh->render(encoder, renderConfig);
 						encoder.submit(viewId, program);
 					}
 				}

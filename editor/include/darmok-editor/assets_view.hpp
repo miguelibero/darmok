@@ -82,10 +82,14 @@ namespace darmok::editor
                     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cellPadding);
                     ImGui::BeginTable(_name, cols);
                     auto selectedAsset = getSelectedAsset();
+                    int i = 0;
                     for (auto asset : _delegate->getAssets(_typeTag))
                     {
+                        ImGui::PushID(i);
                         ImGui::TableNextColumn();
                         drawAsset(asset, selectedAsset);
+                        ImGui::PopID();
+                        ++i;
                     }
                     ImGui::TableNextColumn();
                     if (ImguiUtils::drawAsset("+"))

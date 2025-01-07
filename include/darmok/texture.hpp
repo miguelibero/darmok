@@ -69,7 +69,7 @@ namespace darmok
 		TextureConfig config;
 		uint64_t flags = defaultTextureLoadFlags;
 
-		static TextureDefinition fromImage(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		void loadImage(const Image& img) noexcept;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<TextureDefinition>

@@ -184,6 +184,7 @@ namespace darmok
         virtual std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) = 0;
         virtual std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
         virtual std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false) = 0;
+        virtual bool clearCache(const std::shared_ptr<Definition>& def) = 0;
     };
 
     template<typename Type, typename DefinitionType>
@@ -318,6 +319,23 @@ namespace darmok
             return true;
         }
 
+        bool clearCache(const std::shared_ptr<Definition>& def)
+        {
+            if (!def)
+            {
+                return false;
+            }
+            auto itr = std::find_if(_defCache.begin(), _defCache.end(),
+                [&def](auto& elm) { return elm.second == def; });
+            auto found = itr != _defCache.end();
+            if (found)
+            {
+                _defCache.erase(itr);
+            }
+            auto size = _resCache.erase(def);
+            return found || size > 0;
+        }
+
         void clearCache() noexcept
         {
             _defCache.clear();
@@ -333,7 +351,8 @@ namespace darmok
                 {
                     itr = _resCache.erase(itr);
                 }
-                else {
+                else
+                {
                     ++itr;
                 }
             }
@@ -343,7 +362,8 @@ namespace darmok
                 {
                     itr = _defCache.erase(itr);
                 }
-                else {
+                else
+                {
                     ++itr;
                 }
             }

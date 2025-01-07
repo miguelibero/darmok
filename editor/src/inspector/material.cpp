@@ -20,6 +20,16 @@ namespace darmok::editor
 	bool MaterialInspectorEditor::renderType(Material& mat) noexcept
 	{
 		auto changed = true;
+		auto drawTexture = [this, &mat, &changed](const char* label, MaterialTextureType type)
+		{
+			auto tex = mat.getTexture(type);
+			if (_app->drawTextureReference(label, tex))
+			{
+				mat.setTexture(type, tex);
+				changed = true;
+			}
+		};
+
 		if (ImGui::CollapsingHeader("Material"))
 		{
 			{
@@ -47,13 +57,7 @@ namespace darmok::editor
 					changed = true;
 				}
 			}
-			{
-				auto tex = mat.getTexture(MaterialTextureType::BaseColor);
-				if (_app->drawTextureReference("Base Texture", tex))
-				{
-					mat.setTexture(MaterialTextureType::BaseColor, tex);
-				}
-			}
+			drawTexture("Base Texture", MaterialTextureType::BaseColor);
 			{
 				auto f = mat.getMetallicFactor();
 				if (ImGui::SliderFloat("Metallic Factor", &f, 0.F, 1.F))
@@ -70,6 +74,7 @@ namespace darmok::editor
 					changed = true;
 				}
 			}
+			drawTexture("Metallic Roughness Texture", MaterialTextureType::MetallicRoughness);
 			{
 				auto f = mat.getNormalScale();
 				if (ImGui::SliderFloat("Normal Scale", &f, 0.F, 1.F))
@@ -78,6 +83,7 @@ namespace darmok::editor
 					changed = true;
 				}
 			}
+			drawTexture("Normal Texture", MaterialTextureType::Normal);
 			{
 				auto f = mat.getOcclusionStrength();
 				if (ImGui::SliderFloat("Occlusion Strength", &f, 0.F, 1.F))
@@ -94,6 +100,7 @@ namespace darmok::editor
 					changed = true;
 				}
 			}
+			drawTexture("Emissive Texture", MaterialTextureType::Emissive);
 			{
 				auto prim = mat.getPrimitiveType();
 				if (ImguiUtils::drawEnumCombo("Primitive Type", prim, Material::getPrimitiveTypeName))
@@ -119,8 +126,8 @@ namespace darmok::editor
 				}
 			}
 			// phong lighting: specular + shininess
-
-			ImGui::BeginChild("Basic");
+			ImGui::Separator();
+			ImGui::Text("Basic");
 			{
 				auto color = Colors::normalize(mat.getSpecularColor());
 				if (ImGui::ColorEdit3("Specular Color", glm::value_ptr(color)))
@@ -129,6 +136,7 @@ namespace darmok::editor
 					changed = true;
 				}
 			}
+			drawTexture("Specular Texture", MaterialTextureType::Specular);
 			{
 				int v = mat.getShininess();
 				if (ImGui::SliderInt("Shininess", &v, 0, 256))
@@ -137,7 +145,6 @@ namespace darmok::editor
 					changed = true;
 				}
 			}
-			ImGui::EndChild();
 
 			auto proj = _app->getProject();
 

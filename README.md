@@ -53,6 +53,8 @@ Some philosofical decisions (could be controversial)
 
 **WARNING**: currently in early stages of development
 
+![editor screenshot](editor_screenshot.png)
+
 ## Frequently Asked Questions
 
 * Will it have feature X?
@@ -118,7 +120,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * move lua bindings to separate library?
     * C++ coroutines could be useful in some places (async asset loading)
-* custom UI module (rmlui is nice but slow)
 
 #### In the future
 * fix occlusion culling
@@ -129,6 +130,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * 3d physics materials
 * baked shadowmaps
 * multithreaded updates ([Ubisoft](https://www.youtube.com/watch?v=X1T3IQ4N-3g))
+* custom UI module (rmlui is nice but slow)
 * spine animations
 * unify use of allocators everywhere
 * progressive asset loaders

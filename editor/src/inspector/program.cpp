@@ -8,15 +8,17 @@
 
 namespace darmok::editor
 {
-    void ProgramSourceInspectorEditor::init(EditorApp& editor, ObjectEditorContainer& container)
+    void ProgramSourceInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
     {
-        _editor = editor;
+        _app = app;
     }
 
     void ProgramSourceInspectorEditor::shutdown()
     {
-        _editor.reset();
+        _app.reset();
     }
+
+    const std::string ProgramSourceInspectorEditor::_shaderFilter = "*.txt *.sc";
 
     bool ProgramSourceInspectorEditor::renderType(ProgramSource& src) noexcept
     {
@@ -28,10 +30,33 @@ namespace darmok::editor
                 changed = true;
             }
 
-            if (ImGui::Button("Delete"))
+            if (_app)
             {
-                _editor->getProject().removeProgram(src);
-                changed = true;
+                std::filesystem::path fsPath;
+                if (ImguiUtils::drawFileInput("Load Fragment Shader", fsPath, _shaderFilter))
+                {
+                    src.fragmentShader = Data::fromFile(fsPath);
+                    changed = true;
+                }
+                std::filesystem::path vsPath;
+                if (ImguiUtils::drawFileInput("Load Vertex Shader", vsPath, _shaderFilter))
+                {
+                    src.vertexShader = Data::fromFile(vsPath);
+                    changed = true;
+                }
+
+                auto& proj = _app->getProject();
+                if (ImGui::Button("Apply"))
+                {
+                    proj.reloadProgram(src);
+                    changed = true;
+                }
+
+                if (ImGui::Button("Delete"))
+                {
+                    proj.removeProgram(src);
+                    changed = true;
+                }
             }
         }
         return changed;

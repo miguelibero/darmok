@@ -12,6 +12,7 @@ namespace darmok::editor
         void shutdown() override;
         bool renderType(ProgramSource& src) noexcept override;
     private:
-        OptionalRef<EditorApp> _editor;
+        OptionalRef<EditorApp> _app;
+        static const std::string _shaderFilter;
     };
 }

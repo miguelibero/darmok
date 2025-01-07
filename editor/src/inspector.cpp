@@ -50,6 +50,10 @@ namespace darmok::editor
     {
         _editors.shutdown();
         _sceneEditor.reset();
+        _materialEditor.reset();
+        _programEditor.reset();
+        _meshEditor.reset();
+        _textureEditor.reset();
     }
 
     void EditorInspectorView::selectObject(const SelectableObject& obj, const std::shared_ptr<Scene>& scene)

@@ -4,6 +4,9 @@
 #include <darmok/program.hpp>
 #include <darmok/material.hpp>
 #include <darmok/asset.hpp>
+#include <darmok/stream.hpp>
+
+#include <portable-file-dialogs.h>
 
 namespace darmok::editor
 {
@@ -57,6 +60,36 @@ namespace darmok::editor
     bool ImguiUtils::drawScaleInput(const char* label, glm::vec3& v) noexcept
     {
         return ImGui::InputFloat3(label, glm::value_ptr(v));
+    }
+
+    bool ImguiUtils::drawFileInput(const char* label, std::filesystem::path& path, const std::string& filter) noexcept
+    {
+        if (ImGui::Button(label))
+        {
+            std::vector<std::string> filters;
+            if (!filter.empty())
+            {
+                filters.push_back("");
+                filters.push_back(filter);
+            }
+            auto dialog = pfd::open_file(label, path.string(), filters);
+            // TODO: move this to an update function
+            while (!dialog.ready(1000))
+            {
+                StreamUtils::logDebug("waiting for open dialog...");
+            }
+            if (dialog.result().empty())
+            {
+                return false;
+            }
+            auto resultPath = dialog.result()[0];
+            if (!resultPath.empty())
+            {
+                path = resultPath;
+                return true;
+            }
+        }
+        return false;
     }
 
     ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* name, const char* text) noexcept

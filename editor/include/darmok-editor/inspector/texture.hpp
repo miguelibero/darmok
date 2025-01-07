@@ -14,5 +14,7 @@ namespace darmok::editor
         bool renderType(TextureDefinition& def) noexcept override;
     private:
         OptionalRef<EditorApp> _app;
+        static const std::string _imageFilter;
+        static const glm::vec2 _maxPreviewSize;
     };
 }

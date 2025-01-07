@@ -44,6 +44,7 @@ namespace darmok::editor
         std::shared_ptr<TextureDefinition> addTexture();
         std::string getTextureName(const std::shared_ptr<TextureDefinition>& tex) const;
         TextureAsset findTexture(const std::shared_ptr<Texture>& tex) const;
+        TextureAsset findTexture(const TextureDefinition& def) const;
         std::shared_ptr<Texture> loadTexture(const TextureAsset& asset);
         bool removeTexture(TextureDefinition& def) noexcept;
         bool reloadTexture(TextureDefinition& def);
@@ -118,9 +119,11 @@ namespace darmok::editor
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(Scene& scene);
 
-        Programs::iterator findProgramSource(ProgramSource& src);
-        Meshes::iterator findMeshSource(MeshSource& src);
-        Textures::iterator findTextureDefinition(TextureDefinition& def);
+        Programs::const_iterator findProgramSource(const ProgramSource& src) const;
+        Programs::iterator findProgramSource(const ProgramSource& src);
+        Meshes::const_iterator findMeshSource(const MeshSource& src) const;
+        Meshes::iterator findMeshSource(const MeshSource& src);
+        Textures::const_iterator findTextureDefinition(const TextureDefinition& def) const;
 
         std::vector<std::reference_wrapper<Renderable>> getRenderables();
 

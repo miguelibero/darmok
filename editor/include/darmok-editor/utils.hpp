@@ -122,6 +122,7 @@ namespace darmok::editor
         static bool drawPositionInput(const char* label, glm::vec3& v) noexcept;
         static bool drawRotationInput(const char* label, glm::quat& v) noexcept;
         static bool drawScaleInput(const char* label, glm::vec3& v) noexcept;
+        static bool drawFileInput(const char* label, std::filesystem::path& path, const std::string& filter = "") noexcept;
 
         static void beginFrame(const char* name) noexcept;
         static void endFrame() noexcept;

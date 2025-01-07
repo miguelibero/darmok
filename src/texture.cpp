@@ -11,9 +11,10 @@ namespace darmok
 		return data.empty();
 	}
 
-	TextureDefinition TextureDefinition::fromImage(const Image& img, uint64_t loadFlags) noexcept
+	void TextureDefinition::loadImage(const Image& img) noexcept
 	{
-		return { "", img.getData(), img.getTextureConfig(loadFlags), loadFlags};
+		data = img.getData();
+		config = img.getTextureConfig(flags);
 	}
 
 	const TextureConfig& TextureConfig::getEmpty() noexcept
@@ -65,7 +66,10 @@ namespace darmok
 		}
 		if (auto img = _imgLoader(path))
 		{
-			return std::make_shared<TextureDefinition>(TextureDefinition::fromImage(*img, _loadFlags));
+			auto def = std::make_shared<TextureDefinition>(path.string());
+			def->flags = _loadFlags;
+			def->loadImage(*img);
+			return def;
 		}
 		return nullptr;
 	}

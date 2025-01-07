@@ -23,5 +23,12 @@ namespace darmok::editor
     using MaterialAsset = std::shared_ptr<Material>;
     using MeshAsset = std::shared_ptr<MeshSource>;
     using SceneAsset = std::shared_ptr<Scene>;
-    using SelectableObject = std::variant<Entity, SceneAsset, TextureAsset, ProgramAsset, MaterialAsset, MeshAsset>;
+    using SelectableObject = std::variant<
+        Entity,
+        SceneAsset,
+        TextureAsset,
+        ProgramAsset,
+        MaterialAsset,
+        MeshAsset
+    >;
 }

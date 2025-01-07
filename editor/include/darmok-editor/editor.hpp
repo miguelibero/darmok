@@ -1,8 +1,10 @@
 #pragma once
 
+#include <darmok/optional_ref.hpp>
+
 #include <bx/bx.h>
 #include <entt/entt.hpp>
-#include <darmok/optional_ref.hpp>
+#include <imgui.h>
 
 namespace darmok::editor
 {
@@ -63,9 +65,14 @@ namespace darmok::editor
         template<typename Itr>
         void render(Itr begin, Itr end)
         {
+            int i = 0;
             for (auto itr = begin; itr != end; ++itr)
             {
-                render(*itr);
+                auto& elm = *itr;
+                ImGui::PushID(i);
+                render(elm);
+                ImGui::PopID();
+                ++i;
             }
         }
 
