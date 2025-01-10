@@ -38,7 +38,7 @@ namespace darmok
 		static void configUsertype(sol::usertype<T>& usertype) noexcept
 		{
 			using cls = T;
-			using val = T::template value_type;
+			using val = T::value_type;
 			usertype[sol::meta_function::equal_to] = sol::resolve<bool(const cls&, const cls&)>(glm::operator==);
 			usertype[sol::meta_function::addition] = sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator+), sol::resolve<cls(const cls&, val)>(glm::operator+));
 			usertype[sol::meta_function::subtraction] = sol::overload(sol::resolve<cls(const cls&, const cls&)>(glm::operator-), sol::resolve<cls(const cls&, val)>(glm::operator-));
@@ -121,7 +121,7 @@ namespace darmok
 		}
 
 		template<typename T>
-		static typename T tableGet(const VarLuaVecTable<T>& v) noexcept
+		static T tableGet(const VarLuaVecTable<T>& v) noexcept
 		{
 			using vec = T;
 			using val = typename T::value_type;

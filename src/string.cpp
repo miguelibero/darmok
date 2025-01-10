@@ -39,6 +39,16 @@ namespace darmok
 		return sv.rfind(end) == sv.size() - end.size();
 	}
 
+	bool StringUtils::contains(std::string_view sv, std::string_view part) noexcept
+	{
+		return sv.find(part) != std::string::npos;
+	}
+
+	bool StringUtils::contains(std::string_view sv, std::string_view::value_type part) noexcept
+	{
+		return sv.find(part) != std::string::npos;
+	}
+
 	std::optional<int> StringUtils::getIntSuffix(std::string_view name, std::string_view prefix) noexcept
 	{
 		if (!startsWith(name, prefix))
@@ -264,7 +274,7 @@ namespace darmok
 
 	bool StringUtils::containsGlobPattern(std::string_view sv) noexcept
 	{
-		return sv.contains('*') || sv.contains('?');
+		return StringUtils::contains(sv, '*') || StringUtils::contains(sv, '?');
 	}
 
 	std::string StringUtils::globToRegex(std::string_view glob) noexcept

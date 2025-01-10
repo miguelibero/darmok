@@ -1322,6 +1322,8 @@ namespace darmok
 			case InputDirType::Left:
 				v = vec.x < 0.F ? -vec.x : 0.F;
 				break;
+			default:
+				break;
 		}
 		return v;
 	}

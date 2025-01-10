@@ -12,7 +12,6 @@ uniform vec4 u_data;
 #define u_gridScale2 u_data.w
 #define u_fadeFactor 0.9
 
-#include <bgfx_shader.sh>
 #include <darmok_util.sc>
 
 // http://asliceofrendering.com/scene%20helper/2020/01/05/InfiniteGrid/

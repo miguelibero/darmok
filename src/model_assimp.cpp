@@ -886,7 +886,7 @@ namespace darmok
         }
 
         modelMesh.vertexData = createVertexData(assimpMesh, bones);
-        modelMesh.indexData = createIndexData(assimpMesh);
+        modelMesh.indexData = DataView(createIndexData(assimpMesh));
         modelMesh.vertexLayout = _config.vertexLayout;
     }
     
@@ -1044,11 +1044,13 @@ namespace darmok
         }
         if (json.contains(_rootMeshJsonKey))
         {
-            config.rootMesh = StringUtils::globToRegex(json[_rootMeshJsonKey]);
+            std::string val = json[_rootMeshJsonKey];
+            config.rootMesh = StringUtils::globToRegex(val);
         }
         if (json.contains(_opacityJsonKey))
         {
-            config.opacity = Material::readOpacityType(json[_opacityJsonKey]);
+            std::string val = json[_opacityJsonKey];
+            config.opacity = Material::readOpacityType(val);
         }
 
         auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)
@@ -1062,12 +1064,12 @@ namespace darmok
             {
                 for (auto& elm : jsonVal)
                 {
-                    value.emplace_back(StringUtils::globToRegex(elm));
+                    value.emplace_back(StringUtils::globToRegex(elm.get<std::string>()));
                 }
             }
             else
             {
-                value.emplace_back(StringUtils::globToRegex(jsonVal));
+                value.emplace_back(StringUtils::globToRegex(jsonVal.get<std::string>()));
             }
         };
         loadRegexList(_skipMeshesJsonKey, config.skipMeshes);

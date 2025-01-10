@@ -56,6 +56,8 @@ namespace darmok
 		case WindowScreenMode::WindowedFullscreen:
 			ss << "Borderless Windowed ";
 			break;
+		default:
+			break;
 		}
 		ss << toShortString();
 		if (monitor >= 0)

@@ -7,7 +7,7 @@
 uniform vec4 u_lightCountVec;
 #define u_pointLightCount uint(u_lightCountVec.x)
 #define u_dirLightCount   uint(u_lightCountVec.y)
-#define u_spotLightCount   uint(u_lightCountVec.z)
+#define u_spotLightCount  uint(u_lightCountVec.z)
 
 uniform vec4 u_ambientLightIrradiance;
 

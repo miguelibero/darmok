@@ -9,12 +9,14 @@
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
+
 #include <thread>
 #include <cstdarg>
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
 #include <utility>
+#include <expected>
 
 #include <Jolt/Core/Factory.h>
 #include <Jolt/RegisterTypes.h>
@@ -161,7 +163,7 @@ namespace darmok::physics3d
         };
     }
 
-    std::expected<JoltTransform, std::string> JoltUtils::convertTransform(const glm::mat4& mat) noexcept
+    Expected<JoltTransform, std::string> JoltUtils::convertTransform(const glm::mat4& mat) noexcept
     {
         glm::vec3 pos(0);
         glm::quat rot(1, 0, 0, 0);
@@ -170,7 +172,7 @@ namespace darmok::physics3d
         static const int epsilonFactor = 100;
         if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
         {
-            return std::unexpected("non-uniform scale not supported");
+            return Unexpected<std::string>("non-uniform scale not supported");
         }
         return JoltTransform{ JoltUtils::convert(pos), JoltUtils::convert(rot), scale.x };
     }
@@ -755,7 +757,7 @@ namespace darmok::physics3d
         {
             return true;
         }
-        return tryLoadTransform(trans.value()).has_value();
+        return tryLoadTransform(trans.value()).hasValue();
     }
 
     void PhysicsSystemImpl::setRootTransform(OptionalRef<Transform> root) noexcept
@@ -768,7 +770,7 @@ namespace darmok::physics3d
         return _root;
     }
 
-    std::expected<JoltTransform, std::string> PhysicsSystemImpl::tryLoadTransform(Transform& trans) noexcept
+    Expected<JoltTransform, std::string> PhysicsSystemImpl::tryLoadTransform(Transform& trans) noexcept
     {
         trans.update();
         glm::mat4 mat = trans.getWorldMatrix();
@@ -1242,6 +1244,8 @@ namespace darmok::physics3d
             break;
         case PhysicsBodyMotionType::Static:
             joltMotion = JPH::EMotionType::Static;
+            break;
+        default:
             break;
         }
 

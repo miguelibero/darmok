@@ -23,7 +23,7 @@
 
 namespace darmok
 {
-	class BgfxFatalException : public std::exception
+	class BgfxFatalException : public std::runtime_error
 	{
 	public:
 		const char* filePath;

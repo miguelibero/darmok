@@ -351,7 +351,7 @@ namespace darmok
         }
         if (json.contains("blend"))
         {
-            blendType = getBlendType(json["blend"]);
+            blendType = getBlendType(json["blend"].get<std::string>());
         }
         if(json.contains("tween"))
         {

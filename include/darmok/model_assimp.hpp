@@ -67,7 +67,7 @@ namespace darmok
         Dependencies getDependencies(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        void endImport(const Input& input);
+        void endImport(const Input& input) override;
         const std::string& getName() const noexcept override;
     private:
         std::unique_ptr<AssimpModelFileImporterImpl> _impl;

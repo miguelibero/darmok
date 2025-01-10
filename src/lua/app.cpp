@@ -461,7 +461,7 @@ namespace darmok
 		for (auto& sub : StringUtils::split(fpath, sep))
 		{
 			std::filesystem::path spath(sub);
-			if (!spath.filename().string().contains('?') && spath.extension().empty())
+			if (!StringUtils::contains(spath.filename().string(), '?') && spath.extension().empty())
 			{
 				if (binary)
 				{

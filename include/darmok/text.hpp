@@ -129,7 +129,7 @@ namespace darmok
         void init(Camera& cam, Scene& scene, App& app) noexcept override;
         void shutdown() noexcept override;
         void update(float deltaTime) override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;

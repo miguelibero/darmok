@@ -3,9 +3,11 @@
 #include "platform.hpp"
 #include <darmok/window_fwd.hpp>
 #include <darmok/app_fwd.hpp>
-#include <bx/thread.h>
-#include <expected>
+#include <darmok/expected.hpp>
+
 #include <mutex>
+
+#include <bx/thread.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -145,7 +147,6 @@ namespace darmok
 	public:
 		enum Type
 		{
-			CreateWindow,
 			DestroyWindow,
 			RequestVideoModeInfo,
 			ChangeWindowVideoMode,
@@ -182,7 +183,7 @@ namespace darmok
 	private:
 		VideoMode _mode;
 
-		std::expected<GLFWmonitor*, std::string> getMonitor() noexcept;
+		Expected<GLFWmonitor*, std::string> getMonitor() noexcept;
 	};
 
 	class ChangeWindowCursorModeCmd final : public PlatformCmd

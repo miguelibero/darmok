@@ -41,7 +41,7 @@ namespace darmok
             {
                 lua.new_enum<T>(name,
                     std::initializer_list<std::pair<std::string_view, T>>(
-                        &values.front(), &values.front() + values.size()));
+                        &values.front(), values.size()));
                 return;
             }
 

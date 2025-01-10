@@ -2087,6 +2087,8 @@ namespace darmok
         case MouseButton::Middle:
             i = 2;
             break;
+        default:
+            break;
         }
         auto state = getKeyModifierState();
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())

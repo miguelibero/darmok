@@ -350,7 +350,7 @@ namespace darmok
                 return changed;
             }
             std::string str = elm;
-            if (!str.contains(_includePatternToken)) // fast check
+            if (!StringUtils::contains(str, _includePatternToken)) // fast check
             {
                 return changed;
             }
@@ -1172,6 +1172,11 @@ namespace darmok
         catch (const CLI::ParseError& ex)
         {
             return cli.exit(ex);                                                                                          \
+        }
+        catch(const std::exception& ex)
+        {
+            std::cerr << "error: " << ex.what() << std::endl;
+            return 1;
         }
     }
 }

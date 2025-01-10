@@ -28,27 +28,29 @@ namespace darmok
         std::unique_ptr<Program> _program;
     };
 
+
+    struct GridConfig final
+    {
+        float separation = 1.0F;
+        Color color = Colors::white();
+        float width = 0.01;
+    };
+
+    struct GridRendererConfig final
+    {
+        Color xAxisColor = Colors::red();
+        Color yAxisColor = Colors::green();
+        Color zAxisColor = Colors::blue();
+        std::array<GridConfig, 2> grids = {
+            GridConfig{ 1.F, Colors::fromNumber(0x505050FF) },
+            GridConfig{ 10.F, Colors::fromNumber(0x707070FF) }
+        };
+    };
+
     class GridRenderer final : public ITypeCameraComponent<GridRenderer>
     {
     public:
-
-        struct GridConfig final
-        {
-            float separation = 1.0F;
-            Color color = Colors::white();
-            float width = 0.01;
-        };
-
-        struct Config final
-        {
-            Color xAxisColor = Colors::red();
-            Color yAxisColor = Colors::green();
-            Color zAxisColor = Colors::blue();
-            std::array<GridConfig, 2> grids = {
-                GridConfig{ 1.F, Colors::fromNumber(0x505050FF) },
-                GridConfig{ 10.F, Colors::fromNumber(0x707070FF) }
-            };
-        };
+        using Config = GridRendererConfig;
 
         GridRenderer(const Config& config = {}) noexcept;
         void init(Camera& cam, Scene& scene, App& app) noexcept override;

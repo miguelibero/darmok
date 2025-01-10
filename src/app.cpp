@@ -410,6 +410,9 @@ namespace darmok
 		std::stringstream ss("[DARMOK] exception running app ");
 		switch (phase)
 		{
+		case AppPhase::Setup:
+			ss << "setup";
+			break;
 		case AppPhase::Init:
 			ss << "init";
 			break;
@@ -1042,7 +1045,7 @@ namespace darmok
 	}
 
 	BgfxFatalException::BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg)
-		: std::exception(msg)
+		: std::runtime_error(msg)
 		, filePath(filePath)
 		, line(line)
 		, code(code)

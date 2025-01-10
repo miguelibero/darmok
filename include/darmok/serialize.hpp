@@ -24,8 +24,6 @@ template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);    
 template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
 template void funcName<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);                      \
 template void funcName<cereal::JSONInputArchive>(cereal::JSONInputArchive&);                        \
-template void funcName<cereal::XMLOutputArchive>(cereal::XMLOutputArchive&);                        \
-template void funcName<cereal::XMLInputArchive>(cereal::XMLInputArchive&);                          \
 
 #define DARMOK_IMPLEMENT_TEMPLATE_CEREAL_SAVE(funcName)	                                            \
 template void funcName<cereal::BinaryOutputArchive>(cereal::BinaryOutputArchive&);                  \

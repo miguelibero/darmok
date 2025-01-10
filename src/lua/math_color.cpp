@@ -8,8 +8,8 @@ namespace darmok
 	{
 		auto color = lua.new_usertype<Color>("Color",
 			sol::factories(
-				[](uint8_t r, uint8_t g, uint8_t b, uint8_t a) { return Color(r, g, b, a); },
-				[](uint8_t r, uint8_t g, uint8_t b) { return Color(r, g, b, Colors::getMaxValue()); }
+				[](uint8_t r, uint8_t g, uint8_t b, uint8_t a) -> Color { return Color(r, g, b, a); },
+				[](uint8_t r, uint8_t g, uint8_t b) -> Color { return Color(r, g, b, Colors::getMaxValue()); }
 			),
 			"r", &Color::r, 
 			"g", &Color::g, 

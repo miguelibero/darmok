@@ -252,12 +252,12 @@ namespace darmok
         static const std::vector<bgfx::RendererType::Enum> renderers
         {
 #if BX_PLATFORM_WINDOWS
-            bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12,
+            bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12, bgfx::RendererType::Vulkan
 #endif
 #if BX_PLATFORM_OSX
             bgfx::RendererType::Metal,
 #endif
-            bgfx::RendererType::Vulkan, bgfx::RendererType::OpenGL, bgfx::RendererType::OpenGLES,
+            bgfx::RendererType::OpenGL, bgfx::RendererType::OpenGLES,
         };
         return renderers;
     }
@@ -279,15 +279,10 @@ namespace darmok
         auto& rendererProfiles = ProgramDefinition::getRendererProfiles();
         auto& renderers = getSupportedRenderers();
 
-        auto fixBaseOutputPath = baseOutputPath;
-        if (fixBaseOutputPath.empty())
+        auto baseOutputStr = baseOutputPath.string();
+        if(baseOutputStr.empty())
         {
-            fixBaseOutputPath = config.path.parent_path().string();
-        }
-        std::string baseOutputStr = fixBaseOutputPath.string();
-        if (fixBaseOutputPath.has_filename())
-        {
-            baseOutputStr += ".";
+            baseOutputStr = config.path.string() + ".";
         }
 
         for (auto& renderer : renderers)
@@ -328,24 +323,7 @@ namespace darmok
         {
             suffix = "-" + suffix;
         }
-        auto shaderType = config.type;
-        if (shaderType != ShaderType::Unknown)
-        {
-            shaderType = getType(config.path);
-        }
-        auto type = getTypeName(shaderType);
-        if (!type.empty())
-        {
-            if (!suffix.empty())
-            {
-                type = "." + type;
-            }
-            if (!op.profile.empty())
-            {
-                type += ".";
-            }
-        }
-        return suffix + type + op.profile + _binExt;
+        return suffix + op.profile + _binExt;
     }
 
     ShaderCompiler::ShaderCompiler(const Config& config) noexcept
@@ -452,7 +430,7 @@ namespace darmok
         }
 
         auto r = Exec::run(args);
-        if (r.returnCode != 0 || r.out.contains("Failed to build shader."))
+        if (r.returnCode != 0 || StringUtils::contains(r.out, "Failed to build shader."))
         {
             if (auto log = _config.programConfig.log)
             {

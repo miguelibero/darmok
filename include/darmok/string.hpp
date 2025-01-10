@@ -17,6 +17,8 @@ namespace darmok
         [[nodiscard]] static std::string toUpper(std::string_view sv) noexcept;
         [[nodiscard]] static bool startsWith(std::string_view sv, std::string_view start) noexcept;
         [[nodiscard]] static bool endsWith(std::string_view sv, std::string_view end) noexcept;
+        [[nodiscard]] static bool contains(std::string_view sv, std::string_view part) noexcept;
+        [[nodiscard]] static bool contains(std::string_view sv, std::string_view::value_type part) noexcept;
         [[nodiscard]] static std::optional<int> getIntSuffix(std::string_view name, std::string_view prefix) noexcept;
 
         static std::string binToHex(void* ptr, size_t size) noexcept;

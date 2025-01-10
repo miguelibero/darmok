@@ -387,9 +387,9 @@ namespace entt
             return;
         }
 
-        size_t size;
+        CEREAL_SIZE_TYPE size;
         archive(cereal::make_size_tag(size));
-        for (size_t i = 0; i < size; ++i)
+        for (CEREAL_SIZE_TYPE i = 0; i < size; ++i)
         {
             CerealLoadMetaMapItem item{ v };
             archive(cereal::make_map_item(item.id, item));
@@ -409,7 +409,7 @@ namespace entt
     template<class Archive>
     void load(Archive& archive, entt::meta_sequence_container& v)
     {
-        size_t size;
+        CEREAL_SIZE_TYPE size;
         archive(cereal::make_size_tag(size));
         if (size == 0)
         {
@@ -417,7 +417,7 @@ namespace entt
         }
         v.reserve(size);
         auto valType = v.value_type();
-        for (size_t i = 0; i < size; ++i)
+        for (CEREAL_SIZE_TYPE i = 0; i < size; ++i)
         {
             auto elm = valType.construct();
             load(archive, elm);
@@ -455,7 +455,7 @@ namespace entt
     template<class Archive>
     void load(Archive& archive, entt::meta_associative_container& v)
     {
-        size_t size;
+        CEREAL_SIZE_TYPE size;
         archive(cereal::make_size_tag(size));
         if (size == 0)
         {
@@ -466,7 +466,7 @@ namespace entt
         auto valType = v.mapped_type();
         auto hasStrKeys = darmok::ReflectionSerializeUtils::isType<std::string>(keyType);
         auto hasValType = (bool)valType;
-        for (size_t i = 0; i < size; ++i)
+        for (CEREAL_SIZE_TYPE i = 0; i < size; ++i)
         {
             auto key = keyType.construct();
             auto val = valType.construct();
@@ -589,10 +589,10 @@ namespace darmok
         template<class Archive>
         void load(Archive& archive)
         {
-            size_t size = 0;
+            CEREAL_SIZE_TYPE size = 0;
             archive(cereal::make_size_tag(size));
             reserve(size);
-            for (size_t i = 0; i < size; ++i)
+            for (CEREAL_SIZE_TYPE i = 0; i < size; ++i)
             {
                 CerealReflectLoadListElementData data{ *this };
                 archive(cereal::make_map_item(data.type, data));

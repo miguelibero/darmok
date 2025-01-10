@@ -206,7 +206,7 @@ namespace darmok
 					auto tex = _fontsTexture->getHandle();
 					auto program = _program->getHandle();
 
-					if (NULL != cmd->TextureId)
+					if (cmd->TextureId != 0)
 					{
 						ImguiTextureData texData(cmd->TextureId);
 						state |= 0 != (texData.alphaBlend)
