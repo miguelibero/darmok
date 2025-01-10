@@ -34,9 +34,9 @@ function(darmok_process_assets)
   endif()
   set(BGFX_SHADERC_TARGET bgfx::shaderc)
   set(CMD $<TARGET_FILE:${EXE_TARGET}>
-    --input ${ARGS_INPUT}
-    --output ${ARGS_OUTPUT}
-    --cache ${CACHE_DIR}
+    --import-input ${ARGS_INPUT}
+    --import-output ${ARGS_OUTPUT}
+    --import-cache ${CACHE_DIR}
     --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
     --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
   )

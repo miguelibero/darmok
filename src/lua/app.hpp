@@ -80,7 +80,7 @@ namespace darmok
     {
     public:
 		LuaAppDelegateImpl(App& app) noexcept;
-		std::optional<int32_t> setup(const CmdArgs& args);
+		std::optional<int32_t> setup(const CmdArgs& args) noexcept;
 		void init();
 		void earlyShutdown();
 		void shutdown() noexcept;
@@ -88,21 +88,11 @@ namespace darmok
 
     private:
 
-		static std::string _defaultAssetInputPath;
-		static std::string _defaultAssetOutputPath;
-		static std::string _defaultAssetCachePath;
-
 		struct CliConfig final
 		{
 			std::filesystem::path mainPath;
-			std::filesystem::path assetInputPath;
-			std::filesystem::path assetOutputPath;
-			std::filesystem::path assetCachePath;
-			std::filesystem::path shadercPath;
-			bool dry = false;
-			std::vector<std::filesystem::path> shaderIncludePaths;
+			CommandLineFileImporterConfig assetImport;
 		};
-
 
 		App& _app;
         std::unique_ptr<sol::state> _lua;
@@ -117,7 +107,7 @@ namespace darmok
 		std::vector<DbgText> _dbgTexts;
 
 		std::optional<std::filesystem::path> findMainLua(const std::filesystem::path& path);
-		bool importAssets(const CliConfig& cfg);
+		bool importAssets(const CommandLineFileImporterConfig& cfg);
 		std::optional<int32_t> loadLua(const std::filesystem::path& mainPath);
 		void unloadLua() noexcept;
 

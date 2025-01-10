@@ -287,32 +287,21 @@ namespace darmok
 		_dbgTexts.emplace_back(pos, msg);
 	}
 
-	std::optional<int32_t> LuaAppDelegateImpl::setup(const CmdArgs& args)
+	std::optional<int32_t> LuaAppDelegateImpl::setup(const CmdArgs& args) noexcept
 	{
 		CLI::App cli{ "darmok lua" };
 
 		CliConfig cfg;
-
+		cli.set_version_flag("-v,--version", "VERSION " DARMOK_VERSION);
 		cli.add_option("-m,--main-lua", cfg.mainPath, "Path to the main lua file (dir will be taken as package path).");
-		cli.add_option("-i,--asset-input", cfg.assetInputPath, "Asset input file path.");
-		cli.add_option("-o,--asset-output", cfg.assetOutputPath, "Asset output file path.");
-		auto cacheOpt = cli.add_option("-c, --asset-cache", cfg.assetCachePath, "Asset cache file path (directory that keeps the timestamps of the inputs).")
-			->expected(0, 1);
-		cli.add_flag("-d, --dry", cfg.dry, "Do not process assets, just print output files.");
-		
-		auto& subCli = *cli.group("Program Compiler");
-		subCli.add_option("--bgfx-shaderc", cfg.shadercPath, "path to the shaderc executable");
-		subCli.add_option("--bgfx-shader-include", cfg.shaderIncludePaths, "paths to shader files to be included");
+		auto importGroup = cli.add_option_group("Asset Importer");
+		BaseCommandLineFileImporter::setup(*importGroup, cfg.assetImport);
 
 		try
 		{
 			cli.parse(args.size(), args.data());
-			if (!cacheOpt->results().empty() && cfg.assetCachePath.empty())
-			{
-				// passing --aset-cache without parameter sets default asset cache path
-				cfg.assetCachePath = _defaultAssetCachePath;
-			}
-			if (!importAssets(cfg))
+			cfg.assetImport.fix(cli);
+			if (!importAssets(cfg.assetImport))
 			{
 				return -3;
 			}
@@ -329,9 +318,9 @@ namespace darmok
 			}
 			return result;
 		}
-		catch (const CLI::Error& e)
+		catch (const CLI::ParseError& ex)
 		{
-			return cli.exit(e);                                                                                          \
+			return cli.exit(ex);
 		}
 	}
 
@@ -512,55 +501,20 @@ namespace darmok
 		LuaApp::addUpdater(_app, lua["update"]);
 	}
 
-	std::string LuaAppDelegateImpl::_defaultAssetInputPath = "assets";
-	std::string LuaAppDelegateImpl::_defaultAssetOutputPath = "runtime_assets";
-	std::string LuaAppDelegateImpl::_defaultAssetCachePath = "asset_cache";
-
-	bool LuaAppDelegateImpl::importAssets(const CliConfig& cfg)
+	bool LuaAppDelegateImpl::importAssets(const CommandLineFileImporterConfig& cfg)
 	{
-		auto inputPath = cfg.assetInputPath;
-		if (inputPath.empty() && std::filesystem::exists(_defaultAssetInputPath))
+		if (cfg.dry || cfg.inputPath.empty())
 		{
-			inputPath = _defaultAssetInputPath.c_str();
-		}
-		if (inputPath.empty())
-		{
-			return true;
-		}
-		auto outputPath = cfg.assetOutputPath;
-		if (outputPath.empty())
-		{
-			outputPath = _defaultAssetOutputPath.c_str();
-		}
-		auto cachePath = cfg.assetCachePath;
-		if (cachePath.empty() && std::filesystem::exists(_defaultAssetCachePath))
-		{
-			cachePath = _defaultAssetCachePath;
-		}
-		DarmokAssetFileImporter importer(inputPath);
-		importer.setOutputPath(outputPath);
-		importer.setCachePath(cachePath);
-		importer.setShadercPath(cfg.shadercPath);
-		for (auto& path : cfg.shaderIncludePaths)
-		{
-			importer.addShaderIncludePath(path);
-		}
-		if (cfg.dry)
-		{
-			for (auto& output : importer.getOutputs())
-			{
-				std::cout << output.string() << std::endl;
-			}
 			return false;
 		}
 
+		DarmokAssetFileImporter importer(cfg);
 		importer(std::cout);
 
-		if (std::filesystem::is_directory(outputPath))
+		if (std::filesystem::is_directory(cfg.outputPath))
 		{
-			_app.getAssets().addBasePath(outputPath);
+			_app.getAssets().addBasePath(cfg.outputPath);
 		}
-
 		return true;
 	}
 

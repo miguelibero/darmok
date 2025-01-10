@@ -46,6 +46,8 @@ namespace darmok::editor
         _inspectorView.setup();
 
         CLI::App cli{ "darmok editor" };
+        std::string version = "VERSION " DARMOK_VERSION;
+        cli.set_version_flag("-v,--version", version);
 
         auto& subCli = *cli.group("Program Compiler");
         subCli.add_option("--bgfx-shaderc", _progCompConfig.shadercPath, "path to the shaderc executable");

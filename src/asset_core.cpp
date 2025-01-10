@@ -15,7 +15,7 @@
 #include <chrono>
 
 #include <bx/platform.h>
-#include <bx/commandline.h>
+#include <CLI/CLI.hpp>
 
 namespace darmok
 {
@@ -1073,9 +1073,14 @@ namespace darmok
         // empty on purpose
     }
 
-    int BaseCommandLineFileImporter::operator()(int argc, const char* argv[]) noexcept
+    int BaseCommandLineFileImporter::operator()(const CmdArgs& args) noexcept
     {
-        return (*_impl)(argc, argv);
+        return (*_impl)(args);
+    }
+
+    void BaseCommandLineFileImporter::setup(CLI::App& cli, Config& cfg, bool required) noexcept
+    {
+        CommandLineFileImporterImpl::setup(cli, cfg, required);
     }
 
     CommandLineFileImporterImpl::CommandLineFileImporterImpl(BaseCommandLineFileImporter& importer) noexcept
@@ -1083,109 +1088,90 @@ namespace darmok
     {
     }
 
-    int CommandLineFileImporterImpl::operator()(int argc, const char* argv[]) noexcept
+    void CommandLineFileImporterImpl::setup(CLI::App& cli, Config& cfg, bool required) noexcept
     {
-        // TODO: convert to CLI11
-        bx::CommandLine cmdLine(argc, argv);
-        auto path = std::string(cmdLine.get(0));
-        auto name = fs::path(path).filename().string();
+        cli.set_version_flag("-v,--version", "VERSION " DARMOK_VERSION);
+        auto inputOpt = cli.add_option("-i,--import-input", cfg.inputPath, "Input file path (can be a file or a directory).")
+            ->envname("DARMOK_IMPORT_INPUT")
+            ->option_text("PATH");
+        if (required)
+        {
+            inputOpt->required(true);
+        }
+        cli.add_option("-o,--import-output", cfg.outputPath, "Output file path (can be a file or a directory).")
+            ->option_text("PATH")
+            ->envname("DARMOK_IMPORT_OUTPUT");
+        cli.add_option("-c,--import-cache", cfg.cachePath, "Cache file path (directory that keeps the timestamps of the inputs).")
+            ->expected(0, 1)
+            ->option_text("PATH")
+            ->envname("DARMOK_IMPORT_CACHE");
+        cli.add_flag("-d, --import-dry", cfg.dry, "Do not process assets, just print output files.")
+            ->envname("DARMOK_IMPORT_DRY");
+
+        auto progGroup = cli.add_option_group("Program Compiler");
+        progGroup->add_option("--bgfx-shaderc", cfg.shadercPath, "path to the shaderc executable")
+            ->option_text("PATH")
+            ->envname("DARMOK_IMPORT_BGFX_SHADERC");
+        progGroup->add_option("--bgfx-shader-include", cfg.shaderIncludePaths, "paths to shader files to be included")
+            ->option_text("PATH ...")
+            ->envname("DARMOK_IMPORT_BGFX_SHADER_INCLUDE");
+    }
+
+    const std::string CommandLineFileImporterConfig::defaultInputPath = "assets";
+    const std::string CommandLineFileImporterConfig::defaultOutputPath = "runtime_assets";
+    const std::string CommandLineFileImporterConfig::defaultCachePath = "asset_cache";
+
+    void CommandLineFileImporterConfig::fix(const CLI::App& cli) noexcept
+    {
+        auto cacheOpt = cli.get_option("--import-cache");
+        if (!cacheOpt->results().empty() && cachePath.empty())
+        {
+            // passing --aset-cache without parameter sets default asset cache path
+            cachePath = defaultCachePath;
+        }
+        if (inputPath.empty() && std::filesystem::exists(defaultInputPath))
+        {
+            inputPath = defaultInputPath;
+        }
+        if (outputPath.empty())
+        {
+            outputPath = defaultOutputPath;
+        }
+        if (cachePath.empty() && std::filesystem::exists(defaultCachePath))
+        {
+            cachePath = defaultCachePath;
+        }
+
+    }
+
+    int CommandLineFileImporterImpl::operator()(const CmdArgs& args) noexcept
+    {
+        CLI::App cli{ "darmok asset compile tool" };
+        Config cfg;
+
+        setup(cli, cfg, true);
+
         try
         {
-            return run(name, cmdLine);
-        }
-        catch (const std::exception& ex)
-        {
-            std::cerr << "Exception thrown:" << std::endl;
-            std::cerr << ex.what() << std::endl;
-            return bx::kExitFailure;
-        }
-    }
+            cli.parse(args.size(), args.data());
+            cfg.fix(cli);
 
-    void CommandLineFileImporterImpl::version(const std::string& name) noexcept
-    {
-	    std::cout << name << ": darmok asset compile tool." << std::endl;
-    }
-
-    void CommandLineFileImporterImpl::help(const std::string& name, const char* error) noexcept
-    {
-        if (error)
-        {
-            std::cerr << "Error:" << std::endl << error << std::endl << std::endl;
-        }
-        version(name);
-        std::cout << "Usage: " << name << " -i <in> -o <out>" << std::endl;
-        std::cout << std::endl;
-        std::cout << "Options:" << std::endl;
-        std::cout << "  -h, --help              Display this help and exit." << std::endl;
-        std::cout << "  -v, --version           Output version information and exit." << std::endl;
-        std::cout << "  -i, --input <path>      Input file path (can be a file or a directory)." << std::endl;
-        std::cout << "  -o, --output <path>     Output file path (can be a file or a directory)." << std::endl;
-        std::cout << "  -c, --cache <path>      Cache file path (directory that keeps the timestamps of the inputs)." << std::endl;
-        std::cout << "  -d, --dry               Do not process assets, just print output files." << std::endl;
-        std::cout << "  --bgfx-shaderc          Path of the bgfx shaderc executable." << std::endl;
-        std::cout << "  --bgfx-shader-include   Path of the bgfx shader include dir." << std::endl;
-    }
-
-    int CommandLineFileImporterImpl::run(const std::string& name, const bx::CommandLine cmdLine)
-    {
-        // TODO: convert to CLI11
-        if (cmdLine.hasArg('h', "help"))
-        {
-            help(name);
-            return bx::kExitSuccess;
-        }
-
-        if (cmdLine.hasArg('v', "version"))
-        {
-            version(name);
-            return bx::kExitSuccess;
-        }
-
-        const char* inputPath = cmdLine.findOption('i', "input");
-        if (inputPath == nullptr)
-        {
-            throw std::runtime_error("Input file path must be specified.");
-        }
-        Config config;
-        config.inputPath = inputPath;
-
-        const char* outputPath = cmdLine.findOption('o', "output");
-        if (outputPath != nullptr)
-        {
-            config.outputPath = outputPath;
-        }
-
-        const char* cachePath = cmdLine.findOption('c', "cache");
-        if (cachePath != nullptr)
-        {
-            config.cachePath = cachePath;
-        }
-
-        const char* shadercPath = cmdLine.findOption("bgfx-shaderc");
-        if (shadercPath != nullptr)
-        {
-            config.shadercPath = shadercPath;
-        }
-
-        // TODO: support multiple includes
-        const char* shaderIncludePath = cmdLine.findOption("bgfx-shader-include");
-        if (shaderIncludePath != nullptr)
-        {
-            config.shaderIncludePaths.push_back(shaderIncludePath);
-        }
-
-        if (cmdLine.hasArg('d', "dry"))
-        {
-            for (auto& output : _importer.getOutputs(config))
+            if (cfg.dry)
             {
-                std::cout << output.string() << std::endl;
+                for (auto& output : _importer.getOutputs(cfg))
+                {
+                    std::cout << output.string() << std::endl;
+                }
+                return 0;
             }
+            
+            PrefixStream log(std::cout, cli.get_name() + ": ");
+            _importer.import(cfg, log);
+            return 0;
         }
-        else
+        catch (const CLI::ParseError& ex)
         {
-            PrefixStream log(std::cout, name + ": ");
-            _importer.import(config, log);
+            return cli.exit(ex);                                                                                          \
         }
-        return bx::kExitSuccess;
     }
 }

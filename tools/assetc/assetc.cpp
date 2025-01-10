@@ -19,5 +19,5 @@ protected:
 
 int main(int argc, const char* argv[])
 {
-	return CommandLineFileImporter()(argc, argv);
+	return CommandLineFileImporter()(CmdArgs(argv, argc));
 }

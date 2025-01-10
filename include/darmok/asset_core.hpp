@@ -14,8 +14,15 @@
 #include <bx/bx.h>
 #include <nlohmann/json.hpp>
 
+namespace CLI
+{
+    class App;
+}
+
 namespace darmok
 {
+    using CmdArgs = std::span<const char*>;
+
     struct DARMOK_EXPORT FileTypeImporterInput final
     {
         std::filesystem::path path;
@@ -65,8 +72,15 @@ namespace darmok
         std::filesystem::path inputPath;
         std::filesystem::path outputPath;
         std::filesystem::path cachePath;
+        bool dry = false;
         std::filesystem::path shadercPath;
         std::vector<std::filesystem::path> shaderIncludePaths;
+
+        static const std::string defaultInputPath;
+        static const std::string defaultOutputPath;
+        static const std::string defaultCachePath;
+
+        void fix(const CLI::App& cli) noexcept;
     };
 
     class DARMOK_EXPORT BaseCommandLineFileImporter
@@ -75,7 +89,10 @@ namespace darmok
         using Config = CommandLineFileImporterConfig;
         BaseCommandLineFileImporter() noexcept;
         virtual ~BaseCommandLineFileImporter() noexcept;
-        int operator()(int argc, const char* argv[]) noexcept;
+        int operator()(const CmdArgs& args) noexcept;
+        static void setup(CLI::App& cli, Config& cfg, bool required = false) noexcept;
+
+
     protected:
         virtual std::vector<std::filesystem::path> getOutputs(const Config& config) const = 0;
         virtual void import(const Config& config, std::ostream& log) const = 0;

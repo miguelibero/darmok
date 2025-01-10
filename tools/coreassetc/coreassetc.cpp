@@ -10,7 +10,7 @@ protected:
 		return DarmokCoreAssetFileImporter(config).getOutputs();
 	}
 
-	void import(const Config& config, std::ostream & log) const override
+	void import(const Config& config, std::ostream& log) const override
 	{
 		return DarmokCoreAssetFileImporter(config)(log);
 	}
@@ -18,5 +18,5 @@ protected:
 
 int main(int argc, const char* argv[])
 {
-	return CommandLineFileImporter()(argc, argv);
+	return CommandLineFileImporter()(CmdArgs(argv, argc));
 }

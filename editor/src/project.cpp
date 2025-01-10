@@ -265,6 +265,7 @@ namespace darmok::editor
             _textures.erase(itr);
             return true;
         }
+        return false;
     }
 
     bool EditorProject::reloadTexture(TextureDefinition& def)

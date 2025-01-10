@@ -13,11 +13,6 @@
 
 #include <nlohmann/json.hpp>
 
-namespace bx
-{
-    class CommandLine;
-}
-
 namespace darmok
 {
     class FileImporterImpl final
@@ -156,11 +151,10 @@ namespace darmok
     public:
         using Config = CommandLineFileImporterConfig;
         CommandLineFileImporterImpl(BaseCommandLineFileImporter& importer) noexcept;
-        int operator()(int argc, const char* argv[]) noexcept;
+        int operator()(const CmdArgs& args) noexcept;
+        static void setup(CLI::App& cli, Config& cfg, bool required) noexcept;
     private:
         BaseCommandLineFileImporter& _importer;
-        void version(const std::string& name) noexcept;
-        void help(const std::string& name, const char* error = nullptr) noexcept;
-        int run(const std::string& name, const bx::CommandLine cmdLine);
+
     };
 }
