@@ -35,22 +35,21 @@ namespace darmok
         static int deny(lua_State* L);
 
         template<typename T>
-        static void newEnumVector(sol::state_view& lua, std::string_view name, const std::vector<std::pair<std::string_view, T>>& values, bool string)
+        static void newEnumVector(sol::state_view& lua, std::string_view name, const std::vector<std::pair<std::string_view, T>>& values, bool stringValues)
         {
-            if (!string)
-            {
-                lua.new_enum<T>(name,
-                    std::initializer_list<std::pair<std::string_view, T>>(
-                        &values.front(), values.size()));
-                return;
-            }
-
             auto metatable = lua.create_table_with();
             auto prefix = std::string(name) + ".";
             for (auto& elm : values)
             {
                 std::string valueName(elm.first);
-                metatable[valueName] = prefix + valueName;
+                if (stringValues)
+                {
+                    metatable.set(valueName, prefix + valueName);
+                }
+                else
+                {
+                    metatable.set(valueName, elm.second);
+                }
             }
 
             auto table = lua.create_named_table(name);

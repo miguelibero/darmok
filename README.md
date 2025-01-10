@@ -28,6 +28,7 @@ currently using:
 * [mikktspace](http://www.mikktspace.com/) - to calculate tangents
 * [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
 * [cli11](https://github.com/CLIUtils/CLI11) - command line parser
+* [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) - editor native file dialogs
 
 planned to use:
 

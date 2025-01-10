@@ -2,10 +2,13 @@
 
 #include <darmok/export.h>
 #include <darmok/scene_fwd.hpp>
+
 #include <unordered_set>
 #include <vector>
 #include <memory>
 #include <variant>
+#include <optional>
+
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/variant.hpp>

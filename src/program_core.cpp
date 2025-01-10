@@ -252,7 +252,7 @@ namespace darmok
         static const std::vector<bgfx::RendererType::Enum> renderers
         {
 #if BX_PLATFORM_WINDOWS
-            bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12, bgfx::RendererType::Vulkan
+            bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12, bgfx::RendererType::Vulkan,
 #endif
 #if BX_PLATFORM_OSX
             bgfx::RendererType::Metal,
