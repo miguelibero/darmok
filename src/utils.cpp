@@ -6,6 +6,10 @@
 #include <array>
 #include <process.hpp>
 
+#ifdef _MSC_VER
+#include <io.h>
+#endif
+
 namespace darmok
 {
 	void checkError(bx::Error& err)
@@ -86,7 +90,12 @@ namespace darmok
         auto path = (std::filesystem::temp_directory_path() / filename).string();
         std::vector<char> data;
         data.insert(data.end(), path.begin(), path.end());
+        data.push_back(0);
+#ifdef _MSC_VER
+        _mktemp_s(&data.front(), data.size());
+#else
         mkstemp(&data.front());
+#endif
         return &data.front();
     }
 }
