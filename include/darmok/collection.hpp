@@ -350,19 +350,16 @@ namespace darmok
 
 namespace std
 {
-    template<typename T>
-    struct hash;
-}
-
-template<typename T> struct std::hash<std::unordered_set<T>>
-{
-    std::size_t operator()(const std::unordered_set<T>& key) const noexcept
+    template<typename T> struct hash<unordered_set<T>>
     {
-        size_t hash = 0;
-        for (auto& elm : key)
+        std::size_t operator()(const unordered_set<T>& key) const noexcept
         {
-            darmok::hashCombine(hash, elm);
+            size_t hash = 0;
+            for (auto& elm : key)
+            {
+                darmok::hashCombine(hash, elm);
+            }
+            return hash;
         }
-        return hash;
-    }
-};
+    };
+}

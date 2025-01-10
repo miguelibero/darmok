@@ -353,6 +353,17 @@ namespace darmok
     {
     }
 
+    std::optional<ShaderCompiler::PlatformType> ShaderCompiler::getDefaultPlatform() noexcept
+    {
+#if BX_PLATFORM_WINDOWS
+        return PlatformType::Windows;
+#elif BX_PLATFORM_OSX
+        return PlatformType::Osx;
+#else
+        return std::nullopt;
+#endif
+    }
+
     void ShaderCompiler::operator()(const Operation& op) const
     {
         if (!fs::exists(_config.programConfig.shadercPath))
@@ -383,6 +394,42 @@ namespace darmok
             "--type", ShaderParser::getTypeName(shaderType),
             "--varyingdef", varyingPath
         };
+
+        auto getPlatformArg = [](PlatformType plat)
+        {
+            switch(plat)
+            {
+            case PlatformType::Android:
+                return "android";
+            case PlatformType::Emscripten:
+                return "asm.js";
+            case PlatformType::Ios:
+                return "ios";
+            case PlatformType::Linux:
+                return "linux";
+            case PlatformType::Osx:
+                return "osx";
+            case PlatformType::Orbis:
+                return "orbis";
+            case PlatformType::Windows:
+                return "windows";
+            default:
+                break;
+            }
+            return "";
+        };
+
+        auto plat = _config.platform;
+        if(!plat)
+        {
+            plat = getDefaultPlatform();
+        }
+        if(plat)
+        {
+            args.push_back("--platform");
+            args.push_back(getPlatformArg(plat.value()));
+        }
+
 #ifdef _DEBUG
         args.push_back("--debug");
 #endif
@@ -409,6 +456,8 @@ namespace darmok
         {
             if (auto log = _config.programConfig.log)
             {
+                *log << "shaderc cmd:" << std::endl;
+                *log << Exec::argsToString(args);
                 *log << "shaderc output:" << std::endl;
                 *log << r.out;
                 *log << "shaderc error output:" << std::endl;
@@ -539,7 +588,7 @@ namespace darmok
             .name = src.name,
             .vertexLayout = src.varying.vertex,
         };
-        auto varyingDefPath = getTempPath("-darmok.varyingdef");
+        auto varyingDefPath = getTempPath("darmok.varyingdef.");
         src.varying.writeBgfx(varyingDefPath);
 
         ShaderCompilerConfig shaderConfig
@@ -551,7 +600,7 @@ namespace darmok
 
         {
             shaderConfig.type = ShaderType::Fragment;
-            shaderConfig.path = getTempPath("-darmok.fragment.sc");
+            shaderConfig.path = getTempPath("darmok.fragment.");
             auto ops = shaderParser.prepareCompilerOperations(shaderConfig, src.fragmentShader);
             ShaderCompiler shaderCompiler(shaderConfig);
             for (auto& op : ops)
@@ -566,7 +615,7 @@ namespace darmok
 
         {
             shaderConfig.type = ShaderType::Vertex;
-            shaderConfig.path = getTempPath("-darmok.vertex.sc");
+            shaderConfig.path = getTempPath("darmok.vertex.");
             auto ops = shaderParser.prepareCompilerOperations(shaderConfig, src.vertexShader);
             ShaderCompiler shaderCompiler(shaderConfig);
             for (auto& op : ops)

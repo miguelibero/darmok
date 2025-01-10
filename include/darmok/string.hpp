@@ -81,8 +81,8 @@ namespace darmok
         static void rtrim(std::string& str) noexcept;
         static void trim(std::string& str) noexcept;
 
-        static std::string vsprintf(const std::string& fmt, va_list args);
-        static std::string sprintf(const std::string& fmt, ...);
+        static std::string vsprintf(const char* fmt, va_list args);
+        static std::string sprintf(const char* fmt, ...);
 
         static std::string getTimeSuffix() noexcept;
 

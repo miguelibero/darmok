@@ -371,6 +371,8 @@ namespace darmok
 		case TextureType::Texture2D:
 			_handle = bgfx::createTexture2D(w, h, _config.mips, _config.layers, _config.format, flags, mem);
 			break;
+		default:
+			break;
 		}
 	}
 
@@ -389,6 +391,8 @@ namespace darmok
 			break;
 		case TextureType::Texture3D:
 			_handle = bgfx::createTexture3D(cfg.size.x, cfg.size.y, cfg.depth, cfg.mips, cfg.format, flags);
+			break;
+		default:
 			break;
 		}
 	}

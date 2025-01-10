@@ -33,9 +33,9 @@ namespace darmok
         return (word >> 22u) ^ word;
     }
 
-    Exec::Result Exec::run(const std::vector<Arg>& args, const std::filesystem::path& path)
+    std::string Exec::argsToString(const std::vector<Arg>& args)
     {
-        std::ostringstream cmd;
+        std::ostringstream ss;
         for (const auto& arg : args)
         {
             std::string strArg;
@@ -52,12 +52,17 @@ namespace darmok
             {
                 strArg = std::get<std::string>(arg);
             }
-            cmd << StringUtils::escapeArgument(strArg) << " ";
+            ss << StringUtils::escapeArgument(strArg) << " ";
         }
+        return ss.str();
+    }
 
+    Exec::Result Exec::run(const std::vector<Arg>& args, const std::filesystem::path& path)
+    {
+        auto cmd = argsToString(args);
         std::ostringstream out;
         std::ostringstream err;
-        TinyProcessLib::Process process(cmd.str(), path.string(),
+        TinyProcessLib::Process process(cmd, path.string(),
             [&out](const char* bytes, size_t n)
             {
                 out.write(bytes, n);
@@ -75,10 +80,13 @@ namespace darmok
         };
     }
 
-    std::filesystem::path getTempPath(std::string_view suffix) noexcept
+    std::filesystem::path getTempPath(std::string_view prefix) noexcept
     {
-        std::string name(std::tmpnam(nullptr));
-        name += suffix;
-        return std::filesystem::temp_directory_path() / name;
+        auto filename = std::string(prefix) + "XXXXXX";
+        auto path = (std::filesystem::temp_directory_path() / filename).string();
+        std::vector<char> data;
+        data.insert(data.end(), path.begin(), path.end());
+        mkstemp(&data.front());
+        return &data.front();
     }
 }

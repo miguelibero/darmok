@@ -218,6 +218,8 @@ namespace darmok
 		case ImageEncoding::Ktx:
 			bimg::imageWriteKtx(&writer, format, isCubeMap(), size.x, size.y, getDepth(), getMipCount(), getLayerCount(), srgb, ptr, &err);
 			break;
+		default:
+			break;
 		}
 		checkError(err);
 	}

@@ -2,6 +2,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+#include <charconv>
 
 namespace darmok
 {
@@ -195,25 +196,25 @@ namespace darmok
 		rtrim(str);
 	}
 
-	std::string StringUtils::vsprintf(const std::string& fmt, va_list args)
+	std::string StringUtils::vsprintf(const char* fmt, va_list args)
 	{
 		std::string result;
 #ifdef _MSC_VER
-		auto len = _vscprintf(fmt.c_str(), args);
+		auto len = _vscprintf(fmt, args);
 		result.resize(len);
-		vsprintf_s(result.data(), len + 1, fmt.c_str(), args);
+		vsprintf_s(result.data(), len + 1, fmt, args);
 #else
-		auto len = vsnprintf(nullptr, 0, fmt.c_str(), args);
+		auto len = vsnprintf(nullptr, 0, fmt, args);
 		result.resize(len);
-		vsnprintf(result.data(), len + 1, fmt.c_str(), args);
+		vsnprintf(result.data(), len + 1, fmt, args);
 #endif
 		return result;
 	}
 
-	std::string StringUtils::sprintf(const std::string& fmt, ...)
+	std::string StringUtils::sprintf(const char* fmt, ...)
 	{
 		va_list args;
-		va_start(args, &fmt);
+		va_start(args, fmt);
 		auto str = vsprintf(fmt, args);
 		va_end(args);
 		return str;

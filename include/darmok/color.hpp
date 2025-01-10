@@ -53,22 +53,19 @@ namespace darmok
 
 namespace std
 {
-    template<typename T>
-    struct hash;
+    template<> struct hash<darmok::Color>
+    {
+        std::size_t operator()(const darmok::Color& key) const noexcept
+        {
+            return darmok::Colors::toNumber(key);
+        }
+    };
+
+    template<> struct hash<darmok::Color3>
+    {
+        std::size_t operator()(const darmok::Color3& key) const noexcept
+        {
+            return darmok::Colors::toNumber(key);
+        }
+    };
 }
-
-template<> struct std::hash<darmok::Color>
-{
-    std::size_t operator()(const darmok::Color& key) const noexcept
-    {
-        return darmok::Colors::toNumber(key);
-    }
-};
-
-template<> struct std::hash<darmok::Color3>
-{
-    std::size_t operator()(const darmok::Color3& key) const noexcept
-    {
-        return darmok::Colors::toNumber(key);
-    }
-};

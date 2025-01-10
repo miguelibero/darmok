@@ -27,11 +27,11 @@ namespace darmok
 			auto refName = std::string("OptionalRef<") + name + ">";
 			return entt::meta<R>().type(entt::hashed_string{ refName.c_str() })
 				.traits(ReflectionTraits::OptionalRef)
-				.func<&R::ptr>(_optionalRefPtrKey)
-				.func<&setOptionalRef<T>>(_optionalRefSetKey)
-				.func<&R::value, entt::as_ref_t>(_optionalRefValueKey)
-				.func<&R::reset>(_optionalRefResetKey)
-				.func<&R::empty>(_optionalRefEmptyKey)
+				.template func<&R::ptr>(_optionalRefPtrKey)
+				.template func<&setOptionalRef<T>>(_optionalRefSetKey)
+				.template func<&R::value, entt::as_ref_t>(_optionalRefValueKey)
+				.template func<&R::reset>(_optionalRefResetKey)
+				.template func<&R::empty>(_optionalRefEmptyKey)
 				;
 		}
 
@@ -41,10 +41,10 @@ namespace darmok
 			using R = std::reference_wrapper<T>;
 			auto refName = std::string("std::reference_wrapper<") + name + ">";
 			return entt::meta<R>().type(entt::hashed_string{ refName.c_str() })
-				.ctor<&createReferenceWrapper<T>>()
+				.template ctor<&createReferenceWrapper<T>>()
 				.traits(ReflectionTraits::ReferenceWrapper)
-				.func<&R::get, entt::as_ref_t>(_referenceWrapperGetKey)
-				.func<&setReferenceWrapper<T>>(_referenceWrapperSetKey)
+				.template func<&R::get, entt::as_ref_t>(_referenceWrapperGetKey)
+				.template func<&setReferenceWrapper<T>>(_referenceWrapperSetKey)
 			;
 		}
 
@@ -56,7 +56,7 @@ namespace darmok
 		template<typename T>
 		static bool isEntityComponentType() noexcept
 		{
-			return entt::resolve<T>().traits<ReflectionTraits>() == ReflectionTraits::EntityComponent;
+			return entt::resolve<T>().template traits<ReflectionTraits>() == ReflectionTraits::EntityComponent;
 		}
 
 	private:
@@ -73,7 +73,8 @@ namespace darmok
 		static std::reference_wrapper<T> createReferenceWrapper() noexcept
 		{
 			// hacky but we need a ref wrapper default constructor
-			return std::reference_wrapper<T>(*static_cast<T*>(nullptr));
+			static T obj;
+			return std::reference_wrapper<T>(obj);
 		}
 
 		template<typename T>

@@ -156,9 +156,6 @@ namespace darmok
 
 namespace std
 {
-    template<typename T>
-    struct hash;
-
     template<> struct hash<darmok::UtfChar>
     {
         std::size_t operator()(const darmok::UtfChar& key) const noexcept;

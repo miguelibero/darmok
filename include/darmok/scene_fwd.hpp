@@ -15,14 +15,11 @@ namespace darmok
 
 namespace std
 {
-    template<typename T>
-    struct hash;
-}
-
-template<> struct std::hash<entt::type_info>
-{
-    std::size_t operator()(const entt::type_info& typeInfo) const noexcept
+    template<> struct hash<entt::type_info>
     {
-        return typeInfo.hash();
-    }
-};
+        std::size_t operator()(const entt::type_info& typeInfo) const noexcept
+        {
+            return typeInfo.hash();
+        }
+    };
+}

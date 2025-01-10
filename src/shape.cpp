@@ -1056,6 +1056,8 @@ namespace darmok
             return createPlane(CornerType::NearTopLeft, CornerType::NearBottomLeft, CornerType::FarBottomLeft);
         case PlaneType::Right:
             return createPlane(CornerType::FarTopRight, CornerType::FarBottomRight, CornerType::NearBottomRight);
+        default:
+            break;
         }
         return {};
     }

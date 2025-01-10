@@ -61,7 +61,7 @@ namespace darmok
             {
                 using Archive = std::variant_alternative_t<I, OutputArchiveVariant>;
                 auto key = _processKey.value() + entt::type_hash<T>::value();
-                entt::meta<Archive>().func<&doSave<Archive, T>>(key);
+                entt::meta<Archive>().template func<&doSave<Archive, T>>(key);
                 metaSave<T, I + 1>();
             }
         }
@@ -73,7 +73,7 @@ namespace darmok
             {
                 using Archive = std::variant_alternative_t<I, InputArchiveVariant>;
                 auto key = _processKey.value() + entt::type_hash<T>::value();
-                entt::meta<Archive>().func<&doLoad<Archive, T>>(key);
+                entt::meta<Archive>().template func<&doLoad<Archive, T>>(key);
                 metaLoad<T, I + 1>();
             }
         }

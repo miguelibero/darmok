@@ -311,7 +311,7 @@ namespace darmok
     template<class Archive, class T>
     void load_minimal(Archive& archive, Entity& v, const ENTT_ID_TYPE& entityId)
     {
-        v = entityId;
+        v = static_cast<Entity>(entityId);
     }
 
     template<class Archive, class T>

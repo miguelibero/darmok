@@ -17,16 +17,16 @@ namespace darmok
 
 			return entt::meta<T>().type(entt::hashed_string{ name })
 				.traits(ReflectionTraits::EntityComponent)
-				.func<&doGetEntityComponent<T>, entt::as_ref_t>(_getEntityComponentKey)
-				.func<&doGetEntityComponentStorage<T>, entt::as_ref_t>(_getEntityComponentStorageKey);
-		}
+				.template func<&doGetEntityComponent<T>, entt::as_ref_t>(_getEntityComponentKey)
+				.template func<&doGetEntityComponentStorage<T>, entt::as_ref_t>(_getEntityComponentStorageKey);
+		} 
 
 		template<typename T>
 		static entt::meta_factory<T> metaSceneComponent(const char* name)
 		{
 			return entt::meta<T>().type(entt::hashed_string{ name })
 				.traits(ReflectionTraits::SceneComponent)
-				.func<&doGetSceneComponent<T>, entt::as_ref_t>(_getSceneComponentKey);
+				.template func<&doGetSceneComponent<T>, entt::as_ref_t>(_getSceneComponentKey);
 		}
 
 		static entt::meta_any getEntityComponent(EntityRegistry& registry, Entity entity, const entt::meta_type& type);

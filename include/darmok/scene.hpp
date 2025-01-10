@@ -6,6 +6,7 @@
 #include <darmok/app.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/scene_filter.hpp>
 #include <darmok/transform_fwd.hpp>
 
 #include <memory>
@@ -202,7 +203,7 @@ namespace darmok
             auto view = getComponents<T>();
             auto end = std::cend(view);
             auto it = std::find_if(std::cbegin(view), end, [&component, &view](const auto& entity) {
-                return &view.get<T>(entity) == &component;
+                return &view.template get<T>(entity) == &component;
             });
             return it != end;
         }
@@ -387,7 +388,7 @@ namespace darmok
             {
                 return nullptr;
             }
-            return view.get<T>(view.back());
+            return view.template get<T>(view.back());
         }
 
         template<typename T>
@@ -398,7 +399,7 @@ namespace darmok
             {
                 return nullptr;
             }
-            return view.get<T>(view.front());
+            return view.template get<T>(view.front());
         }
 
         template<typename T>

@@ -146,6 +146,8 @@ namespace darmok
 			return "indices";
 		case bgfx::Attrib::Weight:
 			return "weight";
+		default:
+			break;
 		}
 		if (val >= bgfx::Attrib::Color0 && val <= bgfx::Attrib::Color3)
 		{
@@ -174,6 +176,8 @@ namespace darmok
 			return "half";
 		case bgfx::AttribType::Float:
 			return "float";
+		default:
+			break;
 		}
 		return "";
 	}
@@ -971,7 +975,7 @@ std::ostream& operator<<(std::ostream& out, const bgfx::VertexLayout& layout) no
 
 namespace std
 {
-	std::size_t std::hash<bgfx::VertexLayout>::operator()(const bgfx::VertexLayout& key) const noexcept
+	std::size_t hash<bgfx::VertexLayout>::operator()(const bgfx::VertexLayout& key) const noexcept
 	{
 		return key.m_hash;
 	}

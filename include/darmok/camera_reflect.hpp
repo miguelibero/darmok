@@ -14,7 +14,7 @@ namespace darmok
 		{
 			return entt::meta<T>().type(entt::hashed_string{ name })
 				.traits(ReflectionTraits::CameraComponent)
-				.func<&doGetCameraComponent<T>, entt::as_ref_t>(_getCameraComponentKey);
+				.template func<&doGetCameraComponent<T>, entt::as_ref_t>(_getCameraComponentKey);
 		}
 
 		static entt::meta_any getCameraComponent(Camera& cam, const entt::meta_type& type);

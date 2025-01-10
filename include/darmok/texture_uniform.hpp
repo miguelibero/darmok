@@ -3,6 +3,7 @@
 
 #include <darmok/asset.hpp>
 #include <darmok/serialize.hpp>
+#include <darmok/texture.hpp>
 
 #include <string>
 #include <unordered_map>

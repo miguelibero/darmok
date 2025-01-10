@@ -28,7 +28,7 @@ namespace darmok
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
         void render() noexcept override;
         void shutdown() noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;

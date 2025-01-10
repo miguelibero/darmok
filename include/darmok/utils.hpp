@@ -50,9 +50,10 @@ namespace darmok
 
         using Arg = std::variant<const char*, std::string, std::filesystem::path>;
         static Result run(const std::vector<Arg>& args, const std::filesystem::path& cwd = "");
+        static std::string argsToString(const std::vector<Arg>& args);
     };
 
-    std::filesystem::path getTempPath(std::string_view suffix = "") noexcept;
+    std::filesystem::path getTempPath(std::string_view prefix = "") noexcept;
 
     inline void hashCombine(std::size_t& seed) { }
 

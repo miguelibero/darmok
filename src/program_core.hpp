@@ -17,12 +17,26 @@ namespace darmok
         Compute,
     };
 
+    enum class ShaderCompilerPlatformType
+    {
+        Android,
+        Emscripten,
+        Ios,
+        Linux,
+        Osx,
+        Orbis,
+        Windows,
+    };
+
     struct ShaderCompilerConfig final
     {
         ProgramCompilerConfig programConfig;
         std::filesystem::path path;
         std::filesystem::path varyingPath;
         ShaderType type;
+
+        using PlatformType = ShaderCompilerPlatformType;
+        std::optional<PlatformType> platform;
     };
 
     struct ShaderCompilerOperation final
@@ -78,9 +92,12 @@ namespace darmok
     public:
         using Config = ShaderCompilerConfig;
         using Operation = ShaderCompilerOperation;
+        using PlatformType = ShaderCompilerPlatformType;
 
         ShaderCompiler(const Config& config) noexcept;
         void operator()(const Operation& op) const;
+
+        static std::optional<PlatformType> getDefaultPlatform() noexcept;
 
     private:
         Config _config;

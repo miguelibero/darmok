@@ -92,7 +92,7 @@ namespace darmok
         template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
         static Input<T> getVecInput(const glm::vec<L, T, Q>& input) noexcept
         {
-            return { glm::value_ptr(input), input.length() };
+            return { glm::value_ptr(input), sizeof(T) * L };
         }
 
         template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
