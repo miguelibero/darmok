@@ -921,7 +921,13 @@ namespace darmok
         auto proj = getProjectionMatrix();
         auto ray = Ray::unproject(pos, model, proj);
 
-        if (auto dist = ray.intersect(Plane(glm::vec3(0.F, 0.F, -1.F))))
+        static const Plane plane(glm::vec3(0.F, 0.F, -1.F));
+
+        if (plane.contains(ray.origin))
+        {
+            setMousePosition(ray.origin);
+        }
+        else if (auto dist = ray.intersect(plane))
         {
             pos = ray * dist.value();
             setMousePosition(pos);
@@ -1212,6 +1218,8 @@ namespace darmok
 
         auto model = glm::scale(glm::mat4(1.F), invy);
 
+        auto offset = _offset;
+
         if (auto trans = getTransform())
         {
             if (auto cam = getCurrentCamera())
@@ -1219,10 +1227,9 @@ namespace darmok
                 model *= cam->getViewMatrix();
             }
             model *= trans->getWorldMatrix();
+            offset.y += getCurrentSize().y;
         }
-
-        auto size = getCurrentSize();
-        auto offset = _offset + glm::vec3(0.F, size.y, 0.F);
+        
         model = glm::translate(model, offset);
         model = glm::scale(model, invy);
 

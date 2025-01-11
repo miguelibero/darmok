@@ -108,7 +108,7 @@ namespace
 			// Set up data bindings to synchronize application data.
 			if (Rml::DataModelConstructor constructor = context.CreateDataModel("animals"))
 			{
-				constructor.Bind("show_text", &_show_text);
+				constructor.Bind("show_text", &_showText);
 				constructor.Bind("animal", &_animal);
 			}
 
@@ -128,7 +128,7 @@ namespace
 		}
 	private:
 		App& _app;
-		bool _show_text = true;
+		bool _showText = true;
 		Rml::String _animal = "dog";
 	};
 }

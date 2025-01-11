@@ -194,6 +194,7 @@ namespace darmok
         bool isInFront(const glm::vec3& point) const noexcept;
         bool isInFront(const BoundingBox& bbox) const noexcept;
         bool isInFront(const Sphere& sphere) const noexcept;
+        bool contains(const glm::vec3& point) const noexcept;
 
         template<class Archive>
         void serialize(Archive& archive)
