@@ -40,7 +40,7 @@ namespace darmok::physics3d
 
     JoltPhysicsDebugRenderer::JoltPhysicsDebugRenderer() noexcept
         : _colorUniform(bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4))
-        , _program(std::make_unique<Program>(StandardProgramType::Unlit))
+        , _program(StandardProgramLoader::load(StandardProgramType::Unlit))
         , _solidMeshData(MeshType::Transient)
         , _wireMeshData(MeshType::Transient)
     {
@@ -214,7 +214,7 @@ namespace darmok::physics3d
 
     void JoltPhysicsDebugRenderer::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
     {
-        Utf8Vector content;
+        UtfVector content;
         UtfChar::read(str, content);
         if (content.empty())
         {

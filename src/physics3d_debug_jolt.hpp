@@ -58,7 +58,7 @@ namespace darmok::physics3d
         struct TextData final
         {
             glm::vec3 position;
-            Utf8Vector content;
+            UtfVector content;
             Color color;
             float height;
         };
@@ -73,7 +73,7 @@ namespace darmok::physics3d
         MeshData _wireMeshData;
         std::vector<TextData> _textData;
         bgfx::UniformHandle _colorUniform;
-        std::unique_ptr<Program> _program;
+        std::shared_ptr<Program> _program;
 
         JoltPhysicsDebugRenderer() noexcept;
         void doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder);
