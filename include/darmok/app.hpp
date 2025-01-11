@@ -89,7 +89,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppDelegateFactory() = default;
-		virtual std::unique_ptr<IAppDelegate> operator()(App& app);
+		virtual std::unique_ptr<IAppDelegate> operator()(App& app) = 0;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IAppUpdater

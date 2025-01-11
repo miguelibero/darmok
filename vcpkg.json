@@ -33,7 +33,13 @@
     "cereal",
     "entt",
     "glm",
-    "joltphysics",
+    {
+      "name": "joltphysics",
+      "features": [
+        "debugrenderer",
+        "profiler"
+      ]
+    },
     {
       "name": "lua",
       "features": [

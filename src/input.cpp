@@ -996,6 +996,9 @@ namespace darmok
 		return GamepadInputDir{ stick.value(), type.value(), gamepad };
 	}
 
+	const uint8_t Gamepad::MaxAmount = DARMOK_GAMEPAD_MAX;
+	const uint8_t Gamepad::Any = 5;
+
 	Gamepad::Gamepad() noexcept
 		: _impl(std::make_unique<GamepadImpl>())
 	{

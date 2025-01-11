@@ -106,6 +106,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * editor using imgui
 
 #### Upcoming
+* fix joltphysics in apple when [rtti](https://github.com/microsoft/vcpkg/pull/43190) feature is added
+* move main thread to taskflow
 * frame limiting
 * more renderer features
     * bloom

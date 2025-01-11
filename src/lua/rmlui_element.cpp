@@ -58,8 +58,10 @@ namespace darmok
         case sol::type::boolean:
             elm.SetAttribute(name, val.as<bool>());
             break;
+        default:
+            throw std::invalid_argument("cannot set attribute of that lua type");
+            break;
         }
-        throw std::invalid_argument("cannot set attribute of that lua type");
     }
 
     std::vector<Rml::Element*> LuaRmluiElement::getElementsByClassName(Rml::Element& elm, const std::string& cls) noexcept

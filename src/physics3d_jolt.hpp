@@ -60,7 +60,7 @@ namespace darmok::physics3d
     class IPhysicsUpdater;
     class PhysicsBody;
 
-    struct JoltTransform
+    struct JoltTransform final
     {
         JPH::Vec3 position = JPH::Vec3(0, 0, 0);
         JPH::Quat rotation = JPH::Quat::sIdentity();
@@ -109,7 +109,7 @@ namespace darmok::physics3d
         }
     };
 
-    class JoltJobSystemTaskflow : public JPH::JobSystemWithBarrier
+    class JoltJobSystemTaskflow final : public JPH::JobSystemWithBarrier
     {
     public:
         JoltJobSystemTaskflow() noexcept;

@@ -192,7 +192,7 @@ namespace
 			_app.getWindow().removeListener(*this);
 		}
 
-		void imguiRender()
+		void imguiRender() override
 		{
 			ImGui::TextWrapped("lala");
 			ImGui::InputText("text", &_text);

@@ -55,6 +55,23 @@ function(SET_DEBUGGER_WORKING_DIRECTORY)
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 endfunction()
 
+if(APPLE)
+  macro(target_link_framework TARGET NAME)
+    find_library(FRAMEWORK_${NAME}
+      NAMES ${NAME}
+      PATHS ${CMAKE_OSX_SYSROOT}/System/Library
+      PATH_SUFFIXES Frameworks PrivateFrameworks
+      CMAKE_FIND_FRAMEWORK only
+      NO_DEFAULT_PATH )
+    if(${FRAMEWORK_${NAME}} STREQUAL FRAMEWORK_${NAME}-NOTFOUND)
+      message(ERROR ": Framework ${NAME} not found")
+    else()
+      target_link_libraries(${TARGET} PUBLIC "${FRAMEWORK_${NAME}}")
+      message(STATUS "Framework ${NAME} found at ${FRAMEWORK_${NAME}}")
+    endif()
+  endmacro(target_link_framework)
+endif()
+
 option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
 option(DARMOK_BUILD_LUA "build darmok with lua support" OFF)
@@ -671,18 +688,16 @@ if(DARMOK_BUILD_JOLT)
   find_package(Jolt CONFIG REQUIRED)
   target_link_libraries(${LIB_NAME} PRIVATE Jolt::Jolt)
   target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_JOLT)
-
-  # TODO: check why jolt debug is not workings
-  # target_compile_definitions(${LIB_NAME} PRIVATE
-  #   $<$<CONFIG:Debug>:JPH_DEBUG_RENDERER>
-  #   $<$<CONFIG:Debug>:JPH_PROFILE_ENABLED>
-  # )
 endif()
 
 if(DARMOK_BUILD_MINIAUDIO)
-find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
-target_include_directories(${LIB_NAME} PRIVATE ${MINIAUDIO_INCLUDE_DIRS})
-target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_MINIAUDIO)
+  find_path(MINIAUDIO_INCLUDE_DIRS "miniaudio.h")
+  target_include_directories(${LIB_NAME} PRIVATE ${MINIAUDIO_INCLUDE_DIRS})
+  target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_MINIAUDIO)
+  if(APPLE)
+    target_link_framework(${LIB_NAME} "CoreAudio")
+    target_link_framework(${LIB_NAME} "AudioToolbox")
+  endif()
 endif()
 
 # lua sol2
@@ -699,7 +714,6 @@ if(DARMOK_BUILD_LUA)
     target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB} ${LUASOCKET_SOCKET_UNIX_LIB})
   endif()
 
-  
   if(WIN32)
     find_library(LUASOCKET_MIME_LIB mime.core)
     find_library(LUASOCKET_SOCKET_LIB socket.core)  

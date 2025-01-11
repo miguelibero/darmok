@@ -59,6 +59,8 @@ namespace darmok
                 }
                 break;
             }
+            default:
+                break;
         }
         return false;
     }

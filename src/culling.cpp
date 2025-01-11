@@ -3,13 +3,17 @@
 #include <darmok/scene.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/shape.hpp>
-#include <darmok/physics3d.hpp>
 #include <darmok/program.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/reflect_serialize.hpp>
 #include <darmok/camera_reflect.hpp>
+
+#ifdef DARMOK_JOLT
+#include <darmok/physics3d.hpp>
+#endif
+
 #include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
@@ -22,16 +26,22 @@ namespace darmok
             {
                 return bbox.value();
             }
-            if (auto body = scene.getComponent<physics3d::PhysicsBody>(entity))
-            {
-                return body->getLocalBounds();
-            }
+            #ifdef DARMOK_JOLT
+                if (auto body = scene.getComponent<physics3d::PhysicsBody>(entity))
+                {
+                    return body->getLocalBounds();
+                }
+            #endif
             return std::nullopt;
         }
 
         static const EntityFilter& getEntityFilter() noexcept
         {
-            static const EntityFilter filter = EntityFilter::create<Renderable>() & (EntityFilter::create<BoundingBox>() | EntityFilter::create<physics3d::PhysicsBody>());
+            static const EntityFilter filter = EntityFilter::create<Renderable>() & (EntityFilter::create<BoundingBox>()
+#ifdef DARMOK_JOLT
+                 | EntityFilter::create<physics3d::PhysicsBody>()
+#endif
+            );
             return filter;
         }
     };

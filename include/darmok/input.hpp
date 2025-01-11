@@ -177,11 +177,13 @@ namespace darmok
 
 	class GamepadImpl;
 
+#define DARMOK_GAMEPAD_MAX 4
+
 	class DARMOK_EXPORT Gamepad final
 	{
 	public:
-		const static uint8_t MaxAmount = 4;
-		const static uint8_t Any = 5;
+		static const uint8_t MaxAmount;
+		static const uint8_t Any;
 
 		Gamepad() noexcept;
 		~Gamepad() noexcept;
@@ -275,7 +277,7 @@ namespace darmok
 
 	static bool operator==(const InputDir& a, const InputDir& b) noexcept;
 
-	using Gamepads = std::array<Gamepad, Gamepad::MaxAmount>;
+	using Gamepads = std::array<Gamepad, DARMOK_GAMEPAD_MAX>;
 
 	class InputImpl;
 
