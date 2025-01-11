@@ -172,7 +172,7 @@ namespace darmok
 		, _updateConfig(AppUpdateConfig::getDefaultConfig())
 		, _plat(Platform::get())
 		, _window(_plat)
-		, _pixelSize(0)
+		, _renderSize(0)
 		, _rendererType(bgfx::RendererType::Count)
 	{
 	}
@@ -308,14 +308,14 @@ namespace darmok
 	void AppImpl::bgfxInit()
 	{
 		bgfx::Init init;
-		_pixelSize = _window.getPixelSize();
+		_renderSize = _window.getSize();
 		_videoMode = _window.getVideoMode();
 		init.platformData.ndt = _plat.getDisplayHandle();
 		init.platformData.nwh = _plat.getWindowHandle();
 		init.platformData.type = _plat.getWindowHandleType();
 		init.debug = true;
-		init.resolution.width = _pixelSize.x;
-		init.resolution.height = _pixelSize.y;
+		init.resolution.width = _renderSize.x;
+		init.resolution.height = _renderSize.y;
 		init.resolution.reset = _resetFlags;
 		init.callback = &BgfxCallbacks::get();
 		// _rendererType = bgfx::RendererType::Vulkan;
@@ -450,11 +450,11 @@ namespace darmok
 		_audio.getImpl().update();
 		_input.getImpl().afterUpdate(deltaTime);
 
-		auto& pixelSize = _app.getWindow().getPixelSize();
+		auto& renderSize = _app.getWindow().getSize();
 		auto& videoMode = _app.getWindow().getVideoMode();
-		if (_pixelSize != pixelSize || _videoMode != videoMode || _activeResetFlags != _resetFlags)
+		if (_renderSize != renderSize || _videoMode != videoMode || _activeResetFlags != _resetFlags)
 		{
-			_pixelSize = pixelSize;
+			_renderSize = renderSize;
 			_videoMode = videoMode;
 			_activeResetFlags = _resetFlags;
 			_renderReset = true;
@@ -473,7 +473,7 @@ namespace darmok
 
 	void AppImpl::renderReset()
 	{
-		bgfx::reset(_pixelSize.x, _pixelSize.y, _activeResetFlags);
+		bgfx::reset(_renderSize.x, _renderSize.y, _activeResetFlags);
 
 		auto numViews = bgfx::getCaps()->limits.maxViews;
 		for (bgfx::ViewId i = 0; i < numViews; ++i)

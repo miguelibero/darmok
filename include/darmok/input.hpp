@@ -341,8 +341,8 @@ namespace darmok
 		float getAxis(const InputDirs& negative, const InputDirs& positive, const Sensitivity& sensitivity = {}) const noexcept;
 		float getAxis(const InputAxis& axis, const Sensitivity& sensitivity = {}) const noexcept;
 
-		template<glm::length_t L, typename T = float, glm::qualifier Q = glm::defaultp>
-		void getAxis(glm::vec<L, T, Q>& v, const std::array<InputAxis, L>& axis, const Sensitivity& sensitivity = {}) const noexcept
+		template<glm::length_t L, typename T = float, glm::qualifier Q = glm::defaultp, size_t L2 = L>
+		void getAxis(glm::vec<L, T, Q>& v, const std::array<InputAxis, L2>& axis, const Sensitivity& sensitivity = {}) const noexcept
 		{
 			for (glm::length_t i = 0; i < L; ++i)
 			{

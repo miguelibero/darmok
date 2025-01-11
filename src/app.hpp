@@ -205,7 +205,7 @@ namespace darmok
 		bool _running;
 		bool _paused;
 		bool _renderReset;
-		glm::uvec2 _pixelSize;
+		glm::uvec2 _renderSize;
 		VideoMode _videoMode;
 		uint32_t _debugFlags;
 		uint32_t _resetFlags;

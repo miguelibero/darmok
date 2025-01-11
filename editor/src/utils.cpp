@@ -98,7 +98,7 @@ namespace darmok::editor
 
         if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text(text);
+            ImGui::Text("%s", text);
             ImGui::Separator();
 
             if (ImGui::Button("Ok"))
@@ -147,7 +147,7 @@ namespace darmok::editor
 
         ImGui::BeginGroup();
 
-        ImGui::Text(name);
+        ImGui::Text("%s", name);
     }
 
     void ImguiUtils::endFrame() noexcept

@@ -479,7 +479,7 @@ namespace darmok
         }
         else if (_app)
         {
-            vp = Viewport(_app->getWindow().getPixelSize());
+            vp = Viewport(_app->getWindow().getSize());
         }
         return vp * _viewport;
     }

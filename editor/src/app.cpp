@@ -128,7 +128,10 @@ namespace darmok::editor
     void EditorApp::renderDockspace()
     {
         ImGui::SetNextWindowPos(ImVec2(0, _mainToolbarHeight));
-        auto size = ImGui::GetIO().DisplaySize;
+        auto& io = ImGui::GetIO();
+        auto size = io.DisplaySize;
+        size.x /= io.DisplayFramebufferScale.x;
+        size.y /= io.DisplayFramebufferScale.y;
         size.y -= _mainToolbarHeight;
         ImGui::SetNextWindowSize(size);
 

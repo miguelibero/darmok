@@ -46,7 +46,7 @@ namespace
 		void update(float dt) override
 		{
 			auto margin = _size * 0.5F * glm::vec2(_trans.getScale());
-			auto max = glm::vec2(_win.getSize()) - margin;
+			auto max = glm::vec2(_win.getPixelSize()) - margin;
 			auto min = margin;
 			auto pos = _trans.getPosition() + (glm::vec3(_dir, 0) * dt);
 			if (pos.x > max.x)
@@ -142,16 +142,18 @@ namespace
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<Transform>(sprite);
 			float scale = 0.5;
+			auto& win = _app.getWindow();
+			auto fbScale = win.getFramebufferScale();
 
 			MeshData meshData(Rectangle(tex->getSize()));
-			meshData.scalePositions(glm::vec3(0.5F));
+			meshData.scalePositions(glm::vec3(0.5F) * glm::vec3(fbScale, 1));
 
 			auto mesh = meshData.createMesh(_prog->getVertexLayout());
 			auto mat = std::make_shared<Material>(_prog, tex);
 			scene.addComponent<Renderable>(sprite, std::move(mesh), mat);
 
 			auto spriteBorder = scene.createEntity();
-			auto size = scale * glm::vec2(tex->getSize());
+			auto size = scale * glm::vec2(tex->getSize()) * fbScale;
 			meshData = MeshData(Rectangle::standard(), RectangleMeshType::Outline);
 			meshData.scalePositions(glm::vec3(size, 0));
 			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
@@ -161,7 +163,7 @@ namespace
 			scene.addComponent<Culling2D>(spriteBorder);
 
 			scene.addComponent<Culling2D>(sprite);
-			_app.addUpdater<ScreenBounceUpdater>(_app.getWindow(), trans, size, 100.f);
+			_app.addUpdater<ScreenBounceUpdater>(win, trans, size, 100.f);
 		}
 
 		void createSpriteAnimation(Scene& scene)
@@ -172,10 +174,11 @@ namespace
 			static const std::string animNamePrefix = "Attack/";
 			auto animBounds = texAtlas->getBounds(animNamePrefix);
 			auto anim = scene.createEntity();
+			auto& win = _app.getWindow();
 
 			TextureAtlasMeshConfig config;
 			config.offset = - glm::vec3(animBounds.size.x, animBounds.size.y, 0.f) / 2.f;
-			config.scale = glm::vec3(2.F);
+			config.scale = glm::vec3(2.F) * glm::vec3(win.getFramebufferScale(), 1);
 			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1F, config);
 			
 			auto material = std::make_shared<Material>(_prog, texAtlas->texture);
@@ -183,7 +186,7 @@ namespace
 			scene.addComponent<FrameAnimation>(anim, frames, renderable);
 			
 			scene.addComponent<Culling2D>(anim);
-			auto& winSize = _app.getWindow().getSize();
+			auto& winSize = win.getPixelSize();
 			scene.addComponent<Transform>(anim, glm::vec3(winSize, 0) / 2.f);
 		}
 

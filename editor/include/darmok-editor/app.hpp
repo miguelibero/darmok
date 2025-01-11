@@ -36,7 +36,7 @@ namespace darmok::editor
         ~EditorApp() noexcept;
 
         // IAppDelegate
-        std::optional<int32_t> setup(const CmdArgs& args) noexcept;
+        std::optional<int32_t> setup(const CmdArgs& args) noexcept override;
         void init() override;
 		void shutdown() override;
 		void update(float deltaTime) override;

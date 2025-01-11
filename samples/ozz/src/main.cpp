@@ -54,7 +54,7 @@ namespace
 		{
 		}
 
-		void init()
+		void init() override
 		{
 			_app.setDebugFlag(BGFX_DEBUG_TEXT);
 

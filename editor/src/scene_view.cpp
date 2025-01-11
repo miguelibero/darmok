@@ -153,6 +153,11 @@ namespace darmok::editor
         case TransformGizmoMode::Scale:
             op = ImGuizmo::SCALE;
             break;
+        case TransformGizmoMode::Grab:
+            // TODO
+            break;
+        case TransformGizmoMode::Translate:
+            break;
         }
 
         auto mode = ImGuizmo::LOCAL;

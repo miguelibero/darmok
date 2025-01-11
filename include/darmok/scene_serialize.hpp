@@ -145,7 +145,7 @@ namespace darmok
         template<typename Archive>
         void load(Archive& archive)
         {
-            size_t size = 0;
+            CEREAL_SIZE_TYPE size = 0;
             archive(cereal::make_size_tag(size));
             storage.reserve(size);
             for (size_t i = 0; i < size; ++i)
@@ -169,7 +169,7 @@ namespace darmok
         template<typename Archive>
         void load(Archive& archive)
         {
-            size_t size = 0;
+            CEREAL_SIZE_TYPE size = 0;
             archive(cereal::make_size_tag(size));
             components.reserve(size);
             for (size_t i = 0; i < size; ++i)
@@ -194,7 +194,7 @@ namespace darmok
         template<typename Archive>
         void load(Archive& archive)
         {
-            size_t size = 0;
+            CEREAL_SIZE_TYPE size = 0;
             archive(cereal::make_size_tag(size));
             storages.reserve(size);
             for (size_t i = 0; i < size; ++i)
@@ -212,7 +212,7 @@ namespace darmok
         template<typename Archive>
         void load(Archive& archive)
         {
-            size_t size = 0;
+            CEREAL_SIZE_TYPE size = 0;
             archive(cereal::make_size_tag(size));
             assert(size == components.size());
             for (auto& comp : components)
@@ -229,7 +229,7 @@ namespace darmok
         template<typename Archive>
         void load(Archive& archive)
         {
-            size_t size = 0;
+            CEREAL_SIZE_TYPE size = 0;
             archive(cereal::make_size_tag(size));
             assert(size == storages.size());
             for (auto& storageData : storages)

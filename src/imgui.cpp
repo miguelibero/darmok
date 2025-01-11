@@ -148,7 +148,7 @@ namespace darmok
 		auto clipPos = ImguiUtils::convert(drawData->DisplayPos); // (0,0) unless using multi-viewports
 		auto size = ImguiUtils::convert(drawData->DisplaySize);
 		auto clipScale = ImguiUtils::convert(drawData->FramebufferScale);  // (1,1) unless using retina display which are often (2,2)
-		auto clipSize = size * clipScale;
+		auto clipSize = size / clipScale;
 
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		if (clipSize.x <= 0 || clipSize.y <= 0)
@@ -227,10 +227,7 @@ namespace darmok
 						state |= BGFX_STATE_BLEND_ALPHA;
 					}
 
-					// Project scissor/clipping rectangles into framebuffer space
 					auto clipRect = ImguiUtils::convert(cmd->ClipRect);
-					clipRect = (clipRect - glm::vec4(clipPos, clipPos)) * glm::vec4(clipScale, clipScale);
-
 					if (clipRect.x < clipSize.x
 						&& clipRect.y < clipSize.y
 						&& clipRect.z >= 0.0f
@@ -486,14 +483,12 @@ namespace darmok
 		}
 
 		auto& win = _app->getWindow();
-
-		auto& pixelSize = win.getPixelSize();
-		io.DisplaySize = ImguiUtils::convert(pixelSize);
+		io.DisplaySize = ImguiUtils::convert(win.getPixelSize());
 		io.DisplayFramebufferScale = ImguiUtils::convert(win.getFramebufferScale());
 
 		auto& mouse = input.getMouse();
 		auto& buttons = mouse.getButtons();
-		auto pos = win.windowToScreenPoint(mouse.getPosition());
+		auto pos = mouse.getPosition();
 		io.AddMousePosEvent(pos.x, pos.y);
 
 		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[toUnderlying(MouseButton::Left)]);

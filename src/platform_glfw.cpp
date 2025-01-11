@@ -285,16 +285,16 @@ namespace darmok
 		{
 			return;
 		}
-#	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#		if DARMOK_CONFIG_USE_WAYLAND
+#if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
+#if DARMOK_CONFIG_USE_WAYLAND
 		wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
 		if (win_impl)
 		{
 			glfwSetWindowUserPointer(window, nullptr);
 			wl_egl_window_destroy(win_impl);
 		}
-#		endif
-#	endif
+#endif
+#endif
 		glfwDestroyWindow(window);
 	}
 
