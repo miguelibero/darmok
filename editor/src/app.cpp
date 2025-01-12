@@ -42,7 +42,7 @@ namespace darmok::editor
 
     std::optional<int32_t> EditorApp::setup(const CmdArgs& args) noexcept
     {
-        ReflectionUtils::bind();
+        SceneReflectionUtils::bind();
         _inspectorView.setup();
 
         CLI::App cli{ "darmok editor" };

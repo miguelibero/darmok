@@ -72,10 +72,16 @@ namespace darmok
 		static std::reference_wrapper<T> createReferenceWrapper() noexcept
 		{
 			// extremely hacky but we need a ref wrapper default constructor
-			#pragma clang diagnostic push
-			#pragma clang diagnostic ignored "-Wnull-dereference"
+			#ifndef _MSC_VER
+			#pragma diagnostic push
+			#pragma diagnostic ignored "-Wnull-dereference"
+			#endif
+
 			return std::reference_wrapper<T>(*static_cast<T*>(nullptr));
-			#pragma clang diagnostic pop
+
+			#ifndef _MSC_VER
+			#pragma diagnostic pop
+			#endif
 		}
 
 		template<typename T>

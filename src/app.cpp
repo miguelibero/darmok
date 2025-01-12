@@ -312,7 +312,7 @@ namespace darmok
 		init.platformData.ndt = _plat.getDisplayHandle();
 		init.platformData.nwh = _plat.getWindowHandle();
 		init.platformData.type = _plat.getWindowHandleType();
-		init.debug = true;
+		init.debug = _debugFlags != BGFX_DEBUG_NONE;
 		init.resolution.width = _renderSize.x;
 		init.resolution.height = _renderSize.y;
 		init.resolution.reset = _resetFlags;
