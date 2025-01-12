@@ -201,7 +201,7 @@ namespace darmok
 
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override
         {
-            return CerealUtils::createSaveStream(_outputFormat);
+            return CerealUtils::createSaveStream(_outputFormat, outputPath);
         }
 
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out)

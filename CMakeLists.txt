@@ -200,6 +200,7 @@ set(SOURCES
   input.cpp
   scene.cpp
   scene_filter.cpp
+  scene_reflect.cpp
 
   texture_uniform.cpp
   texture_atlas.cpp
@@ -211,6 +212,7 @@ set(SOURCES
 
   transform.cpp
   camera.cpp
+  camera_reflect.cpp
   culling.cpp
   light.cpp
   render_scene.cpp

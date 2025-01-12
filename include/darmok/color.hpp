@@ -3,6 +3,8 @@
 #include <darmok/export.h>
 #include <darmok/color_fwd.hpp>
 
+#include <functional>
+
 namespace darmok
 {
     struct DARMOK_EXPORT Colors final

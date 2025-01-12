@@ -253,9 +253,10 @@ namespace darmok
         {
 #if BX_PLATFORM_WINDOWS
             bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12, bgfx::RendererType::Vulkan,
-#endif
-#if BX_PLATFORM_OSX
+#elif BX_PLATFORM_OSX
             bgfx::RendererType::Metal,
+#elif BX_PLATFORM_LINUX
+            bgfx::RendererType::Vulkan,
 #endif
             bgfx::RendererType::OpenGL, bgfx::RendererType::OpenGLES,
         };
@@ -435,7 +436,7 @@ namespace darmok
             if (auto log = _config.programConfig.log)
             {
                 *log << "shaderc cmd:" << std::endl;
-                *log << Exec::argsToString(args);
+                *log << Exec::argsToString(args) << std::endl;
                 *log << "shaderc output:" << std::endl;
                 *log << r.out;
                 *log << "shaderc error output:" << std::endl;

@@ -20,7 +20,7 @@ namespace darmok
     template<typename T, typename E>
     struct Expected final
     {
-        using Unexpected = Unexpected<E>;
+        using Error = Unexpected<E>;
 
         Expected(const T& value)
             : _value(value)
@@ -32,7 +32,7 @@ namespace darmok
         {
         }
 
-        Expected(Unexpected&& err)
+        Expected(Error&& err)
             : _value(std::forward<E>(err.value))
         {
         }

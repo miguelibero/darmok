@@ -38,6 +38,8 @@ namespace darmok
 		static std::vector<entt::meta_any> getSceneComponents(Scene& scene);
 		static std::vector<entt::meta_any> getEntityComponents(Scene& scene, Entity entity);
 
+		static void bind() noexcept;
+
 	private:
 
 		static const entt::hashed_string _getEntityComponentKey;

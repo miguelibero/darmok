@@ -916,7 +916,7 @@ namespace darmok
     {
         ReflectionSerializeUtils::metaSerialize<Camera>();
         SceneReflectionUtils::metaEntityComponent<Camera>("Camera")
-            .ctor()
+            .ctor<const glm::mat4&>()
             .func<&Camera::afterLoad>("afterLoad"_hs)
             .func<&Camera::getName>("getName"_hs)
             .func<&Camera::isEnabled>("isEnabled"_hs)

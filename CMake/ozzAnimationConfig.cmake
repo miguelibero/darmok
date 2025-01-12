@@ -25,6 +25,11 @@ set_target_properties(${OZZ_TARGETS}
   PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 )
 
+# error in include/ozz/animation/runtime/blending_job.h:107
+if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+target_compile_options(ozz_animation PUBLIC -Wno-ignored-attributes)
+endif()
+
 include(GNUInstallDirs)
 
 set(EXPORT_BASE_NAME "ozzAnimation")

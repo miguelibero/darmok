@@ -18,7 +18,6 @@ namespace darmok
 
 	struct ReflectionUtils final
 	{
-		static void bind() noexcept;
 
 		template<typename T>
 		static entt::meta_factory<OptionalRef<T>> metaOptionalRef(const char* name)
@@ -41,9 +40,9 @@ namespace darmok
 			using R = std::reference_wrapper<T>;
 			auto refName = std::string("std::reference_wrapper<") + name + ">";
 			return entt::meta<R>().type(entt::hashed_string{ refName.c_str() })
-				.template ctor<&createReferenceWrapper<T>>()
 				.traits(ReflectionTraits::ReferenceWrapper)
-				.template func<&R::get, entt::as_ref_t>(_referenceWrapperGetKey)
+				.template ctor<&createReferenceWrapper<T>>()
+				.template func<&getReferenceWrapper<T>, entt::as_ref_t>(_referenceWrapperGetKey)
 				.template func<&setReferenceWrapper<T>>(_referenceWrapperSetKey)
 			;
 		}
@@ -72,9 +71,17 @@ namespace darmok
 		template<typename T>
 		static std::reference_wrapper<T> createReferenceWrapper() noexcept
 		{
-			// hacky but we need a ref wrapper default constructor
-			static T obj;
-			return std::reference_wrapper<T>(obj);
+			// extremely hacky but we need a ref wrapper default constructor
+			#pragma clang diagnostic push
+			#pragma clang diagnostic ignored "-Wnull-dereference"
+			return std::reference_wrapper<T>(*static_cast<T*>(nullptr));
+			#pragma clang diagnostic pop
+		}
+
+		template<typename T>
+		static T& getReferenceWrapper(std::reference_wrapper<T>& ref) noexcept
+		{
+			return ref.get();
 		}
 
 		template<typename T>
