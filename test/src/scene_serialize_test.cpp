@@ -67,7 +67,7 @@ namespace
         TestComponent::bindMeta();
         TestRefComponent::bindMeta();
         TestStructComponent::bindMeta();
-        ReflectionUtils::bind();
+        SceneReflectionUtils::bind();
     }
 
     Data saveToData(const Scene& scene)

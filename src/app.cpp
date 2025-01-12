@@ -9,11 +9,10 @@
 #include <darmok/stream.hpp>
 #include <darmok/string.hpp>
 
-#include <bx/filepath.h>
-#include <bx/timer.h>
-#include <iostream>
 #include <algorithm>
 
+#include <bx/filepath.h>
+#include <bx/timer.h>
 #include <bx/file.h>
 #include <bimg/bimg.h>
 
@@ -1046,9 +1045,29 @@ namespace darmok
 
 	BgfxFatalException::BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg)
 		: std::runtime_error(msg)
-		, filePath(filePath)
-		, line(line)
-		, code(code)
+		, _filePath(filePath)
+		, _line(line)
+		, _code(code)
+	{
+	}
+
+	const char* BgfxFatalException::getFilePath() const noexcept
+	{
+		return _filePath;
+	}
+
+	uint16_t BgfxFatalException::getLine() const noexcept
+	{
+		return _line;
+	}
+
+	bgfx::Fatal::Enum BgfxFatalException::getCode() const noexcept
+	{
+		return _code;
+	}
+
+	BgfxCallbacks::BgfxCallbacks() noexcept
+		: _cache()
 	{
 	}
 
@@ -1112,10 +1131,10 @@ namespace darmok
 		// TODO: vcpkg bgfx build without profiler enabled
 	}
 
-	uint32_t BgfxCallbacks::cacheReadSize(uint64_t id)
+	uint32_t BgfxCallbacks::cacheReadSize(uint64_t resId)
 	{
 		std::lock_guard lock(_cacheMutex);
-		auto itr = _cache.find(id);
+		auto itr = _cache.find(resId);
 		if (itr == _cache.end())
 		{
 			return 0;
@@ -1123,10 +1142,10 @@ namespace darmok
 		return itr->second.size();
 	}
 
-	bool BgfxCallbacks::cacheRead(uint64_t id, void* dataPtr, uint32_t size)
+	bool BgfxCallbacks::cacheRead(uint64_t resId, void* dataPtr, uint32_t size)
 	{
 		std::lock_guard lock(_cacheMutex);
-		auto itr = _cache.find(id);
+		auto itr = _cache.find(resId);
 		if (itr == _cache.end())
 		{
 			return false;
@@ -1140,9 +1159,9 @@ namespace darmok
 		return true;
 	}
 
-	void BgfxCallbacks::cacheWrite(uint64_t id, const void* data, uint32_t size)
+	void BgfxCallbacks::cacheWrite(uint64_t resId, const void* data, uint32_t size)
 	{
-		_cache.emplace(id, Data(data, size));
+		_cache.emplace(resId, Data(data, size));
 	}
 
 	void BgfxCallbacks::screenShot(

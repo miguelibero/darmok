@@ -1,0 +1,16 @@
+Checks: >
+  -*,
+  readability-*,
+  performance-*,
+  modernize-*,
+  clang-analyzer-*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  misc-*,
+  -modernize-use-trailing-return-type
+
+WarningsAsErrors: 'true'
+
+CheckOptions:
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: "^(i|j|k)$"

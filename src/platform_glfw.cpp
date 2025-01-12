@@ -253,24 +253,10 @@ namespace darmok
 	void* PlatformImpl::getWindowHandle(GLFWwindow* window) noexcept
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-# 		if DARMOK_PLATFORM_SUPPORT_WAYLAND
 		if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
 		{
-			wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
-			if (!win_impl)
-			{
-				int width, height;
-				glfwGetWindowSize(window, &width, &height);
-				struct wl_surface* surface = (struct wl_surface*)glfwGetWaylandWindow(window);
-				if (!surface) {
-					return nullptr;
-				}
-				win_impl = wl_egl_window_create(surface, width, height);
-				glfwSetWindowUserPointer(window, (void*)(uintptr_t)win_impl);
-			}
-			return (void*)(uintptr_t)win_impl;
+			return glfwGetWaylandWindow(window);
 		}
-#		endif
 		return (void*)(uintptr_t)glfwGetX11Window(window);
 #	elif BX_PLATFORM_OSX
 		return glfwGetCocoaWindow(window);
@@ -973,6 +959,7 @@ namespace darmok
 
 	Platform::~Platform() noexcept
 	{
+		// empty on purpose
 	}
 
 	std::unique_ptr<PlatformEvent> Platform::pollEvent() noexcept
@@ -1018,12 +1005,10 @@ namespace darmok
 	void* Platform::getDisplayHandle() const noexcept
 	{
 #	if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#       if DARMOK_PLATFORM_SUPPORT_WAYLAND
         if(glfwGetPlatform() == GLFW_PLATFORM_WAYLAND)
         {
             return glfwGetWaylandDisplay();
         }
-#       endif
 		return glfwGetX11Display();
 #	else
 		return nullptr;

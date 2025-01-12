@@ -26,10 +26,15 @@ namespace darmok
 	class BgfxFatalException : public std::runtime_error
 	{
 	public:
-		const char* filePath;
-		uint16_t line;
-		bgfx::Fatal::Enum code;
 		BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg);
+		[[nodiscard]] const char* getFilePath() const noexcept;
+		[[nodiscard]] uint16_t getLine() const noexcept;
+		[[nodiscard]] bgfx::Fatal::Enum getCode() const noexcept;
+	private:
+		const char* _filePath;
+		uint16_t _line;
+		bgfx::Fatal::Enum _code;
+
 	};
 
 	class BgfxCallbacks final : public bgfx::CallbackI
@@ -68,11 +73,11 @@ namespace darmok
 
 		void profilerEnd() override;
 
-		uint32_t cacheReadSize(uint64_t id) override;
+		uint32_t cacheReadSize(uint64_t resId) override;
 
-		bool cacheRead(uint64_t id, void* data, uint32_t size) override;
+		bool cacheRead(uint64_t resId, void* data, uint32_t size) override;
 
-		void cacheWrite(uint64_t id, const void* data, uint32_t size) override;
+		void cacheWrite(uint64_t resId, const void* data, uint32_t size) override;
 
 		void screenShot(
 			const char* filePath
@@ -98,13 +103,19 @@ namespace darmok
 	private:
 		std::mutex _cacheMutex;
 		std::unordered_map<uint64_t, Data> _cache;
-		BgfxCallbacks() = default;
+		BgfxCallbacks() noexcept;
 	};
 
 	class AppImpl final : ITypeKeyboardListener<AppImpl>
 	{
 	public:
 		AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept;
+		~AppImpl() = default;
+		AppImpl(const AppImpl&) = delete;
+		AppImpl(AppImpl&&) = delete;
+		AppImpl& operator=(const AppImpl&) = delete;
+		AppImpl& operator=(AppImpl&&) = delete;
+
 		std::optional<int32_t> setup(const CmdArgs& args);
 		void init();
 		void update(float deltaTime);
@@ -114,15 +125,15 @@ namespace darmok
 		void shutdown();
 		void quit() noexcept;
 
-		void onException(AppPhase phase, const std::exception& ex) noexcept;
+		void onException(AppPhase phase, const std::exception& exc) noexcept;
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
-		bool getDebugFlag(uint32_t flag) const noexcept;
+		[[nodiscard]] bool getDebugFlag(uint32_t flag) const noexcept;
 		
 		bool toggleResetFlag(uint32_t flag) noexcept;
 		void setResetFlag(uint32_t flag, bool enabled = true) noexcept;
-		bool getResetFlag(uint32_t flag) const noexcept;
+		[[nodiscard]] bool getResetFlag(uint32_t flag) const noexcept;
 
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
@@ -130,7 +141,7 @@ namespace darmok
 		void setRendererType(bgfx::RendererType::Enum renderer);
 
 		void setPaused(bool paused) noexcept;
-		bool isPaused() const noexcept;
+		[[nodiscard]] bool isPaused() const noexcept;
 
 		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;
@@ -139,20 +150,20 @@ namespace darmok
 
 		void addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
-		bool hasComponent(entt::id_type type) const noexcept;
-		OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
-		OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
+		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
+		[[nodiscard]] OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;
+		[[nodiscard]] OptionalRef<const IAppComponent> getComponent(entt::id_type type) const noexcept;
 
-		Input& getInput() noexcept;
-		const Input& getInput() const noexcept;
-		Window& getWindow() noexcept;
-		const Window& getWindow() const noexcept;
-		AssetContext& getAssets() noexcept;
-		const AssetContext& getAssets() const noexcept;
-		Platform& getPlatform() noexcept;
-		const Platform& getPlatform() const noexcept;
-		tf::Executor& getTaskExecutor();
-		const tf::Executor& getTaskExecutor() const;
+		[[nodiscard]] Input& getInput() noexcept;
+		[[nodiscard]] const Input& getInput() const noexcept;
+		[[nodiscard]] Window& getWindow() noexcept;
+		[[nodiscard]] const Window& getWindow() const noexcept;
+		[[nodiscard]] AssetContext& getAssets() noexcept;
+		[[nodiscard]] const AssetContext& getAssets() const noexcept;
+		[[nodiscard]] Platform& getPlatform() noexcept;
+		[[nodiscard]] const Platform& getPlatform() const noexcept;
+		[[nodiscard]] tf::Executor& getTaskExecutor();
+		[[nodiscard]] const tf::Executor& getTaskExecutor() const;
 
 #ifdef DARMOK_MINIAUDIO
 		AudioSystem& getAudio() noexcept;
@@ -167,12 +178,12 @@ namespace darmok
 				return;
 			}
 			auto timePassed = updateTimePassed();
-			const auto dt = _updateConfig.deltaTime;
+			const auto deltaTime = _updateConfig.deltaTime;
 			auto i = 0;
-			while (timePassed > dt && i < _updateConfig.maxInstant)
+			while (timePassed > deltaTime && i < _updateConfig.maxInstant)
 			{
-				logicCallback(dt);
-				timePassed -= dt;
+				logicCallback(deltaTime);
+				timePassed -= deltaTime;
 				i++;
 			}
 			logicCallback(timePassed);
@@ -181,8 +192,8 @@ namespace darmok
 	private:
 		using Components = std::vector<std::shared_ptr<IAppComponent>>;
 
-		Components::iterator findComponent(entt::id_type type) noexcept;
-		Components::const_iterator findComponent(entt::id_type type) const noexcept;
+		[[nodiscard]] Components::iterator findComponent(entt::id_type type) noexcept;
+		[[nodiscard]] Components::const_iterator findComponent(entt::id_type type) const noexcept;
 
 		[[nodiscard]] float updateTimePassed() noexcept;
 
@@ -196,7 +207,6 @@ namespace darmok
 		void renderReset();
 
 		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
-
 
 		// first since it contains the allocator
 		AssetContext _assets;

@@ -308,13 +308,13 @@ set(LUA_SOURCES
 )
 
 if(NOT DARMOK_PLATFORM)
-    set(DARMOK_PLATFORM glfw)
+  set(DARMOK_PLATFORM glfw)
 endif()
-  if(UNIX AND NOT APPLE)
-      set(DARMOK_PLATFORM_SUPPORT_WAYLAND 1)
-  else()
-      set(DARMOK_PLATFORM_SUPPORT_WAYLAND 0)
-  endif()
+if(UNIX AND NOT APPLE)
+  set(DARMOK_PLATFORM_SUPPORT_WAYLAND 1)
+else()
+  set(DARMOK_PLATFORM_SUPPORT_WAYLAND 0)
+endif()
 
 if(DARMOK_PLATFORM STREQUAL "glfw")
   list(APPEND SOURCES platform_glfw.cpp)
@@ -578,21 +578,18 @@ endif()
 
 # code analysis & clang tidy
 if(DARMOK_RUN_CODE_ANALYSIS)
-  set(CLANG_TIDY_CHECKS "-checks=-*,readability-*,modernize-*,-modernize-use-trailing-return-type")
   if(MSVC)
     set_target_properties(${LIB_NAME} PROPERTIES
       VS_GLOBAL_RunCodeAnalysis true
       VS_GLOBAL_EnableMicrosoftCodeAnalysis true
       VS_GLOBAL_CodeAnalysisRuleSet ${PROJECT_SOURCE_DIR}/darmok.ruleset
       VS_GLOBAL_EnableClangTidyCodeAnalysis true
-      VS_GLOBAL_ClangTidyChecks ${CLANG_TIDY_CHECKS}
     )
   else()
     find_program(CLANG_TIDY_EXE
       NAMES "clang-tidy"
       NO_CACHE)
-    set(CLANG_TIDY_COMMAND "${CLANG_TIDY_EXE}" "${CLANG_TIDY_CHECKS}")
-    set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
+    set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
   endif()
 endif()
 
@@ -642,7 +639,6 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
   target_link_libraries(${LIB_NAME} PRIVATE glfw)
   target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_GLFW)
   if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
-    target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_SUPPORT_WAYLAND)
     target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
     target_compile_definitions(bgfx::bgfx INTERFACE WL_EGL_PLATFORM)
   endif()

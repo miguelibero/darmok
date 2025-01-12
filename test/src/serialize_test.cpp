@@ -140,7 +140,7 @@ TEST_CASE("struct any can be serialized", "[serialize]")
 
 TEST_CASE("custom serialize function is called", "[serialize]")
 {
-    ReflectionUtils::bind();
+    ReflectionSerializeUtils::bind();
     TestSerializeStruct::bindMeta();
     TestSerializeStruct v;
     v.value = 3.14F;

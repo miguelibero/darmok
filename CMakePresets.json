@@ -28,6 +28,27 @@
             }
         },
         {
+            "name": "nojolt",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${hostSystemName}/debug",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DARMOK_BUILD_SAMPLES": true,
+                "DARMOK_BUILD_TESTS": true,
+                "DARMOK_BUILD_LUA": true,
+                "DARMOK_BUILD_LUA_EXE": true,
+                "DARMOK_BUILD_FREETYPE": true,
+                "DARMOK_BUILD_IMGUI": true,
+                "DARMOK_BUILD_RMLUI": true,
+                "DARMOK_BUILD_ASSIMP": true,
+                "DARMOK_BUILD_OZZ": true,
+                "DARMOK_BUILD_JOLT": false,
+                "DARMOK_BUILD_MINIAUDIO": true,
+                "DARMOK_BUILD_EDITOR": true
+            }
+        },
+        {
             "name": "release",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${hostSystemName}/release",

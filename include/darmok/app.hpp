@@ -1,15 +1,17 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/app_fwd.hpp>
+#include <darmok/color_fwd.hpp>
+#include <darmok/optional_ref.hpp>
+
 #include <string>
 #include <vector>
 #include <cstdint>
 #include <memory>
 #include <optional>
+
 #include <bgfx/bgfx.h>
-#include <darmok/app_fwd.hpp>
-#include <darmok/color_fwd.hpp>
-#include <darmok/optional_ref.hpp>
 #include <bx/bx.h>
 #include <entt/entt.hpp>
 
@@ -61,7 +63,7 @@ namespace darmok
 
 	DARMOK_EXPORT int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory>&& factory);
 
-	struct DARMOK_EXPORT AppUpdateConfig
+	struct DARMOK_EXPORT AppUpdateConfig final
 	{
 		static const AppUpdateConfig& getDefaultConfig() noexcept;
 		float deltaTime = getDefaultConfig().deltaTime;
