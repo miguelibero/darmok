@@ -1,4 +1,4 @@
-﻿#include <darmok/mesh.hpp>
+#include <darmok/mesh.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
