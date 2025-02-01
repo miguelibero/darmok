@@ -63,9 +63,9 @@ namespace darmok
 	void ImguiRenderPass::updateFonts() noexcept
 	{
 		uint8_t* data;
-		int width, height, bytesPerPixel;
-		ImGuiIO& io = ImGui::GetIO();
-		io.Fonts->GetTexDataAsRGBA32(&data, &width, &height, &bytesPerPixel);
+		int width, height, bytesPerPixel = 0;
+		ImGuiIO& iio = ImGui::GetIO();
+		iio.Fonts->GetTexDataAsRGBA32(&data, &width, &height, &bytesPerPixel);
 
 		TextureConfig config;
 		config.format = bgfx::TextureFormat::BGRA8;
@@ -76,7 +76,7 @@ namespace darmok
 
 	ImguiRenderPass::~ImguiRenderPass() noexcept
 	{
-		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms
+		const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms
 		{
 			_textureUniform, _lodEnabledUniform
 		};
@@ -176,8 +176,8 @@ namespace darmok
 			auto numVertices = (uint32_t)drawList->VtxBuffer.size();
 			auto numIndices = (uint32_t)drawList->IdxBuffer.size();
 
-			DataView vertData(&drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert));
-			DataView idxData(&drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx));
+			const DataView vertData(&drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert));
+			const DataView idxData(&drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx));
 			std::optional<TransientMesh> mesh;
 			try
 			{
@@ -208,7 +208,7 @@ namespace darmok
 
 					if (cmd->TextureId != 0)
 					{
-						ImguiTextureData texData(cmd->TextureId);
+						const ImguiTextureData texData(cmd->TextureId);
 						state |= 0 != (texData.alphaBlend)
 							? BGFX_STATE_BLEND_ALPHA
 							: BGFX_STATE_NONE
@@ -242,7 +242,7 @@ namespace darmok
 
 						encoder.setState(state);
 						encoder.setTexture(0, _textureUniform, tex);
-						MeshRenderConfig renderConfig
+						const MeshRenderConfig renderConfig
 						{
 							.startVertex = cmd->VtxOffset,
 							.startIndex = cmd->IdxOffset,
@@ -315,7 +315,7 @@ namespace darmok
 
 	const ImguiAppComponentImpl::GamepadMap& ImguiAppComponentImpl::getGamepadMap() noexcept
 	{
-		static GamepadMap map
+		static const GamepadMap map
 		{
 			{ GamepadButton::Start, ImGuiKey_GamepadStart },
 			{ GamepadButton::Select, ImGuiKey_GamepadBack },
@@ -385,10 +385,10 @@ namespace darmok
 		_imgui = ImGui::CreateContext();
 		ImGui::SetCurrentContext(_imgui);
 
-		auto& io = ImGui::GetIO();
+		auto& imio = ImGui::GetIO();
 
-		io.DeltaTime = 1.0f / 60.0f;
-		io.IniFilename = NULL;
+		imio.DeltaTime = 1.0f / 60.0f;
+		imio.IniFilename = NULL;
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImGui::StyleColorsDark(&style);
@@ -396,9 +396,9 @@ namespace darmok
 		style.FrameRounding = 4.0f;
 		style.WindowBorderSize = 0.0f;
 
-		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+		imio.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
-		io.ConfigFlags |= 0
+		imio.ConfigFlags |= 0
 			| ImGuiConfigFlags_NavEnableGamepad
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
@@ -498,15 +498,15 @@ namespace darmok
 		auto& scroll = mouse.getScroll();
 		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
-		auto& kb = input.getKeyboard();
-		auto& modifiers = kb.getModifiers();
+		auto& keyb = input.getKeyboard();
+		auto& modifiers = keyb.getModifiers();
 		io.AddKeyEvent(ImGuiMod_Shift, modifiers.contains(KeyboardModifier::Shift));
 		io.AddKeyEvent(ImGuiMod_Ctrl, modifiers.contains(KeyboardModifier::Ctrl));
 		io.AddKeyEvent(ImGuiMod_Alt, modifiers.contains(KeyboardModifier::Alt));
 		io.AddKeyEvent(ImGuiMod_Super, modifiers.contains(KeyboardModifier::Meta));
 		for (auto& elm : getKeyboardMap())
 		{
-			io.AddKeyEvent(elm.second, kb.getKey(elm.first));
+			io.AddKeyEvent(elm.second, keyb.getKey(elm.first));
 		}
 		for (auto& gamepad : input.getGamepads())
 		{

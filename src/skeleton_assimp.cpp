@@ -209,7 +209,8 @@ namespace darmok
         }
         auto& rootNode = *rootBone->mNode;
         auto itr = boneNodes.find(&rootNode);
-        ozz::string name = itr == boneNodes.end() || itr->second.empty() ? rootNode.mName.C_Str() : itr->second.c_str();
+        bool isRoot = itr == boneNodes.end() || itr->second.empty();
+        const ozz::string name = isRoot ? rootNode.mName.C_Str() : itr->second.c_str();
 
         auto rootJoint = findJoint(skel.roots, name, true);
         if (!rootJoint)
@@ -234,7 +235,7 @@ namespace darmok
         auto itr = boneNodes.find(&node);
         if (itr != boneNodes.end())
         {
-            ozz::string name = itr->second.empty() ? node.mName.C_Str() : itr->second.c_str();
+            const ozz::string name = itr->second.empty() ? node.mName.C_Str() : itr->second.c_str();
             joint = findJoint(parentJoint.children, name, false);
             if (!joint)
             {
@@ -412,7 +413,7 @@ namespace darmok
 
     bool AssimpOzzAnimationConverter::isBone(const aiNode& node) const noexcept
     {
-        std::string name = node.mName.C_Str();
+        const std::string name = node.mName.C_Str();
         return std::find(_boneNames.begin(), _boneNames.end(), name) != _boneNames.end();
     }
 
@@ -780,7 +781,7 @@ namespace darmok
             return false;
         }
         _currentInput = input;
-        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
+        const AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
         _currentScene = _sceneLoader.loadFromFile(input.path, loadConfig);
         if (_currentScene == nullptr)
         {
@@ -847,7 +848,7 @@ namespace darmok
         settings.defaultElement = readElement(config);
         if (config.contains(_optimizationJointsJsonKey))
         {
-            for (auto& [elmName, elmConfig] : config[_optimizationJointsJsonKey].items())
+            for (const auto& [elmName, elmConfig] : config[_optimizationJointsJsonKey].items())
             {
                 settings.elements[elmName] = readElement(elmConfig);
             }
@@ -869,7 +870,7 @@ namespace darmok
         auto allAnimationNames = converter.getAnimationNames();
         if (input.config.contains(_animationsJsonKey))
         {
-            for (auto& [animName, animConfig] : input.config[_animationsJsonKey].items())
+            for (const auto& [animName, animConfig] : input.config[_animationsJsonKey].items())
             {
                 if (StringUtils::containsGlobPattern(animName))
                 {

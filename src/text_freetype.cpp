@@ -466,6 +466,10 @@ namespace darmok
 
 	void FreetypeFontAtlasFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
+		if (!_atlas)
+		{
+			return;
+		}
 		if (outputIndex == 0)
 		{
 			auto encoding = Image::getEncodingForPath(_imagePath);

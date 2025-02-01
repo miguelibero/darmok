@@ -74,7 +74,7 @@ namespace darmok
 
     RmluiRenderInterface::~RmluiRenderInterface() noexcept
     {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{ _textureUniform, _dataUniform };
+        const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{ _textureUniform, _dataUniform };
         for (auto ref : uniforms)
         {
             auto& uniform = ref.get();
@@ -936,7 +936,7 @@ namespace darmok
 
     glm::vec2 RmluiCanvasImpl::getViewportMousePosition() const noexcept
     {
-        glm::vec3 pos(getMousePosition(), 0.F);
+        const glm::vec3 pos(getMousePosition(), 0.F);
 
         auto model = getModelMatrix();
         auto proj = getProjectionMatrix();
@@ -1699,9 +1699,9 @@ namespace darmok
 
     void RmluiEventForwarder::remove() noexcept
     {
-        for (auto& [name, attr] : _element.GetAttributes())
+        for (const auto& [name, attr] : _element.GetAttributes())
         {
-            std::string val = attr.Get<Rml::String>();
+            const std::string val = attr.Get<Rml::String>();
             if (name.starts_with(_eventAttrPrefix) && val == _value)
             {
                 _element.RemoveEventListener(name.substr(_eventAttrPrefix.size()), this);
@@ -1936,7 +1936,7 @@ namespace darmok
 
     const RmluiSceneComponentImpl::KeyboardModifierMap& RmluiSceneComponentImpl::getKeyboardModifierMap() noexcept
     {
-        static KeyboardModifierMap map
+        static const KeyboardModifierMap map
         {
             { KeyboardModifier::Ctrl, Rml::Input::KM_CTRL },
             { KeyboardModifier::Shift, Rml::Input::KM_SHIFT },
@@ -1956,8 +1956,8 @@ namespace darmok
         {
             return state;
         }
-        auto& kb = _app->getInput().getKeyboard();
-        auto& mods = kb.getModifiers();
+        auto& keyb = _app->getInput().getKeyboard();
+        auto& mods = keyb.getModifiers();
 
         for (auto& elm : getKeyboardModifierMap())
         {
@@ -1968,7 +1968,7 @@ namespace darmok
                     state |= elm.second;
                 }
             }
-            else if (kb.getKey(std::get<KeyboardKey>(elm.first)))
+            else if (keyb.getKey(std::get<KeyboardKey>(elm.first)))
             {
                 state |= elm.second;
             }

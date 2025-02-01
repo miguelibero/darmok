@@ -6,8 +6,8 @@
 
 namespace darmok
 {
-    FrameAnimation::FrameAnimation(const std::vector<AnimationFrame>& frames, OptionalRef<Renderable> renderable) noexcept
-        : _frames(frames)
+    FrameAnimation::FrameAnimation(std::vector<AnimationFrame> frames, OptionalRef<Renderable> renderable) noexcept
+        : _frames(std::move(frames))
         , _currentFrame(0)
         , _timeSinceLastFrame(0.F)
         , _renderable(renderable)
@@ -63,7 +63,7 @@ namespace darmok
         }
     }
 
-    void FrameAnimationUpdater::init(Scene& scene, App& app)
+    void FrameAnimationUpdater::init(Scene& scene, App& /* app */)
     {
         _scene = scene;
     }

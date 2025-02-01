@@ -43,7 +43,7 @@ namespace darmok
 
         struct HeaderConfig final
         {
-            bool produceHeaders;
+            bool produceHeaders = false;
             std::string varPrefix;
             std::filesystem::path includeDir;
 
@@ -121,7 +121,7 @@ namespace darmok
         struct FileImportResult final
         {
             std::vector<std::filesystem::path> outputs;
-            bool inputCached;
+            bool inputCached = false;
             std::vector<std::filesystem::path> updatedOutputs;
         };
 

@@ -20,51 +20,51 @@ namespace darmok
 
 	std::string VideoMode::toShortString() const noexcept
 	{
-		std::ostringstream ss;
-		ss << size.x << "x" << size.y;
+		std::ostringstream out;
+		out << size.x << "x" << size.y;
 		if (refreshRate > 0)
 		{
-			ss << " " << refreshRate << "Hz";
+			out << " " << refreshRate << "Hz";
 		}
 		if (depth.r > 0 || depth.g > 0 || depth.b > 0)
 		{
-			ss << " ";
+			out << " ";
 			if (depth.r == depth.g && depth.r == depth.b)
 			{
-				ss << (unsigned int)depth.r;
+				out << (unsigned int)depth.r;
 			}
 			else
 			{
-				ss << (unsigned int)depth.r << "-" << (unsigned int)depth.g << "-" << (unsigned int)depth.b;
+				out << (unsigned int)depth.r << "-" << (unsigned int)depth.g << "-" << (unsigned int)depth.b;
 			}
-			ss << "bpp";
+			out << "bpp";
 		}
-		return ss.str();
+		return out.str();
 	}
 
 	std::string VideoMode::toString() const noexcept
 	{
-		std::ostringstream ss;
+		std::ostringstream out;
 		switch (screenMode)
 		{
 		case WindowScreenMode::Normal:
-			ss << "Windowed ";
+			out << "Windowed ";
 			break;
 		case WindowScreenMode::Fullscreen:
-			ss << "Fullscreen ";
+			out << "Fullscreen ";
 			break;
 		case WindowScreenMode::WindowedFullscreen:
-			ss << "Borderless Windowed ";
+			out << "Borderless Windowed ";
 			break;
 		default:
 			break;
 		}
-		ss << toShortString();
+		out << toShortString();
 		if (monitor >= 0)
 		{
-			ss << " monitor " << monitor;
+			out << " monitor " << monitor;
 		}
-		return ss.str();
+		return out.str();
 	}
 
 	bool VideoMode::complete() const noexcept
@@ -265,17 +265,17 @@ namespace darmok
 
 	glm::vec2 WindowImpl::screenToWindowPoint(const glm::vec2& point) const noexcept
 	{
-		auto f = getFramebufferScale();
-		auto p = (point - glm::vec2(0.5F)) / f;
-		return p;
+		auto scale = getFramebufferScale();
+		auto winPoint = (point - glm::vec2(0.5F)) / scale;
+		return winPoint;
 	}
 
 	glm::vec2 WindowImpl::windowToScreenPoint(const glm::vec2& point) const noexcept
 	{
-		glm::vec2 p(point);
-		auto f = getFramebufferScale();
-		p = (p * f) + glm::vec2(0.5F);
-		return p;
+		glm::vec2 newPoint(point);
+		auto scale = getFramebufferScale();
+		newPoint = (newPoint * scale) + glm::vec2(0.5F);
+		return newPoint;
 	}
 
 	void WindowImpl::addListener(std::unique_ptr<IWindowListener>&& listener) noexcept
@@ -320,7 +320,7 @@ namespace darmok
 
 	float Window::getAspect() const noexcept
 	{
-		auto& size = getPixelSize();
+		const auto& size = getPixelSize();
 		return (float)size.x / size.y;
 	}
 
@@ -385,14 +385,14 @@ namespace darmok
 		return _impl->getCursorMode();
 	}
 
-	glm::vec2 Window::windowToScreenPoint(const glm::vec2& pos) const noexcept
+	glm::vec2 Window::windowToScreenPoint(const glm::vec2& point) const noexcept
 	{
-		return _impl->windowToScreenPoint(pos);
+		return _impl->windowToScreenPoint(point);
 	}
 
-	glm::vec2 Window::screenToWindowPoint(const glm::vec2& pos) const noexcept
+	glm::vec2 Window::screenToWindowPoint(const glm::vec2& point) const noexcept
 	{
-		return _impl->screenToWindowPoint(pos);
+		return _impl->screenToWindowPoint(point);
 	}
 
 	glm::vec2 Window::getFramebufferScale() const noexcept

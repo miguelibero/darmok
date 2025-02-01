@@ -11,6 +11,7 @@ namespace darmok
 {
 	RmluiDebuggerComponentImpl::RmluiDebuggerComponentImpl(const Config& config) noexcept
 		: _config(config)
+        , _originalCursorMode(WindowCursorMode::Normal)
 	{
 	}
 

@@ -28,7 +28,7 @@ namespace darmok
     class SceneImpl final : IRenderChainDelegate
     {
     public:
-        SceneImpl(Scene& sceme) noexcept;
+        SceneImpl(Scene& scene) noexcept;
         ~SceneImpl() noexcept;
 
         void setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept;
@@ -69,7 +69,7 @@ namespace darmok
         const RenderChain& getRenderChain() const noexcept;
 
         const std::optional<Viewport>& getViewport() const noexcept;
-        void setViewport(const std::optional<Viewport>& vp) noexcept;
+        void setViewport(const std::optional<Viewport>& vport) noexcept;
         Viewport getCurrentViewport() const noexcept;
 
         void init(App& app);

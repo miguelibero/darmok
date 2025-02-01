@@ -10,15 +10,15 @@ namespace darmok
     {
     }
 
-    EntityFilter::EntityFilter(const Container& elements, Operation op) noexcept
-        : elements(elements)
+    EntityFilter::EntityFilter(Container elements, Operation op) noexcept
+        : elements(std::move(elements))
         , op(op)
     {
     }
 
     EntityFilter& EntityFilter::operator|=(const Element& elm) noexcept
     {
-        if (auto filter = std::get_if<EntityFilter>(&elm))
+        if (const auto* filter = std::get_if<EntityFilter>(&elm))
         {
             if (filter->empty())
             {
@@ -35,7 +35,7 @@ namespace darmok
         }
         if (auto typeId = getTypeId(elm))
         {
-            elements.push_back(typeId.value());
+            elements.emplace_back(typeId.value());
         }
         else
         {
@@ -46,14 +46,14 @@ namespace darmok
 
     EntityFilter EntityFilter::operator|(const Element& elm) const noexcept
     {
-        EntityFilter r(*this);
-        r |= elm;
-        return r;
+        EntityFilter filter(*this);
+        filter |= elm;
+        return filter;
     }
 
     EntityFilter& EntityFilter::operator&=(const Element& elm) noexcept
     {
-        if (auto filter = std::get_if<EntityFilter>(&elm))
+        if (const auto* filter = std::get_if<EntityFilter>(&elm))
         {
             if (filter->empty())
             {
@@ -70,7 +70,7 @@ namespace darmok
         }
         if (auto typeId = getTypeId(elm))
         {
-            elements.push_back(typeId.value());
+            elements.emplace_back(typeId.value());
         }
         else
         {
@@ -81,16 +81,16 @@ namespace darmok
 
     EntityFilter EntityFilter::operator&(const Element& elm) const noexcept
     {
-        EntityFilter r(*this);
-        r &= elm;
-        return r;
+        EntityFilter filter(*this);
+        filter &= elm;
+        return filter;
     }
 
     bool EntityFilter::empty() const noexcept
     {
-        for (auto& elm : elements)
+        for (const auto& elm : elements)
         {
-            if (auto filter = std::get_if<EntityFilter>(&elm))
+            if (const auto* filter = std::get_if<EntityFilter>(&elm))
             {
                 if (!filter->empty())
                 {
@@ -107,7 +107,7 @@ namespace darmok
 
     std::optional<EntityFilter::TypeId> EntityFilter::getTypeId(const Element& elm) noexcept
     {
-        if (auto type = std::get_if<entt::id_type>(&elm))
+        if (const auto* type = std::get_if<entt::id_type>(&elm))
         {
             return *type;
         }
@@ -125,7 +125,7 @@ namespace darmok
 
     EntityFilter EntityFilter::negate(const Element& elm) noexcept
     {
-        if (auto type = std::get_if<entt::id_type>(&elm))
+        if (const auto* type = std::get_if<entt::id_type>(&elm))
         {
             return EntityFilter({ *type }, Operation::Not);
         }
@@ -150,12 +150,11 @@ namespace darmok
 
     EntityFilter& EntityFilter::negateElements() noexcept
     {
-        for (size_t i = 0; i < elements.size(); ++i)
+        for (auto& elm : elements)
         {
-            auto& elm = elements[i];
-            if (auto type = std::get_if<entt::id_type>(&elm))
+            if (auto* type = std::get_if<entt::id_type>(&elm))
             {
-                elements[i] = EntityFilter({ *type }, Operation::Not);
+                elm = EntityFilter({ *type }, Operation::Not);
             }
             else
             {
@@ -182,48 +181,48 @@ namespace darmok
             opBack = " || ";
             break;
         }
-        std::stringstream ss;
+        std::stringstream stream;
         size_t i = 0;
         auto size = elements.size();
-        for (auto& elm : elements)
+        for (const auto& elm : elements)
         {
-            ss << opFront;
-            if (auto typeId = std::get_if<TypeId>(&elm))
+            stream << opFront;
+            if (const auto* typeId = std::get_if<TypeId>(&elm))
             {
-                ss << *typeId;
+                stream << *typeId;
             }
             else
             {
-                auto& sub = std::get<EntityFilter>(elm);
+                const auto& sub = std::get<EntityFilter>(elm);
                 auto par = sub.elements.size() > 1;
                 if (par)
                 {
-                    ss << "( ";
+                    stream << "( ";
                 }
-                ss << sub.toString();
+                stream << sub.toString();
                 if (par)
                 {
-                    ss << " )";
+                    stream << " )";
                 }
             }
             ++i;
             if (i < size)
             {
-                ss << opBack;
+                stream << opBack;
             }
         }
-        return ss.str();
+        return stream.str();
     }
 
     EntityViewFilter::EntityViewFilter(const EntityRegistry& registry, const EntityFilter& filter) noexcept
         : _op(filter.op)
         , _invalid(false)
     {
-        for (auto& elm : filter.elements)
+        for (const auto& elm : filter.elements)
         {
-            if (auto typeId = std::get_if<TypeId>(&elm))
+            if (const auto* typeId = std::get_if<TypeId>(&elm))
             {
-                if (auto set = registry.storage(*typeId))
+                if (const auto* set = registry.storage(*typeId))
                 {
                     _elements.emplace_back(*set);
                 }
@@ -237,8 +236,8 @@ namespace darmok
             }
             else
             {
-                auto& sub = std::get<EntityFilter>(elm);
-                _elements.push_back(EntityViewFilter(registry, sub));
+                const auto& sub = std::get<EntityFilter>(elm);
+                _elements.emplace_back(EntityViewFilter(registry, sub));
             }
         }
     }
@@ -255,43 +254,31 @@ namespace darmok
         }
         if (_op == Operation::And)
         {
-            for (auto& elm : _elements)
+            return std::ranges::all_of(_elements, [entity](auto& elm)
             {
-                if (!valid(entity, elm))
-                {
-                    return false;
-                }
-            }
-            return true;
+                return valid(entity, elm);
+            });
         }
         if (_op == Operation::Or)
         {
-            for (auto& elm : _elements)
-            {
-                if (valid(entity, elm))
-                {
-                    return true;
-                }
-            }
-            return false;
+			return std::ranges::any_of(_elements, [entity](auto& elm)
+			{
+				return valid(entity, elm);
+			});
         }
         if (_op == Operation::Not)
         {
-            for (auto& elm : _elements)
+            return std::ranges::any_of(_elements, [entity](auto& elm)
             {
-                if (!valid(entity, elm))
-                {
-                    return true;
-                }
-            }
-            return false;
+                return !valid(entity, elm);
+            });
         }
         return false;
     }
 
     bool EntityViewFilter::valid(Entity entity, const Element& elm) noexcept
     {
-        if (auto setRef = std::get_if<SetRef>(&elm))
+        if (const auto* setRef = std::get_if<SetRef>(&elm))
         {
             return setRef->get().contains(entity);
         }
@@ -315,7 +302,7 @@ namespace darmok
             if (auto typeId = EntityFilter::getTypeId(elm))
             {
                 baseFound = true;
-                if (auto set = registry.storage(*typeId))
+                if (const auto* set = registry.storage(*typeId))
                 {
                     _elements.emplace_back(*set);
                 }
@@ -327,7 +314,7 @@ namespace darmok
         }
         if (_elements.empty() && (!baseFound || !isAnd))
         {
-            auto store = registry.storage<Entity>();
+            const auto* store = registry.storage<Entity>();
             _elements.emplace_back(*store);
         }
     }
@@ -339,18 +326,9 @@ namespace darmok
 
     bool EntityView::empty() const noexcept
     {
-        if (_elements.empty())
-        {
-            return true;
-        }
-        for (auto& elm : _elements)
-        {
-            if (!elm.get().empty())
-            {
-                return false;
-            }
-        }
-        return true;
+        return std::ranges::all_of(_elements, [](const auto& elm) {
+            return elm.get().empty();
+        });
     }
 
     EntityView::Iterator EntityView::begin() const
@@ -358,9 +336,9 @@ namespace darmok
         auto adapter = EntityViewIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return Iterator(adapter, adapter.beginContItr);
+            return { adapter, adapter.beginContItr };
         }
-        return Iterator(adapter, adapter.beginContItr, adapter.beginElmItr);
+        return { adapter, adapter.beginContItr, adapter.beginElmItr };
     }
 
     EntityView::Iterator EntityView::end() const
@@ -368,9 +346,9 @@ namespace darmok
         auto adapter = EntityViewIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return Iterator(adapter, adapter.endContItr);
+            return { adapter, adapter.endContItr };
         }
-        return Iterator(adapter, adapter.endContItr, adapter.endElmItr);
+        return { adapter, adapter.endContItr, adapter.endElmItr };
     }
 
     EntityView::ReverseIterator EntityView::rbegin() const
@@ -378,9 +356,9 @@ namespace darmok
         auto adapter = EntityViewReverseIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return ReverseIterator(adapter, adapter.beginContItr);
+            return { adapter, adapter.beginContItr };
         }
-        return ReverseIterator(adapter, adapter.beginContItr, adapter.beginElmItr);
+        return { adapter, adapter.beginContItr, adapter.beginElmItr };
     }
 
     EntityView::ReverseIterator EntityView::rend() const
@@ -388,9 +366,9 @@ namespace darmok
         auto adapter = EntityViewReverseIteratorAdapter(*this);
         if (_elements.empty())
         {
-            return ReverseIterator(adapter, adapter.endContItr);
+            return { adapter, adapter.endContItr };
         }
-        return ReverseIterator(adapter, adapter.endContItr, adapter.endElmItr);
+        return { adapter, adapter.endContItr, adapter.endElmItr };
     }
 
     EntityViewIteratorAdapter::EntityViewIteratorAdapter(const EntityView& view) noexcept

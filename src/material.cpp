@@ -18,15 +18,15 @@ namespace darmok
 		, _program(program)
 		, _baseColor(Colors::white())
 		, _specularColor(Colors::black3())
-		, _metallicFactor(0.F)
-		, _roughnessFactor(0.5F)
-		, _normalScale(1.F)
-		, _occlusionStrength(0.F)
+		, _metallicFactor(defaultMetallicFactor)
+		, _roughnessFactor(defaultRoughnessFactor)
+		, _normalScale(defaultNormalScale)
+		, _occlusionStrength(defaultOcclusionStrength)
 		, _emissiveColor(Colors::black3())
 		, _multipleScattering(false)
-		, _whiteFurnance(0.F)
+		, _whiteFurnance(defaultWhiteFurnance)
 		, _opacityType(OpacityType::Transparent)
-		, _shininess(32)
+		, _shininess(defaultShininess)
 		, _twoSided(false)
 		, _uniforms(false)
 		, _textureUniforms(false)
@@ -301,9 +301,9 @@ namespace darmok
 		return _shininess;
 	}
 
-	Material& Material::setShininess(uint16_t v) noexcept
+	Material& Material::setShininess(uint16_t val) noexcept
 	{
-		_shininess = v;
+		_shininess = val;
 		return *this;
 	}
 
@@ -312,9 +312,9 @@ namespace darmok
 		return _opacityType;
 	}
 
-	Material& Material::setOpacityType(OpacityType v) noexcept
+	Material& Material::setOpacityType(OpacityType val) noexcept
 	{
-		_opacityType = v;
+		_opacityType = val;
 		return *this;
 	}
 
@@ -414,7 +414,7 @@ namespace darmok
 		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
 		_basicUniforms.init();
 
-		Image img(Colors::white(), app.getAssets().getAllocator());
+		const Image img(Colors::white(), app.getAssets().getAllocator());
 		_defaultTexture = std::make_shared<Texture>(img);
 	}
 
@@ -434,12 +434,12 @@ namespace darmok
 			bgfx::destroy(elm.handle);
 			elm.handle.idx = bgfx::kInvalidHandle;
 		}
-		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
+		const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
 			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
 			_metallicRoughnessNormalOcclusionUniform, _emissiveColorUniform,
 			_hasTexturesUniform, _multipleScatteringUniform
 		};
-		for (auto& uniform : uniforms)
+		for (const auto& uniform : uniforms)
 		{
 			if (isValid(uniform))
 			{
@@ -454,9 +454,8 @@ namespace darmok
 	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
 	{
 		glm::vec4 hasTextures(0);
-		for (uint8_t i = 0; i < _samplerUniforms.size(); ++i)
+		for (const auto& def : _samplerUniforms)
 		{
-			auto& def = _samplerUniforms[i];
 			auto tex = mat.getTexture(def.type);
 			if (tex)
 			{
@@ -471,17 +470,17 @@ namespace darmok
 		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));
 		encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, _albedoLutSamplerUniform, _defaultTexture->getHandle());
 
-		auto v = Colors::normalize(mat.getBaseColor());
-		encoder.setUniform(_baseColorUniform, glm::value_ptr(v));
-		v = glm::vec4(Colors::normalize(mat.getSpecularColor()), mat.getShininess());
-		encoder.setUniform(_specularColorUniform, glm::value_ptr(v));
+		auto val = Colors::normalize(mat.getBaseColor());
+		encoder.setUniform(_baseColorUniform, glm::value_ptr(val));
+		val = glm::vec4(Colors::normalize(mat.getSpecularColor()), mat.getShininess());
+		encoder.setUniform(_specularColorUniform, glm::value_ptr(val));
 		
-		v = glm::vec4(mat.getMetallicFactor(), mat.getRoughnessFactor(), mat.getNormalScale(), mat.getOcclusionStrength());
-		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(v));
-		v = glm::vec4(Colors::normalize(mat.getEmissiveColor()), 0);
-		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(v));
-		v = glm::vec4(mat.getMultipleScattering() ? 1.F : 0.F, mat.getWhiteFurnanceFactor(), 0, 0);
-		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(v));
+		val = glm::vec4(mat.getMetallicFactor(), mat.getRoughnessFactor(), mat.getNormalScale(), mat.getOcclusionStrength());
+		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
+		val = glm::vec4(Colors::normalize(mat.getEmissiveColor()), 0);
+		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(val));
+		val = glm::vec4(mat.getMultipleScattering() ? 1.F : 0.F, mat.getWhiteFurnanceFactor(), 0, 0);
+		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(val));
 		_basicUniforms.configure(encoder);
 
 		mat.getUniformContainer().configure(encoder);
@@ -499,11 +498,8 @@ namespace darmok
 			state |= BGFX_STATE_PT_LINES;
 			state |= BGFX_STATE_LINEAA;
 		}
-		if (mat.getOpacityType() == OpacityType::Transparent)
-		{
-			state |= BGFX_STATE_BLEND_ALPHA;
-		}
-		else if (mat.getOpacityType() == OpacityType::Mask)
+		auto opa = mat.getOpacityType();
+		if (opa == OpacityType::Transparent || opa == OpacityType::Mask)
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
 		}

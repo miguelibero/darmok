@@ -259,7 +259,7 @@ namespace darmok
         }
         _passes.clear();
 
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
+        const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
             _shadowMapUniform, _shadowData1Uniform, _shadowData2Uniform
         };
         for (auto& uniform : uniforms)
@@ -270,7 +270,7 @@ namespace darmok
                 uniform.get().idx = bgfx::kInvalidHandle;
             }
         }
-        std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers{
+        const std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers{
             _shadowTransBuffer, _shadowLightDataBuffer
         };
         for (auto& buffer : buffers)
@@ -392,13 +392,13 @@ namespace darmok
         };
 
         _camProjs.clear();
-        auto m = _config.cascadeMargin;
+        auto margin = _config.cascadeMargin;
         for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
         {
             auto nearFactor = cascSliceDistri(casc);
             auto farFactor = cascSliceDistri(casc + 1);
-            nearFactor = std::max(nearFactor - m, 0.F);
-            farFactor = std::min(farFactor + m, 1.F);
+            nearFactor = std::max(nearFactor - margin, 0.F);
+            farFactor = std::min(farFactor + margin, 1.F);
 
             auto cascFrust = frust.getSlice(nearFactor, farFactor);
             auto cascProj = cascFrust.getAlignedProjectionMatrix();
@@ -437,7 +437,7 @@ namespace darmok
             transWriter.write(bgfx::Attrib::Color2, index, tmtx[2]);
             transWriter.write(bgfx::Attrib::Color3, index, tmtx[3]);
 
-            glm::vec4 lightData(entity, lightType, toUnderlying(shadowType), 0.F);
+            const glm::vec4 lightData(entity, lightType, toUnderlying(shadowType), 0.F);
             lightDataWriter.write(bgfx::Attrib::Color0, index, lightData);
 
             ++index;

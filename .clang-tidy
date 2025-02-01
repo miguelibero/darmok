@@ -1,5 +1,4 @@
 Checks: >
-  -*,
   readability-*,
   performance-*,
   modernize-*,
@@ -7,10 +6,11 @@ Checks: >
   bugprone-*,
   cppcoreguidelines-*,
   misc-*,
-  -modernize-use-trailing-return-type
+  -modernize-use-trailing-return-type,
+  -misc-no-recursion
 
 WarningsAsErrors: 'true'
 
 CheckOptions:
   - key: readability-identifier-length.IgnoredVariableNames
-    value: "^(i|j|k)$"
+    value: "^(i|j|k|x|y|z|w|v|h|id)$"

@@ -38,7 +38,7 @@ namespace darmok
 		{
 			return entt::null;
 		}
-		auto ptr = ReflectionUtils::getRefPtr(any);
+		const auto* ptr = ReflectionUtils::getRefPtr(any);
 		if (ptr == nullptr)
 		{
 			return entt::null;

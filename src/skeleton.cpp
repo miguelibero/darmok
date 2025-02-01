@@ -63,7 +63,7 @@ namespace darmok
             {
                 layout = MeshData::getDefaultVertexLayout();
             }
-            Line line(glm::vec3(0), glm::vec3(1, 0, 0));
+            const Line line(glm::vec3(0), glm::vec3(1, 0, 0));
             _boneMesh = MeshData(line, LineMeshType::Arrow).createMesh(layout);
         }
     }
@@ -100,7 +100,7 @@ namespace darmok
 
         auto& trans = scene.getOrAddComponent<Transform>(entity);
 
-        for (auto& [name, mtx] : boneMatrixes)
+        for (const auto& [name, mtx] : boneMatrixes)
         {
             auto itr = _boneTransforms.find(name);
             if (itr != _boneTransforms.end())
@@ -571,8 +571,8 @@ namespace darmok
         auto ext = StringUtils::getFileExt(path.filename().string());
         if (ext == ".json")
         {
-            std::ifstream is(path);
-            config.readJson(nlohmann::json::parse(is));
+            std::ifstream stream(path);
+            config.readJson(nlohmann::json::parse(stream));
         }
         return config;
     }

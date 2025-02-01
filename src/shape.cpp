@@ -325,7 +325,7 @@ namespace darmok
 
     bool Plane::contains(const glm::vec3& point) const noexcept
     {
-        float eps = std::numeric_limits<float>::epsilon();
+        constexpr float eps = std::numeric_limits<float>::epsilon();
         return glm::abs(signedDistanceTo(point)) < eps;
     }
 

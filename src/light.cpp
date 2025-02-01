@@ -294,7 +294,7 @@ namespace darmok
 
     void LightingRenderComponent::destroyHandles() noexcept
     {
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
+        const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
             _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
         };
         for (auto& uniform : uniforms)
@@ -305,7 +305,7 @@ namespace darmok
                 uniform.get().idx = bgfx::kInvalidHandle;
             }
         }
-        std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers = {
+        const std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers = {
             _pointLightBuffer, _dirLightBuffer, _spotLightBuffer
         };
         for (auto& buffer : buffers)
@@ -463,7 +463,7 @@ namespace darmok
         _lightData = glm::vec4(0.F);
         for (auto entity : entities)
         {
-            auto& ambientLight = _scene->getComponent<const AmbientLight>(entity).value();
+            const auto& ambientLight = _scene->getComponent<const AmbientLight>(entity).value();
             auto c = Colors::normalize(ambientLight.getColor()) * ambientLight.getIntensity();
             _lightData += glm::vec4(c, 0.F);
         }

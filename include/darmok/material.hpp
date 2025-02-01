@@ -39,6 +39,13 @@ namespace darmok
     class DARMOK_EXPORT Material final
     {
     public:
+		constexpr static float defaultMetallicFactor = 0.F;
+        constexpr static float defaultRoughnessFactor = 0.5F;
+        constexpr static float defaultNormalScale = 1.F;
+        constexpr static float defaultOcclusionStrength = 0.F;
+        constexpr static float defaultWhiteFurnance = 0.F;
+        constexpr static uint16_t defaultShininess = 32;
+
         using TextureType = MaterialTextureType;
         using PrimitiveType = MaterialPrimitiveType;
         using Textures = std::unordered_map<TextureType, std::shared_ptr<Texture>>;

@@ -495,6 +495,11 @@ namespace darmok
 		return std::make_shared<Image>(data, _alloc);
 	}
 
+	ImageFileImporter::ImageFileImporter() noexcept
+		: _outputEncoding(ImageEncoding::Count)
+	{
+	}
+
 	bool ImageFileImporter::startImport(const Input& input, bool dry)
 	{
 		if (input.config.is_null())

@@ -318,8 +318,10 @@ namespace darmok
 	public:
 		Input() noexcept;
 		~Input() noexcept;
-		Input(const Input& other) = delete;
-		Input(Input&& other) = delete;
+		Input(const Input&) = delete;
+		Input(Input&&) = delete;
+		Input& operator=(const Input&) = delete;
+		Input& operator=(Input&&) = delete;
 
 		[[nodiscard]] Keyboard& getKeyboard() noexcept;
 		[[nodiscard]] Mouse& getMouse() noexcept;

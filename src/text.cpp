@@ -180,13 +180,13 @@ namespace darmok
 
 	glm::vec2 TextRenderConfig::getGlyphAdvanceFactor() const noexcept
 	{
-		auto f = direction == Direction::Negative ? -1 : 1;
+		auto factor = direction == Direction::Negative ? -1 : 1;
 		if (axis == Axis::Vertical)
 		{
-			return glm::vec2(0, f);
+			return glm::vec2(0, factor);
 
 		}
-		return glm::vec2(f, 0);
+		return glm::vec2(factor, 0);
 	}
 
 	bool TextRenderConfig::fixEndOfLine(glm::vec2& pos, float lineStep) const

@@ -31,7 +31,7 @@ namespace darmok
     class DARMOK_EXPORT FrameAnimation final
     {
     public:
-        FrameAnimation(const std::vector<AnimationFrame>& frames, OptionalRef<Renderable> renderable = nullptr) noexcept;
+        FrameAnimation(std::vector<AnimationFrame> frames, OptionalRef<Renderable> renderable = nullptr) noexcept;
         void setFrames(const std::vector<AnimationFrame>& frames) noexcept;
         void setRenderable(Renderable& renderable) noexcept;
         

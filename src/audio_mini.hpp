@@ -62,7 +62,7 @@ namespace darmok
 
 		operator ma_sound_group*() noexcept;
 		float getVolume() const noexcept;
-		void setVolume(float v) noexcept;
+		void setVolume(float val) noexcept;
 	private:
 		ma_sound_group _group;
 	};
@@ -81,7 +81,7 @@ namespace darmok
 		bool atEnd() const noexcept;
 		bool isPlaying() const noexcept;
 		void setPosition(const glm::vec3& pos) noexcept;
-		void setLooping(bool v) noexcept;
+		void setLooping(bool val) noexcept;
 	private:
 		ma_sound _sound;
 		MiniaudioDecoder _decoder;
@@ -97,11 +97,11 @@ namespace darmok
 		void play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos);
 		void play(const std::shared_ptr<Music>& music);
 
-		float getVolume(AudioGroup group) const;
+		[[nodiscard]] float getVolume(AudioGroup group) const;
 		void setVolume(AudioGroup group, float v);
 		void stopMusic();
 		void pauseMusic();
-		MusicState getMusicState() const noexcept;
+		[[nodiscard]] MusicState getMusicState() const noexcept;
 	private:
 		ma_engine _engine;
 		std::unique_ptr<MiniaudioSoundGroup> _soundGroup;

@@ -219,7 +219,7 @@ namespace darmok
     {
         auto& scene = _scene.value();
         auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
-        Frustum camFrust = _cam->getViewProjectionMatrix();
+        const Frustum camFrust = _cam->getViewProjectionMatrix();
         _culled.clear();
         for (auto entity : entities)
         {
@@ -277,7 +277,7 @@ namespace darmok
         auto mainCam = _mainCam ? _mainCam : _cam;
         if (mainCam)
         {
-            Frustum frust = mainCam->getViewProjectionMatrix();
+            const Frustum frust = mainCam->getViewProjectionMatrix();
             for (auto& plane : frust.getPlanes())
             {
                 meshData += MeshData(plane, RectangleMeshType::Full);

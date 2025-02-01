@@ -146,6 +146,11 @@ namespace darmok
 	public:
 		App(std::unique_ptr<IAppDelegateFactory>&& delegateFactory) noexcept;
 		~App() noexcept;
+		App(const App&) = delete;
+		App(App&&) = delete;
+		App& operator=(const App&) = delete;
+		App& operator=(App&&) = delete;
+
 		std::optional<int32_t> setup(const CmdArgs& args);
 		void init();
 		void requestRenderReset();

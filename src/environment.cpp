@@ -82,7 +82,7 @@ namespace darmok
         _color2Uniform = bgfx::createUniform("u_gridColor2", bgfx::UniformType::Vec4);
         _dataUniform = bgfx::createUniform("u_data", bgfx::UniformType::Vec4);
 
-        Rectangle rect(glm::vec2(2.0));
+        static const Rectangle rect(glm::vec2(2.0));
         _mesh = MeshData(rect, RectangleMeshType::Full).createMesh(_program->getVertexLayout());
         _cam = cam;
     }

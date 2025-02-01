@@ -2,7 +2,6 @@
 #include "platform.hpp"
 #include "input.hpp"
 #include "window.hpp"
-#include "dbg.h"
 
 namespace darmok
 {
@@ -11,18 +10,18 @@ namespace darmok
 	{
 	}
 
-	KeyboardKeyEvent::KeyboardKeyEvent(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
+	KeyboardKeyEvent::KeyboardKeyEvent(KeyboardKey key, KeyboardModifiers modifiers, bool down) noexcept
 		: PlatformEvent(Type::KeyboardKey)
 		, _key(key)
-		, _modifiers(modifiers)
+		, _modifiers(std::move(modifiers))
 		, _down(down)
 	{
 	}
 
 	void KeyboardKeyEvent::process(Input& input) noexcept
 	{
-		auto& kb = input.getKeyboard().getImpl();
-		kb.setKey(_key, _modifiers, _down);
+		auto& keyb = input.getKeyboard().getImpl();
+		keyb.setKey(_key, _modifiers, _down);
 	}
 
 	KeyboardCharEvent::KeyboardCharEvent(const UtfChar& data) noexcept
@@ -165,9 +164,9 @@ namespace darmok
 		win.getImpl().setPhase(_phase);
 	}
 
-	WindowErrorEvent::WindowErrorEvent(const std::string& err) noexcept
+	WindowErrorEvent::WindowErrorEvent(std::string err) noexcept
 		: PlatformEvent(Type::WindowError)
-		, _error(err)
+		, _error(std::move(err))
 	{
 	}
 
@@ -187,9 +186,9 @@ namespace darmok
 		win.getImpl().setVideoMode(_mode);
 	}
 
-	VideoModeInfoEvent::VideoModeInfoEvent(const VideoModeInfo& info) noexcept
+	VideoModeInfoEvent::VideoModeInfoEvent(VideoModeInfo info) noexcept
 		: PlatformEvent(Type::VideoModeInfo)
-		, _info(info)
+		, _info(std::move(info))
 	{
 	}
 
@@ -209,9 +208,9 @@ namespace darmok
 		win.getImpl().setCursorMode(_mode);
 	}
 
-	WindowTitleEvent::WindowTitleEvent(const std::string& title) noexcept
+	WindowTitleEvent::WindowTitleEvent(std::string title) noexcept
 		: PlatformEvent(Type::WindowCursorMode)
-		, _title(title)
+		, _title(std::move(title))
 	{
 	}
 
@@ -282,13 +281,13 @@ namespace darmok
 
 	void PlatformEventQueue::post(std::unique_ptr<PlatformEvent>&& ev) noexcept
 	{
-		std::lock_guard lock(_mutex);
+		const std::lock_guard lock(_mutex);
 		_events.push(std::move(ev));
 	}
 
 	std::unique_ptr<PlatformEvent> PlatformEventQueue::poll() noexcept
 	{
-		std::lock_guard lock(_mutex);
+		const std::lock_guard lock(_mutex);
 		if (_events.empty())
 		{
 			return nullptr;

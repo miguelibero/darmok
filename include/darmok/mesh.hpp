@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <variant>
+#include <limits>
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
@@ -177,8 +178,8 @@ namespace darmok
 
     struct DARMOK_EXPORT MeshDataVertex final
     {
-        glm::vec3 position;
-        glm::vec2 texCoord;
+        glm::vec3 position{};
+        glm::vec2 texCoord{};
         glm::vec3 normal = glm::vec3(0, 1, 0);
         glm::vec3 tangent = glm::vec3(0, 0, 0);
         Color color = Colors::white();
@@ -282,7 +283,7 @@ namespace darmok
     private:
         static const std::vector<Index> _cuboidTriangleIndices;
 
-        bool doSubdivide(size_t i, float maxDistance = bx::kFloatInfinity) noexcept;
+        bool doSubdivide(size_t i, float maxDistance = std::numeric_limits<float>::infinity()) noexcept;
         static void doCreateIndices(std::vector<Index>& indices, size_t size) noexcept;
         void setupBasicRectangle() noexcept;
     };

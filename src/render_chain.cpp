@@ -391,7 +391,7 @@ namespace darmok
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 		_basicUniforms.init();
 
-		Rectangle screen(glm::uvec2(2));
+		const Rectangle screen(glm::uvec2(2));
 		_mesh = MeshData(screen).createMesh(_program->getVertexLayout());
 	}
 

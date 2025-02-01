@@ -21,6 +21,7 @@ function(darmok_sample_setup)
   darmok_copy_dynamic_libs(${ARGS_TARGET})
   set_target_properties(${ARGS_TARGET} PROPERTIES FOLDER "darmok/samples")
   add_dependencies(${ARGS_TARGET} ${SHARED_ASSETS_TARGET})
+  _darmok_analysis_setup(${ARGS_TARGET})
 
   if(ARGS_ASSETS)
     set(ASSETS_TARGET ${ARGS_TARGET}-assets)

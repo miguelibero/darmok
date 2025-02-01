@@ -85,8 +85,10 @@ namespace darmok
 	public:
 		Window(Platform& plat) noexcept;
 		~Window() noexcept;
-		Window(const Window& other) = delete;
-		Window(Window&& other) = delete;
+		Window(const Window&) = delete;
+		Window(Window&&) = delete;
+		Window& operator=(const Window&) = delete;
+		Window& operator=(Window&&) = delete;
 
 		void requestVideoMode(const VideoMode& mode) noexcept;
 		void requestCursorMode(WindowCursorMode mode) noexcept;

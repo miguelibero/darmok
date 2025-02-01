@@ -101,7 +101,7 @@ namespace darmok
 	private:
 		static std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept;
 		static std::vector<TextureAtlasIndex> readIndexList(std::string_view str) noexcept;
-		static std::pair<std::optional<glm::uvec2>, size_t> readVec2(std::string_view str, size_t i) noexcept;
+		static std::pair<std::optional<glm::uvec2>, size_t> readVec2(std::string_view str, size_t pos) noexcept;
 		static std::vector<glm::uvec2> readVec2List(std::string_view data) noexcept;
 		static std::string writeVec2List(const std::vector<glm::uvec2>& list) noexcept;
 		static std::string writeIndexList(const std::vector<TextureAtlasIndex>& list) noexcept;
@@ -134,7 +134,7 @@ namespace darmok
 		std::filesystem::path imagePath;
 		std::shared_ptr<TextureDefinition> texture;
 		std::vector<TextureAtlasElement> elements;
-		glm::uvec2 size;
+		glm::uvec2 size{};
 
 		bool readTexturePacker(const pugi::xml_document& doc, const std::filesystem::path& basePath = "");
 		bool readTexturePacker(const pugi::xml_node& node, const std::filesystem::path& basePath = "");
@@ -211,7 +211,7 @@ namespace darmok
 	class DARMOK_EXPORT TexturePackerAtlasFileImporter final : public IFileTypeImporter
 	{
 	public:
-		TexturePackerAtlasFileImporter(const std::filesystem::path& exePath = "") noexcept;
+		TexturePackerAtlasFileImporter(std::filesystem::path exePath = "") noexcept;
 		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
 		bool startImport(const Input& input, bool dry) override;
 		Outputs getOutputs(const Input& input) override;

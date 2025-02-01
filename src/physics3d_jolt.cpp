@@ -62,18 +62,18 @@ namespace darmok::physics3d
 
     JPH::Mat44 JoltUtils::convert(const glm::mat4& v) noexcept
     {
-        auto fv = Math::flipHandedness(v);
+        auto flipped = Math::flipHandedness(v);
         return JPH::Mat44(
-            convert(fv[0]),
-            convert(fv[1]),
-            convert(fv[2]),
-            convert(fv[3])
+            convert(flipped[0]),
+            convert(flipped[1]),
+            convert(flipped[2]),
+            convert(flipped[3])
         );
     }
 
     glm::mat4 JoltUtils::convert(const JPH::Mat44& v) noexcept
     {
-        glm::mat4 mat(
+        const glm::mat4 mat(
             convert(v.GetColumn4(0)),
             convert(v.GetColumn4(1)),
             convert(v.GetColumn4(2)),
@@ -90,7 +90,7 @@ namespace darmok::physics3d
 
     glm::quat JoltUtils::convert(const JPH::Quat& v) noexcept
     {
-        glm::quat quat(v.GetW(), v.GetX(), v.GetY(), v.GetZ());
+        const glm::quat quat(v.GetW(), v.GetX(), v.GetY(), v.GetZ());
         return Math::flipHandedness(quat);
     }
 
@@ -357,7 +357,7 @@ namespace darmok::physics3d
     {
         BroadLayer i = 0;
         BroadLayer defi = 0;
-        for (auto& [broadLayer, mask] : broad)
+        for (const auto& [broadLayer, mask] : broad)
         {
             if (mask == kAllLayers || mask == 0)
             {
@@ -836,7 +836,7 @@ namespace darmok::physics3d
         }
         auto joltRay = JoltUtils::convert(ray);
         JoltBroadPhaseLayerMaskFilter bphFilter(_config.layers.getBroad(layers));
-        JoltObjectLayerMaskFilter objFilter(layers);
+        const JoltObjectLayerMaskFilter objFilter(layers);
         JPH::RayCastResult result;
 
         if (!_joltSystem->GetNarrowPhaseQuery().CastRay(joltRay, result, bphFilter, objFilter))
@@ -861,8 +861,8 @@ namespace darmok::physics3d
 
         auto joltRay = JoltUtils::convert(ray);
         JoltBroadPhaseLayerMaskFilter bphFilter(_config.layers.getBroad(layers));
-        JoltObjectLayerMaskFilter objFilter(layers);
-        JPH::RayCastSettings settings;
+        const JoltObjectLayerMaskFilter objFilter(layers);
+        const JPH::RayCastSettings settings;
         JoltVectorCastRayCollector collector;
 
         _joltSystem->GetNarrowPhaseQuery().CastRay(joltRay, settings, collector, bphFilter, objFilter);
@@ -882,7 +882,7 @@ namespace darmok::physics3d
     {
         auto& iface = _joltSystem->GetBodyInterface();
         JoltBroadPhaseLayerMaskFilter bphFilter(_config.layers.getBroad(layers));
-        JoltObjectLayerMaskFilter objFilter(layers);
+        const JoltObjectLayerMaskFilter objFilter(layers);
         iface.ActivateBodiesInAABox(JoltUtils::convert(bbox), bphFilter, objFilter);
     }
 
@@ -1210,7 +1210,7 @@ namespace darmok::physics3d
         {
             return {};
         }
-        JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
+        const JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
         settings->mMaxSlopeAngle = config.maxSlopeAngle;
         settings->mShape = JoltUtils::convert(config.shape, trans.scale);
         settings->mFriction = config.friction;
@@ -1477,7 +1477,7 @@ namespace darmok::physics3d
     {
         auto shape = getBodyInterface()->GetShape(_bodyId);
         auto trans = getBodyInterface()->GetCenterOfMassTransform(_bodyId);
-        JPH::Vec3 scale(1.F, 1.F, 1.F);
+        static const JPH::Vec3 scale(1.F, 1.F, 1.F);
         return JoltUtils::convert(shape->GetWorldSpaceBounds(trans, scale));
     }
 
@@ -1504,7 +1504,7 @@ namespace darmok::physics3d
         {
             return;
         }
-        JPH::BodyLockWrite lock(lockFace.value(), _bodyId);
+        const JPH::BodyLockWrite lock(lockFace.value(), _bodyId);
         if (lock.Succeeded())
         {
             auto& body = lock.GetBody();

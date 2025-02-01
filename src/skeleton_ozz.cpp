@@ -151,7 +151,7 @@ namespace darmok
 
     int DataOzzStream::Seek(int offset, Origin origin) noexcept
     {
-        size_t pos;
+        size_t pos = 0;
         switch (origin) {
         case kCurrent:
             pos = _pos;
@@ -350,7 +350,7 @@ namespace darmok
         {
             return 0.F;
         }
-        State state(getOzz(), stateConfig.value(), (ISkeletalAnimationProvider&)*this);
+        const State state(getOzz(), stateConfig.value(), (ISkeletalAnimationProvider&)*this);
         return state.getDuration();
     }
 
@@ -402,11 +402,7 @@ namespace darmok
 
     bool OzzSkeletalAnimatorAnimationState::hasFinished() const noexcept
     {
-        if (_looped && !_def.loop)
-        {
-            return true;
-        }
-        return false;
+        return _looped && !_def.loop;
     }
 
     void OzzSkeletalAnimatorAnimationState::update(float deltaTime)
@@ -903,8 +899,8 @@ namespace darmok
             glm::vec3 parentPos = OzzUtils::convert(_models[parentId])[3];
             glm::vec3 childPos = OzzUtils::convert(_models[i])[3];
             auto diff = childPos - parentPos;
-            auto rot = glm::rotation(dir, glm::normalize(diff));
-            auto scale = glm::vec3(glm::length(diff));
+            const auto rot = glm::rotation(dir, glm::normalize(diff));
+            const auto scale = glm::vec3(glm::length(diff));
             auto bone = Math::transform(parentPos, rot, scale);
             bones.emplace(name, bone);
         }

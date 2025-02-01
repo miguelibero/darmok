@@ -13,6 +13,7 @@
 #include <darmok/program_fwd.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include <memory>
 #include <string_view>
@@ -22,11 +23,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <bx/bx.h>
 #include <cereal/cereal.hpp>
 
 // to allow serialization
-#include <darmok/glm_serialize.hpp>
 #include <cereal/types/optional.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/unordered_set.hpp>

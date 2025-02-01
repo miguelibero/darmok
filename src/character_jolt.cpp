@@ -203,11 +203,11 @@ namespace darmok::physics3d
         {
             return;
         }
-        auto lv = JoltUtils::convert(linearVelocity);
-        auto av = JoltUtils::convert(angularVelocity);
-        _delegate->onAdjustBodyVelocity(_ctrl.value(), body.value(), lv, av);
-        linearVelocity = JoltUtils::convert(lv);
-        angularVelocity = JoltUtils::convert(av);
+        auto linv = JoltUtils::convert(linearVelocity);
+        auto angv = JoltUtils::convert(angularVelocity);
+        _delegate->onAdjustBodyVelocity(_ctrl.value(), body.value(), linv, angv);
+        linearVelocity = JoltUtils::convert(linv);
+        angularVelocity = JoltUtils::convert(angv);
     }
 
     bool CharacterControllerImpl::OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
@@ -275,7 +275,7 @@ namespace darmok::physics3d
         }
         auto joltTrans = getSystemImpl().loadTransform(trans);
 
-        JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
+        const JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
         settings->mMaxSlopeAngle = _config.maxSlopeAngle;
         settings->mMaxStrength = _config.maxStrength;
         settings->mShape = JoltUtils::convert(_config.shape, joltTrans.scale);

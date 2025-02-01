@@ -54,7 +54,7 @@ namespace darmok
 		{
 			return glfwGetPrimaryMonitor();
 		}
-		int monCount;
+		int monCount = 0;
 		auto monitors = glfwGetMonitors(&monCount);
 		if (_mode.monitor >= monCount)
 		{
@@ -502,8 +502,9 @@ namespace darmok
 			return GamepadButton::Down;
 		case GLFW_GAMEPAD_BUTTON_DPAD_LEFT:
 			return GamepadButton::Left;
+		default:
+			return GamepadButton::Count;
 		};
-		return GamepadButton::Count;
 	}
 
 	std::optional<PlatformImpl::GamepadAxisConfig> PlatformImpl::translateGamepadAxis(int axis) noexcept
@@ -522,8 +523,9 @@ namespace darmok
 			return GamepadAxisConfig{ GamepadStick::Right, 1, true };
 		case GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER:
 			return GamepadAxisConfig{ GamepadStick::Right, 2 };
+		default:
+			return std::nullopt;
 		}
-		return std::nullopt;
 	}
 
 	void PlatformImpl::errorCallback(int error, const char* description)
@@ -535,7 +537,7 @@ namespace darmok
 	{
 		int id = GLFW_JOYSTICK_1 + num;
 
-		int numAxes, numButtons;
+		int numAxes, numButtons = 0;
 		const float* axes = nullptr;
 		const unsigned char* buttons = nullptr;
 		GLFWgamepadstate state;
@@ -627,13 +629,13 @@ namespace darmok
 			return bx::kExitFailure;
 		}
 
-		int left, right, top, bottom;
+		int left, right, top, bottom = 0;
 		glfwGetWindowFrameSize(_window, &left, &top, &right, &bottom);
 		_winFrameSize = { {left, top}, {right, bottom} };
 
-		int w, h;
+		int w, h = 0;
 		glfwGetFramebufferSize(_window, &w, &h);
-		glm::uvec2 pixelSize(w, h);
+		const glm::uvec2 pixelSize(w, h);
 
 		{
 			// send events for initial window state
@@ -647,7 +649,7 @@ namespace darmok
 
 		{
 			// send event for initial mouse state
-			double x, y;
+			double x, y = 0;
 			glfwGetCursorPos(_window, &x, &y);
 			_events.post<MousePositionEvent>(glm::vec2{ x, y });
 		}
@@ -705,14 +707,14 @@ namespace darmok
 		_events.post<KeyboardCharEvent>(chr);
 	}
 
-	void PlatformImpl::scrollCallback(GLFWwindow* window, double dx, double dy) noexcept
+	void PlatformImpl::scrollCallback(GLFWwindow* window, double scrollx, double scrolly) noexcept
 	{
-		_events.post<MouseScrollEvent>(glm::vec2{ dx, dy });
+		_events.post<MouseScrollEvent>(glm::vec2{ scrollx, scrolly });
 	}
 
-	void PlatformImpl::cursorPosCallback(GLFWwindow* window, double x, double y) noexcept
+	void PlatformImpl::cursorPosCallback(GLFWwindow* window, double posx, double posy) noexcept
 	{
-		_events.post<MousePositionEvent>(glm::vec2{ x, y });
+		_events.post<MousePositionEvent>(glm::vec2{ posx, posy });
 	}
 
 	void PlatformImpl::cursorEnterCallback(GLFWwindow* window, int entered) noexcept
@@ -736,7 +738,7 @@ namespace darmok
 		{
 			return;
 		}
-		glm::uvec2 size(width, height);
+		const glm::uvec2 size(width, height);
 		_events.post<WindowSizeEvent>(size);
 	}
 
@@ -844,7 +846,7 @@ namespace darmok
 		}
 		else
 		{
-			int monitorCount;
+			int monitorCount = 0;
 			auto monitors = glfwGetMonitors(&monitorCount);
 			for (int i = 0; i < monitorCount; i++)
 			{
@@ -899,7 +901,7 @@ namespace darmok
 			auto& mon = info.monitors.emplace_back();
 			mon.name = glfwGetMonitorName(glfwMon);
 			mon.workarea = getMonitorWorkarea(glfwMon);
-			int modeCount;
+			int modeCount = 0;
 			auto glfwModes = glfwGetVideoModes(glfwMon, &modeCount);
 			auto monSize = mon.workarea.size - mon.workarea.origin;
 			auto defMode = getVideoMode(nullptr, glfwMon);

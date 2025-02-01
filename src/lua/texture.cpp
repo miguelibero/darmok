@@ -10,13 +10,13 @@ namespace darmok
 	void LuaTexture::bind(sol::state_view& lua) noexcept
 	{
 		auto textureFlagTable = lua.create_named_table("TextureFlag");
-		for (auto& [name, flag] : Texture::getTextureFlags())
+		for (const auto& [name, flag] : Texture::getTextureFlags())
 		{
 			textureFlagTable[name] = flag;
 		}
 		
 		auto samplerFlagTable = lua.create_named_table("SamplerFlag");
-		for (auto& [name, flag] : Texture::getSamplerFlags())
+		for (const auto& [name, flag] : Texture::getSamplerFlags())
 		{
 			samplerFlagTable[name] = flag;
 		}

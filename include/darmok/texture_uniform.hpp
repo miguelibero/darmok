@@ -17,7 +17,7 @@ namespace darmok
 	struct TextureUniformKey final
 	{
 		std::string name;
-		uint8_t stage;
+		uint8_t stage = 0;
 
 		bool operator==(const TextureUniformKey& other) const noexcept;
 		bool operator!=(const TextureUniformKey& other) const noexcept;
@@ -53,7 +53,7 @@ namespace darmok
 		TextureUniform(const std::string& name, uint8_t stage, bool autoInit = true) noexcept;
 		TextureUniform(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
 		TextureUniform(const Key& key, bool autoInit = true) noexcept;
-		TextureUniform(const Key& key, const std::shared_ptr<Texture>& tex, bool autoInit = true) noexcept;
+		TextureUniform(const Key& key, std::shared_ptr<Texture> tex, bool autoInit = true) noexcept;
 		~TextureUniform() noexcept;
 		TextureUniform(const TextureUniform& other) noexcept;
 		TextureUniform& operator=(const TextureUniform& other) noexcept;

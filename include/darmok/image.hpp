@@ -87,6 +87,7 @@ namespace darmok
 	class DARMOK_EXPORT ImageFileImporter final : public IFileTypeImporter
 	{
 	public:
+		ImageFileImporter() noexcept;
 		bool startImport(const Input& input, bool dry = false) override;
 		Outputs getOutputs(const Input& input) noexcept override;
 		Dependencies getDependencies(const Input& input) noexcept override;

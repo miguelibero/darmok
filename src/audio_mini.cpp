@@ -141,7 +141,7 @@ namespace darmok
 
     float MiniaudioDecoder::getDuration() const
     {
-        float len;
+        float len = 0;
         auto result = ma_data_source_get_length_in_seconds(&_decoder, &len);
         AudioUtils::checkResult(result);
         return len;
@@ -153,6 +153,7 @@ namespace darmok
     }
 
     MiniaudioSoundGroup::MiniaudioSoundGroup(ma_engine& engine, ma_uint32 flags) noexcept
+        : _group{}
     {
         auto result = ma_sound_group_init(&engine, flags, nullptr, &_group);
         AudioUtils::checkResult(result);
@@ -180,6 +181,7 @@ namespace darmok
 
     MiniaudioSound::MiniaudioSound(DataView data, ma_engine& engine, const OptionalRef<MiniaudioSoundGroup>& group) noexcept
         : _decoder(data)
+        , _sound{}
     {
         auto config = ma_sound_config_init();
         config.pDataSource = _decoder;
@@ -249,10 +251,10 @@ namespace darmok
 
     void AudioSystemImpl::update()
     {
-        auto it = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& elm) {
+        auto itr = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& elm) {
             return elm.miniaudio->atEnd();
         });
-        _sounds.erase(it, _sounds.end());
+        _sounds.erase(itr, _sounds.end());
     }
 
     MiniaudioSound& AudioSystemImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound)
@@ -356,8 +358,8 @@ namespace darmok
         {
             return MusicState::Stopped;
         }
-        auto& ma = *_music->miniaudio;
-        return ma.isPlaying() ? MusicState::Playing : MusicState::Paused;
+        auto& audio = *_music->miniaudio;
+        return audio.isPlaying() ? MusicState::Playing : MusicState::Paused;
     }
 
 

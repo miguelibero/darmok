@@ -30,7 +30,7 @@ namespace darmok
         using Container = std::vector<Element>;
 
         EntityFilter(TypeId typeId) noexcept;
-        EntityFilter(const Container& elements = {}, Operation op = Operation::And) noexcept;
+        EntityFilter(Container elements = {}, Operation op = Operation::And) noexcept;
 
         EntityFilter& operator|=(const Element& elm) noexcept;
         EntityFilter operator|(const Element& elm) const noexcept;

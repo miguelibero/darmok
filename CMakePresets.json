@@ -13,6 +13,7 @@
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                 "CMAKE_BUILD_TYPE": "Debug",
+                "DARMOK_RUN_CODE_ANALYSIS": false,
                 "DARMOK_BUILD_SAMPLES": true,
                 "DARMOK_BUILD_TESTS": true,
                 "DARMOK_BUILD_LUA": true,

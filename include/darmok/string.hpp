@@ -130,12 +130,12 @@ namespace darmok
             {
                 lowerName = lowerName.substr(lowerPrefix.size());
             }
-            for (auto i = 0; i < names.size(); i++)
+            for (size_t i = 0; i < names.size(); ++i)
             {
                 auto keyName = StringUtils::toLower(names[i]);
                 if (keyName == lowerName)
                 {
-                    return (T)i;
+                    return static_cast<T>(i);
                 }
             }
             return std::nullopt;

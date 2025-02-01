@@ -58,7 +58,7 @@ namespace darmok::physics3d
 
     void JoltPhysicsDebugRenderer::shutdown()
     {
-        std::lock_guard lock(_instanceLock);
+        const std::lock_guard lock(_instanceLock);
         _instance.reset();
     }
 
@@ -67,7 +67,7 @@ namespace darmok::physics3d
 
     void JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
-        std::lock_guard lock(_instanceLock);
+        const std::lock_guard lock(_instanceLock);
         if (!_instance)
         {
             _instance = std::unique_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer());

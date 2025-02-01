@@ -25,11 +25,11 @@ namespace darmok
 	int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory>&& factory)
 	{
 		auto app = std::make_unique<App>(std::move(factory));
-		CmdArgs args(argv, argc);
+		const CmdArgs args(argv, argc);
 		auto runner = std::make_unique<AppRunner>(std::move(app), args);
-		if (auto r = runner->setup())
+		if (auto code = runner->setup())
 		{
-			return r.value();
+			return code.value();
 		}
 		return Platform::get().run(std::move(runner));
 	}
@@ -46,9 +46,9 @@ namespace darmok
 		bool success = true;
 		while (success)
 		{
-			if (auto r = setup())
+			if (auto code = setup())
 			{
-				return r.value();
+				return code.value();
 			}
 			auto result = AppRunResult::Continue;
 			if (init())
@@ -347,7 +347,7 @@ namespace darmok
 		_running = true;
 		_renderReset = true;
 
-		for (auto comp : Components(_components))
+		for (const auto& comp : Components(_components))
 		{
 			comp->init(_app);
 		}
@@ -406,24 +406,24 @@ namespace darmok
 
 	void AppImpl::onException(AppPhase phase, const std::exception& ex) noexcept
 	{
-		std::stringstream ss("[DARMOK] exception running app ");
+		std::ostringstream out("[DARMOK] exception running app ");
 		switch (phase)
 		{
 		case AppPhase::Setup:
-			ss << "setup";
+			out << "setup";
 			break;
 		case AppPhase::Init:
-			ss << "init";
+			out << "init";
 			break;
 		case AppPhase::Update:
-			ss << "update";
+			out << "update";
 			break;
 		case AppPhase::Shutdown:
-			ss << "shutdown";
+			out << "shutdown";
 			break;
 		}
-		ss << ": " << ex.what();
-		StreamUtils::logDebug(ss.str());
+		out << ": " << ex.what();
+		StreamUtils::logDebug(out.str());
 	}
 
 	void AppImpl::update(float deltaTime)
@@ -435,7 +435,7 @@ namespace darmok
 				_delegate->update(deltaTime);
 			}
 
-			for (auto comp : Components(_components))
+			for (const auto& comp : Components(_components))
 			{
 				comp->update(deltaTime);
 			}
@@ -449,8 +449,8 @@ namespace darmok
 		_audio.getImpl().update();
 		_input.getImpl().afterUpdate(deltaTime);
 
-		auto& renderSize = _app.getWindow().getSize();
-		auto& videoMode = _app.getWindow().getVideoMode();
+		const auto& renderSize = _app.getWindow().getSize();
+		const auto& videoMode = _app.getWindow().getVideoMode();
 		if (_renderSize != renderSize || _videoMode != videoMode || _activeResetFlags != _resetFlags)
 		{
 			_renderSize = renderSize;
@@ -486,7 +486,7 @@ namespace darmok
 			bgfx::setViewName(viewId, "App clear");
 			bgfx::setViewRect(viewId, 0, 0, bgfx::BackbufferRatio::Equal);
 			const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_COLOR | BGFX_CLEAR_STENCIL;
-			uint8_t clearColor = 1;
+			static const uint8_t clearColor = 1;
 			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
 				clearColor, clearColor, clearColor, clearColor,
 				clearColor, clearColor, clearColor, clearColor);
@@ -498,7 +498,7 @@ namespace darmok
 			viewId = _delegate->renderReset(viewId);
 		}
 
-		for (auto comp : Components(_components))
+		for (const auto& comp : Components(_components))
 		{
 			viewId = comp->renderReset(viewId);
 		}
@@ -512,7 +512,7 @@ namespace darmok
 		{
 			_delegate->render();
 		}
-		for (auto comp : Components(_components))
+		for (const auto& comp : Components(_components))
 		{
 			comp->render();
 		}
@@ -561,7 +561,7 @@ namespace darmok
 		// Count means default renderer chosen by bgfx based on the platform
 		if (renderer != bgfx::RendererType::Count)
 		{
-			auto& renderers = getSupportedRenderers();
+			const auto& renderers = getSupportedRenderers();
 			auto itr = std::find(renderers.begin(), renderers.end(), renderer);
 			if (itr == renderers.end())
 			{
@@ -582,7 +582,7 @@ namespace darmok
 	void AppImpl::setNextRenderer()
 	{
 		auto renderer = bgfx::getCaps()->rendererType;
-		auto& renderers = getSupportedRenderers();
+		const auto& renderers = getSupportedRenderers();
 		auto itr = std::find(renderers.begin(), renderers.end(), renderer);
 		size_t i = 0;
 		if (itr != renderers.end())
@@ -690,7 +690,7 @@ namespace darmok
 			_taskObserver = _taskExecutor->make_observer<tf::TFProfObserver>();
 			return;
 		}
-		std::filesystem::path basePath = "temp";
+		static const std::filesystem::path basePath = "temp";
 		auto suffix = StringUtils::getTimeSuffix();
 		{
 			auto filePath = basePath / ("taskflow-" + suffix + ".json");
@@ -1093,8 +1093,8 @@ namespace darmok
 	}
 
 	void BgfxCallbacks::traceVargs(
-		const char* filePath
-		, uint16_t line
+		const char* /* filePath */
+		, uint16_t /* line */
 		, const char* format
 		, va_list argList
 	)
@@ -1133,7 +1133,7 @@ namespace darmok
 
 	uint32_t BgfxCallbacks::cacheReadSize(uint64_t resId)
 	{
-		std::lock_guard lock(_cacheMutex);
+		const std::lock_guard lock(_cacheMutex);
 		auto itr = _cache.find(resId);
 		if (itr == _cache.end())
 		{
@@ -1144,7 +1144,7 @@ namespace darmok
 
 	bool BgfxCallbacks::cacheRead(uint64_t resId, void* dataPtr, uint32_t size)
 	{
-		std::lock_guard lock(_cacheMutex);
+		const std::lock_guard lock(_cacheMutex);
 		auto itr = _cache.find(resId);
 		if (itr == _cache.end())
 		{
@@ -1170,7 +1170,7 @@ namespace darmok
 		, uint32_t height
 		, uint32_t pitch
 		, const void* data
-		, uint32_t size
+		, uint32_t /* size */
 		, bool yflip
 	)
 	{

@@ -18,7 +18,7 @@ namespace darmok
         entities.reserve(storage.size());
         for (auto itr = storage.rbegin(), last = storage.rend(); itr != last; ++itr)
         {
-            Entity entity = *itr;
+            const Entity entity = *itr;
             if (entity != entt::null && storage.contains(entity) && (!dlg || dlg->shouldEntityBeSerialized(entity)))
             {
                 entities.push_back(entity);
@@ -161,7 +161,7 @@ namespace darmok
     {
         ConstSceneComponentRefs comps;
         comps.reserve(_components.size());
-        for (auto& comp : _components)
+        for (const auto& comp : _components)
         {
             comps.emplace_back(*comp);
         }
@@ -193,13 +193,13 @@ namespace darmok
         return _viewport;
     }
 
-    void SceneImpl::setViewport(const std::optional<Viewport>& vp) noexcept
+    void SceneImpl::setViewport(const std::optional<Viewport>& vport) noexcept
     {
-        if (_viewport == vp)
+        if (_viewport == vport)
         {
             return;
         }
-        _viewport = vp;
+        _viewport = vport;
         if (_app)
         {
             _app->requestRenderReset();
@@ -212,11 +212,11 @@ namespace darmok
         {
             return _viewport.value();
         }
-        else if (_app)
+        if (_app)
         {
-            return Viewport(_app->getWindow().getPixelSize());
+            return { _app->getWindow().getPixelSize() };
         }
-        return Viewport();
+        return {};
     }
 
     void SceneImpl::setName(const std::string& name) noexcept
@@ -267,7 +267,7 @@ namespace darmok
         _app = app;
         _renderChain.init();
 
-        for (auto comp : Components(_components))
+        for (auto& comp : Components(_components))
         {
             comp->init(_scene, app);
         }
@@ -396,7 +396,7 @@ namespace darmok
         std::vector<Entity> entities;
         if (destroyChildren)
         {
-            _scene.forEachChild(entity, [&entities](auto entity, auto& trans)
+            _scene.forEachChild(entity, [&entities](auto entity, auto& /* trans */)
             {
                 entities.push_back(entity);
                 return false;
@@ -436,7 +436,7 @@ namespace darmok
         }
         if (!_pendingDestroyFilter.empty())
         {
-            auto filter = _pendingDestroyFilter;
+            auto& filter = _pendingDestroyFilter;
             _pendingDestroyFilter.elements.clear();
             destroyEntitiesImmediate(filter);
         }
@@ -467,7 +467,7 @@ namespace darmok
                 _scene.getComponent<Camera>(entity)->getImpl().update(deltaTime);
             }
 
-            for (auto comp : Components(_components))
+            for (auto& comp : Components(_components))
             {
                 comp->update(deltaTime);
             }
@@ -491,7 +491,7 @@ namespace darmok
         _pendingDestroy.insert(entity);
         if (destroyChildren)
         {
-            _scene.forEachChild(entity, [this](auto entity, auto& trans)
+            _scene.forEachChild(entity, [this](auto entity, auto& /* trans */)
             {
                 _pendingDestroy.insert(entity);
                 return false;
@@ -572,27 +572,27 @@ namespace darmok
 
     void Scene::destroyEntities(const EntityFilter& filter) noexcept
     {
-        return _impl->destroyEntities(filter);
+        _impl->destroyEntities(filter);
     }
 
     void Scene::destroyEntity(Entity entity, bool destroyChildren) noexcept
     {
-        return _impl->destroyEntity(entity, destroyChildren);
+        _impl->destroyEntity(entity, destroyChildren);
     }
 
     void Scene::destroyEntityImmediate(Entity entity, bool destroyChildren) noexcept
     {
-        return _impl->destroyEntityImmediate(entity, destroyChildren);
+        _impl->destroyEntityImmediate(entity, destroyChildren);
     }
 
     void Scene::destroyEntitiesImmediate() noexcept
     {
-        return _impl->destroyEntitiesImmediate();
+        _impl->destroyEntitiesImmediate();
     }
 
     void Scene::destroyEntitiesImmediate(const EntityFilter& filter) noexcept
     {
-        return _impl->destroyEntitiesImmediate(filter);
+        _impl->destroyEntitiesImmediate(filter);
     }
 
     bool Scene::isValidEntity(Entity entity) const noexcept
@@ -602,7 +602,7 @@ namespace darmok
 
     Entity Scene::getEntity(entt::id_type type, const void* ptr) const noexcept
     {
-        auto storage = getRegistry().storage(type);
+        const auto* storage = getRegistry().storage(type);
         if (!storage || storage->empty())
         {
             return entt::null;
@@ -616,7 +616,7 @@ namespace darmok
             {
                 continue;
             }
-            auto comp = storage->value(entity);
+            const auto* comp = storage->value(entity);
             if (comp == ptr)
             {
                 return entity;
@@ -627,7 +627,7 @@ namespace darmok
 
     const void* Scene::getComponent(Entity entity, entt::id_type type) const noexcept
     {
-        auto storage = getRegistry().storage(type);
+        const auto* storage = getRegistry().storage(type);
         if (!storage)
         {
             return nullptr;
@@ -642,7 +642,7 @@ namespace darmok
         {
             if (storage.contains(entity))
             {
-                auto ptr = storage.value(entity);
+                const auto* ptr = storage.value(entity);
                 ptrs.emplace(storage.type(), ptr);
             }
         }
@@ -656,7 +656,7 @@ namespace darmok
         {
             if (storage.contains(entity))
             {
-                auto ptr = storage.value(entity);
+                auto* ptr = storage.value(entity);
                 ptrs.emplace(storage.type(), ptr);
             }
         }
@@ -677,9 +677,9 @@ namespace darmok
     {
         if (typeId == 0)
         {
-            return EntityView(getRegistry(), filter);
+            return { getRegistry(), filter };
         }
-        return EntityView(getRegistry(), EntityFilter(typeId) & filter);
+        return { getRegistry(), EntityFilter(typeId) & filter };
     }
 
     bool Scene::removeComponent(Entity entity, entt::id_type typeId) noexcept
@@ -689,7 +689,7 @@ namespace darmok
 
     bool Scene::hasComponent(Entity entity, entt::id_type typeId) const noexcept
     {
-        auto storage = getRegistry().storage(typeId);
+        const auto* storage = getRegistry().storage(typeId);
         return storage && storage->find(entity) != storage->end();
     }
 
@@ -756,9 +756,9 @@ namespace darmok
         return _impl->getViewport();
     }
 
-    Scene& Scene::setViewport(const std::optional<Viewport>& vp) noexcept
+    Scene& Scene::setViewport(const std::optional<Viewport>& viewport) noexcept
     {
-        _impl->setViewport(vp);
+        _impl->setViewport(viewport);
         return *this;
     }
 
@@ -769,7 +769,7 @@ namespace darmok
 
     void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
-        return _impl->addSceneComponent(std::move(component));
+        _impl->addSceneComponent(std::move(component));
     }
 
     bool Scene::removeSceneComponent(entt::id_type type) noexcept

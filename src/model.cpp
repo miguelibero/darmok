@@ -19,11 +19,11 @@ namespace darmok
     template<typename T>
     static std::string getModelString(const T& obj, std::string_view name) noexcept
     {
-        std::stringstream ss;
-        ss << name << ":" << std::endl;
-        cereal::JSONOutputArchive archive(ss);
+        std::stringstream out;
+        out << name << ":\n";
+        cereal::JSONOutputArchive archive(out);
         archive(obj);
-        return ss.str();
+        return out.str();
     }
 
     std::string ModelMaterial::toString() const noexcept
@@ -66,15 +66,15 @@ namespace darmok
 
     BoundingBox ModelNode::getBoundingBox() const noexcept
     {
-        BoundingBox bb;
-        for (auto& renderable : renderables)
+        BoundingBox bounds;
+        for (const auto& renderable : renderables)
         {
             if (renderable.mesh)
             {
-                bb += renderable.mesh->boundingBox;
+                bounds += renderable.mesh->boundingBox;
             }
         }
-        return bb;
+        return bounds;
     }
 
     ModelSceneConfigurer::ModelSceneConfigurer(Scene& scene, AssetContext& assets)
@@ -109,7 +109,7 @@ namespace darmok
     Entity ModelSceneConfigurer::operator()(const ModelNode& node, Entity parent) noexcept
     {
         auto entity = add(node, parent);
-        for (auto& child : node.children)
+        for (const auto& child : node.children)
         {
             operator()(child, entity);
         }
@@ -156,7 +156,7 @@ namespace darmok
         }
         else
         {
-            for (auto& renderable : node.renderables)
+            for (const auto& renderable : node.renderables)
             {
                 auto childEntity = _config.scene.createEntity();
                 _config.scene.addComponent<Transform>(childEntity).setParent(trans);

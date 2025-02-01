@@ -41,6 +41,10 @@ namespace darmok
 	public:
 		AssetContext() noexcept;
 		~AssetContext() noexcept;
+		AssetContext(const AssetContext&) = delete;
+		AssetContext(AssetContext&&) = delete;
+		AssetContext& operator=(const AssetContext&) = delete;
+		AssetContext& operator=(AssetContext&&) = delete;
 
 		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;

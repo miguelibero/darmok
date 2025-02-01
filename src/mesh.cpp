@@ -645,7 +645,7 @@ namespace darmok
 		std::vector<Index> v(indices);
 		indices.clear();
 		indices.reserve(v.size() * 8 / 6);
-		for (auto i = 0; i < v.size() - 5; i += 6)
+		for (size_t i = 0; i < v.size() - 5; i += 6)
 		{
 			indices.push_back(v[i]);
 			indices.push_back(v[i + 1]);
@@ -699,13 +699,13 @@ namespace darmok
 	bool MeshData::doSubdivide(size_t i, float maxDistance) noexcept
 	{
 		i *= 3;
-		const auto i1 = indices[i];
-		const auto i2 = indices[i + 1];
-		const auto i3 = indices[i + 2];
-		const auto i4 = vertices.size();
-		const auto v1 = vertices[i1];
-		const auto v2 = vertices[i2];
-		const auto v3 = vertices[i3];
+		const Index i1 = indices[i];
+		const Index i2 = indices[i + 1];
+		const Index i3 = indices[i + 2];
+		const Index i4 = vertices.size();
+		const Vertex v1 = vertices[i1];
+		const Vertex v2 = vertices[i2];
+		const Vertex v3 = vertices[i3];
 
 		auto d = glm::vec3(
 			glm::distance(v2.position, v1.position),
@@ -944,7 +944,7 @@ namespace darmok
 		dx *= grid.separation.x;
 		dy *= grid.separation.y;
 		auto amount = glm::vec2(grid.amount) * 0.5F;
-		vertices.reserve(2 * (grid.amount.x + grid.amount.y));
+		vertices.reserve(2 * (size_t(grid.amount.x) + grid.amount.y));
 
 		auto addVertex = [&](float x, float y)
 		{

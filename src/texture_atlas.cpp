@@ -55,7 +55,7 @@ namespace darmok
 		std::vector<VertexIndex> totalIndices;
 		totalIndices.reserve(indices.size() * config.amount.x * config.amount.y);
 
-		glm::vec2 fatlasSize(textureSize);
+		const glm::vec2 fatlasSize(textureSize);
 
 		auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
 		// don't think this is needed since it's already factored into the position values
@@ -73,13 +73,13 @@ namespace darmok
 				auto elmOffset = baseOffset + amountOffset;
 				for (uint32_t i = 0; i < vertexAmount; i++)
 				{
-					auto& texPos = positions[i];
+					const auto& texPos = positions[i];
 					auto pos = (elmOffset + glm::vec3(texPos.x, float(originalSize.y) - texPos.y, 0)) * config.scale;
 					writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
 					auto texCoord = glm::vec2(texCoords[i]) / fatlasSize;
 					writer.write(bgfx::Attrib::TexCoord0, vertexIndex + i, texCoord);
 				}
-				for (auto& idx : indices)
+				for (const auto& idx : indices)
 				{
 					totalIndices.push_back(vertexIndex + idx);
 				}
@@ -97,79 +97,79 @@ namespace darmok
 			writer.write(bgfx::Attrib::Color0, config.color);
 		}
 
-		Data vertexData = writer.finish();
+		const Data vertexData = writer.finish();
 		return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
 	}
 
 	std::pair<int, size_t> TextureAtlasElement::readInt(std::string_view str, size_t i) noexcept
 	{
-		if (str.size() == 0 || i == std::string::npos || i >= str.size())
+		if (str.empty() || i == std::string::npos || i >= str.size())
 		{
 			return { -1, std::string::npos };
 		}
-		auto ni = str.find(' ', i);
-		if (ni == std::string::npos)
+		auto pos = str.find(' ', i);
+		if (pos == std::string::npos)
 		{
-			ni = str.size();
+			pos = str.size();
 		}
-		int v;
-		std::from_chars(str.data() + i, str.data() + ni, v);
-		return { v, ni + 1 };
+		int val = -1;
+		std::from_chars(str.data() + i, str.data() + pos, val);
+		return { val, pos + 1 };
 	}
 
 	std::vector<TextureAtlasIndex> TextureAtlasElement::readIndexList(std::string_view str) noexcept
 	{
 		std::vector<TextureAtlasIndex> list;
-		size_t ii = 0;
-		while (ii != std::string::npos)
+		size_t pos = 0;
+		while (pos != std::string::npos)
 		{
-			auto p = readInt(str, ii);
-			if (p.first < 0)
+			auto [val, nextPos] = readInt(str, pos);
+			if (val < 0)
 			{
 				break;
 			}
-			list.push_back(p.first);
-			ii = p.second;
+			list.push_back(val);
+			pos = nextPos;
 		}
 		return list;
 	}
 
-	std::pair<std::optional<glm::uvec2>, size_t> TextureAtlasElement::readVec2(std::string_view str, size_t i) noexcept
+	std::pair<std::optional<glm::uvec2>, size_t> TextureAtlasElement::readVec2(std::string_view str, size_t pos) noexcept
 	{
-		auto p = readInt(str, i);
-		if (p.first < 0)
+		auto [intVal, intPos] = readInt(str, pos);
+		if (intVal < 0)
 		{
 			return { std::nullopt, std::string::npos };
 		}
-		glm::uvec2 v = { p.first, 0 };
-		i = p.second;
-		if (i == std::string::npos)
+		glm::uvec2 val = { intVal, 0 };
+		pos = intPos;
+		if (pos == std::string::npos)
 		{
-			return { v, i };
+			return { val, pos };
 		}
-		p = readInt(str, i);
-		if (p.first < 0)
+		auto [intVal2, intPos2] = readInt(str, pos);
+		if (intVal2 < 0)
 		{
 			return { std::nullopt, std::string::npos };
 		}
-		v.y = p.first;
-		i = p.second;
-		return { v, i };
+		val.y = intVal2;
+		pos = intPos2;
+		return { val, pos };
 	}
 
 	std::vector<glm::uvec2> TextureAtlasElement::readVec2List(std::string_view data) noexcept
 	{
 		std::vector<glm::uvec2> list;
-		size_t pi = 0;
-		while (pi != std::string::npos)
+		size_t i = 0;
+		while (i != std::string::npos)
 		{
-			auto pp = readVec2(data, pi);
-			if (!pp.first.has_value())
+			auto [val, nextPos] = readVec2(data, i);
+			if (!val.has_value())
 			{
 				break;
 			}
-			list.push_back(pp.first.value());
-			pi = pp.second;
+			list.push_back(val.value());
+			i = nextPos;
 		}
 		return list;
 	}
@@ -260,9 +260,9 @@ namespace darmok
 		else
 		{
 			texCoords.reserve(positions.size());
-			for (auto& p : positions)
+			for (auto& pos : positions)
 			{
-				texCoords.push_back(texturePosition + p);
+				texCoords.push_back(texturePosition + pos);
 			}
 		}
 
@@ -361,7 +361,7 @@ namespace darmok
 	TextureAtlasBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
 	{
 		TextureAtlasBounds bounds{};
-		for (auto& elm : elements)
+		for (const auto& elm : elements)
 		{
 			if (StringUtils::startsWith(elm.name, prefix))
 			{
@@ -386,7 +386,7 @@ namespace darmok
 
 	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const noexcept
 	{
-		for (auto& elm : elements)
+		for (const auto& elm : elements)
 		{
 			if (elm.name == name)
 			{
@@ -403,16 +403,16 @@ namespace darmok
 		{
 			return nullptr;
 		}
-		auto& size = texture->getSize();
+		const auto& size = texture->getSize();
 		return elm->createSprite(layout, size, config);
 	}
 
 	std::vector<AnimationFrame> TextureAtlas::createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const MeshConfig& config) const noexcept
 	{
 		std::vector<AnimationFrame> frames;
-		auto& size = texture->getSize();
+		const auto& size = texture->getSize();
 
-		for (auto& elm : elements)
+		for (const auto& elm : elements)
 		{
 			if (StringUtils::startsWith(elm.name, namePrefix))
 			{
@@ -435,22 +435,22 @@ namespace darmok
 		return readTexturePacker(doc.child("TextureAtlas"), basePath);
 	}
 
-	bool TextureAtlasDefinition::readTexturePacker(const pugi::xml_node& atlasXml, const std::filesystem::path& basePath)
+	bool TextureAtlasDefinition::readTexturePacker(const pugi::xml_node& node, const std::filesystem::path& basePath)
 	{
-		if (atlasXml.empty())
+		if (node.empty())
 		{
 			return false;
 		}
 
-		imagePath = basePath / std::filesystem::path(atlasXml.attribute("imagePath").value());
+		imagePath = basePath / std::filesystem::path(node.attribute("imagePath").value());
 
 		size = glm::uvec2{
-			atlasXml.attribute("width").as_int(),
-			atlasXml.attribute("height").as_int(),
+			node.attribute("width").as_int(),
+			node.attribute("height").as_int(),
 		};
 
 		static const char* spriteTag = "sprite";
-		for (pugi::xml_node spriteXml = atlasXml.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
+		for (pugi::xml_node spriteXml = node.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
 		{
 			elements.emplace_back().readTexturePacker(spriteXml, size);
 		}
@@ -467,12 +467,12 @@ namespace darmok
 		writeTexturePacker(node);
 	}
 
-	void TextureAtlasDefinition::writeTexturePacker(pugi::xml_node& xml) const noexcept
+	void TextureAtlasDefinition::writeTexturePacker(pugi::xml_node& node) const noexcept
 	{
-		xml.append_attribute("imagePath") = imagePath.string().c_str();
-		for (auto& elm : elements)
+		node.append_attribute("imagePath") = imagePath.string().c_str();
+		for (const auto& elm : elements)
 		{
-			auto sprite = xml.append_child("sprite");
+			auto sprite = node.append_child("sprite");
 			elm.writeTexturePacker(sprite);
 		}
 	}
@@ -482,44 +482,44 @@ namespace darmok
 		auto name = imagePath.stem().string();
 		if (!config.nameFormat.empty())
 		{
-			auto origName = name;
+			const std::string origName = name;
 			name = config.nameFormat;
 			StringUtils::replace(name, "*", origName);
 		}
-		out << "@spritesheet " << name << std::endl;
-		out << "{" << std::endl;
-		out << "    src: " << imagePath.string() << ";" << std::endl;
-		out << "    resolution: " << config.resolution << "x;" << std::endl;
+		out << "@spritesheet " << name << "\n";
+		out << "{\n";
+		out << "    src: " << imagePath.string() << ";\n";
+		out << "    resolution: " << config.resolution << "x;\n";
 
-		for (auto& elm : elements)
+		for (const auto& elm : elements)
 		{
-			glm::uvec4 v(elm.texturePosition, elm.size);
+			const glm::uvec4 val(elm.texturePosition, elm.size);
 			auto name = StringUtils::getFileStem(elm.name);
 			if (!config.spriteNameFormat.empty())
 			{
-				auto origName = name;
+				const std::string origName = name;
 				name = config.spriteNameFormat;
 				StringUtils::replace(name, "*", origName);
 			}
-			out << "    " << name << ": " << v.x << "px " << v.y << "px " << v.z << "px " << v.w << "px;" << std::endl;
+			out << "    " << name << ": " << val.x << "px " << val.y << "px " << val.z << "px " << val.w << "px;\n";
 		}
-		out << "}" << std::endl;
+		out << "}\n";
 
 		if (!config.boxNameFormat.empty())
 		{
-			for (auto& elm : elements)
+			for (const auto& elm : elements)
 			{
-				out << std::endl;
-				auto name = config.boxNameFormat;
+				out << "\n";
+				std::string name = config.boxNameFormat;
 				auto origName = StringUtils::getFileStem(elm.name);
 				StringUtils::replace(name, "*", origName);
 
-				out << "." << name << " {" << std::endl;
-				out << "  width: " << elm.originalSize.x << "px;" << std::endl;
-				out << "  height: " << elm.originalSize.y << "px;" << std::endl;
-				out << "  padding-left: " << elm.offset.x << "px;" << std::endl;
-				out << "  padding-bottom: " << elm.offset.y << "px;" << std::endl;
-				out << "}" << std::endl;
+				out << "." << name << " {\n";
+				out << "  width: " << elm.originalSize.x << "px;\n";
+				out << "  height: " << elm.originalSize.y << "px;\n";
+				out << "  padding-left: " << elm.offset.x << "px;\n";
+				out << "  padding-bottom: " << elm.offset.y << "px;\n";
+				out << "}\n";
 			}
 		}
 	}
@@ -570,8 +570,8 @@ namespace darmok
 		return atlas;
 	}
 
-	TexturePackerAtlasFileImporter::TexturePackerAtlasFileImporter(const std::filesystem::path& exePath) noexcept
-		: _exePath(exePath)
+	TexturePackerAtlasFileImporter::TexturePackerAtlasFileImporter(std::filesystem::path exePath) noexcept
+		: _exePath(std::move(exePath))
 	{
 		if (_exePath.empty())
 		{
@@ -633,7 +633,7 @@ namespace darmok
 	const std::string TexturePackerAtlasFileImporter::_rmluiSpriteNameFormatOption = "rmluiSpriteNameFormat";
 	const std::string TexturePackerAtlasFileImporter::_rmluiBoxNameFormatOption = "rmluiBoxNameFormat";
 
-	bool TexturePackerAtlasFileImporter::startImport(const Input& input, bool dry)
+	bool TexturePackerAtlasFileImporter::startImport(const Input& input, bool /* dry */)
 	{
 		if (input.config.is_null())
 		{
@@ -656,7 +656,7 @@ namespace darmok
 				"/key[text()='name']/following::filename");
 			if (sheetNode)
 			{
-				std::string val = sheetNode.node().text().as_string();
+				const std::string val = sheetNode.node().text().as_string();
 				if (!val.empty())
 				{
 					_sheetPath = basePath / val;
@@ -684,7 +684,7 @@ namespace darmok
 			"//key[text()='textureSubPath']/following::string");
 		if (textureNode)
 		{
-			std::string val = textureNode.node().text().as_string();
+			const std::string val = textureNode.node().text().as_string();
 			if (!val.empty())
 			{
 				_texturePath = basePath / val;
@@ -722,26 +722,26 @@ namespace darmok
 		
 		if (!sheetFormat.empty())
 		{
-			args.push_back("--format");
-			args.push_back(sheetFormat);
+			args.emplace_back("--format");
+			args.emplace_back(sheetFormat);
 		}
 
 		if (input.config.contains(_textureFormatOption))
 		{
-			args.push_back("--texture-format");
-			args.push_back(input.config[_textureFormatOption].get<std::string>());
+			args.emplace_back("--texture-format");
+			args.emplace_back(input.config[_textureFormatOption].get<std::string>());
 		}
 
-		auto r = Exec::run(args);
+		auto result = Exec::run(args);
 
-		if (r.returnCode != 0)
+		if (result.returnCode != 0)
 		{
 			if (_log)
 			{
-				*_log << "TexturePacker output:" << std::endl;
-				*_log << r.out;
-				*_log << "TexturePacker error output:" << std::endl;
-				*_log << r.err;
+				*_log << "TexturePacker output:\n";
+				*_log << result.out;
+				*_log << "TexturePacker error output:\n";
+				*_log << result.err;
 			}
 			throw std::runtime_error("failed to run texture packer");
 		}
@@ -795,7 +795,7 @@ namespace darmok
 		return config;
 	}
 
-	void TexturePackerAtlasFileImporter::endImport(const Input& input)
+	void TexturePackerAtlasFileImporter::endImport(const Input& /* input */)
 	{
 		_xmlDoc.reset();
 		_sheetPath.clear();
@@ -804,7 +804,7 @@ namespace darmok
 		_textureData.clear();
 	}
 
-	TexturePackerAtlasFileImporter::Outputs TexturePackerAtlasFileImporter::getOutputs(const Input& input)
+	TexturePackerAtlasFileImporter::Outputs TexturePackerAtlasFileImporter::getOutputs(const Input& /* input */)
 	{
 		return { _sheetPath, _texturePath };
 	}
@@ -818,16 +818,16 @@ namespace darmok
 		auto nodes = _xmlDoc.select_nodes(
 			"//struct[@type='SpriteSheet']/key[text()='files']"
 			"/following::array/filename");
-		for (auto& node : nodes)
+		for (const auto& node : nodes)
 		{
-			auto path = node.node().text().as_string();
+			const auto* path = node.node().text().as_string();
 			deps.insert(basePath / path);
 		}
 
 		return deps;
 	}
 
-	void TexturePackerAtlasFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	void TexturePackerAtlasFileImporter::writeOutput(const Input& /* input */, size_t outputIndex, std::ostream& out)
 	{
 		if (outputIndex == 0)
 		{

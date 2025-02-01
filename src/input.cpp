@@ -58,7 +58,7 @@ namespace darmok
 
 	void KeyboardImpl::pushChar(const UtfChar& data) noexcept
 	{
-		_chars[_charsWrite] = data;
+		_chars.at(_charsWrite) = data;
 		_charsWrite = (_charsWrite + 1) % _chars.size();
 		for (auto& listener : _listeners)
 		{
@@ -82,9 +82,9 @@ namespace darmok
 		{
 			return {};
 		}
-		auto& v = _chars[_charsRead];
+		auto& val = _chars.at(_charsRead);
 		_charsRead = (_charsRead + 1) % _chars.size();
-		return v;
+		return val;
 	}
 
 	const KeyboardModifiers& KeyboardImpl::getModifiers() const noexcept
@@ -105,15 +105,15 @@ namespace darmok
 	void KeyboardImpl::afterUpdate() noexcept
 	{
 		_updateChars.clear();
-		UtfChar c;
+		UtfChar chr;
 		while (true)
 		{
-			c = popChar();
-			if (!c)
+			chr = popChar();
+			if (!chr)
 			{
 				break;
 			}
-			_updateChars.push_back(c);
+			_updateChars.push_back(chr);
 		}
 	}
 
@@ -485,11 +485,11 @@ namespace darmok
 	bool MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
 		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size() || _buttons[idx] == down)
+		if (idx >= _buttons.size() || _buttons.at(idx) == down)
 		{
 			return false;
 		}
-		_buttons[idx] = down;
+		_buttons.at(idx) = down;
 		for (auto& listener : _listeners)
 		{
 			listener.onMouseButton(button, down);
@@ -530,7 +530,7 @@ namespace darmok
 		{
 			return false;
 		}
-		return _buttons[idx];
+		return _buttons.at(idx);
 	}
 
 	bool MouseImpl::getActive() const noexcept
@@ -789,12 +789,12 @@ namespace darmok
 		{
 			return false;
 		}
-		auto& oldValue = _sticks[idx];
+		auto& oldValue = _sticks.at(idx);
 		if (oldValue == value)
 		{
 			return false;
 		}
-		_sticks[idx] = value;
+		_sticks.at(idx) = value;
 		auto delta = value - oldValue;
 		for (auto& listener : _listeners)
 		{
@@ -821,11 +821,11 @@ namespace darmok
 	bool GamepadImpl::setButton(GamepadButton button, bool down) noexcept
 	{
 		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size() || _buttons[idx] == down)
+		if (idx >= _buttons.size() || _buttons.at(idx) == down)
 		{
 			return false;
 		}
-		_buttons[idx] = down;
+		_buttons.at(idx) = down;
 		for (auto& listener : _listeners)
 		{
 			listener.onGamepadButton(_num, button, down);
@@ -841,7 +841,7 @@ namespace darmok
 			const static glm::vec3 zero(0);
 			return zero;
 		}
-		return _sticks[idx];
+		return _sticks.at(idx);
 	}
 
 	bool GamepadImpl::getStickDir(GamepadStick stick, InputDirType dir) const noexcept
@@ -949,12 +949,12 @@ namespace darmok
 
 	std::optional<uint8_t> GamepadImpl::readNum(std::string_view name) noexcept
 	{
-		auto ul = std::stoul(std::string(name));
-		if (ul > std::numeric_limits<uint8_t>::max())
+		auto val = std::stoul(std::string(name));
+		if (val > std::numeric_limits<uint8_t>::max())
 		{
 			return Gamepad::Any;
 		}
-		return static_cast<uint8_t>(ul);
+		return static_cast<uint8_t>(val);
 	}
 
 	std::optional<GamepadInputEvent> GamepadImpl::readEvent(std::string_view name) noexcept
@@ -1123,64 +1123,6 @@ namespace darmok
 		return stick == other.stick && type == other.type && gamepad == other.gamepad;
 	}
 
-	bool operator==(const InputEvent& a, const InputEvent& b) noexcept
-	{
-		if (auto v1 = std::get_if<KeyboardInputEvent>(&a))
-		{
-			if (auto v2 = std::get_if<KeyboardInputEvent>(&b))
-			{
-				return *v1 == *v2;
-			}
-			return false;
-		}
-		if (auto v1 = std::get_if<MouseInputEvent>(&a))
-		{
-			if (auto v2 = std::get_if<MouseInputEvent>(&b))
-			{
-				return *v1 == *v2;
-			}
-			return false;
-		}
-		if (auto v1 = std::get_if<GamepadInputEvent>(&a))
-		{
-			if (auto v2 = std::get_if<GamepadInputEvent>(&b))
-			{
-				return *v1 == *v2;
-			}
-			return false;
-		}
-		return false;
-	}
-
-	bool operator==(const InputDir& a, const InputDir& b) noexcept
-	{
-		if (auto v1 = std::get_if<MouseInputDir>(&a))
-		{
-			if (auto v2 = std::get_if<MouseInputDir>(&b))
-			{
-				return *v1 == *v2;
-			}
-			return false;
-		}
-		if (auto v1 = std::get_if<GamepadInputDir>(&a))
-		{
-			if (auto v2 = std::get_if<GamepadInputDir>(&b))
-			{
-				return *v1 == *v2;
-			}
-			return false;
-		}
-		if (auto v1 = std::get_if<InputEvent>(&a))
-		{
-			if (auto v2 = std::get_if<InputEvent>(&b))
-			{
-				return *v1 == *v2;
-			}
-			return false;
-		}
-		return false;
-	}
-
 #pragma endregion Events
 
 #pragma region Input
@@ -1221,7 +1163,7 @@ namespace darmok
 
 	bool InputImpl::removeListener(const std::string& tag, const IInputEventListener& listener) noexcept
 	{
-		auto ptr = &listener;
+		const auto* ptr = &listener;
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, ptr](auto& data)
 		{
 			return data.tag == tag && &data.listener.get() == ptr;
@@ -1237,7 +1179,7 @@ namespace darmok
 
 	bool InputImpl::removeListener(const IInputEventListener& listener) noexcept
 	{
-		auto ptr = &listener;
+		const auto* ptr = &listener;
 		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [ptr](auto& data)
 		{
 			return &data.listener.get() == ptr;
@@ -1263,72 +1205,67 @@ namespace darmok
 
 	bool InputImpl::checkEvents(const InputEvents& evs) const noexcept
 	{
-		for(auto& ev : evs)
-		{
-			if(checkEvent(ev))
-			{
-				return true;
-			}
-		}
-		return false;
+		return std::ranges::any_of(evs, [this](const auto& event) {
+			return checkEvent(event);
+		});
 	}
 
 	bool InputImpl::checkEvent(const InputEvent& ev) const noexcept
 	{
-		if (auto v = std::get_if<KeyboardInputEvent>(&ev))
+		if (const auto* kbEv = std::get_if<KeyboardInputEvent>(&ev))
 		{
-			if (!_keyboard.getKey(v->key))
+			if (!_keyboard.getKey(kbEv->key))
 			{
 				return false;
 			}
-			return _keyboard.getModifiers() == v->modifiers;
+			return _keyboard.getModifiers() == kbEv->modifiers;
 		}
-		if (auto v = std::get_if<MouseInputEvent>(&ev))
+		if (const auto* mouseEv = std::get_if<MouseInputEvent>(&ev))
 		{
-			return _mouse.getButton(v->button);
+			return _mouse.getButton(mouseEv->button);
 		}
-		if (auto v = std::get_if<GamepadInputEvent>(&ev))
+		if (const auto* gamepadEv = std::get_if<GamepadInputEvent>(&ev))
 		{
-			auto gamepad = getGamepad(v->gamepad);
+			auto gamepad = getGamepad(gamepadEv->gamepad);
 			if(!gamepad)
 			{
 				return false;
 			}
-			return gamepad->getButton(v->button);
+			return gamepad->getButton(gamepadEv->button);
 		}
-		if (auto v = std::get_if<GamepadStickInputEvent>(&ev))
+		if (const auto* gamepadStickEv = std::get_if<GamepadStickInputEvent>(&ev))
 		{
-			auto gamepad = getGamepad(v->gamepad);
+			auto gamepad = getGamepad(gamepadStickEv->gamepad);
 			if (!gamepad)
 			{
 				return false;
 			}
-			return gamepad->getStickDir(v->stick, v->dir);
+			return gamepad->getStickDir(gamepadStickEv->stick, gamepadStickEv->dir);
 		}
 		return false;
 	}
 
 	float InputImpl::getDir(const glm::vec2& vec, InputDirType dir) noexcept
 	{
-		float v = 0.F;
+		float val = 0.F;
 		switch (dir)
 		{
 			case InputDirType::Up:
-				v = vec.y > 0.F ? vec.y : 0.F;
+				val = vec.y > 0.F ? vec.y : 0.F;
 				break;
 			case InputDirType::Down:
-				v = vec.y < 0.F ? -vec.y : 0.F;
+				val = vec.y < 0.F ? -vec.y : 0.F;
 				break;
 			case InputDirType::Right:
-				v = vec.x > 0.F ? vec.x : 0.F;
+				val = vec.x > 0.F ? vec.x : 0.F;
 				break;
 			case InputDirType::Left:
-				v = vec.x < 0.F ? -vec.x : 0.F;
+				val = vec.x < 0.F ? -vec.x : 0.F;
 				break;
 			default:
 				break;
 		}
-		return v;
+		return val;
 	}
 
 	// TODO: maybe should be configurable? these values work for me
@@ -1337,10 +1274,10 @@ namespace darmok
 
 	float InputImpl::getDir(const InputDir& dir, const Sensitivity& sensi) const noexcept
 	{
-		if (auto v = std::get_if<MouseInputDir>(&dir))
+		if (const auto* mouseDir = std::get_if<MouseInputDir>(&dir))
 		{
 			glm::vec2 vec(0);
-			if (v->analog == MouseAnalog::Scroll)
+			if (mouseDir->analog == MouseAnalog::Scroll)
 			{
 				vec = _mouse.getScroll() * _mouseScrollDirFactor;
 			}
@@ -1348,37 +1285,37 @@ namespace darmok
 			{
 				vec = _mouse.getVelocity() * glm::vec2(_mouseVelocityDirFactor, -_mouseVelocityDirFactor);
 			}
-			return getDir(vec * sensi.mouse, v->type);
+			return getDir(vec * sensi.mouse, mouseDir->type);
 		}
-		if (auto v = std::get_if<GamepadInputDir>(&dir))
+		if (const auto* gamepadDir = std::get_if<GamepadInputDir>(&dir))
 		{
-			auto gamepad = getGamepad(v->gamepad);
+			auto gamepad = getGamepad(gamepadDir->gamepad);
 			if (!gamepad)
 			{
 				return 0.F;
 			}
-			auto& vec = gamepad->getStick(v->stick);
-			return getDir(vec * sensi.gamepad, v->type);
+			const auto& vec = gamepad->getStick(gamepadDir->stick);
+			return getDir(vec * sensi.gamepad, gamepadDir->type);
 		}
-		if (auto v = std::get_if<InputEvent>(&dir))
+		if (const auto* event = std::get_if<InputEvent>(&dir))
 		{
-			return checkEvent(*v) ? sensi.event : 0.F;
+			return checkEvent(*event) ? sensi.event : 0.F;
 		}
 		return 0.F;
 	}
 
 	float InputImpl::getAxis(const Dirs& negative, const Dirs& positive, const Sensitivity& sensi) const noexcept
 	{
-		float v = 0;
-		for (auto& dir : positive)
+		float val = 0;
+		for (const auto& dir : positive)
 		{
-			v += getDir(dir, sensi);
+			val += getDir(dir, sensi);
 		}
-		for (auto& dir : negative)
+		for (const auto& dir : negative)
 		{
-			v -= getDir(dir, sensi);
+			val -= getDir(dir, sensi);
 		}
-		return v;
+		return val;
 	}
 
 	void InputImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
@@ -1389,9 +1326,9 @@ namespace darmok
 		}
 		for (auto& data : _listeners)
 		{
-			for (auto& ev : data.events)
+			for (auto& event : data.events)
 			{
-				auto keyEvent = std::get_if<KeyboardInputEvent>(&ev);
+				auto* keyEvent = std::get_if<KeyboardInputEvent>(&event);
 				if (!keyEvent)
 				{
 					continue;
@@ -1413,9 +1350,9 @@ namespace darmok
 		}
 		for (auto& data : _listeners)
 		{
-			for (auto& ev : data.events)
+			for (auto& event : data.events)
 			{
-				auto mouseEvent = std::get_if<MouseInputEvent>(&ev);
+				auto* mouseEvent = std::get_if<MouseInputEvent>(&event);
 				if (!mouseEvent || mouseEvent->button != button)
 				{
 					continue;
@@ -1433,9 +1370,9 @@ namespace darmok
 		}
 		for (auto& data : _listeners)
 		{
-			for (auto& ev : data.events)
+			for (auto& event : data.events)
 			{
-				auto gamepadEvent = std::get_if<GamepadInputEvent>(&ev);
+				const auto* gamepadEvent = std::get_if<GamepadInputEvent>(&event);
 				if (!gamepadEvent)
 				{
 					continue;
@@ -1461,9 +1398,9 @@ namespace darmok
 		}
 		for (auto & data : _listeners)
 		{
-			for (auto& ev : data.events)
+			for (auto& event : data.events)
 			{
-				auto gamepadEvent = std::get_if<GamepadStickInputEvent>(&ev);
+				const auto* gamepadEvent = std::get_if<GamepadStickInputEvent>(&event);
 				if (!gamepadEvent)
 				{
 					continue;
@@ -1589,7 +1526,7 @@ namespace darmok
 	{
 		if (num == Gamepad::Any)
 		{
-			for (auto& gamepad : _gamepads)
+			for (const auto& gamepad : _gamepads)
 			{
 				if (gamepad.isConnected())
 				{
@@ -1600,7 +1537,7 @@ namespace darmok
 		}
 		if (num > 0 || num < Gamepad::MaxAmount)
 		{
-			return _gamepads[num];
+			return _gamepads.at(num);
 		}
 		return nullptr;
 	}

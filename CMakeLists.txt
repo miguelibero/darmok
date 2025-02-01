@@ -499,8 +499,27 @@ endforeach()
 add_library(darmok::darmok ALIAS ${LIB_NAME})
 target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 
-# target_link_libraries(${CORE_LIB_NAME} PRIVATE -fsanitize=address)
-# target_link_libraries(${LIB_NAME} PRIVATE -fsanitize=address)
+# code analysis & clang tidy
+if(DARMOK_RUN_CODE_ANALYSIS)
+  find_program(CLANG_TIDY_EXE NAMES "clang-tidy" NO_CACHE)
+endif()
+
+macro(_darmok_analysis_setup TARGET)
+  if(DARMOK_RUN_CODE_ANALYSIS)
+    set(CLANG_TIDY_CMD "${CLANG_TIDY_EXE}")
+    if(MSVC)
+      # clang-tidy header filter not working with vs
+      # set_target_properties(${LIB_NAME} PROPERTIES
+      #   VS_GLOBAL_RunCodeAnalysis false
+      #   VS_GLOBAL_EnableMicrosoftCodeAnalysis true
+      #   VS_GLOBAL_EnableClangTidyCodeAnalysis true
+      # )
+      # # https://gitlab.kitware.com/cmake/cmake/-/issues/20512
+      # set(CLANG_TIDY_CMD "${CLANG_TIDY_CMD};--extra-arg=/EHsc")
+    endif()
+    set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_CMD}")
+  endif()
+endmacro()
 
 set(EXPORT_TARGETS "")
 macro(_darmok_lib_setup TARGET)
@@ -510,6 +529,9 @@ macro(_darmok_lib_setup TARGET)
     # disable https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-1-c4251
     # because public methods return glm and glm is only statically linked
     target_compile_options(${TARGET} PRIVATE /wd4251)
+    target_compile_options(${TARGET} PRIVATE /EHs)
+  else()
+    target_compile_options(${TARGET} PRIVATE -fexceptions)
   endif()
   target_include_directories(
     ${TARGET}
@@ -525,6 +547,8 @@ macro(_darmok_lib_setup TARGET)
   if(BUILD_SHARED_LIBS)
     target_compile_definitions(${TARGET} PUBLIC darmok_EXPORTS)
   endif()
+  _darmok_analysis_setup(${TARGET})
+  # target_link_libraries(${LIB_NAME} PRIVATE -fsanitize=address)
 endmacro()
 
 _darmok_lib_setup(${LIB_NAME})
@@ -574,23 +598,6 @@ if(DARMOK_BUILD_TESTS)
   add_subdirectory(test)
   list(APPEND VCPKG_MANIFEST_FEATURES "tests")
   set_target_properties(darmok-tests PROPERTIES FOLDER ${PROJECT_NAME})
-endif()
-
-# code analysis & clang tidy
-if(DARMOK_RUN_CODE_ANALYSIS)
-  if(MSVC)
-    set_target_properties(${LIB_NAME} PROPERTIES
-      VS_GLOBAL_RunCodeAnalysis true
-      VS_GLOBAL_EnableMicrosoftCodeAnalysis true
-      VS_GLOBAL_CodeAnalysisRuleSet ${PROJECT_SOURCE_DIR}/darmok.ruleset
-      VS_GLOBAL_EnableClangTidyCodeAnalysis true
-    )
-  else()
-    find_program(CLANG_TIDY_EXE
-      NAMES "clang-tidy"
-      NO_CACHE)
-    set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
-  endif()
 endif()
 
 # openGL

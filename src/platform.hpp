@@ -79,7 +79,7 @@ namespace darmok
 	class KeyboardKeyEvent final : public PlatformEvent
 	{
 	public:
-		KeyboardKeyEvent(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
+		KeyboardKeyEvent(KeyboardKey key, KeyboardModifiers modifiers, bool down) noexcept;
 		void process(Input& input) noexcept;
 	private:
 		KeyboardKey _key;
@@ -197,7 +197,7 @@ namespace darmok
 	class WindowErrorEvent final : public PlatformEvent
 	{
 	public:
-		WindowErrorEvent(const std::string& err) noexcept;
+		WindowErrorEvent(std::string err) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		std::string _error;
@@ -215,7 +215,7 @@ namespace darmok
 	class VideoModeInfoEvent final : public PlatformEvent
 	{
 	public:
-		VideoModeInfoEvent(const VideoModeInfo& info) noexcept;
+		VideoModeInfoEvent(VideoModeInfo info) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		VideoModeInfo _info;
@@ -233,7 +233,7 @@ namespace darmok
 	class WindowTitleEvent final : public PlatformEvent
 	{
 	public:
-		WindowTitleEvent(const std::string& title) noexcept;
+		WindowTitleEvent(std::string title) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		std::string _title;

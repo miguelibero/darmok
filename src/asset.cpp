@@ -311,7 +311,7 @@ namespace darmok
 		{
 			setShadercPath(config.shadercPath);
 		}
-		for (auto& path : config.shaderIncludePaths)
+		for (const auto& path : config.shaderIncludePaths)
 		{
 			addShaderIncludePath(path);
 		}
@@ -368,6 +368,6 @@ namespace darmok
 
 	void DarmokAssetFileImporter::operator()(std::ostream& log) const
 	{
-		return _importer(log);
+		_importer(log);
 	}
 }

@@ -563,7 +563,7 @@ namespace darmok
         {
             modelMat.specularColor = AssimpUtils::convert(specularColor);
         }
-        ai_real v;
+        ai_real v = 0;
         if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
         {
             modelMat.metallicFactor = glm::clamp(v, 0.0f, 1.0f);
@@ -849,7 +849,7 @@ namespace darmok
         modelMesh.boundingBox.min = AssimpUtils::convert(assimpMesh.mAABB.mMin);
         modelMesh.boundingBox.max = AssimpUtils::convert(assimpMesh.mAABB.mMax);
 
-        std::string name(assimpMesh.mName.C_Str());
+        const std::string name(assimpMesh.mName.C_Str());
         auto skip = false;
         for (auto& regex : _config.skipMeshes)
         {
@@ -927,7 +927,7 @@ namespace darmok
         auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
-            size_t size;
+            size_t size = 0;
             auto format = bimg::TextureFormat::Count;
             if (assimpTex->mHeight == 0)
             {
@@ -1019,7 +1019,7 @@ namespace darmok
         }
         if (json.contains(_programJsonKey))
         {
-            std::string val = json[_programJsonKey];
+            const std::string val = json[_programJsonKey];
             auto standard = StandardProgramLoader::readType(val);
             if (standard)
             {
@@ -1044,12 +1044,12 @@ namespace darmok
         }
         if (json.contains(_rootMeshJsonKey))
         {
-            std::string val = json[_rootMeshJsonKey];
+            const std::string val = json[_rootMeshJsonKey];
             config.rootMesh = StringUtils::globToRegex(val);
         }
         if (json.contains(_opacityJsonKey))
         {
-            std::string val = json[_opacityJsonKey];
+            const std::string val = json[_opacityJsonKey];
             config.opacity = Material::readOpacityType(val);
         }
 
@@ -1158,7 +1158,7 @@ namespace darmok
         std::filesystem::path outputPath = _currentConfig->outputPath;
         if (outputPath.empty())
         {
-            std::string stem = StringUtils::getFileStem(input.path.filename().string());
+            const std::string stem = StringUtils::getFileStem(input.path.filename().string());
             outputPath = stem + CerealUtils::getFormatExtension(_currentConfig->outputFormat);
         }
         auto basePath = input.getRelativePath().parent_path();

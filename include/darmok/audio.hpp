@@ -47,6 +47,10 @@ namespace darmok
     public:
         AudioSystem() noexcept;
         ~AudioSystem() noexcept;
+        AudioSystem(const AudioSystem&) = delete;
+        AudioSystem(AudioSystem&&) = delete;
+        AudioSystem& operator=(const AudioSystem&) = delete;
+        AudioSystem& operator=(AudioSystem&&) = delete;
 
         const AudioSystemImpl& getImpl() const noexcept;
         AudioSystemImpl& getImpl() noexcept;
