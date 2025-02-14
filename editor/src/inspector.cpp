@@ -9,6 +9,7 @@
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/inspector/mesh.hpp>
 #include <darmok-editor/inspector/texture.hpp>
+#include <darmok-editor/inspector/model.hpp>
 #include <darmok/reflect.hpp>
 
 #include <imgui.h>
@@ -39,6 +40,7 @@ namespace darmok::editor
         _programEditor = _editors.add<ProgramSourceInspectorEditor>();
         _meshEditor = _editors.add<MeshSourceInspectorEditor>();
         _textureEditor = _editors.add<TextureDefinitionInspectorEditor>();
+        _modelEditor = _editors.add<ModelInspectorEditor>();
     }
 
     void EditorInspectorView::init(EditorApp& app)
@@ -54,6 +56,7 @@ namespace darmok::editor
         _programEditor.reset();
         _meshEditor.reset();
         _textureEditor.reset();
+        _modelEditor.reset();
     }
 
     void EditorInspectorView::selectObject(const SelectableObject& obj, const std::shared_ptr<Scene>& scene)
@@ -101,20 +104,6 @@ namespace darmok::editor
             {
                 _sceneEditor->renderType(*scene);
             }
-            else if (auto optTex = getSelectedObject<TextureAsset>())
-            {
-                if (auto tex = optTex.value())
-                {
-                    _textureEditor->renderType(*tex);
-                }
-            }
-            else if (auto optMat = getSelectedObject<MaterialAsset>())
-            {
-                if (auto mat = optMat.value())
-                {
-                    _materialEditor->renderType(*mat);
-                }
-            }
             else if (auto optProg = getSelectedObject<ProgramAsset>())
             {
                 if (auto ptr = std::get_if<std::shared_ptr<ProgramSource>>(&optProg.value()))
@@ -125,13 +114,18 @@ namespace darmok::editor
                     }
                 }
             }
-            else if (auto optMesh = getSelectedObject<MeshAsset>())
+            else if (renderSelectedSharedAsset<TextureAsset>(_textureEditor))
             {
-                if (auto mesh = optMesh.value())
-                {
-                    _meshEditor->renderType(*mesh);
-                }
-            }
+			}
+			else if (renderSelectedSharedAsset<MaterialAsset>(_materialEditor))
+			{
+			}
+			else if (renderSelectedSharedAsset<MeshAsset>(_meshEditor))
+			{
+			}
+			else if (renderSelectedSharedAsset<ModelAsset>(_modelEditor))
+			{
+			}
         }
         ImGui::End();
     }

@@ -411,7 +411,7 @@ namespace darmok
         return anims;
     }
 
-    void SkeletalAnimatorDefinition::readJson(const nlohmann::json& json)
+    void SkeletalAnimatorDefinition::read(const nlohmann::json& json)
     {
         if (json.contains("animationNamePattern"))
         {
@@ -517,76 +517,60 @@ namespace darmok
     {
         auto data = _dataLoader(path);
         auto config = std::make_shared<SkeletalAnimatorDefinition>();
-        auto ext = StringUtils::getFileExt(path.string());
-        if (ext == ".json")
+        auto format = CerealUtils::getExtensionFormat(path);
+        if (format == CerealFormat::Json)
         {
-            config->readJson(nlohmann::json::parse(data.stringView()));
+            config->read(nlohmann::json::parse(data.stringView()));
         }
         else
-        {
+        {        
             DataInputStream stream(data);
-            if (ext == ".xml")
-            {
-                cereal::XMLInputArchive archive(stream);
-                archive(config);
-            }
-            else
-            {
-                cereal::PortableBinaryInputArchive archive(stream);
-                archive(config);
-            }
+            CerealUtils::load(config, stream, format);
         }
         return config;
     }
 
-    std::vector<std::filesystem::path> SkeletalAnimatorDefinitionFileImporter::getOutputs(const Input& input) noexcept
+    bool  SkeletalAnimatorDefinitionFileImporter::startImport(const Input& input, bool dry)
     {
-        std::vector<std::filesystem::path> outputs;
         auto ext = StringUtils::getFileExt(input.path.filename().string());
+
         if (input.config.is_null())
         {
             if (ext != ".animator.json" && ext != ".animator.bin")
             {
-                return outputs;
+                return false;
             }
         }
-        auto outputPath = input.getOutputPath(".bin");
-        return { outputPath };
+
+        _outputPath = input.getOutputPath(".bin");
+
+        return true;
+    }
+
+    std::vector<std::filesystem::path> SkeletalAnimatorDefinitionFileImporter::getOutputs(const Input& input) noexcept
+    {
+        return { _outputPath };
     }
 
     std::ofstream SkeletalAnimatorDefinitionFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
     {
-        auto ext = StringUtils::getFileExt(input.path.filename().string());
-        if (ext == ".json")
-        {
-            return std::ofstream(outputPath);
-        }
-        return std::ofstream(outputPath, std::ios::binary);
-    }
-
-
-    SkeletalAnimatorDefinition SkeletalAnimatorDefinitionFileImporter::read(const std::filesystem::path& path) const
-    {
-        SkeletalAnimatorDefinition config;
-        auto ext = StringUtils::getFileExt(path.filename().string());
-        if (ext == ".json")
-        {
-            std::ifstream stream(path);
-            config.readJson(nlohmann::json::parse(stream));
-        }
-        return config;
+        return CerealUtils::createSaveStream(_outputPath);
     }
 
     void SkeletalAnimatorDefinitionFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        auto ext = StringUtils::getFileExt(input.path.filename().string());
-        auto config = read(input.path);
-        if (ext == ".json")
+        SkeletalAnimatorDefinition def;
+        auto format = CerealUtils::getExtensionFormat(input.path);
+        auto stream = CerealUtils::createLoadStream(format, input.path);
+        if (format == CerealFormat::Json)
         {
-            return;
+            def.read(nlohmann::json::parse(stream));
         }
-        cereal::BinaryOutputArchive archive(out);
-        archive(config);
+        else
+        {
+            CerealUtils::load(def, stream, format);
+        }
+        CerealUtils::save(def, out, CerealUtils::getExtensionFormat(_outputPath));
     }
 
     const std::string& SkeletalAnimatorDefinitionFileImporter::getName() const noexcept

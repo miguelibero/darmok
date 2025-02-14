@@ -13,6 +13,11 @@ namespace darmok
         }
     }
 
+    std::ofstream CerealUtils::createSaveStream(const std::filesystem::path& path)
+    {
+        return createSaveStream(getExtensionFormat(path), path);
+    }
+
     std::ifstream CerealUtils::createLoadStream(CerealFormat format, const std::filesystem::path& path)
     {
         switch (format)
@@ -22,6 +27,11 @@ namespace darmok
         default:
             return std::ifstream(path);
         }
+    }
+
+    std::ifstream CerealUtils::createLoadStream(const std::filesystem::path& path)
+    {
+        return createLoadStream(getExtensionFormat(path), path);
     }
 
     CerealFormat CerealUtils::getFormat(const std::string& name) noexcept

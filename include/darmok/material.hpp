@@ -36,6 +36,11 @@ namespace darmok
     class Program;
     class App;
 
+    struct DARMOK_EXPORT MaterialDefinition final
+    {
+
+    };
+
     class DARMOK_EXPORT Material final
     {
     public:

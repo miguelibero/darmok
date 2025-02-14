@@ -116,38 +116,6 @@ namespace darmok
         }
     };
 
-    struct DARMOK_EXPORT ModelImage final
-    {
-        Data data;
-        std::string name;
-        TextureConfig config;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(data),
-                CEREAL_NVP(name),
-                CEREAL_NVP(config)
-            );
-        }
-    };
-
-    struct DARMOK_EXPORT ModelTexture final
-    {
-        std::shared_ptr<ModelImage> image;
-        TextureSamplingMode samplingMode = TextureSamplingMode::Anisotropic;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(image),
-                CEREAL_NVP(samplingMode)
-            );
-        }
-    };
-
     using ProgramDefines = std::unordered_set<std::string>;
 
     struct DARMOK_EXPORT ModelMaterial final
@@ -157,7 +125,7 @@ namespace darmok
         ProgramDefines programDefines;
 
         MaterialPrimitiveType primitiveType = MaterialPrimitiveType::Triangle;
-        std::unordered_map<MaterialTextureType, ModelTexture> textures;
+        std::unordered_map<MaterialTextureType, std::shared_ptr<TextureDefinition>> textures;
 
         Color baseColor = Colors::white();
         Color specularColor = Colors::white();
@@ -213,6 +181,7 @@ namespace darmok
 
     struct DARMOK_EXPORT ModelMesh final
     {
+        std::string name;
         Data vertexData;
         Data indexData;
         bgfx::VertexLayout vertexLayout;
@@ -224,6 +193,7 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
+                CEREAL_NVP(name),
                 CEREAL_NVP(vertexData),
                 CEREAL_NVP(indexData),
                 CEREAL_NVP(vertexLayout),
@@ -289,12 +259,13 @@ namespace darmok
 
     struct DARMOK_EXPORT Model final
     {
+        std::string name;
         ModelNode rootNode;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(CEREAL_NVP(rootNode));
+            archive(CEREAL_NVP(name), CEREAL_NVP(rootNode));
         }
 
         std::string toString() const noexcept;
@@ -343,7 +314,7 @@ namespace darmok
         std::unordered_map<std::shared_ptr<ModelMaterial>, std::shared_ptr<Material>> _materials;
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Mesh>> _meshes;
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Armature>> _armatures;
-        std::unordered_map<std::shared_ptr<ModelImage>, std::shared_ptr<Texture>> _textures;
+        std::unordered_map<std::shared_ptr<TextureDefinition>, std::shared_ptr<Texture>> _textures;
 
         Entity add(const ModelNode& node, Entity parent) noexcept;
         Entity operator()(const ModelNode& node, Entity parent) noexcept;
@@ -363,7 +334,7 @@ namespace darmok
         std::shared_ptr<Material> loadMaterial(const std::shared_ptr<ModelMaterial>& modelMat) noexcept;
         std::shared_ptr<Mesh> loadMesh(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
         std::shared_ptr<Armature> loadArmature(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
-        std::shared_ptr<Texture> loadTexture(const std::shared_ptr<ModelImage>& modelImg) noexcept;
+        std::shared_ptr<Texture> loadTexture(const std::shared_ptr<TextureDefinition>& def) noexcept;
 
         void configureEntity(const ModelNode& node, Entity entity, Transform& trans) noexcept;
         void configureEntity(const ModelRenderable& renderable, Entity entity) noexcept;

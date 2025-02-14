@@ -8,26 +8,24 @@
 
 namespace darmok
 {
-    struct TextureImportConfig final
+    struct TextureFileImportConfig final
 	{
+		std::string name;
 		TextureConfig config;
-		std::filesystem::path image;
-		uint64_t loadFlags = defaultTextureLoadFlags;
+		uint64_t flags = defaultTextureLoadFlags;
+		bimg::TextureFormat::Enum imageFormat = bimg::TextureFormat::Count;
 
 		void load(const FileTypeImporterInput& input);
 	private:
 		void read(const nlohmann::json& json, std::filesystem::path basePath);
 	};
 
-	/*
-	class TextureImporterImpl final
+	class TextureFileImporterImpl final
 	{
 	public:
-		using Input = AssetTypeImporterInput;
-		using Dependencies = AssetImportDependencies;
-		using Config = TextureImportConfig;
-
-		TextureImporterImpl();
+		using Input = FileTypeImporterInput;
+		using Dependencies = FileTypeImportDependencies;
+		using Config = TextureFileImportConfig;
 
 		bool startImport(const Input& input, bool dry = false);
 		std::vector<std::filesystem::path> getOutputs(const Input& input);
@@ -37,6 +35,9 @@ namespace darmok
 
 		const std::string& getName() const noexcept;
 	private:
+		std::filesystem::path _outputPath;
+		std::optional<Config> _importConfig;
+		bx::DefaultAllocator _alloc;
 	};
-	*/
+
 }

@@ -74,6 +74,12 @@ namespace darmok::editor
         bool removeMesh(MeshSource& src) noexcept;
         bool reloadMesh(MeshSource& src);
 
+        std::vector<ModelAsset> getModels() const;
+        std::string getModelName(const ModelAsset& asset) const;
+        std::shared_ptr<Model> addModel();
+        bool removeModel(Model& model) noexcept;
+        bool reloadModel(Model& model);
+
         // darmok::ISceneDelegate
         bool shouldCameraRender(const Camera& cam) const noexcept override;
         bool shouldEntityBeSerialized(Entity entity) const noexcept override;
@@ -88,7 +94,8 @@ namespace darmok::editor
                 CEREAL_NVP_("textures", _textures),
                 CEREAL_NVP_("materials", _materials),
                 CEREAL_NVP_("programs", _programs),
-                CEREAL_NVP_("meshes", _meshes)
+                CEREAL_NVP_("meshes", _meshes),
+                CEREAL_NVP_("models", _models)
             );
         }
 
@@ -103,6 +110,7 @@ namespace darmok::editor
         using Textures = std::unordered_set<std::shared_ptr<TextureDefinition>>;
         using Materials = std::unordered_set<std::shared_ptr<Material>>;
         using Meshes = std::unordered_map<std::shared_ptr<MeshSource>, std::vector<std::shared_ptr<MeshDefinition>>> ;
+        using Models = std::unordered_set<std::shared_ptr<Model>>;
         using Scenes = std::unordered_set<std::shared_ptr<Scene>>;
 
         Textures _textures;
@@ -110,6 +118,7 @@ namespace darmok::editor
         Scenes _scenes;
         Programs _programs;
         Meshes _meshes;
+        Models _models;
 
         std::filesystem::path _path;
         std::filesystem::path _exportPath;
@@ -124,6 +133,8 @@ namespace darmok::editor
         Meshes::const_iterator findMeshSource(const MeshSource& src) const;
         Meshes::iterator findMeshSource(const MeshSource& src);
         Textures::const_iterator findTextureDefinition(const TextureDefinition& def) const;
+        Models::iterator findModel(const Model& model);
+        Scenes::iterator findScene(const Scene& scene);
 
         std::vector<std::reference_wrapper<Renderable>> getRenderables();
 

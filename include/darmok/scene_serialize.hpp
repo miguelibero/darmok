@@ -74,7 +74,7 @@ namespace darmok
         void save(Archive& archive) const
         {
             archive(cereal::make_size_tag(storages.size()));
-            for (auto storageData : storages)
+            for (auto& storageData : storages)
             {
                 archive(cereal::make_map_item(storageData.type, storageData));
             }
@@ -115,7 +115,7 @@ namespace darmok
 
         auto& registry = scene.getRegistry();
         auto& entities = *registry.storage<Entity>();
-        auto dlg = scene.getDelegate();
+        auto& dlg = scene.getDelegate();
         CerealSaveEntityStorageData entitiesData{ entities };
         archive(CEREAL_NVP_("entities", entitiesData));
         archive(CEREAL_NVP_("freeList", entities.free_list()));
@@ -150,7 +150,7 @@ namespace darmok
             storage.reserve(size);
             for (size_t i = 0; i < size; ++i)
             {
-                Entity entity;
+                Entity entity = entt::null;
                 archive(entity);
                 if (entity != entt::null)
                 {
@@ -174,7 +174,7 @@ namespace darmok
             components.reserve(size);
             for (size_t i = 0; i < size; ++i)
             {
-                Entity entity;
+                Entity entity = entt::null;
                 archive(entity);
                 entt::meta_any any;
                 if (entity != entt::null)

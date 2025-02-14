@@ -23,6 +23,7 @@ namespace darmok::editor
         , _materialAssetsView("Materials", "MATERIAL")
         , _programAssetsView("Programs", "PROGRAM")
         , _meshAssetsView("Meshes", "MESH")
+        , _modelAssetsView("Models", "MODEL")
         , _sceneAssetsView("Scenes", "SCENE")
         , _proj(app)
         , _dockLeftId(0)
@@ -80,6 +81,7 @@ namespace darmok::editor
         _materialAssetsView.init(*this);
         _programAssetsView.init(*this);
         _meshAssetsView.init(*this);
+        _modelAssetsView.init(*this);
     }
 
     void EditorApp::shutdown()
@@ -91,6 +93,7 @@ namespace darmok::editor
         _materialAssetsView.shutdown();
         _programAssetsView.shutdown();
         _meshAssetsView.shutdown();
+        _modelAssetsView.shutdown();
         _sceneView.shutdown();
         _proj.shutdown();
         _imgui.reset();
@@ -160,6 +163,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_materialAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_programAssetsView.getName(), _dockDownId);
             ImGui::DockBuilderDockWindow(_meshAssetsView.getName(), _dockDownId);
+            ImGui::DockBuilderDockWindow(_modelAssetsView.getName(), _dockDownId);
         }
     }   
 
@@ -408,7 +412,7 @@ namespace darmok::editor
             {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            auto sceneName = _proj.getScene()->getName();
+            std::string sceneName = _proj.getScene()->getName();
             if (sceneName.empty())
             {
                 sceneName = "Scene";
@@ -483,6 +487,7 @@ namespace darmok::editor
         _materialAssetsView.render();
         _programAssetsView.render();
         _meshAssetsView.render();
+        _modelAssetsView.render();
         _proj.render();
     }
 
@@ -695,6 +700,31 @@ namespace darmok::editor
     void EditorApp::addAsset(std::type_identity<MeshAsset>)
     {
         _proj.addMesh();
+    }
+
+    std::vector<ModelAsset> EditorApp::getAssets(std::type_identity<ModelAsset>) const
+	{
+		return _proj.getModels();
+	}
+
+    std::optional<ModelAsset> EditorApp::getSelectedAsset(std::type_identity<ModelAsset>) const
+    {
+		return _inspectorView.getSelectedObject<ModelAsset>();  
+    }
+
+    std::string EditorApp::getAssetName(const ModelAsset& asset) const
+    {
+		return _proj.getModelName(asset);
+    }
+
+    void EditorApp::onAssetSelected(const ModelAsset& asset)
+    {
+		onObjectSelected(asset);
+    }
+
+    void EditorApp::addAsset(std::type_identity<ModelAsset>)
+    {
+		_proj.addModel();
     }
 
     std::vector<SceneAsset> EditorApp::getAssets(std::type_identity<SceneAsset>) const

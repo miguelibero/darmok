@@ -165,27 +165,27 @@ namespace darmok
         }
     }
 
-    std::shared_ptr<Texture> ModelSceneConfigurer::loadTexture(const std::shared_ptr<ModelImage>& modelImg) noexcept
+    std::shared_ptr<Texture> ModelSceneConfigurer::loadTexture(const std::shared_ptr<TextureDefinition>& def) noexcept
     {
-        if (!modelImg)
+        if (!def)
         {
             return nullptr;
         }
-        auto itr = _textures.find(modelImg);
+        auto itr = _textures.find(def);
         if (itr != _textures.end())
         {
             return itr->second;
         }
         std::shared_ptr<Texture> tex;
-        if (modelImg->data.empty())
+        if (def->data.empty())
         {
-            tex = _config.assets.getTextureLoader()(modelImg->name);
+            tex = _config.assets.getTextureLoader()(def->name);
         }
         else
         {
-            tex = std::make_shared<Texture>(modelImg->data, modelImg->config, _textureFlags);
+            tex = std::make_shared<Texture>(def->data, def->config, def->flags);
         }
-        _textures.emplace(modelImg, tex);
+        _textures.emplace(def, tex);
         return tex;
     }
 
@@ -210,12 +210,9 @@ namespace darmok
             prog = StandardProgramLoader::load(modelMat->standardProgram);
         }
         auto mat = std::make_shared<Material>(prog);
-        for (auto& [type, modelTex] : modelMat->textures)
+        for (auto& [type, texDef] : modelMat->textures)
         {
-            if (modelTex.image)
-            {
-                mat->setTexture(type, loadTexture(modelTex.image));
-            }
+            mat->setTexture(type, loadTexture(texDef));
         }
         mat->setBaseColor(modelMat->baseColor)
             .setMetallicFactor(modelMat->metallicFactor)

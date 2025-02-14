@@ -4,6 +4,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/image.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/program_core.hpp>
 
 #include <filesystem>
@@ -1027,6 +1028,7 @@ namespace darmok
     {
         _importer.addTypeImporter<CopyFileImporter>();
         _importer.addTypeImporter<ImageFileImporter>();
+        _importer.addTypeImporter<TextureFileImporter>();
     }
 
     DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setCachePath(const fs::path& cachePath) noexcept
@@ -1141,7 +1143,6 @@ namespace darmok
         {
             cachePath = defaultCachePath;
         }
-
     }
 
     int CommandLineFileImporterImpl::operator()(const CmdArgs& args) noexcept

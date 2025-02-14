@@ -23,7 +23,6 @@ namespace darmok
 
     struct DARMOK_EXPORT AssimpModelLoadConfig final
     {
-        std::filesystem::path programPath;
         StandardProgramType standardProgram = StandardProgramType::Unlit;
         std::string program;
         ProgramDefines programDefines;
@@ -34,6 +33,55 @@ namespace darmok
         std::string defaultTexture;
         std::optional<std::regex> rootMesh;
         std::optional<OpacityType> opacity;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(standardProgram),
+                CEREAL_NVP(program),
+                CEREAL_NVP(programDefines),
+                CEREAL_NVP(skipMeshes),
+                CEREAL_NVP(skipNodes),
+                CEREAL_NVP(vertexLayout),
+                CEREAL_NVP(embedTextures),
+                CEREAL_NVP(defaultTexture),
+                CEREAL_NVP(rootMesh),
+                CEREAL_NVP(opacity)
+            );
+        }
+    };
+
+    struct DARMOK_EXPORT AssimpModelSource final
+    {
+        using Config = AssimpModelLoadConfig;
+        std::string name;
+        Data data;
+        Config config;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(
+                CEREAL_NVP(name),
+                CEREAL_NVP(data),
+                CEREAL_NVP(config)
+            );
+        }
+    };
+
+    class ITextureDefinitionLoader;
+    class AssimpModelImporterImpl;
+
+    class DARMOK_EXPORT AssimpModelImporter final
+    {
+    public:
+        using Config = ProgramCompilerConfig;
+        AssimpModelImporter(OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
+        ~AssimpModelImporter() noexcept;
+        Model operator()(const AssimpModelSource& src);
+    private:
+        std::unique_ptr<AssimpModelImporterImpl> _impl;
     };
 
     class IDataLoader;
@@ -44,7 +92,7 @@ namespace darmok
     {
     public:
         using Config = AssimpModelLoadConfig;
-        AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
+        AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         ~AssimpModelLoader() noexcept;
         AssimpModelLoader& setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;

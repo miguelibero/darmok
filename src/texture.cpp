@@ -3,6 +3,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <cereal/archives/xml.hpp>
 #include <cereal/archives/portable_binary.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {
@@ -11,10 +12,90 @@ namespace darmok
 		return data.empty();
 	}
 
+	uint64_t TextureDefinition::readFlags(const nlohmann::json& json)
+	{
+		uint64_t flags = 0;
+
+		auto readFlag = [](auto& elm) -> std::optional<uint64_t>
+		{
+			if (auto textureFlag = Texture::readTextureFlag(elm))
+			{
+				return textureFlag;
+			}
+			if (auto samplerFlag = Texture::readSamplerFlag(elm))
+			{
+				return samplerFlag;
+			}
+			return {};
+		};
+
+		if (json.is_array())
+		{
+			for (auto& elm : json)
+			{
+				if (auto flag = readFlag(elm))
+				{
+					flags |= *flag;
+				}
+			}
+		}
+		else if (json.is_object())
+		{
+			for (auto& [key, val] : json.items())
+			{
+				if (auto flag = readFlag(key))
+				{
+					if (val)
+					{
+						flags |= *flag;
+					}
+					else
+					{
+						flags &= ~(*flag);
+					}
+				}
+			}
+		}
+		else
+		{
+			flags = json;
+		}
+
+		return flags;
+	}
+
 	void TextureDefinition::loadImage(const Image& img) noexcept
 	{
 		data = img.getData();
 		config = img.getTextureConfig(flags);
+	}
+
+	void TextureConfig::read(const nlohmann::json& json)
+	{
+		if (json.contains("size"))
+		{
+			size = json["size"];
+		}
+		if (json.contains("format"))
+		{
+			format = json["format"];
+		}
+		if (json.contains("type"))
+		{
+			type = json["type"];
+		}
+		if (json.contains("depth"))
+		{
+			depth = json["depth"];
+		}
+		if (json.contains("mips"))
+		{
+			mips = json["mips"];
+		}
+		if (json.contains("layers"))
+		{
+			layers = json["layers"];
+		}
 	}
 
 	const TextureConfig& TextureConfig::getEmpty() noexcept
@@ -564,11 +645,24 @@ namespace darmok
 		return *this;
 	}
 
-	void TextureImportConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
+	void TextureFileImportConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
 	{
+		if (json.contains("name"))
+		{
+			name = json["name"];
+		}
+		if (json.contains("imageFormat"))
+		{
+			imageFormat = json["imageFormat"];
+		}
+		if (json.contains("flags"))
+		{
+			flags = TextureDefinition::readFlags(json["flags"]);
+		}
+		config.read(json);
 	}
 
-	void TextureImportConfig::load(const FileTypeImporterInput& input)
+	void TextureFileImportConfig::load(const FileTypeImporterInput& input)
 	{
 		auto basePath = input.path.parent_path();
 		auto fileName = input.path.filename();
@@ -583,87 +677,96 @@ namespace darmok
 			auto fileJson = nlohmann::ordered_json::parse(is);
 			read(fileJson, input.path.parent_path());
 		}
-		if (!std::filesystem::exists(image))
+	}
+
+	bool TextureFileImporterImpl::startImport(const Input& input, bool dry)
+	{
+		if (input.config.is_null())
 		{
-			throw std::runtime_error(std::string("missing image: ") + image.string());
+			return false;
 		}
+		_outputPath = input.getOutputPath(".dtx");
+		_importConfig.emplace().load(input);
+		return true;
 	}
 
-	/*
-	TextureImporterImpl::TextureImporterImpl()
+	std::vector<std::filesystem::path> TextureFileImporterImpl::getOutputs(const Input& input)
 	{
+		return { _outputPath };
 	}
 
-	bool TextureImporterImpl::startImport(const Input& input, bool dry)
+	TextureFileImporterImpl::Dependencies TextureFileImporterImpl::getDependencies(const Input& input)
 	{
-		return false;
+		return {};
 	}
 
-	std::vector<std::filesystem::path> TextureImporterImpl::getOutputs(const Input& input)
+	void TextureFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
-		std::vector<std::filesystem::path> outputs;
-		return outputs;
+		TextureDefinition def;
+		bimg::TextureFormat::Enum format = bimg::TextureFormat::Count;
+		if (_importConfig)
+		{
+			format = _importConfig->imageFormat;
+			def.name = _importConfig->name;
+			def.config = _importConfig->config;
+			def.flags = _importConfig->flags;
+		}
+
+		Image img(Data::fromFile(input.path), _alloc, format);
+		def.loadImage(img);
+		CerealUtils::save(def, _outputPath);
 	}
 
-	TextureImporterImpl::Dependencies TextureImporterImpl::getDependencies(const Input& input)
+	void TextureFileImporterImpl::endImport(const Input& input)
 	{
-		Dependencies deps;
-		return deps;
+		_importConfig.reset();
+		_outputPath.clear();
 	}
 
-	void TextureImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
-	{
-
-	}
-
-	void TextureImporterImpl::endImport(const Input& input)
-	{
-
-	}
-
-	const std::string& TextureImporterImpl::getName() const noexcept
+	const std::string& TextureFileImporterImpl::getName() const noexcept
 	{
 		static const std::string name = "texture";
+		return name;
 	}
 
-	TextureImporter::TextureImporter()
-		: _impl(std::make_unique<TextureImporterImpl>())
+	TextureFileImporter::TextureFileImporter()
+		: _impl(std::make_unique<TextureFileImporterImpl>())
 	{
 	}
 
-	TextureImporter::~TextureImporter() noexcept
+	TextureFileImporter::~TextureFileImporter() noexcept
 	{
 		// empty on purpose
 	}
 
-	bool TextureImporter::startImport(const Input& input, bool dry)
+	bool TextureFileImporter::startImport(const Input& input, bool dry)
 	{
 		return _impl->startImport(input, dry);
 	}
 
-	TextureImporter::Outputs TextureImporter::getOutputs(const Input& input)
+	TextureFileImporter::Outputs TextureFileImporter::getOutputs(const Input& input)
 	{
 		return _impl->getOutputs(input);
 	}
 
-	TextureImporter::Dependencies TextureImporter::getDependencies(const Input& input)
+	TextureFileImporter::Dependencies TextureFileImporter::getDependencies(const Input& input)
 	{
 		return _impl->getDependencies(input);
 	}
 
-	void TextureImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	void TextureFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
 		_impl->writeOutput(input, outputIndex, out);
 	}
 
-	void TextureImporter::endImport(const Input& input)
+	void TextureFileImporter::endImport(const Input& input)
 	{
 		_impl->endImport(input);
 	}
 
-	const std::string& TextureImporter::getName() const noexcept
+	const std::string& TextureFileImporter::getName() const noexcept
 	{
 		return _impl->getName();
 	}
-	*/
+
 }

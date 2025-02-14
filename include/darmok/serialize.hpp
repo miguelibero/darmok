@@ -87,8 +87,11 @@ namespace darmok
 
     struct CerealUtils final
     {
+        static std::ofstream createSaveStream(const std::filesystem::path& path);
         static std::ofstream createSaveStream(CerealFormat format, const std::filesystem::path& path);
+        static std::ifstream createLoadStream(const std::filesystem::path& path);
         static std::ifstream createLoadStream(CerealFormat format, const std::filesystem::path& path);
+
         static CerealFormat getFormat(const std::string& name) noexcept;
         static CerealFormat getExtensionFormat(const std::filesystem::path& ext) noexcept;
         static std::string getFormatExtension(CerealFormat format) noexcept;

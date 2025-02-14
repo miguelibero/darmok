@@ -22,6 +22,7 @@ namespace darmok::editor
     class ProgramSourceInspectorEditor;
     class MeshSourceInspectorEditor;
     class TextureDefinitionInspectorEditor;
+	class ModelInspectorEditor;
 
     class EditorInspectorView final
     {
@@ -56,9 +57,29 @@ namespace darmok::editor
         OptionalRef<ProgramSourceInspectorEditor> _programEditor;
         OptionalRef<MeshSourceInspectorEditor> _meshEditor;
         OptionalRef<TextureDefinitionInspectorEditor> _textureEditor;
+        OptionalRef<ModelInspectorEditor> _modelEditor;
         ObjectEditorContainer _editors;
         static const std::string _windowName;
         SelectableObject _selected;
         std::shared_ptr<Scene> _scene;
+
+
+        template<typename T, typename E>
+        bool renderSelectedSharedAsset(OptionalRef<E> editor) noexcept
+        {
+            if (!editor)
+            {
+                return false;
+            }
+            if (auto opt = getSelectedObject<T>())
+            {
+                if (auto asset = *opt)
+                {
+                    editor->renderType(*asset);
+                    return true;
+                }
+            }
+            return false;
+        }
     };
 }

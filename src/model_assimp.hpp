@@ -38,7 +38,7 @@ namespace darmok
     struct ModelNode;
     struct ModelMaterial;
     struct ModelMesh;
-    struct ModelTexture;
+    struct TextureDefinition;
     struct ModelImage;
     class IImageLoader;
     class IDataLoader;
@@ -75,7 +75,7 @@ namespace darmok
     public:
         using Config = AssimpModelLoadConfig;
         AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
-            bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
+            bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         AssimpModelConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpModelConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
@@ -83,7 +83,7 @@ namespace darmok
         bool update(Model& model) noexcept;
     private:
         bx::AllocatorI& _allocator;
-        OptionalRef<IImageLoader> _imgLoader;
+        OptionalRef<ITextureDefinitionLoader> _texLoader;
         const aiScene& _scene;
         std::filesystem::path _basePath;
         Config _config;
@@ -100,16 +100,16 @@ namespace darmok
 
         std::unordered_map<const aiMesh*, std::shared_ptr<ModelMesh>> _meshes;
         std::unordered_map<const aiMaterial*, std::shared_ptr<ModelMaterial>> _materials;
-        std::unordered_map<std::string, std::shared_ptr<ModelImage>> _images;
+        std::unordered_map<std::string, std::shared_ptr<TextureDefinition>> _textures;
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
         std::shared_ptr<ModelMesh> getMesh(const aiMesh* assimpMesh) noexcept;
         std::shared_ptr<ModelMaterial> getMaterial(const aiMaterial* assimpMaterial) noexcept;
-        std::shared_ptr<ModelImage> getImage(const std::string& path) noexcept;
+        std::shared_ptr<TextureDefinition> getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
+        std::shared_ptr<TextureDefinition> getTexture(const std::string& path) noexcept;
 
         bool update(ModelNode& modelNode, const aiNode& assimpNode) noexcept;
-        void update(ModelTexture& modelTex, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         void update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept;
         void update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept;
         void update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept;
@@ -125,7 +125,7 @@ namespace darmok
     {
     public:
         using Config = AssimpModelLoadConfig;
-        AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader = nullptr) noexcept;
+        AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
         std::shared_ptr<Model> operator()(const std::filesystem::path& path);
@@ -134,7 +134,7 @@ namespace darmok
         Config _config;
         IDataLoader& _dataLoader;
         bx::AllocatorI& _allocator;
-        OptionalRef<IImageLoader> _imgLoader;
+        OptionalRef<ITextureDefinitionLoader> _texLoader;
         AssimpSceneLoader _sceneLoader;
     };
 
@@ -170,6 +170,7 @@ namespace darmok
         bx::FileReader _fileReader;
         DataLoader _dataLoader;
         ImageLoader _imgLoader;
+        ImageTextureDefinitionLoader _texLoader;
         AssimpSceneLoader _assimpLoader;
         std::optional<Config> _currentConfig;
         std::shared_ptr<aiScene> _currentScene;

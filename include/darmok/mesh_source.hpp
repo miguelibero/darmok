@@ -72,6 +72,14 @@ namespace darmok
         }
     };
 
+    struct DARMOK_EXPORT ModelMeshSource final
+    {
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+        }
+    };
+
     class MeshDefinition;
 
     struct DARMOK_EXPORT MeshSource final
@@ -84,7 +92,8 @@ namespace darmok
             SphereMeshSource,
             CapsuleMeshSource,
             RectangleMeshSource,
-            PlaneMeshSource
+            PlaneMeshSource,
+            ModelMeshSource
         >;
         Content content;
 

@@ -25,6 +25,7 @@ namespace darmok::editor
         "Capsule",
         "Rectangle",
         "Plane",
+        "Model"
     };
 
     bool MeshSourceInspectorEditor::renderType(MeshSource& src) noexcept

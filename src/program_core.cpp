@@ -723,28 +723,13 @@ namespace darmok
 
     void ProgramFileImporterImpl::writeDefinition(const ProgramDefinition& def, std::ostream& out)
     {
-        auto ext = _outputPath.extension();
-        if (ext == ".xml")
-        {
-            cereal::XMLOutputArchive archive(out);
-            archive(def);
-        }
-        else if (ext == ".json")
-        {
-            cereal::JSONOutputArchive archive(out);
-            archive(def);
-        }
-        else
-        {
-            cereal::PortableBinaryOutputArchive archive(out);
-            archive(def);
-        }
+        CerealUtils::save(def, out, CerealUtils::getExtensionFormat(_outputPath));
     }
 
     void ProgramFileImporterImpl::endImport(const Input& input)
     {
         _config.reset();
-        _outputPath = "";
+        _outputPath.clear();
     }
 
     const std::string& ProgramFileImporterImpl::getName() const noexcept

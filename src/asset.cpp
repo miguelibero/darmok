@@ -37,7 +37,7 @@ namespace darmok
 		, _skelAnimLoader(_ozzSkeletalAnimationLoader)
 #endif		
 #ifdef DARMOK_ASSIMP
-		, _assimpModelLoader(_dataLoader, _allocator, _imageLoader)
+		, _assimpModelLoader(_dataLoader, _allocator, _texDefLoader)
 		, _modelLoader(_assimpModelLoader)
 #else
 		, _modelLoader(_cerealModelLoader)

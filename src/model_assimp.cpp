@@ -87,26 +87,12 @@ namespace darmok
 
         static bool fixModelLoadConfig(IDataLoader& dataLoader, AssimpModelLoadConfig& config)
         {
-            if (config.vertexLayout.getStride() > 0)
-            {
-                return false;
-            }
-            if (!config.programPath.empty())
-            {
-                ProgramSource src;
-                src.read(config.programPath);
-                config.vertexLayout = src.varying.vertex;
-                if (config.vertexLayout.getStride() == 0)
-                {
-                    throw std::runtime_error("failed to load vertex layout from program path");
-                }
-            }
             if (config.vertexLayout.getStride() == 0)
             {
                 auto def = StandardProgramLoader::loadDefinition(config.standardProgram);
                 config.vertexLayout = def->vertexLayout;
             }
-            return true;
+            return config.vertexLayout.getStride() > 0;
         }
     };
 
@@ -223,10 +209,10 @@ namespace darmok
         return std::shared_ptr<aiScene>(scene);
     }
 
-    AssimpModelLoaderImpl::AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader) noexcept
+    AssimpModelLoaderImpl::AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
         : _dataLoader(dataLoader)
         , _allocator(allocator)
-        , _imgLoader(imgLoader)
+        , _texLoader(texLoader)
     {
     }
 
@@ -250,18 +236,18 @@ namespace darmok
         auto model = std::make_shared<Model>();
         auto basePath = path.parent_path().string();
 
-        AssimpModelConverter converter(*scene, basePath, _config, _allocator, _imgLoader);
+        AssimpModelConverter converter(*scene, basePath, _config, _allocator, _texLoader);
         converter.update(*model);
         return model;
     }
 
     AssimpModelConverter::AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
-        bx::AllocatorI& alloc, OptionalRef<IImageLoader> imgLoader) noexcept
+        bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
         : _scene(scene)
         , _basePath(basePath)
         , _config(config)
         , _allocator(alloc)
-        , _imgLoader(imgLoader)
+        , _texLoader(texLoader)
     {
     }
 
@@ -346,6 +332,7 @@ namespace darmok
 
     bool AssimpModelConverter::update(Model& model) noexcept
     {
+        model.name = AssimpUtils::getStringView(_scene.mName);
         if (_config.rootMesh)
         {
             return updateMeshes(model.rootNode, _config.rootMesh.value());
@@ -504,13 +491,56 @@ namespace darmok
         }
     }
 
-    void AssimpModelConverter::update(ModelTexture& modelTex, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
+    std::shared_ptr<TextureDefinition> AssimpModelConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
-        aiString path("");
-        if (assimpMat.GetTexture(type, index, &path) == AI_SUCCESS)
+        aiString aiPath("");
+        if (assimpMat.GetTexture(type, index, &aiPath) != AI_SUCCESS)
         {
-            modelTex.image = getImage(path.C_Str());
+            return nullptr;
         }
+        return getTexture(aiPath.C_Str());
+    }
+
+    std::shared_ptr<TextureDefinition> AssimpModelConverter::getTexture(const std::string& path) noexcept
+    {
+        auto itr = _textures.find(path);
+        if (itr != _textures.end())
+        {
+            return itr->second;
+        }
+
+        std::shared_ptr<TextureDefinition> tex;
+        auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
+        if (assimpTex)
+        {
+            size_t size = 0;
+            auto format = bimg::TextureFormat::Count;
+            if (assimpTex->mHeight == 0)
+            {
+                // compressed;
+                size = assimpTex->mWidth;
+            }
+            else
+            {
+                size = (size_t)assimpTex->mWidth * assimpTex->mHeight * 4;
+                format = bimg::TextureFormat::RGBA8;
+            }
+            auto data = DataView(assimpTex->pcData, size);
+            tex = std::make_shared<TextureDefinition>(path);
+            // TODO: can we read the texture config?
+            tex->loadImage(Image(data, _allocator, format));
+        }
+        if (!tex && _texLoader)
+        {
+            std::filesystem::path fsPath(path);
+            if (fsPath.is_relative())
+            {
+                fsPath = _basePath / fsPath;
+            }
+            tex = (*_texLoader)(fsPath.string());
+        }
+
+        return tex;
     }
 
     const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_materialTextures =
@@ -534,14 +564,16 @@ namespace darmok
 
         for (auto& elm : _materialTextures)
         {
-            auto& modelTexture = modelMat.textures[elm.darmokType];
-            update(modelTexture, assimpMat, elm.assimpType, elm.assimpIndex);
+            if (auto tex = getTexture(assimpMat, elm.assimpType, elm.assimpIndex))
+            {
+                modelMat.textures[elm.darmokType] = tex;
+            }
         }
 
         auto& baseColorTexture = modelMat.textures[MaterialTextureType::BaseColor];
-        if (baseColorTexture.image == nullptr && !_config.defaultTexture.empty())
+        if (baseColorTexture == nullptr && !_config.defaultTexture.empty())
         {
-            baseColorTexture.image = getImage(_config.defaultTexture);
+            baseColorTexture = getTexture(_config.defaultTexture);
         }
 
         // TODO: convert aiTextureType_METALNESS + aiTextureType_DIFFUSE_ROUGHNESS
@@ -846,6 +878,7 @@ namespace darmok
 
     void AssimpModelConverter::update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept
     {
+		modelMesh.name = AssimpUtils::getStringView(assimpMesh.mName);
         modelMesh.boundingBox.min = AssimpUtils::convert(assimpMesh.mAABB.mMin);
         modelMesh.boundingBox.max = AssimpUtils::convert(assimpMesh.mAABB.mMax);
 
@@ -916,50 +949,12 @@ namespace darmok
         return modelMat;
     }
 
-    std::shared_ptr<ModelImage> AssimpModelConverter::getImage(const std::string& path) noexcept
+    Model AssimpModelImporter::operator()(const AssimpModelSource& src)
     {
-        auto itr = _images.find(path);
-        if (itr != _images.end())
-        {
-            return itr->second;
-        }
-        std::shared_ptr<Image> img;
-        auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
-        if (assimpTex)
-        {
-            size_t size = 0;
-            auto format = bimg::TextureFormat::Count;
-            if (assimpTex->mHeight == 0)
-            {
-                // compressed;
-                size = assimpTex->mWidth;
-            }
-            else
-            {
-                size = (size_t)assimpTex->mWidth * assimpTex->mHeight * 4;
-                format = bimg::TextureFormat::RGBA8;
-            }
-            auto data = DataView(assimpTex->pcData, size);
-            img = std::make_shared<Image>(data, _allocator, format);
-        }
-        if (!img && _imgLoader)
-        {
-            std::filesystem::path fsPath(path);
-            if (fsPath.is_relative())
-            {
-                fsPath = _basePath / fsPath;
-            }
-            img = (*_imgLoader)(fsPath.string());
-        }
-
-        auto modelImg = std::make_shared<ModelImage>(
-            img->getData(), path, img->getTextureConfig());
-        _images.emplace(path, modelImg);
-        return modelImg;
     }
 
-    AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<IImageLoader> imgLoader) noexcept
-        : _impl(std::make_unique<AssimpModelLoaderImpl>(dataLoader, allocator, imgLoader))
+    AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+        : _impl(std::make_unique<AssimpModelLoaderImpl>(dataLoader, allocator, texLoader))
     {
     }
 
@@ -987,6 +982,7 @@ namespace darmok
     AssimpModelFileImporterImpl::AssimpModelFileImporterImpl(bx::AllocatorI& alloc)
         : _dataLoader(alloc)
         , _imgLoader(_dataLoader, alloc)
+        , _texLoader(_imgLoader)
         , _alloc(alloc)
     {
     }
@@ -1015,7 +1011,14 @@ namespace darmok
         }
         if (json.contains(_programPathJsonKey))
         {
-            config.programPath = basePath / json[_programPathJsonKey];
+            auto programPath = basePath / json[_programPathJsonKey];
+            ProgramSource src;
+            src.read(programPath);
+            config.vertexLayout = src.varying.vertex;
+            if (config.vertexLayout.getStride() == 0)
+            {
+                throw std::runtime_error("failed to load vertex layout from program path");
+            }
         }
         if (json.contains(_programJsonKey))
         {
@@ -1030,9 +1033,9 @@ namespace darmok
                 config.program = val;
             }
         }
-        else if (!config.programPath.empty())
+        if (json.contains(_programPathJsonKey))
         {
-            config.program = StringUtils::getFileStem(config.programPath.string()) + ".bin";
+            config.program = StringUtils::getFileStem(json[_programPathJsonKey]) + ".bin";
         }
         if (json.contains(_programDefinesJsonKey))
         {
@@ -1192,13 +1195,13 @@ namespace darmok
     {
         Model model;
         auto basePath = input.getRelativePath().parent_path();
-        OptionalRef<IImageLoader> imgLoader = _imgLoader;
+        OptionalRef<ITextureDefinitionLoader> texLoader = _texLoader;
         if (_currentConfig && !_currentConfig->loadConfig.embedTextures)
         {
-            imgLoader = nullptr;
+            texLoader = nullptr;
         }
         _dataLoader.addBasePath(input.basePath);
-        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _alloc, imgLoader);
+        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _alloc, texLoader);
         converter.setConfig(input.config);
         converter.update(model);
         _dataLoader.removeBasePath(input.basePath);

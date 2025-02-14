@@ -196,7 +196,7 @@ namespace darmok
 
         using TransitionDefinition = SkeletalAnimatorTransitionDefinition;
 
-        void readJson(const nlohmann::json& json);
+        void read(const nlohmann::json& json);
 
         using AnimationMap = SkeletalAnimationMap;
         AnimationMap loadAnimations(ISkeletalAnimationLoader& loader) const;
@@ -363,11 +363,13 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimatorDefinitionFileImporter final : public IFileTypeImporter
     {
     public:
-        SkeletalAnimatorDefinition read(const std::filesystem::path& path) const;
+        bool startImport(const Input& input, bool dry = false) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override;
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
+    public:
+        std::filesystem::path _outputPath;
     };
 
     struct DARMOK_EXPORT ArmatureJoint final

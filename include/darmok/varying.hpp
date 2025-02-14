@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
+#include <darmok/serialize.hpp>
 
 #include <string>
 #include <iostream>
@@ -30,15 +31,9 @@ namespace darmok
         Count
     };
 
-    enum class VaryingDefinitionFormat
-    {
-        Binary,
-        Json,
-        Xml,
-    };
-
     using AttribDefines = std::unordered_set<std::string>;
     using AttribGroups = std::unordered_set<AttribGroup>;
+    using VaryingDefinitionFormat = CerealFormat;
 
     struct DARMOK_EXPORT AttribUtils final
     {
@@ -49,8 +44,6 @@ namespace darmok
 
         [[nodiscard]] static std::string getBgfxName(bgfx::Attrib::Enum val) noexcept;
         [[nodiscard]] static std::string getBgfxTypeName(bgfx::AttribType::Enum val) noexcept;
-
-        [[nodiscard]] static VaryingDefinitionFormat getPathFormat(const std::filesystem::path& path) noexcept;
     };
 
     struct DARMOK_EXPORT VertexAttribute final

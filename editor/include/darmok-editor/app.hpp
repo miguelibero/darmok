@@ -29,6 +29,7 @@ namespace darmok::editor
         IEditorAssetsViewDelegate<MaterialAsset>,
         IEditorAssetsViewDelegate<ProgramAsset>,
         IEditorAssetsViewDelegate<MeshAsset>,
+        IEditorAssetsViewDelegate<ModelAsset>,
         IEditorAssetsViewDelegate<SceneAsset>
     {
     public:
@@ -87,6 +88,7 @@ namespace darmok::editor
         EditorAssetsView<ProgramAsset> _programAssetsView;
         EditorAssetsView<MeshAsset> _meshAssetsView;
         EditorAssetsView<SceneAsset> _sceneAssetsView;
+        EditorAssetsView<ModelAsset> _modelAssetsView;
         bool _scenePlaying;
 
         ImGuiID _dockDownId;
@@ -127,6 +129,13 @@ namespace darmok::editor
         std::string getAssetName(const MeshAsset& asset) const override;
         void onAssetSelected(const MeshAsset& asset) override;
         void addAsset(std::type_identity<MeshAsset>) override;
+
+        // IEditorAssetsViewDelegate<ModelAsset>
+        std::vector<ModelAsset> getAssets(std::type_identity<ModelAsset>) const override;
+        std::optional<ModelAsset> getSelectedAsset(std::type_identity<ModelAsset>) const override;
+        std::string getAssetName(const ModelAsset& asset) const override;
+        void onAssetSelected(const ModelAsset& asset) override;
+        void addAsset(std::type_identity<ModelAsset>) override;
 
         // IEditorAssetsViewDelegate<SceneAsset>
         std::vector<SceneAsset> getAssets(std::type_identity<SceneAsset>) const override;

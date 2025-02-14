@@ -23,6 +23,7 @@ namespace darmok
 {
     struct DARMOK_EXPORT TextureConfig final
 	{
+		using SamplingMode = TextureSamplingMode;
 		glm::uvec2 size = glm::uvec2(1);
 		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
 		TextureType type = TextureType::Texture2D;
@@ -42,6 +43,8 @@ namespace darmok
 				CEREAL_NVP(layers)
 			);
 		}
+
+		void read(const nlohmann::json& json);
 
 		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;
 
@@ -68,6 +71,8 @@ namespace darmok
 		Data data;
 		TextureConfig config;
 		uint64_t flags = defaultTextureLoadFlags;
+
+		static uint64_t readFlags(const nlohmann::json& json);
 
 		void loadImage(const Image& img) noexcept;
 	};
@@ -156,14 +161,14 @@ namespace darmok
 
 	using TextureLoader = FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>;
 
-	/*
-    class TextureImporterImpl;
 
-	class DARMOK_EXPORT TextureImporter final : public IAssetTypeImporter
+    class TextureFileImporterImpl;
+
+	class DARMOK_EXPORT TextureFileImporter final : public IFileTypeImporter
 	{
 	public:
-		TextureImporter();
-		~TextureImporter() noexcept;
+		TextureFileImporter();
+		~TextureFileImporter() noexcept;
 
 		bool startImport(const Input& input, bool dry = false) override;
 		Outputs getOutputs(const Input& input) override;
@@ -173,7 +178,7 @@ namespace darmok
 
 		const std::string& getName() const noexcept override;
 	private:
-		std::unique_ptr<TextureImporterImpl> _impl;
+		std::unique_ptr<TextureFileImporterImpl> _impl;
 	};
-	*/
+
 }

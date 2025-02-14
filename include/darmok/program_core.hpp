@@ -75,7 +75,7 @@ namespace darmok
 		static const RendererProfileMap& getRendererProfiles() noexcept;
 	};
 
-	struct ProgramSource final
+	struct DARMOK_EXPORT ProgramSource final
 	{
 		std::string name;
 		Data vertexShader;

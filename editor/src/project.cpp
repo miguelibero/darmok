@@ -10,6 +10,7 @@
 #include <darmok/mesh_source.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/varying.hpp>
+#include <darmok/model.hpp>
 
 #include <portable-file-dialogs.h>
 
@@ -163,7 +164,7 @@ namespace darmok::editor
 
     std::vector<SceneAsset> EditorProject::getScenes() const
     {
-        return std::vector<SceneAsset>(_scenes.begin(), _scenes.end());
+        return { _scenes.begin(), _scenes.end() };
     }
 
     std::shared_ptr<Scene> EditorProject::addScene()
@@ -180,7 +181,7 @@ namespace darmok::editor
         {
             return "";
         }
-        auto name = scene->getName();
+        std::string name = scene->getName();
         if (name.empty())
         {
             name = "Unnamed Scene";
@@ -201,9 +202,16 @@ namespace darmok::editor
         return false;
     }
 
+    EditorProject::Scenes::iterator EditorProject::findScene(const Scene& scene)
+    {
+        auto ptr = &scene;
+        return std::find_if(_scenes.begin(), _scenes.end(),
+            [ptr](auto& elm) { return elm.get() == ptr; });
+    }
+
     std::vector<TextureAsset> EditorProject::getTextures() const
     {
-        return std::vector<TextureAsset>(_textures.begin(), _textures.end());
+        return { _textures.begin(), _textures.end() };
     }
 
     std::shared_ptr<TextureDefinition> EditorProject::addTexture()
@@ -220,7 +228,7 @@ namespace darmok::editor
         {
             return "";
         }
-        auto name = tex->name;
+        std::string name = tex->name;
         if (name.empty())
         {
             name = "Unnamed Texture";
@@ -283,7 +291,7 @@ namespace darmok::editor
             return false;
         }
         auto tex = loader.loadResource(defPtr, true);
-        for (auto renderRef : getRenderables())
+        for (const auto& renderRef : getRenderables())
         {
             auto mat = renderRef.get().getMaterial();
             if (!mat)
@@ -304,7 +312,7 @@ namespace darmok::editor
 
     std::vector<MaterialAsset> EditorProject::getMaterials() const
     {
-        return std::vector<MaterialAsset>(_materials.begin(), _materials.end());
+        return { _materials.begin(), _materials.end() };
     }
 
     std::shared_ptr<Material> EditorProject::addMaterial()
@@ -321,7 +329,7 @@ namespace darmok::editor
         {
             return "";
         }
-        auto name = mat->getName();
+        std::string name = mat->getName();
         if (name.empty())
         {
             name = "Unnamed Material";
@@ -394,7 +402,7 @@ namespace darmok::editor
         {
             return false;
         }
-        auto oldDef = itr->second;
+        const auto& oldDef = itr->second;
         auto newDef = std::make_shared<ProgramDefinition>((*_progCompiler)(src));
         itr->second = newDef;
         auto& loader = _app.getAssets().getProgramLoader();
@@ -402,7 +410,7 @@ namespace darmok::editor
         auto newProg = loader.loadResource(newDef);
         if (oldProg)
         {
-            for (auto renderRef : getRenderables())
+            for (const auto& renderRef : getRenderables())
             {
                 auto& render = renderRef.get();
                 auto mat = render.getMaterial();
@@ -444,7 +452,7 @@ namespace darmok::editor
         {
             return StandardProgramLoader::getTypeName(*standard);
         }
-        auto ptr = std::get<std::shared_ptr<ProgramSource>>(asset);
+        const auto& ptr = std::get<std::shared_ptr<ProgramSource>>(asset);
         if (!ptr)
         {
             return "";
@@ -463,7 +471,7 @@ namespace darmok::editor
         {
             return true;
         }
-        auto src = std::get<std::shared_ptr<ProgramSource>>(asset);
+        const auto& src = std::get<std::shared_ptr<ProgramSource>>(asset);
         auto itr = _programs.find(src);
         return itr != _programs.end() && itr->second != nullptr;
     }
@@ -482,7 +490,7 @@ namespace darmok::editor
         {
             return StandardProgramLoader::load(*standard);
         }
-        auto src = std::get<std::shared_ptr<ProgramSource>>(asset);
+        const auto& src = std::get<std::shared_ptr<ProgramSource>>(asset);
         auto itr = _programs.find(src);
         std::shared_ptr<ProgramDefinition> def;
         if (itr != _programs.end())
@@ -558,7 +566,7 @@ namespace darmok::editor
         {
             return "";
         }
-        auto name = def->name;
+        std::string name = def->name;
         if (name.empty())
         {
             name = "Unnamed Mesh";
@@ -673,7 +681,7 @@ namespace darmok::editor
         MeshMap newMeshes;
         oldMeshes.reserve(defs.size());
         newMeshes.reserve(defs.size());
-        for (auto& def : defs)
+        for (const auto& def : defs)
         {
             if (auto mesh = loader.getResource(def))
             {
@@ -681,7 +689,7 @@ namespace darmok::editor
             }
         }
         defs.clear();
-        for (auto renderRef : getRenderables())
+        for (const auto& renderRef : getRenderables())
         {
             auto& render = renderRef.get();
             auto oldMesh = render.getMesh();
@@ -706,7 +714,6 @@ namespace darmok::editor
             }
         }
         
-
         return true;
     }
 
@@ -728,6 +735,47 @@ namespace darmok::editor
             return itr->first;
         }
         return nullptr;
+    }
+
+    std::vector<ModelAsset> EditorProject::getModels() const
+    {
+        return { _models.begin(), _models.end() };
+    }
+
+    std::string EditorProject::getModelName(const ModelAsset& asset) const
+    {
+        return asset->name;
+    }
+
+    std::shared_ptr<Model> EditorProject::addModel()
+    {
+        auto model = std::make_shared<Model>();
+        model->name = "New Model";
+        _models.insert(model);
+        return model;
+    }
+
+    bool EditorProject::removeModel(Model& model) noexcept
+    {
+        auto itr = findModel(model);
+        if (itr != _models.end())
+        {
+            _models.erase(itr);
+            return true;
+        }
+        return false;
+    }
+
+    bool EditorProject::reloadModel(Model& model)
+    {
+        return true;
+    }
+
+    EditorProject::Models::iterator EditorProject::findModel(const Model& model)
+    {
+        auto ptr = &model;
+		return std::find_if(_models.begin(), _models.end(),
+			[ptr](auto& elm) { return elm.get() == ptr; });
     }
 
     bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept

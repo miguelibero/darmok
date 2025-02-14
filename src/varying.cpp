@@ -182,20 +182,6 @@ namespace darmok
 		return "";
 	}
 
-	VaryingDefinitionFormat AttribUtils::getPathFormat(const std::filesystem::path& path) noexcept
-	{
-		auto ext = path.extension();
-		if (ext == ".json")
-		{
-			return VaryingDefinitionFormat::Json;
-		}
-		if (ext == ".xml")
-		{
-			return VaryingDefinitionFormat::Xml;
-		}
-		return VaryingDefinitionFormat::Binary;
-	}
-
 	void VertexAttribute::read(const std::string& key)
 	{
 		attrib = AttribUtils::getBgfx(key);
@@ -457,13 +443,13 @@ namespace darmok
 	void VaryingDefinition::read(const std::filesystem::path& path)
 	{
 		std::ifstream in(path);
-		read(in, AttribUtils::getPathFormat(path));
+		read(in, CerealUtils::getExtensionFormat(path));
 	}
 
 	void VaryingDefinition::write(const std::filesystem::path& path) const noexcept
 	{
 		std::ofstream out(path);
-		write(out, AttribUtils::getPathFormat(path));
+		write(out, CerealUtils::getExtensionFormat(path));
 	}
 
 	void VaryingDefinition::read(std::istream& in, Format format)
@@ -701,13 +687,13 @@ namespace darmok
 	void VertexLayout::read(const std::filesystem::path& path)
 	{
 		std::ifstream in(path);
-		read(in, AttribUtils::getPathFormat(path));
+		read(in, CerealUtils::getExtensionFormat(path));
 	}
 
 	void VertexLayout::write(const std::filesystem::path& path) const noexcept
 	{
 		std::ofstream out(path);
-		write(out, AttribUtils::getPathFormat(path));
+		write(out, CerealUtils::getExtensionFormat(path));
 	}
 
 	void VertexLayout::read(std::istream& in, Format format)
@@ -845,13 +831,13 @@ namespace darmok
 	void FragmentLayout::read(const std::filesystem::path& path)
 	{
 		std::ifstream in(path);
-		read(in, AttribUtils::getPathFormat(path));
+		read(in, CerealUtils::getExtensionFormat(path));
 	}
 
 	void FragmentLayout::write(const std::filesystem::path& path) const noexcept
 	{
 		std::ofstream out(path);
-		write(out, AttribUtils::getPathFormat(path));
+		write(out, CerealUtils::getExtensionFormat(path));
 	}
 
 	void FragmentLayout::read(std::istream& in, Format format)
