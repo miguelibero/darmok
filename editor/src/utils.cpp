@@ -92,6 +92,28 @@ namespace darmok::editor
         return false;
     }
 
+    bool ImguiUtils::drawColorInput(const char* label, Color& v) noexcept
+    {
+        auto color = Colors::normalize(v);
+        if (ImGui::ColorEdit4(label, glm::value_ptr(color)))
+        {
+            v = Colors::denormalize(color);
+            return true;
+        }
+        return false;
+    }
+
+    bool ImguiUtils::drawColorInput(const char* label, Color3& v) noexcept
+    {
+        auto color = Colors::normalize(v);
+        if (ImGui::ColorEdit3(label, glm::value_ptr(color)))
+        {
+            v = Colors::denormalize(color);
+            return true;
+        }
+        return false;
+    }
+
     ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* name, const char* text) noexcept
     {
         auto action = ConfirmPopupAction::None;

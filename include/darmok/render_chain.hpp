@@ -4,7 +4,6 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/texture_uniform.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/uniform.hpp>
 
@@ -159,7 +158,9 @@ namespace darmok
         bgfx::UniformHandle _texUniform;
         BasicUniforms _basicUniforms;
         std::optional<bgfx::ViewId> _viewId;
-        UniformContainer _uniforms;
-        TextureUniformContainer _textureUniforms;
+
+        UniformValueMap _uniformValues;
+        UniformTextureMap _uniformTextures;
+        UniformHandleContainer _uniformHandles;
     };
 }

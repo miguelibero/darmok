@@ -55,7 +55,7 @@ namespace darmok
         if (!_boneMesh)
         {
             bgfx::VertexLayout layout;
-            if (auto prog = _material->getProgram())
+            if (auto prog = _material->program)
             {
                 layout = prog->getVertexLayout();
             }

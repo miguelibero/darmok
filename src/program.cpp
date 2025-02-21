@@ -2,11 +2,11 @@
 #include <darmok/program_core.hpp>
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
-#include "generated/gui.program.h"
-#include "generated/unlit.program.h"
-#include "generated/forward.program.h"
-#include "generated/forward_basic.program.h"
-#include "generated/tonemap.program.h"
+#include "generated/shaders/gui.program.h"
+#include "generated/shaders/unlit.program.h"
+#include "generated/shaders/forward.program.h"
+#include "generated/shaders/forward_basic.program.h"
+#include "generated/shaders/tonemap.program.h"
 
 namespace darmok
 {    
@@ -45,7 +45,6 @@ namespace darmok
 
 	Program::Program(const Definition& def)
         : _vertexLayout(def.vertexLayout)
-        , _name(def.name)
 	{
         auto& profile = def.getCurrentProfile();
         _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
@@ -105,11 +104,6 @@ namespace darmok
         }
     }
 
-    const std::string& Program::getName() const noexcept
-    {
-        return _name;
-    }
-
 	bgfx::ProgramHandle Program::getHandle(const Defines& defines) const noexcept
 	{
         Defines existingDefines;
@@ -132,43 +126,6 @@ namespace darmok
 	{
 		return _vertexLayout;
 	}
-
-    const std::unordered_map<StandardProgramType, std::string> StandardProgramLoader::_typeNames =
-    {
-        { StandardProgramType::Gui, "gui" },
-        { StandardProgramType::Unlit, "unlit" },
-        { StandardProgramType::Forward, "forward" },
-        { StandardProgramType::ForwardBasic, "forward_basic" },
-        { StandardProgramType::Tonemap, "tonemap" },
-    };
-
-    const StandardProgramLoader::TypeNames& StandardProgramLoader::getTypeNames() noexcept
-    {
-        return _typeNames;
-    }
-
-    const std::string& StandardProgramLoader::getTypeName(StandardProgramType type) noexcept
-    {
-        auto itr = _typeNames.find(type);
-        if (itr != _typeNames.end())
-        {
-            return itr->second;
-        }
-        static const std::string empty;
-        return empty;
-    }
-
-    std::optional<StandardProgramType> StandardProgramLoader::readType(std::string_view val) noexcept
-    {
-        auto lower = StringUtils::toLower(val);
-        auto itr = std::find_if(_typeNames.begin(), _typeNames.end(),
-            [lower](auto& elm) { return elm.second == lower; });
-        if (itr != _typeNames.end())
-        {
-            return itr->first;
-        }
-        return std::nullopt;
-    }
 
     void StandardProgramLoader::loadDefinition(ProgramDefinition& def, StandardProgramType type)
     {

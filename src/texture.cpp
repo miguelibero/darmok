@@ -12,64 +12,12 @@ namespace darmok
 		return data.empty();
 	}
 
-	uint64_t TextureDefinition::readFlags(const nlohmann::json& json)
-	{
-		uint64_t flags = 0;
-
-		auto readFlag = [](auto& elm) -> std::optional<uint64_t>
-		{
-			if (auto textureFlag = Texture::readTextureFlag(elm))
-			{
-				return textureFlag;
-			}
-			if (auto samplerFlag = Texture::readSamplerFlag(elm))
-			{
-				return samplerFlag;
-			}
-			return {};
-		};
-
-		if (json.is_array())
-		{
-			for (auto& elm : json)
-			{
-				if (auto flag = readFlag(elm))
-				{
-					flags |= *flag;
-				}
-			}
-		}
-		else if (json.is_object())
-		{
-			for (auto& [key, val] : json.items())
-			{
-				if (auto flag = readFlag(key))
-				{
-					if (val)
-					{
-						flags |= *flag;
-					}
-					else
-					{
-						flags &= ~(*flag);
-					}
-				}
-			}
-		}
-		else
-		{
-			flags = json;
-		}
-
-		return flags;
-	}
-
 	void TextureDefinition::loadImage(const Image& img) noexcept
 	{
 		data = img.getData();
-		config = img.getTextureConfig(flags);
+		config = img.getTextureConfig();
 	}
-
+	 
 	void TextureConfig::read(const nlohmann::json& json)
 	{
 		if (json.contains("size"))
@@ -147,7 +95,7 @@ namespace darmok
 		}
 		if (auto img = _imgLoader(path))
 		{
-			auto def = std::make_shared<TextureDefinition>(path.string());
+			auto def = std::make_shared<TextureDefinition>();
 			def->flags = _loadFlags;
 			def->loadImage(*img);
 			return def;
@@ -413,6 +361,69 @@ namespace darmok
 		return BGFX_SAMPLER_BORDER_COLOR(Colors::toNumber(color));
 	}
 
+	uint64_t Texture::readFlags(const nlohmann::json& json) noexcept
+	{
+		uint64_t flags = 0;
+
+		auto readFlag = [](auto& elm) -> std::optional<uint64_t>
+			{
+				if (auto textureFlag = readTextureFlag(elm))
+				{
+					return textureFlag;
+				}
+				if (auto samplerFlag = readSamplerFlag(elm))
+				{
+					return samplerFlag;
+				}
+				return {};
+			};
+
+		if (json.is_array())
+		{
+			for (auto& elm : json)
+			{
+				if (auto flag = readFlag(elm))
+				{
+					flags |= *flag;
+				}
+			}
+		}
+		else if (json.is_object())
+		{
+			for (auto& [key, val] : json.items())
+			{
+				if (auto flag = readFlag(key))
+				{
+					if (val)
+					{
+						flags |= *flag;
+					}
+					else
+					{
+						flags &= ~(*flag);
+					}
+				}
+			}
+		}
+		else if (json.is_string())
+		{
+			for (auto& word : StringUtils::splitWords(json))
+			{
+				if (auto flag = readFlag(word))
+				{
+					flags |= *flag;
+				}
+			}
+		}
+		else
+		{
+			flags = json;
+		}
+
+		return flags;
+	}
+
+
 	Texture::Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept
 		: _handle(handle)
 		, _config(cfg)
@@ -420,7 +431,7 @@ namespace darmok
 	}
 
 	Texture::Texture(const Image& img, uint64_t flags) noexcept
-		: Texture(img.getData(), img.getTextureConfig(flags), flags)
+		: Texture(img.getData(), img.getTextureConfig(), flags)
 	{
 	}
 
@@ -647,17 +658,13 @@ namespace darmok
 
 	void TextureFileImportConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
 	{
-		if (json.contains("name"))
-		{
-			name = json["name"];
-		}
 		if (json.contains("imageFormat"))
 		{
 			imageFormat = json["imageFormat"];
 		}
 		if (json.contains("flags"))
 		{
-			flags = TextureDefinition::readFlags(json["flags"]);
+			flags = Texture::readFlags(json["flags"]);
 		}
 		config.read(json);
 	}
@@ -707,7 +714,6 @@ namespace darmok
 		if (_importConfig)
 		{
 			format = _importConfig->imageFormat;
-			def.name = _importConfig->name;
 			def.config = _importConfig->config;
 			def.flags = _importConfig->flags;
 		}

@@ -5,6 +5,7 @@
 #include <stack>
 
 #include <imgui.h>
+#include <magic_enum/magic_enum.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
@@ -35,18 +36,18 @@ namespace darmok::editor
 
     struct ImguiUtils final
     {
-        template<typename T, typename Callback>
-        static bool drawEnumCombo(const char* label, T& value, Callback callback, size_t size = toUnderlying(T::Count))
+        template<typename T>
+        static bool drawEnumCombo(const char* label, T& value)
         {
             auto selectedIdx = toUnderlying(value);
             bool changed = false;
-            if (ImGui::BeginCombo(label, callback(value).c_str()))
+            if (ImGui::BeginCombo(label, magic_enum::enum_name(value).c_str()))
             {
                 for (size_t i = 0; i < size; ++i)
                 {
                     bool selected = (selectedIdx == i);
                     auto item = (T)i;
-                    if (ImGui::Selectable(callback(item).c_str(), selected))
+                    if (ImGui::Selectable(magic_enum::enum_name(item).c_str(), selected))
                     {
                         selected = true;
                         value = item;
@@ -123,6 +124,8 @@ namespace darmok::editor
         static bool drawRotationInput(const char* label, glm::quat& v) noexcept;
         static bool drawScaleInput(const char* label, glm::vec3& v) noexcept;
         static bool drawFileInput(const char* label, std::filesystem::path& path, const std::string& filter = "") noexcept;
+        static bool drawColorInput(const char* label, Color& v) noexcept;
+        static bool drawColorInput(const char* label, Color3& v) noexcept;
 
         static void beginFrame(const char* name) noexcept;
         static void endFrame() noexcept;

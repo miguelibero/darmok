@@ -1,11 +1,15 @@
 #pragma once
 
 #include "lua.hpp"
+#include <darmok/utils.hpp>
+
 #include <vector>
 #include <string>
 #include <optional>
+
+
 #include <entt/entt.hpp>
-#include <darmok/utils.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace darmok
 {
@@ -20,43 +24,36 @@ namespace darmok
         static std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
 
         template<typename T>
-        static void newEnumFunc(sol::state_view& lua, std::string_view name, T count, const std::string& (*func)(T), bool string = false)
+        static void newEnum(sol::state_view& lua, bool string = false)
         {
-            std::vector<std::pair<std::string_view, T>> values;
-            auto size = toUnderlying(count);
-            for (int i = 0; i < size; i++)
-            {
-                auto elm = (T)i;
-                values.emplace_back(func(elm), elm);
-            }
-            newEnumVector(lua, name, values, string);
+            return newEnum(lua, magic_enum::enum_type_name<T>(), string);
         }
 
-        static int deny(lua_State* L);
-
         template<typename T>
-        static void newEnumVector(sol::state_view& lua, std::string_view name, const std::vector<std::pair<std::string_view, T>>& values, bool stringValues)
+        static void newEnum(sol::state_view& lua, std::string_view name, bool string = false)
         {
             auto metatable = lua.create_table_with();
             auto prefix = std::string(name) + ".";
-            for (auto& elm : values)
+            for (auto val : magic_enum::enum_values<T>())
             {
-                std::string valueName(elm.first);
-                if (stringValues)
+                auto valueName = magic_enum::enum_name(val);
+                if (string)
                 {
                     metatable.set(valueName, prefix + valueName);
                 }
                 else
                 {
-                    metatable.set(valueName, elm.second);
+                    metatable.set(valueName, val);
                 }
             }
-
             auto table = lua.create_named_table(name);
             metatable[sol::meta_function::new_index] = LuaUtils::deny;
             metatable[sol::meta_function::index] = metatable;
             table[sol::metatable_key] = metatable;
         }
+
+        static int deny(lua_State* L);
+
     };
 
     class LuaTableDelegateDefinition

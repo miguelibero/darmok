@@ -16,9 +16,6 @@
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 
-#include <cereal/cereal.hpp>
-#include <cereal/types/memory.hpp>
-
 namespace darmok
 {
     class Camera;
@@ -76,31 +73,6 @@ namespace darmok
         bool render(bgfx::Encoder& encoder) const;
 
         static void bindMeta();
-
-        template<typename Archive>
-        void save(Archive& archive) const 
-        {
-            auto& assets = SerializeContextStack<AssetContext>::get();
-            auto meshDef = assets.getMeshLoader().getDefinition(_mesh);
-            archive(
-                CEREAL_NVP_("mesh", meshDef),
-                CEREAL_NVP_("material", _material),
-                CEREAL_NVP_("enabled", _enabled)
-            );
-        }
-
-        template<typename Archive>
-        void load(Archive& archive) 
-        {
-            std::shared_ptr<MeshDefinition> meshDef;
-            archive(
-                CEREAL_NVP_("mesh", meshDef),
-                CEREAL_NVP_("material", _material),
-                CEREAL_NVP_("enabled", _enabled)
-            );
-            auto& assets = SerializeContextStack<AssetContext>::get();
-            _mesh = assets.getMeshLoader().loadResource(meshDef);
-        }
 
     private:
         bool _enabled;

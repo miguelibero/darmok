@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+import "texture.proto";
+import "program.proto";
+
+message UniformValue {
+    oneof value {
+        Vec4 vec4 = 1;
+        Mat4 mat4 = 2;
+        Mat3 mat3 = 3;
+    }
+}
+
+message UniformTextureKey {
+    string name = 1;
+    uint32 stage = 2;
+}
+
+message MaterialSourceTexture {
+    oneof key {
+        Material.TextureType type = 1;
+        UniformTextureKey uniform = 2;
+    }
+    TextureSource texture = 3;
+}
+
+message MaterialSource {
+    oneof program {
+        ProgramSource customProgram = 1;
+        Program.StandardType standardProgram = 2;
+    }
+    repeated string programDefines = 3;
+    
+    repeated MaterialSourceTexture textures = 4;
+    map<string, UniformValue> uniformValues = 5;
+    
+    Material.OpacityType opacityType = 7;
+    Material.PrimitiveType primitiveType = 8;
+    bool twoSided = 9;
+
+    Color baseColor = 10;
+    Color3 emissiveColor = 11;
+    float metallicFactor = 12;
+    float roughnessFactor = 13;
+    float normalScale = 14;
+    float occlusionStrength = 15;
+    bool multipleScattering = 16;
+    float whiteFurnanceFactor = 17;
+
+    Color3 specularColor = 18;
+    uint32 shininess = 19;
+}
+
+message MaterialTexture {
+    oneof key {
+        Material.TextureType type = 1;
+        UniformTextureKey uniform = 2;
+    }
+    Texture texture = 3;
+}
+
+message Material {
+
+    enum TextureType {
+        BaseColor = 0;
+        MetallicRoughness = 1;
+        Normal = 2;
+        Occlusion = 3;
+        Emissive = 4;
+        Specular = 5;
+    }
+
+    enum PrimitiveType {
+        Triangle = 0;
+        Line = 1;
+    }
+
+    enum OpacityType {
+        Opaque = 0;
+        Mask = 1;
+        Transparent = 2;
+    }
+
+    oneof program {
+        Program customProgram = 1;
+        Program.StandardType standardProgram = 2;
+    }
+    repeated string programDefines = 3;
+    
+    repeated MaterialTexture textures = 4;
+    map<string, UniformValue> uniformValues = 5;
+    
+    OpacityType opacityType = 7;
+    PrimitiveType primitiveType = 8;
+    bool twoSided = 9;
+
+    Color baseColor = 10;
+    Color3 emissiveColor = 11;
+    float metallicFactor = 12;
+    float roughnessFactor = 13;
+    float normalScale = 14;
+    float occlusionStrength = 15;
+    bool multipleScattering = 16;
+    float whiteFurnanceFactor = 17;
+
+    Color3 specularColor = 18;
+    uint32 shininess = 19;
+}

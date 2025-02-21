@@ -19,7 +19,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 
-#include "generated/rmlui/rmlui.program.h"
+#include "generated/shaders/rmlui/rmlui.program.h"
 
 namespace darmok
 {

@@ -102,8 +102,8 @@ include(darmokProcessAssets)
 set(CORE_ASSETS_TARGET darmok-core-assets)
 darmok_process_assets(
   TARGET ${CORE_ASSETS_TARGET} CORE
-  INPUT ${PROJECT_SOURCE_DIR}/assets/core
-  OUTPUT include/private/generated
+  INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/core
+  OUTPUT include/private/generated/shaders
   ASSETS
     darmok_light.sc
     darmok_material.sc
@@ -202,7 +202,6 @@ set(SOURCES
   scene_filter.cpp
   scene_reflect.cpp
 
-  texture_uniform.cpp
   texture_atlas.cpp
   material.cpp
   model.cpp
@@ -243,7 +242,6 @@ set(HEADERS
   scene_reflect.hpp
   scene_serialize.hpp
 
-  texture_uniform.hpp
   texture_atlas.hpp
   anim.hpp
   material_fwd.hpp
@@ -339,8 +337,8 @@ if(DARMOK_BUILD_IMGUI)
   set(IMGUI_ASSETS_TARGET darmok-imgui-assets)
   darmok_process_assets(
     TARGET ${IMGUI_ASSETS_TARGET} CORE
-    INPUT ${PROJECT_SOURCE_DIR}/assets/imgui
-    OUTPUT include/private/generated/imgui
+    INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/imgui
+    OUTPUT include/private/generated/shaders/imgui
     ASSETS
       imgui.fragment.sc
       imgui.vertex.sc
@@ -371,8 +369,8 @@ if(DARMOK_BUILD_RMLUI)
   set(RMLUI_ASSETS_TARGET darmok-rmlui-assets)
   darmok_process_assets(
     TARGET ${RMLUI_ASSETS_TARGET} CORE
-    INPUT ${PROJECT_SOURCE_DIR}/assets/rmlui
-    OUTPUT include/private/generated/rmlui
+    INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/rmlui
+    OUTPUT include/private/generated/shaders/rmlui
     ASSETS
       rmlui.fragment.sc
       rmlui.vertex.sc
@@ -616,6 +614,34 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC pugixml::pugixml)
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
 
+# magic_enum
+find_package(magic_enum CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE magic_enum::magic_enum)
+
+# protobuf
+find_package(Protobuf CONFIG REQUIRED)
+set(PROTO_FILES
+  math.proto
+  program.proto
+  texture.proto
+  material.proto
+)
+set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
+set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/protobuf")
+set(PROTO_LIB_NAME darmok-proto-objects)
+
+list(TRANSFORM PROTO_FILES PREPEND "${PROTO_DIR}/")
+add_library(${PROTO_LIB_NAME} OBJECT ${PROTO_FILES})
+target_link_libraries(${PROTO_LIB_NAME} PUBLIC protobuf::libprotobuf)
+target_include_directories(${PROTO_LIB_NAME} PUBLIC "$<BUILD_INTERFACE:${PROTO_BINARY_DIR}>")
+protobuf_generate(
+    TARGET ${PROTO_LIB_NAME}
+    IMPORT_DIRS "${PROTO_DIR}"
+    PROTOC_OUT_DIR "${PROTO_BINARY_DIR}")
+target_link_libraries(${CORE_LIB_NAME} PRIVATE ${PROTO_LIB_NAME})
+list(APPEND EXPORT_TARGETS ${PROTO_LIB_NAME})
+set_target_properties(${PROTO_LIB_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
+
 # cereal
 find_package(cereal CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
@@ -784,7 +810,7 @@ if(DARMOK_BUILD_LUA_EXE)
     --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
     --bgfx-shader-include
       ${BGFX_SHADER_INCLUDE_PATH}
-      ${PROJECT_SOURCE_DIR}/assets/core
+      ${PROJECT_SOURCE_DIR}/assets/shaders/core
   )
 
   set_target_properties(${LUA_EXE_NAME}

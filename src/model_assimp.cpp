@@ -20,8 +20,9 @@
 #include <assimp/Importer.hpp>
 #include <assimp/GltfMaterial.h>
 #include <assimp/BaseImporter.h>
-#include <mikktspace.h>
 
+#include <mikktspace.h>
+#include <magic_enum/magic_enum.hpp>
 #include <glm/gtx/component_wise.hpp>
 
 namespace darmok
@@ -85,12 +86,19 @@ namespace darmok
             };
         }
 
-        static bool fixModelLoadConfig(IDataLoader& dataLoader, AssimpModelLoadConfig& config)
+        static bool fixModelImportConfig(IDataLoader& dataLoader, AssimpModelImportConfig& config)
         {
             if (config.vertexLayout.getStride() == 0)
             {
-                auto def = StandardProgramLoader::loadDefinition(config.standardProgram);
-                config.vertexLayout = def->vertexLayout;
+                if (auto standard = std::get_if<StandardProgramType>(&config.program))
+                {
+                    auto def = StandardProgramLoader::loadDefinition(*standard);
+                    config.vertexLayout = def->vertexLayout;
+                }
+                else if (auto def = std::get_if<std::shared_ptr<ProgramDefinition>>(&config.program))
+                {
+                    config.vertexLayout = (*def)->vertexLayout;
+                }
             }
             return config.vertexLayout.getStride() > 0;
         }
@@ -219,7 +227,7 @@ namespace darmok
     void AssimpModelLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
-        AssimpUtils::fixModelLoadConfig(_dataLoader, _config);
+        AssimpUtils::fixModelImportConfig(_dataLoader, _config);
     }
 
     bool AssimpModelLoaderImpl::supports(const std::filesystem::path& path) const noexcept
@@ -556,10 +564,9 @@ namespace darmok
         { aiTextureType_EMISSIVE, 0, MaterialTextureType::Emissive },
     };
 
-    void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
+    void AssimpModelConverter::update(MaterialDefinition& modelMat, const aiMaterial& assimpMat) noexcept
     {
         modelMat.program = _config.program;
-        modelMat.standardProgram = _config.standardProgram;
         modelMat.programDefines.insert(_config.programDefines.begin(), _config.programDefines.end());
 
         for (auto& elm : _materialTextures)
@@ -936,21 +943,33 @@ namespace darmok
         return modelMesh;
     }
 
-    std::shared_ptr<ModelMaterial> AssimpModelConverter::getMaterial(const aiMaterial* assimpMat) noexcept
+    std::shared_ptr<MaterialDefinition> AssimpModelConverter::getMaterial(const aiMaterial* assimpMat) noexcept
     {
         auto itr = _materials.find(assimpMat);
         if (itr != _materials.end())
         {
             return itr->second;
         }
-        auto modelMat = std::make_shared<ModelMaterial>();
+        auto modelMat = std::make_shared<MaterialDefinition>();
         update(*modelMat, *assimpMat);
         _materials.emplace(assimpMat, modelMat);
         return modelMat;
     }
 
+    AssimpModelImporter::AssimpModelImporter(bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+        : _alloc(alloc)
+        , _texLoader(texLoader)
+    {
+    }
+
     Model AssimpModelImporter::operator()(const AssimpModelSource& src)
     {
+        Model model;
+        AssimpSceneLoader sceneLoader;
+        auto assimpScene = sceneLoader.loadFromMemory(src.data);
+        std::filesystem::path basePath;
+        AssimpModelConverter converter(*assimpScene, basePath, src.config, _alloc, _texLoader);
+        return model;
     }
 
     AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
@@ -984,6 +1003,7 @@ namespace darmok
         , _imgLoader(_dataLoader, alloc)
         , _texLoader(_imgLoader)
         , _alloc(alloc)
+        , _progLoader(_dataLoader)
     {
     }
 
@@ -1002,7 +1022,7 @@ namespace darmok
     const std::string AssimpModelFileImporterImpl::_formatJsonKey = "format";
     const std::string AssimpModelFileImporterImpl::_loadPathJsonKey = "loadPath";
 
-    void AssimpModelFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const
+    void AssimpModelFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
         // TODO: maybe load material json?
         if (json.contains(_vertexLayoutJsonKey))
@@ -1023,19 +1043,18 @@ namespace darmok
         if (json.contains(_programJsonKey))
         {
             const std::string val = json[_programJsonKey];
-            auto standard = StandardProgramLoader::readType(val);
-            if (standard)
+            if (auto standard = magic_enum::enum_cast<StandardProgramType>(val))
             {
-                config.standardProgram = standard.value();
+                config.program = *standard;
             }
             else
             {
-                config.program = val;
+                config.program = _progLoader(val);
             }
         }
         if (json.contains(_programPathJsonKey))
         {
-            config.program = StringUtils::getFileStem(json[_programPathJsonKey]) + ".bin";
+            config.program = _progLoader(json[_programPathJsonKey]);
         }
         if (json.contains(_programDefinesJsonKey))
         {
@@ -1053,7 +1072,10 @@ namespace darmok
         if (json.contains(_opacityJsonKey))
         {
             const std::string val = json[_opacityJsonKey];
-            config.opacity = Material::readOpacityType(val);
+            if (auto opacity = magic_enum::enum_cast<OpacityType>(val))
+            {
+                config.opacity = *opacity;
+            }
         }
 
         auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)
@@ -1081,23 +1103,6 @@ namespace darmok
         if (json.contains(_embedTexturesJsonKey))
         {
             config.embedTextures = json[_embedTexturesJsonKey];
-        }
-    }
-
-    void AssimpModelFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const
-    {
-        loadConfig(json, basePath, config.loadConfig);
-        if (json.contains(_outputPathJsonKey))
-        {
-            config.outputPath = json[_outputPathJsonKey].get<std::string>();
-        }
-        if (json.contains(_outputFormatJsonKey))
-        {
-            config.outputFormat = CerealUtils::getFormat(json[_outputFormatJsonKey]);
-        }
-        else if (!config.outputPath.empty())
-        {
-            config.outputFormat = CerealUtils::getExtensionFormat(config.outputPath.extension());
         }
     }
 
@@ -1134,7 +1139,20 @@ namespace darmok
             configJson.update(input.dirConfig);
         }
         loadConfig(configJson, input.basePath, config);
-        AssimpUtils::fixModelLoadConfig(_dataLoader, _currentConfig->loadConfig);
+        AssimpUtils::fixModelImportConfig(_dataLoader, config);
+
+        if (configJson.contains(_outputPathJsonKey))
+        {
+            _outputPath = configJson[_outputPathJsonKey].get<std::filesystem::path>();
+        }
+        if (configJson.contains(_outputFormatJsonKey))
+        {
+            _outputFormat = CerealUtils::getFormat(configJson[_outputFormatJsonKey]);
+        }
+        else if (!_outputPath.empty())
+        {
+            _outputFormat = CerealUtils::getExtensionFormat(_outputPath.extension());
+        }
 
         AssimpSceneLoadConfig sceneConfig;
         if (input.config.contains(_formatJsonKey))
@@ -1158,21 +1176,20 @@ namespace darmok
     std::vector<std::filesystem::path> AssimpModelFileImporterImpl::getOutputs(const Input& input) 
     {
         std::vector<std::filesystem::path> outputs;
-        std::filesystem::path outputPath = _currentConfig->outputPath;
-        if (outputPath.empty())
+        if (_outputPath.empty())
         {
             const std::string stem = StringUtils::getFileStem(input.path.filename().string());
-            outputPath = stem + CerealUtils::getFormatExtension(_currentConfig->outputFormat);
+            _outputPath = stem + CerealUtils::getFormatExtension(_outputFormat);
         }
         auto basePath = input.getRelativePath().parent_path();
-        outputs.push_back(basePath / outputPath);
+        outputs.push_back(basePath / _outputPath);
         return outputs;
     }
 
     AssimpModelFileImporterImpl::Dependencies AssimpModelFileImporterImpl::getDependencies(const Input& input)
     {
         Dependencies deps;
-        if (!_currentConfig->loadConfig.embedTextures)
+        if (!_currentConfig || !_currentConfig->embedTextures)
         {
             return deps;
         }
@@ -1186,26 +1203,28 @@ namespace darmok
 
     std::ofstream AssimpModelFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
     {
-        Config config;
-        loadConfig(input.config, input.basePath, config);
-        return CerealUtils::createSaveStream(config.outputFormat, path);
+        return CerealUtils::createSaveStream(_outputFormat, path);
     }
 
     void AssimpModelFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
+        if (!_currentConfig)
+        {
+            return;
+        }
         Model model;
         auto basePath = input.getRelativePath().parent_path();
         OptionalRef<ITextureDefinitionLoader> texLoader = _texLoader;
-        if (_currentConfig && !_currentConfig->loadConfig.embedTextures)
+        if (!_currentConfig->embedTextures)
         {
             texLoader = nullptr;
         }
         _dataLoader.addBasePath(input.basePath);
-        AssimpModelConverter converter(*_currentScene, basePath, _currentConfig->loadConfig, _alloc, texLoader);
+        AssimpModelConverter converter(*_currentScene, basePath, *_currentConfig, _alloc, texLoader);
         converter.setConfig(input.config);
         converter.update(model);
         _dataLoader.removeBasePath(input.basePath);
-        CerealUtils::save(model, out, _currentConfig->outputFormat);
+        CerealUtils::save(model, out, _outputFormat);
     }
 
     const std::string& AssimpModelFileImporterImpl::getName() const noexcept

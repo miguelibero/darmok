@@ -26,11 +26,6 @@ namespace darmok
         return out.str();
     }
 
-    std::string ModelMaterial::toString() const noexcept
-    {
-        return getModelString(*this, "ModelMaterial");
-    }
-
     std::string ModelMesh::toString() const noexcept
     {
         return getModelString(*this, "ModelMesh");
@@ -165,67 +160,9 @@ namespace darmok
         }
     }
 
-    std::shared_ptr<Texture> ModelSceneConfigurer::loadTexture(const std::shared_ptr<TextureDefinition>& def) noexcept
+    std::shared_ptr<Material> ModelSceneConfigurer::loadMaterial(const std::shared_ptr<MaterialDefinition>& matDef) noexcept
     {
-        if (!def)
-        {
-            return nullptr;
-        }
-        auto itr = _textures.find(def);
-        if (itr != _textures.end())
-        {
-            return itr->second;
-        }
-        std::shared_ptr<Texture> tex;
-        if (def->data.empty())
-        {
-            tex = _config.assets.getTextureLoader()(def->name);
-        }
-        else
-        {
-            tex = std::make_shared<Texture>(def->data, def->config, def->flags);
-        }
-        _textures.emplace(def, tex);
-        return tex;
-    }
-
-    std::shared_ptr<Material> ModelSceneConfigurer::loadMaterial(const std::shared_ptr<ModelMaterial>& modelMat) noexcept
-    {
-        if (!modelMat)
-        {
-            return nullptr;
-        }
-        auto itr = _materials.find(modelMat);
-        if (itr != _materials.end())
-        {
-            return itr->second;
-        }
-        std::shared_ptr<Program> prog;
-        if (!modelMat->program.empty())
-        {
-            prog = _config.assets.getProgramLoader()(modelMat->program);
-        }
-        else
-        {
-            prog = StandardProgramLoader::load(modelMat->standardProgram);
-        }
-        auto mat = std::make_shared<Material>(prog);
-        for (auto& [type, texDef] : modelMat->textures)
-        {
-            mat->setTexture(type, loadTexture(texDef));
-        }
-        mat->setBaseColor(modelMat->baseColor)
-            .setMetallicFactor(modelMat->metallicFactor)
-            .setRoughnessFactor(modelMat->roughnessFactor)
-            .setNormalScale(modelMat->normalScale)
-            .setOcclusionStrength(modelMat->occlusionStrength)
-            .setEmissiveColor(modelMat->emissiveColor)
-            .setTwoSided(modelMat->twoSided)
-            .setOpacityType(modelMat->opacityType)
-            .setProgramDefines(modelMat->programDefines);
-
-        _materials.emplace(modelMat, mat);
-        return mat;
+        return _config.assets.getMaterialLoader().loadResource(matDef);
     }
 
     std::shared_ptr<Mesh> ModelSceneConfigurer::loadMesh(const std::shared_ptr<ModelMesh>& modelMesh) noexcept
@@ -315,9 +252,9 @@ namespace darmok
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const darmok::ModelMaterial& material)
+std::ostream& operator<<(std::ostream& out, const darmok::MaterialDefinition& material)
 {
-    out << material.toString();
+    out << getModelString(material, "Material");
     return out;
 }
 

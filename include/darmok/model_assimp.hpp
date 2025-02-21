@@ -12,6 +12,11 @@
 #include <vector>
 #include <unordered_set>
 
+#include <cereal/cereal.hpp>
+#include <cereal/types/variant.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/string.hpp>
+
 namespace bx
 {
     struct AllocatorI;
@@ -21,10 +26,10 @@ namespace darmok
 {
     using ProgramDefines = std::unordered_set<std::string>;
 
-    struct DARMOK_EXPORT AssimpModelLoadConfig final
+    struct DARMOK_EXPORT AssimpModelImportConfig final
     {
-        StandardProgramType standardProgram = StandardProgramType::Unlit;
-        std::string program;
+        using Program = std::variant<StandardProgramType, std::shared_ptr<ProgramDefinition>>;
+        Program program = StandardProgramType::Unlit;
         ProgramDefines programDefines;
         std::vector<std::regex> skipMeshes;
         std::vector<std::regex> skipNodes;
@@ -38,7 +43,6 @@ namespace darmok
         void serialize(Archive& archive)
         {
             archive(
-                CEREAL_NVP(standardProgram),
                 CEREAL_NVP(program),
                 CEREAL_NVP(programDefines),
                 CEREAL_NVP(skipMeshes),
@@ -54,10 +58,11 @@ namespace darmok
 
     struct DARMOK_EXPORT AssimpModelSource final
     {
-        using Config = AssimpModelLoadConfig;
+        using Config = AssimpModelImportConfig;
         std::string name;
         Data data;
         Config config;
+        std::unordered_map<std::string, TextureSource> textures;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -71,17 +76,15 @@ namespace darmok
     };
 
     class ITextureDefinitionLoader;
-    class AssimpModelImporterImpl;
 
     class DARMOK_EXPORT AssimpModelImporter final
     {
     public:
-        using Config = ProgramCompilerConfig;
-        AssimpModelImporter(OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
-        ~AssimpModelImporter() noexcept;
+        AssimpModelImporter(bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         Model operator()(const AssimpModelSource& src);
     private:
-        std::unique_ptr<AssimpModelImporterImpl> _impl;
+        bx::AllocatorI& _alloc;
+        OptionalRef<ITextureDefinitionLoader> _texLoader;
     };
 
     class IDataLoader;
@@ -91,7 +94,7 @@ namespace darmok
     class DARMOK_EXPORT AssimpModelLoader final : public IModelLoader
     {
     public:
-        using Config = AssimpModelLoadConfig;
+        using Config = AssimpModelImportConfig;
         AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         ~AssimpModelLoader() noexcept;
         AssimpModelLoader& setConfig(const Config& config) noexcept;
@@ -106,7 +109,7 @@ namespace darmok
     class DARMOK_EXPORT AssimpModelFileImporter final : public IFileTypeImporter
     {
     public:
-        using LoadConfig = AssimpModelLoadConfig;
+        using Config = AssimpModelImportConfig;
         AssimpModelFileImporter(bx::AllocatorI& alloc);
         ~AssimpModelFileImporter();
         AssimpModelFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);

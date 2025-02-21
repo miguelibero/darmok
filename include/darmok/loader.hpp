@@ -202,6 +202,9 @@ namespace darmok
         {
         }
 
+        BasicFromDefinitionLoader(const BasicFromDefinitionLoader& other) = delete;
+        BasicFromDefinitionLoader(BasicFromDefinitionLoader&& other) = delete;
+
         std::shared_ptr<Resource> operator()(Arg arg)
         {
             auto def = loadDefinition(arg);

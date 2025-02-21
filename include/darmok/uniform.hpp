@@ -2,103 +2,78 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
-#include <darmok/glm_serialize.hpp>
 
-#include <unordered_map>
 #include <variant>
 #include <string>
-#include <optional>
 #include <random>
+#include <unordered_map>
 
 #include <bgfx/bgfx.h>
-#include <bx/bx.h>
 #include <cereal/cereal.hpp>
-#include <cereal/types/variant.hpp>
-#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/string.hpp>
 
 namespace darmok
 {
-    using UniformValue = std::variant<glm::vec4, glm::mat4, glm::mat3>;
-
-    class Uniform final
+    struct DARMOK_EXPORT UniformValue final
     {
-    public:
-        using Value = UniformValue;
-        Uniform() noexcept;
-        Uniform(const std::string& name, const Value& value, bool autoInit = true) noexcept;
-        Uniform(const std::string& name, bgfx::UniformType::Enum type, bool autoInit = true) noexcept;
-        ~Uniform() noexcept;
-        
-        Uniform(const Uniform& other) noexcept;
-        Uniform& operator=(const Uniform& other) noexcept;
-        Uniform(Uniform&& other) noexcept;
-        Uniform& operator=(Uniform&& other) noexcept;
+        using Variant = std::variant<glm::vec4, glm::mat4, glm::mat3>;
 
-        void init() noexcept;
-        void shutdown() noexcept;
+        UniformValue(const UniformValue& other) = default;
+        UniformValue(UniformValue&& other) = default;
+        UniformValue& operator=(const UniformValue& other) = default;
+        UniformValue& operator=(UniformValue&& other) = default;
+        bool operator==(const UniformValue& other) const = default;
+        bool operator!=(const UniformValue& other) const = default;
 
-        bool operator==(const Uniform& other) const noexcept;
-        bool operator!=(const Uniform& other) const noexcept;
+        UniformValue(const Variant& val) noexcept;
+        UniformValue(Variant&& val) noexcept;
+        UniformValue& operator=(const Variant& val) noexcept;
+        UniformValue& operator=(Variant&& val) noexcept;
 
-        Uniform& operator=(const UniformValue& value) noexcept;
-        operator const UniformValue& () const noexcept;
-        operator const glm::vec4& () const;
-        operator const glm::mat3& () const;
-        operator const glm::mat4& () const;
-
-        static bgfx::UniformType::Enum getType(const Value& value) noexcept;
-
-        Uniform& setType(bgfx::UniformType::Enum type) noexcept;
-        Uniform& set(const Value& value) noexcept;
-        const Value& get() const noexcept;
-
-        const Uniform& configure(bgfx::Encoder& encoder) const;
-        Uniform& configure(bgfx::Encoder& encoder) noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
+        template<typename V>
+        operator V()
         {
-            archive(
-                CEREAL_NVP_("name", _name),
-                CEREAL_NVP_("value", _value),
-                CEREAL_NVP_("type", _type)
-            );
+            return std::get<V>(_value);
         }
 
-    private:
-        std::string _name;
-        Value _value;
-        bgfx::UniformHandle _handle;
-        bgfx::UniformType::Enum _type;
+        template<typename V>
+        operator V&&()
+        {
+            return std::get<V>(std::move(_value));
+        }
 
-        void doConfigure(bgfx::Encoder& encoder) const noexcept;
+        bgfx::UniformType::Enum getType() const noexcept;
+        const void* ptr() const noexcept;
+    private:
+        Variant _value;
     };
 
-    class UniformContainer final
+    struct TextureUniformKey final
     {
-    public:
-        UniformContainer(bool autoInit = true) noexcept;
-        ~UniformContainer() noexcept;
+        std::string name;
+        uint8_t stage = 0;
 
-        void init() noexcept;
-        void shutdown() noexcept;
+        bool operator==(const TextureUniformKey& other) const noexcept;
+        bool operator!=(const TextureUniformKey& other) const noexcept;
 
-        UniformContainer& set(const std::string& name, std::optional<UniformValue> value) noexcept;
-        const UniformContainer& configure(bgfx::Encoder& encoder) const;
-        UniformContainer& configure(bgfx::Encoder& encoder) noexcept;
+        size_t hash() const noexcept;
 
-        template<typename Archive>
+        struct Hash final
+        {
+            size_t operator()(const TextureUniformKey& key) const noexcept
+            {
+                return key.hash();
+            }
+        };
+
+        template<class Archive>
         void serialize(Archive& archive)
         {
             archive(
-                CEREAL_NVP_("uniforms", _uniforms)
+                CEREAL_NVP(name),
+                CEREAL_NVP(stage)
             );
         }
-
-    private:
-        std::unordered_map<std::string, Uniform> _uniforms;
-        bool _autoInit;
-        bool _initialized;
     };
 
     class BasicUniforms final
@@ -118,5 +93,48 @@ namespace darmok
         bgfx::UniformHandle _randomUniform;
         glm::vec4 _timeValues;
         glm::vec4 _randomValues;
+    };
+
+    using UniformValueMap = std::unordered_map<std::string, UniformValue>;
+
+    class Texture;
+
+    template<typename Tex>
+    using GenericUniformTextureMap = std::unordered_map<TextureUniformKey, Tex, TextureUniformKey::Hash>;
+    using UniformTextureMap = GenericUniformTextureMap<std::shared_ptr<Texture>>;
+
+    class UniformHandleContainer final
+    {
+    public:
+        ~UniformHandleContainer() noexcept;
+        void configure(bgfx::Encoder& encoder, const UniformValueMap& values) const;
+        void configure(bgfx::Encoder& encoder, const UniformTextureMap& textures) const;
+        void configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept;
+        void configure(bgfx::Encoder& encoder, const std::string& name, const UniformValue& val) const noexcept;
+        void shutdown() noexcept;
+    private:
+
+        struct Key final
+        {
+            std::string name;
+            bgfx::UniformType::Enum type = bgfx::UniformType::Count;
+
+            bool operator==(const Key& other) const noexcept;
+            bool operator!=(const Key& other) const noexcept;
+
+            size_t hash() const noexcept;
+
+            struct Hash final
+            {
+                size_t operator()(const Key& key) const noexcept
+                {
+                    return key.hash();
+                }
+            };
+        };
+
+        bgfx::UniformHandle getHandle(const Key& key) const noexcept;
+
+        mutable std::unordered_map<Key, bgfx::UniformHandle, Key::Hash> _handles;
     };
 }

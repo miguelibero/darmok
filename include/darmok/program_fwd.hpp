@@ -8,6 +8,7 @@ namespace darmok
 		Gui,
 		Forward,
 		ForwardBasic,
-		Tonemap
+		Tonemap,
+		Count
 	};
 }

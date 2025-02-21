@@ -452,10 +452,6 @@ namespace darmok
         auto basePath = path.parent_path();
         auto readJson = [this, &basePath](const nlohmann::ordered_json& json)
             {
-                if (json.contains("name"))
-                {
-                    name = json["name"];
-                }
                 if (json.contains("vertexShader"))
                 {
                     auto vertPath = basePath / json["vertexShader"].get<std::string>();
@@ -564,7 +560,6 @@ namespace darmok
     {
         ProgramDefinition def
         {
-            .name = src.name,
             .vertexLayout = src.varying.vertex,
         };
         auto varyingDefPath = getTempPath("darmok.varyingdef.");

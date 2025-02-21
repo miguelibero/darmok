@@ -23,13 +23,19 @@ namespace darmok
 {
     struct DARMOK_EXPORT TextureConfig final
 	{
-		using SamplingMode = TextureSamplingMode;
 		glm::uvec2 size = glm::uvec2(1);
 		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
 		TextureType type = TextureType::Texture2D;
 		uint16_t depth = 0;
 		bool mips = false;
 		uint16_t layers = 1;
+
+		void read(const nlohmann::json& json);
+
+		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;
+
+		[[nodiscard]] std::string toString() const noexcept;
+		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
 
 		template<class Archive>
 		void serialize(Archive& archive)
@@ -43,38 +49,44 @@ namespace darmok
 				CEREAL_NVP(layers)
 			);
 		}
-
-		void read(const nlohmann::json& json);
-
-		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;
-
-		[[nodiscard]] std::string toString() const noexcept;
-		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
 	};
 
-	struct DARMOK_EXPORT TextureDefinition final
+	struct DARMOK_EXPORT TextureSource final
 	{
+		Data imageData;
+		bimg::TextureFormat::Enum imageFormat;
+		uint64_t flags = defaultTextureLoadFlags;
+
 		template<class Archive>
 		void serialize(Archive& archive)
 		{
 			archive(
-				CEREAL_NVP(name),
+				CEREAL_NVP(imageData),
+				CEREAL_NVP(imageFormat),
+				CEREAL_NVP(flags)
+			);
+		}
+	};
+
+	struct DARMOK_EXPORT TextureDefinition final
+	{
+		bool empty() const noexcept;
+
+		Data data;
+		TextureConfig config;
+		uint64_t flags = defaultTextureLoadFlags;
+
+		void loadImage(const Image& img) noexcept;
+
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
 				CEREAL_NVP(data),
 				CEREAL_NVP(config),
 				CEREAL_NVP(flags)
 			);
 		}
-
-		bool empty() const noexcept;
-
-		std::string name;
-		Data data;
-		TextureConfig config;
-		uint64_t flags = defaultTextureLoadFlags;
-
-		static uint64_t readFlags(const nlohmann::json& json);
-
-		void loadImage(const Image& img) noexcept;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<TextureDefinition>
@@ -135,6 +147,7 @@ namespace darmok
 		[[nodiscard]] static std::optional<bgfx::TextureFormat::Enum> readFormat(std::string_view name) noexcept;
 		[[nodiscard]] static const std::string& getTypeName(TextureType type) noexcept;
 		[[nodiscard]] static std::optional<TextureType> readType(std::string_view name) noexcept;
+		[[nodiscard]] static uint64_t readFlags(const nlohmann::json& json) noexcept;
 
 		using FlagMap = std::unordered_map<std::string, uint64_t>;
 

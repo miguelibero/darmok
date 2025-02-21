@@ -19,133 +19,87 @@ namespace darmok::editor
 
 	bool MaterialInspectorEditor::renderType(Material& mat) noexcept
 	{
-		auto changed = true;
-		auto drawTexture = [this, &mat, &changed](const char* label, MaterialTextureType type)
+		auto changed = false;
+		auto drawTexture = [this, &mat, &changed](const char* label, auto textureType)
 		{
-			auto tex = mat.getTexture(type);
-			if (_app->drawTextureReference(label, tex))
+			if (_app->drawTextureReference(label, mat.textures[textureType]))
 			{
-				mat.setTexture(type, tex);
+				changed = true;
+			}
+		};
+
+		auto drawColorTexture = [this, &mat, &changed](const char* label, auto& color, auto textureType)
+		{
+			if (ImguiUtils::drawColorInput(label, color))
+			{
+				changed = true;
+			}
+			if (_app->drawTextureReference(label, mat.textures[textureType]))
+			{
 				changed = true;
 			}
 		};
 
 		if (ImGui::CollapsingHeader("Material"))
 		{
-			{
-				std::string name = mat.getName();
-				if (ImGui::InputText("Name", &name))
-				{
-					mat.setName(name);
-					changed = true;
-				}
-			}
 			if (_app)
 			{
-				auto prog = mat.getProgram();
-				if (_app->drawProgramReference("Program", prog))
+				if (_app->drawProgramReference("Program", mat.program))
 				{
-					mat.setProgram(prog);
 					changed = true;
 				}
 			}
+			// pbr
+			drawColorTexture("Base Texture", mat.baseColor, MaterialTextureType::BaseColor);
+			if (ImGui::SliderFloat("Metallic Factor", &mat.metallicFactor, 0.F, 1.F))
 			{
-				auto color = Colors::normalize(mat.getBaseColor());
-				if (ImGui::ColorEdit4("Base Color", glm::value_ptr(color)))
-				{
-					mat.setBaseColor(Colors::denormalize(color));
-					changed = true;
-				}
+				changed = true;
 			}
-			drawTexture("Base Texture", MaterialTextureType::BaseColor);
+			if (ImGui::SliderFloat("Roughness Factor", &mat.roughnessFactor, 0.F, 1.F))
 			{
-				auto f = mat.getMetallicFactor();
-				if (ImGui::SliderFloat("Metallic Factor", &f, 0.F, 1.F))
-				{
-					mat.setMetallicFactor(f);
-					changed = true;
-				}
+				changed = true;
 			}
+			drawTexture("Metallic Roughness", MaterialTextureType::MetallicRoughness);
+			if (ImGui::SliderFloat("Normal Scale", &mat.normalScale, 0.F, 1.F))
 			{
-				auto f = mat.getRoughnessFactor();
-				if (ImGui::SliderFloat("Roughness Factor", &f, 0.F, 1.F))
-				{
-					mat.setRoughnessFactor(f);
-					changed = true;
-				}
+				changed = true;
 			}
-			drawTexture("Metallic Roughness Texture", MaterialTextureType::MetallicRoughness);
+			drawTexture("Normal", MaterialTextureType::Normal);
+			if (ImGui::SliderFloat("Occlusion Strength", &mat.occlusionStrength, 0.F, 1.F))
 			{
-				auto f = mat.getNormalScale();
-				if (ImGui::SliderFloat("Normal Scale", &f, 0.F, 1.F))
-				{
-					mat.setNormalScale(f);
-					changed = true;
-				}
+				changed = true;
 			}
-			drawTexture("Normal Texture", MaterialTextureType::Normal);
+			if (ImguiUtils::drawColorInput("Emissive Color", mat.emissiveColor))
 			{
-				auto f = mat.getOcclusionStrength();
-				if (ImGui::SliderFloat("Occlusion Strength", &f, 0.F, 1.F))
-				{
-					mat.setOcclusionStrength(f);
-					changed = true;
-				}
+
+				changed = true;
 			}
+			drawTexture("Emissive", MaterialTextureType::Emissive);
+			
+			// phong
+			drawColorTexture("Specular", mat.specularColor, MaterialTextureType::Specular);
 			{
-				auto color = Colors::normalize(mat.getEmissiveColor());
-				if (ImGui::ColorEdit3("Emissive Color", glm::value_ptr(color)))
-				{
-					mat.setEmissiveColor(Colors::denormalize(color));
-					changed = true;
-				}
-			}
-			drawTexture("Emissive Texture", MaterialTextureType::Emissive);
-			{
-				auto prim = mat.getPrimitiveType();
-				if (ImguiUtils::drawEnumCombo("Primitive Type", prim, Material::getPrimitiveTypeName))
-				{
-					mat.setPrimitiveType(prim);
-					changed = true;
-				}
-			}
-			{
-				auto opacity = mat.getOpacityType();
-				if (ImguiUtils::drawEnumCombo("Opacity Type", opacity, Material::getOpacityTypeName))
-				{
-					mat.setOpacityType(opacity);
-					changed = true;
-				}
-			}
-			{
-				auto twoSided = mat.getTwoSided();
-				if (ImGui::Checkbox("Two Sided", &twoSided))
-				{
-					mat.setTwoSided(twoSided);
-					changed = true;
-				}
-			}
-			// phong lighting: specular + shininess
-			ImGui::Separator();
-			ImGui::Text("Basic");
-			{
-				auto color = Colors::normalize(mat.getSpecularColor());
-				if (ImGui::ColorEdit3("Specular Color", glm::value_ptr(color)))
-				{
-					mat.setSpecularColor(Colors::denormalize(color));
-					changed = true;
-				}
-			}
-			drawTexture("Specular Texture", MaterialTextureType::Specular);
-			{
-				int v = mat.getShininess();
+				int v = mat.shininess;
 				if (ImGui::SliderInt("Shininess", &v, 0, 256))
 				{
-					mat.setShininess(v);
+					mat.shininess = v;
 					changed = true;
 				}
 			}
 
+			if (ImguiUtils::drawEnumCombo("Primitive Type", mat.primitiveType))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawEnumCombo("Opacity Type", mat.opacityType))
+			{
+				changed = true;
+			}
+			if (ImGui::Checkbox("Two Sided", &mat.twoSided))
+			{
+				changed = true;
+			}
+			
 			auto proj = _app->getProject();
 
 			if (ImGui::Button("Delete"))

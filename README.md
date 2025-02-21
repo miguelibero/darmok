@@ -32,6 +32,7 @@ currently using:
 
 planned to use:
 
+* [magic_enum](https://github.com/Neargye/magic_enum) automatically convert enum types
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling
     (blocked because of [bgfx#3308](https://github.com/bkaradzic/bgfx/pull/3308)
     and the vcpkg bgfx build not having a profiler feature)
@@ -136,6 +137,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * instancing
 * 3d physics materials
 * baked shadowmaps
+* switch from cereal to protocol buffers for serialization?
 * multithreaded updates ([Ubisoft](https://www.youtube.com/watch?v=X1T3IQ4N-3g))
 * custom UI module (rmlui is nice but slow)
 * spine animations

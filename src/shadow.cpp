@@ -15,7 +15,7 @@
 #include <darmok/string.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/camera_reflect.hpp>
-#include "generated/shadow.program.h"
+#include "generated/shaders/shadow.program.h"
 #include "render_samplers.hpp"
 
 namespace darmok
@@ -164,7 +164,7 @@ namespace darmok
             {
                 continue;
             }
-            if (renderable->getMaterial()->getPrimitiveType() == MaterialPrimitiveType::Line)
+            if (renderable->getMaterial()->primitiveType == MaterialPrimitiveType::Line)
             {
                 continue;
             }

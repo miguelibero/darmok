@@ -36,7 +36,7 @@ namespace darmok
 {
     struct Model;
     struct ModelNode;
-    struct ModelMaterial;
+    struct MaterialDefinition;
     struct ModelMesh;
     struct TextureDefinition;
     struct ModelImage;
@@ -73,7 +73,7 @@ namespace darmok
     class AssimpModelConverter final
     {
     public:
-        using Config = AssimpModelLoadConfig;
+        using Config = AssimpModelImportConfig;
         AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
@@ -99,18 +99,18 @@ namespace darmok
         static const std::vector<AssimpMaterialTexture> _materialTextures;
 
         std::unordered_map<const aiMesh*, std::shared_ptr<ModelMesh>> _meshes;
-        std::unordered_map<const aiMaterial*, std::shared_ptr<ModelMaterial>> _materials;
+        std::unordered_map<const aiMaterial*, std::shared_ptr<MaterialDefinition>> _materials;
         std::unordered_map<std::string, std::shared_ptr<TextureDefinition>> _textures;
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
         std::shared_ptr<ModelMesh> getMesh(const aiMesh* assimpMesh) noexcept;
-        std::shared_ptr<ModelMaterial> getMaterial(const aiMaterial* assimpMaterial) noexcept;
+        std::shared_ptr<MaterialDefinition> getMaterial(const aiMaterial* assimpMaterial) noexcept;
         std::shared_ptr<TextureDefinition> getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         std::shared_ptr<TextureDefinition> getTexture(const std::string& path) noexcept;
 
         bool update(ModelNode& modelNode, const aiNode& assimpNode) noexcept;
-        void update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept;
+        void update(MaterialDefinition& modelMat, const aiMaterial& assimpMat) noexcept;
         void update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept;
         void update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept;
         void update(ModelNode& modelNode, const aiLight& assimpLight) noexcept;
@@ -124,7 +124,7 @@ namespace darmok
     class AssimpModelLoaderImpl final
     {
     public:
-        using Config = AssimpModelLoadConfig;
+        using Config = AssimpModelImportConfig;
         AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
@@ -138,21 +138,11 @@ namespace darmok
         AssimpSceneLoader _sceneLoader;
     };
 
-    struct AssimpModelImportConfig
-    {
-        using OutputFormat = CerealFormat;
-        using LoadConfig = AssimpModelLoadConfig;
-        OutputFormat outputFormat = OutputFormat::Binary;
-        std::filesystem::path outputPath;
-        LoadConfig loadConfig;
-    };
-
     class AssimpModelFileImporterImpl final
     {
     public:
         using Input = FileTypeImporterInput;
         using Config = AssimpModelImportConfig;
-        using LoadConfig = AssimpModelLoadConfig;
         using OutputFormat = CerealFormat;
         using Dependencies = FileTypeImportDependencies;
 
@@ -171,8 +161,11 @@ namespace darmok
         DataLoader _dataLoader;
         ImageLoader _imgLoader;
         ImageTextureDefinitionLoader _texLoader;
+        CerealProgramDefinitionLoader _progLoader;
         AssimpSceneLoader _assimpLoader;
         std::optional<Config> _currentConfig;
+        OutputFormat _outputFormat = OutputFormat::Binary;
+        std::filesystem::path _outputPath;
         std::shared_ptr<aiScene> _currentScene;
 
         static const std::string _outputFormatJsonKey;
@@ -190,8 +183,7 @@ namespace darmok
         static const std::string _formatJsonKey;
         static const std::string _loadPathJsonKey;
 
-        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config) const;
-        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, LoadConfig& config) const;
+        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
         static VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

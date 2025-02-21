@@ -6,12 +6,15 @@ namespace darmok
 {
     enum class MaterialTextureType
     {
+        // PBR
         BaseColor,
-        Specular,
         MetallicRoughness,
         Normal,
         Occlusion,
         Emissive,
+
+        // Phong
+        Specular,
 
         Count
     };

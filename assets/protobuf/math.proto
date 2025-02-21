@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+message Uvec2 {
+    uint32 x = 1;
+    uint32 y = 2;
+}
+
+message Vec2 {
+    float x = 1;
+    float y = 2;
+}
+
+message Vec3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message Vec4 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+    float w = 4;
+}
+
+message Mat3 {
+    Vec3 row1 = 1;
+    Vec3 row2 = 2;
+    Vec3 row3 = 3;
+}
+
+message Mat4 {
+    Vec4 row1 = 1;
+    Vec4 row2 = 2;
+    Vec4 row3 = 3;
+    Vec4 row4 = 4;
+}
+
+message Color {
+    uint32 r = 1;
+    uint32 g = 2;
+    uint32 b = 3;
+    uint32 a = 4;
+}
+
+message Color3 {
+    uint32 r = 1;
+    uint32 g = 2;
+    uint32 b = 3;
+}

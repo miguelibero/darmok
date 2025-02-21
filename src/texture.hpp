@@ -10,7 +10,6 @@ namespace darmok
 {
     struct TextureFileImportConfig final
 	{
-		std::string name;
 		TextureConfig config;
 		uint64_t flags = defaultTextureLoadFlags;
 		bimg::TextureFormat::Enum imageFormat = bimg::TextureFormat::Count;

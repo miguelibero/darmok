@@ -72,12 +72,11 @@ namespace darmok
 		{
 			return {};
 		}
-		auto prog = _material->getProgram();
-		if (!prog)
+		if (!_material->program)
 		{
 			return {};
 		}
-		return prog->getVertexLayout();
+		return _material->program->getVertexLayout();
 	}
 
 	bool Renderable::valid() const noexcept
@@ -96,8 +95,6 @@ namespace darmok
 
 	void Renderable::bindMeta()
 	{
-		ReflectionSerializeUtils::metaSave<Renderable>();
-		ReflectionSerializeUtils::metaLoad<Renderable>();
 		SceneReflectionUtils::metaEntityComponent<Renderable>("Renderable")
 			.ctor()
 			.data<&Renderable::_enabled, entt::as_ref_t>("enabled"_hs)

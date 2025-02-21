@@ -47,7 +47,7 @@ namespace darmok
 		return assets.getModelLoader()(path);
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::string& path, const AssimpModelLoadConfig& config)
+	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::string& path, const AssimpModelImportConfig& config)
 	{
 		auto& loader = assets.getAssimpModelLoader();
 		loader.setConfig(config);

@@ -20,6 +20,7 @@
 #include <bx/bx.h>
 #include <bx/allocator.h>
 
+
 namespace darmok
 {
 	class Data;
@@ -48,9 +49,10 @@ namespace darmok
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
-		[[nodiscard]] TextureConfig getTextureConfig(uint64_t flags = defaultTextureLoadFlags) const noexcept;
+		[[nodiscard]] TextureConfig getTextureConfig() const noexcept;
 		[[nodiscard]] DataView getData() const noexcept;		
-		[[nodiscard]] TextureType getTextureType(uint64_t flags = defaultTextureLoadFlags) const noexcept;
+		[[nodiscard]] bool isTextureValid(uint64_t flags = defaultTextureLoadFlags) const noexcept;
+		[[nodiscard]] TextureType getTextureType() const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
 		void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
 		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;

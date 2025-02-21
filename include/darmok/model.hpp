@@ -5,7 +5,7 @@
 #include <darmok/color.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/material_fwd.hpp>
+#include <darmok/material.hpp>
 #include <darmok/model_fwd.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
@@ -116,54 +116,6 @@ namespace darmok
         }
     };
 
-    using ProgramDefines = std::unordered_set<std::string>;
-
-    struct DARMOK_EXPORT ModelMaterial final
-    {
-        std::string program;
-        StandardProgramType standardProgram = StandardProgramType::Unlit;
-        ProgramDefines programDefines;
-
-        MaterialPrimitiveType primitiveType = MaterialPrimitiveType::Triangle;
-        std::unordered_map<MaterialTextureType, std::shared_ptr<TextureDefinition>> textures;
-
-        Color baseColor = Colors::white();
-        Color specularColor = Colors::white();
-        float shininess = 0.F;
-        float metallicFactor = 0.F;
-        float roughnessFactor = 0.F;
-        float normalScale = 0.F;
-        float occlusionStrength = 0.F;
-        Color3 emissiveColor = Colors::black();
-        bool twoSided = false;
-
-        OpacityType opacityType = OpacityType::Transparent;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(program),
-                CEREAL_NVP(standardProgram),
-                CEREAL_NVP(programDefines),
-                CEREAL_NVP(primitiveType),
-                CEREAL_NVP(textures),
-                CEREAL_NVP(baseColor),
-                CEREAL_NVP(specularColor),
-                CEREAL_NVP(shininess),
-                CEREAL_NVP(metallicFactor),
-                CEREAL_NVP(roughnessFactor),
-                CEREAL_NVP(normalScale),
-                CEREAL_NVP(occlusionStrength),
-                CEREAL_NVP(emissiveColor),
-                CEREAL_NVP(twoSided),
-                CEREAL_NVP(opacityType)
-            );
-        }
-
-        std::string toString() const noexcept;
-    };
-
     struct DARMOK_EXPORT ModelArmatureJoint final
     {
         std::string name;
@@ -210,7 +162,7 @@ namespace darmok
     struct DARMOK_EXPORT ModelRenderable final
     {
         std::shared_ptr<ModelMesh> mesh;
-        std::shared_ptr<ModelMaterial> material;
+        std::shared_ptr<MaterialDefinition> material;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -311,10 +263,8 @@ namespace darmok
         ModelSceneConfig _config;
         Entity _parent;
         uint64_t _textureFlags;
-        std::unordered_map<std::shared_ptr<ModelMaterial>, std::shared_ptr<Material>> _materials;
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Mesh>> _meshes;
         std::unordered_map<std::shared_ptr<ModelMesh>, std::shared_ptr<Armature>> _armatures;
-        std::unordered_map<std::shared_ptr<TextureDefinition>, std::shared_ptr<Texture>> _textures;
 
         Entity add(const ModelNode& node, Entity parent) noexcept;
         Entity operator()(const ModelNode& node, Entity parent) noexcept;
@@ -331,10 +281,9 @@ namespace darmok
             return entity;
         }
 
-        std::shared_ptr<Material> loadMaterial(const std::shared_ptr<ModelMaterial>& modelMat) noexcept;
+        std::shared_ptr<Material> loadMaterial(const std::shared_ptr<MaterialDefinition>& matDef) noexcept;
         std::shared_ptr<Mesh> loadMesh(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
         std::shared_ptr<Armature> loadArmature(const std::shared_ptr<ModelMesh>& modelMesh) noexcept;
-        std::shared_ptr<Texture> loadTexture(const std::shared_ptr<TextureDefinition>& def) noexcept;
 
         void configureEntity(const ModelNode& node, Entity entity, Transform& trans) noexcept;
         void configureEntity(const ModelRenderable& renderable, Entity entity) noexcept;
@@ -351,7 +300,7 @@ namespace darmok
     using CerealModelLoader = CerealLoader<IModelLoader>;
 }
 
-DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelMaterial& material);
+DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::MaterialDefinition& material);
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelMesh& mesh);
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelRenderable& renderable);
 DARMOK_EXPORT std::ostream& operator<<(std::ostream& out, const darmok::ModelNode& node);

@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+
+message TextureSource {
+    bytes imageData = 1;
+    Texture.Format format = 2;
+    uint64 flags = 3;
+}
+
+message TextureConfig {
+    Uvec2 size = 1;
+    Texture.Format format = 2;
+    Texture.Type type = 3;
+    uint32 depth = 4;
+    bool mips = 5;
+    uint32 layers = 6;
+}
+
+message Texture {
+	enum Type {
+		Unknown = 0;
+		CubeMap = 1;
+		Texture2D = 2;
+		Texture3D = 3;
+	}
+
+	enum Format {
+		BC1 = 0;
+		BC2 = 1;
+		BC3 = 2;
+		BC4 = 3;
+		BC5 = 5;
+		BC6H = 6;
+		BC7 = 7;
+		ETC1 = 8;
+		ETC2 = 9;
+		ETC2A = 10;
+		ETC2A1 = 11;
+		PTC12 = 12;
+		PTC14 = 13;
+		PTC12A = 14;
+		PTC14A = 15;
+		PTC22 = 16;
+		PTC24 = 17;
+		ATC = 18;
+		ATCE = 19;
+		ATCI = 20;
+		ASTC4x4 = 21;
+		ASTC5x4 = 22;
+		ASTC5x5 = 23;
+		ASTC6x5 = 24;
+		ASTC6x6 = 25;
+		ASTC8x5 = 26;
+		ASTC8x6 = 27;
+		ASTC8x8 = 28;
+		ASTC10x5 = 29;
+		ASTC10x6 = 30;
+		ASTC10x8 = 31;
+		ASTC10x10 = 32;
+		ASTC12x10 = 33;
+		ASTC12x12 = 34;
+		UnknownFormat = 35;
+		R1 = 36;
+		A8 = 37;
+		R8 = 38;
+		R8I = 39;
+		R8U = 40;
+		R8S = 41;
+		R16 = 42;
+		R16I = 43;
+		R16U = 44;
+		R16F = 45;
+		R16S = 46;
+		R32I = 47;
+		R32U = 48;
+		R32F = 49;
+		RG8 = 50;
+		RG8I = 51;
+		RG8U = 52;
+		RG8S = 53;
+		RG16 = 54;
+		RG16I = 55;
+		RG16U = 56;
+		RG16F = 57;
+		RG16S = 58;
+		RG32I = 59;
+		RG32U = 60;
+		RG32F = 61;
+		RGB8 = 62;
+		RGB8I = 63;
+		RGB8U = 64;
+		RGB8S = 65;
+		RGB9E5F = 66;
+		BGRA8 = 67;
+		RGBA8 = 68;
+		RGBA8I = 69;
+		RGBA8U = 70;
+		RGBA8S = 71;
+		RGBA16 = 72;
+		RGBA16I = 73;
+		RGBA16U = 74;
+		RGBA16F = 75;
+		RGBA16S = 76;
+		RGBA32I = 77;
+		RGBA32U = 78;
+		RGBA32F = 79;
+		B5G6R5 = 80;
+		R5G6B5 = 81;
+		BGRA4 = 82;
+		RGBA4 = 83;
+		BGR5A1 = 84;
+		RGB5A1 = 85;
+		RGB10A2 = 86;
+		RG11B10F = 87;
+		UnknownDepth = 88;
+		D16 = 89;
+		D24 = 90;
+		D24S8 = 91;
+		D32 = 92;
+		D16F = 93;
+		D24F = 94;
+		D32F = 95;
+		D0S8 = 96;
+	}
+
+    bytes data = 1;
+    TextureConfig config = 2;
+    uint64 flags = 3;
+}

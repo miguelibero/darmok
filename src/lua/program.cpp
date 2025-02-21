@@ -18,7 +18,6 @@ namespace darmok
 			{ "ForwardBasic",	StandardProgramType::ForwardBasic }
 		});
 		lua.new_usertype<StandardProgramLoader>("StandardProgramLoader", sol::no_constructor,
-			"readType", &StandardProgramLoader::readType,
 			"load", &StandardProgramLoader::load
 		);
 	}

@@ -67,6 +67,8 @@
     "mikktspace",
     "imguizmo",
     "portable-file-dialogs",
-    "cli11"
+    "cli11",
+    "magic-enum",
+    "protobuf"
   ]
 }

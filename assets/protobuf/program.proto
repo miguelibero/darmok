@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+
+message Bgfx {
+    enum Attrib {
+        Position = 0;
+        Normal = 1;
+        Tangent = 2;
+        Bitangent = 3;
+        Color0 = 4;
+        Color1 = 5;
+        Color2 = 6;
+        Color3 = 7;
+        Indices = 8;
+        Weight = 9;
+        TexCoord0 = 10;
+        TexCoord1 = 11;
+        TexCoord2 = 12;
+        TexCoord3 = 13;
+        TexCoord4 = 14;
+        TexCoord5 = 15;
+        TexCoord6 = 16;
+        TexCoord7 = 17;
+    }
+
+    enum AttribType {
+        Uint8 = 0;
+        Uint10 = 1;
+        Int16 = 2;
+        Half = 3;
+        Float = 4;
+    }
+}
+
+message VertexAttribute {
+    Bgfx.Attrib attrib = 1;
+    Bgfx.AttribType type = 2;
+    uint32 num = 3;
+    bool normalize = 4;
+    bool asInt = 5;
+}
+
+message FragmentAttribute {
+    Bgfx.Attrib attrib = 1;
+    uint32 num = 2;
+    string name = 3;
+    oneof defaultValue {
+        Vec2 vec2 = 4;
+        Vec3 vec3 = 5;
+        Vec4 vec4 = 6;
+    }
+}
+
+message VertexLayout {
+    repeated VertexAttribute attributes = 1;
+}
+
+message FragmentLayout {
+    repeated FragmentAttribute attributes = 1;
+}
+
+message Varying {
+    VertexLayout vertex = 1;
+    FragmentLayout fragment = 2;
+    uint32 instanceAttribs = 3;
+}
+
+message ProgramSource {
+    bytes vertexShader = 1;
+    bytes fragmentShader = 2;
+	Varying varying = 3;
+}
+
+message ProgramVariant {
+    bytes vertexShader = 1;
+    bytes fragmentShader = 2;
+    repeated string defines = 3;
+}
+
+message ProgramProfile {
+    repeated ProgramVariant variants = 1;
+}
+
+message Program {
+
+    enum StandardType {
+        Unlit = 0;
+        ForwardBasic = 1;
+        Forward = 2;
+        Gui = 3;
+        Tonemap = 4;
+    }
+
+    string name = 1;
+    map<string, ProgramProfile> profiles = 2;
+    VertexLayout VertexLayout = 3;
+}

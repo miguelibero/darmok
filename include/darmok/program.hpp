@@ -34,8 +34,6 @@ namespace darmok
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
 
-		const std::string& getName() const noexcept;
-
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const VertexLayout& getVertexLayout() const noexcept;
 
@@ -50,16 +48,11 @@ namespace darmok
 		ShaderHandles _fragmentHandles;
 		Handles _handles;
 		VertexLayout _vertexLayout;
-		std::string _name;
 	};
 
 	class DARMOK_EXPORT StandardProgramLoader final
 	{
 	public:
-		using TypeNames = std::unordered_map<StandardProgramType, std::string>;
-		static std::optional<StandardProgramType> readType(std::string_view val) noexcept;
-		static const TypeNames& getTypeNames() noexcept;
-		static const std::string& getTypeName(StandardProgramType type) noexcept;
 		static std::shared_ptr<Program> load(StandardProgramType type);
 		static std::shared_ptr<ProgramDefinition> loadDefinition(StandardProgramType type);
 		static std::optional<StandardProgramType> getType(const std::shared_ptr<Program>& prog) noexcept;
@@ -67,7 +60,6 @@ namespace darmok
 	private:
 		static std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> _defCache;
 		static std::unordered_map<StandardProgramType, std::weak_ptr<Program>> _cache;
-		static const TypeNames _typeNames;
 
 		static void loadDefinition(ProgramDefinition& def, StandardProgramType type);
 	};

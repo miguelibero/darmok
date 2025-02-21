@@ -370,7 +370,7 @@ namespace darmok
 		}
 		if (_name.empty())
 		{
-			_name = "ScreenSpaceRenderPass " + prog->getName();
+			_name = "ScreenSpaceRenderPass";
 		}
 	}
 
@@ -435,13 +435,20 @@ namespace darmok
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept
 	{
-		_textureUniforms.set(name, stage, texture);
+		_uniformTextures.emplace(TextureUniformKey{ name, stage }, texture);
 		return *this;
 	}
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setUniform(const std::string& name, std::optional<UniformValue> value) noexcept
 	{
-		_uniforms.set(name, value);
+		if (value.has_value())
+		{
+			_uniformValues.emplace(name, *value);
+		}
+		else
+		{
+			_uniformValues.erase(name);
+		}
 		return *this;
 	}
 
@@ -462,8 +469,8 @@ namespace darmok
 
 		encoder.setTexture(0, _texUniform, _readTex->getTexture()->getHandle());
 		_basicUniforms.configure(encoder);
-		_uniforms.configure(encoder);
-		_textureUniforms.configure(encoder);
+		_uniformHandles.configure(encoder, _uniformValues);
+		_uniformHandles.configure(encoder, _uniformTextures);
 
 		uint64_t state = 0
 			| BGFX_STATE_WRITE_RGB

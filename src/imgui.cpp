@@ -10,7 +10,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/program_core.hpp>
 #include <bx/allocator.h>
-#include "generated/imgui/imgui.program.h"
+#include "generated/shaders/imgui/imgui.program.h"
 
 namespace darmok
 {

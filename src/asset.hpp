@@ -79,7 +79,8 @@ namespace darmok
 		ImageTextureDefinitionLoader _imgTexDefLoader;
 		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
 		TextureLoader _texLoader;
-		CerealMaterialLoader _cerealMaterialLoader;
+		CerealMaterialDefinitionLoader _cerealMatDefLoader;
+		MaterialLoader _materialLoader;
 		CerealMeshDefinitionLoader _cerealMeshDefLoader;
 		MeshLoader _meshLoader;
 		CerealTextureAtlasDefinitionLoader _cerealTexAtlasDefLoader;

@@ -7,8 +7,8 @@
 #include <darmok/program_core.hpp>
 #include <darmok/color.hpp>
 
-#include "generated/skybox.program.h"
-#include "generated/grid.program.h"
+#include "generated/shaders/skybox.program.h"
+#include "generated/shaders/grid.program.h"
 
 namespace darmok
 {

@@ -154,7 +154,15 @@ namespace darmok
 			, _container->m_size);
 	}
 
-	TextureType Image::getTextureType(uint64_t flags) const noexcept
+	bool Image::isTextureValid(uint64_t flags) const noexcept
+	{
+		auto depth = getDepth();
+		auto layers = getLayerCount();
+		auto format = bgfx::TextureFormat::Enum(getFormat());
+		return bgfx::isTextureValid(depth, false, layers, format, flags);
+	}
+
+	TextureType Image::getTextureType() const noexcept
 	{
 		if (isCubeMap())
 		{
@@ -165,19 +173,7 @@ namespace darmok
 		{
 			return TextureType::Texture3D;
 		}
-		auto format = bgfx::TextureFormat::Enum(getFormat());
-		auto layers = getLayerCount();
-		auto renderer = bgfx::getCaps()->rendererType;
-		if (renderer == bgfx::RendererType::Noop)
-		{
-			// command line tools
-			return TextureType::Texture2D;
-		}
-		if (bgfx::isTextureValid(depth, false, layers, format, flags))
-		{
-			return TextureType::Texture2D;
-		}
-		return TextureType::Unknown;
+		return TextureType::Texture2D;
 	}
 
 	bx::AllocatorI& Image::getAllocator() const noexcept
@@ -471,12 +467,12 @@ namespace darmok
 		return info;
 	}
 
-	TextureConfig Image::getTextureConfig(uint64_t flags) const noexcept
+	TextureConfig Image::getTextureConfig() const noexcept
 	{
 		return {
 			getSize(),
 			bgfx::TextureFormat::Enum(getFormat()),
-			getTextureType(flags),
+			getTextureType(),
 			uint16_t(getDepth()),
 			getMipCount() > 1,
 			getLayerCount()

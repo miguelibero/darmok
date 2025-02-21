@@ -22,6 +22,26 @@ namespace darmok
 {
 	class DataView;
 
+	struct DARMOK_EXPORT ProgramSource final
+	{
+		Data vertexShader;
+		Data fragmentShader;
+		VaryingDefinition varying;
+
+		void read(const nlohmann::ordered_json& json, std::filesystem::path path = "");
+		void read(const std::filesystem::path& path);
+
+		template<class Archive>
+		void serialize(Archive& archive)
+		{
+			archive(
+				CEREAL_NVP(vertexShader),
+				CEREAL_NVP(fragmentShader),
+				CEREAL_NVP(varying)
+			);
+		}
+	};
+
 	using ProgramDefines = std::unordered_set<std::string>;
 
 	struct DARMOK_EXPORT ProgramProfileDefinition final
@@ -73,28 +93,6 @@ namespace darmok
 
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
 		static const RendererProfileMap& getRendererProfiles() noexcept;
-	};
-
-	struct DARMOK_EXPORT ProgramSource final
-	{
-		std::string name;
-		Data vertexShader;
-		Data fragmentShader;
-		VaryingDefinition varying;
-
-		void read(const nlohmann::ordered_json& json, std::filesystem::path path = "");
-		void read(const std::filesystem::path& path);
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(name),
-				CEREAL_NVP(vertexShader),
-				CEREAL_NVP(fragmentShader),
-				CEREAL_NVP(varying)
-			);
-		}
 	};
 
 	struct ProgramCompilerConfig final
