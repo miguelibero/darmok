@@ -6,93 +6,32 @@
 #include <darmok/collection.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/expected.hpp>
+#include <darmok/protobuf/program.pb.h>
 
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
+#include <filesystem>
 
 #include <nlohmann/json.hpp>
-#include <cereal/cereal.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/unordered_set.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
 
 namespace darmok
 {
 	class DataView;
 
-	struct DARMOK_EXPORT ProgramSource final
-	{
-		Data vertexShader;
-		Data fragmentShader;
-		VaryingDefinition varying;
-
-		void read(const nlohmann::ordered_json& json, std::filesystem::path path = "");
-		void read(const std::filesystem::path& path);
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(vertexShader),
-				CEREAL_NVP(fragmentShader),
-				CEREAL_NVP(varying)
-			);
-		}
-	};
-
 	using ProgramDefines = std::unordered_set<std::string>;
 
-	struct DARMOK_EXPORT ProgramProfileDefinition final
+	using ProgramSource = protobuf::ProgramSource;
+	using ProgramDefinition = protobuf::Program;
+	using ProgramDefinitionProfile = protobuf::ProgramProfile;
+
+	namespace ProgramCoreUtils
 	{
-		using Defines = ProgramDefines;
-		using Map = std::unordered_map<Defines, Data>;
-		Map vertexShaders;
-		Map fragmentShaders;
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(vertexShaders),
-				CEREAL_NVP(fragmentShaders)
-			);
-		}
-	};
-	
-	struct DARMOK_EXPORT ProgramDefinition final
-	{
-		using Profile = ProgramProfileDefinition;
-
-		std::string name;
-		std::unordered_map<std::string, Profile> profiles;
-		VertexLayout vertexLayout;
-
-		const Profile& getCurrentProfile() const;
-
-		bool empty() const noexcept;
-
-		template<typename T>
-		void loadStaticMem(const T& mem)
-		{
-			loadBinary(DataView(mem, sizeof(mem)));
-		}
-
-		void loadBinary(DataView data);
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(name),
-				CEREAL_NVP(profiles),
-				CEREAL_NVP(vertexLayout)
-			);
-		}
-
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
-		static const RendererProfileMap& getRendererProfiles() noexcept;
+
+		const RendererProfileMap& getRendererProfiles() noexcept;
+		const ProgramDefinitionProfile& getCurrentProfile(const ProgramDefinition& def);
 	};
 
 	struct ProgramCompilerConfig final
@@ -104,16 +43,6 @@ namespace darmok
 		OptionalRef<std::ostream> log;
 
 		void read(const nlohmann::json& json, std::filesystem::path basePath);
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(bufferSize),
-				CEREAL_NVP(shadercPath),
-				CEREAL_NVP(includePaths)
-			);
-		}
 	};
 
 	class DARMOK_EXPORT ProgramCompiler final
@@ -122,6 +51,7 @@ namespace darmok
 		using Config = ProgramCompilerConfig;
 		ProgramCompiler(const Config& config) noexcept;
 		ProgramDefinition operator()(const ProgramSource& src);
+
 	private:
 		Config _config;
 	};

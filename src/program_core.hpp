@@ -2,8 +2,10 @@
 
 #include <darmok/asset_core.hpp>
 #include <darmok/varying.hpp>
+
 #include <regex>
 #include <unordered_set>
+#include <filesystem>
 
 namespace darmok
 {
@@ -68,6 +70,8 @@ namespace darmok
         static std::filesystem::path getDefaultOutputFile(const CompilerConfig& config, const CompilerOperation& op) noexcept;
         std::vector<CompilerOperation> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
         static std::vector<CompilerOperation> getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath = "") noexcept;
+    
+        static protobuf::ProgramVariant& getVariant(ProgramDefinition& def, const CompilerOperation& op);
     private:
         IncludePaths _includePaths;
 
@@ -85,6 +89,7 @@ namespace darmok
         static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
 
         std::filesystem::path getCompilerProfileOutputPath(const CompilerConfig& config, const std::filesystem::path& basePath, const std::string& profileExt) const noexcept;
+  
     };
 
     class ShaderCompiler final
@@ -101,18 +106,6 @@ namespace darmok
 
     private:
         Config _config;
-    };
-
-    class ProgramCompilerImpl final
-    {
-    public:
-        using Config = ProgramCompilerConfig;
-        ProgramCompilerImpl(const Config& config) noexcept;
-        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        ProgramDefinition operator()(const ProgramSource& src);
-    private:
-        Config _config;
-        OptionalRef<std::ostream> _log;
     };
 
     class ProgramFileImporterImpl final
@@ -143,7 +136,7 @@ namespace darmok
         std::optional<Source> _src;
         std::filesystem::path _outputPath;
 
-        void writeDefinition(const ProgramDefinition& def, std::ostream& out);
-        ProgramSource readSource(const Input& input);
+        expected<void, std::string> readSource(ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path);
+        expected<void, std::string> doReadSource(ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
     };
 }

@@ -6,6 +6,17 @@
 
 namespace darmok
 {
+    std::string StreamUtils::readString(std::istream& input)
+    {
+        return std::string((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    }
+
+    std::string StreamUtils::readString(std::filesystem::path& path)
+    {
+        std::ifstream input(path);
+        return readString(input);
+    }
+
     void StreamUtils::copy(std::istream& input, std::ostream& output, size_t bufferSize)
     {
         std::vector<char> buffer(bufferSize);

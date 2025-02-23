@@ -153,6 +153,7 @@ set(CORE_SOURCES
   asset_core.cpp
   easing.cpp
   reflect.cpp
+  protobuf.cpp
 )
 
 set(CORE_HEADERS
@@ -188,6 +189,8 @@ set(CORE_HEADERS
   loader.hpp
   easing_fwd.hpp
   easing.hpp
+  protobuf.hpp
+  expected.hpp
 )
 
 set(SOURCES
@@ -618,16 +621,21 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
 find_package(magic_enum CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE magic_enum::magic_enum)
 
+# tl-expected
+find_package(tl-expected CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC tl::expected)
+
 # protobuf
 find_package(Protobuf CONFIG REQUIRED)
 set(PROTO_FILES
   math.proto
+  varying.proto
   program.proto
   texture.proto
   material.proto
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
-set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/protobuf")
+set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/public/darmok/protobuf")
 set(PROTO_LIB_NAME darmok-proto-objects)
 
 list(TRANSFORM PROTO_FILES PREPEND "${PROTO_DIR}/")

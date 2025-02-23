@@ -16,9 +16,9 @@ namespace darmok
     {
     }
 
-    DataView::DataView(const char* str) noexcept
-        : _ptr(str)
-        , _size(std::strlen(str)+1)
+    DataView::DataView(std::string_view str) noexcept
+        : _ptr(str.data())
+        , _size(str.size())
     {
     }
 

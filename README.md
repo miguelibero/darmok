@@ -131,6 +131,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### In the future
 * fix occlusion culling
+* switch from exceptions to std::expected
 * more unit tests
 * performance profiling
 * 2d physics

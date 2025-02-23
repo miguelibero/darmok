@@ -69,6 +69,7 @@
     "portable-file-dialogs",
     "cli11",
     "magic-enum",
-    "protobuf"
+    "protobuf",
+    "tl-expected"
   ]
 }

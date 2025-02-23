@@ -14,7 +14,6 @@
 namespace darmok
 {
     class Material;
-    struct ProgramDefinition;
 
     class DARMOK_EXPORT PointLight final
     {

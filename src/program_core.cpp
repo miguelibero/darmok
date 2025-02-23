@@ -2,16 +2,14 @@
 #include "program_core.hpp"
 #include <darmok/data_stream.hpp>
 #include <darmok/string.hpp>
-#include <darmok/utils.hpp>
-#include <cereal/archives/xml.hpp>
-#include <cereal/archives/json.hpp>
-#include <cereal/archives/portable_binary.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/stream.hpp>
 
 namespace darmok
 {
     namespace fs = std::filesystem;
 
-    const ProgramDefinition::RendererProfileMap& ProgramDefinition::getRendererProfiles() noexcept
+    const ProgramCoreUtils::RendererProfileMap& ProgramCoreUtils::getRendererProfiles() noexcept
     {
         static const RendererProfileMap profiles
         {
@@ -22,11 +20,10 @@ namespace darmok
             { bgfx::RendererType::OpenGL,       { "150", "130" }},
             { bgfx::RendererType::Vulkan,       { "spirv16-13", "spirv14-11", "spirv" }},
         };
-
         return profiles;
     }
 
-    const ProgramDefinition::Profile& ProgramDefinition::getCurrentProfile() const
+    const ProgramDefinitionProfile& ProgramCoreUtils::getCurrentProfile(const ProgramDefinition& def)
     {
         auto render = bgfx::getRendererType();
         auto& rendererProfiles = getRendererProfiles();
@@ -35,9 +32,10 @@ namespace darmok
         {
             throw std::invalid_argument("could not find renderer profiles");
         }
-        for (auto& profile : itr->second)
+        auto& profiles = def.profiles();
+        for (auto& profileName : itr->second)
         {
-            auto itr = profiles.find(profile);
+            auto itr = profiles.find(profileName);
             if (itr == profiles.end())
             {
                 continue;
@@ -45,18 +43,6 @@ namespace darmok
             return itr->second;
         }
         throw std::invalid_argument("no valid profile found");
-    }
-
-    bool ProgramDefinition::empty() const noexcept
-    {
-        return vertexLayout.empty();
-    }
-
-    void ProgramDefinition::loadBinary(DataView data)
-    {
-        DataInputStream stream(data);
-        cereal::PortableBinaryInputArchive archive(stream);
-        archive(*this);
     }
 
     ShaderParser::ShaderParser(const IncludePaths& includePaths) noexcept
@@ -277,7 +263,7 @@ namespace darmok
         auto defineCombs = CollectionUtils::combinations(defines);
         std::vector<CompilerOperation> ops;
 
-        auto& rendererProfiles = ProgramDefinition::getRendererProfiles();
+        auto& rendererProfiles = ProgramCoreUtils::getRendererProfiles();
         auto& renderers = getSupportedRenderers();
 
         auto baseOutputStr = baseOutputPath.string();
@@ -308,6 +294,36 @@ namespace darmok
             }
         }
         return ops;
+    }
+
+    protobuf::ProgramVariant& ShaderParser::getVariant(ProgramDefinition& def, const CompilerOperation& op)
+    {
+        auto& profiles = *def.mutable_profiles();
+        auto itr = profiles.find(op.profile);
+        protobuf::ProgramProfile* profile;
+        if (itr != profiles.end())
+        {
+            profile = &itr->second;
+        }
+        else
+        {
+            profile = &profiles.at(op.profile);
+        }
+        auto& variants = *profile->mutable_variants();
+        auto itr2 = std::find_if(variants.begin(), variants.end(), [&op](protobuf::ProgramVariant& variant)
+        {
+            return variant.defines() == op.defines;
+        });
+        if (itr2 != variants.end())
+        {
+            return *itr2;
+        }
+        auto& variant = *profile->add_variants();
+        for (auto& define : op.defines)
+        {
+            *variant.add_defines() = define;
+        }
+        return variant;
     }
 
     std::filesystem::path ShaderParser::getDefaultOutputFile(const CompilerConfig& config, const CompilerOperation& op) noexcept
@@ -446,92 +462,96 @@ namespace darmok
         }
     }
 
-    void ProgramSource::read(const nlohmann::ordered_json& json, fs::path path)
+    expected<void, std::string> ProgramFileImporterImpl::doReadSource(ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& basePath)
+    {
+        auto& varying = *src.mutable_varying();
+        if (json.contains("vertexShader"))
+        {
+            auto vertPath = basePath / json["vertexShader"].get<std::string>();
+            *src.mutable_vertex_shader() = std::move(StreamUtils::readString(vertPath));
+        }
+        if (json.contains("fragmentShader"))
+        {
+            auto fragPath = basePath / json["fragmentShader"].get<std::string>();
+            *src.mutable_fragment_shader() = std::move(StreamUtils::readString(fragPath));
+        }
+        if (json.contains("varyingDef"))
+        {
+            auto def = json["varyingDef"];
+            if (def.is_string())
+            {
+                fs::path varyingPath = basePath / json["varyingDef"].get<std::string>();
+                auto result = VaryingUtils::read(varying, varyingPath);
+                if (!result)
+                {
+                    return result;
+                }
+            }
+            else
+            {
+                auto result = VaryingUtils::read(varying, def);
+                if (!result)
+                {
+                    return result;
+                }
+            }
+        }
+        else
+        {
+            auto result = VaryingUtils::read(varying, json);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        return {};
+    }
+
+    expected<void, std::string> ProgramFileImporterImpl::readSource(ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& path)
     {
         // maybe switch to arrays to avoid ordered_json
         auto basePath = path.parent_path();
-        auto readJson = [this, &basePath](const nlohmann::ordered_json& json)
-            {
-                if (json.contains("vertexShader"))
-                {
-                    auto vertPath = basePath / json["vertexShader"].get<std::string>();
-                    vertexShader = Data::fromFile(vertPath);
-                }
-                if (json.contains("fragmentShader"))
-                {
-                    auto fragPath = basePath / json["fragmentShader"].get<std::string>();
-                    fragmentShader = Data::fromFile(fragPath);
-                }
-                if (json.contains("varyingDef"))
-                {
-                    auto def = json["varyingDef"];
-                    if (def.is_string())
-                    {
-                        fs::path varyingPath = basePath / json["varyingDef"].get<std::string>();
-                        varying.read(varyingPath);
-                    }
-                    else
-                    {
-                        varying.read(def);
-                    }
-                }
-                else
-                {
-                    varying.read(json);
-                }
-            };
 
         if (fs::is_regular_file(path) && path.extension() == ".json")
         {
             auto pathJson = nlohmann::ordered_json::parse(std::ifstream(path));
-            readJson(pathJson);
-        }
-
-        readJson(json);
-        
-        if (!path.empty())
-        {
-            auto fileName = path.filename();
-            auto stem = StringUtils::getFileStem(fileName.string());
-
-            auto basePath = path.parent_path();
-            if (vertexShader.empty())
+            auto result = doReadSource(src, pathJson, basePath);
+            if (!result)
             {
-                auto vertPath = basePath / (stem + ".vertex.sc");
-                vertexShader = Data::fromFile(vertPath);
-            }
-            if (fragmentShader.empty())
-            {
-                auto fragPath = basePath / (stem + ".fragment.sc");
-                fragmentShader = Data::fromFile(fragPath);
-            }
-            if (varying.empty())
-            {
-                auto varyingPath = basePath / (stem + ".varyingdef");
-                varying.read(varyingPath);
+                return result;
             }
         }
-    }
 
-    void ProgramSource::read(const std::filesystem::path& path)
-    {
-        auto ext = path.extension();
-        std::ifstream is(path);
-        if (ext == ".json")
+        auto result = doReadSource(src, json, basePath);
+        if (!result)
         {
-            auto fileJson = nlohmann::ordered_json::parse(is);
-            read(fileJson, path);
+            return result;
         }
-        else if (ext == ".xml")
+
+        auto fileName = path.filename();
+        auto stem = StringUtils::getFileStem(fileName.string());
+
+        if (src.vertex_shader().empty())
         {
-            cereal::XMLInputArchive archive(is);
-            archive(*this);
+            auto vertPath = basePath / (stem + ".vertex.sc");
+            *src.mutable_vertex_shader() = std::move(StreamUtils::readString(vertPath));
         }
-        else
+        if (src.fragment_shader().empty())
         {
-            cereal::PortableBinaryInputArchive archive(is);
-            archive(*this);
+            auto fragPath = basePath / (stem + ".fragment.sc");
+            *src.mutable_fragment_shader() = std::move(StreamUtils::readString(fragPath));
         }
+        if (!src.has_varying())
+        {
+            auto varyingPath = basePath / (stem + ".varyingdef");
+            auto result = VaryingUtils::read(*src.mutable_varying(), varyingPath);
+            if (!result)
+            {
+                return result;
+            }
+        }
+
+        return {};
     }
 
     void ProgramCompilerConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
@@ -558,12 +578,10 @@ namespace darmok
 
     ProgramDefinition ProgramCompiler::operator()(const ProgramSource& src)
     {
-        ProgramDefinition def
-        {
-            .vertexLayout = src.varying.vertex,
-        };
+        ProgramDefinition def;
+        *def.mutable_vertex_layout() = src.varying().vertex();
         auto varyingDefPath = getTempPath("darmok.varyingdef.");
-        src.varying.writeBgfx(varyingDefPath);
+        VaryingUtils::writeBgfx(src.varying(), varyingDefPath);
 
         ShaderCompilerConfig shaderConfig
         {
@@ -575,13 +593,14 @@ namespace darmok
         {
             shaderConfig.type = ShaderType::Fragment;
             shaderConfig.path = getTempPath("darmok.fragment.");
-            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, src.fragmentShader);
+            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, DataView(src.fragment_shader()));
             ShaderCompiler shaderCompiler(shaderConfig);
             for (auto& op : ops)
             {
                 shaderCompiler(op);
-                auto data = Data::fromFile(op.outputPath);
-                def.profiles[op.profile].fragmentShaders[op.defines] = std::move(data);
+                auto& variant = ShaderParser::getVariant(def, op);
+                auto data = StreamUtils::readString(op.outputPath);
+                *variant.mutable_fragment_shader() = std::move(data);
                 fs::remove(op.outputPath);
             }
             fs::remove(shaderConfig.path);
@@ -590,13 +609,14 @@ namespace darmok
         {
             shaderConfig.type = ShaderType::Vertex;
             shaderConfig.path = getTempPath("darmok.vertex.");
-            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, src.vertexShader);
+            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, DataView(src.vertex_shader()));
             ShaderCompiler shaderCompiler(shaderConfig);
             for (auto& op : ops)
             {
                 shaderCompiler(op);
-                auto data = Data::fromFile(op.outputPath);
-                def.profiles[op.profile].vertexShaders[op.defines] = std::move(data);
+                auto& variant = ShaderParser::getVariant(def, op);
+                auto data = StreamUtils::readString(op.outputPath);
+                *variant.mutable_vertex_shader() = std::move(data);
                 fs::remove(op.outputPath);
             }
             fs::remove(shaderConfig.path);
@@ -623,33 +643,6 @@ namespace darmok
         _defaultConfig.includePaths.insert(path);
     }
 
-    ProgramSource ProgramFileImporterImpl::readSource(const Input& input)
-    {
-        ProgramSource src;
-        if (input.config.is_object())
-        {
-            src.read(input.config, input.path);
-        }
-        if (fs::exists(input.path))
-        {
-            src.read(input.path);
-        }
-        
-        if (src.vertexShader.empty())
-        {
-            throw std::runtime_error("missing vertex shader");
-        }
-        if (src.fragmentShader.empty())
-        {
-            throw std::runtime_error("missing fragment shader");
-        }
-        if (src.varying.empty())
-        {
-            throw std::runtime_error("missing varying definition");
-        }
-        return src;
-    }
-
     void ProgramFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
     {
         _log = log;
@@ -671,7 +664,7 @@ namespace darmok
         _config->read(input.config, input.basePath);
 
         _src.emplace();
-        _src->read(input.config, input.path);
+        readSource(*_src, input.config, input.path);
 
         _outputPath = input.getOutputPath(".bin");
         return true;
@@ -691,11 +684,11 @@ namespace darmok
         }
         ShaderParser parser(_config ? _config->includePaths : ShaderParser::IncludePaths{});
         {
-            DataInputStream in(_src->vertexShader);
+            std::istringstream in(_src->vertex_shader());
             parser.getDependencies(in, deps);
         }
         {
-            DataInputStream in(_src->fragmentShader);
+            std::istringstream in(_src->fragment_shader());
             parser.getDependencies(in, deps);
         }
 
@@ -713,12 +706,9 @@ namespace darmok
         config.log = _log;
         ProgramCompiler compiler(config);
         auto def = compiler(_src.value());
-        writeDefinition(def, out);
-    }
 
-    void ProgramFileImporterImpl::writeDefinition(const ProgramDefinition& def, std::ostream& out)
-    {
-        CerealUtils::save(def, out, CerealUtils::getExtensionFormat(_outputPath));
+        auto format = ProtobufUtils::getFormat(input.getOutputPath());
+        ProtobufUtils::write(def, out, format);
     }
 
     void ProgramFileImporterImpl::endImport(const Input& input)

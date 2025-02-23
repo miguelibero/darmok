@@ -6,6 +6,32 @@ import "math.proto";
 import "texture.proto";
 import "program.proto";
 
+message MaterialTextureType {
+    enum Enum {
+        BaseColor = 0;
+        MetallicRoughness = 1;
+        Normal = 2;
+        Occlusion = 3;
+        Emissive = 4;
+        Specular = 5;
+    }
+}
+
+message MaterialPrimitiveType {
+    enum Enum {
+        Triangle = 0;
+        Line = 1;
+    }
+}
+
+message MaterialOpacityType {
+    enum Enum {
+        Opaque = 0;
+        Mask = 1;
+        Transparent = 2;
+    }
+}
+
 message UniformValue {
     oneof value {
         Vec4 vec4 = 1;
@@ -21,7 +47,7 @@ message UniformTextureKey {
 
 message MaterialSourceTexture {
     oneof key {
-        Material.TextureType type = 1;
+        MaterialTextureType.Enum type = 1;
         UniformTextureKey uniform = 2;
     }
     TextureSource texture = 3;
@@ -29,83 +55,62 @@ message MaterialSourceTexture {
 
 message MaterialSource {
     oneof program {
-        ProgramSource customProgram = 1;
-        Program.StandardType standardProgram = 2;
+        ProgramSource custom_program = 1;
+        StandardProgramType.Enum standard_program = 2;
     }
-    repeated string programDefines = 3;
+    repeated string program_defines = 3;
     
     repeated MaterialSourceTexture textures = 4;
-    map<string, UniformValue> uniformValues = 5;
+    map<string, UniformValue> uniform_values = 5;
     
-    Material.OpacityType opacityType = 7;
-    Material.PrimitiveType primitiveType = 8;
+    MaterialOpacityType.Enum opacity_type = 7;
+    MaterialPrimitiveType.Enum primitive_type = 8;
     bool twoSided = 9;
 
-    Color baseColor = 10;
-    Color3 emissiveColor = 11;
-    float metallicFactor = 12;
-    float roughnessFactor = 13;
-    float normalScale = 14;
-    float occlusionStrength = 15;
-    bool multipleScattering = 16;
-    float whiteFurnanceFactor = 17;
+    Color base_color = 10;
+    Color3 emissive_color = 11;
+    float metallic_factor = 12;
+    float roughness_factor = 13;
+    float normal_scale = 14;
+    float occlusion_strength = 15;
+    bool multiple_scattering = 16;
+    float white_furnance_factor = 17;
 
-    Color3 specularColor = 18;
+    Color3 specular_color = 18;
     uint32 shininess = 19;
 }
 
 message MaterialTexture {
     oneof key {
-        Material.TextureType type = 1;
+        MaterialTextureType.Enum type = 1;
         UniformTextureKey uniform = 2;
     }
     Texture texture = 3;
 }
 
 message Material {
-
-    enum TextureType {
-        BaseColor = 0;
-        MetallicRoughness = 1;
-        Normal = 2;
-        Occlusion = 3;
-        Emissive = 4;
-        Specular = 5;
-    }
-
-    enum PrimitiveType {
-        Triangle = 0;
-        Line = 1;
-    }
-
-    enum OpacityType {
-        Opaque = 0;
-        Mask = 1;
-        Transparent = 2;
-    }
-
     oneof program {
-        Program customProgram = 1;
-        Program.StandardType standardProgram = 2;
+        Program custom_program = 1;
+        StandardProgramType.Enum standard_program = 2;
     }
-    repeated string programDefines = 3;
+    repeated string program_defines = 3;
     
     repeated MaterialTexture textures = 4;
-    map<string, UniformValue> uniformValues = 5;
+    map<string, UniformValue> uniform_values = 5;
     
-    OpacityType opacityType = 7;
-    PrimitiveType primitiveType = 8;
+    MaterialOpacityType.Enum opacity_type = 7;
+    MaterialPrimitiveType.Enum primitive_type = 8;
     bool twoSided = 9;
 
-    Color baseColor = 10;
-    Color3 emissiveColor = 11;
-    float metallicFactor = 12;
-    float roughnessFactor = 13;
-    float normalScale = 14;
-    float occlusionStrength = 15;
-    bool multipleScattering = 16;
-    float whiteFurnanceFactor = 17;
+    Color base_color = 10;
+    Color3 emissive_color = 11;
+    float metallic_factor = 12;
+    float roughness_factor = 13;
+    float normal_scale = 14;
+    float occlusion_strength = 15;
+    bool multiple_scattering = 16;
+    float white_furnance_factor = 17;
 
-    Color3 specularColor = 18;
+    Color3 specular_color = 18;
     uint32 shininess = 19;
 }

@@ -29,7 +29,7 @@ namespace darmok
     {
     public:
         DataView(const void* ptr = nullptr, size_t size = 0) noexcept;
-        DataView(const char* str) noexcept;
+        DataView(std::string_view str) noexcept;
         DataView(const Data& data) noexcept;
         DataView(const bgfx::Memory& mem) noexcept;
 

@@ -9,11 +9,13 @@
 
 namespace darmok
 {
-    struct StreamUtils final
+    namespace StreamUtils
     {
-        static void copy(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
-        static void logDebug(const std::string& msg, bool error = false) noexcept;
-        static void writeUtf8Bom(std::ostream& out);
+        std::string readString(std::istream& input);
+        std::string readString(std::filesystem::path& path);
+        void copy(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
+        void logDebug(const std::string& msg, bool error = false) noexcept;
+        void writeUtf8Bom(std::ostream& out);
     };
 
     class PrefixBuffer final : public std::streambuf

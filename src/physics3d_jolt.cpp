@@ -162,7 +162,7 @@ namespace darmok::physics3d
         };
     }
 
-    Expected<JoltTransform, std::string> JoltUtils::convertTransform(const glm::mat4& mat) noexcept
+    expected<JoltTransform, std::string> JoltUtils::convertTransform(const glm::mat4& mat) noexcept
     {
         glm::vec3 pos(0);
         glm::quat rot(1, 0, 0, 0);
@@ -171,7 +171,7 @@ namespace darmok::physics3d
         static const int epsilonFactor = 100;
         if (!Math::almostEqual(scale.x, scale.y, epsilonFactor) || !Math::almostEqual(scale.x, scale.z, epsilonFactor))
         {
-            return Unexpected<std::string>("non-uniform scale not supported");
+            return unexpected<std::string>("non-uniform scale not supported");
         }
         return JoltTransform{ JoltUtils::convert(pos), JoltUtils::convert(rot), scale.x };
     }
@@ -757,7 +757,7 @@ namespace darmok::physics3d
         {
             return true;
         }
-        return tryLoadTransform(trans.value()).hasValue();
+        return tryLoadTransform(trans.value()).has_value();
     }
 
     void PhysicsSystemImpl::setRootTransform(OptionalRef<Transform> root) noexcept
@@ -770,7 +770,7 @@ namespace darmok::physics3d
         return _root;
     }
 
-    Expected<JoltTransform, std::string> PhysicsSystemImpl::tryLoadTransform(Transform& trans) noexcept
+    expected<JoltTransform, std::string> PhysicsSystemImpl::tryLoadTransform(Transform& trans) noexcept
     {
         trans.update();
         glm::mat4 mat = trans.getWorldMatrix();

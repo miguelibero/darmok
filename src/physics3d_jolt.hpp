@@ -90,7 +90,7 @@ namespace darmok::physics3d
         static BoundingBox convert(const JPH::AABox& v) noexcept;
         static JPH::RRayCast convert(const Ray& v) noexcept;
         static RaycastHit convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept;
-        static Expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
+        static expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
         static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
         static glm::vec3 getOrigin(const Shape& shape) noexcept;
         static float getConvexRadius(const glm::vec3& size) noexcept;
@@ -299,7 +299,7 @@ namespace darmok::physics3d
         mutable std::mutex _collisionMutex;
         std::deque<CollisionEvent> _pendingCollisionEvents;
 
-        Expected<JoltTransform, std::string> tryLoadTransform(Transform& trans) noexcept;
+        expected<JoltTransform, std::string> tryLoadTransform(Transform& trans) noexcept;
 
         void processPendingCollisionEvents();
         static Collision createCollision(const JPH::ContactManifold& manifold) noexcept;
