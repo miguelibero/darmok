@@ -11,89 +11,33 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/protobuf/texture.pb.h>
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <cereal/cereal.hpp>
+
 
 #include <string>
 #include <memory>
 
 namespace darmok
 {
-    struct DARMOK_EXPORT TextureConfig final
+	using TextureDefinition = protobuf::Texture;
+	using TextureConfig = protobuf::TextureConfig;
+
+	namespace TextureUtils
 	{
-		glm::uvec2 size = glm::uvec2(1);
-		bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8;
-		TextureType type = TextureType::Texture2D;
-		uint16_t depth = 0;
-		bool mips = false;
-		uint16_t layers = 1;
-
-		void read(const nlohmann::json& json);
-
-		[[nodiscard]] static const TextureConfig& getEmpty() noexcept;
-
-		[[nodiscard]] std::string toString() const noexcept;
-		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(size),
-				CEREAL_NVP(format),
-				CEREAL_NVP(type),
-				CEREAL_NVP(depth),
-				CEREAL_NVP(mips),
-				CEREAL_NVP(layers)
-			);
-		}
-	};
-
-	struct DARMOK_EXPORT TextureSource final
-	{
-		Data imageData;
-		bimg::TextureFormat::Enum imageFormat;
-		uint64_t flags = defaultTextureLoadFlags;
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(imageData),
-				CEREAL_NVP(imageFormat),
-				CEREAL_NVP(flags)
-			);
-		}
-	};
-
-	struct DARMOK_EXPORT TextureDefinition final
-	{
-		bool empty() const noexcept;
-
-		Data data;
-		TextureConfig config;
-		uint64_t flags = defaultTextureLoadFlags;
-
-		void loadImage(const Image& img) noexcept;
-
-		template<class Archive>
-		void serialize(Archive& archive)
-		{
-			archive(
-				CEREAL_NVP(data),
-				CEREAL_NVP(config),
-				CEREAL_NVP(flags)
-			);
-		}
-	};
+		void loadImage(TextureDefinition& def, const Image& img) noexcept;
+		bgfx::TextureInfo getInfo(const TextureConfig& config) noexcept;
+		const TextureConfig& getEmptyConfig() noexcept;
+	}
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<TextureDefinition>
 	{
 	};
 
-	using CerealTextureDefinitionLoader = CerealLoader<ITextureDefinitionLoader>;
+	using TextureDefinitionLoader = ProtobufLoader<ITextureDefinitionLoader>;
 
 	class DARMOK_EXPORT ImageTextureDefinitionLoader final : public ITextureDefinitionLoader
 	{
@@ -132,7 +76,7 @@ namespace darmok
 		[[nodiscard]] std::string toString() const noexcept;
 		[[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;
 		[[nodiscard]] TextureType getType() const noexcept;
-		[[nodiscard]] const glm::uvec2& getSize() const noexcept;
+		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] bgfx::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
 		[[nodiscard]] uint16_t getDepth() const noexcept;
@@ -143,9 +87,9 @@ namespace darmok
 
 		Texture& setName(std::string_view name) noexcept;
 
-		[[nodiscard]] static const std::string& getFormatName(bgfx::TextureFormat::Enum format) noexcept;
+		[[nodiscard]] static std::string_view getFormatName(bgfx::TextureFormat::Enum format) noexcept;
 		[[nodiscard]] static std::optional<bgfx::TextureFormat::Enum> readFormat(std::string_view name) noexcept;
-		[[nodiscard]] static const std::string& getTypeName(TextureType type) noexcept;
+		[[nodiscard]] static std::string_view getTypeName(TextureType type) noexcept;
 		[[nodiscard]] static std::optional<TextureType> readType(std::string_view name) noexcept;
 		[[nodiscard]] static uint64_t readFlags(const nlohmann::json& json) noexcept;
 
@@ -162,8 +106,6 @@ namespace darmok
 	private:
 		bgfx::TextureHandle _handle;
 		Config _config;
-		static const std::array<std::string, bgfx::TextureFormat::Count> _formatNames;
-		static const std::array<std::string, toUnderlying(TextureType::Count)> _typeNames;
 		static const FlagMap _textureFlags;
 		static const FlagMap _samplerFlags;
 	};
@@ -175,23 +117,16 @@ namespace darmok
 	using TextureLoader = FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>;
 
 
-    class TextureFileImporterImpl;
-
-	class DARMOK_EXPORT TextureFileImporter final : public IFileTypeImporter
+	class DARMOK_EXPORT TextureFileImporter final : public ProtobufFileImporter<ImageTextureDefinitionLoader>
 	{
 	public:
 		TextureFileImporter();
-		~TextureFileImporter() noexcept;
-
-		bool startImport(const Input& input, bool dry = false) override;
-		Outputs getOutputs(const Input& input) override;
-		Dependencies getDependencies(const Input& input) override;
 		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-		void endImport(const Input& input) override;
-
-		const std::string& getName() const noexcept override;
 	private:
-		std::unique_ptr<TextureFileImporterImpl> _impl;
+		bx::DefaultAllocator _alloc;
+		DataLoader _dataLoader;
+		ImageLoader _imgLoader;
+		ImageTextureDefinitionLoader _defLoader;
 	};
 
 }

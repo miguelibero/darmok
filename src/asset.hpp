@@ -73,7 +73,7 @@ namespace darmok
 		bx::DefaultAllocator _allocator;
 		DataLoader _dataLoader;
 		ImageLoader _imageLoader;
-		CerealProgramDefinitionLoader _cerealProgDefLoader;
+		ProgramDefinitionLoader _cerealProgDefLoader;
 		ProgramLoader _progLoader;
 		CerealTextureDefinitionLoader _cerealTexDefLoader;
 		ImageTextureDefinitionLoader _imgTexDefLoader;

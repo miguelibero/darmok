@@ -2,6 +2,7 @@
 #include <darmok/program_core.hpp>
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/protobuf.hpp>
 #include "generated/shaders/gui.program.h"
 #include "generated/shaders/unlit.program.h"
 #include "generated/shaders/forward.program.h"
@@ -10,21 +11,31 @@
 
 namespace darmok
 {    
-    Program::ShaderHandles Program::createShaders(const DefinesDataMap& defMap, const std::string& name)
+    expected<void, std::string> Program::createShaders(const ProgramDefinitionProfile& profile, const std::string& name)
     {
-        ShaderHandles handles;
-        for (auto& [defines, data] : defMap)
+        for (auto& variant : profile.variants())
         {
-            auto handle = bgfx::createShader(data.copyMem());
-            auto defName = name + StringUtils::join(" ", defines.begin(), defines.end());
-            if (!isValid(handle))
+            Defines defines(variant.defines().begin(), variant.defines().end());
+            auto varName = name + StringUtils::join(" ", defines.begin(), defines.end());
+            auto vertName = varName + " vertex";
+            auto vertHandle = bgfx::createShader(ProtobufUtils::copyMem(variant.vertex_shader()));
+            if (!isValid(vertHandle))
             {
-                throw std::runtime_error("failed to create shader: " + defName);
+                return unexpected<std::string>("failed to create vertex shader: " + vertName);
             }
-            bgfx::setName(handle, defName.c_str());
-            handles[defines] = handle;
+            auto fragName = varName + " fragment";
+            auto fragHandle = bgfx::createShader(ProtobufUtils::copyMem(variant.fragment_shader()));
+            if (!isValid(fragHandle))
+            {
+                bgfx::destroy(vertHandle);
+                return unexpected<std::string>("failed to create fragment shader: " + fragName);
+            }
+            bgfx::setName(vertHandle, vertName.c_str());
+            bgfx::setName(fragHandle, fragName.c_str());
+            _vertexHandles[defines] = vertHandle;
+            _fragmentHandles[defines] = fragHandle;
         }
-        return handles;
+        return {};
     }
 
     bgfx::ShaderHandle Program::findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept
@@ -44,11 +55,10 @@ namespace darmok
     }
 
 	Program::Program(const Definition& def)
-        : _vertexLayout(def.vertexLayout)
+        : _vertexLayout(VaryingUtils::getBgfx(def.vertex_layout()))
 	{
-        auto& profile = def.getCurrentProfile();
-        _vertexHandles = createShaders(profile.vertexShaders, def.name + " vertex ");
-        _fragmentHandles = createShaders(profile.fragmentShaders, def.name + " fragment ");
+        auto& profile = ProgramCoreUtils::getCurrentProfile(def);
+        createShaders(profile, def.name());
 
         for (auto& [defines, vertHandle] : _vertexHandles)
         {
@@ -122,31 +132,27 @@ namespace darmok
         return { bgfx::kInvalidHandle };
 	}
 
-	const VertexLayout& Program::getVertexLayout() const noexcept
+	const bgfx::VertexLayout& Program::getVertexLayout() const noexcept
 	{
 		return _vertexLayout;
 	}
 
-    void StandardProgramLoader::loadDefinition(ProgramDefinition& def, StandardProgramType type)
+    expected<void, std::string> StandardProgramLoader::loadDefinition(ProgramDefinition& def, StandardProgramType type)
     {
         switch (type)
         {
         case StandardProgramType::Gui:
-            def.loadStaticMem(gui_program);
-            break;
+            return ProtobufUtils::readStaticMem(def, gui_program);
         case StandardProgramType::Unlit:
-            def.loadStaticMem(unlit_program);
-            break;
+            return ProtobufUtils::readStaticMem(def, unlit_program);
         case StandardProgramType::Forward:
-            def.loadStaticMem(forward_program);
-            break;
+            return ProtobufUtils::readStaticMem(def, forward_program);
         case StandardProgramType::ForwardBasic:
-            def.loadStaticMem(forward_basic_program);
-            break;
+            return ProtobufUtils::readStaticMem(def, forward_basic_program);
         case StandardProgramType::Tonemap:
-            def.loadStaticMem(tonemap_program);
-            break;
+            return ProtobufUtils::readStaticMem(def, tonemap_program);
         }
+        return unexpected<std::string>{"undefined standar program type"};
     }
 
     std::shared_ptr<ProgramDefinition> StandardProgramLoader::loadDefinition(StandardProgramType type)

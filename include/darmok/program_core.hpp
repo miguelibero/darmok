@@ -7,6 +7,7 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/expected.hpp>
+#include <darmok/protobuf.hpp>
 #include <darmok/protobuf/program.pb.h>
 
 #include <unordered_set>
@@ -82,5 +83,5 @@ namespace darmok
 	{
 	};
 
-	using CerealProgramDefinitionLoader = CerealLoader<IProgramDefinitionLoader>;
+	using ProgramDefinitionLoader = ProtobufLoader<IProgramDefinitionLoader>;
 }

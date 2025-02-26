@@ -469,14 +469,14 @@ namespace darmok
 
 	TextureConfig Image::getTextureConfig() const noexcept
 	{
-		return {
-			getSize(),
-			bgfx::TextureFormat::Enum(getFormat()),
-			getTextureType(),
-			uint16_t(getDepth()),
-			getMipCount() > 1,
-			getLayerCount()
-		};
+		TextureConfig config;
+		*config.mutable_size() = GlmSerializationUtils::convert(getSize());
+		config.set_format(protobuf::TextureFormat::Enum(getFormat()));
+		config.set_type(protobuf::TextureType::Enum(getTextureType()));
+		config.set_depth(getDepth());
+		config.set_mips(getMipCount() > 1);
+		config.set_layers(getLayerCount());
+		return config;
 	}
 
 	ImageLoader::ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept

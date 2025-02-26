@@ -7,6 +7,7 @@
 #include <darmok/image_fwd.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/protobuf/texture.pb.h>
 
 #include <memory>
 #include <string_view>
@@ -25,7 +26,8 @@ namespace darmok
 {
 	class Data;
 	class DataView;
-	struct TextureConfig;
+
+	using TextureConfig = protobuf::TextureConfig;
 
     class DARMOK_EXPORT Image final
 	{

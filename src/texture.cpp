@@ -1,73 +1,31 @@
 #include "texture.hpp"
 
 #include <glm/gtx/string_cast.hpp>
-#include <cereal/archives/xml.hpp>
-#include <cereal/archives/portable_binary.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace darmok
 {
-	bool TextureDefinition::empty() const noexcept
+	void TextureUtils::loadImage(TextureDefinition& def, const Image& img) noexcept
 	{
-		return data.empty();
-	}
-
-	void TextureDefinition::loadImage(const Image& img) noexcept
-	{
-		data = img.getData();
-		config = img.getTextureConfig();
+		def.set_data(img.getData().toString());
+		*def.mutable_config() = img.getTextureConfig();
 	}
 	 
-	void TextureConfig::read(const nlohmann::json& json)
-	{
-		if (json.contains("size"))
-		{
-			size = json["size"];
-		}
-		if (json.contains("format"))
-		{
-			format = json["format"];
-		}
-		if (json.contains("type"))
-		{
-			type = json["type"];
-		}
-		if (json.contains("depth"))
-		{
-			depth = json["depth"];
-		}
-		if (json.contains("mips"))
-		{
-			mips = json["mips"];
-		}
-		if (json.contains("layers"))
-		{
-			layers = json["layers"];
-		}
-	}
-
-	const TextureConfig& TextureConfig::getEmpty() noexcept
-	{
-		static TextureConfig empty{
-			glm::uvec2(0),
-			bgfx::TextureFormat::Unknown,
-			TextureType::Unknown,
-			0, false, 0
-		};
-		return empty;
-	}
-
-	std::string TextureConfig::toString() const noexcept
-	{
-		return "TextureConfig(" + glm::to_string(size) + ")";
-	}
-
-	bgfx::TextureInfo TextureConfig::getInfo() const noexcept
+	bgfx::TextureInfo TextureUtils::getInfo(const TextureConfig& config) noexcept
 	{
 		bgfx::TextureInfo info;
-		auto cubeMap = type == TextureType::CubeMap;
-		bgfx::calcTextureSize(info, size.x, size.y, depth, cubeMap, mips, layers, format);
+		auto cubeMap = config.type() == protobuf::TextureType::CubeMap;
+		auto format = bgfx::TextureFormat::Enum(config.format());
+		bgfx::calcTextureSize(info, config.size().x(), config.size().y(),
+			config.depth(), cubeMap, config.mips(), config.layers(), format);
 		return info;
+	}
+
+	const TextureConfig& TextureUtils::getEmptyConfig() noexcept
+	{
+		static const TextureConfig config;
+		return config;
 	}
 
 	ImageTextureDefinitionLoader::ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept
@@ -96,120 +54,12 @@ namespace darmok
 		if (auto img = _imgLoader(path))
 		{
 			auto def = std::make_shared<TextureDefinition>();
-			def->flags = _loadFlags;
-			def->loadImage(*img);
+			def->set_flags(_loadFlags);
+			TextureUtils::loadImage(*def, *img);
 			return def;
 		}
 		return nullptr;
 	}
-
-	const std::array<std::string, toUnderlying(bgfx::TextureFormat::Count)> Texture::_formatNames =
-	{
-		"BC1",
-		"BC2",
-		"BC3",
-		"BC4",
-		"BC5",
-		"BC6H",
-		"BC7",
-		"ETC1",
-		"ETC2",
-		"ETC2A",
-		"ETC2A1",
-		"PTC12",
-		"PTC14",
-		"PTC12A",
-		"PTC14A",
-		"PTC22",
-		"PTC24",
-		"ATC",
-		"ATCE",
-		"ATCI",
-		"ASTC4x4",
-		"ASTC5x4",
-		"ASTC5x5",
-		"ASTC6x5",
-		"ASTC6x6",
-		"ASTC8x5",
-		"ASTC8x6",
-		"ASTC8x8",
-		"ASTC10x5",
-		"ASTC10x6",
-		"ASTC10x8",
-		"ASTC10x10",
-		"ASTC12x10",
-		"ASTC12x12",
-		"Unknown",
-		"R1",
-		"A8",
-		"R8",
-		"R8I",
-		"R8U",
-		"R8S",
-		"R16",
-		"R16I",
-		"R16U",
-		"R16F",
-		"R16S",
-		"R32I",
-		"R32U",
-		"R32F",
-		"RG8",
-		"RG8I",
-		"RG8U",
-		"RG8S",
-		"RG16",
-		"RG16I",
-		"RG16U",
-		"RG16F",
-		"RG16S",
-		"RG32I",
-		"RG32U",
-		"RG32F",
-		"RGB8",
-		"RGB8I",
-		"RGB8U",
-		"RGB8S",
-		"RGB9E5F",
-		"BGRA8",
-		"RGBA8",
-		"RGBA8I",
-		"RGBA8U",
-		"RGBA8S",
-		"RGBA16",
-		"RGBA16I",
-		"RGBA16U",
-		"RGBA16F",
-		"RGBA16S",
-		"RGBA32I",
-		"RGBA32U",
-		"RGBA32F",
-		"B5G6R5",
-		"R5G6B5",
-		"BGRA4",
-		"RGBA4",
-		"BGR5A1",
-		"RGB5A1",
-		"RGB10A2",
-		"RG11B10F",
-		"UnknownDepth",
-		"D16",
-		"D24",
-		"D24S8",
-		"D32",
-		"D16F",
-		"D24F",
-		"D32F",
-		"D0S8"
-	};
-
-	const std::array<std::string, toUnderlying(TextureType::Count)> Texture::_typeNames =
-	{
-		"Unknown",
-		"CubeMap",
-		"Texture2D",
-		"Texture3D"
-	};
 
 	const Texture::FlagMap Texture::_textureFlags =
 	{
@@ -282,24 +132,24 @@ namespace darmok
 		{ "BITS_MASK", BGFX_SAMPLER_BITS_MASK }
 	};
 
-	const std::string& Texture::getFormatName(bgfx::TextureFormat::Enum format) noexcept
+	std::string_view Texture::getFormatName(bgfx::TextureFormat::Enum format) noexcept
 	{
-		return StringUtils::getEnumName(static_cast<size_t>(format), _formatNames);
+		return magic_enum::enum_name(format);
 	}
 
 	std::optional<bgfx::TextureFormat::Enum> Texture::readFormat(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<bgfx::TextureFormat::Enum>(name, _formatNames);
+		return magic_enum::enum_cast<bgfx::TextureFormat::Enum>(name);
 	}
 
-	const std::string& Texture::getTypeName(TextureType type) noexcept
+	std::string_view Texture::getTypeName(TextureType type) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(type), _typeNames);
+		return magic_enum::enum_name(type);
 	}
 
 	std::optional<TextureType> Texture::readType(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<TextureType>(name, _typeNames);
+		return magic_enum::enum_cast<TextureType>(name);
 	}
 
 	const Texture::FlagMap& Texture::getTextureFlags() noexcept
@@ -439,7 +289,7 @@ namespace darmok
 		: _handle{ bgfx::kInvalidHandle }
 		, _config(cfg)
 	{
-		if (_config.type == TextureType::Unknown)
+		if (getType() == TextureType::Unknown)
 		{
 			// TODO: maybe throw here
 			return;
@@ -449,19 +299,19 @@ namespace darmok
 		// since the texture creation can b e async, and it could happen that the std::shared_ptr<Image>
 		// is destroyed before (for example if a texture is created and replaced in the same frame
 		const auto mem = data.copyMem();
-		auto w = uint16_t(_config.size.x);
-		auto h = uint16_t(_config.size.y);
-
-		switch (_config.type)
+		auto w = uint16_t(_config.size().x());
+		auto h = uint16_t(_config.size().y());
+		auto format = bgfx::TextureFormat::Enum(_config.format());
+		switch (getType())
 		{
 		case TextureType::CubeMap:
-			_handle = bgfx::createTextureCube(w, _config.mips, _config.layers, _config.format, flags, mem);
+			_handle = bgfx::createTextureCube(w, _config.mips(), _config.layers(), format, flags, mem);
 			break;
 		case TextureType::Texture3D:
-			_handle = bgfx::createTexture3D(w, h, _config.depth, _config.mips, _config.format, flags, mem);
+			_handle = bgfx::createTexture3D(w, h, _config.depth(), _config.mips(), format, flags, mem);
 			break;
 		case TextureType::Texture2D:
-			_handle = bgfx::createTexture2D(w, h, _config.mips, _config.layers, _config.format, flags, mem);
+			_handle = bgfx::createTexture2D(w, h, _config.mips(), _config.layers(), format, flags, mem);
 			break;
 		default:
 			break;
@@ -473,16 +323,17 @@ namespace darmok
 		, _config(cfg)
 	{
 		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
-		switch (cfg.type)
+		auto format = bgfx::TextureFormat::Enum(cfg.format());
+		switch (getType())
 		{
 		case TextureType::CubeMap:
-			_handle = bgfx::createTextureCube(cfg.size.x, cfg.mips, cfg.layers, cfg.format, flags);
+			_handle = bgfx::createTextureCube(cfg.size().x(), cfg.mips(), cfg.layers(), format, flags);
 			break;
 		case TextureType::Texture2D:
-			_handle = bgfx::createTexture2D(cfg.size.x, cfg.size.y, cfg.mips, cfg.layers, cfg.format, flags);
+			_handle = bgfx::createTexture2D(cfg.size().x(), cfg.size().y(), cfg.mips(), cfg.layers(), format, flags);
 			break;
 		case TextureType::Texture3D:
-			_handle = bgfx::createTexture3D(cfg.size.x, cfg.size.y, cfg.depth, cfg.mips, cfg.format, flags);
+			_handle = bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags);
 			break;
 		default:
 			break;
@@ -490,7 +341,7 @@ namespace darmok
 	}
 
 	Texture::Texture(const TextureDefinition& def) noexcept
-		: Texture(def.data, def.config, def.flags)
+		: Texture(DataView{ def.data() }, def.config(), def.flags())
 	{
 	}
 
@@ -499,7 +350,7 @@ namespace darmok
 		, _config(other._config)
 	{
 		other._handle.idx = bgfx::kInvalidHandle;
-		other._config = Config::getEmpty();
+		other._config = TextureUtils::getEmptyConfig();
 	}
 
 	Texture& Texture::operator=(Texture&& other) noexcept
@@ -507,7 +358,7 @@ namespace darmok
 		_handle = other._handle;
 		_config = other._config;
 		other._handle.idx = bgfx::kInvalidHandle;
-		other._config = Config::getEmpty();
+		other._config = TextureUtils::getEmptyConfig();
 		return *this;
 	}
 
@@ -521,22 +372,22 @@ namespace darmok
 
 	uint32_t Texture::getStorageSize() const noexcept
 	{
-		return _config.getInfo().storageSize;
+		return TextureUtils::getInfo(_config).storageSize;
 	}
 
 	uint8_t Texture::getMipsCount() const noexcept
 	{
-		return _config.getInfo().numMips;
+		return TextureUtils::getInfo(_config).numMips;
 	}
 
 	uint8_t Texture::getBitsPerPixel() const noexcept
 	{
-		return _config.getInfo().bitsPerPixel;
+		return TextureUtils::getInfo(_config).bitsPerPixel;
 	}
 
 	void Texture::update(const DataView& data, uint8_t mip)
 	{
-		if (_config.type == TextureType::Texture3D)
+		if (getType() == TextureType::Texture3D)
 		{
 			update(data, glm::uvec3(getSize(), getDepth()), glm::uvec3(0), mip);
 		}
@@ -548,7 +399,7 @@ namespace darmok
 
 	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint8_t mip, uint16_t layer, uint8_t side)
 	{
-		if (_config.type == TextureType::Texture3D)
+		if (getType() == TextureType::Texture3D)
 		{
 			throw std::runtime_error("does not work on 3D textures");
 		}
@@ -561,7 +412,7 @@ namespace darmok
 		{
 			throw std::runtime_error("data is smaller that expected size");
 		}
-		if (_config.type == TextureType::Texture2D)
+		if (getType() == TextureType::Texture2D)
 		{
 			bgfx::updateTexture2D(_handle, layer, mip,
 				origin.x, origin.y, size.x, size.y,
@@ -577,7 +428,7 @@ namespace darmok
 
 	void Texture::update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin, uint8_t mip)
 	{
-		if (_config.type != TextureType::Texture3D)
+		if (getType() != TextureType::Texture3D)
 		{
 			throw std::runtime_error("does only work on 3D textures");
 		}
@@ -609,7 +460,7 @@ namespace darmok
 	std::string Texture::toString() const noexcept
 	{
 		return "Texture(" + std::to_string(_handle.idx)
-			+ " " + _config.toString() + ")";
+			+ " " + _config.DebugString() + ")";
 	}
 
 	const bgfx::TextureHandle& Texture::getHandle() const noexcept
@@ -617,34 +468,34 @@ namespace darmok
 		return _handle;
 	}
 
-	const glm::uvec2& Texture::getSize() const noexcept
+	glm::uvec2 Texture::getSize() const noexcept
 	{
-		return _config.size;
+		return GlmSerializationUtils::convert(_config.size());
 	}
 
 	TextureType Texture::getType() const noexcept
 	{
-		return _config.type;
+		return TextureType(_config.type());
 	}
 
 	bgfx::TextureFormat::Enum Texture::getFormat() const noexcept
 	{
-		return _config.format;
+		return bgfx::TextureFormat::Enum(_config.format());
 	}
 
 	uint16_t Texture::getLayerCount() const noexcept
 	{
-		return _config.layers;
+		return _config.layers();
 	}
 
 	uint16_t Texture::getDepth() const noexcept
 	{
-		return _config.depth;
+		return _config.depth();
 	}
 
 	bool Texture::hasMips() const noexcept
 	{
-		return _config.mips;
+		return _config.mips();
 	}
 
 	Texture& Texture::setName(std::string_view name) noexcept
@@ -666,7 +517,7 @@ namespace darmok
 		{
 			flags = Texture::readFlags(json["flags"]);
 		}
-		config.read(json);
+		ProtobufUtils::readJson(config, json);
 	}
 
 	void TextureFileImportConfig::load(const FileTypeImporterInput& input)
@@ -686,93 +537,20 @@ namespace darmok
 		}
 	}
 
-	bool TextureFileImporterImpl::startImport(const Input& input, bool dry)
-	{
-		if (input.config.is_null())
-		{
-			return false;
-		}
-		_outputPath = input.getOutputPath(".dtx");
-		_importConfig.emplace().load(input);
-		return true;
-	}
-
-	std::vector<std::filesystem::path> TextureFileImporterImpl::getOutputs(const Input& input)
-	{
-		return { _outputPath };
-	}
-
-	TextureFileImporterImpl::Dependencies TextureFileImporterImpl::getDependencies(const Input& input)
-	{
-		return {};
-	}
-
-	void TextureFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
-	{
-		TextureDefinition def;
-		bimg::TextureFormat::Enum format = bimg::TextureFormat::Count;
-		if (_importConfig)
-		{
-			format = _importConfig->imageFormat;
-			def.config = _importConfig->config;
-			def.flags = _importConfig->flags;
-		}
-
-		Image img(Data::fromFile(input.path), _alloc, format);
-		def.loadImage(img);
-		CerealUtils::save(def, _outputPath);
-	}
-
-	void TextureFileImporterImpl::endImport(const Input& input)
-	{
-		_importConfig.reset();
-		_outputPath.clear();
-	}
-
-	const std::string& TextureFileImporterImpl::getName() const noexcept
-	{
-		static const std::string name = "texture";
-		return name;
-	}
-
 	TextureFileImporter::TextureFileImporter()
-		: _impl(std::make_unique<TextureFileImporterImpl>())
+		: _dataLoader(_alloc)
+		, _imgLoader(_dataLoader, _alloc)
+		, _defLoader(_imgLoader)
+		, ProtobufFileImporter<ImageTextureDefinitionLoader>(_defLoader, "texture")
 	{
-	}
-
-	TextureFileImporter::~TextureFileImporter() noexcept
-	{
-		// empty on purpose
-	}
-
-	bool TextureFileImporter::startImport(const Input& input, bool dry)
-	{
-		return _impl->startImport(input, dry);
-	}
-
-	TextureFileImporter::Outputs TextureFileImporter::getOutputs(const Input& input)
-	{
-		return _impl->getOutputs(input);
-	}
-
-	TextureFileImporter::Dependencies TextureFileImporter::getDependencies(const Input& input)
-	{
-		return _impl->getDependencies(input);
 	}
 
 	void TextureFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
-		_impl->writeOutput(input, outputIndex, out);
+		auto def = _defLoader(input.path);
+		auto& config = *def->mutable_config();
+		ProtobufUtils::read(config, input.dirConfig);
+		ProtobufUtils::read(config, input.config);
+		ProtobufFileImporter::writeOutput(*def, out);
 	}
-
-	void TextureFileImporter::endImport(const Input& input)
-	{
-		_impl->endImport(input);
-	}
-
-	const std::string& TextureFileImporter::getName() const noexcept
-	{
-		return _impl->getName();
-	}
-
 }

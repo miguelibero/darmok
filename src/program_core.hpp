@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/program_core.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/varying.hpp>
 
@@ -87,9 +88,6 @@ namespace darmok
         size_t getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
         std::optional<std::filesystem::path> readDependency(const std::string& line) const noexcept;
         static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
-
-        std::filesystem::path getCompilerProfileOutputPath(const CompilerConfig& config, const std::filesystem::path& basePath, const std::string& profileExt) const noexcept;
-  
     };
 
     class ShaderCompiler final

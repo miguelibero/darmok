@@ -1,63 +1,41 @@
 #pragma once
 
 #include <darmok/glm.hpp>
+#include <darmok/color.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/protobuf/math.pb.h>
 
 #include <glm/detail/type_quat.hpp>
 #include <cereal/cereal.hpp>
 #include <nlohmann/json.hpp>
 
+
+namespace darmok
+{
+	namespace GlmSerializationUtils
+	{
+		protobuf::Uvec2 convert(const glm::uvec2& v);
+		protobuf::Vec2 convert(const glm::vec2& v);
+		protobuf::Vec3 convert(const glm::vec3& v);
+		protobuf::Vec4 convert(const glm::vec4& v);
+		protobuf::Mat3 convert(const glm::mat3& v);
+		protobuf::Mat4 convert(const glm::mat4& v);
+		protobuf::Color convert(const Color& v);
+		protobuf::Color3 convert(const Color3& v);
+
+		glm::uvec2 convert(const protobuf::Uvec2& v);
+		glm::vec2 convert(const protobuf::Vec2& v);
+		glm::vec3 convert(const protobuf::Vec3& v);
+		glm::vec4 convert(const protobuf::Vec4& v);
+		glm::mat3 convert(const protobuf::Mat3& v);
+		glm::mat4 convert(const protobuf::Mat4& v);
+		Color convert(const protobuf::Color& v);
+		Color3 convert(const protobuf::Color3& v);
+	}
+}
+
 namespace glm
 {
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	static void serialize(Archive& archive, glm::vec<2, T, Q>& vec)
-	{
-		archive(
-			CEREAL_NVP_("x", vec.x)
-			, CEREAL_NVP_("y", vec.y)
-		);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	static void serialize(Archive& archive, glm::vec<3, T, Q>& vec)
-	{
-		archive(
-			CEREAL_NVP_("x", vec.x)
-			, CEREAL_NVP_("y", vec.y)
-			, CEREAL_NVP_("z", vec.z)
-		);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	static void serialize(Archive& archive, glm::vec<4, T, Q>& vec)
-	{
-		archive(
-			CEREAL_NVP_("x", vec.x)
-			, CEREAL_NVP_("y", vec.y)
-			, CEREAL_NVP_("z", vec.z)
-			, CEREAL_NVP_("w", vec.w)
-		);
-	}
-
-	template<class Archive, typename T, glm::qualifier Q = glm::defaultp>
-	static void serialize(Archive& archive, glm::qua<T, Q>& quat)
-	{
-		archive(
-			CEREAL_NVP_("x", quat.x)
-			, CEREAL_NVP_("y", quat.y)
-			, CEREAL_NVP_("z", quat.z)
-			, CEREAL_NVP_("w", quat.w)
-		);
-	}
-
-	template<class Archive, glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
-	static void serialize(Archive& archive, glm::mat<L1, L2, T, Q>& mat)
-	{
-		for (glm::length_t i = 0; i < L1; ++i)
-		{
-			archive(mat[i]);
-		}
-	}
-
 	template<typename T, glm::qualifier Q = glm::defaultp>
 	void to_json(nlohmann::json& json, const glm::vec<2, T, Q>& vec)
 	{

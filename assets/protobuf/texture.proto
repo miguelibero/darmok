@@ -4,30 +4,17 @@ package darmok.protobuf;
 
 import "math.proto";
 
-message TextureSource {
-    bytes image_data = 1;
-    Texture.Format format = 2;
-    uint64 flags = 3;
-}
-
-message TextureConfig {
-    Uvec2 size = 1;
-    Texture.Format format = 2;
-    Texture.Type type = 3;
-    uint32 depth = 4;
-    bool mips = 5;
-    uint32 layers = 6;
-}
-
-message Texture {
-	enum Type {
+message TextureType {
+	enum Enum {
 		Unknown = 0;
 		CubeMap = 1;
 		Texture2D = 2;
 		Texture3D = 3;
 	}
+}
 
-	enum Format {
+message TextureFormat {
+	enum Enum {
 		BC1 = 0;
 		BC2 = 1;
 		BC3 = 2;
@@ -125,7 +112,24 @@ message Texture {
 		D32F = 94;
 		D0S8 = 95;
 	}
+}
 
+message TextureSource {
+    bytes image_data = 1;
+    TextureFormat.Enum format = 2;
+    uint64 flags = 3;
+}
+
+message TextureConfig {
+    Uvec2 size = 1;
+    TextureFormat.Enum format = 2;
+    TextureType.Enum type = 3;
+    uint32 depth = 4;
+    bool mips = 5;
+    uint32 layers = 6;
+}
+
+message Texture {
     bytes data = 1;
     TextureConfig config = 2;
     uint64 flags = 3;

@@ -35,6 +35,7 @@ namespace darmok
 
         std::filesystem::path getRelativePath() const noexcept;
         std::filesystem::path getOutputPath(const std::string& defaultExt = "") const noexcept;
+        std::optional<const nlohmann::json> getConfigField(std::string_view key) const noexcept;
     };
 
     using FileTypeImportDependencies = std::unordered_set<std::filesystem::path>;

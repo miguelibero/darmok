@@ -27,36 +27,55 @@ namespace darmok
         return std::filesystem::relative(path, basePath);
     }
 
+    std::optional<const nlohmann::json> FileTypeImporterInput::getConfigField(std::string_view key) const noexcept
+    {
+        auto itr = config.find(key);
+        if (itr != config.end())
+        {
+            return *itr;
+        }
+        itr = dirConfig.find(key);
+        if (itr != dirConfig.end())
+        {
+            return *itr;
+        }
+        return std::nullopt;
+    }
+
     std::filesystem::path FileTypeImporterInput::getOutputPath(const std::string& defaultExt) const noexcept
     {
+        constexpr std::string_view configKey = "outputPath";
         auto relPath = getRelativePath();
         auto basePath = relPath.parent_path();
         auto outputPath = basePath;
         auto name = path.stem().string();
-        if (config.contains("outputPath"))
+        auto itr = config.find(configKey);
+        if (itr != config.end())
         {
-            outputPath /= config["outputPath"].get<std::filesystem::path>();
-        }
-        else if (dirConfig.contains("outputPath"))
-        {
-            std::string v = dirConfig["outputPath"];
-            if (name.empty())
-            {
-                name = StringUtils::getFileStem(relPath.string());
-            }
-            StringUtils::replace(v, "*", name);
-            outputPath /= v;
-        }
-        else if (defaultExt.empty())
-        {
-            // defaultExt == "" means we dont want a default output path
-            outputPath = "";
+            outputPath /= itr->get<std::filesystem::path>();
+            return outputPath;
         }
         else
         {
-            outputPath /= name + defaultExt;
+            itr = dirConfig.find(configKey);
+            if (itr != dirConfig.end())
+            {
+                std::string v = *itr;
+                if (name.empty())
+                {
+                    name = StringUtils::getFileStem(relPath.string());
+                }
+                StringUtils::replace(v, "*", name);
+                outputPath /= v;
+                return outputPath;
+            }
         }
-        return outputPath;
+        if (defaultExt.empty())
+        {
+            // defaultExt == "" means we dont want a default output path
+            return {};
+        }
+        return outputPath / (name + defaultExt);
     }
 
     FileImporterImpl::FileImporterImpl(const fs::path& inputPath)

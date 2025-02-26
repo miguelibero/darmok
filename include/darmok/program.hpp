@@ -24,7 +24,6 @@ namespace darmok
 	{
 	public:
 		using Defines = ProgramDefines;
-		using DefinesDataMap = std::unordered_map<Defines, Data>;
 		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = ProgramDefinition;
@@ -35,11 +34,11 @@ namespace darmok
 		Program& operator=(const Program& other) = delete;
 
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
-		[[nodiscard]] const VertexLayout& getVertexLayout() const noexcept;
+		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
 	private:
 
-		static ShaderHandles createShaders(const DefinesDataMap& defMap, const std::string& name);
+		expected<void, std::string> createShaders(const ProgramDefinitionProfile& profile, const std::string& name);
 		static bgfx::ShaderHandle findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept;
 		void createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle);
 
@@ -47,7 +46,7 @@ namespace darmok
 		ShaderHandles _vertexHandles;
 		ShaderHandles _fragmentHandles;
 		Handles _handles;
-		VertexLayout _vertexLayout;
+		bgfx::VertexLayout _vertexLayout;
 	};
 
 	class DARMOK_EXPORT StandardProgramLoader final
@@ -61,7 +60,7 @@ namespace darmok
 		static std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> _defCache;
 		static std::unordered_map<StandardProgramType, std::weak_ptr<Program>> _cache;
 
-		static void loadDefinition(ProgramDefinition& def, StandardProgramType type);
+		static expected<void, std::string> loadDefinition(ProgramDefinition& def, StandardProgramType type);
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, ProgramDefinition>
