@@ -1,7 +1,6 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/program_fwd.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/varying.hpp>
@@ -26,7 +25,7 @@ namespace darmok
 		using Defines = ProgramDefines;
 		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
-		using Definition = ProgramDefinition;
+		using Definition = protobuf::Program;
 
 		Program(const Definition& def);
 		~Program() noexcept;
@@ -38,7 +37,7 @@ namespace darmok
 
 	private:
 
-		expected<void, std::string> createShaders(const ProgramDefinitionProfile& profile, const std::string& name);
+		expected<void, std::string> createShaders(const protobuf::ProgramProfile& profile, const std::string& name);
 		static bgfx::ShaderHandle findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept;
 		void createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle);
 
@@ -53,17 +52,17 @@ namespace darmok
 	{
 	public:
 		static std::shared_ptr<Program> load(StandardProgramType type);
-		static std::shared_ptr<ProgramDefinition> loadDefinition(StandardProgramType type);
+		static std::shared_ptr<Program::Definition> loadDefinition(StandardProgramType type);
 		static std::optional<StandardProgramType> getType(const std::shared_ptr<Program>& prog) noexcept;
-		static std::optional<StandardProgramType> getType(const std::shared_ptr<ProgramDefinition>& def) noexcept;
+		static std::optional<StandardProgramType> getType(const std::shared_ptr<Program::Definition>& def) noexcept;
 	private:
-		static std::unordered_map<StandardProgramType, std::weak_ptr<ProgramDefinition>> _defCache;
+		static std::unordered_map<StandardProgramType, std::weak_ptr<Program::Definition>> _defCache;
 		static std::unordered_map<StandardProgramType, std::weak_ptr<Program>> _cache;
 
-		static expected<void, std::string> loadDefinition(ProgramDefinition& def, StandardProgramType type);
+		static expected<void, std::string> loadDefinition(Program::Definition& def, StandardProgramType type);
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, ProgramDefinition>
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, Program::Definition>
 	{
 	};
 

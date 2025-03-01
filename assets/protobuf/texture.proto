@@ -13,6 +13,22 @@ message TextureType {
 	}
 }
 
+message TextureSamplingType {
+	enum Enum {
+        Min = 0; // minification
+        Mag = 1; // magnification
+        Mip = 2;  // mip level
+    }
+}
+
+message TextureSamplingMode {
+	enum Enum {
+        Anisotropic = 0;
+        Point = 1;
+        Count = 2;
+    }
+}
+
 message TextureFormat {
 	enum Enum {
 		BC1 = 0;

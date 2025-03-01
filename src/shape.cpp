@@ -940,13 +940,6 @@ namespace darmok
         return !operator==(other);
     }
 
-    void BoundingBox::bindMeta()
-    {
-        ReflectionSerializeUtils::metaSerialize<BoundingBox>();
-        SceneReflectionUtils::metaEntityComponent<BoundingBox>("BoundingBox")
-            .ctor();
-    }
-
     Frustum::Frustum(const glm::mat4& mtx, bool inverse) noexcept
     {
         auto nd = Math::getNormalizedNearDepth();

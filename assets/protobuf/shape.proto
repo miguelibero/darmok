@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+
+message BoundingBox {
+    Vec3 min = 1;
+    Vec3 max = 2;
+}
+
+message Cube {
+    Vec3 size = 1;
+    Vec3 origin = 2;
+}
+
+message Sphere {
+    float radius = 1;
+    Vec3 origin = 2;
+}
+
+message Capsule {
+    float cylinder_height = 1;
+    float radius = 2;
+    Vec3 origin = 3;
+}
+
+message Rectangle {
+    Vec2 size = 1;
+    Vec2 origin = 2;
+}
+
+message Plane {
+    Vec3 normal = 1;
+    float distance = 2;
+}

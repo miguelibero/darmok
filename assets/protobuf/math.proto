@@ -26,16 +26,16 @@ message Vec4 {
 }
 
 message Mat3 {
-    Vec3 row1 = 1;
-    Vec3 row2 = 2;
-    Vec3 row3 = 3;
+    Vec3 col1 = 1;
+    Vec3 col2 = 2;
+    Vec3 col3 = 3;
 }
 
 message Mat4 {
-    Vec4 row1 = 1;
-    Vec4 row2 = 2;
-    Vec4 row3 = 3;
-    Vec4 row4 = 4;
+    Vec4 col1 = 1;
+    Vec4 col2 = 2;
+    Vec4 col3 = 3;
+    Vec4 col4 = 4;
 }
 
 message Color {

@@ -8,7 +8,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <cereal/cereal.hpp>
 
 namespace darmok
 {
@@ -30,12 +29,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const Rectangle& other) const noexcept;
         [[nodiscard]] bool operator!=(const Rectangle& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(size), CEREAL_NVP(origin));
-        }
     };
 
     struct BoundingBox;
@@ -59,12 +52,6 @@ namespace darmok
         [[nodiscard]] static const Cube& standard() noexcept;
 
         [[nodiscard]] bool empty() const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(size), CEREAL_NVP(origin));
-        }
     };
 
     struct TextureTriangle;
@@ -87,12 +74,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const Triangle& other) const noexcept;
         [[nodiscard]] bool operator!=(const Triangle& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(vertices));
-        }
     };
 
     struct DARMOK_EXPORT TextureTriangle final
@@ -109,12 +90,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const TextureTriangle& other) const noexcept;
         [[nodiscard]] bool operator!=(const TextureTriangle& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(coordinates));
-        }
     };
 
     struct DARMOK_EXPORT Polygon final
@@ -132,12 +107,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const Polygon& other) const noexcept;
         [[nodiscard]] bool operator!=(const Polygon& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(triangles), CEREAL_NVP(origin));
-        }
     };
 
     struct DARMOK_EXPORT Sphere final
@@ -156,12 +125,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const Sphere& other) const noexcept;
         [[nodiscard]] bool operator!=(const Sphere& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(radius), CEREAL_NVP(origin));
-        }
     };
 
     struct BoundingBox;
@@ -195,12 +158,6 @@ namespace darmok
         bool isInFront(const BoundingBox& bbox) const noexcept;
         bool isInFront(const Sphere& sphere) const noexcept;
         bool contains(const glm::vec3& point) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(normal), CEREAL_NVP(distance));
-        }
     };
 
     struct DARMOK_EXPORT Grid final
@@ -218,19 +175,7 @@ namespace darmok
 
         [[nodiscard]] glm::vec3 getAlong() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(normal),
-                CEREAL_NVP(origin),
-                CEREAL_NVP(separation),
-                CEREAL_NVP(amount)
-            );
-        }
     };
-
 
     struct DARMOK_EXPORT Capsule final
     {
@@ -247,12 +192,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const Capsule& other) const noexcept;
         [[nodiscard]] bool operator!=(const Capsule& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(cylinderHeight), CEREAL_NVP(radius), CEREAL_NVP(origin));
-        }
     };
 
     struct DARMOK_EXPORT NormalIntersection final
@@ -264,12 +203,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const NormalIntersection& other) const noexcept;
         [[nodiscard]] bool operator!=(const NormalIntersection& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(position), CEREAL_NVP(normal));
-        }
     };
 
     struct DARMOK_EXPORT DistanceIntersection final
@@ -281,12 +214,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const DistanceIntersection& other) const noexcept;
         [[nodiscard]] bool operator!=(const DistanceIntersection& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(position), CEREAL_NVP(distance));
-        }
     };
 
     struct Line;
@@ -321,12 +248,6 @@ namespace darmok
         [[nodiscard]] std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
         [[nodiscard]] static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const Viewport& viewport = Viewport()) noexcept;
-    
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(direction), CEREAL_NVP(origin));
-        }
     };
 
     struct DARMOK_EXPORT Line final
@@ -351,14 +272,7 @@ namespace darmok
         [[nodiscard]] glm::vec3 closestPoint(const glm::vec3& p);
 
         [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(points));
-        }
     };
-
 
     struct DARMOK_EXPORT Frustum final
     {
@@ -413,12 +327,6 @@ namespace darmok
 
         [[nodiscard]] bool operator==(const Frustum& other) const noexcept;
         [[nodiscard]] bool operator!=(const Frustum& other) const noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(corners);
-        }
     };
 
     struct DARMOK_EXPORT BoundingBox final
@@ -469,14 +377,6 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::mat4 getOrtho() const noexcept;
-
-        void bindMeta();
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(min), CEREAL_NVP(max));
-        }
     };
 }
 

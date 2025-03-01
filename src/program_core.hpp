@@ -72,7 +72,7 @@ namespace darmok
         std::vector<CompilerOperation> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
         static std::vector<CompilerOperation> getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath = "") noexcept;
     
-        static protobuf::ProgramVariant& getVariant(ProgramDefinition& def, const CompilerOperation& op);
+        static protobuf::ProgramVariant& getVariant(protobuf::Program& def, const CompilerOperation& op);
     private:
         IncludePaths _includePaths;
 
@@ -112,7 +112,6 @@ namespace darmok
         using Input = FileTypeImporterInput;
         using Dependencies = FileTypeImportDependencies;
         using Config = ProgramCompilerConfig;
-        using Source = ProgramSource;
         ProgramFileImporterImpl(size_t defaultBufferSize = 4096) noexcept;
 
         void setShadercPath(const std::filesystem::path& path) noexcept;
@@ -131,10 +130,10 @@ namespace darmok
         OptionalRef<std::ostream> _log;
 
         std::optional<Config> _config;
-        std::optional<Source> _src;
+        std::optional<protobuf::ProgramSource> _src;
         std::filesystem::path _outputPath;
 
-        expected<void, std::string> readSource(ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path);
-        expected<void, std::string> doReadSource(ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
+        expected<void, std::string> readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path);
+        expected<void, std::string> doReadSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
     };
 }

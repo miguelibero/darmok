@@ -6,7 +6,6 @@
 #include <darmok/protobuf/math.pb.h>
 
 #include <glm/detail/type_quat.hpp>
-#include <cereal/cereal.hpp>
 #include <nlohmann/json.hpp>
 
 

@@ -23,7 +23,7 @@ namespace darmok
         return profiles;
     }
 
-    const ProgramDefinitionProfile& ProgramCoreUtils::getCurrentProfile(const ProgramDefinition& def)
+    const protobuf::ProgramProfile& ProgramCoreUtils::getCurrentProfile(const protobuf::Program& def)
     {
         auto render = bgfx::getRendererType();
         auto& rendererProfiles = getRendererProfiles();
@@ -296,7 +296,7 @@ namespace darmok
         return ops;
     }
 
-    protobuf::ProgramVariant& ShaderParser::getVariant(ProgramDefinition& def, const CompilerOperation& op)
+    protobuf::ProgramVariant& ShaderParser::getVariant(protobuf::Program& def, const CompilerOperation& op)
     {
         auto& profiles = *def.mutable_profiles();
         auto itr = profiles.find(op.profile);
@@ -462,7 +462,7 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> ProgramFileImporterImpl::doReadSource(ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& basePath)
+    expected<void, std::string> ProgramFileImporterImpl::doReadSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& basePath)
     {
         auto& varying = *src.mutable_varying();
         if (json.contains("vertexShader"))
@@ -475,39 +475,29 @@ namespace darmok
             auto fragPath = basePath / json["fragmentShader"].get<std::string>();
             *src.mutable_fragment_shader() = std::move(StreamUtils::readString(fragPath));
         }
+        expected<void, std::string> result;
         if (json.contains("varyingDef"))
         {
             auto def = json["varyingDef"];
             if (def.is_string())
             {
                 fs::path varyingPath = basePath / json["varyingDef"].get<std::string>();
-                auto result = VaryingUtils::read(varying, varyingPath);
-                if (!result)
-                {
-                    return result;
-                }
+                result = std::move(VaryingUtils::read(varying, varyingPath));
+
             }
             else
             {
-                auto result = VaryingUtils::read(varying, def);
-                if (!result)
-                {
-                    return result;
-                }
+                result = std::move(VaryingUtils::read(varying, def));
             }
         }
         else
         {
-            auto result = VaryingUtils::read(varying, json);
-            if (!result)
-            {
-                return result;
-            }
+            result = std::move(VaryingUtils::read(varying, json));
         }
-        return {};
+        return result;
     }
 
-    expected<void, std::string> ProgramFileImporterImpl::readSource(ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& path)
+    expected<void, std::string> ProgramFileImporterImpl::readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& path)
     {
         // maybe switch to arrays to avoid ordered_json
         auto basePath = path.parent_path();
@@ -576,9 +566,9 @@ namespace darmok
     {
     }
 
-    ProgramDefinition ProgramCompiler::operator()(const ProgramSource& src)
+    protobuf::Program ProgramCompiler::operator()(const protobuf::ProgramSource& src)
     {
-        ProgramDefinition def;
+        protobuf::Program def;
         *def.mutable_vertex_layout() = src.varying().vertex();
         auto varyingDefPath = getTempPath("darmok.varyingdef.");
         VaryingUtils::writeBgfx(src.varying(), varyingDefPath);

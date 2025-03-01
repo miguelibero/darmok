@@ -2,7 +2,6 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
-#include <darmok/texture_fwd.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/image_fwd.hpp>
 #include <darmok/asset_core.hpp>
@@ -27,11 +26,12 @@ namespace darmok
 	class Data;
 	class DataView;
 
-	using TextureConfig = protobuf::TextureConfig;
-
     class DARMOK_EXPORT Image final
 	{
 	public:
+		using TextureConfig = protobuf::TextureConfig;
+		using TextureType = protobuf::TextureType;
+
 		Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
 		Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
 		Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
@@ -53,8 +53,8 @@ namespace darmok
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
 		[[nodiscard]] TextureConfig getTextureConfig() const noexcept;
 		[[nodiscard]] DataView getData() const noexcept;		
-		[[nodiscard]] bool isTextureValid(uint64_t flags = defaultTextureLoadFlags) const noexcept;
-		[[nodiscard]] TextureType getTextureType() const noexcept;
+		[[nodiscard]] bool isTextureValid(uint64_t flags) const noexcept;
+		[[nodiscard]] TextureType::Enum getTextureType() const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
 		void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
 		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;

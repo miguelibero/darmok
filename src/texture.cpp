@@ -1,4 +1,4 @@
-#include "texture.hpp"
+#include <darmok/texture.hpp>
 
 #include <glm/gtx/string_cast.hpp>
 #include <darmok/glm_serialize.hpp>
@@ -6,13 +6,13 @@
 
 namespace darmok
 {
-	void TextureUtils::loadImage(TextureDefinition& def, const Image& img) noexcept
+	void TextureUtils::loadImage(protobuf::Texture& def, const Image& img) noexcept
 	{
 		def.set_data(img.getData().toString());
 		*def.mutable_config() = img.getTextureConfig();
 	}
 	 
-	bgfx::TextureInfo TextureUtils::getInfo(const TextureConfig& config) noexcept
+	bgfx::TextureInfo TextureUtils::getInfo(const protobuf::TextureConfig& config) noexcept
 	{
 		bgfx::TextureInfo info;
 		auto cubeMap = config.type() == protobuf::TextureType::CubeMap;
@@ -22,9 +22,9 @@ namespace darmok
 		return info;
 	}
 
-	const TextureConfig& TextureUtils::getEmptyConfig() noexcept
+	const protobuf::TextureConfig& TextureUtils::getEmptyConfig() noexcept
 	{
-		static const TextureConfig config;
+		static const protobuf::TextureConfig config;
 		return config;
 	}
 
@@ -45,7 +45,7 @@ namespace darmok
 		return *this;
 	}
 
-	std::shared_ptr<TextureDefinition> ImageTextureDefinitionLoader::operator()(std::filesystem::path path)
+	std::shared_ptr<Texture::Definition> ImageTextureDefinitionLoader::operator()(std::filesystem::path path)
 	{
 		if (!supports(path))
 		{
@@ -53,7 +53,7 @@ namespace darmok
 		}
 		if (auto img = _imgLoader(path))
 		{
-			auto def = std::make_shared<TextureDefinition>();
+			auto def = std::make_shared<Texture::Definition>();
 			def->set_flags(_loadFlags);
 			TextureUtils::loadImage(*def, *img);
 			return def;
@@ -142,14 +142,14 @@ namespace darmok
 		return magic_enum::enum_cast<bgfx::TextureFormat::Enum>(name);
 	}
 
-	std::string_view Texture::getTypeName(TextureType type) noexcept
+	std::string_view Texture::getTypeName(TextureType::Enum type) noexcept
 	{
 		return magic_enum::enum_name(type);
 	}
 
-	std::optional<TextureType> Texture::readType(std::string_view name) noexcept
+	std::optional<Texture::TextureType::Enum> Texture::readType(std::string_view name) noexcept
 	{
-		return magic_enum::enum_cast<TextureType>(name);
+		return magic_enum::enum_cast<TextureType::Enum>(name);
 	}
 
 	const Texture::FlagMap& Texture::getTextureFlags() noexcept
@@ -340,7 +340,7 @@ namespace darmok
 		}
 	}
 
-	Texture::Texture(const TextureDefinition& def) noexcept
+	Texture::Texture(const Definition& def) noexcept
 		: Texture(DataView{ def.data() }, def.config(), def.flags())
 	{
 	}
@@ -473,9 +473,9 @@ namespace darmok
 		return GlmSerializationUtils::convert(_config.size());
 	}
 
-	TextureType Texture::getType() const noexcept
+	Texture::TextureType::Enum Texture::getType() const noexcept
 	{
-		return TextureType(_config.type());
+		return _config.type();
 	}
 
 	bgfx::TextureFormat::Enum Texture::getFormat() const noexcept
@@ -505,36 +505,6 @@ namespace darmok
 			bgfx::setName(_handle, name.data(), int32_t(name.size()));
 		}
 		return *this;
-	}
-
-	void TextureFileImportConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
-	{
-		if (json.contains("imageFormat"))
-		{
-			imageFormat = json["imageFormat"];
-		}
-		if (json.contains("flags"))
-		{
-			flags = Texture::readFlags(json["flags"]);
-		}
-		ProtobufUtils::readJson(config, json);
-	}
-
-	void TextureFileImportConfig::load(const FileTypeImporterInput& input)
-	{
-		auto basePath = input.path.parent_path();
-		auto fileName = input.path.filename();
-
-		if (input.config.is_object())
-		{
-			read(input.config, input.basePath);
-		}
-		if (std::filesystem::exists(input.path))
-		{
-			std::ifstream is(input.path);
-			auto fileJson = nlohmann::ordered_json::parse(is);
-			read(fileJson, input.path.parent_path());
-		}
 	}
 
 	TextureFileImporter::TextureFileImporter()

@@ -154,10 +154,12 @@ set(CORE_SOURCES
   easing.cpp
   reflect.cpp
   protobuf.cpp
+  glm_serialize.cpp
 )
 
 set(CORE_HEADERS
   glm.hpp
+  glm_serialize.hpp
   utils.hpp
   serialize.hpp
   reflect.hpp
@@ -178,7 +180,6 @@ set(CORE_HEADERS
   color.hpp
   image_fwd.hpp
   image.hpp
-  texture_fwd.hpp
   texture.hpp
   vertex.hpp
   varying.hpp
@@ -247,9 +248,7 @@ set(HEADERS
 
   texture_atlas.hpp
   anim.hpp
-  material_fwd.hpp
   material.hpp
-  program_fwd.hpp
   program.hpp
   model_fwd.hpp
   model.hpp
@@ -629,6 +628,7 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC tl::expected)
 find_package(Protobuf CONFIG REQUIRED)
 set(PROTO_FILES
   math.proto
+  shape.proto
   varying.proto
   program.proto
   texture.proto

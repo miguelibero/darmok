@@ -1,7 +1,6 @@
 #pragma once
 
 #include <darmok/export.h>
-#include <darmok/texture_fwd.hpp>
 #include <darmok/image.hpp>
 #include <darmok/color.hpp>
 #include <darmok/glm.hpp>
@@ -17,23 +16,21 @@
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 
-
 #include <string>
 #include <memory>
 
 namespace darmok
 {
-	using TextureDefinition = protobuf::Texture;
-	using TextureConfig = protobuf::TextureConfig;
+	const uint64_t defaultTextureLoadFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
 
 	namespace TextureUtils
 	{
-		void loadImage(TextureDefinition& def, const Image& img) noexcept;
-		bgfx::TextureInfo getInfo(const TextureConfig& config) noexcept;
-		const TextureConfig& getEmptyConfig() noexcept;
+		void loadImage(protobuf::Texture& def, const Image& img) noexcept;
+		bgfx::TextureInfo getInfo(const protobuf::TextureConfig& config) noexcept;
+		const protobuf::TextureConfig& getEmptyConfig() noexcept;
 	}
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<TextureDefinition>
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<protobuf::Texture>
 	{
 	};
 
@@ -45,7 +42,7 @@ namespace darmok
 		ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept;
 		bool supports(const std::filesystem::path& path) const noexcept;
 		ImageTextureDefinitionLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
-		[[nodiscard]] std::shared_ptr<TextureDefinition> operator()(std::filesystem::path path) override;
+		[[nodiscard]] std::shared_ptr<protobuf::Texture> operator()(std::filesystem::path path) override;
 	private:
 		IImageLoader& _imgLoader;
 		uint64_t _loadFlags;
@@ -54,13 +51,15 @@ namespace darmok
 	class DARMOK_EXPORT Texture final
 	{
 	public:
-		using Config = TextureConfig;
+		using Config = protobuf::TextureConfig;
+		using Definition = protobuf::Texture;
+		using TextureType = protobuf::TextureType;
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
 		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		Texture(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		Texture(const TextureDefinition& definition) noexcept;
+		Texture(const Definition& definition) noexcept;
 		Texture(Texture&& other) noexcept;
 		Texture& operator=(Texture&& other) noexcept;
 
@@ -75,7 +74,7 @@ namespace darmok
 
 		[[nodiscard]] std::string toString() const noexcept;
 		[[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;
-		[[nodiscard]] TextureType getType() const noexcept;
+		[[nodiscard]] TextureType::Enum getType() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] bgfx::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
@@ -89,8 +88,8 @@ namespace darmok
 
 		[[nodiscard]] static std::string_view getFormatName(bgfx::TextureFormat::Enum format) noexcept;
 		[[nodiscard]] static std::optional<bgfx::TextureFormat::Enum> readFormat(std::string_view name) noexcept;
-		[[nodiscard]] static std::string_view getTypeName(TextureType type) noexcept;
-		[[nodiscard]] static std::optional<TextureType> readType(std::string_view name) noexcept;
+		[[nodiscard]] static std::string_view getTypeName(TextureType::Enum type) noexcept;
+		[[nodiscard]] static std::optional<TextureType::Enum> readType(std::string_view name) noexcept;
 		[[nodiscard]] static uint64_t readFlags(const nlohmann::json& json) noexcept;
 
 		using FlagMap = std::unordered_map<std::string, uint64_t>;
@@ -110,12 +109,11 @@ namespace darmok
 		static const FlagMap _samplerFlags;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<Texture, TextureDefinition>
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<Texture, protobuf::Texture>
 	{
 	};
 
 	using TextureLoader = FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>;
-
 
 	class DARMOK_EXPORT TextureFileImporter final : public ProtobufFileImporter<ImageTextureDefinitionLoader>
 	{

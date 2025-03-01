@@ -2,7 +2,6 @@
 
 #include <darmok/export.h>
 #include <darmok/color.hpp>
-#include <darmok/material_fwd.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/app.hpp>
@@ -11,6 +10,7 @@
 #include <darmok/serialize.hpp>
 #include <darmok/asset_serialize.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/protobuf/material.pb.h>
 
 #include <vector>
 #include <string>
@@ -21,22 +21,17 @@
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
 
-#include <cereal/cereal.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/variant.hpp>
-
 namespace darmok
 {
     class Texture;
     class Program;
     class App;
 
-    template<typename Prog, typename Tex>
-    struct DARMOK_EXPORT GenericMaterial
+    struct DARMOK_EXPORT Material
     {
-        using TextureType = MaterialTextureType;
+        using TextureType = protobuf::MaterialTextureType::Enum;
         using PrimitiveType = MaterialPrimitiveType;
+        using Definition = protobuf::Material;
 
         Prog program;
         ProgramDefines programDefines;
@@ -62,71 +57,12 @@ namespace darmok
 
         using TextureType = MaterialTextureType;
         std::unordered_map<TextureType, Tex> textures;
-        
+
         OpacityType opacityType = OpacityType::Opaque;
         bool twoSided = false;
         PrimitiveType primitiveType = PrimitiveType::Triangle;
 
-    };
 
-    struct DARMOK_EXPORT MaterialSource final : GenericMaterial<std::variant<StandardProgramType, std::shared_ptr<ProgramSource>>, std::shared_ptr<TextureSource>>
-    {
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(program),
-                CEREAL_NVP(programDefines),
-                CEREAL_NVP(uniformValues),
-                CEREAL_NVP(uniformTextures),
-                CEREAL_NVP(opacityType),
-                CEREAL_NVP(twoSided),
-                CEREAL_NVP(primitiveType),
-                CEREAL_NVP(baseColor),
-                CEREAL_NVP(emissiveColor),
-                CEREAL_NVP(metallicFactor),
-                CEREAL_NVP(roughnessFactor),
-                CEREAL_NVP(normalScale),
-                CEREAL_NVP(occlusionStrength),
-                CEREAL_NVP(multipleScattering),
-                CEREAL_NVP(whiteFurnanceFactor),
-                CEREAL_NVP(specularColor),
-                CEREAL_NVP(shininess),
-                CEREAL_NVP(textures)
-            );
-        }
-    };
-
-    struct DARMOK_EXPORT MaterialDefinition final : GenericMaterial<std::variant<StandardProgramType, std::shared_ptr<ProgramDefinition>>, std::shared_ptr<TextureDefinition>>
-    {
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(program),
-                CEREAL_NVP(programDefines),
-                CEREAL_NVP(uniformValues),
-                CEREAL_NVP(uniformTextures),
-                CEREAL_NVP(opacityType),
-                CEREAL_NVP(twoSided),
-                CEREAL_NVP(primitiveType),
-                CEREAL_NVP(baseColor),
-                CEREAL_NVP(emissiveColor),
-                CEREAL_NVP(metallicFactor),
-                CEREAL_NVP(roughnessFactor),
-                CEREAL_NVP(normalScale),
-                CEREAL_NVP(occlusionStrength),
-                CEREAL_NVP(multipleScattering),
-                CEREAL_NVP(whiteFurnanceFactor),
-                CEREAL_NVP(specularColor),
-                CEREAL_NVP(shininess),
-                CEREAL_NVP(textures)
-            );
-        }
-    };
-
-    struct DARMOK_EXPORT Material : GenericMaterial<std::shared_ptr<Program>, std::shared_ptr<Texture>>
-    {
         bool valid() const noexcept;
         static void bindMeta();
 

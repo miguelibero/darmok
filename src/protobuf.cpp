@@ -389,5 +389,14 @@ namespace darmok
         }
         return {};
     }
+}
 
+void to_json(nlohmann::json& json, const google::protobuf::Message& msg)
+{
+    darmok::ProtobufUtils::writeJson(msg, json);
+}
+
+void from_json(const nlohmann::json& json, google::protobuf::Message& msg)
+{
+    darmok::ProtobufUtils::readJson(msg, json);
 }

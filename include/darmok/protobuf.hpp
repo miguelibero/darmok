@@ -162,6 +162,9 @@ namespace darmok
     };
 }
 
+void to_json(nlohmann::json& json, const google::protobuf::Message& msg);
+void from_json(const nlohmann::json& json, google::protobuf::Message& msg);
+
 template<class T>
 bool operator==(const google::protobuf::RepeatedPtrField<T> proto, const std::unordered_set<T>& container)
 {

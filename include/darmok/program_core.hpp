@@ -23,16 +23,12 @@ namespace darmok
 
 	using ProgramDefines = std::unordered_set<std::string>;
 
-	using ProgramSource = protobuf::ProgramSource;
-	using ProgramDefinition = protobuf::Program;
-	using ProgramDefinitionProfile = protobuf::ProgramProfile;
-
 	namespace ProgramCoreUtils
 	{
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
 
 		const RendererProfileMap& getRendererProfiles() noexcept;
-		const ProgramDefinitionProfile& getCurrentProfile(const ProgramDefinition& def);
+		const protobuf::ProgramProfile& getCurrentProfile(const protobuf::Program& def);
 	};
 
 	struct ProgramCompilerConfig final
@@ -51,7 +47,7 @@ namespace darmok
 	public:
 		using Config = ProgramCompilerConfig;
 		ProgramCompiler(const Config& config) noexcept;
-		ProgramDefinition operator()(const ProgramSource& src);
+		protobuf::Program operator()(const protobuf::ProgramSource& src);
 
 	private:
 		Config _config;
@@ -79,7 +75,7 @@ namespace darmok
 		std::unique_ptr<ProgramFileImporterImpl> _impl;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<ProgramDefinition>
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<protobuf::Program>
 	{
 	};
 

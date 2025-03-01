@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "varying.proto";
+
+message MeshType {
+    enum Enum {
+        Static = 0;
+        Dynamic = 1;
+        Transient = 2;
+    }
+}
+
+message MeshSource {
+    
+}
+
+message Mesh {
+    MeshType type = 1;
+    bool index32 = 2;
+    VertexLayout layout = 3;
+    bytes vertices = 4;
+    bytes indices = 5;
+}

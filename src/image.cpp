@@ -162,7 +162,7 @@ namespace darmok
 		return bgfx::isTextureValid(depth, false, layers, format, flags);
 	}
 
-	TextureType Image::getTextureType() const noexcept
+	Image::TextureType::Enum Image::getTextureType() const noexcept
 	{
 		if (isCubeMap())
 		{
@@ -467,7 +467,7 @@ namespace darmok
 		return info;
 	}
 
-	TextureConfig Image::getTextureConfig() const noexcept
+	Image::TextureConfig Image::getTextureConfig() const noexcept
 	{
 		TextureConfig config;
 		*config.mutable_size() = GlmSerializationUtils::convert(getSize());

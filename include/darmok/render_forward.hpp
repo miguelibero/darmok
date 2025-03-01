@@ -3,7 +3,6 @@
 #include <memory>
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
-#include <darmok/material_fwd.hpp>
 
 namespace darmok
 {
