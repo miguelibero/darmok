@@ -5,6 +5,7 @@
 #include <darmok/string.hpp>
 #include <darmok/serialize.hpp>
 #include <darmok/data.hpp>
+#include <darmok/expected.hpp>
 
 #include <string>
 #include <vector>
@@ -22,8 +23,11 @@ namespace darmok
     {
     public:
         using Resource = Type;
+        using Error = std::string;
+        using Result = expected<std::shared_ptr<Resource>, Error>;
+        using Argument = Arg;
         virtual ~IBasicLoader() = default;
-        [[nodiscard]] virtual std::shared_ptr<Resource> operator()(Arg arg) = 0;
+        [[nodiscard]] virtual Result operator()(Argument arg) = 0;
     };
 
     template<typename Type>
@@ -99,7 +103,9 @@ namespace darmok
     template<typename Type, typename Arg>
     class DARMOK_EXPORT BX_NO_VTABLE IBasicCachedLoader : public IBasicLoader<Type, Arg>
     {
-        virtual std::shared_ptr<Type> forceLoad(Arg arg) = 0;
+    public:
+        using Result = IBasicLoader<Type, Arg>::Result;
+        virtual Result forceLoad(Arg arg) = 0;
 
         virtual bool clearCache(Arg arg) = 0;
         virtual void clearCache() = 0;
@@ -180,41 +186,62 @@ namespace darmok
     public:
         using Resource = Type;
         using Definition = DefinitionType;
+        using Result = IBasicCachedLoader<Type, Arg>::Result;
+        using DefinitionResult = expected<std::shared_ptr<Definition>, std::string>;
+
         virtual std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) = 0;
+        virtual std::shared_ptr<Resource> getResource(std::size_t hash) = 0;
         virtual std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) = 0;
-        virtual std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
-        virtual std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false) = 0;
+        virtual Result loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
+        virtual DefinitionResult loadDefinition(Arg arg, bool force = false) = 0;
         virtual bool clearCache(const std::shared_ptr<Definition>& def) = 0;
+
+        std::shared_ptr<Resource> getResource(const Definition& def)
+        {
+            return getResource(std::hash<Resource>{}(def));
+        }
     };
 
     template<typename Type, typename DefinitionType>
     using IFromDefinitionLoader = IBasicFromDefinitionLoader<Type, DefinitionType, std::filesystem::path>;
 
-    template<typename Interface, typename DefinitionLoader, typename Arg>
-    class DARMOK_EXPORT BasicFromDefinitionLoader : public Interface
+    template<typename Interface, typename DefinitionLoader>
+    class DARMOK_EXPORT FromDefinitionLoader : public Interface
     {
     public:
+        using Result = Interface::Result;
+        using Argument = Interface::Argument;
         using Resource = Interface::Resource;
+        using Error = Interface::Error;
         using Definition = DefinitionLoader::Resource;
+        using DefinitionResult = DefinitionLoader::Result;
 
-        BasicFromDefinitionLoader(DefinitionLoader& defLoader) noexcept
+        FromDefinitionLoader(DefinitionLoader& defLoader) noexcept
             : _defLoader(defLoader)
         {
         }
 
-        BasicFromDefinitionLoader(const BasicFromDefinitionLoader& other) = delete;
-        BasicFromDefinitionLoader(BasicFromDefinitionLoader&& other) = delete;
+        FromDefinitionLoader(const FromDefinitionLoader& other) = delete;
+        FromDefinitionLoader(FromDefinitionLoader&& other) = delete;
 
-        std::shared_ptr<Resource> operator()(Arg arg)
+        Result operator()(Argument arg) override
         {
-            auto def = loadDefinition(arg);
-            return loadResource(def);
+            auto defResult = loadDefinition(arg);
+            if (!defResult)
+            {
+                return unexpected<Error>{ defResult.error() };
+            }
+            return loadResource(defResult.value());
         }
 
-        std::shared_ptr<Resource> forceLoad(Arg arg)
+        Result forceLoad(Argument arg) override
         {
-            auto def = loadDefinition(arg, true);
-            return loadResource(def, true);
+            auto defResult = loadDefinition(arg, true);
+            if (!defResult)
+            {
+                return unexpected<Error>{ defResult.error() };
+            }
+            return loadResource(defResult.value(), true);
         }
 
         bool isCached(const std::shared_ptr<Definition>& def) const noexcept
@@ -223,7 +250,7 @@ namespace darmok
             return itr != _resCache.end();
         }
 
-        bool isCached(Arg arg) const noexcept
+        bool isCached(Argument arg) const noexcept
         {
             auto itr = _defCache.find(arg);
             return itr != _defCache.end();
@@ -236,7 +263,7 @@ namespace darmok
             return itr != _resCache.end();
         }
 
-        std::shared_ptr<Definition> loadDefinition(Arg arg, bool force = false)
+        DefinitionResult loadDefinition(Argument arg, bool force = false) override
         {
             if (!force)
             {
@@ -246,20 +273,16 @@ namespace darmok
                     return itr->second;
                 }
             }
-            if (auto def = _defLoader(arg))
+            auto defResult = _defLoader(arg);
+            if (defResult)
             {
-                _defCache[arg] = def;
-                return def;
+                _defCache[arg] = defResult.value();
             }
-            return nullptr;
+            return defResult;
         }
 
-        std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def)
+        std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) override
         {
-            if (!def)
-            {
-                return nullptr;
-            }
             auto itr = _resCache.find(def);
             if (itr != _resCache.end())
             {
@@ -271,12 +294,8 @@ namespace darmok
             return nullptr;
         }
 
-        std::shared_ptr<Resource> loadResource(const std::shared_ptr<Definition>& def, bool force = false)
+        Result loadResource(const std::shared_ptr<Definition>& def, bool force = false) override
         {
-            if (!def)
-            {
-                return nullptr;
-            }
             if (!force)
             {
                 if (auto res = getResource(def))
@@ -284,12 +303,15 @@ namespace darmok
                     return res;
                 }
             }
-            auto res = create(def);
-            _resCache[def] = res;
-            return res;
+            auto result = create(def);
+            if (result)
+            {
+                _resCache[def] = result.value();
+            }
+            return result;
         }
 
-        std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) noexcept
+        std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) noexcept override
         {
             if (!res)
             {
@@ -306,7 +328,7 @@ namespace darmok
             return nullptr;
         }
 
-        bool clearCache(Arg arg) noexcept
+        bool clearCache(Argument arg) noexcept
         {
             auto itr = _defCache.find(arg);
             if (itr == _defCache.end())
@@ -322,7 +344,7 @@ namespace darmok
             return true;
         }
 
-        bool clearCache(const std::shared_ptr<Definition>& def)
+        bool clearCache(const std::shared_ptr<Definition>& def) override
         {
             if (!def)
             {
@@ -373,7 +395,7 @@ namespace darmok
         }
 
     protected:
-        virtual std::shared_ptr<Resource> create(const std::shared_ptr<Definition>& def)
+        virtual Result create(const std::shared_ptr<Definition>& def)
         {
             if constexpr (std::is_constructible_v<Resource, Definition>)
             {
@@ -384,37 +406,12 @@ namespace darmok
                 return std::make_shared<Resource>(def);
             }
             // TODO: check for static Resource::create methods
-            return nullptr;
+            return unexpected<Error>{"could not create resource"};
         }
     private:
         DefinitionLoader& _defLoader;
-        std::unordered_map<Arg, std::shared_ptr<Definition>> _defCache;
+        std::unordered_map<Argument, std::shared_ptr<Definition>> _defCache;
         std::unordered_map<std::shared_ptr<Definition>, std::weak_ptr<Resource>> _resCache;
     };
 
-    template<typename Type, typename DefinitionLoader>
-    using FromDefinitionLoader = BasicFromDefinitionLoader<Type, DefinitionLoader, std::filesystem::path>;
-
-    template<typename Interface>
-    class DARMOK_EXPORT CerealLoader final : public Interface
-    {
-    public:
-        using Resource = Interface::Resource;
-
-        CerealLoader(IDataLoader& dataLoader) noexcept
-            : _dataLoader(dataLoader)
-        {
-        }
-
-        std::shared_ptr<Resource> operator()(std::filesystem::path path) override
-        {
-            auto data = _dataLoader(path);
-            auto format = CerealUtils::getExtensionFormat(path.extension());
-            auto res = std::make_shared<Resource>();
-            CerealUtils::load(*res, data, format);
-            return res;
-        }
-    private:
-        IDataLoader& _dataLoader;
-    };
 }

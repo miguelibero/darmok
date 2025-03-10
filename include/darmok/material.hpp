@@ -8,8 +8,8 @@
 #include <darmok/uniform.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/serialize.hpp>
-#include <darmok/asset_serialize.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/protobuf.hpp>
 #include <darmok/protobuf/material.pb.h>
 
 #include <vector>
@@ -29,15 +29,16 @@ namespace darmok
 
     struct DARMOK_EXPORT Material
     {
-        using TextureType = protobuf::MaterialTextureType::Enum;
-        using PrimitiveType = MaterialPrimitiveType;
+        using TextureType = protobuf::MaterialTextureType;
+        using PrimitiveType = protobuf::MaterialPrimitiveType;
+        using OpacityType = protobuf::MaterialOpacityType;
         using Definition = protobuf::Material;
 
-        Prog program;
+        std::shared_ptr<Program> program;
         ProgramDefines programDefines;
 
         UniformValueMap uniformValues;
-        GenericUniformTextureMap<Tex> uniformTextures;
+        UniformTextureMap uniformTextures;
 
         // PBR
         Color baseColor = {};
@@ -55,12 +56,12 @@ namespace darmok
         Color3 specularColor = {};
         uint16_t shininess = 32;
 
-        using TextureType = MaterialTextureType;
-        std::unordered_map<TextureType, Tex> textures;
 
-        OpacityType opacityType = OpacityType::Opaque;
+        std::unordered_map<TextureType::Enum, std::shared_ptr<Texture>> textures;
+
+        OpacityType::Enum opacityType = OpacityType::Opaque;
         bool twoSided = false;
-        PrimitiveType primitiveType = PrimitiveType::Triangle;
+        PrimitiveType::Enum primitiveType = PrimitiveType::Triangle;
 
 
         bool valid() const noexcept;
@@ -81,9 +82,9 @@ namespace darmok
         void shutdown() override;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
     private:
-        using TextureType = MaterialTextureType;
+        using TextureType = Material::TextureType;
 
-        std::unordered_map<TextureType, TextureUniformKey> _textureUniformKeys;
+        std::unordered_map<TextureType::Enum, TextureUniformKey> _textureUniformKeys;
         UniformHandleContainer _uniformHandles;
 
         bgfx::UniformHandle _albedoLutSamplerUniform;
@@ -97,13 +98,13 @@ namespace darmok
         std::shared_ptr<Texture> _defaultTexture;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMaterialDefinitionLoader : public ILoader<MaterialDefinition>
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialDefinitionLoader : public ILoader<Material::Definition>
     {
     };
 
-    using CerealMaterialDefinitionLoader = CerealLoader<IMaterialDefinitionLoader>;
+    using MaterialDefinitionLoader = ProtobufLoader<IMaterialDefinitionLoader>;
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public IFromDefinitionLoader<Material, MaterialDefinition>
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public IFromDefinitionLoader<Material, Material::Definition>
     {
     };
 
@@ -112,7 +113,7 @@ namespace darmok
     public:
         MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
     protected:
-        std::shared_ptr<Resource> create(const std::shared_ptr<Definition>& def) override;
+        Result create(const std::shared_ptr<Definition>& def) override;
         IProgramLoader& _progLoader;
         ITextureLoader& _texLoader;
     };

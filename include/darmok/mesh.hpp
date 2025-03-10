@@ -5,11 +5,12 @@
 #include <darmok/data.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/vertex_fwd.hpp>
-#include <darmok/mesh_fwd.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/varying.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/protobuf/mesh.pb.h>
 
 #include <vector>
 #include <memory>
@@ -19,20 +20,12 @@
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
-#include <cereal/cereal.hpp>
-#include <cereal/types/vector.hpp>
 
 namespace darmok
 {
     struct DARMOK_EXPORT MeshConfig final
     {
         bool index32 = false;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP_("index32", index32));
-        }
 
         uint16_t getFlags() const noexcept;
         size_t getIndexSize() const noexcept;
@@ -49,49 +42,29 @@ namespace darmok
         void fix(uint32_t maxVertices, uint32_t maxIndices) noexcept;
     };
 
-    struct DARMOK_EXPORT MeshDefinition
-    {
-        std::string name;
-        MeshType type;
-        MeshConfig config;
-        bgfx::VertexLayout layout;
-        Data vertices;
-        Data indices;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(name),
-                CEREAL_NVP(type),
-                CEREAL_NVP(config),
-                CEREAL_NVP(layout),
-                CEREAL_NVP(vertices),
-                CEREAL_NVP(indices)
-            );
-        }
-    };
-
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionLoader : public ILoader<MeshDefinition>
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionLoader : public ILoader<protobuf::Mesh>
     {
     };
 
-    using CerealMeshDefinitionLoader = CerealLoader<IMeshDefinitionLoader>;
+    using MeshDefinitionLoader = ProtobufLoader<IMeshDefinitionLoader>;
 
     class DARMOK_EXPORT BX_NO_VTABLE IMesh
     {
     public:
         using Config = MeshConfig;
         using RenderConfig = MeshRenderConfig;
+        using Definition = protobuf::Mesh;
+        using MeshType = protobuf::MeshType;
+        using Source = protobuf::MeshSource;
 
         virtual ~IMesh() = default;
         [[nodiscard]] virtual std::string toString() const noexcept = 0;
         virtual bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
         [[nodiscard]] virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
-        [[nodiscard]] static std::unique_ptr<IMesh> create(const MeshDefinition& def);
-        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
-        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
+        [[nodiscard]] static std::unique_ptr<IMesh> create(const Definition& def);
+        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
+        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
     };
 
     class DARMOK_EXPORT Mesh final : public IMesh
@@ -217,22 +190,25 @@ namespace darmok
     {
         using Vertex = MeshDataVertex;
         using Index = VertexIndex;
+        using MeshType = protobuf::MeshType;
+        using RectangleMeshType = protobuf::RectangleMeshType;
+        using LineMeshType = protobuf::LineMeshType;
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
-        MeshType type = MeshType::Static;
+        MeshType::Enum type = MeshType::Static;
 
-        MeshData(MeshType type = MeshType::Static) noexcept;
-        MeshData(const Cube& Cube, RectangleMeshType type = RectangleMeshType::Full) noexcept;
+        MeshData(MeshType::Enum type = MeshType::Static) noexcept;
+        MeshData(const Cube& Cube, RectangleMeshType::Enum type = RectangleMeshType::Full) noexcept;
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
-        MeshData(const Rectangle& rect, RectangleMeshType type = RectangleMeshType::Full) noexcept;
-        MeshData(const Plane& plane, RectangleMeshType type = RectangleMeshType::Full, float scale = 100.F) noexcept;
+        MeshData(const Rectangle& rect, RectangleMeshType::Enum type = RectangleMeshType::Full) noexcept;
+        MeshData(const Plane& plane, RectangleMeshType::Enum type = RectangleMeshType::Full, float scale = 100.F) noexcept;
         MeshData(const Ray& ray) noexcept;
-        MeshData(const Line& line, LineMeshType type = LineMeshType::Line) noexcept;
+        MeshData(const Line& line, LineMeshType::Enum type = LineMeshType::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
         MeshData(const Polygon& poly) noexcept;
-        MeshData(const Frustum& frust, RectangleMeshType type = RectangleMeshType::Outline) noexcept;
+        MeshData(const Frustum& frust, RectangleMeshType::Enum type = RectangleMeshType::Outline) noexcept;
         MeshData(const Grid& grid) noexcept;
 
         MeshData& operator+=(const MeshData& other) noexcept;
@@ -261,7 +237,7 @@ namespace darmok
         void clear() noexcept;
 
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
-        [[nodiscard]] MeshDefinition createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
+        [[nodiscard]] Mesh::Definition createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
@@ -288,7 +264,7 @@ namespace darmok
         void setupBasicRectangle() noexcept;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public IFromDefinitionLoader<IMesh, MeshDefinition>
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public IFromDefinitionLoader<IMesh, Mesh::Definition>
     {
     };
 
@@ -297,6 +273,7 @@ namespace darmok
     public:
         MeshLoader(IMeshDefinitionLoader& defLoader) noexcept;
     protected:
-        std::shared_ptr<IMesh> create(const std::shared_ptr<Definition>& def) override;
+
+        Result create(const std::shared_ptr<Definition>& def) override;
     };
 }

@@ -391,7 +391,7 @@ namespace darmok
         return data;
     }
 
-    Data Data::fromFile(const std::filesystem::path& path, const OptionalRef<bx::AllocatorI>& alloc)
+    expected<Data, std::string> Data::fromFile(const std::filesystem::path& path, const OptionalRef<bx::AllocatorI>& alloc)
     {
         FILE* fh;
 #ifdef _MSC_VER        
@@ -406,8 +406,7 @@ namespace darmok
 #endif
         if (err)
         {
-            std::string error = strerror(err);
-            throw std::runtime_error("failed to open file: " + error);
+            return unexpected(strerror(err));
         }
         fseek(fh, 0, SEEK_END);
         long size = ftell(fh);
@@ -513,7 +512,7 @@ namespace darmok
         return true;
     }
 
-    Data DataLoader::operator()(const std::filesystem::path& path) noexcept
+    expected<Data, std::string> DataLoader::operator()(const std::filesystem::path& path) noexcept
     {
         for (auto& basePath : _basePaths)
         {
@@ -523,7 +522,7 @@ namespace darmok
                 return Data::fromFile(combPath, _alloc);
             }
         }
-        return {};
+        return unexpected<std::string>("path does not exist");
     }
 }
 

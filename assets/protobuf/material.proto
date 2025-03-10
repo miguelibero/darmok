@@ -3,7 +3,6 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "math.proto";
-import "texture.proto";
 import "program.proto";
 
 message MaterialTextureType {
@@ -50,12 +49,12 @@ message MaterialSourceTexture {
         MaterialTextureType.Enum type = 1;
         UniformTextureKey uniform = 2;
     }
-    TextureSource texture = 3;
+    string texture = 3;
 }
 
 message MaterialSource {
     oneof program {
-        ProgramSource custom_program = 1;
+        string custom_program = 1;
         StandardProgramType.Enum standard_program = 2;
     }
     repeated string program_defines = 3;
@@ -85,12 +84,12 @@ message MaterialTexture {
         MaterialTextureType.Enum type = 1;
         UniformTextureKey uniform = 2;
     }
-    Texture texture = 3;
+    string texture = 3;
 }
 
 message Material {
     oneof program {
-        Program custom_program = 1;
+        string custom_program = 1;
         StandardProgramType.Enum standard_program = 2;
     }
     repeated string program_defines = 3;

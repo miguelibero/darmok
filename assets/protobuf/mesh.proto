@@ -3,6 +3,7 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "varying.proto";
+import "shape.proto";
 
 message MeshType {
     enum Enum {
@@ -12,12 +13,51 @@ message MeshType {
     }
 }
 
+message RectangleMeshType {
+    enum Enum {
+        Full = 0;
+        Outline = 1;
+    }
+}
+
+message LineMeshType {
+    enum Enum {
+        Line = 0;
+        Arrow = 1;
+    }
+}
+
+message CubeMeshSource {
+    Cube shape = 1;
+    RectangleMeshType.Enum type = 2;
+}
+
+message SphereMeshSource {
+    Sphere shape = 1;
+    uint32 lod = 2;
+}
+
+message CapsuleMeshSource {
+    Capsule shape = 1;
+    uint32 lod = 2;
+}
+
+message RectangleMeshSource {
+    Rectangle shape = 1;
+    RectangleMeshType.Enum type = 2;
+}
+
 message MeshSource {
-    
+    oneof value {
+        CubeMeshSource cube = 1;
+        SphereMeshSource sphere = 2;
+        CapsuleMeshSource capsule = 3;
+        RectangleMeshSource rectangle = 4;
+    }
 }
 
 message Mesh {
-    MeshType type = 1;
+    MeshType.Enum type = 1;
     bool index32 = 2;
     VertexLayout layout = 3;
     bytes vertices = 4;

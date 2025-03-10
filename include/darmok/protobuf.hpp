@@ -29,6 +29,7 @@ namespace darmok
 
         ProtobufFormat getFormat(const std::filesystem::path& path);
         std::optional<ProtobufFormat> getFormat(const std::string& name);
+        std::size_t getHash(const Message& msg);
 
         const bgfx::Memory* copyMem(const std::string& data);
         const bgfx::Memory* refMem(const std::string& data);
@@ -133,8 +134,12 @@ namespace darmok
 
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override
         {
-            auto obj = _loader(input.path);
-            writeOutput(*obj, out);
+            auto objResult = _loader(input.path);
+            if (!objResult)
+            {
+                throw std::runtime_error(objResult.error());
+            }
+            writeOutput(**objResult, out);
         }
 
         void endImport(const Input& input) override

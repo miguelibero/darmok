@@ -8,6 +8,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/data_stream.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <bx/platform.h>
 
 #include <filesystem>
@@ -16,346 +17,464 @@
 
 namespace darmok
 {
-    TextureAtlasBounds TextureAtlasElement::getBounds() const noexcept
+	namespace TextureAtlasDetail
 	{
-		return {
-			originalSize,
-			offset
-		};
-	}
-
-	size_t TextureAtlasElement::getVertexAmount() const noexcept
-	{
-		return std::min(positions.size(), texCoords.size());
-	}
-
-	TextureAtlasElement TextureAtlasElement::create(const TextureAtlasBounds& bounds) noexcept
-	{
-		static const std::vector<glm::uvec2> elms = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 } };
-		static const std::vector<VertexIndex> idxs = { 0, 1, 2, 2, 3, 0 };
-		TextureAtlasElement elm{ "", elms, elms, idxs, bounds.offset, bounds.size, {}, bounds.size, {}, false };
-
-		for (auto& pos : elm.positions)
+		std::pair<int, size_t> readInt(std::string_view str, size_t i) noexcept
 		{
-			pos = pos * bounds.size;
-		}
-		for (auto& texCoord : elm.texCoords)
-		{
-			texCoord.y = texCoord.y ? 0 : 1;
-			texCoord = bounds.offset + texCoord * bounds.size;
-		}
-
-		return elm;
-	}
-
-	std::unique_ptr<IMesh> TextureAtlasElement::createSprite(const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) const noexcept
-	{
-		auto vertexAmount = uint32_t(getVertexAmount());
-		VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
-		std::vector<VertexIndex> totalIndices;
-		totalIndices.reserve(indices.size() * config.amount.x * config.amount.y);
-
-		const glm::vec2 fatlasSize(textureSize);
-
-		auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
-		// don't think this is needed since it's already factored into the position values
-		// baseOffset += glm::vec3(offset, 0);
-		auto amountStep = glm::vec2(originalSize);
-		auto amountOffsetMax = (glm::vec2(config.amount) - glm::vec2(1)) * amountStep * 0.5F;
-		auto amountOffset = -glm::vec3(amountOffsetMax, 0.F);
-
-		uint32_t vertexIndex = 0;
-		for (; amountOffset.x <= amountOffsetMax.x; amountOffset.x += amountStep.x)
-		{
-			amountOffset.y = -amountOffsetMax.y;
-			for (; amountOffset.y <= amountOffsetMax.y; amountOffset.y += amountStep.y)
+			if (str.empty() || i == std::string::npos || i >= str.size())
 			{
-				auto elmOffset = baseOffset + amountOffset;
-				for (uint32_t i = 0; i < vertexAmount; i++)
-				{
-					const auto& texPos = positions[i];
-					auto pos = (elmOffset + glm::vec3(texPos.x, float(originalSize.y) - texPos.y, 0)) * config.scale;
-					writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
-					auto texCoord = glm::vec2(texCoords[i]) / fatlasSize;
-					writer.write(bgfx::Attrib::TexCoord0, vertexIndex + i, texCoord);
-				}
-				for (const auto& idx : indices)
-				{
-					totalIndices.push_back(vertexIndex + idx);
-				}
-				vertexIndex += vertexAmount;
+				return { -1, std::string::npos };
 			}
-		}
-
-		if (layout.has(bgfx::Attrib::Normal))
-		{
-			static const glm::vec3 norm(0, 0, -1);
-			writer.write(bgfx::Attrib::Normal, norm);
-		}
-		if (layout.has(bgfx::Attrib::Color0))
-		{
-			writer.write(bgfx::Attrib::Color0, config.color);
-		}
-
-		const Data vertexData = writer.finish();
-		return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
-	}
-
-	std::pair<int, size_t> TextureAtlasElement::readInt(std::string_view str, size_t i) noexcept
-	{
-		if (str.empty() || i == std::string::npos || i >= str.size())
-		{
-			return { -1, std::string::npos };
-		}
-		auto pos = str.find(' ', i);
-		if (pos == std::string::npos)
-		{
-			pos = str.size();
-		}
-		int val = -1;
-		std::from_chars(str.data() + i, str.data() + pos, val);
-		return { val, pos + 1 };
-	}
-
-	std::vector<TextureAtlasIndex> TextureAtlasElement::readIndexList(std::string_view str) noexcept
-	{
-		std::vector<TextureAtlasIndex> list;
-		size_t pos = 0;
-		while (pos != std::string::npos)
-		{
-			auto [val, nextPos] = readInt(str, pos);
-			if (val < 0)
+			auto pos = str.find(' ', i);
+			if (pos == std::string::npos)
 			{
-				break;
+				pos = str.size();
 			}
-			list.push_back(val);
-			pos = nextPos;
+			int val = -1;
+			std::from_chars(str.data() + i, str.data() + pos, val);
+			return { val, pos + 1 };
 		}
-		return list;
-	}
 
-	std::pair<std::optional<glm::uvec2>, size_t> TextureAtlasElement::readVec2(std::string_view str, size_t pos) noexcept
-	{
-		auto [intVal, intPos] = readInt(str, pos);
-		if (intVal < 0)
+		std::vector<int> readIndexList(std::string_view str) noexcept
 		{
-			return { std::nullopt, std::string::npos };
+			std::vector<int> list;
+			size_t pos = 0;
+			while (pos != std::string::npos)
+			{
+				auto [val, nextPos] = readInt(str, pos);
+				if (val < 0)
+				{
+					break;
+				}
+				list.push_back(val);
+				pos = nextPos;
+			}
+			return list;
 		}
-		glm::uvec2 val = { intVal, 0 };
-		pos = intPos;
-		if (pos == std::string::npos)
+
+		std::pair<std::optional<glm::uvec2>, size_t> readUvec2(std::string_view str, size_t pos) noexcept
 		{
+			auto [intVal, intPos] = readInt(str, pos);
+			if (intVal < 0)
+			{
+				return { std::nullopt, std::string::npos };
+			}
+			glm::uvec2 val = { intVal, 0 };
+			pos = intPos;
+			if (pos == std::string::npos)
+			{
+				return { val, pos };
+			}
+			auto [intVal2, intPos2] = readInt(str, pos);
+			if (intVal2 < 0)
+			{
+				return { std::nullopt, std::string::npos };
+			}
+			val.y = intVal2;
+			pos = intPos2;
 			return { val, pos };
 		}
-		auto [intVal2, intPos2] = readInt(str, pos);
-		if (intVal2 < 0)
-		{
-			return { std::nullopt, std::string::npos };
-		}
-		val.y = intVal2;
-		pos = intPos2;
-		return { val, pos };
-	}
 
-	std::vector<glm::uvec2> TextureAtlasElement::readVec2List(std::string_view data) noexcept
-	{
-		std::vector<glm::uvec2> list;
-		size_t i = 0;
-		while (i != std::string::npos)
+		std::vector<glm::uvec2> readUvec2List(std::string_view data) noexcept
 		{
-			auto [val, nextPos] = readVec2(data, i);
-			if (!val.has_value())
+			std::vector<glm::uvec2> list;
+			size_t i = 0;
+			while (i != std::string::npos)
 			{
-				break;
+				auto [val, nextPos] = readUvec2(data, i);
+				if (!val.has_value())
+				{
+					break;
+				}
+				list.push_back(val.value());
+				i = nextPos;
 			}
-			list.push_back(val.value());
-			i = nextPos;
+			return list;
 		}
-		return list;
+
+		std::string writeUvec2List(const std::vector<glm::uvec2>& list) noexcept
+		{
+			return StringUtils::join(" ", list, [](auto& v) {
+				return std::to_string(v.x) + " " + std::to_string(v.y);
+				});
+		}
+
+		std::string writeIndexList(const std::vector<int>& list) noexcept
+		{
+			return StringUtils::join(" ", list, [](auto& v) {
+				return std::to_string(v);
+				});
+		}
 	}
 
-	bool TextureAtlasElement::isRect() const noexcept
+	namespace TextureAtlasUtils
 	{
-		if (positions.size() != 4)
+		Bounds getBounds(const Element& elm) noexcept
 		{
-			return false;
-		}
-		if (positions[0] != glm::uvec2(size.x, 0))
-		{
-			return false;
-		}
-		if (positions[1] != size)
-		{
-			return false;
-		}
-		if (positions[2] != glm::uvec2(0, size.y))
-		{
-			return false;
-		}
-		if (positions[3] != glm::uvec2(0))
-		{
-			return false;
-		}
-		return true;
-	}
-
-	void TextureAtlasElement::readTexturePacker(const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
-	{
-		name = xml.attribute("n").value();
-
-		texturePosition = glm::uvec2(0);
-		size = textureSize;
-
-		auto xmlX = xml.attribute("x");
-		if (xmlX)
-		{
-			texturePosition.x = xmlX.as_int();
-		}
-		auto xmlY = xml.attribute("y");
-		if (xmlY)
-		{
-			texturePosition.y = xmlY.as_int();
-		}
-		auto xmlW = xml.attribute("w");
-		if (xmlW)
-		{
-			size.x = xmlW.as_int();
-		}
-		auto xmlH = xml.attribute("h");
-		if (xmlH)
-		{
-			size.y = xmlH.as_int();
-		}
-
-		offset = glm::uvec2(0);
-		auto xmlOriginalX = xml.attribute("oX");
-		if (xmlOriginalX)
-		{
-			offset.x = xmlOriginalX.as_float();
-		}
-		auto xmlOriginalY = xml.attribute("oY");
-		if (xmlOriginalY)
-		{
-			offset.y = xmlOriginalY.as_float();
-		}
-
-		auto xmlVertices = xml.child("vertices");
-		if (xmlVertices)
-		{
-			positions = readVec2List(xmlVertices.text().get());
-		}
-		else
-		{
-			positions = {
-				glm::uvec2(size.x, 0), size,
-				glm::uvec2(0, size.y), glm::uvec2(0),
+			return {
+				GlmSerializationUtils::convert(elm.original_size()),
+				GlmSerializationUtils::convert(elm.offset())
 			};
 		}
 
-		auto xmlVerticesUV = xml.child("verticesUV");
-		if (xmlVerticesUV)
+		size_t getVertexAmount(const Element& elm) noexcept
 		{
-			texCoords = readVec2List(xmlVerticesUV.text().get());
+			return std::min(elm.positions_size(), elm.texture_coords_size());
 		}
-		else
+
+		Element createElement(const Bounds& bounds) noexcept
 		{
-			texCoords.reserve(positions.size());
+			static const std::vector<glm::uvec2> positions = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 } };
+			static const std::vector<VertexIndex> indices = { 0, 1, 2, 2, 3, 0 };
+			Element elm;
+			
 			for (auto& pos : positions)
 			{
-				texCoords.push_back(texturePosition + pos);
+				*elm.add_positions() = GlmSerializationUtils::convert(pos * bounds.size);
+				auto texCoord = pos;
+				texCoord.y = texCoord.y ? 0 : 1;
+				texCoord = bounds.offset + texCoord * bounds.size;
+				*elm.add_texture_coords() = GlmSerializationUtils::convert(texCoord);
 			}
-		}
-
-		auto xmlTriangles = xml.child("triangles");
-		if (xmlTriangles)
-		{
-			indices = readIndexList(xmlTriangles.text().get());
-		}
-		else
-		{
-			indices = { 0, 1, 2, 2, 3, 0 };
-		}
-
-		originalSize = size;
-		auto xmlOriginalW = xml.attribute("oW");
-		if (xmlOriginalW)
-		{
-			originalSize.x = xmlOriginalW.as_int();
-		}
-		auto xmlOriginalH = xml.attribute("oH");
-		if (xmlOriginalH)
-		{
-			originalSize.y = xmlOriginalH.as_int();
-		}
-
-		pivot = { xml.attribute("pX").as_float(), xml.attribute("pY").as_float() };
-		rotated = std::string(xml.attribute("r").value()) == "y";
-	}
-
-	void TextureAtlasElement::writeTexturePacker(pugi::xml_node& xml) const noexcept
-	{
-		xml.append_attribute("n") = name.c_str();
-		xml.append_attribute("x") = texturePosition.x;
-		xml.append_attribute("y") = texturePosition.y;
-		xml.append_attribute("w") = size.x;
-		xml.append_attribute("h") = size.y;
-		if (offset.x != 0)
-		{
-			xml.append_attribute("oX") = offset.x;
-		}
-		if (offset.y != 0)
-		{
-			xml.append_attribute("oY") = offset.y;
-		}
-		if (originalSize.x != 0)
-		{
-			xml.append_attribute("oW") = originalSize.x;
-		}
-		if (originalSize.y != 0)
-		{
-			xml.append_attribute("oH") = originalSize.y;
-		}
-		if (pivot.x != 0)
-		{
-			xml.append_attribute("pX") = pivot.x;
-		}
-		if (pivot.y != 0)
-		{
-			xml.append_attribute("pY") = pivot.y;
-		}
-		if (rotated)
-		{
-			xml.append_attribute("r") = "y";
-		}
-		if (!isRect())
-		{
-			if (!positions.empty())
+			for (auto& idx : indices)
 			{
-				xml.append_child("vertices").set_value(writeVec2List(positions).c_str());
+				elm.add_indices(idx);
 			}
-			if (!texCoords.empty())
+			*elm.mutable_texture_position() = GlmSerializationUtils::convert(bounds.offset);
+			auto protoSize = GlmSerializationUtils::convert(bounds.size);
+			*elm.mutable_size() = protoSize;
+			*elm.mutable_original_size() = protoSize;
+
+			return elm;
+		}
+
+		std::unique_ptr<IMesh> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
+		{
+			auto vertexAmount = uint32_t(getVertexAmount(elm));
+			VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
+			std::vector<VertexIndex> totalIndices;
+			totalIndices.reserve(elm.indices_size() * config.amount.x * config.amount.y);
+
+			const glm::vec2 fatlasSize(textureSize);
+
+			auto pivot = GlmSerializationUtils::convert(elm.pivot());
+			auto originalSize = GlmSerializationUtils::convert(elm.original_size());
+			auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
+			// don't think this is needed since it's already factored into the position values
+			// baseOffset += glm::vec3(offset, 0);
+			auto amountStep = glm::vec2(originalSize);
+			auto amountOffsetMax = (glm::vec2(config.amount) - glm::vec2(1)) * amountStep * 0.5F;
+			auto amountOffset = -glm::vec3(amountOffsetMax, 0.F);
+
+			uint32_t vertexIndex = 0;
+			for (; amountOffset.x <= amountOffsetMax.x; amountOffset.x += amountStep.x)
 			{
-				xml.append_child("verticesUV").set_value(writeVec2List(texCoords).c_str());
+				amountOffset.y = -amountOffsetMax.y;
+				for (; amountOffset.y <= amountOffsetMax.y; amountOffset.y += amountStep.y)
+				{
+					auto elmOffset = baseOffset + amountOffset;
+					for (uint32_t i = 0; i < vertexAmount; i++)
+					{
+						auto texPos = GlmSerializationUtils::convert(elm.positions()[i]);
+						auto texCoord = GlmSerializationUtils::convert(elm.texture_coords()[i]);
+						auto pos = (elmOffset + glm::vec3(texPos.x, float(originalSize.y) - texPos.y, 0)) * config.scale;
+						writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
+						auto texCoord = glm::vec2(texCoord) / fatlasSize;
+						writer.write(bgfx::Attrib::TexCoord0, vertexIndex + i, texCoord);
+					}
+					for (const auto& idx : elm.indices())
+					{
+						totalIndices.push_back(vertexIndex + idx);
+					}
+					vertexIndex += vertexAmount;
+				}
 			}
-			if (!indices.empty())
+
+			if (layout.has(bgfx::Attrib::Normal))
 			{
-				xml.append_child("triangles").set_value(writeIndexList(indices).c_str());
+				static const glm::vec3 norm(0, 0, -1);
+				writer.write(bgfx::Attrib::Normal, norm);
+			}
+			if (layout.has(bgfx::Attrib::Color0))
+			{
+				writer.write(bgfx::Attrib::Color0, config.color);
+			}
+
+			const Data vertexData = writer.finish();
+			return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
+		}
+
+		bool isRect(const Element& elm) noexcept
+		{
+			if (elm.positions_size() != 4)
+			{
+				return false;
+			}
+			if (GlmSerializationUtils::convert(elm.positions()[0]) != glm::uvec2(elm.size().x(), 0))
+			{
+				return false;
+			}
+			if (GlmSerializationUtils::convert(elm.positions()[1]) != GlmSerializationUtils::convert(elm.size()))
+			{
+				return false;
+			}
+			if (GlmSerializationUtils::convert(elm.positions()[2]) != glm::uvec2(0, elm.size().y()))
+			{
+				return false;
+			}
+			if (GlmSerializationUtils::convert(elm.positions()[3]) != glm::uvec2(0))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		void readTexturePacker(Element& elm, const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept
+		{
+			elm.set_name(xml.attribute("n").value());
+
+			auto& texPos = *elm.mutable_texture_position();
+			auto& size = *elm.mutable_size();
+			auto& offset = *elm.mutable_offset();
+			auto& originalSize = *elm.mutable_original_size();
+			auto& pivot = *elm.mutable_pivot();
+
+			auto xmlX = xml.attribute("x");
+			texPos.set_x(xmlX ? xmlX.as_int() : 0);
+			auto xmlY = xml.attribute("y");
+			texPos.set_y(xmlY ? xmlY.as_int() : 0);
+			auto xmlW = xml.attribute("w");
+			size.set_x(xmlW ? xmlW.as_int() : textureSize.x);
+			auto xmlH = xml.attribute("h");
+			size.set_y(xmlH ? xmlH.as_int() : textureSize.y);
+			auto xmlOriginalX = xml.attribute("oX");
+			offset.set_x(xmlOriginalX ? xmlOriginalX.as_float() : 0);
+			auto xmlOriginalY = xml.attribute("oY");
+			offset.set_y(xmlOriginalY ? xmlOriginalY.as_float() : 0);
+			auto xmlOriginalW = xml.attribute("oW");
+			originalSize.set_x(xmlOriginalW ? xmlOriginalW.as_int() : size.x());
+			auto xmlOriginalH = xml.attribute("oH");
+			originalSize.set_y(xmlOriginalH ? xmlOriginalH.as_int() : size.y());
+			pivot.set_x(xml.attribute("pX").as_float());
+			pivot.set_y(xml.attribute("pY").as_float());
+			elm.set_rotated(std::string(xml.attribute("r").value()) == "y");
+
+			auto xmlVertices = xml.child("vertices");
+			if (xmlVertices)
+			{
+				for (const auto& pos : TextureAtlasDetail::readUvec2List(xmlVertices.text().get()))
+				{
+					*elm.add_positions() = GlmSerializationUtils::convert(pos);
+				}
+			}
+			else
+			{
+				*elm.add_positions() = GlmSerializationUtils::convert(glm::uvec2(size.x(), 0));
+				*elm.add_positions() = size;
+				*elm.add_positions() = GlmSerializationUtils::convert(glm::uvec2(0, size.y()));
+				*elm.add_positions() = GlmSerializationUtils::convert(glm::uvec2(0));
+			}
+
+			auto xmlVerticesUV = xml.child("verticesUV");
+			if (xmlVerticesUV)
+			{
+				for (const auto& texCoord : TextureAtlasDetail::readUvec2List(xmlVerticesUV.text().get()))
+				{
+					*elm.add_texture_coords() = GlmSerializationUtils::convert(texCoord);
+				}
+			}
+			else
+			{
+				elm.mutable_texture_coords()->Reserve(elm.positions_size());
+				for (auto& pos : elm.positions())
+				{
+					auto& texCoord = *elm.add_texture_coords();
+					texCoord.set_x(texPos.x() + pos.x());
+					texCoord.set_y(texPos.y() + pos.y());
+				}
+			}
+
+			std::vector<int> indices = { 0, 1, 2, 2, 3, 0 };
+			auto xmlTriangles = xml.child("triangles");
+			if (xmlTriangles)
+			{
+				indices = TextureAtlasDetail::readIndexList(xmlTriangles.text().get());
+			}
+			for (auto idx : indices)
+			{
+				elm.mutable_indices()->Add(idx);
 			}
 		}
-	}
 
-	std::string TextureAtlasElement::writeVec2List(const std::vector<glm::uvec2>& list) noexcept
-	{
-		return StringUtils::join(" ", list, [](auto& v) {
-			return std::to_string(v.x) + " " + std::to_string(v.y);
-		});
-	}
+		void writeTexturePacker(const Element& elm, pugi::xml_node& xml) noexcept
+		{
+			xml.append_attribute("n") = elm.name();
+			xml.append_attribute("x") = elm.texture_position().x();
+			xml.append_attribute("y") = elm.texture_position().y();
+			xml.append_attribute("w") = elm.size().x();
+			xml.append_attribute("h") = elm.size().y();
+			if (elm.offset().x() != 0)
+			{
+				xml.append_attribute("oX") = elm.offset().x();
+			}
+			if (elm.offset().y() != 0)
+			{
+				xml.append_attribute("oY") = elm.offset().y();
+			}
+			if (elm.original_size().x() != 0)
+			{
+				xml.append_attribute("oW") = elm.original_size().x();
+			}
+			if (elm.original_size().y() != 0)
+			{
+				xml.append_attribute("oH") = elm.original_size().y();
+			}
+			if (elm.pivot().x() != 0)
+			{
+				xml.append_attribute("pX") = elm.pivot().x();
+			}
+			if (elm.pivot().y() != 0)
+			{
+				xml.append_attribute("pY") = elm.pivot().y();
+			}
+			if (elm.rotated())
+			{
+				xml.append_attribute("r") = "y";
+			}
+			if (!isRect(elm))
+			{
+				auto convertUvec2 = [](const protobuf::Uvec2& v) { return GlmSerializationUtils::convert(v); };
 
-	std::string TextureAtlasElement::writeIndexList(const std::vector<TextureAtlasIndex>& list) noexcept
-	{
-		return StringUtils::join(" ", list, [](auto& v) {
-			return std::to_string(v);
-		});
+				if (elm.positions_size() > 0)
+				{
+					std::vector<glm::uvec2> positions(elm.positions_size());
+					std::transform(elm.positions().begin(), elm.positions().end(), positions.begin(), convertUvec2);
+					xml.append_child("vertices").set_value(TextureAtlasDetail::writeUvec2List(positions));
+				}
+				if (elm.texture_coords_size() > 0)
+				{
+					std::vector<glm::uvec2> texCoords(elm.texture_coords_size());
+					std::transform(elm.texture_coords().begin(), elm.texture_coords().end(), texCoords.begin(), convertUvec2);
+					xml.append_child("verticesUV").set_value(TextureAtlasDetail::writeUvec2List(texCoords));
+				}
+				if (elm.indices_size() > 0)
+				{
+					std::vector<int> indices(elm.indices().begin(), elm.indices().end());
+					xml.append_child("triangles").set_value(TextureAtlasDetail::writeIndexList(indices));
+				}
+			}
+		}
+
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath)
+		{
+			if (doc.empty())
+			{
+				return unexpected<std::string>("empty xml document");
+			}
+			return readTexturePacker(atlas, doc.child("TextureAtlas"), texLoader, basePath);
+		}
+
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath)
+		{
+			if (node.empty())
+			{
+				return unexpected<std::string>("empty xml node");
+			}
+
+			auto imagePath = basePath / std::filesystem::path(node.attribute("imagePath").value());
+			auto texResult = texLoader(imagePath);
+			if (!texResult)
+			{
+				return unexpected<std::string>{ texResult.error() };
+			}
+
+			*atlas.mutable_texture() = *texResult.value();
+
+			glm::uvec2 size {
+				node.attribute("width").as_int(),
+				node.attribute("height").as_int(),
+			};
+
+			static const char* spriteTag = "sprite";
+			for (pugi::xml_node spriteXml = node.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
+			{
+				readTexturePacker(*atlas.add_elements(), spriteXml, size);
+			}
+
+			return {};
+		}
+
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, bx::AllocatorI& alloc, const std::filesystem::path& imagePath) noexcept
+		{
+			pugi::xml_node decl = doc.prepend_child(pugi::node_declaration);
+			decl.append_attribute("version") = "1.0";
+			decl.append_attribute("encoding") = "utf-8";
+			auto node = doc.append_child("TextureAtlas");
+			return writeTexturePacker(atlas, node, alloc, imagePath);
+		}
+
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, bx::AllocatorI& alloc, const std::filesystem::path& imagePath) noexcept
+		{
+			node.append_attribute("imagePath") = imagePath.string();
+			auto imgResult = TextureUtils::writeImage(atlas.texture(), alloc, imagePath);
+			if (!imgResult)
+			{
+				return unexpected(imgResult.error());
+			}
+			for (const auto& elm : atlas.elements())
+			{
+				auto sprite = node.append_child("sprite");
+				writeTexturePacker(elm, sprite);
+			}
+			return {};
+		}
+
+		expected<void, std::string> writeRmlui(const Atlas& atlas, std::ostream& out, const RmluiConfig& config) noexcept
+		{
+			auto name = imagePath.stem().string();
+			if (!config.nameFormat.empty())
+			{
+				const std::string origName = name;
+				name = config.nameFormat;
+				StringUtils::replace(name, "*", origName);
+			}
+			out << "@spritesheet " << name << "\n";
+			out << "{\n";
+			out << "    src: " << imagePath.string() << ";\n";
+			out << "    resolution: " << config.resolution << "x;\n";
+
+			for (const auto& elm : atlas.elements())
+			{
+				const glm::uvec4 val(elm.texture_position(), elm.size());
+				auto name = StringUtils::getFileStem(elm.name());
+				if (!config.spriteNameFormat.empty())
+				{
+					const std::string origName = name;
+					name = config.spriteNameFormat;
+					StringUtils::replace(name, "*", origName);
+				}
+				out << "    " << name << ": " << val.x << "px " << val.y << "px " << val.z << "px " << val.w << "px;\n";
+			}
+			out << "}\n";
+
+			if (!config.boxNameFormat.empty())
+			{
+				for (const auto& elm : atlas.elements())
+				{
+					out << "\n";
+					std::string name = config.boxNameFormat;
+					auto origName = StringUtils::getFileStem(elm.name());
+					StringUtils::replace(name, "*", origName);
+
+					out << "." << name << " {\n";
+					out << "  width: " << elm.original_size().x() << "px;\n";
+					out << "  height: " << elm.original_size().y() << "px;\n";
+					out << "  padding-left: " << elm.offset().x() << "px;\n";
+					out << "  padding-bottom: " << elm.offset().y() << "px;\n";
+					out << "}\n";
+				}
+			}
+		}
 	}
 
 	TextureAtlasBounds TextureAtlas::getBounds(std::string_view prefix) const noexcept
@@ -363,20 +482,20 @@ namespace darmok
 		TextureAtlasBounds bounds{};
 		for (const auto& elm : elements)
 		{
-			if (StringUtils::startsWith(elm.name, prefix))
+			if (StringUtils::startsWith(elm.name(), prefix))
 			{
 				// TODO: algorithm to combine bounds
-				bounds = elm.getBounds();
+				bounds = TextureAtlasUtils::getBounds(elm);
 			}
 		}
 		return bounds;
 	}
 
-	OptionalRef<TextureAtlasElement> TextureAtlas::getElement(std::string_view name) noexcept
+	OptionalRef<TextureAtlas::Element> TextureAtlas::getElement(std::string_view name) noexcept
 	{
 		for (auto& elm : elements)
 		{
-			if (elm.name == name)
+			if (elm.name() == name)
 			{
 				return elm;
 			}
@@ -384,11 +503,11 @@ namespace darmok
 		return nullptr;
 	}
 
-	OptionalRef<const TextureAtlasElement> TextureAtlas::getElement(std::string_view name) const noexcept
+	OptionalRef<const TextureAtlas::Element> TextureAtlas::getElement(std::string_view name) const noexcept
 	{
 		for (const auto& elm : elements)
 		{
-			if (elm.name == name)
+			if (elm.name() == name)
 			{
 				return elm;
 			}
@@ -404,7 +523,7 @@ namespace darmok
 			return nullptr;
 		}
 		const auto& size = texture->getSize();
-		return elm->createSprite(layout, size, config);
+		return TextureAtlasUtils::createSprite(*elm, layout, size, config);
 	}
 
 	std::vector<AnimationFrame> TextureAtlas::createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix, float frameDuration, const MeshConfig& config) const noexcept
@@ -414,9 +533,9 @@ namespace darmok
 
 		for (const auto& elm : elements)
 		{
-			if (StringUtils::startsWith(elm.name, namePrefix))
+			if (StringUtils::startsWith(elm.name(), namePrefix))
 			{
-				auto mesh = elm.createSprite(layout, size, config);
+				auto mesh = TextureAtlasUtils::createSprite(elm, layout, size, config);
 				if (mesh)
 				{
 					frames.emplace_back(std::move(mesh), frameDuration);
@@ -426,124 +545,34 @@ namespace darmok
 		return frames;
 	}
 
-	bool TextureAtlasDefinition::readTexturePacker(const pugi::xml_document& doc, const std::filesystem::path& basePath)
-	{
-		if (doc.empty())
-		{
-			return false;
-		}
-		return readTexturePacker(doc.child("TextureAtlas"), basePath);
-	}
-
-	bool TextureAtlasDefinition::readTexturePacker(const pugi::xml_node& node, const std::filesystem::path& basePath)
-	{
-		if (node.empty())
-		{
-			return false;
-		}
-
-		imagePath = basePath / std::filesystem::path(node.attribute("imagePath").value());
-
-		size = glm::uvec2{
-			node.attribute("width").as_int(),
-			node.attribute("height").as_int(),
-		};
-
-		static const char* spriteTag = "sprite";
-		for (pugi::xml_node spriteXml = node.child(spriteTag); spriteXml; spriteXml = spriteXml.next_sibling(spriteTag))
-		{
-			elements.emplace_back().readTexturePacker(spriteXml, size);
-		}
-
-		return true;
-	}
-
-	void TextureAtlasDefinition::writeTexturePacker(pugi::xml_document& doc) const noexcept
-	{
-		pugi::xml_node decl = doc.prepend_child(pugi::node_declaration);
-		decl.append_attribute("version") = "1.0";
-		decl.append_attribute("encoding") = "utf-8";
-		auto node = doc.append_child("TextureAtlas");
-		writeTexturePacker(node);
-	}
-
-	void TextureAtlasDefinition::writeTexturePacker(pugi::xml_node& node) const noexcept
-	{
-		node.append_attribute("imagePath") = imagePath.string().c_str();
-		for (const auto& elm : elements)
-		{
-			auto sprite = node.append_child("sprite");
-			elm.writeTexturePacker(sprite);
-		}
-	}
-
-	void TextureAtlasDefinition::writeRmlui(std::ostream& out, const RmluiConfig& config) const noexcept
-	{
-		auto name = imagePath.stem().string();
-		if (!config.nameFormat.empty())
-		{
-			const std::string origName = name;
-			name = config.nameFormat;
-			StringUtils::replace(name, "*", origName);
-		}
-		out << "@spritesheet " << name << "\n";
-		out << "{\n";
-		out << "    src: " << imagePath.string() << ";\n";
-		out << "    resolution: " << config.resolution << "x;\n";
-
-		for (const auto& elm : elements)
-		{
-			const glm::uvec4 val(elm.texturePosition, elm.size);
-			auto name = StringUtils::getFileStem(elm.name);
-			if (!config.spriteNameFormat.empty())
-			{
-				const std::string origName = name;
-				name = config.spriteNameFormat;
-				StringUtils::replace(name, "*", origName);
-			}
-			out << "    " << name << ": " << val.x << "px " << val.y << "px " << val.z << "px " << val.w << "px;\n";
-		}
-		out << "}\n";
-
-		if (!config.boxNameFormat.empty())
-		{
-			for (const auto& elm : elements)
-			{
-				out << "\n";
-				std::string name = config.boxNameFormat;
-				auto origName = StringUtils::getFileStem(elm.name);
-				StringUtils::replace(name, "*", origName);
-
-				out << "." << name << " {\n";
-				out << "  width: " << elm.originalSize.x << "px;\n";
-				out << "  height: " << elm.originalSize.y << "px;\n";
-				out << "  padding-left: " << elm.offset.x << "px;\n";
-				out << "  padding-bottom: " << elm.offset.y << "px;\n";
-				out << "}\n";
-			}
-		}
-	}
-
-	TexturePackerDefinitionLoader::TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texDefLoader) noexcept
+	TexturePackerDefinitionLoader::TexturePackerDefinitionLoader(IDataLoader& dataLoader, IImageLoader& imgLoader, ITextureDefinitionLoader& texDefLoader) noexcept
 		: _dataLoader(dataLoader)
+		, _imgLoader(imgLoader)
 		, _texDefLoader(texDefLoader)
 	{
 	}
 
-	std::shared_ptr<TextureAtlasDefinition> TexturePackerDefinitionLoader::operator()(std::filesystem::path path)
+	TexturePackerDefinitionLoader::Result TexturePackerDefinitionLoader::operator()(std::filesystem::path path)
 	{
-		auto data = _dataLoader(path);
+		auto dataResult = _dataLoader(path);
+		if (!dataResult)
+		{
+			return unexpected<std::string>{ dataResult.error() };
+		}
+
+		auto data = std::move(dataResult.value());
 
 		pugi::xml_document doc;
-		auto result = doc.load_buffer_inplace(data.ptr(), data.size());
-		if (result.status != pugi::status_ok)
+		auto xmlResult = doc.load_buffer_inplace(data.ptr(), data.size());
+		if (xmlResult.status != pugi::status_ok)
 		{
-			throw std::runtime_error(result.description());
+			throw std::runtime_error(xmlResult.description());
 		}
-		auto atlasDef = std::make_shared<TextureAtlasDefinition>();
-		if (!atlasDef->readTexturePacker(doc, path.parent_path()))
+		auto atlasDef = std::make_shared<TextureAtlas::Definition>();
+		auto readResult = TextureAtlasUtils::readTexturePacker(*atlasDef, doc, _alloc, path.parent_path());
+		if (!readResult)
 		{
-			throw std::runtime_error("failed to read texture packer xml");
+			throw std::runtime_error("failed to read texture packer xml: " + readResult.error());
 		}
 		atlasDef->texture = _texDefLoader(atlasDef->imagePath);
 		return atlasDef;
@@ -555,13 +584,13 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<TextureAtlas> TextureAtlasLoader::create(const std::shared_ptr<TextureAtlasDefinition>& def)
+	std::shared_ptr<TextureAtlas> TextureAtlasLoader::create(const std::shared_ptr<TextureAtlas::Definition>& def)
 	{
 		auto atlas = std::make_shared<TextureAtlas>();
-		atlas->elements = def->elements;
-		if (def->texture)
+		atlas->elements = def->elements();
+		if (def->has_texture())
 		{
-			atlas->texture = _texLoader.loadResource(def->texture);
+			atlas->texture = _texLoader.loadResource(def->texture());
 		}
 		else
 		{
@@ -757,7 +786,7 @@ namespace darmok
 			{
 				throw std::runtime_error(result.description());
 			}
-			TextureAtlasDefinition atlasDef;
+			TextureAtlas::Definition atlasDef;
 			if (!atlasDef.readTexturePacker(doc, basePath))
 			{
 				throw std::runtime_error("failed to read texture packer xml");

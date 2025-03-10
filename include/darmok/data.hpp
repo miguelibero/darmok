@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/expected.hpp>
 
 #include <vector>
 #include <memory>
@@ -137,7 +138,7 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] static Data fromHex(std::string_view hex, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
-        [[nodiscard]] static Data fromFile(const std::filesystem::path& path, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
+        [[nodiscard]] static expected<Data, std::string> fromFile(const std::filesystem::path& path, const OptionalRef<bx::AllocatorI>& alloc = nullptr);
 
     private:
         void* _ptr;
@@ -208,7 +209,7 @@ namespace darmok
     public:
         using Resource = Data;
         virtual ~IDataLoader() = default;
-        [[nodiscard]] virtual Data operator()(const std::filesystem::path& path) = 0;
+        [[nodiscard]] virtual expected<Data, std::string> operator()(const std::filesystem::path& path) = 0;
     };
 
     class DARMOK_EXPORT DataLoader final : public IDataLoader
@@ -220,7 +221,7 @@ namespace darmok
         DataLoader& addBasePath(const std::filesystem::path& basePath) noexcept;
         bool removeBasePath(const std::filesystem::path& basePath) noexcept;
 
-        [[nodiscard]] Data operator()(const std::filesystem::path& path) noexcept override;
+        [[nodiscard]] expected<Data, std::string> operator()(const std::filesystem::path& path) noexcept override;
 	private:
         std::vector<std::filesystem::path> _basePaths;
 		OptionalRef<bx::AllocatorI> _alloc;

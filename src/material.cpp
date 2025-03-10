@@ -6,6 +6,7 @@
 #include <darmok/image.hpp>
 #include <darmok/app.hpp>
 #include <darmok/string.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <darmok/reflect_serialize.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
@@ -41,46 +42,81 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<Material> MaterialLoader::create(const std::shared_ptr<Definition>& def)
+	MaterialLoader::Result MaterialLoader::create(const std::shared_ptr<Definition>& def)
 	{
 		if (!def)
 		{
-			return nullptr;
+			return unexpected<std::string>{ "null definition pointer" };
 		}
 		auto mat = std::make_shared<Material>();
-		mat->programDefines = def->programDefines;
-		mat->uniformValues = def->uniformValues;
-		mat->baseColor = def->baseColor;
-		mat->emissiveColor = def->emissiveColor;
-		mat->metallicFactor = def->metallicFactor;
-		mat->roughnessFactor = def->roughnessFactor;
-		mat->normalScale = def->normalScale;
-		mat->occlusionStrength = def->occlusionStrength;
-		mat->multipleScattering = def->multipleScattering;
-		mat->whiteFurnanceFactor = def->whiteFurnanceFactor;
-		mat->specularColor = def->specularColor;
-		mat->shininess = def->shininess;
-		mat->opacityType = def->opacityType;
-		mat->twoSided = def->twoSided;
-		mat->primitiveType = def->primitiveType;
+	
+		mat->programDefines = ProgramDefines(def->program_defines().begin(), def->program_defines().end());
+		mat->baseColor = GlmSerializationUtils::convert(def->base_color());
+		mat->emissiveColor = GlmSerializationUtils::convert(def->emissive_color());
+		mat->metallicFactor = def->metallic_factor();
+		mat->roughnessFactor = def->roughness_factor();
+		mat->normalScale = def->normal_scale();
+		mat->occlusionStrength = def->occlusion_strength();
+		mat->multipleScattering = def->multiple_scattering();
+		mat->whiteFurnanceFactor = def->white_furnance_factor();
+		mat->specularColor = GlmSerializationUtils::convert(def->specular_color());
+		mat->shininess = def->shininess();
+		mat->opacityType = def->opacity_type();
+		mat->twoSided = def->twosided();
+		mat->primitiveType = def->primitive_type();
 
-		if (auto standard = std::get_if<StandardProgramType>(&def->program))
+		if (def->has_standard_program())
 		{
-			mat->program = StandardProgramLoader::load(*standard);
+			mat->program = StandardProgramLoader::load(def->standard_program());
 		}
-		else
+		else if(def->has_custom_program())
 		{
-			auto progDef = std::get<std::shared_ptr<ProgramDefinition>>(def->program);
-			mat->program = _progLoader.loadResource(progDef);
+			auto loadResult = _progLoader(def->custom_program());
+			if (!loadResult)
+			{
+				return unexpected<std::string>{ "failed to load custom program" };
+			}
+			mat->program = loadResult.value();
 		}
 
-		for (auto& [key, texDef] : def->textures)
+		for (auto& defTex : def->textures())
 		{
-			mat->textures.emplace(key, _texLoader.loadResource(texDef));
+			auto loadResult = _texLoader(defTex.texture());
+			if (!loadResult)
+			{
+				return unexpected<std::string>{ "failed to load texture" };
+			}
+			auto tex = loadResult.value();
+			if (defTex.has_type())
+			{
+				mat->textures[defTex.type()] = tex;
+			}
+			else if (defTex.has_uniform())
+			{
+				TextureUniformKey key;
+				key.name = defTex.uniform().name();
+				key.stage = defTex.uniform().stage();
+				mat->uniformTextures[key] = tex;
+			}
 		}
-		for (auto& [key, texDef] : def->uniformTextures)
+
+		mat->uniformValues.reserve(def->uniform_values_size());
+		for (auto& [key, defVal] : def->uniform_values())
 		{
-			mat->uniformTextures.emplace(key, _texLoader.loadResource(texDef));
+			auto& val = mat->uniformValues.emplace(key).first->second;
+
+			if (defVal.has_mat4())
+			{
+				val = GlmSerializationUtils::convert(defVal.mat4());
+			}
+			else if (defVal.has_mat3())
+			{
+				val = GlmSerializationUtils::convert(defVal.mat3());
+			}
+			else if (defVal.has_vec4())
+			{
+				val = GlmSerializationUtils::convert(defVal.vec4());
+			}
 		}
 
 		return mat;
@@ -107,7 +143,7 @@ namespace darmok
 
 	void MaterialAppComponent::init(App& app)
 	{
-		_textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
+		_textureUniformKeys = std::unordered_map<TextureType::Enum, TextureUniformKey>{
 			{ TextureType::BaseColor, {"s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO}},
 			{ TextureType::MetallicRoughness, { "s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS}},
 			{ TextureType::Normal, { "s_texNormal", RenderSamplers::MATERIAL_NORMAL}},
@@ -202,14 +238,14 @@ namespace darmok
 		{
 			state |= BGFX_STATE_CULL_CCW;
 		}
-		if (mat.primitiveType == MaterialPrimitiveType::Line)
+		if (mat.primitiveType == Material::PrimitiveType::Line)
 		{
 			state &= ~BGFX_STATE_MSAA;
 			state |= BGFX_STATE_PT_LINES;
 			state |= BGFX_STATE_LINEAA;
 		}
 		auto opa = mat.opacityType;
-		if (opa == OpacityType::Transparent || opa == OpacityType::Mask)
+		if (opa == Material::OpacityType::Transparent || opa == Material::OpacityType::Mask)
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
 		}

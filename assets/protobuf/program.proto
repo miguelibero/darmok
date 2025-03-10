@@ -15,9 +15,10 @@ message StandardProgramType {
 }
 
 message ProgramSource {
-    bytes vertex_shader = 1;
-    bytes fragment_shader = 2;
-	Varying varying = 3;
+    string name = 1;
+    bytes vertex_shader = 2;
+    bytes fragment_shader = 3;
+	Varying varying = 4;
 }
 
 message ProgramVariant {

@@ -131,9 +131,10 @@ message TextureFormat {
 }
 
 message TextureSource {
-    bytes image_data = 1;
-    TextureFormat.Enum format = 2;
-    uint64 flags = 3;
+	string name = 1;
+    bytes image_data = 2;
+    TextureFormat.Enum format = 3;
+    uint64 flags = 4;
 }
 
 message TextureConfig {
@@ -146,7 +147,8 @@ message TextureConfig {
 }
 
 message Texture {
-    bytes data = 1;
-    TextureConfig config = 2;
-    uint64 flags = 3;
+	string name = 1;
+    bytes data = 2;
+    TextureConfig config = 3;
+    uint64 flags = 4;
 }

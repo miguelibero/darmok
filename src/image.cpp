@@ -485,10 +485,14 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<Image> ImageLoader::operator()(std::filesystem::path path)
+	ImageLoader::Result ImageLoader::operator()(std::filesystem::path path)
 	{
-		auto data = _dataLoader(path);
-		return std::make_shared<Image>(data, _alloc);
+		auto dataResult = _dataLoader(path);
+		if (!dataResult)
+		{
+			return unexpected<std::string>{ dataResult.error() };
+		}
+		return std::make_shared<Image>(dataResult.value(), _alloc);
 	}
 
 	ImageFileImporter::ImageFileImporter() noexcept
@@ -559,8 +563,11 @@ namespace darmok
 			size_t i = 0;
 			for (auto& facePath : _cubemapFaces.value())
 			{
-				faceData[i] = Data::fromFile(facePath);
-				faceDataView[i] = faceData[i];
+				if (auto result = Data::fromFile(facePath))
+				{
+					faceData[i] = result.value();
+					faceDataView[i] = faceData[i];
+				}
 				++i;
 			}
 			Image img(faceDataView, _alloc, format);
@@ -568,8 +575,12 @@ namespace darmok
 		}
 		else
 		{
-			Image img(Data::fromFile(input.path), _alloc, format);
-			img.write(_outputEncoding, out);
+			auto result = Data::fromFile(input.path);
+			if (result)
+			{
+				Image img(result.value(), _alloc, format);
+				img.write(_outputEncoding, out);
+			}
 		}
 	}
 

@@ -10,6 +10,7 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/expected.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/texture.pb.h>
 
@@ -26,6 +27,8 @@ namespace darmok
 	namespace TextureUtils
 	{
 		void loadImage(protobuf::Texture& def, const Image& img) noexcept;
+		Image createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept;
+		expected<void, std::string> writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept;
 		bgfx::TextureInfo getInfo(const protobuf::TextureConfig& config) noexcept;
 		const protobuf::TextureConfig& getEmptyConfig() noexcept;
 	}
@@ -42,7 +45,7 @@ namespace darmok
 		ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept;
 		bool supports(const std::filesystem::path& path) const noexcept;
 		ImageTextureDefinitionLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
-		[[nodiscard]] std::shared_ptr<protobuf::Texture> operator()(std::filesystem::path path) override;
+		[[nodiscard]] Result operator()(std::filesystem::path path) override;
 	private:
 		IImageLoader& _imgLoader;
 		uint64_t _loadFlags;
@@ -109,7 +112,7 @@ namespace darmok
 		static const FlagMap _samplerFlags;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<Texture, protobuf::Texture>
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<Texture, Texture::Definition>
 	{
 	};
 

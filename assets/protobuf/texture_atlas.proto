@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "texture.proto";
+import "math.proto";
+
+message TextureAtlasElement {
+    string name = 1;
+    repeated Uvec2 positions = 2;
+    repeated Uvec2 texture_coords = 3;
+    repeated uint32 indices = 4;
+    Uvec2 texture_position = 5;
+    Uvec2 size = 6;
+    Vec2 offset = 7;
+    Uvec2 original_size = 8;
+    Vec2 pivot = 9;
+    bool rotated = 10;
+}
+
+message TextureAtlas {
+    string texture = 1;
+    repeated TextureAtlasElement elements = 2;
+}

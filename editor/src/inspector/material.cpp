@@ -50,7 +50,7 @@ namespace darmok::editor
 				}
 			}
 			// pbr
-			drawColorTexture("Base Texture", mat.baseColor, MaterialTextureType::BaseColor);
+			drawColorTexture("Base Texture", mat.baseColor, Material::TextureType::BaseColor);
 			if (ImGui::SliderFloat("Metallic Factor", &mat.metallicFactor, 0.F, 1.F))
 			{
 				changed = true;
@@ -59,12 +59,12 @@ namespace darmok::editor
 			{
 				changed = true;
 			}
-			drawTexture("Metallic Roughness", MaterialTextureType::MetallicRoughness);
+			drawTexture("Metallic Roughness", Material::TextureType::MetallicRoughness);
 			if (ImGui::SliderFloat("Normal Scale", &mat.normalScale, 0.F, 1.F))
 			{
 				changed = true;
 			}
-			drawTexture("Normal", MaterialTextureType::Normal);
+			drawTexture("Normal", Material::TextureType::Normal);
 			if (ImGui::SliderFloat("Occlusion Strength", &mat.occlusionStrength, 0.F, 1.F))
 			{
 				changed = true;
@@ -74,10 +74,10 @@ namespace darmok::editor
 
 				changed = true;
 			}
-			drawTexture("Emissive", MaterialTextureType::Emissive);
+			drawTexture("Emissive", Material::TextureType::Emissive);
 			
 			// phong
-			drawColorTexture("Specular", mat.specularColor, MaterialTextureType::Specular);
+			drawColorTexture("Specular", mat.specularColor, Material::TextureType::Specular);
 			{
 				int v = mat.shininess;
 				if (ImGui::SliderInt("Shininess", &v, 0, 256))

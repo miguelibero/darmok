@@ -99,9 +99,7 @@ namespace darmok
 
     class Texture;
 
-    template<typename Tex>
-    using GenericUniformTextureMap = std::unordered_map<TextureUniformKey, Tex, TextureUniformKey::Hash>;
-    using UniformTextureMap = GenericUniformTextureMap<std::shared_ptr<Texture>>;
+    using UniformTextureMap = std::unordered_map<TextureUniformKey, std::shared_ptr<Texture>, TextureUniformKey::Hash>;
 
     class UniformHandleContainer final
     {

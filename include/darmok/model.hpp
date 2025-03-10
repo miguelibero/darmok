@@ -10,7 +10,6 @@
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/program_fwd.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/glm_serialize.hpp>

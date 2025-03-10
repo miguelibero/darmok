@@ -11,6 +11,20 @@ namespace darmok
 		def.set_data(img.getData().toString());
 		*def.mutable_config() = img.getTextureConfig();
 	}
+
+	Image TextureUtils::createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept
+	{
+		return { DataView{ def.data() }, alloc, bimg::TextureFormat::Enum(def.config().format()) };
+	}
+
+	expected<void, std::string> TextureUtils::writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept
+	{
+		auto img = createImage(def, alloc);
+		auto encoding = Image::getEncodingForPath(path);
+		std::ofstream out(path, std::ios::binary);
+		img.write(encoding, out);
+		return {};
+	}
 	 
 	bgfx::TextureInfo TextureUtils::getInfo(const protobuf::TextureConfig& config) noexcept
 	{
@@ -45,20 +59,27 @@ namespace darmok
 		return *this;
 	}
 
-	std::shared_ptr<Texture::Definition> ImageTextureDefinitionLoader::operator()(std::filesystem::path path)
+	ImageTextureDefinitionLoader::Result ImageTextureDefinitionLoader::operator()(std::filesystem::path path)
 	{
 		if (!supports(path))
 		{
-			return nullptr;
+			return unexpected<std::string>("format not supported");
 		}
-		if (auto img = _imgLoader(path))
+		auto imgResult = _imgLoader(path);
+		if (!imgResult)
 		{
-			auto def = std::make_shared<Texture::Definition>();
-			def->set_flags(_loadFlags);
-			TextureUtils::loadImage(*def, *img);
-			return def;
+			return unexpected<std::string>{ imgResult.error() };
 		}
-		return nullptr;
+		auto img = *imgResult;
+		if (!img)
+		{
+			return unexpected<std::string>("empty image");
+		}
+
+		auto def = std::make_shared<Texture::Definition>();
+		def->set_flags(_loadFlags);
+		TextureUtils::loadImage(*def, *img);
+		return def;
 	}
 
 	const Texture::FlagMap Texture::_textureFlags =
@@ -517,10 +538,15 @@ namespace darmok
 
 	void TextureFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
 	{
-		auto def = _defLoader(input.path);
-		auto& config = *def->mutable_config();
+		auto defResult = _defLoader(input.path);
+		if (!defResult)
+		{
+			throw std::runtime_error(defResult.error());
+		}
+		auto& def = **defResult;
+		auto& config = *def.mutable_config();
 		ProtobufUtils::read(config, input.dirConfig);
 		ProtobufUtils::read(config, input.config);
-		ProtobufFileImporter::writeOutput(*def, out);
+		ProtobufFileImporter::writeOutput(def, out);
 	}
 }

@@ -51,15 +51,17 @@ namespace darmok
 	class DARMOK_EXPORT StandardProgramLoader final
 	{
 	public:
-		static std::shared_ptr<Program> load(StandardProgramType type);
-		static std::shared_ptr<Program::Definition> loadDefinition(StandardProgramType type);
-		static std::optional<StandardProgramType> getType(const std::shared_ptr<Program>& prog) noexcept;
-		static std::optional<StandardProgramType> getType(const std::shared_ptr<Program::Definition>& def) noexcept;
+		using Type = protobuf::StandardProgramType;
+		using Definition = protobuf::Program;
+		static std::shared_ptr<Program> load(Type::Enum type);
+		static std::shared_ptr<Definition> loadDefinition(Type::Enum type);
+		static std::optional<Type::Enum> getType(const std::shared_ptr<Program>& prog) noexcept;
+		static std::optional<Type::Enum> getType(const std::shared_ptr<Definition>& def) noexcept;
 	private:
-		static std::unordered_map<StandardProgramType, std::weak_ptr<Program::Definition>> _defCache;
-		static std::unordered_map<StandardProgramType, std::weak_ptr<Program>> _cache;
+		static std::unordered_map<Type::Enum, std::weak_ptr<Definition>> _defCache;
+		static std::unordered_map<Type::Enum, std::weak_ptr<Program>> _cache;
 
-		static expected<void, std::string> loadDefinition(Program::Definition& def, StandardProgramType type);
+		static expected<void, std::string> loadDefinition(Definition& def, Type::Enum type);
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, Program::Definition>

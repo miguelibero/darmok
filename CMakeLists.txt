@@ -145,7 +145,6 @@ set(CORE_SOURCES
   shape.cpp
   texture.cpp
   mesh.cpp
-  mesh_source.cpp
   vertex.cpp
   varying.cpp
   viewport.cpp
@@ -173,9 +172,7 @@ set(CORE_HEADERS
   uniform.hpp
   math.hpp
   shape.hpp
-  mesh_fwd.hpp
   mesh.hpp
-  mesh_source.hpp
   color_fwd.hpp
   color.hpp
   image_fwd.hpp
@@ -232,7 +229,6 @@ set(SOURCES
 set(HEADERS
   asset.hpp
   asset_pack.hpp
-  asset_serialize.hpp
   app_fwd.hpp
   app.hpp
   input_fwd.hpp
@@ -632,7 +628,9 @@ set(PROTO_FILES
   varying.proto
   program.proto
   texture.proto
+  texture_atlas.proto
   material.proto
+  mesh.proto
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/public/darmok/protobuf")

@@ -19,6 +19,12 @@ namespace darmok
         return magic_enum::enum_cast<ProtobufFormat>(name);
     }
 
+    std::size_t ProtobufUtils::getHash(const Message& msg)
+    {
+        // TODO: better algorithm
+        return std::hash<std::string>{}(msg.SerializeAsString());
+    }
+
     const bgfx::Memory* ProtobufUtils::copyMem(const std::string& data)
     {
         return bgfx::copy(data.data(), data.size());

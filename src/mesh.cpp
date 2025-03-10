@@ -33,12 +33,17 @@ namespace darmok
 		return getMeshIndexSize(index32);
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(const MeshDefinition& def)
+	std::unique_ptr<IMesh> IMesh::create(const Definition& def)
 	{
-		return create(def.type, def.layout, def.vertices, def.indices, def.config);
+		Config config;
+		config.index32 = def.index32();
+		auto layout = VaryingUtils::getBgfx(def.layout());
+		DataView vertices{ def.vertices() };
+		DataView indices{ def.indices() };
+		return create(def.type(), layout, vertices, indices, config);
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
+	std::unique_ptr<IMesh> IMesh::create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
 	{
 		switch (type)
 		{
@@ -51,7 +56,7 @@ namespace darmok
 		}
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(MeshType type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
+	std::unique_ptr<IMesh> IMesh::create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
 	{
 		switch (type)
 		{
@@ -406,16 +411,16 @@ namespace darmok
 	}
 
 	MeshLoader::MeshLoader(IMeshDefinitionLoader& defLoader) noexcept
-		: BasicFromDefinitionLoader(defLoader)
+		: FromDefinitionLoader(defLoader)
 	{
 	}
 
-	std::shared_ptr<IMesh> MeshLoader::create(const std::shared_ptr<Definition>& def)
+	MeshLoader::Result MeshLoader::create(const std::shared_ptr<Definition>& def)
 	{
 		return IMesh::create(*def);
 	}
 
-	MeshData::MeshData(MeshType type) noexcept
+	MeshData::MeshData(MeshType::Enum type) noexcept
 		: type(type)
 	{
 	}
@@ -469,15 +474,17 @@ namespace darmok
 		indexData = DataView(indices);
 	}
 
-	MeshDefinition MeshData::createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
+	Mesh::Definition MeshData::createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
-		MeshDefinition def
-		{
-			.type = type,
-			.config = meshConfig,
-			.layout = vertexLayout,
-		};
-		exportData(vertexLayout, def.vertices, def.indices);
+		Mesh::Definition def;
+		def.set_type(type);
+		def.set_index32(meshConfig.index32);
+
+		VaryingUtils::read(*def.mutable_layout(), vertexLayout);
+
+		Data vertices;
+		Data indices;
+		exportData(vertexLayout, vertices, indices);
 		return def;
 	}
 
@@ -497,7 +504,7 @@ namespace darmok
 		20, 21, 22, 22, 23, 20,
 	};
 
-	MeshData::MeshData(const Cube& cube, RectangleMeshType type) noexcept
+	MeshData::MeshData(const Cube& cube, RectangleMeshType::Enum type) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
 			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
@@ -561,7 +568,7 @@ namespace darmok
 		indices = basicIndices;
 	}
 
-	MeshData::MeshData(const Rectangle& rect, RectangleMeshType type) noexcept
+	MeshData::MeshData(const Rectangle& rect, RectangleMeshType::Enum type) noexcept
 	{
 		setupBasicRectangle();
 
@@ -584,7 +591,7 @@ namespace darmok
 		*this *= trans;
 	}
 
-	MeshData::MeshData(const Plane& plane, RectangleMeshType type, float scale) noexcept
+	MeshData::MeshData(const Plane& plane, RectangleMeshType::Enum type, float scale) noexcept
 	{
 		setupBasicRectangle();
 
@@ -598,7 +605,7 @@ namespace darmok
 		*this *= plane.getTransform();
 	}
 
-	MeshData::MeshData(const Frustum& frust, RectangleMeshType type) noexcept
+	MeshData::MeshData(const Frustum& frust, RectangleMeshType::Enum type) noexcept
 	{
 		vertices = {
 			{ frust.getCorner(Frustum::CornerType::FarTopRight),		{ 0, 0 } },
@@ -870,7 +877,7 @@ namespace darmok
 	 {
 	 }
 
-	MeshData::MeshData(const Line& line, LineMeshType type) noexcept
+	MeshData::MeshData(const Line& line, LineMeshType::Enum type) noexcept
 	{
 		if (type == LineMeshType::Line)
 		{

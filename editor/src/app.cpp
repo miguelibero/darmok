@@ -4,7 +4,6 @@
 
 #include <darmok/window.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/mesh_source.hpp>
 
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
