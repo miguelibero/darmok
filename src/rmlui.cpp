@@ -145,7 +145,7 @@ namespace darmok
         auto atlasElm = TextureAtlasElement::create(TextureAtlasBounds{ rect.size, rect.origin });
 
         TextureAtlasMeshConfig config;
-        config.type = MeshType::Transient;
+        config.type = MeshData::MeshType::Transient;
         auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture->getSize(), config);
 
         auto& encoder = _encoder.value();

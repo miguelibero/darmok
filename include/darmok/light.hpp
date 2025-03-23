@@ -9,8 +9,6 @@
 
 #include <unordered_map>
 
-#include <cereal/cereal.hpp>
-
 namespace darmok
 {
     class Material;
@@ -30,18 +28,6 @@ namespace darmok
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] ShadowType getShadowType() const noexcept;
 
-        static void bindMeta() noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("intensity", _intensity),
-                CEREAL_NVP_("range", _range),
-                CEREAL_NVP_("color", _color),
-                CEREAL_NVP_("shadow", _shadow)
-            );
-        }
     private:
         float _intensity;
         float _range;
@@ -62,17 +48,6 @@ namespace darmok
         [[nodiscard]] float getIntensity() const noexcept;
         [[nodiscard]] ShadowType getShadowType() const noexcept;
 
-        static void bindMeta() noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("intensity", _intensity),
-                CEREAL_NVP_("color", _color),
-                CEREAL_NVP_("shadow", _shadow)
-            );
-        }
     private:
         float _intensity;
         Color3 _color;
@@ -98,21 +73,6 @@ namespace darmok
         [[nodiscard]] float getInnerConeAngle() const noexcept;
         [[nodiscard]] ShadowType getShadowType() const noexcept;
 
-        static void bindMeta() noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("intensity", _intensity),
-                CEREAL_NVP_("range", _range),
-                CEREAL_NVP_("color", _color),
-                CEREAL_NVP_("coneAngle", _coneAngle),
-                CEREAL_NVP_("innerConeAngle", _innerConeAngle),
-                CEREAL_NVP_("shadow", _shadow)
-            );
-        }
-
     private:
         float _intensity;
         float _range;
@@ -133,17 +93,6 @@ namespace darmok
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
 
-        static void bindMeta() noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("intensity", _intensity),
-                CEREAL_NVP_("color", _color)
-            );
-        }
-
     private:
         float _intensity;
         Color3 _color;
@@ -158,13 +107,6 @@ namespace darmok
         void shutdown() noexcept override;
         void update(float deltaTime)  noexcept override;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
-
-        static void bindMeta() noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-        }
 
     private:
         OptionalRef<Scene> _scene;

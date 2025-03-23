@@ -45,7 +45,7 @@ namespace darmok
         template<class T>
         expected<void, std::string> readStaticMem(Message& msg, const T& mem)
         {
-            if (!mem.ParseFromArray(mem, sizeof(mem)))
+            if (!mem.ParseFromArray(mem, sizeof(T)))
             {
                 return unexpected<std::string>{ "failed to parse from array" };
             }
@@ -63,20 +63,21 @@ namespace darmok
     }
 
     template<typename Interface>
-    class DARMOK_EXPORT ProtobufLoader final : public Interface
+    class DARMOK_EXPORT DataProtobufLoader final : public Interface
     {
     public:
         using Resource = Interface::Resource;
+        using Result = Interface::Result;
 
-        ProtobufLoader(IDataLoader& dataLoader) noexcept
+        DataProtobufLoader(IDataLoader& dataLoader) noexcept
             : _dataLoader(dataLoader)
         {
         }
 
-        ProtobufLoader(const ProtobufLoader& other) = delete;
-        ProtobufLoader(ProtobufLoader&& other) = delete;
+        DataProtobufLoader(const DataProtobufLoader& other) = delete;
+        DataProtobufLoader(DataProtobufLoader&& other) = delete;
 
-        std::shared_ptr<Resource> operator()(std::filesystem::path path) override
+        Result operator()(std::filesystem::path path) override
         {
             auto data = _dataLoader(path);
             auto format = ProtobufUtils::getFormat(path);

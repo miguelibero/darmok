@@ -1,23 +1,25 @@
 #pragma once
 
+#include <darmok/material.hpp>
+#include <darmok/vertex_fwd.hpp>
+#include <darmok/optional_ref.hpp>
+#include <darmok/program.hpp>
+#include <darmok/model_assimp.hpp>
+#include <darmok/glm.hpp>
+#include <darmok/protobuf/scene.pb.h>
+
 #include <string_view>
 #include <memory>
 #include <vector>
 #include <unordered_map>
 #include <optional>
 #include <filesystem>
+
 #include <bgfx/bgfx.h>
 #include <assimp/material.h>
-#include <darmok/material_fwd.hpp>
-#include <darmok/vertex_fwd.hpp>
-#include <darmok/optional_ref.hpp>
-#include <darmok/program.hpp>
-#include <darmok/model_assimp.hpp>
-#include <darmok/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <bx/allocator.h>
 #include <bx/file.h>
-
 
 struct aiNode;
 struct aiMaterial;
@@ -34,12 +36,6 @@ namespace Assimp
 
 namespace darmok
 {
-    struct Model;
-    struct ModelNode;
-    struct MaterialDefinition;
-    struct ModelMesh;
-    struct TextureDefinition;
-    struct ModelImage;
     class IImageLoader;
     class IDataLoader;
     class IProgramLoader;
@@ -47,33 +43,40 @@ namespace darmok
     class Data;
     class VertexDataWriter;
 
-    struct AssimpSceneLoadConfig final
-    {
-        bool leftHanded = true;
-        bool populateArmature = false;
-        std::string basePath; 
-        std::string format;
-
-        void setPath(const std::filesystem::path& path) noexcept;
-    };
-
     class AssimpSceneLoader
     {
     public:
-        using Config = AssimpSceneLoadConfig;
-        using result_type = std::shared_ptr<aiScene>;
+        struct Config final
+        {
+            bool leftHanded = true;
+            bool populateArmature = false;
+            std::string basePath;
+            std::string format;
+
+            void setPath(const std::filesystem::path& path) noexcept;
+        };
+
+        using Result = expected<std::shared_ptr<aiScene>, std::string>;
         bool supports(const std::filesystem::path& path) const noexcept;
-        result_type loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
-        result_type loadFromMemory(const DataView& data, const Config& config = {}) const;
+        Result loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
+        Result loadFromMemory(const DataView& data, const Config& config = {}) const;
     private:
         static unsigned int getImporterFlags(const Config& config = {}) noexcept;
-        static result_type fixScene(Assimp::Importer& importer) noexcept;
+        static std::shared_ptr<aiScene> fixScene(Assimp::Importer& importer) noexcept;
     };
 
     class AssimpModelConverter final
     {
     public:
-        using Config = AssimpModelImportConfig;
+        using Config = protobuf::AssimpModelImportConfig;
+        using Model = protobuf::Scene;
+        using ModelMesh = protobuf::Mesh;
+        using ModelTransform = protobuf::Transform;
+        using ModelCamera = protobuf::Camera;
+        using ModelMaterial = protobuf::Material;
+        using ModelTexture = protobuf::Texture;
+        using ModelTextureType = protobuf::MaterialTextureType;
+
         AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
@@ -93,28 +96,28 @@ namespace darmok
         {
             aiTextureType assimpType;
             unsigned int assimpIndex;
-            MaterialTextureType darmokType;
+            ModelTextureType::Enum darmokType;
         };
 
         static const std::vector<AssimpMaterialTexture> _materialTextures;
 
         std::unordered_map<const aiMesh*, std::shared_ptr<ModelMesh>> _meshes;
-        std::unordered_map<const aiMaterial*, std::shared_ptr<MaterialDefinition>> _materials;
-        std::unordered_map<std::string, std::shared_ptr<TextureDefinition>> _textures;
+        std::unordered_map<const aiMaterial*, std::shared_ptr<ModelMaterial>> _materials;
+        std::unordered_map<std::string, std::shared_ptr<ModelTexture>> _textures;
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
         std::shared_ptr<ModelMesh> getMesh(const aiMesh* assimpMesh) noexcept;
-        std::shared_ptr<MaterialDefinition> getMaterial(const aiMaterial* assimpMaterial) noexcept;
-        std::shared_ptr<TextureDefinition> getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
-        std::shared_ptr<TextureDefinition> getTexture(const std::string& path) noexcept;
+        std::shared_ptr<ModelMaterial> getMaterial(const aiMaterial* assimpMaterial) noexcept;
+        std::shared_ptr<ModelTexture> getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
+        std::shared_ptr<ModelTexture> getTexture(const std::string& path) noexcept;
 
-        bool update(ModelNode& modelNode, const aiNode& assimpNode) noexcept;
-        void update(MaterialDefinition& modelMat, const aiMaterial& assimpMat) noexcept;
+        bool update(uint32_t modelNodeId, const aiNode& assimpNode) noexcept;
+        void update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept;
         void update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept;
-        void update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept;
-        void update(ModelNode& modelNode, const aiLight& assimpLight) noexcept;
-        bool updateMeshes(ModelNode& modelNode, const std::regex& regex) noexcept;
+        void update(ModelCamera modelCam, const aiCamera& assimpCam) noexcept;
+        void update(uint32_t modelNodeId, const aiLight& assimpLight) noexcept;
+        bool updateMeshes(uint32_t modelNodeId, const std::regex& regex) noexcept;
 
         Data createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
         std::vector<VertexIndex> createIndexData(const aiMesh& assimpMesh) const noexcept;
@@ -124,11 +127,13 @@ namespace darmok
     class AssimpModelLoaderImpl final
     {
     public:
-        using Config = AssimpModelImportConfig;
+        using Config = protobuf::AssimpModelImportConfig;
+        using Model = protobuf::Scene;
+        using Result = expected<std::shared_ptr<Model>, std::string>;
         AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
-        std::shared_ptr<Model> operator()(const std::filesystem::path& path);
+        Result operator()(const std::filesystem::path& path);
 
     private:
         Config _config;
@@ -142,8 +147,8 @@ namespace darmok
     {
     public:
         using Input = FileTypeImporterInput;
-        using Config = AssimpModelImportConfig;
-        using OutputFormat = CerealFormat;
+        using Config = protobuf::AssimpModelImportConfig;
+        using OutputFormat = ProtobufFormat;
         using Dependencies = FileTypeImportDependencies;
 
         AssimpModelFileImporterImpl(bx::AllocatorI& alloc);
@@ -161,7 +166,7 @@ namespace darmok
         DataLoader _dataLoader;
         ImageLoader _imgLoader;
         ImageTextureDefinitionLoader _texLoader;
-        CerealProgramDefinitionLoader _progLoader;
+        DataProgramDefinitionLoader _progLoader;
         AssimpSceneLoader _assimpLoader;
         std::optional<Config> _currentConfig;
         OutputFormat _outputFormat = OutputFormat::Binary;

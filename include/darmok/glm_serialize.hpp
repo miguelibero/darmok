@@ -11,7 +11,7 @@
 
 namespace darmok
 {
-	namespace GlmSerializationUtils
+	namespace GlmProtobufUtils
 	{
 		protobuf::Uvec2 convert(const glm::uvec2& v);
 		protobuf::Vec2 convert(const glm::vec2& v);

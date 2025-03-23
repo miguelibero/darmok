@@ -5,7 +5,6 @@
 #include <darmok/camera.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/reflect_serialize.hpp>
 
 using namespace entt::literals;
 
@@ -91,15 +90,5 @@ namespace darmok
 			return false;
 		}
 		return _mesh->render(encoder);
-	}
-
-	void Renderable::bindMeta()
-	{
-		SceneReflectionUtils::metaEntityComponent<Renderable>("Renderable")
-			.ctor()
-			.data<&Renderable::_enabled, entt::as_ref_t>("enabled"_hs)
-			.data<&Renderable::_mesh, entt::as_ref_t>("mesh"_hs)
-			.data<&Renderable::_material, entt::as_ref_t>("material"_hs)
-			;
 	}
 }

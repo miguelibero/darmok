@@ -2,22 +2,23 @@
 #include <darmok/shape.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {
-	TextureConfig FrameBuffer::createColorConfig(const glm::uvec2& size) noexcept
+	Texture::Config FrameBuffer::createColorConfig(const glm::uvec2& size) noexcept
 	{
-		TextureConfig config;
-		config.size = size;
-		config.format = bgfx::TextureFormat::RGBA16F;
+		Texture::Config config;
+		*config.mutable_size() = GlmProtobufUtils::convert(size);
+		config.set_format(Texture::Format::RGBA16F);
 		return config;
 	}
 
-	TextureConfig FrameBuffer::createDepthConfig(const glm::uvec2& size) noexcept
+	Texture::Config FrameBuffer::createDepthConfig(const glm::uvec2& size) noexcept
 	{
-		TextureConfig config;
-		config.size = size;
-		config.format = bgfx::TextureFormat::D16F;
+		Texture::Config config;
+		*config.mutable_size() = GlmProtobufUtils::convert(size);
+		config.set_format(Texture::Format::D16F);
 		return config;
 	}
 

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+
+message PointLight {
+    float intensity = 1;
+    Color3 color = 2;
+    float range = 3;
+}
+
+message SpotLight {
+    float intensity = 1;
+    Color3 color = 2;
+    float range = 3;
+    float inner_cone_angle = 4;
+    float cone_angle = 5;
+}
+
+message DirectionalLight {
+    float intensity = 1;
+    Color3 color = 2;
+    Vec3 direction = 3;
+}
+
+message AmbientLight {
+    float intensity = 1;
+    Color3 color = 2;
+}

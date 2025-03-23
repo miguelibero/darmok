@@ -16,11 +16,7 @@
 
 #include <bx/bx.h>
 #include <nlohmann/json.hpp>
-#include <cereal/cereal.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/utility.hpp>
+
 
 #ifndef DARMOK_SKELETON_MAX_BONES
 #define DARMOK_SKELETON_MAX_BONES 64
@@ -74,16 +70,6 @@ namespace darmok
         bool loop = true;
 
         void readJson(const nlohmann::json& json);
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(animation),
-                CEREAL_NVP(blendPosition),
-                CEREAL_NVP(speed)
-            );
-        }
     };
 
     enum class SkeletalAnimatorBlendType
@@ -99,15 +85,6 @@ namespace darmok
 
         float operator()(float position) const noexcept;
         void readJson(const nlohmann::json& json);
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(easing),
-                CEREAL_NVP(duration)
-            );
-        }
     };
 
     struct DARMOK_EXPORT SkeletalAnimatorStateDefinition final
@@ -126,18 +103,6 @@ namespace darmok
 
         void readJson(const nlohmann::json& json);
         static SkeletalAnimatorBlendType getBlendType(const std::string_view name) noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(name),
-                CEREAL_NVP(animations),
-                CEREAL_NVP(blendType),
-                CEREAL_NVP(threshold),
-                CEREAL_NVP(tween)
-            );
-        }
     };
 
     struct DARMOK_EXPORT SkeletalAnimatorTransitionDefinition final
@@ -147,12 +112,6 @@ namespace darmok
 
         static std::pair<std::string, std::string> readJsonKey(std::string_view key);
         void readJson(const nlohmann::json& json);
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(tween), CEREAL_NVP(offset));
-        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorState
@@ -208,16 +167,6 @@ namespace darmok
         std::optional<const StateDefinition> getState(std::string_view name) const noexcept;
         std::optional<const TransitionDefinition> getTransition(std::string_view src, std::string_view dst) const noexcept;
 
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("states", _states),
-                CEREAL_NVP_("transitions", _transitions),
-                CEREAL_NVP_("animationPattern", _animationPattern)
-            );
-        }
-
     private:
         std::string _animationPattern;
         std::unordered_map<std::string, StateDefinition> _states;
@@ -236,7 +185,7 @@ namespace darmok
     {
     public:
         SkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<SkeletalAnimatorDefinition> operator()(std::filesystem::path path) override;
+        Result operator()(std::filesystem::path path) override;
     private:
         IDataLoader& _dataLoader;
     };

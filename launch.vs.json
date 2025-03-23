@@ -6,31 +6,31 @@
       "type": "default",
       "project": "CMakeLists.txt",
       "projectTarget": "darmok-coreassetc.exe",
-        "name": "darmok-coreassetc.exe",
-        "args": [
-            "--import-input",
-            "${workspaceRoot}/assets/core",
-            "--import-output",
-            "include/private/generated",
-            "--bgfx-shaderc",
-            "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
-            "--bgfx-shader-include",
-            "vcpkg_installed/x64-windows/include/bgfx"
-        ]
+      "name": "darmok-coreassetc.exe",
+      "args": [
+        "--import-input",
+        "${workspaceRoot}/assets/shaders/core",
+        "--import-output",
+        "include/private/generated",
+        "--bgfx-shaderc",
+        "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
+        "--bgfx-shader-include",
+        "vcpkg_installed/x64-windows/include/bgfx"
+      ]
     },
     {
       "type": "default",
       "project": "CMakeLists.txt",
       "projectTarget": "darmok-assetc.exe",
-        "name": "darmok-assetc.exe",
-        "args": [
-            "--import-input",
-            "${workspaceRoot}/samples/ozz/assets",
-            "--bgfx-shaderc",
-            "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
-            "--bgfx-shader-include",
-            "vcpkg_installed/x64-windows/include/bgfx"
-        ]
+      "name": "darmok-assetc.exe",
+      "args": [
+        "--import-input",
+        "${workspaceRoot}/samples/ozz/assets",
+        "--bgfx-shaderc",
+        "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
+        "--bgfx-shader-include",
+        "vcpkg_installed/x64-windows/include/bgfx"
+      ]
     }
   ]
 }

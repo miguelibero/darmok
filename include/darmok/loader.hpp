@@ -3,7 +3,6 @@
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
 #include <darmok/string.hpp>
-#include <darmok/serialize.hpp>
 #include <darmok/data.hpp>
 #include <darmok/expected.hpp>
 
@@ -37,7 +36,9 @@ namespace darmok
     class DARMOK_EXPORT ContainerLoader final : public Interface
     {
     public:
-        using Resource = typename Interface::Resource;
+        using Resource = Interface::Resource;
+        using Result = Interface::Result;
+        using Error = Interface::Error;
 
         struct Element final
         {
@@ -75,7 +76,7 @@ namespace darmok
             _loaders.emplace_back(loader, StringUtils::split(exts, ";"));
         }
 
-        std::shared_ptr<Resource> operator()(std::filesystem::path path) override
+        Result operator()(std::filesystem::path path) override
         {
             auto ext = path.extension();
             for (auto& [loader, exts] : _loaders)
@@ -93,7 +94,7 @@ namespace darmok
                     return res;
                 }
             }
-            return nullptr;
+            return unexpected<Error>{ "all loaders failed" };
         }
 
     private:
@@ -190,7 +191,6 @@ namespace darmok
         using DefinitionResult = expected<std::shared_ptr<Definition>, std::string>;
 
         virtual std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) = 0;
-        virtual std::shared_ptr<Resource> getResource(std::size_t hash) = 0;
         virtual std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) = 0;
         virtual Result loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
         virtual DefinitionResult loadDefinition(Arg arg, bool force = false) = 0;

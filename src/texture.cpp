@@ -1,7 +1,7 @@
 #include <darmok/texture.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include <glm/gtx/string_cast.hpp>
-#include <darmok/glm_serialize.hpp>
 #include <magic_enum/magic_enum.hpp>
 
 namespace darmok
@@ -491,7 +491,7 @@ namespace darmok
 
 	glm::uvec2 Texture::getSize() const noexcept
 	{
-		return GlmSerializationUtils::convert(_config.size());
+		return GlmProtobufUtils::convert(_config.size());
 	}
 
 	Texture::TextureType::Enum Texture::getType() const noexcept

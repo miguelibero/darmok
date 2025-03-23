@@ -300,16 +300,12 @@ namespace darmok
     {
         auto& profiles = *def.mutable_profiles();
         auto itr = profiles.find(op.profile);
-        protobuf::ProgramProfile* profile;
-        if (itr != profiles.end())
+        if (itr == profiles.end())
         {
-            profile = &itr->second;
+            itr = profiles.emplace(op.profile, protobuf::ProgramProfile{}).first;
         }
-        else
-        {
-            profile = &profiles.at(op.profile);
-        }
-        auto& variants = *profile->mutable_variants();
+        auto& profile = itr->second;
+        auto& variants = *profile.mutable_variants();
         auto itr2 = std::find_if(variants.begin(), variants.end(), [&op](protobuf::ProgramVariant& variant)
         {
             return variant.defines() == op.defines;
@@ -318,7 +314,7 @@ namespace darmok
         {
             return *itr2;
         }
-        auto& variant = *profile->add_variants();
+        auto& variant = *profile.add_variants();
         for (auto& define : op.defines)
         {
             *variant.add_defines() = define;
@@ -569,7 +565,7 @@ namespace darmok
     protobuf::Program ProgramCompiler::operator()(const protobuf::ProgramSource& src)
     {
         protobuf::Program def;
-        *def.mutable_vertex_layout() = src.varying().vertex();
+        *def.mutable_varying() = src.varying();
         auto varyingDefPath = getTempPath("darmok.varyingdef.");
         VaryingUtils::writeBgfx(src.varying(), varyingDefPath);
 

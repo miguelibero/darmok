@@ -4,12 +4,11 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/protobuf.hpp>
+
 #include <sstream>
 #include <fstream>
 #include <map>
-#include <cereal/types/vector.hpp>
-#include <cereal/archives/xml.hpp>
-#include <cereal/archives/portable_binary.hpp>
+
 
 namespace darmok
 {

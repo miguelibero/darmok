@@ -11,9 +11,6 @@
 #include <optional>
 
 #include <bgfx/bgfx.h>
-#include <cereal/cereal.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/memory.hpp>
 
 namespace darmok
 {
@@ -39,8 +36,8 @@ namespace darmok
         std::shared_ptr<Texture> _depthTex;
         bgfx::FrameBufferHandle _handle;
 
-        static TextureConfig createColorConfig(const glm::uvec2& size) noexcept;
-        static TextureConfig createDepthConfig(const glm::uvec2& size) noexcept;
+        static Texture::Config createColorConfig(const glm::uvec2& size) noexcept;
+        static Texture::Config createDepthConfig(const glm::uvec2& size) noexcept;
     };
 
     class RenderChain;
@@ -55,11 +52,6 @@ namespace darmok
         virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; };
         virtual void render(bgfx::Encoder& encoder) noexcept = 0;
         virtual void shutdown() = 0;
-
-        template <class Archive>
-        void serialize(Archive& ar)
-        {
-        }
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderChainDelegate
@@ -106,12 +98,6 @@ namespace darmok
 
         bool removeStep(const IRenderChainStep& step) noexcept;
         bool empty() const noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(_steps);
-        }
 
     private:
         IRenderChainDelegate& _delegate;

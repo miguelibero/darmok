@@ -7,7 +7,6 @@
 #include <darmok/app.hpp>
 #include <darmok/uniform.hpp>
 #include <darmok/texture.hpp>
-#include <darmok/serialize.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/material.pb.h>
@@ -65,7 +64,6 @@ namespace darmok
 
 
         bool valid() const noexcept;
-        static void bindMeta();
 
         Material() = default;
         Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept;
@@ -102,7 +100,7 @@ namespace darmok
     {
     };
 
-    using MaterialDefinitionLoader = ProtobufLoader<IMaterialDefinitionLoader>;
+    using DataMaterialDefinitionLoader = DataProtobufLoader<IMaterialDefinitionLoader>;
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public IFromDefinitionLoader<Material, Material::Definition>
     {

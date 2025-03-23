@@ -15,10 +15,9 @@ message StandardProgramType {
 }
 
 message ProgramSource {
-    string name = 1;
-    bytes vertex_shader = 2;
-    bytes fragment_shader = 3;
-	Varying varying = 4;
+    string vertex_shader = 1;
+    string fragment_shader = 2;
+	Varying varying = 3;
 }
 
 message ProgramVariant {
@@ -34,5 +33,5 @@ message ProgramProfile {
 message Program {
     string name = 1;
     map<string, ProgramProfile> profiles = 2;
-    VertexLayout vertex_layout = 3;
+    Varying varying = 3;
 }

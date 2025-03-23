@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+
+message ArmatureJoint {
+    string name = 1;
+    Mat4 inverse_bind_pose = 2;
+}
+
+message Armature {
+    repeated ArmatureJoint joints = 1;
+}

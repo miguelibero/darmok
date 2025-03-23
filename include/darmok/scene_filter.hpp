@@ -9,10 +9,6 @@
 #include <variant>
 #include <optional>
 
-#include <cereal/cereal.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/variant.hpp>
-
 namespace darmok
 {
     enum class EntityFilterOperation
@@ -53,13 +49,6 @@ namespace darmok
 
         Container elements;
         Operation op;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            CEREAL_NVP(elements);
-            CEREAL_NVP(op);
-        }
     };
 
     class EntityViewFilter final

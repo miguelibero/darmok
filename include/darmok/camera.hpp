@@ -178,14 +178,7 @@ namespace darmok
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
-        static void bindMeta() noexcept;
-
-        template<class Archive>
-        void serialize(Archive& archive);
-
     private:
         std::unique_ptr<CameraImpl> _impl;
-
-        void afterLoad();
     };
 }

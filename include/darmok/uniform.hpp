@@ -9,8 +9,6 @@
 #include <unordered_map>
 
 #include <bgfx/bgfx.h>
-#include <cereal/cereal.hpp>
-#include <cereal/types/string.hpp>
 
 namespace darmok
 {
@@ -57,23 +55,6 @@ namespace darmok
         bool operator!=(const TextureUniformKey& other) const noexcept;
 
         size_t hash() const noexcept;
-
-        struct Hash final
-        {
-            size_t operator()(const TextureUniformKey& key) const noexcept
-            {
-                return key.hash();
-            }
-        };
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(name),
-                CEREAL_NVP(stage)
-            );
-        }
     };
 
     class BasicUniforms final
@@ -99,7 +80,7 @@ namespace darmok
 
     class Texture;
 
-    using UniformTextureMap = std::unordered_map<TextureUniformKey, std::shared_ptr<Texture>, TextureUniformKey::Hash>;
+    using UniformTextureMap = std::unordered_map<TextureUniformKey, std::shared_ptr<Texture>>;
 
     class UniformHandleContainer final
     {
@@ -134,5 +115,17 @@ namespace darmok
         bgfx::UniformHandle getHandle(const Key& key) const noexcept;
 
         mutable std::unordered_map<Key, bgfx::UniformHandle, Key::Hash> _handles;
+    };
+}
+
+namespace std
+{
+    template<>
+    struct hash<darmok::TextureUniformKey>
+    {
+        size_t operator()(const darmok::TextureUniformKey& key) const noexcept
+        {
+            return key.hash();
+        }
     };
 }

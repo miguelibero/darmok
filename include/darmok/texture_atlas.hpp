@@ -7,7 +7,9 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/data.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/image.hpp>
 #include <darmok/expected.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/mesh.pb.h>
 #include <darmok/protobuf/texture_atlas.pb.h>
@@ -70,8 +72,8 @@ namespace darmok
 
 		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "");
 		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "");
-		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, bx::AllocatorI& alloc, const std::filesystem::path& imagePath) noexcept;
-		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, bx::AllocatorI& alloc, const std::filesystem::path& imagePath) noexcept;
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, bx::AllocatorI& alloc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "") noexcept;
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, bx::AllocatorI& alloc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "") noexcept;
 		expected<void, std::string> writeRmlui(const Atlas& atlas, std::ostream& out, const RmluiConfig& config) noexcept;
 	}
 
@@ -101,7 +103,7 @@ namespace darmok
 	{
 	};
 
-	using TextureAtlasDefinitionLoader = ProtobufLoader<ITextureAtlasDefinitionLoader>;
+	using DataTextureAtlasDefinitionLoader = DataProtobufLoader<ITextureAtlasDefinitionLoader>;
 
 	class ITextureLoader;
 	class ITextureDefinitionLoader;
@@ -110,13 +112,11 @@ namespace darmok
 	{
 	public:
 		using Definition = protobuf::TextureAtlas;
-		TexturePackerDefinitionLoader(IDataLoader& dataLoader, IImageLoader& imgLoader, ITextureDefinitionLoader& texDefLoader) noexcept;
+		TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texLoader) noexcept;
 		Result operator()(std::filesystem::path path) override;
 	private:
 		IDataLoader& _dataLoader;
-		IImageLoader& _imgLoader;
-		ITextureDefinitionLoader& _texDefLoader;
-
+		ITextureDefinitionLoader& _texLoader;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<TextureAtlas, TextureAtlas::Definition>
@@ -128,7 +128,7 @@ namespace darmok
 	public:
 		TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept;
 	protected:
-		std::shared_ptr<TextureAtlas> create(const std::shared_ptr<TextureAtlas::Definition>& def) override;
+		Result create(const std::shared_ptr<TextureAtlas::Definition>& def) override;
 	private:
 		ITextureLoader& _texLoader;
 	};
@@ -162,6 +162,10 @@ namespace darmok
 		Data _textureData;
 		Data _sheetData;
 		OptionalRef<std::ostream> _log;
+		bx::DefaultAllocator _alloc;
+		DataLoader _dataLoader;
+		ImageLoader _imgLoader;
+		ImageTextureDefinitionLoader _texLoader;
 
 		static std::string getTextureFormatExt(const std::string& format) noexcept;
 		static std::string getSheetFormatExt(const std::string& format) noexcept;

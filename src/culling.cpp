@@ -7,8 +7,6 @@
 #include <darmok/mesh.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/reflect_serialize.hpp>
-#include <darmok/camera_reflect.hpp>
 
 #ifdef DARMOK_JOLT
 #include <darmok/physics3d.hpp>
@@ -60,7 +58,7 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _prog = StandardProgramLoader::load(StandardProgramType::Unlit);
+        _prog = StandardProgramLoader::load(StandardProgramLoader::Type::Unlit);
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
     }
 
@@ -147,7 +145,7 @@ namespace darmok
             {
                 _cam->setEntityTransform(entity, encoder);
                 MeshData meshData(bounds.value());
-                meshData.type = MeshType::Transient;
+                meshData.type = MeshData::MeshType::Transient;
                 auto mesh = meshData.createMesh(layout);
                 mesh->render(encoder);
                 auto occlusion = getQuery(entity);
@@ -241,13 +239,6 @@ namespace darmok
     bool FrustumCuller::shouldEntityBeCulled(Entity entity) noexcept
     {
         return _culled.contains(entity);
-    }
-
-    void FrustumCuller::bindMeta() noexcept
-    {
-        ReflectionSerializeUtils::metaSerialize<FrustumCuller>();
-        CameraReflectionUtils::metaCameraComponent<FrustumCuller>("FrustumCuller")
-            .ctor();
     }
 
     CullingDebugRenderer::CullingDebugRenderer(const OptionalRef<const Camera>& mainCam) noexcept

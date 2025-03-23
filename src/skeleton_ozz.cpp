@@ -190,12 +190,12 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<Skeleton> OzzSkeletonLoader::operator()(std::filesystem::path path)
+    OzzSkeletonLoader::Result OzzSkeletonLoader::operator()(std::filesystem::path path)
     {
         auto skel = OzzUtils::loadFromData<ozz::animation::Skeleton>(_dataLoader, path);
         if (!skel)
         {
-            throw std::runtime_error("archive doesn't contain a skeleton");
+            return unexpected<std::string>{"archive doesn't contain a skeleton"};
         }
         return std::make_shared<Skeleton>(
             std::make_unique<SkeletonImpl>(std::move(skel.value())));
@@ -206,12 +206,12 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<SkeletalAnimation> OzzSkeletalAnimationLoader::operator()(std::filesystem::path path)
+    OzzSkeletalAnimationLoader::Result OzzSkeletalAnimationLoader::operator()(std::filesystem::path path)
     {
         auto anim = OzzUtils::loadFromData<ozz::animation::Animation>(_dataLoader, path);
         if (!anim)
         {
-            throw std::runtime_error("archive doesn't contain an animation");
+            return unexpected<std::string>{"archive doesn't contain an animation"};
         }
         return std::make_shared<SkeletalAnimation>(
             std::make_unique<SkeletalAnimationImpl>(std::move(anim.value())));

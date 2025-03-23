@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "math.proto";
+
+message FreetypeFont {
+    bytes data = 1;
+    Uvec2 font_size = 2;
+}

@@ -44,52 +44,17 @@ message UniformTextureKey {
     uint32 stage = 2;
 }
 
-message MaterialSourceTexture {
-    oneof key {
-        MaterialTextureType.Enum type = 1;
-        UniformTextureKey uniform = 2;
-    }
-    string texture = 3;
-}
-
-message MaterialSource {
-    oneof program {
-        string custom_program = 1;
-        StandardProgramType.Enum standard_program = 2;
-    }
-    repeated string program_defines = 3;
-    
-    repeated MaterialSourceTexture textures = 4;
-    map<string, UniformValue> uniform_values = 5;
-    
-    MaterialOpacityType.Enum opacity_type = 7;
-    MaterialPrimitiveType.Enum primitive_type = 8;
-    bool twoSided = 9;
-
-    Color base_color = 10;
-    Color3 emissive_color = 11;
-    float metallic_factor = 12;
-    float roughness_factor = 13;
-    float normal_scale = 14;
-    float occlusion_strength = 15;
-    bool multiple_scattering = 16;
-    float white_furnance_factor = 17;
-
-    Color3 specular_color = 18;
-    uint32 shininess = 19;
-}
-
 message MaterialTexture {
     oneof key {
         MaterialTextureType.Enum type = 1;
         UniformTextureKey uniform = 2;
     }
-    string texture = 3;
+    string texture_path = 3;
 }
 
 message Material {
     oneof program {
-        string custom_program = 1;
+        string program_path = 1;
         StandardProgramType.Enum standard_program = 2;
     }
     repeated string program_defines = 3;

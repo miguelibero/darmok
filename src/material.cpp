@@ -7,7 +7,6 @@
 #include <darmok/app.hpp>
 #include <darmok/string.hpp>
 #include <darmok/glm_serialize.hpp>
-#include <darmok/reflect_serialize.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
 #include "render_samplers.hpp"
@@ -17,10 +16,6 @@ namespace darmok
 	bool Material::valid() const noexcept
 	{
 		return program && isValid(program->getHandle(programDefines));
-	}
-
-	void Material::bindMeta()
-	{
 	}
 
 	Material::Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept

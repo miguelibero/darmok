@@ -2,18 +2,9 @@
 #include <darmok/render_chain.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/viewport.hpp>
-#include <darmok/material_fwd.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_filter.hpp>
-#include <darmok/glm_serialize.hpp>
-#include <darmok/reflect_serialize.hpp>
 
-#include <cereal/cereal.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/optional.hpp>
-#include <cereal/types/variant.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/memory.hpp>
 
 namespace darmok
 {
@@ -26,19 +17,6 @@ namespace darmok
 
     using ConstCameraComponentRefs = std::vector<std::reference_wrapper<const ICameraComponent>>;
     using CameraComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
-
-    class CameraComponentCerealListDelegate final : public ICerealReflectSaveListDelegate<ICameraComponent>, public ICerealReflectLoadListDelegate<ICameraComponent>
-    {
-    public:
-        CameraComponentCerealListDelegate(Camera& cam) noexcept;
-        entt::meta_any create(const entt::meta_type& type) override;
-        std::optional<entt::type_info> getTypeInfo(const ICameraComponent& comp) const noexcept override;
-        ConstCameraComponentRefs getList() const noexcept override;
-        void afterLoad() noexcept override;
-    private:
-        Camera& _cam;
-    };
-
 
     class CameraImpl final : IRenderChainDelegate
     {
@@ -120,21 +98,6 @@ namespace darmok
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
-        void afterLoad();
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("enabled", _enabled),
-                CEREAL_NVP_("proj", _projData),
-                CEREAL_NVP_("viewport", _viewport),
-                CEREAL_NVP_("cullingFilter", _cullingFilter),
-                CEREAL_NVP_("renderChain", _renderChain),
-                CEREAL_NVP_("components", CameraComponentCerealListDelegate(_cam))
-            );
-        }
-
     private:
         Camera& _cam;
         bool _enabled;
@@ -172,19 +135,4 @@ namespace darmok
         void onTransformChanged();
     };
 
-    template<typename Archive>
-    void serialize(Archive& archive, CameraPerspectiveData& data)
-    {
-        CEREAL_NVP(data.fovy);
-        CEREAL_NVP(data.near);
-        CEREAL_NVP(data.far);
-    }
-
-    template<typename Archive>
-    void serialize(Archive& archive, CameraOrthoData& data)
-    {
-        CEREAL_NVP(data.center);
-        CEREAL_NVP(data.near);
-        CEREAL_NVP(data.far);
-    }
 }

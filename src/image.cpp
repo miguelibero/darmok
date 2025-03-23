@@ -6,6 +6,7 @@
 #include <darmok/stream.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/string.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include <stdexcept>
 #include <bx/readerwriter.h>
@@ -470,7 +471,7 @@ namespace darmok
 	Image::TextureConfig Image::getTextureConfig() const noexcept
 	{
 		TextureConfig config;
-		*config.mutable_size() = GlmSerializationUtils::convert(getSize());
+		*config.mutable_size() = GlmProtobufUtils::convert(getSize());
 		config.set_format(protobuf::TextureFormat::Enum(getFormat()));
 		config.set_type(protobuf::TextureType::Enum(getTextureType()));
 		config.set_depth(getDepth());

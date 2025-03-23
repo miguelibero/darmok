@@ -4,12 +4,9 @@
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/scene_serialize.hpp>
-#include <darmok/glm_serialize.hpp>
+
 #include <unordered_set>
 #include <glm/detail/type_quat.hpp>
-#include <cereal/cereal.hpp>
-#include <cereal/types/unordered_set.hpp>
 
 namespace darmok
 {
@@ -67,22 +64,6 @@ namespace darmok
         Transform& lookDir(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& setForward(const glm::vec3& v) noexcept;
-
-        static void bindMeta() noexcept;
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP_("name", _name),
-                CEREAL_NVP_("position", _position),
-                CEREAL_NVP_("rotation", _rotation),
-                CEREAL_NVP_("scale", _scale),
-                CEREAL_NVP_("parent", _parent),
-                // using reflection because std::reference_wrapper does not have default constructor
-                CEREAL_NVP_("children", entt::forward_as_meta(_children))
-            );
-        }
 
     private:
         // should not use PIMPL here since we want consecutive memory

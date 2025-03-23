@@ -1,7 +1,6 @@
 #pragma once
 
 #include <darmok/asset.hpp>
-#include <darmok/model.hpp>
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
@@ -44,7 +43,6 @@ namespace darmok
 		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		IMaterialLoader& getMaterialLoader() noexcept;
 		IMeshLoader& getMeshLoader() noexcept;
-		IModelLoader& getModelLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
 
 		bx::AllocatorI& getAllocator() noexcept;
@@ -53,10 +51,6 @@ namespace darmok
 		ISkeletonLoader& getSkeletonLoader() noexcept;
 		ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept;
-#endif
-
-#ifdef DARMOK_ASSIMP
-		AssimpModelLoader& getAssimpModelLoader() noexcept;
 #endif
 
 #ifdef DARMOK_MINIAUDIO
@@ -73,22 +67,20 @@ namespace darmok
 		bx::DefaultAllocator _allocator;
 		DataLoader _dataLoader;
 		ImageLoader _imageLoader;
-		ProgramDefinitionLoader _cerealProgDefLoader;
+		DataProgramDefinitionLoader _dataProgDefLoader;
 		ProgramLoader _progLoader;
-		CerealTextureDefinitionLoader _cerealTexDefLoader;
+		DataTextureDefinitionLoader _dataTexDefLoader;
 		ImageTextureDefinitionLoader _imgTexDefLoader;
 		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
 		TextureLoader _texLoader;
-		CerealMaterialDefinitionLoader _cerealMatDefLoader;
+		DataMaterialDefinitionLoader _dataMatDefLoader;
 		MaterialLoader _materialLoader;
-		CerealMeshDefinitionLoader _cerealMeshDefLoader;
+		DataMeshDefinitionLoader _dataMeshDefLoader;
 		MeshLoader _meshLoader;
-		CerealTextureAtlasDefinitionLoader _cerealTexAtlasDefLoader;
+		DataTextureAtlasDefinitionLoader _dataTexAtlasDefLoader;
 		TexturePackerDefinitionLoader _texPackerDefLoader;
 		ContainerLoader<ITextureAtlasDefinitionLoader> _texAtlasDefLoader;
 		TextureAtlasLoader _texAtlasLoader;
-		ContainerLoader<IModelLoader> _modelLoader;
-		CerealModelLoader _cerealModelLoader;
 		TextureAtlasFontLoader _texAtlasFontLoader;
 		ContainerLoader<IFontLoader> _fontLoader;
 
@@ -101,13 +93,9 @@ namespace darmok
 		OzzSkeletalAnimationLoader _ozzSkeletalAnimationLoader;
 #endif
 
-#ifdef DARMOK_ASSIMP
-		AssimpModelLoader _assimpModelLoader;
-#endif
-
 #ifdef DARMOK_FREETYPE
-		DataFreetypeFontDefinitionLoader _dataFreetypeFontDefLoader;
-		CerealFreetypeFontDefinitionLoader _cerealFreetypeFontDefLoader;
+		FreetypeFontDefinitionLoader _freetypeFontDefLoader;
+		DataFontDefinitionLoader _dataFontDefLoader;
 		ContainerLoader<IFreetypeFontDefinitionLoader> _freetypeFontDefLoader;
 		FreetypeFontLoader _freetypeFontLoader;
 #endif

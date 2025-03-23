@@ -48,7 +48,7 @@ namespace darmok
 	{
 	}
 
-	Expected<GLFWmonitor*, std::string> ChangeWindowVideoModeCmd::getMonitor() noexcept
+	expected<GLFWmonitor*, std::string> ChangeWindowVideoModeCmd::getMonitor() noexcept
 	{
 		if (_mode.monitor <= 0)
 		{
@@ -58,7 +58,7 @@ namespace darmok
 		auto monitors = glfwGetMonitors(&monCount);
 		if (_mode.monitor >= monCount)
 		{
-			return Unexpected<std::string>("invalid monitor");
+			return unexpected<std::string>("invalid monitor");
 		}
 		return monitors[_mode.monitor];
 	}

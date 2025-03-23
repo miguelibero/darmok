@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "google/protobuf/any.proto";
+import "registry.proto";
+import "math.proto";
+
+message Renderable {
+    string mesh_path = 1;
+    string material_path = 2;
+}
+
+message Transform {
+    Mat4 matrix = 1;
+    optional uint32 parent = 2;
+    string name = 3;
+}
+
+message Camera {
+    Mat4 projection = 1;
+}
+
+message SceneAssets {
+    map<string, google.protobuf.Any> assets = 1;
+}
+
+message Scene {
+    map<uint32, google.protobuf.Any> components = 2;
+    map<uint32, SceneAssets> assets = 3;
+    Registry registry = 4;
+}

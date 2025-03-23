@@ -8,7 +8,6 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
-#include <darmok/serialize.hpp>
 #include <memory>
 #include <vector>
 #include <optional>
@@ -71,8 +70,6 @@ namespace darmok
 
         bool valid() const noexcept;
         bool render(bgfx::Encoder& encoder) const;
-
-        static void bindMeta();
 
     private:
         bool _enabled;

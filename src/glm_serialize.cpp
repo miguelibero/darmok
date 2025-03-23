@@ -2,7 +2,7 @@
 
 namespace darmok
 {
-	protobuf::Uvec2 GlmSerializationUtils::convert(const glm::uvec2& v)
+	protobuf::Uvec2 GlmProtobufUtils::convert(const glm::uvec2& v)
 	{
 		protobuf::Uvec2 vec;
 		vec.set_x(v.x);
@@ -10,7 +10,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Vec2 GlmSerializationUtils::convert(const glm::vec2& v)
+	protobuf::Vec2 GlmProtobufUtils::convert(const glm::vec2& v)
 	{
 		protobuf::Vec2 vec;
 		vec.set_x(v.x);
@@ -18,7 +18,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Vec3 GlmSerializationUtils::convert(const glm::vec3& v)
+	protobuf::Vec3 GlmProtobufUtils::convert(const glm::vec3& v)
 	{
 		protobuf::Vec3 vec;
 		vec.set_x(v.x);
@@ -27,7 +27,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Vec4 GlmSerializationUtils::convert(const glm::vec4& v)
+	protobuf::Vec4 GlmProtobufUtils::convert(const glm::vec4& v)
 	{
 		protobuf::Vec4 vec;
 		vec.set_x(v.x);
@@ -37,7 +37,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Mat3 GlmSerializationUtils::convert(const glm::mat3& v)
+	protobuf::Mat3 GlmProtobufUtils::convert(const glm::mat3& v)
 	{
 		protobuf::Mat3 mat;
 		*mat.mutable_col1() = convert(v[0]);
@@ -46,7 +46,7 @@ namespace darmok
 		return mat;
 	}
 
-	protobuf::Mat4 GlmSerializationUtils::convert(const glm::mat4& v)
+	protobuf::Mat4 GlmProtobufUtils::convert(const glm::mat4& v)
 	{
 		protobuf::Mat4 mat;
 		*mat.mutable_col1() = convert(v[0]);
@@ -56,7 +56,7 @@ namespace darmok
 		return mat;
 	}
 
-	protobuf::Color3 GlmSerializationUtils::convert(const Color3& v)
+	protobuf::Color3 GlmProtobufUtils::convert(const Color3& v)
 	{
 		protobuf::Color3 color;
 		color.set_r(v.r);
@@ -65,7 +65,7 @@ namespace darmok
 		return color;
 	}
 
-	protobuf::Color GlmSerializationUtils::convert(const Color& v)
+	protobuf::Color GlmProtobufUtils::convert(const Color& v)
 	{
 		protobuf::Color color;
 		color.set_r(v.r);
@@ -75,27 +75,27 @@ namespace darmok
 		return color;
 	}
 
-	glm::uvec2 GlmSerializationUtils::convert(const protobuf::Uvec2& v)
+	glm::uvec2 GlmProtobufUtils::convert(const protobuf::Uvec2& v)
 	{
 		return { v.x(), v.y() };
 	}
 
-	glm::vec2 GlmSerializationUtils::convert(const protobuf::Vec2& v)
+	glm::vec2 GlmProtobufUtils::convert(const protobuf::Vec2& v)
 	{
 		return { v.x(), v.y() };
 	}
 
-	glm::vec3 GlmSerializationUtils::convert(const protobuf::Vec3& v)
+	glm::vec3 GlmProtobufUtils::convert(const protobuf::Vec3& v)
 	{
 		return { v.x(), v.y(), v.z() };
 	}
 
-	glm::vec4 GlmSerializationUtils::convert(const protobuf::Vec4& v)
+	glm::vec4 GlmProtobufUtils::convert(const protobuf::Vec4& v)
 	{
 		return { v.x(), v.y(), v.z(), v.w() };
 	}
 
-	glm::mat3 GlmSerializationUtils::convert(const protobuf::Mat3& v)
+	glm::mat3 GlmProtobufUtils::convert(const protobuf::Mat3& v)
 	{
 		return {
 			convert(v.col1()),
@@ -104,7 +104,7 @@ namespace darmok
 		};
 	}
 
-	glm::mat4 GlmSerializationUtils::convert(const protobuf::Mat4& v)
+	glm::mat4 GlmProtobufUtils::convert(const protobuf::Mat4& v)
 	{
 		return {
 			convert(v.col1()),
@@ -114,12 +114,12 @@ namespace darmok
 		};
 	}
 
-	Color GlmSerializationUtils::convert(const protobuf::Color& v)
+	Color GlmProtobufUtils::convert(const protobuf::Color& v)
 	{
 		return { v.r(), v.g(), v.b(), v.a() };
 	}
 
-	Color3 GlmSerializationUtils::convert(const protobuf::Color3& v)
+	Color3 GlmProtobufUtils::convert(const protobuf::Color3& v)
 	{
 		return { v.r(), v.g(), v.b() };
 	}

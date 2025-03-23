@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "google/protobuf/any.proto";
+
+message RegistryComponent {
+    uint32 entity = 1;
+    repeated google.protobuf.Any data = 2;
+}
+
+message RegistryComponents {
+    uint32 type = 1;
+    repeated RegistryComponent components = 2;
+}
+
+message Registry {
+    repeated uint32 entities = 1;
+    uint32 free_list = 2;
+    repeated RegistryComponents components = 3;
+}

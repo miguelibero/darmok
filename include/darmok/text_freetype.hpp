@@ -5,8 +5,7 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/data.hpp>
-
-#include <cereal/cereal.hpp>
+#include <darmok/protobuf/text.pb.h>
 
 namespace bx
 {
@@ -19,37 +18,19 @@ namespace darmok
     class FreetypeFontLoaderImpl;
     class App;
 
-    struct FreetypeFontDefinition final
-    {
-        Data data;
-        glm::uvec2 fontSize = glm::uvec2(48, 48);
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(data),
-                CEREAL_NVP(fontSize)
-            );
-        }
-    };
-
-    class DARMOK_EXPORT BX_NO_VTABLE IFreetypeFontDefinitionLoader : public ILoader<FreetypeFontDefinition>
+    class DARMOK_EXPORT BX_NO_VTABLE IFreetypeFontDefinitionLoader : public ILoader<protobuf::FreetypeFont>
     {
     };
 
-    class DARMOK_EXPORT DataFreetypeFontDefinitionLoader : public IFreetypeFontDefinitionLoader
+    class DARMOK_EXPORT FreetypeFontDefinitionLoader : public IFreetypeFontDefinitionLoader
     {
     public:
-        DataFreetypeFontDefinitionLoader(IDataLoader& dataLoader, bool skipInvalid = true) noexcept;
-        [[nodiscard]] std::shared_ptr<FreetypeFontDefinition> operator()(std::filesystem::path path) override;
+        FreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept;
+        [[nodiscard]] Result operator()(std::filesystem::path path) override;
         static std::string checkFontData(const DataView& data) noexcept;
     private:
         IDataLoader& _dataLoader;
-        bool _skipInvalid;
     };
-
-    using CerealFreetypeFontDefinitionLoader = CerealLoader<IFreetypeFontDefinitionLoader>;
 
     class DARMOK_EXPORT FreetypeFontLoader final : public FromDefinitionLoader<IFontLoader, IFreetypeFontDefinitionLoader>
     {
@@ -59,18 +40,18 @@ namespace darmok
         void init(App& app);
         void shutdown();
     protected:
-        std::shared_ptr<IFont> create(const std::shared_ptr<FreetypeFontDefinition>& def) override;
+        Result create(const std::shared_ptr<Definition>& def) override;
     private:
         std::unique_ptr<FreetypeFontLoaderImpl> _impl;
     };
 
-    class FreetypeFontAtlasFileImporterImpl;
+    class FreetypeFontFileImporterImpl;
 
-    class DARMOK_EXPORT FreetypeFontAtlasFileImporter final : public IFileTypeImporter
+    class DARMOK_EXPORT FreetypeFontFileImporter final : public IFileTypeImporter
     {
     public:
-        FreetypeFontAtlasFileImporter() noexcept;
-        ~FreetypeFontAtlasFileImporter() noexcept;
+        FreetypeFontFileImporter() noexcept;
+        ~FreetypeFontFileImporter() noexcept;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
         bool startImport(const Input& input, bool dry = false) override;
@@ -78,6 +59,6 @@ namespace darmok
         const std::string& getName() const noexcept override;
         void endImport(const Input& input) override;
     private:
-        std::unique_ptr<FreetypeFontAtlasFileImporterImpl> _impl;
+        std::unique_ptr<FreetypeFontFileImporterImpl> _impl;
     };
 }

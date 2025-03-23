@@ -2,7 +2,6 @@
 
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
-#include <darmok/serialize.hpp>
 #include <darmok/expected.hpp>
 #include <darmok/protobuf/varying.pb.h>
 
@@ -33,7 +32,6 @@ namespace darmok
 
     using AttribDefines = std::unordered_set<std::string>;
     using AttribGroups = std::unordered_set<AttribGroup>;
-    using VaryingDefinitionFormat = CerealFormat;
     using VertexAttribute = protobuf::VertexAttribute;
     using FragmentAttribute = protobuf::FragmentAttribute;
     using VertexLayout = protobuf::VertexLayout;

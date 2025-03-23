@@ -241,17 +241,20 @@ namespace darmok
 
 			config.fixEndOfLine(pos, lineSize);
 
-			MeshData glyphMesh(Rectangle(glyph->size, glm::vec2(glyph->size) * 0.5F));
-			
-			glyphMesh.scaleTexCoords(glyph->size);
-			glyphMesh.translateTexCoords(glyph->texturePosition);
+			auto glyphSize = GlmProtobufUtils::convert(glyph->size());
+			auto glyphTexPos = GlmProtobufUtils::convert(glyph->texture_position());
+			auto glyphOffset = GlmProtobufUtils::convert(glyph->offset());
+			auto glyphOriginalSize = GlmProtobufUtils::convert(glyph->original_size());
+			glyphOffset += pos;
 
-			auto offset = pos + glyph->offset;
-			glyphMesh.translatePositions(glm::vec3(offset, 0));
+			MeshData glyphMesh(Rectangle(glyphSize, glm::vec2(glyphSize) * 0.5F));
+
+			glyphMesh.scaleTexCoords(glyphSize);
+			glyphMesh.translateTexCoords(glyphTexPos);
+			glyphMesh.translatePositions(glm::vec3(glyphOffset, 0));
 
 			meshData += glyphMesh;
-
-			pos += glyphAdv * glm::vec2(glyph->originalSize);
+			pos += glyphAdv * glm::vec2(glyphOriginalSize);
 		}
 
 		// TODO: maybe add getter of the size to the font interface
@@ -276,7 +279,7 @@ namespace darmok
 	{
 		if (_prog == nullptr)
 		{
-			_prog = StandardProgramLoader::load(StandardProgramType::Gui);
+			_prog = StandardProgramLoader::load(StandardProgramLoader::Type::Gui);
 		}
 	}
 
@@ -379,19 +382,19 @@ namespace darmok
 		return _atlas->texture;
 	}
 
-	std::optional<Glyph> TextureAtlasFont::getGlyph(const UtfChar& chr) const noexcept
+	std::optional<TextureAtlasFont::Glyph> TextureAtlasFont::getGlyph(const UtfChar& chr) const noexcept
 	{
 		auto elm = _atlas->getElement(chr.toString());
 		if (!elm)
 		{
 			return std::nullopt;
 		}
-		return Glyph{
-			.size = elm->size,
-			.texturePosition = elm->texturePosition,
-			.offset = elm->offset,
-			.originalSize = elm->originalSize,
-		};
+		Glyph glyph;
+		*glyph.mutable_size() = elm->size();
+		*glyph.mutable_texture_position() = elm->texture_position();
+		*glyph.mutable_offset() = elm->offset();
+		*glyph.mutable_original_size() = elm->original_size();
+		return glyph;
 	}
 
 	float TextureAtlasFont::getLineSize() const noexcept
@@ -399,18 +402,20 @@ namespace darmok
 		auto elm = _atlas->getElement("line");
 		if (elm)
 		{
-			return std::max(elm->originalSize.x, elm->originalSize.y);
+			auto& size = elm->original_size();
+			return std::max(size.x(), size.y());
 		}
 		float size = 0;
 		for (auto& elm : _atlas->elements)
 		{
-			if (elm.originalSize.x > size)
+			auto& elmSize = elm.original_size();
+			if (elmSize.x() > size)
 			{
-				size = elm.originalSize.x;
+				size = elmSize.x();
 			}
-			if (elm.originalSize.y > size)
+			if (elmSize.y() > size)
 			{
-				size = elm.originalSize.y;
+				size = elmSize.y();
 			}
 		}
 		return size;
@@ -421,14 +426,14 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<IFont> TextureAtlasFontLoader::operator()(std::filesystem::path path)
+	TextureAtlasFontLoader::Result TextureAtlasFontLoader::operator()(std::filesystem::path path)
 	{
-		auto atlas = _atlasLoader(path);
-		if (!atlas)
+		auto atlasResult = _atlasLoader(path);
+		if (!atlasResult)
 		{
-			return nullptr;
+			return unexpected<std::string>{ atlasResult.error() };
 		}
-		return std::make_shared<TextureAtlasFont>(atlas);
+		return std::make_shared<TextureAtlasFont>(atlasResult.value());
 	}
 
 }

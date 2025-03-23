@@ -20,7 +20,7 @@ currently using:
     * [imGuizmo](https://github.com/CedricGuillemet/ImGuizmo) for editor controls
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
-* [cereal](https://uscilab.github.io/cereal/) for serialization
+* [protocol buffers](https://protobuf.dev/getting-started/cpptutorial/) for serialization
 * [Jolt](https://github.com/jrouwe/JoltPhysics) for 3D physics
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreading

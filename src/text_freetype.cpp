@@ -39,13 +39,12 @@ namespace darmok
 		}
 	};
 
-	DataFreetypeFontDefinitionLoader::DataFreetypeFontDefinitionLoader(IDataLoader& dataLoader, bool skipInvalid) noexcept
+	FreetypeFontDefinitionLoader::FreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept
 		: _dataLoader(dataLoader)
-		, _skipInvalid(skipInvalid)
 	{
 	}
 
-	std::string DataFreetypeFontDefinitionLoader::checkFontData(const DataView& data) noexcept
+	std::string FreetypeFontDefinitionLoader::checkFontData(const DataView& data) noexcept
 	{
 		FT_Library library;
 		auto err = FT_Init_FreeType(&library);
@@ -77,17 +76,23 @@ namespace darmok
 		{
 			return FreetypeUtils::getErrorMessage(err);
 		}
-		return "";
+		return {};
 	}
 
-	std::shared_ptr<FreetypeFontDefinition> DataFreetypeFontDefinitionLoader::operator()(std::filesystem::path path)
+	FreetypeFontDefinitionLoader::Result FreetypeFontDefinitionLoader::operator()(std::filesystem::path path)
 	{
-		auto data = _dataLoader(path);
-		if (_skipInvalid && !checkFontData(data).empty())
+		auto dataResult = _dataLoader(path);
+		if (!dataResult)
 		{
-			return nullptr;
+			return unexpected<std::string>{ dataResult.error() };
 		}
-		return std::make_shared<FreetypeFontDefinition>(std::move(data));
+		auto& data = dataResult.value();
+		auto error = checkFontData(data);
+		if (!error.empty())
+		{
+			return unexpected<std::string>{ error };
+		}
+		return std::make_shared<Resource>(std::move(data));
 	}
 
 	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(bx::AllocatorI& alloc)
@@ -118,21 +123,22 @@ namespace darmok
 		}
 	}
 
-	std::shared_ptr<IFont> FreetypeFontLoaderImpl::create(const std::shared_ptr<FreetypeFontDefinition>& def)
+	FreetypeFontLoaderImpl::Result FreetypeFontLoaderImpl::create(const std::shared_ptr<Definition>& def)
 	{
 		if (!def)
 		{
-			return nullptr;
+			return unexpected<std::string>{ "empty definition" };
 		}
 		if (!_library)
 		{
-			throw std::runtime_error("freetype library not initialized");
+			return unexpected<std::string>{ "freetype library not initialized" };
 		}
 		FT_Face face = nullptr;
-
-		auto err = FT_New_Memory_Face(_library, (const FT_Byte*)def->data.ptr(), def->data.size(), 0, &face);
+		auto& data = def->data();
+		auto err = FT_New_Memory_Face(_library, (const FT_Byte*)data.data(), data.size(), 0, &face);
 		FreetypeUtils::checkError(err);
-		err = FT_Set_Pixel_Sizes(face, def->fontSize.x, def->fontSize.y);
+		auto& fontSize = def->font_size();
+		err = FT_Set_Pixel_Sizes(face, fontSize.x(), fontSize.y());
 		FreetypeUtils::checkError(err);
 		err = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 		FreetypeUtils::checkError(err);
@@ -141,7 +147,7 @@ namespace darmok
 	}
 
 	FreetypeFontLoader::FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc)
-		: BasicFromDefinitionLoader(defLoader)
+		: FromDefinitionLoader(defLoader)
 		, _impl(std::make_unique<FreetypeFontLoaderImpl>(alloc))
 	{
 	}
@@ -161,7 +167,7 @@ namespace darmok
 		_impl->shutdown();
 	}
 
-	std::shared_ptr<IFont> FreetypeFontLoader::create(const std::shared_ptr<FreetypeFontDefinition>& def)
+	FreetypeFontLoader::Result FreetypeFontLoader::create(const std::shared_ptr<Definition>& def)
 	{
 		return _impl->create(def);
 	}
@@ -179,7 +185,7 @@ namespace darmok
 		FT_Done_Face(_face);
 	}
 
-	std::optional<Glyph> FreetypeFont::getGlyph(const UtfChar& chr) const noexcept
+	std::optional<IFont::Glyph> FreetypeFont::getGlyph(const UtfChar& chr) const noexcept
 	{
 		auto itr = _glyphs.find(chr);
 		if (itr == _glyphs.end())

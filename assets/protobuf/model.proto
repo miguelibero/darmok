@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "varying.proto";
+
+message AssimpModelImportConfig {
+    VertexLayout vertex_layout = 1;
+    bool embed_textures = 2;
+    string default_texture = 3;
+    string skip_meshes_regex = 4;
+    string skip_nodes_regex = 5;
+    string root_mesh_regex = 6;
+}
+
+message AssimpModelSource {
+
+}

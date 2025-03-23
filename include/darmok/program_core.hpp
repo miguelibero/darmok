@@ -79,5 +79,5 @@ namespace darmok
 	{
 	};
 
-	using ProgramDefinitionLoader = ProtobufLoader<IProgramDefinitionLoader>;
+	using DataProgramDefinitionLoader = DataProtobufLoader<IProgramDefinitionLoader>;
 }

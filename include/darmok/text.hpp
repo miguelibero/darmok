@@ -9,6 +9,8 @@
 #include <darmok/material.hpp>
 #include <darmok/text_fwd.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/protobuf/texture_atlas.pb.h>
 
 #include <memory>
 #include <string>
@@ -18,41 +20,14 @@
 
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
-#include <cereal/cereal.hpp>
-
-namespace bx
-{
-    struct AllocatorI;
-}
 
 namespace darmok
 {
-    struct DARMOK_EXPORT Glyph final
-    {
-        glm::uvec2 size = {};
-        glm::uvec2 texturePosition = {};
-        glm::vec2 offset = {};
-        glm::vec2 originalSize = {};
-
-        // TODO: support texture rotation
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(
-                CEREAL_NVP(size),
-                CEREAL_NVP(texturePosition),
-                CEREAL_NVP(offset),
-                CEREAL_NVP(originalSize)
-            );
-        }
-    };
-
-    class Text;
-
     class DARMOK_EXPORT BX_NO_VTABLE IFont
     {
     public:
+		using Glyph = protobuf::TextureAtlasElement;
+
         virtual ~IFont() = default;
 
         virtual std::optional<Glyph> getGlyph(const UtfChar& chr) const = 0;
@@ -159,7 +134,7 @@ namespace darmok
     {
     public:
         TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept;
-        std::shared_ptr<IFont> operator()(std::filesystem::path path) override;
+        Result operator()(std::filesystem::path path) override;
     private:
         ITextureAtlasLoader& _atlasLoader;
     };

@@ -12,41 +12,34 @@
 namespace darmok
 {
 	AssetContextImpl::AssetContextImpl()
-		: _dataLoader(_allocator)
-		, _imageLoader(_dataLoader, _allocator)
-		, _cerealProgDefLoader(_dataLoader)
-		, _cerealTexDefLoader(_dataLoader)
-		, _imgTexDefLoader(_imageLoader)
-		, _texDefLoader{ _imgTexDefLoader, _cerealTexDefLoader }
-		, _cerealMeshDefLoader(_dataLoader)
-		, _progLoader(_cerealProgDefLoader)
-		, _texLoader(_texDefLoader)
-		, _cerealMatDefLoader(_dataLoader)
-		, _materialLoader(_cerealMatDefLoader, _progLoader, _texLoader)
-		, _meshLoader(_cerealMeshDefLoader)
-		, _cerealTexAtlasDefLoader(_dataLoader)
-		, _texPackerDefLoader(_dataLoader, _texDefLoader)
-		, _texAtlasDefLoader{ _texPackerDefLoader, _cerealTexAtlasDefLoader }
-		, _texAtlasLoader({ _texPackerDefLoader }, _texLoader)
-		, _cerealModelLoader(_dataLoader)
-		, _texAtlasFontLoader(_texAtlasLoader)
+		: _dataLoader{ _allocator }
+		, _imageLoader{ _dataLoader, _allocator }
+		, _dataProgDefLoader{ _dataLoader }
+		, _dataTexDefLoader{ _dataLoader }
+		, _imgTexDefLoader{ _imageLoader }
+		, _texDefLoader{ _imgTexDefLoader, _dataTexDefLoader }
+		, _dataMeshDefLoader{ _dataLoader }
+		, _progLoader{ _dataProgDefLoader }
+		, _texLoader{ _texDefLoader }
+		, _dataMatDefLoader{ _dataLoader }
+		, _materialLoader{ _dataMatDefLoader, _progLoader, _texLoader }
+		, _meshLoader{ _dataMeshDefLoader }
+		, _dataTexAtlasDefLoader{ _dataLoader }
+		, _texPackerDefLoader{ _dataLoader }
+		, _texAtlasDefLoader{ _texPackerDefLoader, _dataTexAtlasDefLoader }
+		, _texAtlasLoader{ { _texPackerDefLoader }, _texLoader }
+		, _texAtlasFontLoader{ _texAtlasLoader }
 #ifdef DARMOK_OZZ
-		, _skelAnimDefLoader(_dataLoader)
-		, _ozzSkeletonLoader(_dataLoader)
-		, _ozzSkeletalAnimationLoader(_dataLoader)
-		, _skelLoader(_ozzSkeletonLoader)
-		, _skelAnimLoader(_ozzSkeletalAnimationLoader)
-#endif		
-#ifdef DARMOK_ASSIMP
-		, _assimpModelLoader(_dataLoader, _allocator, _texDefLoader)
-		, _modelLoader(_assimpModelLoader)
-#else
-		, _modelLoader(_cerealModelLoader)
+		, _skelAnimDefLoader{ _dataLoader }
+		, _ozzSkeletonLoader{ _dataLoader }
+		, _ozzSkeletalAnimationLoader{ _dataLoader }
+		, _skelLoader{ _ozzSkeletonLoader }
+		, _skelAnimLoader{ _ozzSkeletalAnimationLoader }
 #endif		
 #ifdef DARMOK_FREETYPE
-		, _dataFreetypeFontDefLoader(_dataLoader)
+		, _freetypeFontDefLoader(_dataLoader)
 		, _cerealFreetypeFontDefLoader(_dataLoader)
-		, _freetypeFontDefLoader({ _dataFreetypeFontDefLoader, _cerealFreetypeFontDefLoader })
+		, _freetypeFontDefLoader({ _dataFreetypeFontDefLoader, _freetypeFontDefLoader })
 		, _freetypeFontLoader(_freetypeFontDefLoader, _allocator)
 		, _fontLoader(_freetypeFontLoader)
 #else

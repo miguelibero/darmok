@@ -4,7 +4,6 @@
 #include <map>
 
 #include <darmok/model_assimp.hpp>
-#include <darmok/model.hpp>
 #include <darmok/image.hpp>
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
@@ -104,7 +103,7 @@ namespace darmok
         }
     };
 
-    void AssimpSceneLoadConfig::setPath(const std::filesystem::path& path) noexcept
+    void AssimpSceneLoader::Config::setPath(const std::filesystem::path& path) noexcept
     {
         basePath = path.parent_path().string();
         format = path.extension().string();
@@ -141,10 +140,9 @@ namespace darmok
         return flags;
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
+    AssimpSceneLoader::Result AssimpSceneLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
     {
         Assimp::Importer importer;
-
         const aiScene* ptr = nullptr;
         if (!config.format.empty())
         {
@@ -160,13 +158,12 @@ namespace darmok
         }
         if (ptr == nullptr)
         {
-            auto err = importer.GetErrorString();
-            throw std::runtime_error(err);
+            return unexpected<std::string>{ importer.GetErrorString() };
         }
         return fixScene(importer);
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::loadFromMemory(const DataView& data, const Config& config) const
+    AssimpSceneLoader::Result AssimpSceneLoader::loadFromMemory(const DataView& data, const Config& config) const
     {
         Assimp::Importer importer;
         if (!config.basePath.empty())
@@ -182,8 +179,7 @@ namespace darmok
         auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), config.format.c_str());
         if (ptr == nullptr)
         {
-            auto err = importer.GetErrorString();
-            throw std::runtime_error(err);
+            return unexpected<std::string>{ importer.GetErrorString() };
         }
         return fixScene(importer);
     }
@@ -235,12 +231,16 @@ namespace darmok
         return _sceneLoader.supports(path);
     }
 
-    std::shared_ptr<Model> AssimpModelLoaderImpl::operator()(const std::filesystem::path& path)
+    AssimpModelLoaderImpl::Result AssimpModelLoaderImpl::operator()(const std::filesystem::path& path)
     {
-        AssimpSceneLoadConfig config;
+        AssimpSceneLoader::Config config;
         config.setPath(path);
-        auto data = _dataLoader(path);
-        auto scene = _sceneLoader.loadFromMemory(data, config);
+        auto dataResult = _dataLoader(path);
+        if (!dataResult)
+        {
+            return unexpected<std::string>{ dataResult.error() };
+        }
+        auto scene = _sceneLoader.loadFromMemory(dataResult.value(), config);
         auto model = std::make_shared<Model>();
         auto basePath = path.parent_path().string();
 
@@ -317,7 +317,7 @@ namespace darmok
         return *this;
     }
 
-    bool AssimpModelConverter::updateMeshes(ModelNode& modelNode, const std::regex& regex) noexcept
+    bool AssimpModelConverter::updateMeshes(uint32_t modelNodeId, const std::regex& regex) noexcept
     {
         auto found = false;
         for (int i = 0; i < _scene.mNumMeshes; ++i)
@@ -328,7 +328,6 @@ namespace darmok
             {
                 continue;
             }
-            modelNode.name = name;
             auto& modelRenderable = modelNode.renderables.emplace_back();
             modelRenderable.mesh = getMesh(assimpMesh);
             auto assimpMaterial = _scene.mMaterials[assimpMesh->mMaterialIndex];
@@ -340,20 +339,21 @@ namespace darmok
 
     bool AssimpModelConverter::update(Model& model) noexcept
     {
-        model.name = AssimpUtils::getStringView(_scene.mName);
-        if (_config.rootMesh)
+        model.set_name(AssimpUtils::getStringView(_scene.mName));
+        if (!_config.root_mesh().empty())
         {
-            return updateMeshes(model.rootNode, _config.rootMesh.value());
+            return updateMeshes(model.rootNode, std::regex{ _config.root_mesh() });
         }
         return update(model.rootNode, *_scene.mRootNode);
     }
 
-    bool AssimpModelConverter::update(ModelNode& modelNode, const aiNode& assimpNode) noexcept
+    bool AssimpModelConverter::update(uint32_t modelNodeId, const aiNode& assimpNode) noexcept
     {
-        modelNode.name = AssimpUtils::getStringView(assimpNode.mName);
-        for (auto& regex : _config.skipNodes)
+        if(!_config.skip_meshes_regex().empty())
         {
-            if (std::regex_match(modelNode.name, regex))
+            auto name = AssimpUtils::getStringView(assimpNode.mName);
+            std::regex regex{ _config.skip_meshes_regex() };
+            if (std::regex_match(name, regex))
             {
                 return false;
             }
@@ -499,7 +499,7 @@ namespace darmok
         }
     }
 
-    std::shared_ptr<TextureDefinition> AssimpModelConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
+    std::shared_ptr<AssimpModelConverter::ModelTexture> AssimpModelConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
         aiString aiPath("");
         if (assimpMat.GetTexture(type, index, &aiPath) != AI_SUCCESS)
@@ -509,7 +509,7 @@ namespace darmok
         return getTexture(aiPath.C_Str());
     }
 
-    std::shared_ptr<TextureDefinition> AssimpModelConverter::getTexture(const std::string& path) noexcept
+    std::shared_ptr<AssimpModelConverter::ModelTexture> AssimpModelConverter::getTexture(const std::string& path) noexcept
     {
         auto itr = _textures.find(path);
         if (itr != _textures.end())
@@ -517,7 +517,7 @@ namespace darmok
             return itr->second;
         }
 
-        std::shared_ptr<TextureDefinition> tex;
+        std::shared_ptr<ModelTexture> tex;
         auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
@@ -534,9 +534,9 @@ namespace darmok
                 format = bimg::TextureFormat::RGBA8;
             }
             auto data = DataView(assimpTex->pcData, size);
-            tex = std::make_shared<TextureDefinition>(path);
+            tex = std::make_shared<ModelTexture>(path);
             // TODO: can we read the texture config?
-            tex->loadImage(Image(data, _allocator, format));
+            TextureUtils::loadImage(*tex, Image{ data, _allocator, format });
         }
         if (!tex && _texLoader)
         {
@@ -545,7 +545,11 @@ namespace darmok
             {
                 fsPath = _basePath / fsPath;
             }
-            tex = (*_texLoader)(fsPath.string());
+            auto result = (*_texLoader)(fsPath.string());
+            if (result)
+            {
+                tex = result.value();
+            }
         }
 
         return tex;
@@ -553,18 +557,18 @@ namespace darmok
 
     const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_materialTextures =
     {        
-        { AI_MATKEY_BASE_COLOR_TEXTURE, MaterialTextureType::BaseColor },
-        { aiTextureType_DIFFUSE, 0, MaterialTextureType::BaseColor },
-        { aiTextureType_SPECULAR, 0, MaterialTextureType::Specular },
-        { AI_MATKEY_METALLIC_TEXTURE, MaterialTextureType::MetallicRoughness },
-        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, MaterialTextureType::MetallicRoughness },
-        { aiTextureType_NORMALS, 0, MaterialTextureType::Normal },
-        { aiTextureType_AMBIENT_OCCLUSION, 0, MaterialTextureType::Occlusion },
-        { aiTextureType_LIGHTMAP, 0, MaterialTextureType::Occlusion },
-        { aiTextureType_EMISSIVE, 0, MaterialTextureType::Emissive },
+        { AI_MATKEY_BASE_COLOR_TEXTURE, ModelTextureType::BaseColor },
+        { aiTextureType_DIFFUSE, 0, ModelTextureType::BaseColor },
+        { aiTextureType_SPECULAR, 0, ModelTextureType::Specular },
+        { AI_MATKEY_METALLIC_TEXTURE, ModelTextureType::MetallicRoughness },
+        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, ModelTextureType::MetallicRoughness },
+        { aiTextureType_NORMALS, 0, ModelTextureType::Normal },
+        { aiTextureType_AMBIENT_OCCLUSION, 0, ModelTextureType::Occlusion },
+        { aiTextureType_LIGHTMAP, 0, ModelTextureType::Occlusion },
+        { aiTextureType_EMISSIVE, 0, ModelTextureType::Emissive },
     };
 
-    void AssimpModelConverter::update(MaterialDefinition& modelMat, const aiMaterial& assimpMat) noexcept
+    void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
     {
         modelMat.program = _config.program;
         modelMat.programDefines.insert(_config.programDefines.begin(), _config.programDefines.end());

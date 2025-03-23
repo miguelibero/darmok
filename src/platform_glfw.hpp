@@ -180,7 +180,7 @@ namespace darmok
 	private:
 		VideoMode _mode;
 
-		Expected<GLFWmonitor*, std::string> getMonitor() noexcept;
+		expected<GLFWmonitor*, std::string> getMonitor() noexcept;
 	};
 
 	class ChangeWindowCursorModeCmd final : public PlatformCmd

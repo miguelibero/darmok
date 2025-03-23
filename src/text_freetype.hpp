@@ -6,6 +6,7 @@
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/material.hpp>
+#include <darmok/protobuf/texture_atlas.pb.h>
 #include <map>
 #include <optional>
 #include <string_view>
@@ -25,11 +26,13 @@ namespace darmok
     class FreetypeFontLoaderImpl final
     {
     public:
+        using Definition = protobuf::FreetypeFont;
+		using Result = expected<std::shared_ptr<IFont>, std::string>;
         FreetypeFontLoaderImpl(bx::AllocatorI& alloc);
         ~FreetypeFontLoaderImpl();
         void init(App& app);
         void shutdown();
-        std::shared_ptr<IFont> create(const std::shared_ptr<FreetypeFontDefinition>& def);
+        Result create(const std::shared_ptr<Definition>& def);
     private:
         FT_Library _library;
         bx::AllocatorI& _alloc;
@@ -38,7 +41,9 @@ namespace darmok
     class FreetypeFont final : public IFont
     {
     public:
-        using Definition = FreetypeFontDefinition;
+        using Definition = protobuf::FreetypeFont;
+        using Glyph = protobuf::Glyph;
+
         FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
 
@@ -57,22 +62,16 @@ namespace darmok
         bx::AllocatorI& _alloc;
     };
 
-    struct FontAtlas
-    {
-        Image image;
-        std::map<UtfChar, Glyph> glyphs;
-    };
-
     class FreetypeFontAtlasGenerator final
-    {
     public:
+        using Atlas = protobuf::TextureAtlas;
         FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
         FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
         FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
         glm::uvec2 calcSpace(const UtfVector& chars) noexcept;
-        FontAtlas operator()(const UtfVector& chars);
-        FontAtlas operator()(std::string_view str);
+        Atlas operator()(const UtfVector& chars);
+        Atlas operator()(std::string_view str);
     private:
         FT_Face _face;
         FT_Library _library;
@@ -85,12 +84,13 @@ namespace darmok
         const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 
-    class FreetypeFontAtlasFileImporterImpl final
+    class FreetypeFontFileImporterImpl final
     {
     public:
         using Input = FileTypeImporterInput;
-        FreetypeFontAtlasFileImporterImpl();
-        ~FreetypeFontAtlasFileImporterImpl();
+        using FontAtlas = protbuf::FontAtlas;
+        FreetypeFontFileImporterImpl();
+        ~FreetypeFontFileImporterImpl();
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
@@ -101,7 +101,7 @@ namespace darmok
         FT_Face _face;
         FT_Library _library;
         bx::DefaultAllocator _alloc;
-        std::optional<FontAtlas> _atlas;
+        std::optional<FontAtlas> _font;
         std::filesystem::path _imagePath;
         std::filesystem::path _atlasPath;
     };

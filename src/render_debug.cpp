@@ -16,7 +16,7 @@ namespace darmok
 
     void DebugRenderer::init(App& app) noexcept
     {
-        _prog = StandardProgramLoader::load(StandardProgramType::Unlit);
+        _prog = StandardProgramLoader::load(StandardProgramLoader::Type::Unlit);
         _textureUniform = bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler);
         _hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
         _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);

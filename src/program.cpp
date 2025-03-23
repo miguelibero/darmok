@@ -55,7 +55,7 @@ namespace darmok
     }
 
 	Program::Program(const Definition& def)
-        : _vertexLayout(VaryingUtils::getBgfx(def.vertex_layout()))
+        : _vertexLayout(VaryingUtils::getBgfx(def.varying().vertex()))
 	{
         auto& profile = ProgramCoreUtils::getCurrentProfile(def);
         createShaders(profile, def.name());

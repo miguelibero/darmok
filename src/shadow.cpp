@@ -14,7 +14,7 @@
 #include <darmok/scene_filter.hpp>
 #include <darmok/string.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/camera_reflect.hpp>
+#include <darmok/glm_serialize.hpp>
 #include "generated/shaders/shadow.program.h"
 #include "render_samplers.hpp"
 
@@ -164,7 +164,7 @@ namespace darmok
             {
                 continue;
             }
-            if (renderable->getMaterial()->primitiveType == MaterialPrimitiveType::Line)
+            if (renderable->getMaterial()->primitiveType == Material::PrimitiveType::Line)
             {
                 continue;
             }
@@ -219,14 +219,14 @@ namespace darmok
             0.5f, 0.5f, tz,   1.0f,
         };
 
-        ProgramDefinition shadowProgDef;
-        shadowProgDef.loadStaticMem(shadow_program);
+        Program::Definition shadowProgDef;
+        ProtobufUtils::readStaticMem(shadowProgDef, shadow_program);
         _program = std::make_unique<Program>(shadowProgDef);
 
-        TextureConfig texConfig;
-        texConfig.size = glm::uvec2(_config.mapSize);
-        texConfig.layers = _config.maxPassAmount;
-        texConfig.format = bgfx::TextureFormat::D16;
+        Texture::Config texConfig;
+        *texConfig.mutable_size() = GlmProtobufUtils::convert(glm::uvec2(_config.mapSize));
+        texConfig.set_layers(_config.maxPassAmount);
+        texConfig.set_format(Texture::Format::D16);
 
         _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
@@ -653,13 +653,6 @@ namespace darmok
         encoder.setUniform(_shadowData2Uniform, glm::value_ptr(shadowData));
     }
 
-    void ShadowRenderer::bindMeta() noexcept
-    {
-        ReflectionSerializeUtils::metaSerialize<ShadowRenderer>();
-        CameraReflectionUtils::metaCameraComponent<ShadowRenderer>("ShadowRenderer")
-            .ctor();
-    }
-
     ShadowDebugRenderer::ShadowDebugRenderer(ShadowRenderer& renderer) noexcept
         : _renderer(renderer)
     {
@@ -689,7 +682,7 @@ namespace darmok
             return;
         }
         MeshData meshData;
-        meshData.type = MeshType::Transient;
+        meshData.type = Mesh::MeshType::Transient;
         uint8_t debugColor = 0;
 
         auto cascadeAmount = _renderer.getConfig().cascadeAmount;
@@ -697,7 +690,7 @@ namespace darmok
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
         {
             auto cascProjView = _renderer.getCameraProjMatrix(casc);
-            meshData += MeshData(Frustum(cascProjView), RectangleMeshType::Outline);
+            meshData += MeshData(Frustum(cascProjView), MeshData::RectangleMeshType::Outline);
         }
         _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
         ++debugColor;
@@ -710,7 +703,7 @@ namespace darmok
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
                 auto mtx = _renderer.getDirLightMatrix(lightTrans, casc);
-                meshData += MeshData(Frustum(mtx), RectangleMeshType::Outline);
+                meshData += MeshData(Frustum(mtx), MeshData::RectangleMeshType::Outline);
             }
 
             glm::vec3 lightPos;

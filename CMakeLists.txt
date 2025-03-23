@@ -137,7 +137,6 @@ set(CORE_SOURCES
   data.cpp
   data_stream.cpp
   utils.cpp
-  serialize.cpp
   uniform.cpp
   math.cpp
   color.cpp
@@ -151,7 +150,6 @@ set(CORE_SOURCES
   program_core.cpp
   asset_core.cpp
   easing.cpp
-  reflect.cpp
   protobuf.cpp
   glm_serialize.cpp
 )
@@ -160,8 +158,6 @@ set(CORE_HEADERS
   glm.hpp
   glm_serialize.hpp
   utils.hpp
-  serialize.hpp
-  reflect.hpp
   string.hpp
   utf.hpp
   stream.hpp
@@ -194,25 +190,20 @@ set(CORE_HEADERS
 set(SOURCES
   platform.cpp
   asset.cpp
-  asset_pack.cpp
 
   app.cpp
   window.cpp
   input.cpp
   scene.cpp
   scene_filter.cpp
-  scene_reflect.cpp
 
   texture_atlas.cpp
   material.cpp
-  model.cpp
   anim.cpp
   program.cpp
-  reflect_serialize.cpp
 
   transform.cpp
   camera.cpp
-  camera_reflect.cpp
   culling.cpp
   light.cpp
   render_scene.cpp
@@ -228,30 +219,22 @@ set(SOURCES
 
 set(HEADERS
   asset.hpp
-  asset_pack.hpp
   app_fwd.hpp
   app.hpp
   input_fwd.hpp
   input.hpp
   window.hpp
-  reflect_serialize.hpp
-  glm_serialize.hpp
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
-  scene_reflect.hpp
-  scene_serialize.hpp
 
   texture_atlas.hpp
   anim.hpp
   material.hpp
   program.hpp
-  model_fwd.hpp
-  model.hpp
 
   transform.hpp
   camera.hpp
-  camera_reflect.hpp
   culling.hpp
   light.hpp
   render_scene.hpp
@@ -631,6 +614,12 @@ set(PROTO_FILES
   texture_atlas.proto
   material.proto
   mesh.proto
+  registry.proto
+  scene.proto
+  light.proto
+  skeleton.proto
+  model.proto
+  text.proto
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/public/darmok/protobuf")
@@ -647,12 +636,6 @@ protobuf_generate(
 target_link_libraries(${CORE_LIB_NAME} PRIVATE ${PROTO_LIB_NAME})
 list(APPEND EXPORT_TARGETS ${PROTO_LIB_NAME})
 set_target_properties(${PROTO_LIB_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
-
-# cereal
-find_package(cereal CONFIG REQUIRED)
-target_link_libraries(${CORE_LIB_NAME} PUBLIC cereal::cereal)
-set(CEREAL_DEFINES CEREAL_FUTURE_EXPERIMENTAL)
-target_compile_definitions(cereal::cereal INTERFACE ${CEREAL_DEFINES})
 
 # glm
 find_package(glm CONFIG REQUIRED)

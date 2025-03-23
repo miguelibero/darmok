@@ -5,10 +5,8 @@
 #include <darmok/color.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/data.hpp>
-#include <darmok/serialize.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/asset_core.hpp>
-#include <darmok/glm_serialize.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/expected.hpp>
 #include <darmok/protobuf.hpp>
@@ -37,7 +35,7 @@ namespace darmok
 	{
 	};
 
-	using TextureDefinitionLoader = ProtobufLoader<ITextureDefinitionLoader>;
+	using DataTextureDefinitionLoader = DataProtobufLoader<ITextureDefinitionLoader>;
 
 	class DARMOK_EXPORT ImageTextureDefinitionLoader final : public ITextureDefinitionLoader
 	{
@@ -57,6 +55,7 @@ namespace darmok
 		using Config = protobuf::TextureConfig;
 		using Definition = protobuf::Texture;
 		using TextureType = protobuf::TextureType;
+		using Format = protobuf::TextureFormat;
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
 		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
