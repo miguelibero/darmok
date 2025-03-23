@@ -457,11 +457,11 @@ namespace darmok
         , _normalizedTweenTime(0.F)
         , _duration(0)
         , _looped(false)
-        , _speed(_def.speed)
+        , _speed(_def.speed())
     {
         _locals.resize(skel.num_soa_joints());
-        _animations.reserve(_def.animations.size());
-        for (auto& animConfig : _def.animations)
+        _animations.reserve(_def.animations_size());
+        for (auto& animConfig : _def.animations())
         {
             _animations.emplace_back(skel, animConfig, animations);
 
@@ -512,7 +512,7 @@ namespace darmok
 
     void OzzSkeletalAnimatorState::afterFinished() noexcept
     {
-        _speed = _def.speed;
+        _speed = _def.speed();
     }
 
     void OzzSkeletalAnimatorState::update(float deltaTime, const glm::vec2& blendPosition)
@@ -535,25 +535,25 @@ namespace darmok
         ozz::animation::BlendingJob blending;
         blending.layers = ozz::make_span(_layers);
         blending.output = ozz::make_span(_locals);
-        blending.threshold = _def.threshold;
+        blending.threshold = _def.threshold();
 
         if (_blendPos != blendPosition)
         {
-            auto blendFactor = _def.tween(_normalizedTweenTime);
+            auto blendFactor = SkeletalAnimatorUtils::calcTween(_def.tween(), _normalizedTweenTime);
             _oldBlendPos = getBlendedPosition(blendFactor);
             _normalizedTweenTime = 0.F;
             _blendPos = blendPosition;
         }
-        _normalizedTweenTime += deltaTime / _def.tween.duration;
+        _normalizedTweenTime += deltaTime / _def.tween().duration();
         if (_normalizedTweenTime >= 1.F)
         {
             _normalizedTweenTime = 1.F;
         }
-        auto blendFactor = _def.tween(_normalizedTweenTime);
+        auto blendFactor = SkeletalAnimatorUtils::calcTween(_def.tween(), _normalizedTweenTime);
         auto pos = getBlendedPosition(blendFactor);
 
         size_t i = 0;
-        auto weights = _def.calcBlendWeights(pos);
+        auto weights = SkeletalAnimatorUtils::calcBlendWeights(_def, pos);
         for (auto& anim : _animations)
         {
             if (anim.getBlendPosition() == glm::vec2(0))
@@ -587,7 +587,7 @@ namespace darmok
 
     std::string_view OzzSkeletalAnimatorState::getName() const noexcept
     {
-        return _def.name;
+        return _def.name();
     }
 
     const ozz::vector<ozz::math::SoaTransform>& OzzSkeletalAnimatorState::getLocals() const
@@ -628,7 +628,7 @@ namespace darmok
 
     const std::string& OzzSkeletalAnimatorState::getNextState() const noexcept
     {
-        return _def.nextState;
+        return _def.next_state();
     }
 
     OzzSkeletalAnimatorTransition::OzzSkeletalAnimatorTransition(const Definition& def, State&& currentState, State&& previousState) noexcept
@@ -642,7 +642,7 @@ namespace darmok
 
     float OzzSkeletalAnimatorTransition::getDuration() const noexcept
     {
-        return _def.tween.duration;
+        return _def.tween().duration();
     }
 
     float OzzSkeletalAnimatorTransition::getNormalizedTime() const noexcept
@@ -667,11 +667,11 @@ namespace darmok
         auto currentStateDeltaTime = deltaTime;
         if (_normalizedTime == 0.F)
         {
-            currentStateDeltaTime += _def.offset;
+            currentStateDeltaTime += _def.offset();
         }
         _currentState.update(currentStateDeltaTime, blendPosition);
         _normalizedTime += deltaTime / getDuration();
-        auto v = _def.tween(_normalizedTime);
+        auto v = SkeletalAnimatorUtils::calcTween(_def.tween(), _normalizedTime);
 
         std::array<ozz::animation::BlendingJob::Layer, 2> layers;
         layers[0].weight = 1.F - v;

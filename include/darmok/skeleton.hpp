@@ -6,8 +6,8 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/glm_serialize.hpp>
 #include <darmok/easing.hpp>
+#include <darmok/protobuf/skeleton.pb.h>
 
 #include <memory>
 #include <string>
@@ -62,62 +62,10 @@ namespace darmok
     {
     };
 
-    struct DARMOK_EXPORT SkeletalAnimatorAnimationDefinition final
-    {
-        std::string animation;
-        glm::vec2 blendPosition = {};
-        float speed = 1.F;
-        bool loop = true;
-
-        void readJson(const nlohmann::json& json);
-    };
-
-    enum class SkeletalAnimatorBlendType
-    {
-        Cartesian,
-        Directional
-    };
-
-    struct DARMOK_EXPORT SkeletalAnimatorTweenConfig final
-    {
-        EasingType easing = EasingType::Linear;
-        float duration = 0.F;
-
-        float operator()(float position) const noexcept;
-        void readJson(const nlohmann::json& json);
-    };
-
-    struct DARMOK_EXPORT SkeletalAnimatorStateDefinition final
-    {
-        using AnimationDefinition = SkeletalAnimatorAnimationDefinition;
-        std::string name;
-        std::vector<AnimationDefinition> animations;
-        SkeletalAnimatorBlendType blendType = SkeletalAnimatorBlendType::Directional;
-        float threshold = bx::kFloatSmallest;
-        SkeletalAnimatorTweenConfig tween;
-        std::string nextState;
-        float speed = 1.F;
-
-        float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos);
-        std::vector<float> calcBlendWeights(const glm::vec2& pos);
-
-        void readJson(const nlohmann::json& json);
-        static SkeletalAnimatorBlendType getBlendType(const std::string_view name) noexcept;
-    };
-
-    struct DARMOK_EXPORT SkeletalAnimatorTransitionDefinition final
-    {
-        SkeletalAnimatorTweenConfig tween;
-        float offset = 0.F;
-
-        static std::pair<std::string, std::string> readJsonKey(std::string_view key);
-        void readJson(const nlohmann::json& json);
-    };
-
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorState
     {
     public:
-        using Definition = SkeletalAnimatorStateDefinition;
+        using Definition = protobuf::SkeletalAnimatorState;
         virtual ~ISkeletalAnimatorState() = default;
         virtual float getNormalizedTime() const = 0;
         virtual float getDuration() const = 0;
@@ -127,7 +75,7 @@ namespace darmok
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorTransition
     {
     public:
-        using Definition = SkeletalAnimatorTransitionDefinition;
+        using Definition = protobuf::SkeletalAnimatorTransition;
         virtual ~ISkeletalAnimatorTransition() = default;
         virtual float getNormalizedTime() const = 0;
         virtual float getDuration() const = 0;
@@ -137,58 +85,13 @@ namespace darmok
 
     using SkeletalAnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
-    struct DARMOK_EXPORT SkeletalAnimatorDefinition final
-    {
-        using StateDefinition = SkeletalAnimatorStateDefinition;
-
-        using TransitionKey = std::pair<std::string, std::string>;
-
-        struct TransitionKeyHash
-        {
-            std::size_t operator()(const TransitionKey& key) const noexcept
-            {
-                auto h1 = std::hash<std::string>{}(key.first);
-                auto h2 = std::hash<std::string>{}(key.second);
-                return h1 ^ (h2 << 1);
-            }
-        };
-
-        using TransitionDefinition = SkeletalAnimatorTransitionDefinition;
-
-        void read(const nlohmann::json& json);
-
-        using AnimationMap = SkeletalAnimationMap;
-        AnimationMap loadAnimations(ISkeletalAnimationLoader& loader) const;
-
-        SkeletalAnimatorDefinition& addState(const StateDefinition& def) noexcept;
-        SkeletalAnimatorDefinition& addState(std::string_view animation, std::string_view name = "") noexcept;
-        SkeletalAnimatorDefinition& addTransition(std::string_view src, std::string_view dst, const TransitionDefinition& def) noexcept;
-
-        std::optional<const StateDefinition> getState(std::string_view name) const noexcept;
-        std::optional<const TransitionDefinition> getTransition(std::string_view src, std::string_view dst) const noexcept;
-
-    private:
-        std::string _animationPattern;
-        std::unordered_map<std::string, StateDefinition> _states;
-        std::unordered_map<TransitionKey, TransitionDefinition, TransitionKeyHash> _transitions;
-
-        std::string getAnimationName(std::string_view key) const noexcept;
-    };
-
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorDefinitionLoader : public ILoader<SkeletalAnimatorDefinition>
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorDefinitionLoader : public ILoader<protobuf::SkeletalAnimator>
     {
     };
 
     class IDataLoader;
 
-    class DARMOK_EXPORT SkeletalAnimatorDefinitionLoader final : public ISkeletalAnimatorDefinitionLoader
-    {
-    public:
-        SkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept;
-        Result operator()(std::filesystem::path path) override;
-    private:
-        IDataLoader& _dataLoader;
-    };
+	using DataSkeletalAnimatorDefinitionLoader = DataProtobufLoader<ISkeletalAnimatorDefinitionLoader>;
 
     class SkeletalAnimator;
 
@@ -231,10 +134,22 @@ namespace darmok
         Paused
     };
 
+    namespace SkeletalAnimatorUtils
+    {
+        using TweenDefinition = protobuf::SkeletalAnimatorTween;
+        using StateDefinition = protobuf::SkeletalAnimatorState;
+		using Definition = protobuf::SkeletalAnimator;
+        using AnimationMap = SkeletalAnimationMap;
+        float calcTween(const TweenDefinition& tween, float position);
+        float calcBlendWeight(const StateDefinition& state, const glm::vec2& pos, const glm::vec2& animPos);
+        std::vector<float> calcBlendWeights(const StateDefinition& state, const glm::vec2& pos);
+        SkeletalAnimationMap loadAnimations(const Definition& animator, ISkeletalAnimationLoader& loader);
+    }
+
     class DARMOK_EXPORT SkeletalAnimator final
     {
     public:
-        using Definition = SkeletalAnimatorDefinition;
+        using Definition = protobuf::SkeletalAnimator;
         using AnimationMap = SkeletalAnimationMap;
         using PlaybackState = SkeletalAnimatorPlaybackState;
         SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept;
@@ -309,17 +224,7 @@ namespace darmok
         OptionalRef<SkeletalAnimator> getAnimator(Entity entity) const noexcept;
     };
 
-    class DARMOK_EXPORT SkeletalAnimatorDefinitionFileImporter final : public IFileTypeImporter
-    {
-    public:
-        bool startImport(const Input& input, bool dry = false) override;
-        std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        const std::string& getName() const noexcept override;
-    public:
-        std::filesystem::path _outputPath;
-    };
+    using SkeletalAnimatorDefinitionFileImporter = ProtobufFileImporter<SkeletalAnimator::Definition>;    
 
     struct DARMOK_EXPORT ArmatureJoint final
     {

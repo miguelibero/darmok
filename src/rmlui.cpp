@@ -12,8 +12,8 @@
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/math.hpp>
-#include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include "rmlui.hpp"
 #include <glm/gtc/type_ptr.hpp>
@@ -67,8 +67,8 @@ namespace darmok
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
         _dataUniform = bgfx::createUniform("u_rmluiData", bgfx::UniformType::Vec4);
 
-        ProgramDefinition progDef;
-        progDef.loadStaticMem(rmlui_program);
+        Program::Definition progDef;
+        ProtobufUtils::readStaticMem(progDef, rmlui_program);
         _program = std::make_unique<Program>(progDef);
     }
 
@@ -142,11 +142,11 @@ namespace darmok
             return false;
         }
         auto rect = RmluiUtils::convert(sprite.rectangle);
-        auto atlasElm = TextureAtlasElement::create(TextureAtlasBounds{ rect.size, rect.origin });
+        auto atlasElm = TextureAtlasUtils::createElement(TextureAtlasBounds{ rect.size, rect.origin });
 
         TextureAtlasMeshConfig config;
         config.type = MeshData::MeshType::Transient;
-        auto mesh = atlasElm.createSprite(_program->getVertexLayout(), texture->getSize(), config);
+        auto mesh = TextureAtlasUtils::createSprite(atlasElm, _program->getVertexLayout(), texture->getSize(), config);
 
         auto& encoder = _encoder.value();
         mesh->render(encoder);
@@ -223,9 +223,9 @@ namespace darmok
     Rml::TextureHandle RmluiRenderInterface::GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept
     {
         auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
-        TextureConfig config;
-        config.format = bgfx::TextureFormat::RGBA8;
-        config.size = glm::uvec2(dimensions.x, dimensions.y);
+        Texture::Config config;
+        config.set_format(Texture::Format::RGBA8);
+        *config.mutable_size() = GlmProtobufUtils::convert(glm::uvec2(dimensions.x, dimensions.y));
 
         DataView data(source.data(), size);
 
@@ -459,7 +459,7 @@ namespace darmok
         encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
         auto meshData = MeshData(Rectangle(_canvas.getCurrentSize()));
-        meshData.type = MeshType::Transient;
+        meshData.type = MeshData::MeshType::Transient;
         auto mesh = meshData.createMesh(_program->getVertexLayout());
 
         static const uint64_t state = 0
@@ -531,16 +531,15 @@ namespace darmok
 
     Rml::FileHandle RmluiFileInterface::Open(const Rml::String& path) noexcept
     {
-        try
+        auto dataResult = _dataLoader.value()(path);
+        if (!dataResult)
         {
-            auto data = _dataLoader.value()(path);
-            auto handle = (Rml::FileHandle)data.ptr();
-            _elements.emplace(handle, Element{ std::move(data), 0 });
-            return handle;
+            return (Rml::FileHandle)nullptr;
         }
-        catch(...)
-        {
-        }
+        auto& data = dataResult.value();
+        auto handle = (Rml::FileHandle)data.ptr();
+        _elements.emplace(handle, Element{ std::move(data), 0 });
+        return handle;
         return (Rml::FileHandle)nullptr;
     }
 
@@ -626,16 +625,13 @@ namespace darmok
 
     bool RmluiFileInterface::LoadFile(const Rml::String& path, Rml::String& outData) noexcept
     {
-        try
+        auto dataResult = _dataLoader.value()(path);
+        if (!dataResult)
         {
-            auto data = _dataLoader.value()(path);
-            outData = data.stringView();
-            return true;
+            return false;
         }
-        catch (...)
-        {
-        }
-        return false;
+        outData = dataResult->stringView();
+        return true;
     }
 
     RmluiCanvasImpl::RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size)
@@ -1649,8 +1645,12 @@ namespace darmok
 
     bool RmluiPlugin::loadExternalScript(Rml::ElementDocument& doc, const std::string& sourcePath)
     {
-        auto data = _app.getAssets().getDataLoader()(sourcePath);
-        return loadScript(doc, data.stringView(), sourcePath);
+        auto dataResult = _app.getAssets().getDataLoader()(sourcePath);
+		if (!dataResult)
+		{
+			return false;
+		}   
+        return loadScript(doc, dataResult->stringView(), sourcePath);
     }
 
     void RmluiPlugin::recycleRender(std::unique_ptr<RmluiRenderInterface>&& render) noexcept

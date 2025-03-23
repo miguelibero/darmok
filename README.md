@@ -29,6 +29,7 @@ currently using:
 * [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
 * [cli11](https://github.com/CLIUtils/CLI11) - command line parser
 * [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) - editor native file dialogs
+* [tl-expected](https://github.com/TartanLlama/expected) - expected for C++20
 
 planned to use:
 
@@ -50,7 +51,7 @@ Some philosofical decisions (could be controversial)
 * use modern C++ (20) patterns where possible
 * use as much stl as possible (need to look into memory management at some point)
 * no naked pointers
-* throw exceptions for error handling
+* return `expected` for error handling
 * try to keep the API similar to Unity3D (where it makes sense) so that it's easy to port game logic
 
 **WARNING**: currently in early stages of development

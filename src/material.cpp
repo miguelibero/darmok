@@ -46,15 +46,15 @@ namespace darmok
 		auto mat = std::make_shared<Material>();
 	
 		mat->programDefines = ProgramDefines(def->program_defines().begin(), def->program_defines().end());
-		mat->baseColor = GlmSerializationUtils::convert(def->base_color());
-		mat->emissiveColor = GlmSerializationUtils::convert(def->emissive_color());
+		mat->baseColor = GlmProtobufUtils::convert(def->base_color());
+		mat->emissiveColor = GlmProtobufUtils::convert(def->emissive_color());
 		mat->metallicFactor = def->metallic_factor();
 		mat->roughnessFactor = def->roughness_factor();
 		mat->normalScale = def->normal_scale();
 		mat->occlusionStrength = def->occlusion_strength();
 		mat->multipleScattering = def->multiple_scattering();
 		mat->whiteFurnanceFactor = def->white_furnance_factor();
-		mat->specularColor = GlmSerializationUtils::convert(def->specular_color());
+		mat->specularColor = GlmProtobufUtils::convert(def->specular_color());
 		mat->shininess = def->shininess();
 		mat->opacityType = def->opacity_type();
 		mat->twoSided = def->twosided();
@@ -64,9 +64,9 @@ namespace darmok
 		{
 			mat->program = StandardProgramLoader::load(def->standard_program());
 		}
-		else if(def->has_custom_program())
+		else if(def->has_program_path())
 		{
-			auto loadResult = _progLoader(def->custom_program());
+			auto loadResult = _progLoader(def->program_path());
 			if (!loadResult)
 			{
 				return unexpected<std::string>{ "failed to load custom program" };
@@ -76,7 +76,7 @@ namespace darmok
 
 		for (auto& defTex : def->textures())
 		{
-			auto loadResult = _texLoader(defTex.texture());
+			auto loadResult = _texLoader(defTex.texture_path());
 			if (!loadResult)
 			{
 				return unexpected<std::string>{ "failed to load texture" };
@@ -102,15 +102,15 @@ namespace darmok
 
 			if (defVal.has_mat4())
 			{
-				val = GlmSerializationUtils::convert(defVal.mat4());
+				val = GlmProtobufUtils::convert(defVal.mat4());
 			}
 			else if (defVal.has_mat3())
 			{
-				val = GlmSerializationUtils::convert(defVal.mat3());
+				val = GlmProtobufUtils::convert(defVal.mat3());
 			}
 			else if (defVal.has_vec4())
 			{
-				val = GlmSerializationUtils::convert(defVal.vec4());
+				val = GlmProtobufUtils::convert(defVal.vec4());
 			}
 		}
 

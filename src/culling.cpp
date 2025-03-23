@@ -271,7 +271,7 @@ namespace darmok
             const Frustum frust = mainCam->getViewProjectionMatrix();
             for (auto& plane : frust.getPlanes())
             {
-                meshData += MeshData(plane, RectangleMeshType::Full);
+                meshData += MeshData(plane, MeshData::RectangleMeshType::Full);
                 _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
                 ++debugColor;
             }
@@ -286,7 +286,7 @@ namespace darmok
             {
                 if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
                 {
-                    meshData += MeshData(bbox.value(), RectangleMeshType::Outline);
+                    meshData += MeshData(bbox.value(), MeshData::RectangleMeshType::Outline);
                     _cam->setEntityTransform(entity, encoder);
                     _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
                     ++debugColor;

@@ -2,18 +2,12 @@
 
 #include <darmok-editor/asset_fwd.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/scene_serialize.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/material.hpp>
 
 #include <filesystem>
 #include <unordered_map>
 #include <unordered_set>
-
-#include <cereal/cereal.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/unordered_set.hpp>
-#include <cereal/types/memory.hpp>
 
 namespace darmok::editor
 {

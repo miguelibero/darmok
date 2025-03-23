@@ -10,7 +10,7 @@ namespace darmok
     {
     public:
         MiniaudioSoundLoader(IDataLoader& dataLoader);
-        std::shared_ptr<Sound> operator()(std::filesystem::path path) override;
+        Result operator()(std::filesystem::path path) override;
     private:
         IDataLoader& _dataLoader;
     };
@@ -19,7 +19,7 @@ namespace darmok
     {
     public:
         MiniaudioMusicLoader(IDataLoader& dataLoader);
-        std::shared_ptr<Music> operator()(std::filesystem::path path) override;
+        Result operator()(std::filesystem::path path) override;
     private:
         IDataLoader& _dataLoader;
     };

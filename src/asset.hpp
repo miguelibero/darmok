@@ -87,7 +87,7 @@ namespace darmok
 #ifdef DARMOK_OZZ
 		ContainerLoader<ISkeletonLoader> _skelLoader;
 		ContainerLoader<ISkeletalAnimationLoader> _skelAnimLoader;
-		SkeletalAnimatorDefinitionLoader _skelAnimDefLoader;
+		DataSkeletalAnimatorDefinitionLoader _dataSkelAnimDefLoader;
 
 		OzzSkeletonLoader _ozzSkeletonLoader;
 		OzzSkeletalAnimationLoader _ozzSkeletalAnimationLoader;
@@ -95,8 +95,6 @@ namespace darmok
 
 #ifdef DARMOK_FREETYPE
 		FreetypeFontDefinitionLoader _freetypeFontDefLoader;
-		DataFontDefinitionLoader _dataFontDefLoader;
-		ContainerLoader<IFreetypeFontDefinitionLoader> _freetypeFontDefLoader;
 		FreetypeFontLoader _freetypeFontLoader;
 #endif
 

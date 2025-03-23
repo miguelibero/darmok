@@ -79,11 +79,4 @@ namespace darmok
 		}
 		bgfx::end(&encoder);
 	}
-
-	void ForwardRenderer::bindMeta() noexcept
-	{
-		ReflectionSerializeUtils::metaSerialize<ForwardRenderer>();
-		CameraReflectionUtils::metaCameraComponent<ForwardRenderer>("ForwardRenderer")
-			.ctor();
-	}
 }

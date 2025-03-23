@@ -110,9 +110,14 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<Sound> MiniaudioSoundLoader::operator()(std::filesystem::path path)
+    MiniaudioSoundLoader::Result MiniaudioSoundLoader::operator()(std::filesystem::path path)
     {
-        auto data = _dataLoader(path);
+        auto dataResult = _dataLoader(path);
+        if (!dataResult)
+        {
+            return unexpected<std::string>{ dataResult.error() };
+        }
+        auto& data = dataResult.value();
         return std::make_shared<Sound>(std::make_unique<SoundImpl>(std::move(data)));
     }
 
@@ -121,9 +126,14 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<Music> MiniaudioMusicLoader::operator()(std::filesystem::path path)
+    MiniaudioMusicLoader::Result MiniaudioMusicLoader::operator()(std::filesystem::path path)
     {
-        auto data = _dataLoader(path);
+        auto dataResult = _dataLoader(path);
+        if (!dataResult)
+        {
+			return unexpected<std::string>{ dataResult.error() };
+        }
+		auto& data = dataResult.value();
         return std::make_shared<Music>(std::make_unique<MusicImpl>(std::move(data)));
     }
 
