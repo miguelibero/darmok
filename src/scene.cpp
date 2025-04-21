@@ -12,21 +12,6 @@
 
 namespace darmok
 {
-    std::vector<Entity> ISceneDelegate::getSerializableEntities(const EntitySparseSet& storage, const OptionalRef<ISceneDelegate>& dlg)
-    {
-        std::vector<Entity> entities;
-        entities.reserve(storage.size());
-        for (auto itr = storage.rbegin(), last = storage.rend(); itr != last; ++itr)
-        {
-            const Entity entity = *itr;
-            if (entity != entt::null && storage.contains(entity) && (!dlg || dlg->shouldEntityBeSerialized(entity)))
-            {
-                entities.push_back(entity);
-            }
-        }
-        return entities;
-    }
-
     SceneImpl::SceneImpl(Scene& scene) noexcept
         : _scene(scene)
         , _renderChain(*this)
@@ -44,16 +29,6 @@ namespace darmok
     SceneImpl::~SceneImpl() noexcept
     {
         // empty on purpose
-    }
-
-    void SceneImpl::setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept
-    {
-        _delegate = dlg;
-    }
-
-    const OptionalRef<ISceneDelegate>& SceneImpl::getDelegate() const noexcept
-    {
-        return _delegate;
     }
 
     std::string SceneImpl::toString() const noexcept
@@ -318,10 +293,6 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            if (!shouldCameraRender(*itr))
-            {
-                continue;
-            }
             itr->getImpl().render();
         }
         _renderChain.render();
@@ -346,24 +317,6 @@ namespace darmok
         _app.reset();
     }
 
-    bool SceneImpl::shouldCameraRender(const Camera& cam) const
-    {
-        if (_delegate)
-        {
-            return _delegate->shouldCameraRender(cam);
-        }
-        return true;
-    }
-
-    bool SceneImpl::shouldEntityBeSerialized(Entity entity) const
-    {
-        if (_delegate)
-        {
-            return _delegate->shouldEntityBeSerialized(entity);
-        }
-        return true;
-    }
-
     bgfx::ViewId SceneImpl::renderReset(bgfx::ViewId viewId)
     {
         _renderChain.beforeRenderReset();
@@ -380,10 +333,6 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            if (!shouldCameraRender(*itr))
-            {
-                continue;
-            }
             viewId = itr->getImpl().renderReset(viewId);
         }
 
@@ -717,17 +666,6 @@ namespace darmok
     std::string Scene::toString() const noexcept
     {
         return _impl->toString();
-    }
-
-    Scene& Scene::setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept
-    {
-        _impl->setDelegate(dlg);
-        return *this;
-    }
-
-    const OptionalRef<ISceneDelegate>& Scene::getDelegate() const noexcept
-    {
-        return _impl->getDelegate();
     }
 
     Scene& Scene::setPaused(bool paused) noexcept

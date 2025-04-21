@@ -42,7 +42,6 @@ namespace darmok
     {
     public:
         using Definition = protobuf::FreetypeFont;
-        using Glyph = protobuf::Glyph;
 
         FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
@@ -63,15 +62,27 @@ namespace darmok
     };
 
     class FreetypeFontAtlasGenerator final
+    {
     public:
         using Atlas = protobuf::TextureAtlas;
+		using Glyph = protobuf::TextureAtlasElement;
+
+		struct ResultData final
+		{
+            Atlas atlas;
+            Image image;
+		};
+
+		using Error = std::string;
+		using Result = expected<ResultData, Error>;
+
         FreetypeFontAtlasGenerator(FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
         FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
         FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
         glm::uvec2 calcSpace(const UtfVector& chars) noexcept;
-        Atlas operator()(const UtfVector& chars);
-        Atlas operator()(std::string_view str);
+        Result operator()(const UtfVector& chars);
+        Result operator()(std::string_view str);
     private:
         FT_Face _face;
         FT_Library _library;
@@ -88,7 +99,6 @@ namespace darmok
     {
     public:
         using Input = FileTypeImporterInput;
-        using FontAtlas = protbuf::FontAtlas;
         FreetypeFontFileImporterImpl();
         ~FreetypeFontFileImporterImpl();
         bool startImport(const Input& input, bool dry = false);
@@ -98,10 +108,12 @@ namespace darmok
         const std::string& getName() const noexcept;
         void endImport(const Input& input);
     private:
+        using Atlas = protobuf::TextureAtlas;
         FT_Face _face;
         FT_Library _library;
         bx::DefaultAllocator _alloc;
-        std::optional<FontAtlas> _font;
+        std::optional<Atlas> _atlas;
+        std::optional<Image> _image;
         std::filesystem::path _imagePath;
         std::filesystem::path _atlasPath;
     };

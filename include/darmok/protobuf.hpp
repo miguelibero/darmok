@@ -25,10 +25,12 @@ namespace darmok
     namespace ProtobufUtils
     {
         using Message = google::protobuf::Message;
+		using Descriptor = google::protobuf::Descriptor;
         using FieldDescriptor = google::protobuf::FieldDescriptor;
 
         ProtobufFormat getFormat(const std::filesystem::path& path);
-        std::optional<ProtobufFormat> getFormat(const std::string& name);
+		std::string_view getExtension(ProtobufFormat format);
+        std::optional<ProtobufFormat> getFormat(std::string_view name);
         std::size_t getHash(const Message& msg);
 
         const bgfx::Memory* copyMem(const std::string& data);
@@ -45,7 +47,7 @@ namespace darmok
         template<class T>
         expected<void, std::string> readStaticMem(Message& msg, const T& mem)
         {
-            if (!mem.ParseFromArray(mem, sizeof(T)))
+            if (!msg.ParseFromArray(mem, sizeof(T)))
             {
                 return unexpected<std::string>{ "failed to parse from array" };
             }
@@ -60,6 +62,8 @@ namespace darmok
         expected<void, std::string> writeJson(const Message& msg, nlohmann::json& json);
         expected<void, std::string> writeJson(const Message& msg, const FieldDescriptor& field, nlohmann::json& json);
 
+        uint32_t getTypeId(const Message& msg);
+        uint32_t getTypeId(const Descriptor& desc);
     }
 
     template<typename Interface>
@@ -110,7 +114,7 @@ namespace darmok
             std::optional<ProtobufFormat> outputFormat;
             if (auto jsonOutputFormat = input.getConfigField("outputFormat"))
             {
-                outputFormat = ProtobufUtils::getFormat(jsonOutputFormat->get<std::string>());
+                outputFormat = ProtobufUtils::getFormat(jsonOutputFormat->get<std::string_view>());
             }
             if (outputFormat)
             {

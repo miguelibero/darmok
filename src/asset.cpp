@@ -30,6 +30,10 @@ namespace darmok
 		, _texAtlasLoader{ { _texPackerDefLoader }, _texLoader }
 		, _texAtlasFontLoader{ _texAtlasLoader }
 		, _dataSkelAnimDefLoader{ _dataLoader }
+		, _assimpSceneDefLoader{ _dataLoader, _allocator }
+		, _dataSceneDefLoader{ _dataLoader }
+		, _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
+		, _sceneLoader{ _sceneDefLoader }
 
 #ifdef DARMOK_OZZ
 		, _ozzSkeletonLoader{ _dataLoader }
@@ -96,6 +100,11 @@ namespace darmok
 	IFontLoader& AssetContextImpl::getFontLoader() noexcept
 	{
 		return _fontLoader;
+	}
+
+	ISceneLoader& AssetContextImpl::getSceneLoader() noexcept
+	{
+		return _sceneLoader;
 	}
 	
 #ifdef DARMOK_OZZ
@@ -202,6 +211,16 @@ namespace darmok
 		return _impl->getMaterialLoader();
 	}
 
+	ISceneLoader& AssetContext::getSceneLoader() noexcept
+	{
+		return _impl->getSceneLoader();
+	}
+
+	IFontLoader& AssetContext::getFontLoader() noexcept
+	{
+		return _impl->getFontLoader();
+	}
+
 #ifdef DARMOK_OZZ
 	ISkeletonLoader& AssetContext::getSkeletonLoader() noexcept
 	{
@@ -216,13 +235,6 @@ namespace darmok
 	ISkeletalAnimatorDefinitionLoader& AssetContext::getSkeletalAnimatorDefinitionLoader() noexcept
 	{
 		return _impl->getSkeletalAnimatorDefinitionLoader();
-	}
-#endif
-
-#ifdef DARMOK_FREETYPE
-	IFontLoader& AssetContext::getFontLoader() noexcept
-	{
-		return _impl->getFontLoader();
 	}
 #endif
 

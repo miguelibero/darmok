@@ -44,7 +44,7 @@ namespace darmok
 		IMaterialLoader& getMaterialLoader() noexcept;
 		IMeshLoader& getMeshLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
-
+		ISceneLoader& getSceneLoader() noexcept;
 		bx::AllocatorI& getAllocator() noexcept;
 
 #ifdef DARMOK_OZZ
@@ -83,6 +83,10 @@ namespace darmok
 		TextureAtlasLoader _texAtlasLoader;
 		TextureAtlasFontLoader _texAtlasFontLoader;
 		ContainerLoader<IFontLoader> _fontLoader;
+		ContainerLoader<ISceneDefinitionLoader> _sceneDefLoader;
+		AssimpSceneDefinitionLoader _assimpSceneDefLoader;
+		DataSceneDefinitionLoader _dataSceneDefLoader;
+		SceneLoader _sceneLoader;
 
 #ifdef DARMOK_OZZ
 		ContainerLoader<ISkeletonLoader> _skelLoader;

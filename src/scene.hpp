@@ -1,21 +1,20 @@
 #pragma once
 
-#include <bgfx/bgfx.h>
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/render_chain.hpp>
-#include <darmok/utils.hpp>
-#include <entt/entt.hpp>
+
 #include <vector>
 #include <memory>
-#include <unordered_map>
 #include <unordered_set>
+
+#include <entt/entt.hpp>
+#include <bgfx/bgfx.h>
 
 namespace darmok
 {
-    class ISceneDelegate;
     class ISceneComponent;
     class Scene;
     class App;
@@ -30,9 +29,6 @@ namespace darmok
     public:
         SceneImpl(Scene& scene) noexcept;
         ~SceneImpl() noexcept;
-
-        void setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept;
-        const OptionalRef<ISceneDelegate>& getDelegate() const noexcept;
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
@@ -95,7 +91,6 @@ namespace darmok
         RenderChain _renderChain;
         std::optional<Viewport> _viewport;
         EntityFilter _updateFilter;
-        OptionalRef<ISceneDelegate> _delegate;
 
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
@@ -106,8 +101,5 @@ namespace darmok
         Viewport getRenderChainViewport() const noexcept override;
         void onRenderChainChanged() noexcept override;
         void destroyPendingEntities() noexcept;
-
-        bool shouldCameraRender(const Camera& cam) const;
-        bool shouldEntityBeSerialized(Entity entity) const;
     };
 }

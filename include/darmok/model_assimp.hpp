@@ -5,10 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/varying.hpp>
 #include <darmok/program.hpp>
-#include <darmok/loader.hpp>
-#include <darmok/protobuf.hpp>
-#include <darmok/protobuf/model.pb.h>
-#include <darmok/protobuf/scene.pb.h>
+#include <darmok/scene_loader.hpp>
 
 #include <memory>
 #include <string>
@@ -25,46 +22,39 @@ namespace bx
 namespace darmok
 {
     class ITextureDefinitionLoader;
-
-    class DARMOK_EXPORT AssimpModelImporter final
-    {
-    public:
-        using Model = protobuf::Scene;
-        using Source = protobuf::AssimpModelSource;
-        AssimpModelImporter(bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
-        Model operator()(const Source& src);
-    private:
-        bx::AllocatorI& _alloc;
-        OptionalRef<ITextureDefinitionLoader> _texLoader;
-    };
-
     class IDataLoader;
-    class AssimpModelLoaderImpl;
+    class AssimpSceneDefinitionLoaderImpl;
 
-    class DARMOK_EXPORT AssimpModelLoader final : public ILoader<protobuf::Scene>
+    namespace protobuf
+    {
+		class AssimpModelImportConfig;
+		class Scene;
+    }
+
+    class DARMOK_EXPORT AssimpSceneDefinitionLoader final : public ISceneDefinitionLoader
     {
     public:
         using Config = protobuf::AssimpModelImportConfig;
         using Model = protobuf::Scene;
 
-        AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
-        ~AssimpModelLoader() noexcept;
-        AssimpModelLoader& setConfig(const Config& config) noexcept;
+        AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
+        ~AssimpSceneDefinitionLoader() noexcept;
+        AssimpSceneDefinitionLoader& setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
 		Result operator()(std::filesystem::path path) override;
     private:
-        std::unique_ptr<AssimpModelLoaderImpl> _impl;
+        std::unique_ptr<AssimpSceneDefinitionLoaderImpl> _impl;
     };
 
-    class AssimpModelFileImporterImpl;
+    class AssimpFileImporterImpl;
 
-    class DARMOK_EXPORT AssimpModelFileImporter final : public IFileTypeImporter
+    class DARMOK_EXPORT AssimpFileImporter final : public IFileTypeImporter
     {
     public:
         using Config = protobuf::AssimpModelImportConfig;
-        AssimpModelFileImporter(bx::AllocatorI& alloc);
-        ~AssimpModelFileImporter();
-        AssimpModelFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
+        AssimpFileImporter(bx::AllocatorI& alloc);
+        ~AssimpFileImporter();
+        AssimpFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
         bool startImport(const Input& input, bool dry = false) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         Dependencies getDependencies(const Input& input) override;
@@ -73,6 +63,6 @@ namespace darmok
         void endImport(const Input& input) override;
         const std::string& getName() const noexcept override;
     private:
-        std::unique_ptr<AssimpModelFileImporterImpl> _impl;
+        std::unique_ptr<AssimpFileImporterImpl> _impl;
     };
 }

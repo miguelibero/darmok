@@ -53,14 +53,15 @@ message MaterialTexture {
 }
 
 message Material {
+    string name = 1;
     oneof program {
-        string program_path = 1;
-        StandardProgramType.Enum standard_program = 2;
+        string program_path = 2;
+        StandardProgramType.Enum standard_program = 3;
     }
-    repeated string program_defines = 3;
+    repeated string program_defines = 4;
     
-    repeated MaterialTexture textures = 4;
-    map<string, UniformValue> uniform_values = 5;
+    repeated MaterialTexture textures = 5;
+    map<string, UniformValue> uniform_values = 6;
     
     MaterialOpacityType.Enum opacity_type = 7;
     MaterialPrimitiveType.Enum primitive_type = 8;
@@ -75,6 +76,6 @@ message Material {
     bool multiple_scattering = 16;
     float white_furnance_factor = 17;
 
-    Color3 specular_color = 18;
+    Color specular_color = 18;
     uint32 shininess = 19;
 }

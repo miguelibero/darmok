@@ -2,7 +2,7 @@
     "files": {
         "sponza/Sponza.gltf": {
             "model": {
-                "outputPath": "../Sponza.dml",
+                "outputPath": "../Sponza.pb",
                 "program": "forward",
                 "embedTextures": true
             }

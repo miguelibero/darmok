@@ -17,7 +17,6 @@
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 
-
 namespace darmok
 {    
     class Scene;
@@ -43,16 +42,6 @@ namespace darmok
         {
             return entt::type_id<T>();
         }
-    };
-
-    class DARMOK_EXPORT BX_NO_VTABLE ISceneDelegate
-    {
-    public:
-        virtual ~ISceneDelegate() = default;
-        virtual bool shouldCameraRender(const Camera& cam) const { return true; }
-        virtual bool shouldEntityBeSerialized(Entity entity) const { return true; }
-
-        static std::vector<Entity> getSerializableEntities(const EntitySparseSet& storage, const OptionalRef<ISceneDelegate>& dlg);
     };
 
     class App;
@@ -89,8 +78,6 @@ namespace darmok
         const std::optional<Viewport>& getViewport() const noexcept;
         Scene& setViewport(const std::optional<Viewport>& vp) noexcept;
         Viewport getCurrentViewport() const noexcept;
-
-        Scene& setDelegate(const OptionalRef<ISceneDelegate>& dlg) noexcept;
 
         void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
@@ -430,16 +417,9 @@ namespace darmok
 
         EntityRegistry& getRegistry() noexcept;
         const EntityRegistry& getRegistry() const noexcept;
-        const OptionalRef<ISceneDelegate>& getDelegate() const noexcept;
 
         static OptionalRef<Transform> getTransformParent(const Transform& trans) noexcept;
         static TransformChildren getTransformChildren(const Transform& trans) noexcept;
-
-        template<typename Archive>
-        friend void save(Archive& ar, const Scene& scene);
-
-        template<typename Archive>
-        friend void load(Archive& ar, Scene& scene);
     };
 
     class DARMOK_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>

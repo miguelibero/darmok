@@ -4,6 +4,7 @@ package darmok.protobuf;
 
 import "varying.proto";
 import "shape.proto";
+import "skeleton.proto";
 
 message MeshType {
     enum Enum {
@@ -57,9 +58,12 @@ message MeshSource {
 }
 
 message Mesh {
-    MeshType.Enum type = 1;
-    bool index32 = 2;
-    VertexLayout layout = 3;
-    bytes vertices = 4;
-    bytes indices = 5;
+    string name = 1;
+    MeshType.Enum type = 2;
+    bool index32 = 3;
+    VertexLayout layout = 4;
+    bytes vertices = 5;
+    bytes indices = 6;
+    BoundingBox bounds = 7;
+    Armature armature = 8;
 }

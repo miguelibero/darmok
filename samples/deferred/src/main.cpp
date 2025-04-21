@@ -2,8 +2,6 @@
 
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/asset.hpp>
-#include <darmok/model.hpp>
 #include <darmok/model_assimp.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
@@ -17,6 +15,7 @@
 #include <darmok/shadow.hpp>
 #include <darmok/material.hpp>
 #include <darmok/culling.hpp>
+#include <darmok/shape.hpp>
 
 namespace
 {
@@ -49,6 +48,7 @@ namespace
 	public:
 		DeferredSampleAppDelegate(App& app)
 			: _app(app)
+			, _mouseVel(0)
 		{
 		}
 
@@ -60,10 +60,6 @@ namespace
 			_app.setDebugFlag(BGFX_DEBUG_TEXT);
 
 			auto scene = _app.addComponent<SceneAppComponent>().getScene();
-			_app.getAssets().getAssimpModelLoader().setConfig({
-				.standardProgram = StandardProgramType::Forward
-			});
-			auto model = _app.getAssets().getModelLoader()("Sponza.dml");
 
 			_cam = createCamera(*scene);
 			_freeCam = createCamera(*scene, _cam);
@@ -72,7 +68,7 @@ namespace
 			freelook.addListener(*this);
 
 			scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
-				StandardProgramLoader::load(StandardProgramType::Tonemap), "Tonemap");
+				StandardProgramLoader::load(StandardProgramLoader::Type::Tonemap), "Tonemap");
 
 			auto lightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);
@@ -84,8 +80,8 @@ namespace
 			dirLight.setShadowType(ShadowType::Soft);
 			scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
-			auto prog = StandardProgramLoader::load(StandardProgramType::ForwardBasic);
-			std::shared_ptr<IMesh> arrowMesh = MeshData(Line(), LineMeshType::Arrow).createMesh(prog->getVertexLayout());
+			auto prog = StandardProgramLoader::load(StandardProgramLoader::Type::ForwardBasic);
+			std::shared_ptr<IMesh> arrowMesh = MeshData(Line{}, MeshData::LineMeshType::Arrow).createMesh(prog->getVertexLayout());
 			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)
@@ -96,17 +92,7 @@ namespace
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
-			ModelSceneConfigurer configurer(*scene, _app.getAssets());
-			configurer.setTextureFlags(BGFX_TEXTURE_NONE | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC);
-			auto modelEntity = configurer(*model);
-
-			for (auto renderable : scene->getComponentsInChildren<Renderable>(modelEntity))
-			{
-				if (auto mat = renderable.get().getMaterial())
-				{
-					mat->setProgramDefine("SHADOW_ENABLED");
-				}
-			}
+			_app.getAssets().getSceneLoader()(*scene, "Sponza.pb");
 
 			_mouseVel = glm::vec2(0);
 		}

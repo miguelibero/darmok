@@ -20,10 +20,8 @@ namespace darmok
 	class ITextureLoader;
 	class ITextureAtlasLoader;
 	class IMaterialLoader;
-	class IModelLoader;
 	class IFontLoader;
-
-	class AssimpModelLoader;
+	class ISceneLoader;
 
 #ifdef DARMOK_OZZ
 	class ISkeletonLoader;
@@ -53,20 +51,15 @@ namespace darmok
 		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept;
 		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept;
 		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		[[nodiscard]] IModelLoader& getModelLoader() noexcept;
+		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept;
+		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
-
-#ifdef DARMOK_ASSIMP
-		[[nodiscard]] AssimpModelLoader& getAssimpModelLoader() noexcept;
-#endif
 
 #ifdef DARMOK_OZZ
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		[[nodiscard]] ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept;
 #endif
-
-		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
 
 #ifdef DARMOK_MINIAUDIO
 		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept;

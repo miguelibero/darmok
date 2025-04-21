@@ -4,13 +4,13 @@
 #include <darmok/asset.hpp>
 #include <darmok/skeleton.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/model.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
+#include <darmok/shape.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
@@ -61,7 +61,7 @@ namespace
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
-			auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
+			auto prog = StandardProgramLoader::load(StandardProgramLoader::Type::Forward);
 			
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
@@ -75,7 +75,7 @@ namespace
 			cam.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
-			auto unlitProg = StandardProgramLoader::load(StandardProgramType::Unlit);
+			auto unlitProg = StandardProgramLoader::load(StandardProgramLoader::Type::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
 			auto lightRootEntity = scene.createEntity();
@@ -94,10 +94,11 @@ namespace
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
 
-			auto animDef = _app.getAssets().getSkeletalAnimatorDefinitionLoader()("animator.json");
+			auto animDefResult = _app.getAssets().getSkeletalAnimatorDefinitionLoader()("animator.json");
+			auto animDef = *animDefResult.value();
+			auto anims = SkeletalAnimatorUtils::loadAnimations(animDef, _app.getAssets().getSkeletalAnimationLoader());
+			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animDef);
 
-			auto anims = animDef->loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
-			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, *animDef);
 			_animator->play("run");
 			// _animator->setPlaybackSpeed(0.05);
 
@@ -108,39 +109,33 @@ namespace
 			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
-			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf"));
+			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf").value());
 			cam.addComponent<TextRenderer>();
 #endif
-			auto baseTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-BaseColor.png");
-			auto metalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Metallic.png");
-			auto normalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Normal.png");
-			auto ambientTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-AmbientOcclusion.png");
+			auto baseTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-BaseColor.png").value();
+			auto metalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Metallic.png").value();
+			auto normalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Normal.png").value();
+			auto ambientTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-AmbientOcclusion.png").value();
 
 			auto mat = std::make_shared<Material>(prog);
-			mat->setProgramDefine("SKINNING_ENABLED");
-			mat->setBaseColor(Colors::fromNumber(0xFAB137FF));
-			mat->setTexture(MaterialTextureType::BaseColor, baseTex);
-			mat->setTexture(MaterialTextureType::MetallicRoughness, metalTex);
-			mat->setTexture(MaterialTextureType::Normal, normalTex);
-			mat->setTexture(MaterialTextureType::Occlusion, ambientTex);
-			mat->setOcclusionStrength(0.75F);
-			mat->setMetallicFactor(1.F);
+			mat->programDefines = { "SKINNING_ENABLED" };
+			mat->baseColor = Colors::fromNumber(0xFAB137FF);
+			mat->textures[Material::TextureType::BaseColor] = baseTex;
+			mat->textures[Material::TextureType::MetallicRoughness] = metalTex;
+			mat->textures[Material::TextureType::Normal] = normalTex;
+			mat->textures[Material::TextureType::Occlusion] = ambientTex;
+			mat->occlusionStrength = 0.75F;
+			mat->metallicFactor = 1.F;
 
-			auto model = _app.getAssets().getModelLoader()("model.dml");
+			_app.getAssets().getSceneLoader()(scene, "model.dml");
+			for (auto entity : scene.getComponents<Renderable>())
+			{
+				scene.getComponent<Renderable>(entity)->setMaterial(mat);
+			}
 
 			auto skinEntity = scene.createEntity();
 			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3(1, 0, 0));
 			skinTrans.setParent(animTrans);
-
-			ModelSceneConfigurer configurer(scene, _app.getAssets());
-			configurer.setParent(skinEntity);
-			configurer(*model, [&scene, mat](const auto& node, Entity entity)
-			{
-				if (auto renderable = scene.getComponent<Renderable>(entity))
-				{
-					renderable->setMaterial(mat);
-				}
-			});
 
 			_app.getInput().addListener("talk", _talkInputs, *this);
 		}

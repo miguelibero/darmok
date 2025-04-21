@@ -1,4 +1,3 @@
-#include "scene_filter.hpp"
 #include <darmok/scene_filter.hpp>
 #include <sstream>
 

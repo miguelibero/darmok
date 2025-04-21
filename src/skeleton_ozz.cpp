@@ -4,6 +4,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include <darmok/easing.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <ozz/base/io/archive.h>
 #include <ozz/base/span.h>
 #include <ozz/base/maths/simd_math.h>
@@ -14,16 +15,16 @@
 
 namespace darmok
 {
-    struct OzzUtils final
+    namespace OzzUtils
     {
-        static glm::mat4 convert(const ozz::math::Float4x4& v)
+        glm::mat4 convert(const ozz::math::Float4x4& v)
         {
             // convert from right-handed (ozz) to left-handed (bgfx)
             return Math::flipHandedness((const glm::mat4&)v);
         }
 
         template<typename T>
-        static std::optional<T> loadFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
+        std::optional<T> loadFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
         {
             auto data = loader(path);
             std::optional<T> obj;
@@ -35,6 +36,7 @@ namespace darmok
             }
             return obj;
         }
+
     };
 
     Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
@@ -345,13 +347,13 @@ namespace darmok
 
     float SkeletalAnimatorImpl::getStateDuration(const std::string& name) const noexcept
     {
-        auto stateConfig = _def.getState(name);
-        if (!stateConfig)
-        {
-            return 0.F;
-        }
-        const State state(getOzz(), stateConfig.value(), (ISkeletalAnimationProvider&)*this);
-        return state.getDuration();
+		if (auto stateDef = SkeletalAnimatorUtils::getState(_def, name))
+		{
+            const State state(getOzz(), *stateDef, (ISkeletalAnimationProvider&)*this);
+            return state.getDuration();
+		}
+        return 0.F;
+
     }
 
     OzzSkeletalAnimatorAnimationState::OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations)
@@ -359,7 +361,7 @@ namespace darmok
         , _normalizedTime(0.F)
         , _looped(false)
     {
-        _animation = animations.getAnimation(def.animation);
+        _animation = animations.getAnimation(def.name());
         _sampling.Resize(skel.num_joints());
         _locals.resize(skel.num_soa_joints());
     }
@@ -397,12 +399,12 @@ namespace darmok
     float OzzSkeletalAnimatorAnimationState::getDuration() const noexcept
     {
         auto& anim = getOzz();
-        return anim.duration() / _def.speed;
+        return anim.duration() / _def.speed();
     }
 
     bool OzzSkeletalAnimatorAnimationState::hasFinished() const noexcept
     {
-        return _looped && !_def.loop;
+        return _looped && !_def.loop();
     }
 
     void OzzSkeletalAnimatorAnimationState::update(float deltaTime)
@@ -444,9 +446,9 @@ namespace darmok
         return _locals;
     }
 
-    const glm::vec2& OzzSkeletalAnimatorAnimationState::getBlendPosition() const noexcept
+    glm::vec2 OzzSkeletalAnimatorAnimationState::getBlendPosition() const noexcept
     {
-        return _def.blendPosition;
+        return GlmProtobufUtils::convert(_def.blend_position());
     }
 
     OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept
@@ -754,8 +756,9 @@ namespace darmok
             currState->setSpeed(stateSpeed);
             return false;
         }
-        auto stateConfig = _def.getState(name);
-        if (!stateConfig)
+
+        auto stateDef = SkeletalAnimatorUtils::getState(_def, name);
+        if (!stateDef)
         {
             return false;
         }
@@ -775,11 +778,11 @@ namespace darmok
 
         if (prevState)
         {
-            auto transConfig = _def.getTransition(prevState->getName(), name);
+            auto transConfig = SkeletalAnimatorUtils::getTransition(_def, prevState->getName(), name);
             if (transConfig)
             {
                 _transition.emplace(transConfig.value(),
-                    State(getOzz(), stateConfig.value(), *this),
+                    State(getOzz(), *stateDef, *this),
                     std::move(prevState.value()));
                 for (auto& listener : listeners)
                 {
@@ -801,7 +804,7 @@ namespace darmok
             _state->afterFinished();
         }
 
-        _state.emplace(getOzz(), stateConfig.value(), *this);
+        _state.emplace(getOzz(), stateDef, *this);
         for (auto& listener : listeners)
         {
             listener.onAnimatorStateStarted(_animator, _state->getName());

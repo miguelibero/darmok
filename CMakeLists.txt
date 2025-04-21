@@ -196,7 +196,8 @@ set(SOURCES
   input.cpp
   scene.cpp
   scene_filter.cpp
-
+  scene_loader.cpp
+  
   texture_atlas.cpp
   material.cpp
   anim.cpp
@@ -227,6 +228,7 @@ set(HEADERS
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
+  scene_loader.hpp
 
   texture_atlas.hpp
   anim.hpp

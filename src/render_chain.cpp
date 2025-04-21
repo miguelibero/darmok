@@ -75,7 +75,7 @@ namespace darmok
 		return _handle;
 	}
 
-	const glm::uvec2& FrameBuffer::getSize() const noexcept
+	glm::uvec2 FrameBuffer::getSize() const noexcept
 	{
 		return _colorTex->getSize();
 	}

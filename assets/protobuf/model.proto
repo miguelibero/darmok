@@ -3,16 +3,18 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "varying.proto";
+import "program.proto";
+import "material.proto";
 
 message AssimpModelImportConfig {
     VertexLayout vertex_layout = 1;
-    bool embed_textures = 2;
-    string default_texture = 3;
-    string skip_meshes_regex = 4;
-    string skip_nodes_regex = 5;
-    string root_mesh_regex = 6;
-}
-
-message AssimpModelSource {
-
+    optional StandardProgramType.Enum standard_program = 2;
+    string program_path = 3;
+    repeated string program_defines = 4;
+    bool embed_textures = 5;
+    string default_texture = 6;
+    string skip_meshes_regex = 7;
+    string skip_nodes_regex = 8;
+    string root_mesh_regex = 9;
+    optional MaterialOpacityType.Enum opacity = 10;
 }

@@ -11,6 +11,15 @@
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
 #include <darmok/material.hpp>
+#include <darmok/glm_serialize.hpp>
+
+#include <darmok/protobuf/scene.pb.h>
+#include <darmok/protobuf/mesh.pb.h>
+#include <darmok/protobuf/material.pb.h>
+#include <darmok/protobuf/texture.pb.h>
+#include <darmok/protobuf/model.pb.h>
+#include <darmok/protobuf/scene.pb.h>
+#include <darmok/protobuf/light.pb.h>
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
@@ -26,14 +35,14 @@
 
 namespace darmok
 {
-    struct AssimpUtils final
+    namespace AssimpUtils
     {
-        static inline std::string_view getStringView(const aiString& str) noexcept
+        std::string_view getStringView(const aiString& str) noexcept
         {
             return std::string_view(str.data, str.length);
         }
 
-        static inline glm::mat4 convert(const aiMatrix4x4& from) noexcept
+        glm::mat4 convert(const aiMatrix4x4& from) noexcept
         {
             // the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
             return glm::mat4(
@@ -44,22 +53,22 @@ namespace darmok
             );
         }
 
-        static inline glm::vec3 convert(const aiVector3D& vec) noexcept
+        glm::vec3 convert(const aiVector3D& vec) noexcept
         {
             return glm::vec3(vec.x, vec.y, vec.z);
         }
 
-        static inline glm::vec2 convert(const aiVector2D& vec) noexcept
+        glm::vec2 convert(const aiVector2D& vec) noexcept
         {
             return glm::vec2(vec.x, vec.y);
         }
 
-        static inline uint8_t convertColorComp(ai_real v) noexcept
+        uint8_t convertColorComp(ai_real v) noexcept
         {
             return 255 * v;
         }
 
-        static inline Color convert(const aiColor4D& c) noexcept
+        Color convert(const aiColor4D& c) noexcept
         {
             return Color
             {
@@ -70,12 +79,12 @@ namespace darmok
             };
         }
 
-        static inline float getIntensity(const aiColor3D& c) noexcept
+        float getIntensity(const aiColor3D& c) noexcept
         {
             return glm::compMax(glm::vec3(c.r, c.g, c.b));
         }
 
-        static inline Color3 convert(aiColor3D c) noexcept
+        Color3 convert(aiColor3D c) noexcept
         {
             return Color3
             {
@@ -85,37 +94,56 @@ namespace darmok
             };
         }
 
-        static bool fixModelImportConfig(IDataLoader& dataLoader, AssimpModelImportConfig& config)
+        bool fixModelImportConfig(IDataLoader& dataLoader, protobuf::AssimpModelImportConfig& config)
         {
-            if (config.vertexLayout.getStride() == 0)
+			auto stride = VaryingUtils::getBgfx(config.vertex_layout()).getStride();
+            if (stride == 0)
             {
-                if (auto standard = std::get_if<StandardProgramType>(&config.program))
+                if (config.has_standard_program())
                 {
-                    auto def = StandardProgramLoader::loadDefinition(*standard);
-                    config.vertexLayout = def->vertexLayout;
+                    auto def = StandardProgramLoader::loadDefinition(config.standard_program());
+                    *config.mutable_vertex_layout() = def->varying().vertex();
                 }
-                else if (auto def = std::get_if<std::shared_ptr<ProgramDefinition>>(&config.program))
+                else if (config.program_path().empty())
                 {
-                    config.vertexLayout = (*def)->vertexLayout;
+                    protobuf::Program prog;
+                    auto result = ProtobufUtils::read(prog, config.program_path());
+                    if (!result)
+                    {
+                        return false;
+                    }
+                    *config.mutable_vertex_layout() = prog.varying().vertex();
                 }
             }
-            return config.vertexLayout.getStride() > 0;
+            return stride > 0;
         }
+
+		bool match(const std::string& str, const std::vector<std::regex>& regexes) noexcept
+		{
+			for (const auto& regex : regexes)
+			{
+				if (std::regex_match(str, regex))
+				{
+					return true;
+				}
+			}
+            return false;
+		}
     };
 
-    void AssimpSceneLoader::Config::setPath(const std::filesystem::path& path) noexcept
+    void AssimpLoader::Config::setPath(const std::filesystem::path& path) noexcept
     {
         basePath = path.parent_path().string();
         format = path.extension().string();
     }
 
-    bool AssimpSceneLoader::supports(const std::filesystem::path& path) const noexcept
+    bool AssimpLoader::supports(const std::filesystem::path& path) const noexcept
     {
         Assimp::Importer importer;
         return importer.IsExtensionSupported(path.extension().string());
     }
 
-    unsigned int AssimpSceneLoader::getImporterFlags(const Config& config) noexcept
+    unsigned int AssimpLoader::getImporterFlags(const Config& config) noexcept
     {
         auto flags = // aiProcess_CalcTangentSpace | // produces weird tangents, we use mikktspace instead
             aiProcess_Triangulate |
@@ -140,7 +168,7 @@ namespace darmok
         return flags;
     }
 
-    AssimpSceneLoader::Result AssimpSceneLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
+    AssimpLoader::Result AssimpLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
     {
         Assimp::Importer importer;
         const aiScene* ptr = nullptr;
@@ -163,7 +191,7 @@ namespace darmok
         return fixScene(importer);
     }
 
-    AssimpSceneLoader::Result AssimpSceneLoader::loadFromMemory(const DataView& data, const Config& config) const
+    AssimpLoader::Result AssimpLoader::loadFromMemory(const DataView& data, const Config& config) const
     {
         Assimp::Importer importer;
         if (!config.basePath.empty())
@@ -184,7 +212,7 @@ namespace darmok
         return fixScene(importer);
     }
 
-    std::shared_ptr<aiScene> AssimpSceneLoader::fixScene(Assimp::Importer& importer) noexcept
+    std::shared_ptr<aiScene> AssimpLoader::fixScene(Assimp::Importer& importer) noexcept
     {
         auto scene = importer.GetOrphanedScene();
 
@@ -213,43 +241,47 @@ namespace darmok
         return std::shared_ptr<aiScene>(scene);
     }
 
-    AssimpModelLoaderImpl::AssimpModelLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+    AssimpSceneDefinitionLoaderImpl::AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
         : _dataLoader(dataLoader)
         , _allocator(allocator)
         , _texLoader(texLoader)
     {
     }
 
-    void AssimpModelLoaderImpl::setConfig(const Config& config) noexcept
+    void AssimpSceneDefinitionLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
         AssimpUtils::fixModelImportConfig(_dataLoader, _config);
     }
 
-    bool AssimpModelLoaderImpl::supports(const std::filesystem::path& path) const noexcept
+    bool AssimpSceneDefinitionLoaderImpl::supports(const std::filesystem::path& path) const noexcept
     {
-        return _sceneLoader.supports(path);
+        return _assimpLoader.supports(path);
     }
 
-    AssimpModelLoaderImpl::Result AssimpModelLoaderImpl::operator()(const std::filesystem::path& path)
+    AssimpSceneDefinitionLoaderImpl::Result AssimpSceneDefinitionLoaderImpl::operator()(const std::filesystem::path& path)
     {
-        AssimpSceneLoader::Config config;
+        AssimpLoader::Config config;
         config.setPath(path);
         auto dataResult = _dataLoader(path);
         if (!dataResult)
         {
             return unexpected<std::string>{ dataResult.error() };
         }
-        auto scene = _sceneLoader.loadFromMemory(dataResult.value(), config);
+        auto sceneResult = _assimpLoader.loadFromMemory(dataResult.value(), config);
+		if (!dataResult)
+		{
+			return unexpected<std::string>{ sceneResult.error() };
+		}
         auto model = std::make_shared<Model>();
         auto basePath = path.parent_path().string();
 
-        AssimpModelConverter converter(*scene, basePath, _config, _allocator, _texLoader);
+        AssimpSceneDefinitionConverter converter(**sceneResult, basePath, _config, _allocator, _texLoader);
         converter.update(*model);
         return model;
     }
 
-    AssimpModelConverter::AssimpModelConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
+    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
         bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
         : _scene(scene)
         , _basePath(basePath)
@@ -259,7 +291,7 @@ namespace darmok
     {
     }
 
-    std::vector<std::string> AssimpModelConverter::getTexturePaths(const aiScene& scene) noexcept
+    std::vector<std::string> AssimpSceneDefinitionConverter::getTexturePaths(const aiScene& scene) noexcept
     {
         std::vector<std::string> paths;
         for (size_t i = 0; i < scene.mNumMaterials; ++i)
@@ -282,7 +314,7 @@ namespace darmok
         return paths;
     }
 
-    AssimpModelConverter& AssimpModelConverter::setBoneNames(const std::vector<std::string>& names) noexcept
+    AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setBoneNames(const std::vector<std::string>& names) noexcept
     {
         _boneNames.clear();
         for (auto& name : names)
@@ -292,13 +324,13 @@ namespace darmok
         return *this;
     }
 
-    AssimpModelConverter& AssimpModelConverter::setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept
+    AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept
     {
         _boneNames = names;
         return *this;
     }
 
-    AssimpModelConverter& AssimpModelConverter::setConfig(const nlohmann::json& config) noexcept
+    AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setConfig(const nlohmann::json& config) noexcept
     {
         if (config.contains("bones"))
         {
@@ -317,7 +349,37 @@ namespace darmok
         return *this;
     }
 
-    bool AssimpModelConverter::updateMeshes(uint32_t modelNodeId, const std::regex& regex) noexcept
+    uint32_t AssimpSceneDefinitionConverter::getNextEntityId(const Definition& def) noexcept
+    {
+        uint32_t maxEntityId = 1;
+		for (auto& [typeId, components] : def.components())
+		{
+			for (auto& [entityId, component] : components.components())
+			{
+				if (entityId > maxEntityId)
+				{
+                    maxEntityId = entityId;
+				}
+			}
+		}
+        return maxEntityId + 1;
+    }
+
+    bool AssimpSceneDefinitionConverter::addAsset(Definition& def, std::string_view path, Message& asset) noexcept
+    {
+        auto typeId = ProtobufUtils::getTypeId(asset);
+        auto& assets = def.mutable_assets()->try_emplace(typeId).first->second;
+        return assets.mutable_assets()->try_emplace(path, asset).second;
+    }
+
+    bool AssimpSceneDefinitionConverter::addComponent(Definition& def, uint32_t entityId, Message& comp) noexcept
+    {
+        auto typeId = ProtobufUtils::getTypeId(comp);
+        auto& components = def.mutable_components()->try_emplace(typeId).first->second;
+        return components.mutable_components()->try_emplace(entityId, comp).second;
+    }
+
+    bool AssimpSceneDefinitionConverter::updateMeshes(Definition& def, uint32_t entityId, const std::regex& regex) noexcept
     {
         auto found = false;
         for (int i = 0; i < _scene.mNumMeshes; ++i)
@@ -328,47 +390,61 @@ namespace darmok
             {
                 continue;
             }
-            auto& modelRenderable = modelNode.renderables.emplace_back();
-            modelRenderable.mesh = getMesh(assimpMesh);
+            auto mesh = getMesh(def, assimpMesh);
             auto assimpMaterial = _scene.mMaterials[assimpMesh->mMaterialIndex];
-            modelRenderable.material = getMaterial(assimpMaterial);
+            auto material = getMaterial(def, assimpMaterial);
+            protobuf::Renderable renderable;
+			renderable.set_mesh_path(mesh->name());
+			renderable.set_material_path(material->name());
+			addComponent(def, entityId, renderable);
+
             found = true;
         }
         return found;
     }
 
-    bool AssimpModelConverter::update(Model& model) noexcept
+    bool AssimpSceneDefinitionConverter::update(Definition& def) noexcept
     {
-        model.set_name(AssimpUtils::getStringView(_scene.mName));
-        if (!_config.root_mesh().empty())
+        def.set_name(AssimpUtils::getStringView(_scene.mName));
+        auto entityId = getNextEntityId(def);
+        if (!_config.root_mesh_regex().empty())
         {
-            return updateMeshes(model.rootNode, std::regex{ _config.root_mesh() });
+            return updateMeshes(def, entityId, std::regex{ _config.root_mesh_regex() });
         }
-        return update(model.rootNode, *_scene.mRootNode);
+        return updateNode(def, entityId, *_scene.mRootNode);
     }
 
-    bool AssimpModelConverter::update(uint32_t modelNodeId, const aiNode& assimpNode) noexcept
+    bool AssimpSceneDefinitionConverter::updateNode(Definition& def, uint32_t entityId, const aiNode& assimpNode, uint32_t parentEntityId) noexcept
     {
-        if(!_config.skip_meshes_regex().empty())
+        std::string name{ AssimpUtils::getStringView(assimpNode.mName) };
+        if(!_config.skip_nodes_regex().empty())
         {
-            auto name = AssimpUtils::getStringView(assimpNode.mName);
-            std::regex regex{ _config.skip_meshes_regex() };
+            std::regex regex{ _config.skip_nodes_regex() };
             if (std::regex_match(name, regex))
             {
                 return false;
             }
         }
-        // std::cout << modelNode.name << std::endl;
 
-        modelNode.transform = AssimpUtils::convert(assimpNode.mTransformation);
+        protobuf::Transform trans;
+        trans.set_name(name);
+        trans.set_parent(parentEntityId);
+        *trans.mutable_matrix() = GlmProtobufUtils::convert(
+            AssimpUtils::convert(assimpNode.mTransformation)
+        );
+        addComponent(def, entityId, trans);
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
-            auto& modelRenderable = modelNode.renderables.emplace_back();
             auto assimpMesh = _scene.mMeshes[assimpNode.mMeshes[i]];
-            modelRenderable.mesh = getMesh(assimpMesh);
+            auto mesh = getMesh(def, assimpMesh);
             auto assimpMaterial = _scene.mMaterials[assimpMesh->mMaterialIndex];
-            modelRenderable.material = getMaterial(assimpMaterial);
+            auto material = getMaterial(def, assimpMaterial);
+
+            protobuf::Renderable renderable;
+            renderable.set_mesh_path(mesh->name());
+            renderable.set_material_path(material->name());
+			addComponent(def, entityId, renderable);
         }
 
         for (size_t i = 0; i < _scene.mNumCameras; ++i)
@@ -376,7 +452,7 @@ namespace darmok
             auto assimpCam = _scene.mCameras[i];
             if (assimpCam->mName == assimpNode.mName)
             {
-                update(modelNode, *assimpCam);
+                updateCamera(def, entityId, *assimpCam);
                 break;
             }
         }
@@ -385,32 +461,39 @@ namespace darmok
             auto assimpLight = _scene.mLights[i];
             if (assimpLight->mName == assimpNode.mName)
             {
-                update(modelNode, *assimpLight);
+                updateLight(def, entityId, *assimpLight);
                 break;
             }
         }
 
         for (size_t i = 0; i < assimpNode.mNumChildren; ++i)
         {
-            ModelNode modelChild;
-            if (!update(modelChild, *assimpNode.mChildren[i]))
+			auto childEntityId = getNextEntityId(def);
+            if (!updateNode(def, childEntityId, *assimpNode.mChildren[i], entityId))
             {
                 continue;
             }
-            modelNode.children.push_back(std::move(modelChild));
         }
 
         return true;
     }
 
-    void AssimpModelConverter::update(ModelNode& modelNode, const aiCamera& assimpCam) noexcept
+    void AssimpSceneDefinitionConverter::updateCamera(Definition& def, uint32_t entityId, const aiCamera& assimpCam) noexcept
     {
-        auto& camNode = modelNode.children.emplace_back();
-        camNode.name = AssimpUtils::getStringView(assimpCam.mName);
+        CameraDefinition cam;
 
         aiMatrix4x4 mat;
         assimpCam.GetCameraMatrix(mat);
-        camNode.transform = AssimpUtils::convert(mat);
+
+        if (!mat.IsIdentity())
+        {
+            protobuf::Transform trans;
+            trans.set_parent(entityId);
+            trans.set_name(AssimpUtils::getStringView(assimpCam.mName));
+            *trans.mutable_matrix() = GlmProtobufUtils::convert(AssimpUtils::convert(mat));
+            entityId = getNextEntityId(def);
+            addComponent(def, entityId, trans);
+        }
 
         auto aspect = assimpCam.mAspect;
         auto fovy = 0.f;
@@ -420,11 +503,13 @@ namespace darmok
             fovy = 2.f * atan(tan(0.5f * fovx) * aspect);
         }
 
-        auto& cam = camNode.camera.emplace();
-        cam.projection = Math::perspective(fovy, aspect, assimpCam.mClipPlaneNear, assimpCam.mClipPlaneFar);
+        CameraDefinition cam;
+        auto proj = Math::perspective(fovy, aspect, assimpCam.mClipPlaneNear, assimpCam.mClipPlaneFar);
+		*cam.mutable_projection() = GlmProtobufUtils::convert(proj);
+		addComponent(def, entityId, cam);
     }
 
-    float AssimpModelConverter::getLightRange(const glm::vec3& attenuation) noexcept
+    float AssimpSceneDefinitionConverter::getLightRange(const glm::vec3& attenuation) noexcept
     {
         static const float intensityThreshold = 0.001F;
         auto thres = intensityThreshold;
@@ -453,63 +538,76 @@ namespace darmok
         return glm::max(d1, d2);
     }
 
-    void AssimpModelConverter::update(ModelNode& modelNode, const aiLight& assimpLight) noexcept
+    void AssimpSceneDefinitionConverter::updateLight(Definition& def, uint32_t entityId, const aiLight& assimpLight) noexcept
     {
-        auto& lightNode = modelNode.children.emplace_back();
-        lightNode.name = AssimpUtils::getStringView(assimpLight.mName);
+        protobuf::Transform trans;
+        trans.set_parent(entityId);
+        trans.set_name(AssimpUtils::getStringView(assimpLight.mName));
+
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
-        lightNode.transform = glm::translate(glm::mat4(1), pos);
+        auto mat = glm::translate(glm::mat4(1), pos);
+        *trans.mutable_matrix() = GlmProtobufUtils::convert(mat);
+        entityId = getNextEntityId(def);
+        addComponent(def, entityId, trans);
 
         auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
         auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
+		auto pbColor = GlmProtobufUtils::convert(color);
 
         if (assimpLight.mType == aiLightSource_POINT)
         {
-            auto& light = lightNode.pointLight.emplace();
+            protobuf::PointLight light;
             auto attn = glm::vec3(
                 assimpLight.mAttenuationConstant,
                 assimpLight.mAttenuationLinear,
                 assimpLight.mAttenuationQuadratic
             );
-            light.range = getLightRange(attn);
-            light.intensity = intensity;
-            light.color = color;
+            light.set_range(getLightRange(attn));
+            light.set_intensity(intensity);
+            *light.mutable_color() = pbColor;
             // we're not supporting different specular color in lights
+			addComponent(def, entityId, light);
         }
         else if (assimpLight.mType == aiLightSource_DIRECTIONAL)
         {
-            auto& light = lightNode.dirLight.emplace();
-            light.intensity = intensity;
-            light.color = color;
-            light.direction = AssimpUtils::convert(assimpLight.mDirection);
+			protobuf::DirectionalLight light;
+			light.set_intensity(intensity);
+            *light.mutable_color() = pbColor;
+			*light.mutable_direction() = GlmProtobufUtils::convert(AssimpUtils::convert(assimpLight.mDirection));
+            addComponent(def, entityId, light);
         }
         else if (assimpLight.mType == aiLightSource_SPOT)
         {
-            auto& light = lightNode.spotLight.emplace();
-            light.intensity = intensity;
-            light.color = color;
-            light.innerConeAngle = assimpLight.mAngleInnerCone;
-            light.coneAngle = assimpLight.mAngleOuterCone;
+			protobuf::SpotLight light;
+            light.set_intensity(intensity);
+            *light.mutable_color() = pbColor;
+			light.set_cone_angle(assimpLight.mAngleOuterCone);
+			light.set_inner_cone_angle(assimpLight.mAngleInnerCone);
+            addComponent(def, entityId, light);
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {
-            auto& ambLight = lightNode.ambientLight.emplace();
-            ambLight.intensity = AssimpUtils::getIntensity(assimpLight.mColorAmbient);
-            ambLight.color = AssimpUtils::convert(assimpLight.mColorAmbient * (1.F / ambLight.intensity));
+			protobuf::AmbientLight light;
+            intensity = AssimpUtils::getIntensity(assimpLight.mColorAmbient);
+            color = AssimpUtils::convert(assimpLight.mColorAmbient * (1.F / intensity));
+            pbColor = GlmProtobufUtils::convert(color);
+            light.set_intensity(intensity);
+            *light.mutable_color() = pbColor;
+            addComponent(def, entityId, light);
         }
     }
 
-    std::shared_ptr<AssimpModelConverter::ModelTexture> AssimpModelConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
+    std::shared_ptr<AssimpSceneDefinitionConverter::TextureDefinition> AssimpSceneDefinitionConverter::getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
         aiString aiPath("");
         if (assimpMat.GetTexture(type, index, &aiPath) != AI_SUCCESS)
         {
             return nullptr;
         }
-        return getTexture(aiPath.C_Str());
+        return getTexture(def, aiPath.C_Str());
     }
 
-    std::shared_ptr<AssimpModelConverter::ModelTexture> AssimpModelConverter::getTexture(const std::string& path) noexcept
+    std::shared_ptr<AssimpSceneDefinitionConverter::TextureDefinition> AssimpSceneDefinitionConverter::getTexture(Definition& def, const std::string& path) noexcept
     {
         auto itr = _textures.find(path);
         if (itr != _textures.end())
@@ -517,7 +615,7 @@ namespace darmok
             return itr->second;
         }
 
-        std::shared_ptr<ModelTexture> tex;
+        std::shared_ptr<TextureDefinition> tex;
         auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
@@ -534,7 +632,8 @@ namespace darmok
                 format = bimg::TextureFormat::RGBA8;
             }
             auto data = DataView(assimpTex->pcData, size);
-            tex = std::make_shared<ModelTexture>(path);
+            tex = std::make_shared<TextureDefinition>();
+			tex->set_name(path);
             // TODO: can we read the texture config?
             TextureUtils::loadImage(*tex, Image{ data, _allocator, format });
         }
@@ -551,91 +650,115 @@ namespace darmok
                 tex = result.value();
             }
         }
-
+        _textures.emplace(path, tex);
+		addAsset(def, path, *tex);
         return tex;
     }
 
-    const std::vector<AssimpModelConverter::AssimpMaterialTexture> AssimpModelConverter::_materialTextures =
+    const std::vector<AssimpSceneDefinitionConverter::AssimpMaterialTexture> AssimpSceneDefinitionConverter::_materialTextures =
     {        
-        { AI_MATKEY_BASE_COLOR_TEXTURE, ModelTextureType::BaseColor },
-        { aiTextureType_DIFFUSE, 0, ModelTextureType::BaseColor },
-        { aiTextureType_SPECULAR, 0, ModelTextureType::Specular },
-        { AI_MATKEY_METALLIC_TEXTURE, ModelTextureType::MetallicRoughness },
-        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, ModelTextureType::MetallicRoughness },
-        { aiTextureType_NORMALS, 0, ModelTextureType::Normal },
-        { aiTextureType_AMBIENT_OCCLUSION, 0, ModelTextureType::Occlusion },
-        { aiTextureType_LIGHTMAP, 0, ModelTextureType::Occlusion },
-        { aiTextureType_EMISSIVE, 0, ModelTextureType::Emissive },
+        { AI_MATKEY_BASE_COLOR_TEXTURE, TextureType::BaseColor },
+        { aiTextureType_DIFFUSE, 0, TextureType::BaseColor },
+        { aiTextureType_SPECULAR, 0, TextureType::Specular },
+        { AI_MATKEY_METALLIC_TEXTURE, TextureType::MetallicRoughness },
+        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, TextureType::MetallicRoughness },
+        { aiTextureType_NORMALS, 0, TextureType::Normal },
+        { aiTextureType_AMBIENT_OCCLUSION, 0, TextureType::Occlusion },
+        { aiTextureType_LIGHTMAP, 0, TextureType::Occlusion },
+        { aiTextureType_EMISSIVE, 0, TextureType::Emissive },
     };
 
-    void AssimpModelConverter::update(ModelMaterial& modelMat, const aiMaterial& assimpMat) noexcept
+    void AssimpSceneDefinitionConverter::updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
     {
-        modelMat.program = _config.program;
-        modelMat.programDefines.insert(_config.programDefines.begin(), _config.programDefines.end());
-
-        for (auto& elm : _materialTextures)
+        matDef.set_program_path(_config.program_path());
+        for (auto& define : _config.program_defines())
         {
-            if (auto tex = getTexture(assimpMat, elm.assimpType, elm.assimpIndex))
+			auto itr = std::find(matDef.program_defines().begin(), matDef.program_defines().end(), define);
+            if (itr == matDef.program_defines().end())
             {
-                modelMat.textures[elm.darmokType] = tex;
+                *matDef.mutable_program_defines()->Add() = define;
             }
         }
 
-        auto& baseColorTexture = modelMat.textures[MaterialTextureType::BaseColor];
-        if (baseColorTexture == nullptr && !_config.defaultTexture.empty())
+        auto& textures = *matDef.mutable_textures();
+        for (auto& elm : _materialTextures)
         {
-            baseColorTexture = getTexture(_config.defaultTexture);
+            if (auto tex = getTexture(def, assimpMat, elm.assimpType, elm.assimpIndex))
+            {
+                auto& matTex = *textures.Add();
+                matTex.set_type(elm.darmokType);
+				matTex.set_texture_path(tex->name());
+            }
+        }
+
+		auto itr = std::find_if(textures.begin(), textures.end(), [](auto& tex)
+		{
+			return tex.type() == TextureType::BaseColor;
+		});
+
+        if (itr == textures.end() && !_config.default_texture().empty())
+        {
+            if (auto tex = getTexture(def, _config.default_texture()))
+            {
+				auto& matTex = *textures.Add();
+				matTex.set_type(TextureType::BaseColor);
+				matTex.set_texture_path(tex->name());
+            }
         }
 
         // TODO: convert aiTextureType_METALNESS + aiTextureType_DIFFUSE_ROUGHNESS
         // TODO: also other conversions from FBX
 
-        assimpMat.Get(AI_MATKEY_TWOSIDED, modelMat.twoSided);
+		bool twoSided = false;
+        if (assimpMat.Get(AI_MATKEY_TWOSIDED, twoSided))
+        {
+			matDef.set_twosided(twoSided);
+        }
 
         aiColor4D baseColor;
         if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
         {
-            modelMat.baseColor = AssimpUtils::convert(baseColor);
+            *matDef.mutable_base_color() = GlmProtobufUtils::convert(AssimpUtils::convert(baseColor));
         }
         else if (assimpMat.Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
         {
-            modelMat.baseColor = AssimpUtils::convert(baseColor);
+            *matDef.mutable_base_color() = GlmProtobufUtils::convert(AssimpUtils::convert(baseColor));
         }
         aiColor4D specularColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_SPECULAR, specularColor) == AI_SUCCESS)
         {
-            modelMat.specularColor = AssimpUtils::convert(specularColor);
+            *matDef.mutable_specular_color() = GlmProtobufUtils::convert(AssimpUtils::convert(specularColor));
         }
         ai_real v = 0;
         if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
         {
-            modelMat.metallicFactor = glm::clamp(v, 0.0f, 1.0f);
+            matDef.set_metallic_factor(glm::clamp(v, 0.0f, 1.0f));
         }
         if (assimpMat.Get(AI_MATKEY_SHININESS, v) == AI_SUCCESS)
         {
-            modelMat.shininess = v;
+            matDef.set_shininess(v);
         }
         if (assimpMat.Get(AI_MATKEY_ROUGHNESS_FACTOR, v) == AI_SUCCESS)
         {
-            modelMat.roughnessFactor = glm::clamp(v, 0.0f, 1.0f);
+            matDef.set_roughness_factor(glm::clamp(v, 0.0f, 1.0f));
         }
         if (assimpMat.Get(AI_MATKEY_GLTF_TEXTURE_SCALE(aiTextureType_NORMALS, 0), v) == AI_SUCCESS)
         {
-            modelMat.normalScale = v;
+            matDef.set_normal_scale(v);
         }
         if (assimpMat.Get(AI_MATKEY_GLTF_TEXTURE_STRENGTH(aiTextureType_LIGHTMAP, 0), v) == AI_SUCCESS)
         {
-            modelMat.occlusionStrength = glm::clamp(v, 0.0f, 1.0f);
+            matDef.set_occlusion_strength(glm::clamp(v, 0.0f, 1.0f));
         }
         aiColor3D emissiveColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
         {
-            modelMat.emissiveColor = AssimpUtils::convert(emissiveColor);
+            *matDef.mutable_emissive_color() = GlmProtobufUtils::convert(AssimpUtils::convert(emissiveColor));
         }
 
-        if (_config.opacity)
+        if (_config.has_opacity())
         {
-            modelMat.opacityType = _config.opacity.value();
+            matDef.set_opacity_type(_config.opacity());
         }
         else
         {
@@ -645,15 +768,15 @@ namespace darmok
                 std::string alphaMode = aiAlphaMode.C_Str();
                 if (alphaMode == "OPAQUE")
                 {
-                    modelMat.opacityType = OpacityType::Opaque;
+                    matDef.set_opacity_type(protobuf::MaterialOpacityType::Opaque);
                 }
                 else if (alphaMode == "MASK")
                 {
-                    modelMat.opacityType = OpacityType::Mask;
+                    matDef.set_opacity_type(protobuf::MaterialOpacityType::Mask);
                 }
                 else
                 {
-                    modelMat.opacityType = OpacityType::Transparent;
+                    matDef.set_opacity_type(protobuf::MaterialOpacityType::Transparent);
                 }
             }
             else
@@ -664,10 +787,10 @@ namespace darmok
                     switch (blendMode)
                     {
                     case aiBlendMode_Additive:
-                        modelMat.opacityType = OpacityType::Transparent;
+                        matDef.set_opacity_type(protobuf::MaterialOpacityType::Transparent);
                         break;
                     case aiBlendMode_Default:
-                        modelMat.opacityType = OpacityType::Opaque;
+                        matDef.set_opacity_type(protobuf::MaterialOpacityType::Opaque);
                         break;
                     }
                 }
@@ -770,13 +893,14 @@ namespace darmok
         }
     };
 
-    Data AssimpModelConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
+    Data AssimpSceneDefinitionConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
     {
         auto vertexCount = assimpMesh.mNumVertices;
-        VertexDataWriter writer(_config.vertexLayout, vertexCount, _allocator);
+        auto layout = VaryingUtils::getBgfx(_config.vertex_layout());
+        VertexDataWriter writer(layout, vertexCount, _allocator);
 
         std::vector<glm::vec3> tangents;
-        if (assimpMesh.mTangents == nullptr && _config.vertexLayout.has(bgfx::Attrib::Tangent))
+        if (assimpMesh.mTangents == nullptr && layout.has(bgfx::Attrib::Tangent))
         {
             AssimpCalcTangentsOperation op;
             tangents = op(assimpMesh);
@@ -821,7 +945,7 @@ namespace darmok
         return writer.finish();
     }
 
-    bool AssimpModelConverter::updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept
+    bool AssimpSceneDefinitionConverter::updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept
     {
         if (bones.empty())
         {
@@ -867,7 +991,7 @@ namespace darmok
         return true;
     }
 
-    std::vector<VertexIndex> AssimpModelConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
+    std::vector<VertexIndex> AssimpSceneDefinitionConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
     {
         size_t size = 0;
         for(size_t i = 0; i < assimpMesh.mNumFaces; ++i)
@@ -887,15 +1011,16 @@ namespace darmok
         return indices;
     }
 
-    void AssimpModelConverter::update(ModelMesh& modelMesh, const aiMesh& assimpMesh) noexcept
+    void AssimpSceneDefinitionConverter::updateMesh(Definition& def, MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
     {
-		modelMesh.name = AssimpUtils::getStringView(assimpMesh.mName);
-        modelMesh.boundingBox.min = AssimpUtils::convert(assimpMesh.mAABB.mMin);
-        modelMesh.boundingBox.max = AssimpUtils::convert(assimpMesh.mAABB.mMax);
-
+        meshDef.set_name(AssimpUtils::getStringView(assimpMesh.mName));
+        auto& bounds = *meshDef.mutable_bounds();
+		*bounds.mutable_min() = GlmProtobufUtils::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
+        *bounds.mutable_max() = GlmProtobufUtils::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
+            
         const std::string name(assimpMesh.mName.C_Str());
         auto skip = false;
-        for (auto& regex : _config.skipMeshes)
+        for (auto& regex : _skipMeshes)
         {
             if (std::regex_match(name, regex))
             {
@@ -909,45 +1034,46 @@ namespace darmok
         }
 
         std::vector<aiBone*> bones;
+        auto& armature = *meshDef.mutable_armature();
         for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
         {
             auto bone = assimpMesh.mBones[i];
-            std::string boneName(bone->mName.C_Str());
+            auto boneName = AssimpUtils::getStringView(bone->mName);
             if (!_boneNames.empty())
             {
-                auto itr = _boneNames.find(boneName);
+                auto itr = std::find_if(_boneNames.begin(), _boneNames.end(),
+                    [&boneName](auto& elm) { return elm.first == boneName; });
                 if (itr == _boneNames.end())
                 {
                     continue;
                 }
                 boneName = itr->second;
             }
-            bones.push_back(bone);
-            modelMesh.joints.push_back(ModelArmatureJoint{
-                boneName,
-                AssimpUtils::convert(bone->mOffsetMatrix)
-            });
+            auto& joint = *armature.add_joints();
+            joint.set_name(boneName);
+            *joint.mutable_inverse_bind_pose() = GlmProtobufUtils::convert(AssimpUtils::convert(bone->mOffsetMatrix));
         }
 
-        modelMesh.vertexData = createVertexData(assimpMesh, bones);
-        modelMesh.indexData = DataView(createIndexData(assimpMesh));
-        modelMesh.vertexLayout = _config.vertexLayout;
+        meshDef.set_vertices(createVertexData(assimpMesh, bones));
+        meshDef.set_indices(createIndexData(assimpMesh));
+        *meshDef.mutable_layout() = _config.vertex_layout();
     }
     
-    std::shared_ptr<ModelMesh> AssimpModelConverter::getMesh(const aiMesh* assimpMesh) noexcept
+    std::shared_ptr<AssimpSceneDefinitionConverter::MeshDefinition> AssimpSceneDefinitionConverter::getMesh(Definition& def, const aiMesh* assimpMesh) noexcept
     {
         auto itr = _meshes.find(assimpMesh);
         if (itr != _meshes.end())
         {
             return itr->second;
         }
-        auto modelMesh = std::make_shared<ModelMesh>();
-        update(*modelMesh, *assimpMesh);
+        auto modelMesh = std::make_shared<MeshDefinition>();
+        updateMesh(def, *modelMesh, *assimpMesh);
         _meshes.emplace(assimpMesh, modelMesh);
+		addAsset(def, modelMesh->name(), *modelMesh);
         return modelMesh;
     }
 
-    std::shared_ptr<MaterialDefinition> AssimpModelConverter::getMaterial(const aiMaterial* assimpMat) noexcept
+    std::shared_ptr<AssimpSceneDefinitionConverter::MaterialDefinition> AssimpSceneDefinitionConverter::getMaterial(Definition& def, const aiMaterial* assimpMat) noexcept
     {
         auto itr = _materials.find(assimpMat);
         if (itr != _materials.end())
@@ -955,54 +1081,39 @@ namespace darmok
             return itr->second;
         }
         auto modelMat = std::make_shared<MaterialDefinition>();
-        update(*modelMat, *assimpMat);
+        updateMaterial(def, *modelMat, *assimpMat);
         _materials.emplace(assimpMat, modelMat);
+		addAsset(def, modelMat->name(), *modelMat);
         return modelMat;
     }
 
-    AssimpModelImporter::AssimpModelImporter(bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
-        : _alloc(alloc)
-        , _texLoader(texLoader)
+    AssimpSceneDefinitionLoader::AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+        : _impl(std::make_unique<AssimpSceneDefinitionLoaderImpl>(dataLoader, allocator, texLoader))
     {
     }
 
-    Model AssimpModelImporter::operator()(const AssimpModelSource& src)
-    {
-        Model model;
-        AssimpSceneLoader sceneLoader;
-        auto assimpScene = sceneLoader.loadFromMemory(src.data);
-        std::filesystem::path basePath;
-        AssimpModelConverter converter(*assimpScene, basePath, src.config, _alloc, _texLoader);
-        return model;
-    }
-
-    AssimpModelLoader::AssimpModelLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
-        : _impl(std::make_unique<AssimpModelLoaderImpl>(dataLoader, allocator, texLoader))
-    {
-    }
-
-    AssimpModelLoader::~AssimpModelLoader() noexcept
+    AssimpSceneDefinitionLoader::~AssimpSceneDefinitionLoader() noexcept
     {
         // empty to forward declare the impl pointer
     }
 
-    AssimpModelLoader& AssimpModelLoader::setConfig(const Config& config) noexcept
+    AssimpSceneDefinitionLoader& AssimpSceneDefinitionLoader::setConfig(const Config& config) noexcept
     {
         _impl->setConfig(config);
         return *this;
     }
 
-    bool AssimpModelLoader::supports(const std::filesystem::path& path) const noexcept
+    bool AssimpSceneDefinitionLoader::supports(const std::filesystem::path& path) const noexcept
     {
         return _impl->supports(path);
     }
 
-    std::shared_ptr<Model> AssimpModelLoader::operator()(std::filesystem::path path)
+    AssimpSceneDefinitionLoader::Result AssimpSceneDefinitionLoader::operator()(std::filesystem::path path)
     {
         return (*_impl)(path);
     }
 
-    AssimpModelFileImporterImpl::AssimpModelFileImporterImpl(bx::AllocatorI& alloc)
+    AssimpFileImporterImpl::AssimpFileImporterImpl(bx::AllocatorI& alloc)
         : _dataLoader(alloc)
         , _imgLoader(_dataLoader, alloc)
         , _texLoader(_imgLoader)
@@ -1011,131 +1122,118 @@ namespace darmok
     {
     }
 
-    const std::string AssimpModelFileImporterImpl::_outputFormatJsonKey = "outputFormat";
-    const std::string AssimpModelFileImporterImpl::_outputPathJsonKey = "outputPath";
-    const std::string AssimpModelFileImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
-    const std::string AssimpModelFileImporterImpl::_embedTexturesJsonKey = "embedTextures";
-    const std::string AssimpModelFileImporterImpl::_programPathJsonKey = "programPath";
-    const std::string AssimpModelFileImporterImpl::_programJsonKey = "program";
-    const std::string AssimpModelFileImporterImpl::_programDefinesJsonKey = "programDefines";
-    const std::string AssimpModelFileImporterImpl::_skipMeshesJsonKey = "skipMeshes";
-    const std::string AssimpModelFileImporterImpl::_skipNodesJsonKey = "skipNodes";
-    const std::string AssimpModelFileImporterImpl::_defaultTextureJsonKey = "defaultTexture";
-    const std::string AssimpModelFileImporterImpl::_rootMeshJsonKey = "rootMesh";
-    const std::string AssimpModelFileImporterImpl::_opacityJsonKey = "opacity";
-    const std::string AssimpModelFileImporterImpl::_formatJsonKey = "format";
-    const std::string AssimpModelFileImporterImpl::_loadPathJsonKey = "loadPath";
+    const std::string AssimpFileImporterImpl::_outputFormatJsonKey = "outputFormat";
+    const std::string AssimpFileImporterImpl::_outputPathJsonKey = "outputPath";
+    const std::string AssimpFileImporterImpl::_vertexLayoutJsonKey = "vertexLayout";
+    const std::string AssimpFileImporterImpl::_embedTexturesJsonKey = "embedTextures";
+    const std::string AssimpFileImporterImpl::_programPathJsonKey = "programPath";
+    const std::string AssimpFileImporterImpl::_programJsonKey = "program";
+    const std::string AssimpFileImporterImpl::_programDefinesJsonKey = "programDefines";
+    const std::string AssimpFileImporterImpl::_skipMeshesJsonKey = "skipMeshes";
+    const std::string AssimpFileImporterImpl::_skipNodesJsonKey = "skipNodes";
+    const std::string AssimpFileImporterImpl::_defaultTextureJsonKey = "defaultTexture";
+    const std::string AssimpFileImporterImpl::_rootMeshJsonKey = "rootMesh";
+    const std::string AssimpFileImporterImpl::_opacityJsonKey = "opacity";
+    const std::string AssimpFileImporterImpl::_formatJsonKey = "format";
+    const std::string AssimpFileImporterImpl::_loadPathJsonKey = "loadPath";
 
-    void AssimpModelFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
+    void AssimpFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
         // TODO: maybe load material json?
         if (json.contains(_vertexLayoutJsonKey))
         {
-            config.vertexLayout = loadVertexLayout(json[_vertexLayoutJsonKey]);
+            *config.mutable_vertex_layout() = loadVertexLayout(json[_vertexLayoutJsonKey]);
         }
         if (json.contains(_programPathJsonKey))
         {
             auto programPath = basePath / json[_programPathJsonKey];
-            ProgramSource src;
-            src.read(programPath);
-            config.vertexLayout = src.varying.vertex;
-            if (config.vertexLayout.getStride() == 0)
+            protobuf::ProgramSource src;
+			auto result = ProtobufUtils::read(src, programPath);
+            if (!result)
             {
                 throw std::runtime_error("failed to load vertex layout from program path");
             }
+            *config.mutable_vertex_layout() = src.varying().vertex();
         }
         if (json.contains(_programJsonKey))
         {
             const std::string val = json[_programJsonKey];
-            if (auto standard = magic_enum::enum_cast<StandardProgramType>(val))
+            if (auto standard = magic_enum::enum_cast<StandardProgramLoader::Type::Enum>(val))
             {
-                config.program = *standard;
+                config.set_standard_program(*standard);
             }
             else
             {
-                config.program = _progLoader(val);
+                config.set_program_path(val);
             }
         }
         if (json.contains(_programPathJsonKey))
         {
-            config.program = _progLoader(json[_programPathJsonKey]);
+            config.set_program_path(json[_programPathJsonKey]);
         }
         if (json.contains(_programDefinesJsonKey))
         {
-            config.programDefines = json[_programDefinesJsonKey];
+            for (auto& elm : json[_programDefinesJsonKey])
+            {
+                config.add_program_defines(elm);
+            }
         }
         if (json.contains(_defaultTextureJsonKey))
         {
-            config.defaultTexture = json[_defaultTextureJsonKey];
+            config.set_default_texture(json[_defaultTextureJsonKey]);
         }
         if (json.contains(_rootMeshJsonKey))
         {
             const std::string val = json[_rootMeshJsonKey];
-            config.rootMesh = StringUtils::globToRegex(val);
+            config.set_root_mesh_regex(StringUtils::globToRegex(val));
         }
         if (json.contains(_opacityJsonKey))
         {
             const std::string val = json[_opacityJsonKey];
-            if (auto opacity = magic_enum::enum_cast<OpacityType>(val))
+            if (auto opacity = magic_enum::enum_cast<protobuf::MaterialOpacityType::Enum>(val))
             {
-                config.opacity = *opacity;
+                config.set_opacity(*opacity);
             }
         }
 
-        auto loadRegexList = [&json](const std::string& key, std::vector<std::regex>& value)
+		if (json.contains(_skipMeshesJsonKey))
+		{
+			config.set_skip_meshes_regex(StringUtils::globToRegex(json[_skipMeshesJsonKey]));
+		}
+        if (json.contains(_skipNodesJsonKey))
         {
-            if (!json.contains(key))
-            {
-                return;
-            }
-            auto& jsonVal = json[key];
-            if (jsonVal.is_array())
-            {
-                for (auto& elm : jsonVal)
-                {
-                    value.emplace_back(StringUtils::globToRegex(elm.get<std::string>()));
-                }
-            }
-            else
-            {
-                value.emplace_back(StringUtils::globToRegex(jsonVal.get<std::string>()));
-            }
-        };
-        loadRegexList(_skipMeshesJsonKey, config.skipMeshes);
-        loadRegexList(_skipNodesJsonKey, config.skipNodes);
-
+            config.set_skip_nodes_regex(StringUtils::globToRegex(json[_skipNodesJsonKey]));
+        }
         if (json.contains(_embedTexturesJsonKey))
         {
-            config.embedTextures = json[_embedTexturesJsonKey];
+            config.set_embed_textures(json[_embedTexturesJsonKey]);
         }
     }
 
-    VertexLayout AssimpModelFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
+    VertexLayout AssimpFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
     {
         VertexLayout layout;
         if (json.is_string())
         {
-            layout.read(json.get<std::filesystem::path>());
+			ProtobufUtils::read(layout, json.get<std::filesystem::path>());
         }
         else
         {
-            layout.read(json);
+            VaryingUtils::read(layout, json);
         }
         return layout;
     }
 
-    bool AssimpModelFileImporterImpl::startImport(const Input& input, bool dry)
+    bool AssimpFileImporterImpl::startImport(const Input& input, bool dry)
     {
         if (input.config.is_null())
         {
             return false;
         }
-        /*
         if (!_assimpLoader.supports(input.path))
         {
             return false;
         }
-        */
         auto& config = _currentConfig.emplace();
         nlohmann::json configJson = input.config;
         if (!input.dirConfig.empty())
@@ -1151,14 +1249,15 @@ namespace darmok
         }
         if (configJson.contains(_outputFormatJsonKey))
         {
-            _outputFormat = CerealUtils::getFormat(configJson[_outputFormatJsonKey]);
+            std::string_view val{ configJson[_outputFormatJsonKey] };
+            _outputFormat = ProtobufUtils::getFormat(val).value();
         }
         else if (!_outputPath.empty())
         {
-            _outputFormat = CerealUtils::getExtensionFormat(_outputPath.extension());
+            _outputFormat = ProtobufUtils::getFormat(_outputPath);
         }
 
-        AssimpSceneLoadConfig sceneConfig;
+        AssimpLoader::Config sceneConfig;
         if (input.config.contains(_formatJsonKey))
         {
             sceneConfig.format = input.config[_formatJsonKey];
@@ -1167,117 +1266,122 @@ namespace darmok
         {
             sceneConfig.basePath = input.config[_loadPathJsonKey];
         }
-        _currentScene = _assimpLoader.loadFromFile(input.path, sceneConfig);
+        auto result = _assimpLoader.loadFromFile(input.path, sceneConfig);
+		if (!result)
+		{
+			return false;
+		}
+        _currentScene = *result;
         return _currentScene != nullptr;
     }
 
-    void AssimpModelFileImporterImpl::endImport(const Input& input)
+    void AssimpFileImporterImpl::endImport(const Input& input)
     {
         _currentConfig.reset();
         _currentScene.reset();
     }
 
-    std::vector<std::filesystem::path> AssimpModelFileImporterImpl::getOutputs(const Input& input) 
+    std::vector<std::filesystem::path> AssimpFileImporterImpl::getOutputs(const Input& input)
     {
         std::vector<std::filesystem::path> outputs;
         if (_outputPath.empty())
         {
             const std::string stem = StringUtils::getFileStem(input.path.filename().string());
-            _outputPath = stem + CerealUtils::getFormatExtension(_outputFormat);
+            _outputPath = stem + std::string{ ProtobufUtils::getExtension(_outputFormat) };
         }
         auto basePath = input.getRelativePath().parent_path();
         outputs.push_back(basePath / _outputPath);
         return outputs;
     }
 
-    AssimpModelFileImporterImpl::Dependencies AssimpModelFileImporterImpl::getDependencies(const Input& input)
+    AssimpFileImporterImpl::Dependencies AssimpFileImporterImpl::getDependencies(const Input& input)
     {
         Dependencies deps;
-        if (!_currentConfig || !_currentConfig->embedTextures)
+        if (!_currentConfig || !_currentConfig->embed_textures())
         {
             return deps;
         }
         auto basePath = input.getRelativePath().parent_path();
-        for (auto& texPath : AssimpModelConverter::getTexturePaths(*_currentScene))
+        for (auto& texPath : AssimpSceneDefinitionConverter::getTexturePaths(*_currentScene))
         {
             deps.insert(basePath / texPath);
         }
         return deps;
     }
 
-    std::ofstream AssimpModelFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
+    std::ofstream AssimpFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
     {
-        return CerealUtils::createSaveStream(_outputFormat, path);
+        return ProtobufUtils::createOutputStream(path, _outputFormat);
     }
 
-    void AssimpModelFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void AssimpFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         if (!_currentConfig)
         {
             return;
         }
-        Model model;
+        Definition def;
         auto basePath = input.getRelativePath().parent_path();
         OptionalRef<ITextureDefinitionLoader> texLoader = _texLoader;
-        if (!_currentConfig->embedTextures)
+        if (!_currentConfig->embed_textures())
         {
             texLoader = nullptr;
         }
         _dataLoader.addBasePath(input.basePath);
-        AssimpModelConverter converter(*_currentScene, basePath, *_currentConfig, _alloc, texLoader);
+        AssimpSceneDefinitionConverter converter(*_currentScene, basePath, *_currentConfig, _alloc, texLoader);
         converter.setConfig(input.config);
-        converter.update(model);
+        converter.update(def);
         _dataLoader.removeBasePath(input.basePath);
-        CerealUtils::save(model, out, _outputFormat);
+		ProtobufUtils::write(def, out, _outputFormat);
     }
 
-    const std::string& AssimpModelFileImporterImpl::getName() const noexcept
+    const std::string& AssimpFileImporterImpl::getName() const noexcept
     {
-        static const std::string name("model");
+        static const std::string name("assimp");
         return name;
     }
 
-    AssimpModelFileImporter::AssimpModelFileImporter(bx::AllocatorI& alloc)
-        : _impl(std::make_unique<AssimpModelFileImporterImpl>(alloc))
+    AssimpFileImporter::AssimpFileImporter(bx::AllocatorI& alloc)
+        : _impl(std::make_unique<AssimpFileImporterImpl>(alloc))
     {
     }
 
-    AssimpModelFileImporter::~AssimpModelFileImporter()
+    AssimpFileImporter::~AssimpFileImporter()
     {
         // empty on purpose
     }
 
-    bool AssimpModelFileImporter::startImport(const Input& input, bool dry)
+    bool AssimpFileImporter::startImport(const Input& input, bool dry)
     {
         return _impl->startImport(input, dry);
     }
 
-    std::vector<std::filesystem::path> AssimpModelFileImporter::getOutputs(const Input& input)
+    std::vector<std::filesystem::path> AssimpFileImporter::getOutputs(const Input& input)
     {
         return _impl->getOutputs(input);
     }
 
-    AssimpModelFileImporter::Dependencies AssimpModelFileImporter::getDependencies(const Input& input)
+    AssimpFileImporter::Dependencies AssimpFileImporter::getDependencies(const Input& input)
     {
         return _impl->getDependencies(input);
     }
 
-    std::ofstream AssimpModelFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
+    std::ofstream AssimpFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
     {
         return _impl->createOutputStream(input, outputIndex, path);
     }
 
-    void AssimpModelFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    void AssimpFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
         return _impl->writeOutput(input, outputIndex, out);
     }
 
-    void AssimpModelFileImporter::endImport(const Input& input)
+    void AssimpFileImporter::endImport(const Input& input)
     {
         return _impl->endImport(input);
     }
 
-    const std::string& AssimpModelFileImporter::getName() const noexcept
+    const std::string& AssimpFileImporter::getName() const noexcept
     {
         return _impl->getName();
     }

@@ -138,12 +138,15 @@ namespace darmok
     {
         using TweenDefinition = protobuf::SkeletalAnimatorTween;
         using StateDefinition = protobuf::SkeletalAnimatorState;
+        using TransitionDefinition = protobuf::SkeletalAnimatorTransition;
 		using Definition = protobuf::SkeletalAnimator;
         using AnimationMap = SkeletalAnimationMap;
         float calcTween(const TweenDefinition& tween, float position);
         float calcBlendWeight(const StateDefinition& state, const glm::vec2& pos, const glm::vec2& animPos);
         std::vector<float> calcBlendWeights(const StateDefinition& state, const glm::vec2& pos);
         SkeletalAnimationMap loadAnimations(const Definition& animator, ISkeletalAnimationLoader& loader);
+        OptionalRef<const StateDefinition> getState(const Definition& def, std::string_view name);
+        OptionalRef<const TransitionDefinition> getTransition(const Definition& def, std::string_view src, std::string_view dst);
     }
 
     class DARMOK_EXPORT SkeletalAnimator final

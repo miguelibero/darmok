@@ -14,7 +14,16 @@ namespace darmok
         return ProtobufFormat::Binary;
     }
 
-    std::optional<ProtobufFormat> ProtobufUtils::getFormat(const std::string& name)
+    std::string_view ProtobufUtils::getExtension(ProtobufFormat format)
+    {
+		if (format == ProtobufFormat::Json)
+		{
+			return ".json";
+		}
+		return ".pb";
+    }
+
+    std::optional<ProtobufFormat> ProtobufUtils::getFormat(std::string_view name)
     {
         return magic_enum::enum_cast<ProtobufFormat>(name);
     }
@@ -394,6 +403,16 @@ namespace darmok
             }
         }
         return {};
+    }
+
+    uint32_t ProtobufUtils::getTypeId(const Message& msg)
+    {
+        return getTypeId(*msg.GetDescriptor());
+    }
+
+    uint32_t ProtobufUtils::getTypeId(const Descriptor& desc)
+    {
+		return std::hash<std::string>{}(desc.full_name());
     }
 }
 

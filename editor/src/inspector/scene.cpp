@@ -1,5 +1,4 @@
 #include <darmok-editor/inspector/scene.hpp>
-#include <darmok/scene_reflect.hpp>
 
 #include <imgui.h>
 #include <imgui_stdlib.h>

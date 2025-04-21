@@ -295,26 +295,41 @@ namespace darmok
         return anims;
     }
 
-    bool SkeletalAnimatorDefinitionFileImporter::startImport(const Input& input, bool dry)
+    OptionalRef<const SkeletalAnimatorUtils::StateDefinition> SkeletalAnimatorUtils::getState(const Definition& def, std::string_view name)
     {
-        auto ext = StringUtils::getFileExt(input.path.filename().string());
-
-        if (input.config.is_null())
+        auto itr = std::find_if(def.states().begin(), def.states().end(),
+            [name](auto& stateDef) { return stateDef.name() == name; });
+        if (itr == def.states().end())
         {
-            if (ext != ".animator.json" && ext != ".animator.bin")
-            {
-                return false;
-            }
+            return nullptr;
         }
-
-        _outputPath = input.getOutputPath(".bin");
-
-        return true;
+        return *itr;
     }
 
-    std::vector<std::filesystem::path> SkeletalAnimatorDefinitionFileImporter::getOutputs(const Input& input) noexcept
+    OptionalRef<const SkeletalAnimatorUtils::TransitionDefinition> SkeletalAnimatorUtils::getTransition(const Definition& def, std::string_view src, std::string_view dst)
     {
-        return { _outputPath };
+        auto& ts = def.transitions();
+        auto itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state() == src && trans.dst_state() == dst; });
+		if (itr != ts.end())
+		{
+			return *itr;
+		}
+        itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state() == src && trans.dst_state().empty(); });
+        if (itr != ts.end())
+        {
+            return *itr;
+        }
+        itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state().empty() && trans.dst_state() == dst; });
+        if (itr != ts.end())
+        {
+            return *itr;
+        }
+        itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state().empty() && trans.dst_state().empty(); });
+        if (itr != ts.end())
+        {
+            return *itr;
+        }
+		return nullptr;
     }
 
     Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept

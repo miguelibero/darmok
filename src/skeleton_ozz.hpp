@@ -63,7 +63,7 @@ namespace darmok
 	class OzzSkeletalAnimatorAnimationState final
 	{
 	public:
-		using Definition = SkeletalAnimatorAnimationDefinition;
+		using Definition = protobuf::SkeletalAnimatorAnimation;
 		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations);
 		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
 
@@ -74,7 +74,7 @@ namespace darmok
 		float getNormalizedTime() const noexcept;
 		void setNormalizedTime(float normalizedTime) noexcept;
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
-		const glm::vec2& getBlendPosition() const noexcept;
+		glm::vec2 getBlendPosition() const noexcept;
 	private:
 		Definition _def;
 		std::shared_ptr<SkeletalAnimation> _animation;
@@ -154,7 +154,7 @@ namespace darmok
 	class SkeletalAnimatorImpl final : public ISkeletalAnimationProvider
 	{
 	public:
-		using Definition = SkeletalAnimatorDefinition;
+		using Definition = protobuf::SkeletalAnimator;
 		using Transition = OzzSkeletalAnimatorTransition;
 		using State = OzzSkeletalAnimatorState;
 		using AnimationMap = SkeletalAnimationMap;

@@ -25,8 +25,13 @@ message SceneAssets {
     map<string, google.protobuf.Any> assets = 1;
 }
 
+message SceneComponents {
+    map<uint32, google.protobuf.Any> components = 1;
+}
+
 message Scene {
-    map<uint32, google.protobuf.Any> components = 2;
+    string name = 1;
+    map<uint32, SceneComponents> components = 2;
     map<uint32, SceneAssets> assets = 3;
     Registry registry = 4;
 }

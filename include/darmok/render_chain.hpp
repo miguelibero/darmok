@@ -30,7 +30,7 @@ namespace darmok
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
         const bgfx::FrameBufferHandle& getHandle() const noexcept;
         void configureView(bgfx::ViewId viewId) const noexcept;
-        const glm::uvec2& getSize() const noexcept;
+        glm::uvec2 getSize() const noexcept;
     private:
         std::shared_ptr<Texture> _colorTex;
         std::shared_ptr<Texture> _depthTex;
