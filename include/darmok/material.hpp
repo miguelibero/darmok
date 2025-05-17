@@ -40,7 +40,7 @@ namespace darmok
         UniformTextureMap uniformTextures;
 
         // PBR
-        Color baseColor = {};
+        Color baseColor = Colors::white();
         Color3 emissiveColor = {};
 
         float metallicFactor = 0.F;

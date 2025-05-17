@@ -58,7 +58,7 @@ namespace darmok::physics3d
         struct TextData final
         {
             glm::vec3 position;
-            UtfVector content;
+            std::u32string content;
             Color color;
             float height;
         };

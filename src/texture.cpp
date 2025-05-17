@@ -14,14 +14,14 @@ namespace darmok
 
 	Image TextureUtils::createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept
 	{
-		return { DataView{ def.data() }, alloc, bimg::TextureFormat::Enum(def.config().format()) };
+		return { DataView{ def.data() }, alloc, static_cast<bimg::TextureFormat::Enum>(def.config().format()) };
 	}
 
 	expected<void, std::string> TextureUtils::writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept
 	{
 		auto img = createImage(def, alloc);
 		auto encoding = Image::getEncodingForPath(path);
-		std::ofstream out(path, std::ios::binary);
+		std::ofstream out{ path, std::ios::binary };
 		img.write(encoding, out);
 		return {};
 	}
@@ -30,7 +30,7 @@ namespace darmok
 	{
 		bgfx::TextureInfo info;
 		auto cubeMap = config.type() == protobuf::TextureType::CubeMap;
-		auto format = bgfx::TextureFormat::Enum(config.format());
+		auto format = static_cast<bgfx::TextureFormat::Enum>(config.format());
 		bgfx::calcTextureSize(info, config.size().x(), config.size().y(),
 			config.depth(), cubeMap, config.mips(), config.layers(), format);
 		return info;
@@ -43,8 +43,8 @@ namespace darmok
 	}
 
 	ImageTextureDefinitionLoader::ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept
-		: _imgLoader(imgLoader)
-		, _loadFlags(defaultTextureLoadFlags)
+		: _imgLoader{ imgLoader }
+		, _loadFlags{ defaultTextureLoadFlags }
 	{
 	}
 
@@ -63,17 +63,17 @@ namespace darmok
 	{
 		if (!supports(path))
 		{
-			return unexpected<std::string>("format not supported");
+			return unexpected{ "format not supported" };
 		}
 		auto imgResult = _imgLoader(path);
 		if (!imgResult)
 		{
-			return unexpected<std::string>{ imgResult.error() };
+			return unexpected{ imgResult.error() };
 		}
 		auto img = *imgResult;
 		if (!img)
 		{
-			return unexpected<std::string>("empty image");
+			return unexpected{ "empty image" };
 		}
 
 		auto def = std::make_shared<Texture::Definition>();
@@ -296,33 +296,30 @@ namespace darmok
 
 
 	Texture::Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept
-		: _handle(handle)
-		, _config(cfg)
+		: _handle{ handle }
+		, _config{ cfg }
 	{
 	}
 
-	Texture::Texture(const Image& img, uint64_t flags) noexcept
+	Texture::Texture(const Image& img, uint64_t flags)
 		: Texture(img.getData(), img.getTextureConfig(), flags)
 	{
 	}
 
-	Texture::Texture(const DataView& data, const Config& cfg, uint64_t flags) noexcept
+	Texture::Texture(const DataView& data, const Config& cfg, uint64_t flags)
 		: _handle{ bgfx::kInvalidHandle }
-		, _config(cfg)
+		, _config{ cfg }
 	{
 		if (getType() == TextureType::Unknown)
 		{
-			// TODO: maybe throw here
-			return;
+			throw std::runtime_error{ "unknown texture type" };
 		}
 
 		// copying the memory of the image becauyse bgfx needs to maintain the memory for some frames
-		// since the texture creation can b e async, and it could happen that the std::shared_ptr<Image>
-		// is destroyed before (for example if a texture is created and replaced in the same frame
 		const auto mem = data.copyMem();
-		auto w = uint16_t(_config.size().x());
-		auto h = uint16_t(_config.size().y());
-		auto format = bgfx::TextureFormat::Enum(_config.format());
+		auto w = static_cast<uint16_t>(_config.size().x());
+		auto h = static_cast<uint16_t>(_config.size().y());
+		auto format = static_cast<bgfx::TextureFormat::Enum>(_config.format());
 		switch (getType())
 		{
 		case TextureType::CubeMap:
@@ -339,12 +336,12 @@ namespace darmok
 		}
 	}
 
-	Texture::Texture(const Config& cfg, uint64_t flags) noexcept
+	Texture::Texture(const Config& cfg, uint64_t flags)
 		: _handle{ bgfx::kInvalidHandle }
-		, _config(cfg)
+		, _config{ cfg }
 	{
 		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
-		auto format = bgfx::TextureFormat::Enum(cfg.format());
+		auto format = static_cast<bgfx::TextureFormat::Enum>(cfg.format());
 		switch (getType())
 		{
 		case TextureType::CubeMap:
@@ -357,6 +354,7 @@ namespace darmok
 			_handle = bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags);
 			break;
 		default:
+			throw std::runtime_error{ "unknown texture type" };
 			break;
 		}
 	}
@@ -367,8 +365,8 @@ namespace darmok
 	}
 
 	Texture::Texture(Texture&& other) noexcept
-		: _handle(other._handle)
-		, _config(other._config)
+		: _handle{ other._handle }
+		, _config{ other._config }
 	{
 		other._handle.idx = bgfx::kInvalidHandle;
 		other._config = TextureUtils::getEmptyConfig();
@@ -406,32 +404,32 @@ namespace darmok
 		return TextureUtils::getInfo(_config).bitsPerPixel;
 	}
 
-	void Texture::update(const DataView& data, uint8_t mip)
+	expected<void, std::string> Texture::update(const DataView& data, uint8_t mip)
 	{
 		if (getType() == TextureType::Texture3D)
 		{
-			update(data, glm::uvec3(getSize(), getDepth()), glm::uvec3(0), mip);
+			return update(data, glm::uvec3(getSize(), getDepth()), glm::uvec3(0), mip);
 		}
 		else
 		{
-			update(data, getSize(), glm::uvec2(0), mip);
+			return update(data, getSize(), glm::uvec2(0), mip);
 		}
 	}
 
-	void Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint8_t mip, uint16_t layer, uint8_t side)
+	expected<void, std::string> Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint8_t mip, uint16_t layer, uint8_t side)
 	{
 		if (getType() == TextureType::Texture3D)
 		{
-			throw std::runtime_error("does not work on 3D textures");
+			return unexpected{ "does not work on 3D textures" };
 		}
 		auto memSize = size.x * size.y * getBitsPerPixel() / 8;
 		if (memSize == 0)
 		{
-			return;
+			return {};
 		}
 		if (data.size() < memSize)
 		{
-			throw std::runtime_error("data is smaller that expected size");
+			return unexpected{ "data is smaller that expected size" };
 		}
 		if (getType() == TextureType::Texture2D)
 		{
@@ -445,27 +443,28 @@ namespace darmok
 				origin.x, origin.y, size.x, size.y,
 				data.copyMem(0, memSize));
 		}
+		return {};
 	}
 
-	void Texture::update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin, uint8_t mip)
+	expected<void, std::string> Texture::update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin, uint8_t mip)
 	{
 		if (getType() != TextureType::Texture3D)
 		{
-			throw std::runtime_error("does only work on 3D textures");
+			return unexpected{ "does only work on 3D textures" };
 		}
 		auto memSize = size.x * size.y * size.z * getBitsPerPixel() / 8;
 		if (memSize == 0)
 		{
-			return;
+			return {};
 		}
 		if (data.size() < memSize)
 		{
-			throw std::runtime_error("data is smaller that expected size");
+			return unexpected{ "data is smaller that expected size" };
 		}
 		bgfx::updateTexture3D(_handle, mip,
 			origin.x, origin.y, origin.y, size.x, size.y, size.z,
 			data.copyMem(0, memSize));
-
+		return {};
 	}
 
 	uint32_t Texture::read(Data& data) noexcept
@@ -529,9 +528,9 @@ namespace darmok
 	}
 
 	TextureFileImporter::TextureFileImporter()
-		: _dataLoader(_alloc)
-		, _imgLoader(_dataLoader, _alloc)
-		, _defLoader(_imgLoader)
+		: _dataLoader{ _alloc }
+		, _imgLoader{ _dataLoader, _alloc }
+		, _defLoader{ _imgLoader }
 		, ProtobufFileImporter<ImageTextureDefinitionLoader>(_defLoader, "texture")
 	{
 	}

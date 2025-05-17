@@ -679,9 +679,9 @@ namespace darmok
 		return _thread.getExitCode();
 	}
 
-	void PlatformImpl::keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) noexcept
+	void PlatformImpl::keyCallback(GLFWwindow* window, int32_t key, int32_t chr, int32_t action, int32_t mods) noexcept
 	{
-		BX_UNUSED(window, scancode);
+		BX_UNUSED(window, chr);
 		if (key == GLFW_KEY_UNKNOWN)
 		{
 			return;
@@ -696,14 +696,9 @@ namespace darmok
 		_events.post<KeyboardKeyEvent>(key2, mods2, down);
 	}
 
-	void PlatformImpl::charCallback(GLFWwindow* window, uint32_t scancode) noexcept
+	void PlatformImpl::charCallback(GLFWwindow* window, uint32_t chr) noexcept
 	{
 		BX_UNUSED(window);
-		UtfChar chr(scancode);
-		if (!chr)
-		{
-			return;
-		}
 		_events.post<KeyboardCharEvent>(chr);
 	}
 
@@ -774,14 +769,14 @@ namespace darmok
 		Platform::get().getImpl().errorCallback(error, description);
 	}
 
-	void PlatformImpl::staticKeyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) noexcept
+	void PlatformImpl::staticKeyCallback(GLFWwindow* window, int32_t key, int32_t chr, int32_t action, int32_t mods) noexcept
 	{
-		Platform::get().getImpl().keyCallback(window, key, scancode, action, mods);
+		Platform::get().getImpl().keyCallback(window, key, chr, action, mods);
 	}
 
-	void PlatformImpl::staticCharCallback(GLFWwindow* window, uint32_t scancode) noexcept
+	void PlatformImpl::staticCharCallback(GLFWwindow* window, uint32_t chr) noexcept
 	{
-		Platform::get().getImpl().charCallback(window, scancode);
+		Platform::get().getImpl().charCallback(window, chr);
 	}
 
 	void PlatformImpl::staticScrollCallback(GLFWwindow* window, double dx, double dy) noexcept

@@ -90,10 +90,10 @@ namespace darmok
 	class KeyboardCharEvent final : public PlatformEvent
 	{
 	public:
-		KeyboardCharEvent(const UtfChar& data) noexcept;
+		KeyboardCharEvent(char32_t chr) noexcept;
 		void process(Input& input) noexcept;
 	private:
-		UtfChar _data;
+		char32_t _chr;
 	};
 
 	class MousePositionEvent final : public PlatformEvent

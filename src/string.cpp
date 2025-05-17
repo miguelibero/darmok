@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <sstream>
 #include <charconv>
+#include <utf8cpp/utf8.h>
 
 namespace darmok::StringUtils
 {
 	std::string toLower(std::string_view sv) noexcept
 	{
-		std::string s{sv};
+		std::string s{ sv };
 		std::transform(s.begin(), s.end(), s.begin(),
 			[](auto c) { return std::tolower(c); }
 		);
@@ -17,7 +18,7 @@ namespace darmok::StringUtils
 
 	std::string toUpper(std::string_view sv) noexcept
 	{
-		std::string s{sv};
+		std::string s{ sv };
 		std::transform(s.begin(), s.end(), s.begin(),
 			[](auto c) { return std::toupper(c); }
 		);
@@ -42,7 +43,7 @@ namespace darmok::StringUtils
 	bool contains(std::string_view sv, std::string_view::value_type part) noexcept
 	{
 		return sv.find(part) != std::string::npos;
-	}	
+	}
 
 	std::vector<std::string> splitWords(std::string_view sv) noexcept
 	{
@@ -92,7 +93,7 @@ namespace darmok::StringUtils
 	{
 		auto itr = std::find_if(str.begin(), str.end(), [](auto ch) {
 			return !std::isspace(ch);
-		});
+			});
 		return { itr, str.end() };
 	}
 
@@ -100,7 +101,7 @@ namespace darmok::StringUtils
 	{
 		auto itr = std::find_if(str.rbegin(), str.rend(), [](auto ch) {
 			return !std::isspace(ch);
-		});
+			});
 		return { str.begin(), itr.base() };
 	}
 
@@ -144,5 +145,32 @@ namespace darmok::StringUtils
 			++count;
 		}
 		return count;
+	}
+
+	std::u32string toUtf32(std::string_view str) noexcept
+	{
+		std::u32string result;
+		utf8::utf8to32(str.begin(), str.end(), std::back_inserter(result));
+		return result;
+	}
+
+	std::string toUtf8(std::u32string_view str) noexcept
+	{
+		std::string result;
+		utf8::utf32to8(str.begin(), str.end(), std::back_inserter(result));
+		return result;
+	}
+
+	std::string toUtf8(char32_t chr) noexcept
+	{
+		std::string str;
+		utf8::utf32to8(&chr, &chr + 1, std::back_inserter(str));
+		return str;
+	}
+
+	char32_t toUtf32Char(std::string_view str) noexcept
+	{
+		auto itr = str.begin();
+		return utf8::next(itr, str.end());
 	}
 }

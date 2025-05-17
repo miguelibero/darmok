@@ -45,7 +45,7 @@ namespace
 			_scene = _app.addComponent<SceneAppComponent>().getScene();
 			_scene->addSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
 
-			auto prog = StandardProgramLoader::load(StandardProgramType::ForwardBasic);
+			auto prog = StandardProgramLoader::load(StandardProgramLoader::Type::ForwardBasic);
 
 			// camera
 			{
@@ -64,7 +64,7 @@ namespace
 #ifdef PHYSICS_DEBUG_RENDER
 				PhysicsDebugConfig physicsDebugconfig;
 #ifdef DARMOK_FREETYPE
-				physicsDebugconfig.render.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf");
+				physicsDebugconfig.render.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf").value();
 #endif
 				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>(physicsDebugconfig);
 				_physicsDebugRender->setEnabled(false);
@@ -78,7 +78,7 @@ namespace
 				auto light = _scene->createEntity();
 				_scene->addComponent<Transform>(light)
 					.setPosition({ 1, 2, -2 })
-					.lookDir(glm::vec3(-1, -1, 0));
+					.lookDir({ -1, -1, 0 });
 				_scene->addComponent<PointLight>(light, 0.5)
 					.setRange(5);
 				_scene->addComponent<DirectionalLight>(light, 0.5);
@@ -87,7 +87,7 @@ namespace
 
 			{ // floor
 				auto floorEntity = _scene->createEntity();
-				Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 0));
+				Cube floorShape{ {10.F, .5F, 10.F}, {0, -0.25, 0} };
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
 				auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
@@ -95,26 +95,26 @@ namespace
 
 			{ // door
 				auto doorEntity = _scene->createEntity();
-				Cube doorShape(glm::vec3(1.5F, 2.F, 0.2F), glm::vec3(0, 1.F, 0));
+				Cube doorShape{ {1.5F, 2.F, 0.2F}, {0, 1.F, 0} };
 				PhysicsBodyConfig config;
 				config.trigger = true;
 				config.shape = doorShape;
 				config.motion = PhysicsBodyMotionType::Kinematic;
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
 				_scene->addComponent<Transform>(doorEntity)
-					.setPosition(glm::vec3(2.F, 0.F, 2.F))
-					.setEulerAngles(glm::vec3(0, 90, 0));
+					.setPosition({ 2.F, 0.F, 2.F })
+					.setEulerAngles({ 0, 90, 0 });
 
-				_doorMat = std::make_shared<Material>(prog, Color(255, 1000, 100, 255));
+				_doorMat = std::make_shared<Material>(prog, Color{ 255, 1000, 100, 255 });
 				_triggerDoorMat = std::make_shared<Material>(prog, Colors::red());
-				auto doorMesh = MeshData(doorShape).createMesh(prog->getVertexLayout());
+				auto doorMesh = MeshData{ doorShape }.createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(doorEntity, std::move(doorMesh), _doorMat);
 			}
 
 			{ // cubes
-				_cubeMat = std::make_shared<Material>(prog, Color(100, 255, 100, 255));
+				_cubeMat = std::make_shared<Material>(prog, Color{ 100, 255, 100, 255 });
 				_touchedCubeMat = std::make_shared<Material>(prog, Colors::green());
-				_cubeMesh = MeshData(_cubeShape).createMesh(prog->getVertexLayout());
+				_cubeMesh = MeshData{ _cubeShape }.createMesh(prog->getVertexLayout());
 
 				for (auto x = -5.F; x < 5.F; x += 1.1F)
 				{
@@ -127,7 +127,7 @@ namespace
 			}
 
 			{ // player
-				Capsule playerShape(1.F, 0.5F, glm::vec3(0.F, 1.F, 0.F ));
+				Capsule playerShape{1.F, 0.5F, { 0.F, 1.F, 0.F }};
 				auto playerEntity = _scene->createEntity();
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 				_characterCtrl->setDelegate(*this);
@@ -136,7 +136,7 @@ namespace
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
 				_characterBody->addListener(*this);
 
-				auto playerMesh = MeshData(playerShape).createMesh(prog->getVertexLayout());
+				auto playerMesh = MeshData{ playerShape }.createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, Colors::red());
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
@@ -251,18 +251,18 @@ namespace
 			{
 				glm::vec2 pos = mouse.getPosition();
 				pos = _app.getWindow().windowToScreenPoint(pos);
-				auto ray = _cam->screenPointToRay(glm::vec3(pos, 0.F));
+				auto ray = _cam->screenPointToRay({ pos, 0.F });
 				auto dist = ray.intersect(_playerMovePlane);
 				if (dist)
 				{
 					_characterCtrl->setPosition(ray * dist.value());
 				}
-				_characterCtrl->setLinearVelocity(glm::vec3(0));
+				_characterCtrl->setLinearVelocity(glm::vec3{ 0 });
 				return;
 			}
 
 			auto& kb = _app.getInput().getKeyboard();
-			glm::vec3 dir(0);
+			glm::vec3 dir{ 0 };
 			if (_characterCtrl->isGrounded())
 			{
 				dir.x = _app.getInput().getAxis(_moveRight, _moveLeft);
@@ -284,7 +284,7 @@ namespace
 
 	private:
 		App& _app;
-		Plane _playerMovePlane = Plane(glm::vec3(0, 1, 0), 0.0);
+		Plane _playerMovePlane{ { 0, 1, 0 }, 0.0 };
 		OptionalRef<ImguiAppComponent> _imgui;
 		OptionalRef<Camera> _cam;
 		OptionalRef<Transform> _camTrans;

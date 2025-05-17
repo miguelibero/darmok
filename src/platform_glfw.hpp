@@ -114,8 +114,8 @@ namespace darmok
 
 		void joystickCallback(int jid, int action) noexcept;
 		void errorCallback(int error, const char* description);
-		void keyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) noexcept;
-		void charCallback(GLFWwindow* window, uint32_t scancode) noexcept;
+		void keyCallback(GLFWwindow* window, int32_t key, int32_t chr, int32_t action, int32_t mods) noexcept;
+		void charCallback(GLFWwindow* window, uint32_t chr) noexcept;
 		void scrollCallback(GLFWwindow* window, double dx, double dy) noexcept;
 		void cursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
 		void cursorEnterCallback(GLFWwindow* window, int entered) noexcept;
@@ -125,8 +125,8 @@ namespace darmok
 
 		static void staticJoystickCallback(int jid, int action) noexcept;
 		static void staticErrorCallback(int error, const char* description) noexcept;
-		static void staticKeyCallback(GLFWwindow* window, int32_t key, int32_t scancode, int32_t action, int32_t mods) noexcept;
-		static void staticCharCallback(GLFWwindow* window, uint32_t scancode) noexcept;
+		static void staticKeyCallback(GLFWwindow* window, int32_t key, int32_t chr, int32_t action, int32_t mods) noexcept;
+		static void staticCharCallback(GLFWwindow* window, uint32_t chr) noexcept;
 		static void staticScrollCallback(GLFWwindow* window, double dx, double dy) noexcept;
 		static void staticCursorPosCallback(GLFWwindow* window, double x, double y) noexcept;
 		static void staticCursorEnterCallback(GLFWwindow* window, int entered) noexcept;

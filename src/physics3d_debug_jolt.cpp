@@ -12,8 +12,8 @@
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/text.hpp>
-#include <darmok/utf.hpp>
 #include "physics3d_jolt.hpp"
+
 #include <glm/gtc/type_ptr.hpp>
 #include <Jolt/Physics/Body/BodyManager.h>
 #include <Jolt/Physics/PhysicsSystem.h>
@@ -124,7 +124,7 @@ namespace darmok::physics3d
         {
             return;
         }
-        std::unordered_set<UtfChar> chars;
+        std::unordered_set<char32_t> chars;
         for (auto& textData : _textData)
         {
             chars.insert(textData.content.begin(), textData.content.end());
@@ -214,8 +214,7 @@ namespace darmok::physics3d
 
     void JoltPhysicsDebugRenderer::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
     {
-        UtfVector content;
-        UtfChar::read(str, content);
+		auto content = StringUtils::toUtf32(str);
         if (content.empty())
         {
             return;

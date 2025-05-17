@@ -32,7 +32,7 @@ currently using:
 * [tl-expected](https://github.com/TartanLlama/expected) - expected for C++20
 * [magic_enum](https://github.com/Neargye/magic_enum) automatically convert enum types
 * [fmt](https://github.com/fmtlib/fmt) for string formatting
-* [utfcpp](https://github.com/nemtrif/utfcpp) for string encoding
+* [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
 
 planned to use:
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling

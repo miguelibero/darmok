@@ -1,15 +1,20 @@
 #include <darmok/shape.hpp>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
+#include <darmok/glm_serialize.hpp>
+
+#include <cmath>
+
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/norm.hpp>
+#include <fmt/format.h>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
-#include <cmath>
+
 
 namespace darmok
 {
@@ -27,7 +32,7 @@ namespace darmok
 
     std::string Rectangle::toString() const noexcept
     {
-        return "Rectangle(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
+        return fmt::format("Rectangle(size={}, origin={})", size, origin);
     }
 
     std::vector<Line> Rectangle::toLines() const noexcept
@@ -37,16 +42,6 @@ namespace darmok
         glm::vec3 v2 = v0 + glm::vec3(size, 0);
         glm::vec3 v3 = v0 + glm::vec3(0, size.y, 0);
         return { Line{ v0, v1 }, Line{v1, v2}, Line{ v2, v3 }, Line{ v3, v0 } };
-    }
-
-    bool Rectangle::operator==(const Rectangle& other) const noexcept
-    {
-        return size == other.size && origin == other.origin;
-    }
-
-    bool Rectangle::operator!=(const Rectangle& other) const noexcept
-    {
-        return !operator==(other);
     }
 
     Cube::Cube(const glm::vec3& size, const glm::vec3& origin) noexcept
@@ -74,7 +69,7 @@ namespace darmok
 
     std::string Cube::toString() const noexcept
     {
-        return "Cube(size=" + glm::to_string(size) + ", origin=" + glm::to_string(origin) + ")";
+        return fmt::format("Cube(size={}, origin={})", size, origin);
     }
 
     Cube& Cube::operator*=(float scale) noexcept
@@ -91,16 +86,6 @@ namespace darmok
         return cube;
     }
 
-    bool Cube::operator==(const Cube& other) const noexcept
-    {
-        return size == other.size && origin == other.origin;
-    }
-
-    bool Cube::operator!=(const Cube& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
     Triangle::Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept
         : vertices{ vert1, vert2, vert3 }
     {
@@ -113,7 +98,7 @@ namespace darmok
 
     std::string Triangle::toString() const noexcept
     {
-        return "Triangle(" + glm::to_string(vertices[0]) + ", " + glm::to_string(vertices[1]) + ", " + glm::to_string(vertices[2]) + ")";
+		return fmt::format("Triangle({}, {}, {})", vertices[0], vertices[1], vertices[2]);
     }
 
     glm::vec3 Triangle::getNormal() const
@@ -170,16 +155,6 @@ namespace darmok
         return tri;
     }
 
-    bool Triangle::operator==(const Triangle& other) const noexcept
-    {
-        return vertices == other.vertices;
-    }
-
-    bool Triangle::operator!=(const Triangle& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
     TextureTriangle::TextureTriangle(const glm::vec2& coord1, const glm::vec2& coord2, const glm::vec2& coord3) noexcept
         : coordinates{ coord1, coord2, coord3 }
     {
@@ -192,7 +167,7 @@ namespace darmok
 
     std::string TextureTriangle::toString() const noexcept
     {
-        return "TextureTriangle(" + glm::to_string(coordinates[0]) + ", " + glm::to_string(coordinates[1]) + ", " + glm::to_string(coordinates[2]) + ")";
+		return fmt::format("TextureTriangle({}, {}, {})", coordinates[0], coordinates[1], coordinates[2]);
     }
 
     TextureTriangle& TextureTriangle::operator*=(float scale) noexcept
@@ -211,16 +186,6 @@ namespace darmok
         return tri;
     }
 
-    bool TextureTriangle::operator==(const TextureTriangle& other) const noexcept
-    {
-        return coordinates == other.coordinates;
-    }
-
-    bool TextureTriangle::operator!=(const TextureTriangle& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
     Polygon::Polygon(const Triangles& tris, const glm::vec3& origin) noexcept
         : triangles(tris)
         , origin(origin)
@@ -229,12 +194,7 @@ namespace darmok
 
     std::string Polygon::toString() const noexcept
     {
-        std::string str = "Polygon(" + StringUtils::join(", ", triangles);
-        if (origin != glm::vec3(0))
-        {
-            str += ", origin = " + glm::to_string(origin);
-        }
-        return str +")";
+		return fmt::format("Polygon({}, origin={})", StringUtils::join(", ", triangles), origin);
     }
 
     Polygon& Polygon::operator*=(float scale) noexcept
@@ -251,16 +211,6 @@ namespace darmok
         Polygon poly = *this;
         poly *= scale;
         return poly;
-    }
-
-    bool Polygon::operator==(const Polygon& other) const noexcept
-    {
-        return triangles == other.triangles;
-    }
-
-    bool Polygon::operator!=(const Polygon& other) const noexcept
-    {
-        return !operator==(other);
     }
 
     const Sphere& Sphere::standard() noexcept
@@ -283,7 +233,7 @@ namespace darmok
 
     std::string Sphere::toString() const noexcept
     {
-        return "Cube(radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
+		return fmt::format("Sphere(radius={}, origin={})", radius, origin);
     }
 
     Sphere& Sphere::operator*=(float scale) noexcept
@@ -298,16 +248,6 @@ namespace darmok
         Sphere copy(*this);
         copy *= scale;
         return copy;
-    }
-
-    bool Sphere::operator==(const Sphere& other) const noexcept
-    {
-        return origin == other.origin && radius == other.radius;
-    }
-
-    bool Sphere::operator!=(const Sphere& other) const noexcept
-    {
-        return !operator==(other);
     }
 
     Plane::Plane(const glm::vec3& normal, float distance) noexcept
@@ -382,7 +322,7 @@ namespace darmok
 
     std::string Plane::toString() const noexcept
     {
-        return "Plane(" + glm::to_string(normal) + ", " + std::to_string(distance) + ")";
+		return fmt::format("Plane(normal={}, distance={})", normal, distance);  
     }
 
     Line Plane::getNormalLine() const noexcept
@@ -418,16 +358,6 @@ namespace darmok
         return *this;
     }
 
-    bool Plane::operator==(const Plane& other) const noexcept
-    {
-        return distance == other.distance && normal == other.normal;
-    }
-
-    bool Plane::operator!=(const Plane& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
     Ray::Ray(const glm::vec3& origin, const glm::vec3& dir) noexcept
         : origin(origin)
         , direction(dir)
@@ -456,7 +386,7 @@ namespace darmok
 
     std::string Ray::toString() const noexcept
     {
-        return "Ray(origin=" + glm::to_string(origin) + ", direction=" + glm::to_string(direction) + ")";
+		return fmt::format("Ray(origin={}, direction={})", origin, direction);
     }
 
     Line Ray::toLine() const noexcept
@@ -524,16 +454,6 @@ namespace darmok
         return origin + (direction * dist);
     }
 
-    bool Ray::operator==(const Ray& other) const noexcept
-    {
-        return origin == other.origin && direction == other.direction;
-    }
-
-    bool Ray::operator!=(const Ray& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
     Line::Line(const glm::vec3& point1, const glm::vec3& point2) noexcept
     : points{ point1, point2 }
     {
@@ -551,7 +471,7 @@ namespace darmok
 
     std::string Line::toString() const noexcept
     {
-        return "Line(" + glm::to_string(points[0]) + ", " + glm::to_string(points[1]) + ")";
+		return fmt::format("Line({}, {})", points[0], points[1]);        
     }
 
     Ray Line::toRay() const noexcept
@@ -577,32 +497,12 @@ namespace darmok
 
     std::string NormalIntersection::toString() const noexcept
     {
-        return "NormalIntersection(position=" + glm::to_string(position) + ", normal=" + glm::to_string(normal) + ")";
-    }
-
-    bool NormalIntersection::operator==(const NormalIntersection& other) const noexcept
-    {
-        return position == other.position && normal == other.normal;
-    }
-
-    bool NormalIntersection::operator!=(const NormalIntersection& other) const noexcept
-    {
-        return !operator==(other);
+		return fmt::format("NormalIntersection(position={}, normal={})", position, normal);
     }
 
     std::string DistanceIntersection::toString() const noexcept
     {
-        return "DistanceIntersection(position=" + glm::to_string(position) + ", distance=" + std::to_string(distance) + ")";
-    }
-
-    bool DistanceIntersection::operator==(const DistanceIntersection& other) const noexcept
-    {
-        return position == other.position && distance == other.distance;
-    }
-
-    bool DistanceIntersection::operator!=(const DistanceIntersection& other) const noexcept
-    {
-        return !operator==(other);
+        return fmt::format("DistanceIntersection(position={}, distance={})", position, distance);        
     }
 
     std::optional<glm::vec3> Line::intersect(const Triangle& tri) const noexcept
@@ -630,16 +530,6 @@ namespace darmok
         return mtx;
     }
 
-    bool Line::operator==(const Line& other) const noexcept
-    {
-        return points == other.points;
-    }
-
-    bool Line::operator!=(const Line& other) const noexcept
-    {
-        return !operator==(other);
-    }
-
     Grid::Grid(const glm::vec2& separation
         , const glm::uvec2& amount
         , const glm::vec3& normal
@@ -654,11 +544,8 @@ namespace darmok
 
     std::string Grid::toString() const noexcept
     {
-        return "Grid(separation=" + glm::to_string(separation)
-            + ", amount=" + glm::to_string(amount)
-            + ", normal=" + glm::to_string(normal)
-            + ", origin=" + glm::to_string(origin)
-            + ")";
+		return fmt::format("Grid(separation={}, amount={}, normal={}, origin={})",
+			separation, amount, normal, origin);
     }
 
     glm::vec3 Grid::getAlong() const noexcept
@@ -675,7 +562,8 @@ namespace darmok
 
     std::string Capsule::toString() const noexcept
     {
-        return "Capsule(cylinderHeight=" + std::to_string(cylinderHeight) + ", radius=" + std::to_string(radius) + ", origin=" + glm::to_string(origin) + ")";
+		return fmt::format("Capsule(cylinderHeight={}, radius={}, origin={})",
+			cylinderHeight, radius, origin);
     }
 
     const Capsule& Capsule::standard() noexcept
@@ -697,16 +585,6 @@ namespace darmok
         Capsule copy(*this);
         copy *= scale;
         return copy;
-    }
-
-    bool Capsule::operator==(const Capsule& other) const noexcept
-    {
-        return cylinderHeight == other.cylinderHeight && radius == other.radius && origin == other.origin;
-    }
-
-    bool Capsule::operator!=(const Capsule& other) const noexcept
-    {
-        return !operator==(other);
     }
 
     BoundingBox::BoundingBox() noexcept
@@ -921,22 +799,12 @@ namespace darmok
 
     std::string BoundingBox::toString() const noexcept
     {
-        return "BoundingBox(" + glm::to_string(min) + ", " + glm::to_string(max) + ")";
+		return fmt::format("BoundingBox(min={}, max={})", min, max);
     }
 
     glm::mat4 BoundingBox::getOrtho() const noexcept
     {
         return Math::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
-    }
-
-    bool BoundingBox::operator==(const BoundingBox& other) const noexcept
-    {
-        return min == other.min && max == other.max;
-    }
-
-    bool BoundingBox::operator!=(const BoundingBox& other) const noexcept
-    {
-        return !operator==(other);
     }
 
     Frustum::Frustum(const glm::mat4& mtx, bool inverse) noexcept
@@ -1122,15 +990,5 @@ namespace darmok
             corner = trans * glm::vec4(corner, 1.0f);
         }
         return *this;
-    }
-
-    bool Frustum::operator==(const Frustum& other) const noexcept
-    {
-        return corners == other.corners;
-    }
-
-    bool Frustum::operator!=(const Frustum& other) const noexcept
-    {
-        return !operator==(other);
     }
 }

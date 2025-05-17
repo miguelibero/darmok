@@ -1,6 +1,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/shape_serialize.hpp>
 #include <darmok/data.hpp>
 #include <glm/gtx/component_wise.hpp>
 
@@ -78,11 +79,11 @@ namespace darmok
 	}
 
 	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
-		: _layout(layout)
+		: _layout{ layout }
 		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
-		, _vertNum(vertices.size() / layout.getStride())
-		, _idxNum(indices.size() / config.getIndexSize())
+		, _vertNum{ vertices.size() / layout.getStride() }
+		, _idxNum{ indices.size() / config.getIndexSize() }
 	{
 		auto flags = config.getFlags();
 		if (!vertices.empty())
@@ -96,7 +97,7 @@ namespace darmok
 	}
 
 	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
-		: Mesh(layout, vertices, DataView(), config)
+		: Mesh(layout, vertices, DataView{}, config)
 	{
 	}
 
@@ -118,11 +119,11 @@ namespace darmok
 	}
 
 	Mesh::Mesh(Mesh&& other) noexcept
-		: _layout(other._layout)
-		, _vertexBuffer(other._vertexBuffer)
-		, _indexBuffer(other._indexBuffer)
-		, _vertNum(other._vertNum)
-		, _idxNum(other._idxNum)
+		: _layout{ other._layout }
+		, _vertexBuffer{ other._vertexBuffer }
+		, _indexBuffer{ other._indexBuffer }
+		, _vertNum{ other._vertNum }
+		, _idxNum{ other._idxNum }
 	{
 		other._vertexBuffer.idx = bgfx::kInvalidHandle;
 		other._indexBuffer.idx = bgfx::kInvalidHandle;
@@ -194,12 +195,12 @@ namespace darmok
 	}
 
 	DynamicMesh::DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
-		: _layout(layout)
+		: _layout{ layout }
 		, _vertexBuffer{ bgfx::kInvalidHandle }
 		, _indexBuffer{ bgfx::kInvalidHandle }
-		, _vertNum(vertices.size() / layout.getStride())
-		, _idxNum(indices.size() / config.getIndexSize())
-		, _idxSize(config.getIndexSize())
+		, _vertNum{ vertices.size() / layout.getStride() }
+		, _idxNum{ indices.size() / config.getIndexSize() }
+		, _idxSize{ config.getIndexSize() }
 	{
 		auto flags = config.getFlags() | BGFX_BUFFER_ALLOW_RESIZE;
 		if (!vertices.empty())
@@ -235,12 +236,12 @@ namespace darmok
 	}
 
 	DynamicMesh::DynamicMesh(DynamicMesh&& other) noexcept
-		: _layout(other._layout)
-		, _vertexBuffer(other._vertexBuffer)
-		, _indexBuffer(other._indexBuffer)
-		, _vertNum(other._vertNum)
-		, _idxNum(other._idxNum)
-		, _idxSize(other._idxSize)
+		: _layout{ other._layout }
+		, _vertexBuffer{ other._vertexBuffer }
+		, _indexBuffer{ other._indexBuffer }
+		, _vertNum{ other._vertNum }
+		, _idxNum{ other._idxNum }
+		, _idxSize{ other._idxSize }
 	{
 		other._vertexBuffer.idx = bgfx::kInvalidHandle;
 		other._indexBuffer.idx = bgfx::kInvalidHandle;
@@ -321,9 +322,9 @@ namespace darmok
 	}
 
 	TransientMesh::TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, bool index32)
-		: _layout(layout)
-		, _vertNum(uint32_t(vertices.size() / layout.getStride()))
-		, _idxNum(uint32_t(indices.size() / getMeshIndexSize(index32)))
+		: _layout{ layout }
+		, _vertNum{ static_cast<uint32_t>(vertices.size() / layout.getStride()) }
+		, _idxNum{ static_cast<uint32_t>(indices.size() / getMeshIndexSize(index32)) }
 	{
 		if (!vertices.empty())
 		{
@@ -363,11 +364,11 @@ namespace darmok
 	}
 
 	TransientMesh::TransientMesh(TransientMesh&& other) noexcept
-		: _layout(other._layout)
-		, _vertexBuffer(std::move(other._vertexBuffer))
-		, _indexBuffer(std::move(other._indexBuffer))
-		, _vertNum(other._vertNum)
-		, _idxNum(other._idxNum)
+		: _layout{ other._layout }
+		, _vertexBuffer{ std::move(other._vertexBuffer) }
+		, _indexBuffer{ std::move(other._indexBuffer) }
+		, _vertNum{ other._vertNum }
+		, _idxNum{ other._idxNum }
 	{
 		other._vertNum = 0;
 		other._idxNum = 0;
@@ -474,7 +475,7 @@ namespace darmok
 		indexData = DataView(indices);
 	}
 
-	Mesh::Definition MeshData::createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
+	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
 		Mesh::Definition def;
 		def.set_type(type);
@@ -485,12 +486,15 @@ namespace darmok
 		Data vertices;
 		Data indices;
 		exportData(vertexLayout, vertices, indices);
+		*def.mutable_vertices() = std::move(vertices).toString();
+		*def.mutable_indices() = std::move(indices).toString();
+		*def.mutable_bounds() = protobuf::convert(getBounds());
 		return def;
 	}
 
 	std::unique_ptr<IMesh> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
-		auto def = createMeshDefinition(vertexLayout, meshConfig);
+		auto def = createDefinition(vertexLayout, meshConfig);
 		return IMesh::create(def);
 	}
 
@@ -979,7 +983,7 @@ namespace darmok
 
 	MeshData MeshData::operator+(const MeshData& other) const noexcept
 	{
-		MeshData r(*this);
+		MeshData r{ *this };
 		r += other;
 		return r;
 	}

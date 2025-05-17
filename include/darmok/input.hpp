@@ -1,6 +1,11 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/utils.hpp>
+#include <darmok/optional_ref.hpp>
+#include <darmok/input_fwd.hpp>
+#include <darmok/glm.hpp>
+
 #include <functional>
 #include <string>
 #include <array>
@@ -9,18 +14,13 @@
 #include <memory>
 #include <cstdint>
 #include <unordered_set>
-#include <darmok/utils.hpp>
-#include <darmok/optional_ref.hpp>
-#include <darmok/input_fwd.hpp>
-#include <darmok/glm.hpp>
-#include <darmok/utf.hpp>
+
 #include <bx/bx.h>
 
 namespace darmok
 {
 	using KeyboardKeys = std::unordered_set<KeyboardKey>;
 	using KeyboardModifiers = std::unordered_set<KeyboardModifier>;
-	using KeyboardChars = UtfVector;
 	class KeyboardImpl;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IKeyboardListener
@@ -29,7 +29,7 @@ namespace darmok
 		virtual ~IKeyboardListener() = default;
 		virtual entt::id_type getKeyboardListenerType() const noexcept { return 0; };
 		virtual void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) {};
-		virtual void onKeyboardChar(const UtfChar& chr) {};
+		virtual void onKeyboardChar(char32_t chr) {};
 	};
 
 	template<typename T>
@@ -60,7 +60,7 @@ namespace darmok
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
-		[[nodiscard]] const KeyboardChars& getUpdateChars() const noexcept;
+		[[nodiscard]] std::u32string_view getUpdateChars() const noexcept;
 
 		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
 		void addListener(IKeyboardListener& listener) noexcept;

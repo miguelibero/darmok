@@ -464,7 +464,7 @@ namespace darmok
 				uint8_t num;
 				bool normalize, asInt;
 				bgfxLayout.decode(bgfxAttrib, num, bgfxAttribType, normalize, asInt);
-				auto& attrib = items.at(offset);
+				auto& attrib = items[offset];
 				attrib.set_bgfx(protobuf::BgfxAttrib::Enum(bgfxAttrib));
 				attrib.set_num(num);
 				attrib.set_bgfx_type(protobuf::BgfxAttribType::Enum(bgfxAttribType));

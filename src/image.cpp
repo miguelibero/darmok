@@ -15,7 +15,7 @@
 namespace darmok
 {
 	Image::Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
-		: _container(nullptr)
+		: _container{ nullptr }
 	{
 		if(data.empty())
 		{
@@ -33,12 +33,12 @@ namespace darmok
 
 	Image::Image(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
 	{
-		auto right	= Image(faceData[0], alloc, format);
-		auto left	= Image(faceData[1], alloc, format);
-		auto top	= Image(faceData[2], alloc, format);
-		auto bottom = Image(faceData[3], alloc, format);
-		auto front	= Image(faceData[4], alloc, format);
-		auto back	= Image(faceData[5], alloc, format);
+		auto right	= Image{ faceData[0], alloc, format };
+		auto left	= Image{ faceData[1], alloc, format };
+		auto top	= Image{ faceData[2], alloc, format };
+		auto bottom = Image{ faceData[3], alloc, format };
+		auto front	= Image{ faceData[4], alloc, format };
+		auto back	= Image{ faceData[5], alloc, format };
 
 		auto fformat = right.getFormat();
 
@@ -58,7 +58,7 @@ namespace darmok
 		_container = bimg::imageAlloc(&alloc, fformat, size.x, size.y, 1, 1, true, false);
 
 		// Copy each face into the cubemap
-		auto ptr = (uint8_t*)_container->m_data;
+		auto ptr = static_cast<uint8_t*>(_container->m_data);
 		auto memSize = right.getData().size();
 		std::memcpy(ptr + memSize * 0, right.getData().ptr(), memSize);
 		std::memcpy(ptr + memSize * 1, left.getData().ptr(), memSize);
@@ -76,15 +76,15 @@ namespace darmok
 	}
 
 	Image::Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
-		: _container(bimg::imageAlloc(
+		: _container{ bimg::imageAlloc(
 			&alloc, format, size.x, size.y, 0, 1, false, false
-		))
+		) }
 	{
 		std::memset(_container->m_data, 0, _container->m_size);
 	}
 
 	Image::Image(const Image& other) noexcept
-		: _container(nullptr)
+		: _container{ nullptr }
 	{
 		copyContainer(other);
 	}
@@ -95,7 +95,6 @@ namespace darmok
 		{
 			bimg::imageFree(_container);
 		}
-
 		copyContainer(other);
 		return *this;
 	}
@@ -116,7 +115,7 @@ namespace darmok
 	}
 
     Image::Image(bimg::ImageContainer* container)
-		: _container(container)
+		: _container{ container }
 	{
 		if (_container == nullptr)
 		{
@@ -133,7 +132,7 @@ namespace darmok
 	}
 
 	Image::Image(Image&& other) noexcept
-		: _container(other._container)
+		: _container{ other._container }
 	{
 		other._container = nullptr;
 	}
@@ -151,15 +150,15 @@ namespace darmok
 
 	DataView Image::getData() const noexcept
 	{
-		return DataView(_container->m_data
-			, _container->m_size);
+		return DataView{ _container->m_data
+			, _container->m_size };
 	}
 
 	bool Image::isTextureValid(uint64_t flags) const noexcept
 	{
 		auto depth = getDepth();
 		auto layers = getLayerCount();
-		auto format = bgfx::TextureFormat::Enum(getFormat());
+		auto format = static_cast<bgfx::TextureFormat::Enum>(getFormat());
 		return bgfx::isTextureValid(depth, false, layers, format, flags);
 	}
 
@@ -224,8 +223,8 @@ namespace darmok
 	Data Image::encode(ImageEncoding encoding) const noexcept
 	{
 		Data data;
-		DataMemoryBlock block(data);
-		bx::MemoryWriter writer(&block);
+		DataMemoryBlock block{ data };
+		bx::MemoryWriter writer{ &block };
 		encode(encoding, writer);
 		return data;
 	}
@@ -376,7 +375,7 @@ namespace darmok
 
 	void Image::write(ImageEncoding encoding, std::ostream& stream) const noexcept
 	{
-		StreamWriter writer(stream);
+		StreamWriter writer{ stream };
 		encode(encoding, writer);
 	}
 
@@ -385,12 +384,12 @@ namespace darmok
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	void Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset, size_t elmSize)
+	expected<void, std::string> Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset, size_t elmSize)
 	{
 		auto imgSize = getSize();
 		if (pos.x + size.x > imgSize.x || pos.y + size.y > imgSize.y)
 		{
-			throw std::runtime_error("size does not fit");
+			return unexpected{ "size does not fit" };
 		}
 		auto bpp = getTextureInfo().bitsPerPixel / 8;
 		elmOffset = elmOffset < 0 ? 0 : elmOffset;
@@ -398,7 +397,7 @@ namespace darmok
 		size_t updateSize = elmSize * size.x * size.y;
 		if (data.size() < updateSize)
 		{
-			throw std::runtime_error("data is too small");
+			return unexpected{ "data is too small" };
 		}
 		auto imgStart = pos.x + (pos.y * imgSize.x);
 		auto rowSize = elmSize * size.x;
@@ -420,11 +419,12 @@ namespace darmok
 				}
 			}
 		}
+		return {};
 	}
 
 	glm::uvec2 Image::getSize() const noexcept
 	{
-		return glm::uvec2(_container->m_width, _container->m_height);
+		return glm::uvec2{ _container->m_width, _container->m_height };
 	}
 
 	uint32_t Image::getDepth() const noexcept
@@ -457,13 +457,13 @@ namespace darmok
 		bgfx::TextureInfo info;
 		bgfx::calcTextureSize(
 			info
-			, uint16_t(_container->m_width)
-			, uint16_t(_container->m_height)
-			, uint16_t(_container->m_depth)
+			, static_cast<uint16_t>(_container->m_width)
+			, static_cast<uint16_t>(_container->m_height)
+			, static_cast<uint16_t>(_container->m_depth)
 			, _container->m_cubeMap
 			, 1 < _container->m_numMips
 			, _container->m_numLayers
-			, bgfx::TextureFormat::Enum(_container->m_format)
+			, static_cast<bgfx::TextureFormat::Enum>(_container->m_format)
 		);
 		return info;
 	}
@@ -481,8 +481,8 @@ namespace darmok
 	}
 
 	ImageLoader::ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept
-		: _dataLoader(dataLoader)
-		, _alloc(alloc)
+		: _dataLoader{ dataLoader }
+		, _alloc{ alloc }
 	{
 	}
 
@@ -491,13 +491,13 @@ namespace darmok
 		auto dataResult = _dataLoader(path);
 		if (!dataResult)
 		{
-			return unexpected<std::string>{ dataResult.error() };
+			return unexpected{ dataResult.error() };
 		}
 		return std::make_shared<Image>(dataResult.value(), _alloc);
 	}
 
 	ImageFileImporter::ImageFileImporter() noexcept
-		: _outputEncoding(ImageEncoding::Count)
+		: _outputEncoding{ ImageEncoding::Count }
 	{
 	}
 
@@ -539,9 +539,9 @@ namespace darmok
 	{
 		if (_cubemapFaces)
 		{
-			return Dependencies(_cubemapFaces->begin(), _cubemapFaces->end());
+			return { _cubemapFaces->begin(), _cubemapFaces->end() };
 		}
-		return Dependencies();
+		return {};
 	}
 
 	void ImageFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out) noexcept

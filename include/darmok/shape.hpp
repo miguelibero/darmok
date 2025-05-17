@@ -20,7 +20,7 @@ namespace darmok
         glm::vec2 size;
         glm::vec2 origin;
 
-        explicit Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
+        Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] std::vector<Line> toLines() const noexcept;
 
@@ -29,8 +29,7 @@ namespace darmok
         Rectangle& operator*=(float scale) noexcept;
         [[nodiscard]] Rectangle operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const Rectangle& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Rectangle& other) const noexcept;
+        [[nodiscard]] bool operator==(const Rectangle& other) const = default;
     };
 
     struct BoundingBox;
@@ -40,7 +39,7 @@ namespace darmok
         glm::vec3 size;
         glm::vec3 origin;
 
-        explicit Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         explicit Cube(const BoundingBox& bbox) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
@@ -48,11 +47,9 @@ namespace darmok
         Cube& operator*=(float scale) noexcept;
         [[nodiscard]] Cube operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const Cube& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Cube& other) const noexcept;
+        [[nodiscard]] bool operator==(const Cube& other) const = default;
 
         [[nodiscard]] static const Cube& standard() noexcept;
-
         [[nodiscard]] bool empty() const noexcept;
     };
 
@@ -64,7 +61,7 @@ namespace darmok
         Vertices vertices;
 
         Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
-        explicit Triangle(const Vertices& vertices = {}) noexcept;
+        Triangle(const Vertices& vertices = {}) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] glm::vec3 getNormal() const;
@@ -74,8 +71,7 @@ namespace darmok
         Triangle& operator*=(float scale) noexcept;
         [[nodiscard]] Triangle operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const Triangle& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Triangle& other) const noexcept;
+        [[nodiscard]] bool operator==(const Triangle& other) const = default;
     };
 
     struct DARMOK_EXPORT TextureTriangle final
@@ -84,14 +80,13 @@ namespace darmok
         Coordinates coordinates;
 
         TextureTriangle(const glm::vec2& coord1, const glm::vec2& coord2, const glm::vec2& coord3) noexcept;
-        explicit TextureTriangle(const Coordinates& coordinates = {}) noexcept;
+        TextureTriangle(const Coordinates& coordinates = {}) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         TextureTriangle& operator*=(float scale) noexcept;
         [[nodiscard]] TextureTriangle operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const TextureTriangle& other) const noexcept;
-        [[nodiscard]] bool operator!=(const TextureTriangle& other) const noexcept;
+        [[nodiscard]] bool operator==(const TextureTriangle& other) const = default;
     };
 
     struct DARMOK_EXPORT Polygon final
@@ -101,14 +96,13 @@ namespace darmok
         Triangles triangles;
         glm::vec3 origin;
 
-        explicit Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         Polygon& operator*=(float scale) noexcept;
         [[nodiscard]] Polygon operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const Polygon& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Polygon& other) const noexcept;
+        [[nodiscard]] bool operator==(const Polygon& other) const = default;
     };
 
     struct DARMOK_EXPORT Sphere final
@@ -116,8 +110,8 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
-        explicit Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
-        explicit Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
+        Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] static const Sphere& standard() noexcept;
@@ -125,8 +119,7 @@ namespace darmok
         Sphere& operator*=(float scale) noexcept;
         [[nodiscard]] Sphere operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const Sphere& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Sphere& other) const noexcept;
+        [[nodiscard]] bool operator==(const Sphere& other) const = default;
     };
 
     struct BoundingBox;
@@ -136,7 +129,7 @@ namespace darmok
         glm::vec3 normal;
         float distance;
 
-        explicit Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
+        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
         explicit Plane(const Triangle& tri) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
@@ -150,8 +143,7 @@ namespace darmok
         [[nodiscard]] Plane operator*(const glm::mat4& transform) const noexcept;
         Plane& operator*=(const glm::mat4& transform) noexcept;
 
-        [[nodiscard]] bool operator==(const Plane& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Plane& other) const noexcept;
+        [[nodiscard]] bool operator==(const Plane& other) const = default;
 
         [[nodiscard]] static const Plane& standard() noexcept;
 
@@ -177,6 +169,8 @@ namespace darmok
 
         [[nodiscard]] glm::vec3 getAlong() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
+
+        [[nodiscard]] bool operator==(const Grid& other) const = default;
     };
 
     struct DARMOK_EXPORT Capsule final
@@ -185,15 +179,14 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
-        explicit Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] static const Capsule& standard() noexcept;
 
         Capsule& operator*=(float scale) noexcept;
         [[nodiscard]] Capsule operator*(float scale) const noexcept;
 
-        [[nodiscard]] bool operator==(const Capsule& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Capsule& other) const noexcept;
+        [[nodiscard]] bool operator==(const Capsule& other) const = default;
     };
 
     struct DARMOK_EXPORT NormalIntersection final
@@ -203,8 +196,7 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
 
-        [[nodiscard]] bool operator==(const NormalIntersection& other) const noexcept;
-        [[nodiscard]] bool operator!=(const NormalIntersection& other) const noexcept;
+        [[nodiscard]] bool operator==(const NormalIntersection& other) const = default;
     };
 
     struct DARMOK_EXPORT DistanceIntersection final
@@ -214,8 +206,7 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
 
-        [[nodiscard]] bool operator==(const DistanceIntersection& other) const noexcept;
-        [[nodiscard]] bool operator!=(const DistanceIntersection& other) const noexcept;
+        [[nodiscard]] bool operator==(const DistanceIntersection& other) const = default;
     };
 
     struct Line;
@@ -225,7 +216,7 @@ namespace darmok
         glm::vec3 origin;
         glm::vec3 direction;
 
-        explicit Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 0, 1)) noexcept;
+        Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 0, 1)) noexcept;
         explicit Ray(const Line& line) noexcept;
 
         [[nodiscard]] Ray operator*(const glm::mat4& transform) const noexcept;
@@ -233,8 +224,7 @@ namespace darmok
 
         [[nodiscard]] glm::vec3 operator*(float dist) const noexcept;
 
-        [[nodiscard]] bool operator==(const Ray& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Ray& other) const noexcept;
+        [[nodiscard]] bool operator==(const Ray& other) const = default;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] Line toLine() const noexcept;
@@ -257,7 +247,7 @@ namespace darmok
         using Points = std::array<glm::vec3, 2>;
         Points points;
 
-        explicit Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
+        Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
         explicit Line(const Points& points) noexcept;
         explicit Line(const Ray& ray) noexcept;
 
@@ -266,8 +256,7 @@ namespace darmok
 
         [[nodiscard]] glm::vec3 operator*(float dist) const noexcept;
 
-        [[nodiscard]] bool operator==(const Line& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Line& other) const noexcept;
+        [[nodiscard]] bool operator==(const Line& other) const = default;
 
         [[nodiscard]] std::optional<std::array<NormalIntersection, 2>> intersect(const Sphere& sphere) const noexcept;
         [[nodiscard]] std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
@@ -327,8 +316,7 @@ namespace darmok
         [[nodiscard]] Frustum operator*(const glm::mat4& trans) const noexcept;
         Frustum& operator*=(const glm::mat4& trans) noexcept;
 
-        [[nodiscard]] bool operator==(const Frustum& other) const noexcept;
-        [[nodiscard]] bool operator!=(const Frustum& other) const noexcept;
+        [[nodiscard]] bool operator==(const Frustum& other) const = default;
     };
 
     struct DARMOK_EXPORT BoundingBox final
@@ -345,8 +333,7 @@ namespace darmok
         explicit BoundingBox(const Triangle& tri) noexcept;
         explicit BoundingBox(const Frustum& frust) noexcept;
 
-        [[nodiscard]] bool operator==(const BoundingBox& other) const noexcept;
-        [[nodiscard]] bool operator!=(const BoundingBox& other) const noexcept;
+        [[nodiscard]] bool operator==(const BoundingBox& other) const = default;
 
         BoundingBox& operator+=(const BoundingBox& bb) noexcept;
         [[nodiscard]] BoundingBox operator+(const BoundingBox& bb) const noexcept;

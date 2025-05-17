@@ -3,8 +3,10 @@
 #include "utils.hpp"
 #include <darmok/input.hpp>
 #include <darmok/string.hpp>
-#include <glm/gtx/string_cast.hpp>
+
 #include <sstream>
+
+#include <glm/gtx/string_cast.hpp>
 
 namespace darmok
 {
@@ -26,9 +28,9 @@ namespace darmok
 		_keyDelegate(_table, modifiers, down);
 	}
 
-	void LuaKeyboardListener::onKeyboardChar(const UtfChar& chr)
+	void LuaKeyboardListener::onKeyboardChar(char32_t chr)
 	{
-		_charDelegate(_table, chr.toString());
+		_charDelegate(_table, StringUtils::toUtf8(chr));
 	}
 
 	LuaKeyboardListenerFilter::LuaKeyboardListenerFilter(const sol::table& table) noexcept
@@ -98,12 +100,7 @@ namespace darmok
 
 	std::string LuaKeyboard::getUpdateChars(const Keyboard& kb) noexcept
 	{
-		std::stringstream ss;
-		for (auto& chr : kb.getUpdateChars())
-		{
-			ss << chr;
-		}
-		return ss.str();
+		return StringUtils::toUtf8(kb.getUpdateChars());
 	}
 
 	void LuaKeyboard::addListener(Keyboard& kb, const sol::table& table) noexcept

@@ -20,7 +20,7 @@ namespace darmok
 		sol::object getReal() const noexcept;
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
-		void onKeyboardChar(const UtfChar& chr) override;
+		void onKeyboardChar(char32_t chr) override;
 
 	private:
 		sol::main_table _table;

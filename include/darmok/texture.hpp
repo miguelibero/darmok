@@ -58,9 +58,9 @@ namespace darmok
 		using Format = protobuf::TextureFormat;
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
-		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
-		Texture(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags);
+		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags);
+		Texture(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags);
 		Texture(const Definition& definition) noexcept;
 		Texture(Texture&& other) noexcept;
 		Texture& operator=(Texture&& other) noexcept;
@@ -69,10 +69,10 @@ namespace darmok
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
 
-		void update(const DataView& data, uint8_t mip = 0);
-		void update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0), uint8_t mip = 0, uint16_t layer = 0, uint8_t side = 0);
-		void update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin = glm::uvec3(0), uint8_t mip = 0);
-		uint32_t read(Data& data) noexcept;
+		[[nodiscard]] expected<void, std::string> update(const DataView& data, uint8_t mip = 0);
+		[[nodiscard]] expected<void, std::string> update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0), uint8_t mip = 0, uint16_t layer = 0, uint8_t side = 0);
+		[[nodiscard]] expected<void, std::string> update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin = glm::uvec3(0), uint8_t mip = 0);
+		[[nodiscard]] uint32_t read(Data& data) noexcept;
 
 		[[nodiscard]] std::string toString() const noexcept;
 		[[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;

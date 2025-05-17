@@ -18,35 +18,35 @@ namespace darmok
 	{
 		static glm::vec2 convert(const ImVec2& v) noexcept
 		{
-			return glm::vec2(v.x, v.y);
+			return { v.x, v.y };
 		}
 
 		static ImVec2 convert(const glm::vec2& v) noexcept
 		{
-			return ImVec2(v.x, v.y);
+			return { v.x, v.y };
 		}
 
 		static glm::vec4 convert(const ImVec4& v) noexcept
 		{
-			return glm::vec4(v.x, v.y, v.z, v.w);
+			return { v.x, v.y, v.z, v.w };
 		}
 
 		static ImVec4 convert(const glm::vec4& v) noexcept
 		{
-			return ImVec4(v.x, v.y, v.z, v.w);
+			return { v.x, v.y, v.z, v.w };
 		}
 
 		static uint16_t convertUint16(float v) noexcept
 		{
 			v = bx::max(v, 0.0f);
 			v = bx::min(v, 65535.0f);
-			return uint16_t(v);
+			return static_cast<uint16_t>(v);
 		}
 	};
 
 	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui)
-		: _renderer(renderer)
-		, _imgui(imgui)
+		: _renderer{ renderer }
+		, _imgui{ imgui }
 		, _lodEnabledUniform{ bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4) }
 		, _textureUniform{ bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler) }
 		, _program{ std::make_unique<Program>(Program::fromStaticMem(imgui_program)) }
@@ -63,8 +63,9 @@ namespace darmok
 
 		Texture::Config config;
 		config.set_format(Texture::Format::BGRA8);
-		*config.mutable_size() = protobuf::convert(glm::uvec2(width, height));
-		DataView dataView(data, width * height * bytesPerPixel);
+		config.set_type(Texture::TextureType::Texture2D);
+		*config.mutable_size() = protobuf::convert(glm::uvec2{ width, height });
+		DataView dataView{ data, static_cast<size_t>(width * height * bytesPerPixel) };
 		_fontsTexture = std::make_unique<Texture>(dataView, config);
 	}
 
@@ -115,9 +116,9 @@ namespace darmok
 	}
 
 	ImguiTextureData::ImguiTextureData(const bgfx::TextureHandle& handle) noexcept
-		: handle(handle)
-		, alphaBlend(false)
-		, mip(0)
+		: handle{ handle }
+		, alphaBlend{ false }
+		, mip{ 0 }
 	{
 	}
 
@@ -167,11 +168,11 @@ namespace darmok
 		{
 			const ImDrawList* drawList = drawData->CmdLists[ii];
 
-			auto numVertices = (uint32_t)drawList->VtxBuffer.size();
-			auto numIndices = (uint32_t)drawList->IdxBuffer.size();
+			auto numVertices = static_cast<uint32_t>(drawList->VtxBuffer.size());
+			auto numIndices = static_cast<uint32_t>(drawList->IdxBuffer.size());
 
-			const DataView vertData(&drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert));
-			const DataView idxData(&drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx));
+			const DataView vertData{ &drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert) };
+			const DataView idxData{ &drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx) };
 			std::optional<TransientMesh> mesh;
 			try
 			{
@@ -202,7 +203,7 @@ namespace darmok
 
 					if (cmd->TextureId != 0)
 					{
-						const ImguiTextureData texData(cmd->TextureId);
+						const ImguiTextureData texData{ cmd->TextureId };
 						state |= 0 != (texData.alphaBlend)
 							? BGFX_STATE_BLEND_ALPHA
 							: BGFX_STATE_NONE
@@ -306,7 +307,6 @@ namespace darmok
 		return map;
 	}
 
-
 	const ImguiAppComponentImpl::GamepadMap& ImguiAppComponentImpl::getGamepadMap() noexcept
 	{
 		static const GamepadMap map
@@ -359,9 +359,9 @@ namespace darmok
 	}	
 
 	ImguiAppComponentImpl::ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize)
-		: _renderer(renderer)
-		, _inputEnabled(true)
-		, _imgui(nullptr)
+		: _renderer{ renderer }
+		, _inputEnabled{ true }
+		, _imgui{ nullptr }
 	{
 		IMGUI_CHECKVERSION();
 	}
@@ -471,9 +471,9 @@ namespace darmok
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = dt;
 
-		for (auto& inputChar : input.getImpl().getKeyboard().getUpdateChars())
+		for (auto& chr : input.getImpl().getKeyboard().getUpdateChars())
 		{
-			io.AddInputCharacter(inputChar.code);
+			io.AddInputCharacter(chr);
 		}
 
 		auto& win = _app->getWindow();
@@ -512,7 +512,7 @@ namespace darmok
 	}
 
 	ImguiAppComponent::ImguiAppComponent(IImguiRenderer& renderer, float fontSize) noexcept
-		: _impl(std::make_unique<ImguiAppComponentImpl>(renderer, fontSize))
+		: _impl{ std::make_unique<ImguiAppComponentImpl>(renderer, fontSize) }
 	{
 	}
 

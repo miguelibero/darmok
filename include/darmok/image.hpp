@@ -38,10 +38,10 @@ namespace darmok
 		Image(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
 		Image(bimg::ImageContainer* container);
 		~Image() noexcept;
-		Image(Image&& other) noexcept;
-		Image& operator=(Image&& other) noexcept;
 		Image(const Image& other) noexcept;
 		Image& operator=(const Image& other) noexcept;
+		Image(Image&& other) noexcept;
+		Image& operator=(Image&& other) noexcept;
 
 		[[nodiscard]] bool empty() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
@@ -60,7 +60,7 @@ namespace darmok
 		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;
 		void write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 
-		void update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1);
+		[[nodiscard]] expected<void, std::string> update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1);
 
 		static bimg::TextureFormat::Enum readFormat(std::string_view name) noexcept;
 		static ImageEncoding getEncodingForPath(const std::filesystem::path& path) noexcept;

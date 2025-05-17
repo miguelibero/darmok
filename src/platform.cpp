@@ -6,15 +6,15 @@
 namespace darmok
 {
 	PlatformEvent::PlatformEvent(Type type)
-		: _type(type)
+		: _type{ type }
 	{
 	}
 
 	KeyboardKeyEvent::KeyboardKeyEvent(KeyboardKey key, KeyboardModifiers modifiers, bool down) noexcept
 		: PlatformEvent(Type::KeyboardKey)
-		, _key(key)
-		, _modifiers(std::move(modifiers))
-		, _down(down)
+		, _key{ key }
+		, _modifiers{ std::move(modifiers) }
+		, _down{ down }
 	{
 	}
 
@@ -24,20 +24,20 @@ namespace darmok
 		keyb.setKey(_key, _modifiers, _down);
 	}
 
-	KeyboardCharEvent::KeyboardCharEvent(const UtfChar& data) noexcept
+	KeyboardCharEvent::KeyboardCharEvent(char32_t chr) noexcept
 		: PlatformEvent(Type::KeyboardChar)
-		, _data(data)
+		, _chr{ chr }
 	{
 	}
 
 	void KeyboardCharEvent::process(Input& input) noexcept
 	{
-		input.getKeyboard().getImpl().pushChar(_data);
+		input.getKeyboard().getImpl().pushChar(_chr);
 	}
 
 	MousePositionEvent::MousePositionEvent(const glm::vec2& pos) noexcept
 		: PlatformEvent(Type::MousePosition)
-		, _pos(pos)
+		, _pos{ pos }
 	{
 	}
 
@@ -48,7 +48,7 @@ namespace darmok
 
 	MouseActiveEvent::MouseActiveEvent(bool active) noexcept
 		: PlatformEvent(Type::MouseActive)
-		, _active(active)
+		, _active{ active }
 	{
 	}
 
@@ -59,7 +59,7 @@ namespace darmok
 
 	MouseScrollEvent::MouseScrollEvent(const glm::vec2& scroll) noexcept
 		: PlatformEvent(Type::MouseScroll)
-		, _scroll(scroll)
+		, _scroll{ scroll }
 	{
 	}
 
@@ -70,8 +70,8 @@ namespace darmok
 
 	MouseButtonEvent::MouseButtonEvent(MouseButton button, bool down) noexcept
 		: PlatformEvent(Type::MouseButton)
-		, _button(button)
-		, _down(down)
+		, _button{ button }
+		, _down{ down }
 	{
 	}
 
@@ -82,9 +82,9 @@ namespace darmok
 
 	GamepadStickEvent::GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::vec3& value) noexcept
 		: PlatformEvent(Type::GamepadStick)
-		, _gamepad(gampad)
-		, _stick(stick)
-		, _value(value)
+		, _gamepad{ gampad }
+		, _stick{ stick }
+		, _value{ value }
 	{
 	}
 
@@ -99,9 +99,9 @@ namespace darmok
 
 	GamepadButtonEvent::GamepadButtonEvent(uint8_t gampad, GamepadButton button, bool down) noexcept
 		: PlatformEvent(Type::GamepadButton)
-		, _gamepad(gampad)
-		, _button(button)
-		, _down(down)
+		, _gamepad{ gampad }
+		, _button{ button }
+		, _down{ down }
 	{
 	}
 
@@ -116,8 +116,8 @@ namespace darmok
 
 	GamepadConnectEvent::GamepadConnectEvent(uint8_t gamepad, bool connected) noexcept
 		: PlatformEvent(Type::GamepadConnect)
-		, _gamepad(gamepad)
-		, _connected(connected)
+		, _gamepad{ gamepad }
+		, _connected{ connected }
 	{
 	}
 
@@ -132,7 +132,7 @@ namespace darmok
 
 	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size) noexcept
 		: PlatformEvent(Type::WindowSize)
-		, _size(size)
+		, _size{ size }
 	{
 	}
 
@@ -143,9 +143,8 @@ namespace darmok
 
 	WindowPixelSizeEvent::WindowPixelSizeEvent(const glm::uvec2& size) noexcept
 		: PlatformEvent(Type::WindowPixelSize)
-		, _size(size)
+		, _size{ size }
 	{
-
 	}
 
 	void WindowPixelSizeEvent::process(Window& win) noexcept
@@ -155,7 +154,7 @@ namespace darmok
 	
 	WindowPhaseEvent::WindowPhaseEvent(WindowPhase phase) noexcept
 		: PlatformEvent(Type::WindowPhase)
-		, _phase(phase)
+		, _phase{ phase }
 	{
 	}
 
@@ -166,7 +165,7 @@ namespace darmok
 
 	WindowErrorEvent::WindowErrorEvent(std::string err) noexcept
 		: PlatformEvent(Type::WindowError)
-		, _error(std::move(err))
+		, _error{ std::move(err) }
 	{
 	}
 
@@ -177,7 +176,7 @@ namespace darmok
 
 	WindowVideoModeEvent::WindowVideoModeEvent(const VideoMode& mode) noexcept
 		: PlatformEvent(Type::WindowVideoMode)
-		, _mode(mode)
+		, _mode{ mode }
 	{
 	}
 
@@ -188,7 +187,7 @@ namespace darmok
 
 	VideoModeInfoEvent::VideoModeInfoEvent(VideoModeInfo info) noexcept
 		: PlatformEvent(Type::VideoModeInfo)
-		, _info(std::move(info))
+		, _info{ std::move(info) }
 	{
 	}
 
@@ -199,7 +198,7 @@ namespace darmok
 
 	WindowCursorModeEvent::WindowCursorModeEvent(WindowCursorMode mode) noexcept
 		: PlatformEvent(Type::WindowCursorMode)
-		, _mode(mode)
+		, _mode{ mode }
 	{
 	}
 
@@ -210,7 +209,7 @@ namespace darmok
 
 	WindowTitleEvent::WindowTitleEvent(std::string title) noexcept
 		: PlatformEvent(Type::WindowCursorMode)
-		, _title(std::move(title))
+		, _title{ std::move(title) }
 	{
 	}
 

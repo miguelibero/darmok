@@ -224,7 +224,7 @@ namespace darmok
         void clear() noexcept;
 
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
-        [[nodiscard]] Mesh::Definition createMeshDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
+        [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 

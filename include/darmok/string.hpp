@@ -62,6 +62,11 @@ namespace darmok
         std::string_view trimRight(std::string_view str) noexcept;
         std::string_view trim(std::string_view str) noexcept;
 
+		std::u32string toUtf32(std::string_view str) noexcept;
+        char32_t toUtf32Char(std::string_view str) noexcept;
+		std::string toUtf8(std::u32string_view str) noexcept;
+		std::string toUtf8(char32_t chr) noexcept;
+
         template<typename Callback>
         bool regexReplace(std::string& str, const std::regex& pattern, Callback&& callback)
         {

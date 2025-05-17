@@ -132,7 +132,6 @@ set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
 set(CORE_SOURCES
   string.cpp
-  utf.cpp
   stream.cpp
   data.cpp
   data_stream.cpp
@@ -142,6 +141,7 @@ set(CORE_SOURCES
   color.cpp
   image.cpp
   shape.cpp
+  shape_serialize.cpp
   texture.cpp
   mesh.cpp
   vertex.cpp
@@ -159,7 +159,6 @@ set(CORE_HEADERS
   glm_serialize.hpp
   utils.hpp
   string.hpp
-  utf.hpp
   stream.hpp
   optional_ref.hpp
   collection.hpp
@@ -168,6 +167,7 @@ set(CORE_HEADERS
   uniform.hpp
   math.hpp
   shape.hpp
+  shape_serialize.hpp
   mesh.hpp
   color_fwd.hpp
   color.hpp

@@ -2000,13 +2000,13 @@ namespace darmok
         }
     }
 
-    void RmluiSceneComponentImpl::onKeyboardChar(const UtfChar& chr) noexcept
+    void RmluiSceneComponentImpl::onKeyboardChar(char32_t chr) noexcept
     {
         if (!_scene)
         {
             return;
         }
-        Rml::String str = chr.toString();
+        Rml::String str = StringUtils::toUtf8(chr);
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
             canvas.getImpl().processTextInput(str);

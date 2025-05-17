@@ -30,8 +30,8 @@ namespace
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
 
-			_sound = _app.getAssets().getSoundLoader()("sound.wav");
-			_music = _app.getAssets().getMusicLoader()("music.mp3");
+			_sound = _app.getAssets().getSoundLoader()("sound.wav").value();
+			_music = _app.getAssets().getMusicLoader()("music.mp3").value();
 			auto& audio = _app.getAudio();
 			_soundVolume = audio.getVolume(AudioGroup::Sound);
 			_musicVolume = audio.getVolume(AudioGroup::Music);

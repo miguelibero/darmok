@@ -10,6 +10,7 @@
 #include <glm/detail/type_quat.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <nlohmann/json.hpp>
+#include <fmt/format.h>
 
 
 namespace darmok
@@ -134,5 +135,37 @@ namespace std
 	{
 		return out << glm::to_string(mat);
 	}
+}
 
+namespace fmt
+{
+	template<glm::length_t L, typename T, glm::qualifier Q>
+	struct formatter<glm::vec<L, T, Q>> : public formatter<std::string_view>
+	{
+		template <typename FormatContext>
+		auto format(const glm::vec<L, T, Q>& v, FormatContext& ctx) const
+		{
+			return formatter<std::string_view>::format(glm::to_string(v), ctx);
+		}
+	};
+
+	template<typename T, glm::qualifier Q>
+	struct formatter<glm::qua<T, Q>> : public formatter<std::string_view>
+	{
+		template <typename FormatContext>
+		auto format(const glm::qua<T, Q>& v, FormatContext& ctx) const
+		{
+			return formatter<std::string_view>::format(glm::to_string(v), ctx);
+		}
+	};
+
+	template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q>
+	struct formatter<glm::mat<L1, L2, T, Q>> : public formatter<std::string_view>
+	{
+		template <typename FormatContext>
+		auto format(const glm::mat<L1, L2, T, Q>& v, FormatContext& ctx) const
+		{
+			return formatter<std::string_view>::format(glm::to_string(v), ctx);
+		}
+	};
 }

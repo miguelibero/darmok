@@ -3,7 +3,6 @@
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/utf.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/color.hpp>
 #include <darmok/material.hpp>
@@ -30,10 +29,13 @@ namespace darmok
 
         virtual ~IFont() = default;
 
-        virtual std::optional<Glyph> getGlyph(const UtfChar& chr) const = 0;
+        virtual std::optional<Glyph> getGlyph(char32_t chr) const = 0;
         virtual std::shared_ptr<Texture> getTexture() const = 0;
         virtual float getLineSize() const = 0;
-        virtual void update(const std::unordered_set<UtfChar>& chars) {};
+        virtual [[nodiscard]] expected<void, std::string> update(const std::unordered_set<char32_t>& chars)
+        {
+            return {};
+        };
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader : public ILoader<IFont>
@@ -62,14 +64,12 @@ namespace darmok
         using RenderConfig = TextRenderConfig;
 
         Text(const std::shared_ptr<IFont>& font, const std::string& content = "") noexcept;
-        ~Text();
         std::shared_ptr<IFont> getFont() noexcept;
         Text& setFont(const std::shared_ptr<IFont>& font) noexcept;
         std::string getContentString() const;
-        const UtfVector& getContent() const noexcept;
+        const std::u32string& getContent() const noexcept;
         Text& setContent(const std::string& str);
-        Text& setContent(const std::u8string& str);
-        Text& setContent(const UtfVector& content);
+        Text& setContent(const std::u32string& str);
         const Color& getColor() const noexcept;
         Text& setColor(const Color& color) noexcept;
 
@@ -84,10 +84,10 @@ namespace darmok
         bool update(const bgfx::VertexLayout& layout);
         bool render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const;
 
-        static MeshData createMeshData(const UtfVector& content, const IFont& font, const RenderConfig& config = {});
+        static MeshData createMeshData(std::u32string_view content, const IFont& font, const RenderConfig& config = {});
     private:
         std::shared_ptr<IFont> _font;
-        UtfVector _content;
+        std::u32string _content;
         std::optional<DynamicMesh> _mesh;
         Color _color;
         bool _changed;
@@ -120,7 +120,7 @@ namespace darmok
     {
     public:
         TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
-        std::optional<Glyph> getGlyph(const UtfChar& chr) const noexcept override;
+        std::optional<Glyph> getGlyph(char32_t chr) const noexcept override;
         float getLineSize() const noexcept override;
         std::shared_ptr<Texture> getTexture() const override;
     private:

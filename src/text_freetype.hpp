@@ -6,6 +6,7 @@
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/material.hpp>
+#include <darmok/expected.hpp>
 #include <darmok/protobuf/texture_atlas.pb.h>
 #include <map>
 #include <optional>
@@ -46,18 +47,18 @@ namespace darmok
         FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
 
-        std::optional<Glyph> getGlyph(const UtfChar& chr) const noexcept override;
+        std::optional<Glyph> getGlyph(char32_t chr) const noexcept override;
         float getLineSize() const noexcept override;
         std::shared_ptr<Texture> getTexture() const override;
-        void update(const std::unordered_set<UtfChar>& chars) override;
+        [[nodiscard]] expected<void, std::string> update(const std::unordered_set<char32_t>& chars) override;
         FT_Face getFace() const noexcept;
     private:
         std::shared_ptr<Texture> _texture;
-        std::map<UtfChar, Glyph> _glyphs;
+        std::map<char32_t, Glyph> _glyphs;
         std::shared_ptr<Definition> _def;
         FT_Face _face;
         FT_Library _library;
-        std::unordered_set<UtfChar> _renderedChars;
+        std::unordered_set<char32_t> _renderedChars;
         bx::AllocatorI& _alloc;
     };
 
@@ -80,8 +81,8 @@ namespace darmok
         FreetypeFontAtlasGenerator& setSize(const glm::uvec2& size) noexcept;
         FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
         FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
-        glm::uvec2 calcSpace(const UtfVector& chars) noexcept;
-        Result operator()(const UtfVector& chars);
+        glm::uvec2 calcSpace(std::u32string_view chars) noexcept;
+        Result operator()(std::u32string_view chars);
         Result operator()(std::string_view str);
     private:
         FT_Face _face;
@@ -91,7 +92,7 @@ namespace darmok
         FT_Render_Mode _renderMode;
         bimg::TextureFormat::Enum _imageFormat;
 
-        std::map<UtfChar, FT_UInt> getIndices(const UtfVector& chars) const;
+        std::map<char32_t, FT_UInt> getIndices(std::u32string_view chars) const;
         const FT_Bitmap& renderBitmap(FT_UInt index);
     };
 

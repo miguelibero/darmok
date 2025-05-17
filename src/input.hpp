@@ -24,7 +24,7 @@ namespace darmok
 		const KeyboardKeys& getKeys() const noexcept;
 		const KeyboardModifiers& getModifiers() const noexcept;
 		bool hasModifier(KeyboardModifier mod) const noexcept;
-		const KeyboardChars& getUpdateChars() const noexcept;
+		std::u32string_view getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
 		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
@@ -34,7 +34,7 @@ namespace darmok
 		void flush() noexcept;
 		void reset() noexcept;
 		void setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
-		void pushChar(const UtfChar& data) noexcept;
+		void pushChar(char32_t chr) noexcept;
 
 		static char keyToAscii(KeyboardKey key, bool upper = false) noexcept;
 		
@@ -46,12 +46,12 @@ namespace darmok
 		static std::optional<KeyboardInputEvent> readEvent(std::string_view name) noexcept;
 
 	private:
-		UtfChar popChar() noexcept;
+		char32_t popChar() noexcept;
 
 		KeyboardKeys _keys;
-		KeyboardChars _updateChars;
+		std::u32string _updateChars;
 		KeyboardModifiers _modifiers;
-		std::array<UtfChar, 256> _chars;
+		std::array<char32_t, 256> _chars;
 		size_t _charsRead;
 		size_t _charsWrite;
 		OwnRefCollection<IKeyboardListener> _listeners;

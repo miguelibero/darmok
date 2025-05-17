@@ -56,7 +56,7 @@ namespace darmok
 		}
 	}
 
-	void KeyboardImpl::pushChar(const UtfChar& data) noexcept
+	void KeyboardImpl::pushChar(char32_t data) noexcept
 	{
 		_chars.at(_charsWrite) = data;
 		_charsWrite = (_charsWrite + 1) % _chars.size();
@@ -76,7 +76,7 @@ namespace darmok
 		return _keys;
 	}
 
-	UtfChar KeyboardImpl::popChar() noexcept
+	char32_t KeyboardImpl::popChar() noexcept
 	{
 		if (_charsRead == _charsWrite)
 		{
@@ -97,7 +97,7 @@ namespace darmok
 		return _modifiers.contains(mod);
 	}
 
-	const KeyboardChars& KeyboardImpl::getUpdateChars() const noexcept
+	std::u32string_view KeyboardImpl::getUpdateChars() const noexcept
 	{
 		return _updateChars;
 	}
@@ -105,7 +105,7 @@ namespace darmok
 	void KeyboardImpl::afterUpdate() noexcept
 	{
 		_updateChars.clear();
-		UtfChar chr;
+		char32_t chr;
 		while (true)
 		{
 			chr = popChar();
@@ -244,7 +244,7 @@ namespace darmok
 		return _impl->getKeys();
 	}
 
-	const KeyboardChars& Keyboard::getUpdateChars() const noexcept
+	std::u32string_view Keyboard::getUpdateChars() const noexcept
 	{
 		return _impl->getUpdateChars();
 	}

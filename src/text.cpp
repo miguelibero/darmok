@@ -12,17 +12,13 @@
 namespace darmok
 {
 	Text::Text(const std::shared_ptr<IFont>& font, const std::string& content) noexcept
-		: _font(font)
-		, _color(Colors::black())
-		, _changed(false)
-		, _vertexNum(0)
-		, _indexNum(0)
+		: _font{ font }
+		, _color{ Colors::black() }
+		, _changed{ false }
+		, _vertexNum{ 0 }
+		, _indexNum{ 0 }
 	{
 		setContent(content);
-	}
-
-	Text::~Text()
-	{
 	}
 
 	const Color& Text::getColor() const noexcept
@@ -96,34 +92,26 @@ namespace darmok
 
 	std::string Text::getContentString() const
 	{
-		return UtfChar::toString(_content);
+		return StringUtils::toUtf8(_content);
 	}
 
-	const UtfVector& Text::getContent() const noexcept
+	const std::u32string& Text::getContent() const noexcept
 	{
 		return _content;
 	}
 
 	Text& Text::setContent(const std::string& str)
 	{
-		_content.clear();
-		UtfChar::read(str, _content);
-		_changed = true;
-		return *this;
+		return setContent(StringUtils::toUtf32(str));
 	}
 
-	Text& Text::setContent(const std::u8string& str)
+	Text& Text::setContent(const std::u32string& str)
 	{
-		_content.clear();
-		UtfChar::read(str, _content);
-		_changed = true;
-		return *this;
-	}
-
-	Text& Text::setContent(const UtfVector& content)
-	{
-		_content = content;
-		_changed = true;
+		if (_content != str)
+		{
+			_content = str;
+			_changed = true;
+		}
 		return *this;
 	}
 
@@ -183,10 +171,10 @@ namespace darmok
 		auto factor = direction == Direction::Negative ? -1 : 1;
 		if (axis == Axis::Vertical)
 		{
-			return glm::vec2(0, factor);
+			return { 0, factor };
 
 		}
-		return glm::vec2(factor, 0);
+		return { factor, 0 };
 	}
 
 	bool TextRenderConfig::fixEndOfLine(glm::vec2& pos, float lineStep) const
@@ -225,9 +213,9 @@ namespace darmok
 
 	}
 
-	MeshData Text::createMeshData(const UtfVector& content, const IFont& font, const RenderConfig& config)
+	MeshData Text::createMeshData(std::u32string_view content, const IFont& font, const RenderConfig& config)
 	{
-		glm::vec2 pos(0);
+		glm::vec2 pos{ 0 };
 		MeshData meshData;
 		auto lineSize = font.getLineSize();
 		auto glyphAdv = config.getGlyphAdvanceFactor();
@@ -247,33 +235,33 @@ namespace darmok
 			auto glyphOriginalSize = protobuf::convert(glyph->original_size());
 			glyphOffset += pos;
 
-			MeshData glyphMesh(Rectangle(glyphSize, glm::vec2(glyphSize) * 0.5F));
+			MeshData glyphMesh{ Rectangle{glyphSize, glm::vec2{glyphSize} *0.5F} };
 
 			glyphMesh.scaleTexCoords(glyphSize);
 			glyphMesh.translateTexCoords(glyphTexPos);
-			glyphMesh.translatePositions(glm::vec3(glyphOffset, 0));
+			glyphMesh.translatePositions({ glyphOffset, 0 });
 
 			meshData += glyphMesh;
-			pos += glyphAdv * glm::vec2(glyphOriginalSize);
+			pos += glyphAdv * glm::vec2{ glyphOriginalSize };
 		}
 
 		// TODO: maybe add getter of the size to the font interface
 		// to not assume that the size is the diffuse texture size
 		auto tex = font.getTexture();
-		auto texScale = glm::vec2(1);
+		auto texScale = glm::vec2{ 1 };
 		if (tex)
 		{
-			texScale /= glm::vec2(tex->getSize());
+			texScale /= glm::vec2{ tex->getSize() };
 		}
 
-		meshData.scalePositions(glm::vec3(texScale, 1.F));
+		meshData.scalePositions({ texScale, 1.F });
 		meshData.scaleTexCoords(texScale);
 
 		return meshData;
 	}
 
 	TextRenderer::TextRenderer(const std::shared_ptr<Program>& prog) noexcept
-		: _prog(prog)
+		: _prog{ prog }
 		, _colorUniform{ bgfx::kInvalidHandle }
 		, _textureUniform{ bgfx::kInvalidHandle }
 	{
@@ -296,7 +284,7 @@ namespace darmok
 		_scene.reset();
 		_cam.reset();
 
-		std::vector<bgfx::UniformHandle> uniforms = { _colorUniform, _textureUniform };
+		std::vector<bgfx::UniformHandle> uniforms{ _colorUniform, _textureUniform };
 		for (auto& uniform : uniforms)
 		{
 			if (isValid(uniform))
@@ -314,7 +302,7 @@ namespace darmok
 			return;
 		}
 		auto entities = _cam->getEntities<Text>();
-		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<UtfChar>> fontChars;
+		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<char32_t>> fontChars;
 		for (auto entity : entities)
 		{
 			auto& text = _scene->getComponent<Text>(entity).value();
@@ -373,7 +361,7 @@ namespace darmok
 	}
 
 	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept
-		: _atlas(atlas)
+		: _atlas{ atlas }
 	{
 	}
 
@@ -382,9 +370,10 @@ namespace darmok
 		return _atlas->texture;
 	}
 
-	std::optional<TextureAtlasFont::Glyph> TextureAtlasFont::getGlyph(const UtfChar& chr) const noexcept
+	std::optional<TextureAtlasFont::Glyph> TextureAtlasFont::getGlyph(char32_t chr) const noexcept
 	{
-		auto elm = _atlas->getElement(chr.toString());
+		auto key = StringUtils::toUtf8(chr);
+		auto elm = _atlas->getElement(key);
 		if (!elm)
 		{
 			return std::nullopt;
@@ -422,7 +411,7 @@ namespace darmok
 	}
 
 	TextureAtlasFontLoader::TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept
-		: _atlasLoader(atlasLoader)
+		: _atlasLoader{ atlasLoader }
 	{
 	}
 
@@ -431,7 +420,7 @@ namespace darmok
 		auto atlasResult = _atlasLoader(path);
 		if (!atlasResult)
 		{
-			return unexpected<std::string>{ atlasResult.error() };
+			return unexpected{ atlasResult.error() };
 		}
 		return std::make_shared<TextureAtlasFont>(atlasResult.value());
 	}

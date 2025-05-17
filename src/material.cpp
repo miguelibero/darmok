@@ -19,21 +19,21 @@ namespace darmok
 	}
 
 	Material::Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept
+		: program{ prog }
+		, textures{ {TextureType::BaseColor, tex} }
 	{
-		program = prog;
-		textures.emplace(TextureType::BaseColor, tex);
 	}
 
 	Material::Material(std::shared_ptr<Program> prog, const Color& color) noexcept
+		: program{ prog }
+		, baseColor{ color }
 	{
-		program = prog;
-		baseColor = color;
 	}
 
 	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
 		: FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>(defLoader)
-		, _progLoader(progLoader)
-		, _texLoader(texLoader)
+		, _progLoader{ progLoader }
+		, _texLoader{ texLoader }
 	{
 	}
 
@@ -41,7 +41,7 @@ namespace darmok
 	{
 		if (!def)
 		{
-			return unexpected<std::string>{ "null definition pointer" };
+			return unexpected{ "null definition pointer" };
 		}
 		auto mat = std::make_shared<Material>();
 	
@@ -69,7 +69,7 @@ namespace darmok
 			auto loadResult = _progLoader(def->program_path());
 			if (!loadResult)
 			{
-				return unexpected<std::string>{ "failed to load custom program" };
+				return unexpected{ "failed to load custom program" };
 			}
 			mat->program = loadResult.value();
 		}
@@ -79,7 +79,7 @@ namespace darmok
 			auto loadResult = _texLoader(defTex.texture_path());
 			if (!loadResult)
 			{
-				return unexpected<std::string>{ "failed to load texture" };
+				return unexpected{ "failed to load texture" };
 			}
 			auto tex = loadResult.value();
 			if (defTex.has_type())
@@ -178,7 +178,7 @@ namespace darmok
 
 	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
 	{
-		glm::vec4 hasTextures(0);
+		glm::vec4 hasTextures{ 0 };
 
 		for (const auto& [type, key] : _textureUniformKeys)
 		{
@@ -200,15 +200,15 @@ namespace darmok
 		encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, _albedoLutSamplerUniform, _defaultTexture->getHandle());
 		auto val = Colors::normalize(mat.baseColor);
 		encoder.setUniform(_baseColorUniform, glm::value_ptr(val));
-		val = glm::vec4(mat.metallicFactor, mat.roughnessFactor, mat.normalScale, mat.occlusionStrength);
+		val = glm::vec4{ mat.metallicFactor, mat.roughnessFactor, mat.normalScale, mat.occlusionStrength };
 		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
-		val = glm::vec4(Colors::normalize(mat.emissiveColor), 0);
+		val = glm::vec4{ Colors::normalize(mat.emissiveColor), 0 };
 		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(val));
-		val = glm::vec4(mat.multipleScattering ? 1.F : 0.F, mat.whiteFurnanceFactor, 0, 0);
+		val = glm::vec4{ mat.multipleScattering ? 1.F : 0.F, mat.whiteFurnanceFactor, 0, 0 };
 		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(val));
 		
 		// phong
-		val = glm::vec4(Colors::normalize(mat.specularColor), mat.shininess);
+		val = glm::vec4{ Colors::normalize(mat.specularColor), mat.shininess };
 		encoder.setUniform(_specularColorUniform, glm::value_ptr(val));
 
 		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));

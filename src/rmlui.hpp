@@ -391,7 +391,7 @@ namespace darmok
 		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
 
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
-		void onKeyboardChar(const UtfChar& chr) noexcept override;
+		void onKeyboardChar(char32_t chr) noexcept override;
 		void onMouseActive(bool active) noexcept override;
 		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
 		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;

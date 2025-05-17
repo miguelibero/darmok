@@ -307,7 +307,7 @@ namespace darmok
     {
         shader.write(config.path);
         ShaderDefines defines;
-        DataInputStream in(shader);
+        DataInputStream in{ shader };
         getDefines(in, defines);
         return getCompilerOperations(config, defines, baseOutputPath);
     }
@@ -592,23 +592,25 @@ namespace darmok
 
     void ProgramCompilerConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
     {
-        if (json.contains("includeDirs"))
+        auto itr = json.find("includeDirs");
+        if (itr != json.end())
         {
-            for (fs::path path : json["includeDirs"])
+            for (fs::path path : *itr)
             {
                 includePaths.insert(basePath / path);
             }
         }
         includePaths.insert(basePath);
 
-        if (json.contains("shadercPath"))
+        itr = json.find("shadercPath");
+        if (itr != json.end())
         {
-            shadercPath = basePath / json["shadercPath"];
+            shadercPath = basePath / *itr;
         }
     }
     
     ProgramCompiler::ProgramCompiler(const Config& config) noexcept
-        : _config(config)
+        : _config{ config }
     {
     }
 
@@ -625,7 +627,7 @@ namespace darmok
             .programConfig = _config,
             .varyingPath = varyingDefPath,
         };
-        ShaderParser shaderParser(_config.includePaths);
+        ShaderParser shaderParser{ _config.includePaths };
 
 		auto compileShaders = [&](DataView srcData) -> std::optional<std::string>
         {
@@ -771,7 +773,7 @@ namespace darmok
 
     const std::string& ProgramFileImporterImpl::getName() const noexcept
     {
-        static const std::string name("program");
+        static const std::string name{ "program" };
         return name;
     }
 
