@@ -11,37 +11,36 @@
 
 namespace darmok
 {    
-    expected<void, std::string> Program::createShaders(const protobuf::ProgramProfile& profile, const std::string& name)
-    {
-        for (auto& variant : profile.variants())
+    expected<Program::ShaderHandles, std::string> Program::createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name)
+    {		
+        ShaderHandles handles;
+
+        for (auto& shader : shaders)
         {
-            Defines defines(variant.defines().begin(), variant.defines().end());
-            auto varName = name + StringUtils::join(" ", defines.begin(), defines.end());
-            auto vertName = varName + " vertex";
-            auto vertHandle = bgfx::createShader(ProtobufUtils::copyMem(variant.vertex_shader()));
-            if (!isValid(vertHandle))
+            Defines defines{ shader.defines().begin(), shader.defines().end() };
+            auto shaderName = name + StringUtils::join(" ", defines.begin(), defines.end());
+            
+			if (shader.data().empty())
+			{
+				return unexpected{ "shader is empty: " + shaderName };
+			}
+            auto handle = bgfx::createShader(protobuf::copyMem(shader.data()));
+            if (!isValid(handle))
             {
-                return unexpected<std::string>("failed to create vertex shader: " + vertName);
+                return unexpected{ "failed to create shader: " + shaderName };
             }
-            auto fragName = varName + " fragment";
-            auto fragHandle = bgfx::createShader(ProtobufUtils::copyMem(variant.fragment_shader()));
-            if (!isValid(fragHandle))
-            {
-                bgfx::destroy(vertHandle);
-                return unexpected<std::string>("failed to create fragment shader: " + fragName);
-            }
-            bgfx::setName(vertHandle, vertName.c_str());
-            bgfx::setName(fragHandle, fragName.c_str());
-            _vertexHandles[defines] = vertHandle;
-            _fragmentHandles[defines] = fragHandle;
+            
+            bgfx::setName(handle, shaderName.c_str());
+            handles[defines] = handle;
         }
-        return {};
+        
+        return handles;
     }
 
     bgfx::ShaderHandle Program::findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept
     {
         size_t count = 0;
-        bgfx::ShaderHandle handle = { bgfx::kInvalidHandle };
+        bgfx::ShaderHandle handle{ bgfx::kInvalidHandle };
         for (auto combDefines : CollectionUtils::combinations(defines))
         {
             auto itr = handles.find(combDefines);
@@ -55,10 +54,28 @@ namespace darmok
     }
 
 	Program::Program(const Definition& def)
-        : _vertexLayout(VaryingUtils::getBgfx(def.varying().vertex()))
+        : _vertexLayout{ VaryingUtils::getBgfx(def.varying().vertex()) }
 	{
-        auto& profile = ProgramCoreUtils::getCurrentProfile(def);
-        createShaders(profile, def.name());
+        auto profileResult = ProgramCoreUtils::getCurrentProfile(def);
+		if (!profileResult)
+		{
+			throw std::runtime_error{ profileResult.error() };
+		}
+
+        auto& profile = profileResult.value().get();
+		
+        auto fragResult = createShaders(profile.fragment_shaders(), def.name());
+        if (!fragResult)
+        {
+            throw std::runtime_error{ fragResult.error() };
+        }
+		_fragmentHandles = std::move(fragResult.value());
+        auto vertResult = createShaders(profile.vertex_shaders(), def.name());
+        if (!vertResult)
+        {
+            throw std::runtime_error{ vertResult.error() };
+        }
+        _vertexHandles = std::move(vertResult.value());
 
         for (auto& [defines, vertHandle] : _vertexHandles)
         {
@@ -74,19 +91,21 @@ namespace darmok
         }
     }
 
-    void Program::createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle)
+    expected<bgfx::ProgramHandle, std::string> Program::createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle)
     {
-        if (_handles.contains(defines))
+        auto itr = _handles.find(defines);
+        if (itr != _handles.end())
         {
-            return;
+            return itr->second;
         }
         auto handle = bgfx::createProgram(vertHandle, fragHandle);
         if (!isValid(handle))
         {
             auto definesStr = StringUtils::join(", ", defines.begin(), defines.end());
-            throw std::runtime_error("failed to create program: " + definesStr);
+            return unexpected{ "failed to create program: " + definesStr };
         }
         _handles[defines] = handle;
+        return handle;
     }
 
     Program::~Program() noexcept
@@ -142,17 +161,17 @@ namespace darmok
         switch (type)
         {
         case Type::Gui:
-            return ProtobufUtils::readStaticMem(def, gui_program);
+            return protobuf::readStaticMem(def, gui_program);
         case Type::Unlit:
-            return ProtobufUtils::readStaticMem(def, unlit_program);
+            return protobuf::readStaticMem(def, unlit_program);
         case Type::Forward:
-            return ProtobufUtils::readStaticMem(def, forward_program);
+            return protobuf::readStaticMem(def, forward_program);
         case Type::ForwardBasic:
-            return ProtobufUtils::readStaticMem(def, forward_basic_program);
+            return protobuf::readStaticMem(def, forward_basic_program);
         case Type::Tonemap:
-            return ProtobufUtils::readStaticMem(def, tonemap_program);
+            return protobuf::readStaticMem(def, tonemap_program);
         }
-        return unexpected<std::string>{"undefined standar program type"};
+        return unexpected{"undefined standar program type"};
     }
 
     std::shared_ptr<Program::Definition> StandardProgramLoader::loadDefinition(Type::Enum type)

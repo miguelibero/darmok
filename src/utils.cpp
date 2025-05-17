@@ -24,12 +24,12 @@ namespace darmok
         }
     }
 
-    Random::Random(uint32_t seed) noexcept
+    RandomGenerator::RandomGenerator(uint32_t seed) noexcept
         : _seed(seed)
     {
     }
 
-    uint32_t Random::hash(uint32_t input) noexcept
+    uint32_t RandomGenerator::hash(uint32_t input) noexcept
     {
         // PGC hash
         uint32_t state = input * 747796405u + 2891336453u;
@@ -37,51 +37,89 @@ namespace darmok
         return (word >> 22u) ^ word;
     }
 
-    std::string Exec::argsToString(const std::vector<Arg>& args)
+    namespace Exec
     {
-        std::ostringstream ss;
-        for (const auto& arg : args)
+        std::string escapeArgument(std::string_view arg) noexcept
         {
-            std::string strArg;
-            if (auto path = std::get_if<std::filesystem::path>(&arg))
+            std::ostringstream oss;
+
+            bool needsQuotes = false;
+            for (char c : arg)
             {
-                strArg = path->string();
-                std::replace(strArg.begin(), strArg.end(), '\\', '/');
+                if (c == ' ' || c == '\t' || c == '"' || c == '\\')
+                {
+                    needsQuotes = true;
+                    break;
+                }
             }
-            else if (auto constChar = std::get_if<const char*>(&arg))
+
+            if (needsQuotes)
             {
-                strArg = *constChar;
+                oss << '"';
+                for (char c : arg)
+                {
+                    if (c == '"' || c == '\\')
+                    {
+                        oss << '\\';
+                    }
+                    oss << c;
+                }
+                oss << '"';
             }
             else
             {
-                strArg = std::get<std::string>(arg);
+                oss << arg;
             }
-            ss << StringUtils::escapeArgument(strArg) << " ";
-        }
-        return ss.str();
-    }
 
-    Exec::Result Exec::run(const std::vector<Arg>& args, const std::filesystem::path& path)
-    {
-        auto cmd = argsToString(args);
-        std::ostringstream out;
-        std::ostringstream err;
-        TinyProcessLib::Process process(cmd, path.string(),
-            [&out](const char* bytes, size_t n)
+            return oss.str();
+        }
+
+        std::string argsToString(const std::vector<Arg>& args)
+        {
+            std::ostringstream ss;
+            for (const auto& arg : args)
             {
-                out.write(bytes, n);
-            },
-            [&err](const char* bytes, size_t n)
-            {
-                err.write(bytes, n);
+                std::string strArg;
+                if (auto path = std::get_if<std::filesystem::path>(&arg))
+                {
+                    strArg = path->string();
+                    std::replace(strArg.begin(), strArg.end(), '\\', '/');
+                }
+                else if (auto constChar = std::get_if<const char*>(&arg))
+                {
+                    strArg = *constChar;
+                }
+                else
+                {
+                    strArg = std::get<std::string>(arg);
+                }
+                ss << escapeArgument(strArg) << " ";
             }
-        );
-        auto code = process.get_exit_status();
-        return Result{
-            .out = out.str(),
-            .err = err.str(),
-            .returnCode = code
-        };
+            return ss.str();
+        }
+
+        Result run(const std::vector<Arg>& args, const std::filesystem::path& path)
+        {
+            auto cmd = argsToString(args);
+            std::ostringstream out;
+            std::ostringstream err;
+            TinyProcessLib::Process process(cmd, path.string(),
+                [&out](const char* bytes, size_t n)
+                {
+                    out.write(bytes, n);
+                },
+                [&err](const char* bytes, size_t n)
+                {
+                    err.write(bytes, n);
+                }
+            );
+            auto code = process.get_exit_status();
+            return Result{
+                .out = out.str(),
+                .err = err.str(),
+                .returnCode = code
+            };
+        }
     }
 
     std::filesystem::path getTempPath(std::string_view prefix) noexcept

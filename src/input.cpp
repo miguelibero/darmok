@@ -181,127 +181,27 @@ namespace darmok
 	}
 
 	const std::string KeyboardImpl::_keyPrefix = "KeyboardKey.";
-	const std::array<std::string, toUnderlying(KeyboardKey::Count)> KeyboardImpl::_keyNames =
-	{
-		"None",
-		"Esc",
-		"Return",
-		"Tab",
-		"Space",
-		"Backspace",
-		"Up",
-		"Down",
-		"Left",
-		"Right",
-		"Insert",
-		"Delete",
-		"Home",
-		"End",
-		"PageUp",
-		"PageDown",
-		"Print",
-		"Plus",
-		"Minus",
-		"LeftBracket",
-		"RightBracket",
-		"Semicolon",
-		"Quote",
-		"Comma",
-		"Period",
-		"Slash",
-		"Backslash",
-		"GraveAccent",
-		"CapsLock",
-		"NumLock",
-		"ScrollLock",
-		"Pause",
-		"F1",
-		"F2",
-		"F3",
-		"F4",
-		"F5",
-		"F6",
-		"F7",
-		"F8",
-		"F9",
-		"F10",
-		"F11",
-		"F12",
-		"NumPad0",
-		"NumPad1",
-		"NumPad2",
-		"NumPad3",
-		"NumPad4",
-		"NumPad5",
-		"NumPad6",
-		"NumPad7",
-		"NumPad8",
-		"NumPad9",
-		"Key0",
-		"Key1",
-		"Key2",
-		"Key3",
-		"Key4",
-		"Key5",
-		"Key6",
-		"Key7",
-		"Key8",
-		"Key9",
-		"KeyA",
-		"KeyB",
-		"KeyC",
-		"KeyD",
-		"KeyE",
-		"KeyF",
-		"KeyG",
-		"KeyH",
-		"KeyI",
-		"KeyJ",
-		"KeyK",
-		"KeyL",
-		"KeyM",
-		"KeyN",
-		"KeyO",
-		"KeyP",
-		"KeyQ",
-		"KeyR",
-		"KeyS",
-		"KeyT",
-		"KeyU",
-		"KeyV",
-		"KeyW",
-		"KeyX",
-		"KeyY",
-		"KeyZ",
-	};
 
-	const std::string& KeyboardImpl::getKeyName(KeyboardKey key) noexcept
+	std::string_view KeyboardImpl::getKeyName(KeyboardKey key) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(key), _keyNames);
+		return StringUtils::getEnumName(key);
 	}
 
 	std::optional<KeyboardKey> KeyboardImpl::readKey(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<KeyboardKey>(name, _keyNames, _keyPrefix);
+		return StringUtils::readEnum<KeyboardKey>(name, _keyPrefix);
 	}
 
 	const std::string KeyboardImpl::_modPrefix = "KeyboardModifier.";
-	const std::array<std::string, toUnderlying(KeyboardModifier::Count)> KeyboardImpl::_modNames
+	
+	std::string_view KeyboardImpl::getModifierName(KeyboardModifier mod) noexcept
 	{
-		"Alt",
-		"Ctrl",
-		"Shift",
-		"Meta"
-	};
-
-	const std::string& KeyboardImpl::getModifierName(KeyboardModifier mod) noexcept
-	{
-		return StringUtils::getEnumName(toUnderlying(mod), _modNames);
+		return StringUtils::getEnumName(mod);
 	}
 
 	std::optional<KeyboardModifier> KeyboardImpl::readModifier(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<KeyboardModifier>(name, _modNames, _modPrefix);
+		return StringUtils::readEnum<KeyboardModifier>(name, _modPrefix);
 	}
 
 	std::optional<KeyboardInputEvent> KeyboardImpl::readEvent(std::string_view name) noexcept
@@ -389,7 +289,7 @@ namespace darmok
 		return KeyboardImpl::keyToAscii(key, upper);
 	}
 
-	const std::string& Keyboard::getKeyName(KeyboardKey key) noexcept
+	std::string_view Keyboard::getKeyName(KeyboardKey key) noexcept
 	{
 		return KeyboardImpl::getKeyName(key);
 	}
@@ -404,7 +304,7 @@ namespace darmok
 		return KeyboardImpl::readModifier(name);
 	}
 
-	const std::string& Keyboard::getModifierName(KeyboardModifier mod) noexcept
+	std::string_view Keyboard::getModifierName(KeyboardModifier mod) noexcept
 	{
 		return KeyboardImpl::getModifierName(mod);
 	}
@@ -579,38 +479,28 @@ namespace darmok
 	}
 
 	const std::string MouseImpl::_buttonPrefix = "MouseButton.";
-	const std::array<std::string, toUnderlying(MouseButton::Count)> MouseImpl::_buttonNames =
-	{
-		"Left",
-		"Middle",
-		"Right",
-	};
+
 
 	std::optional<MouseButton> MouseImpl::readButton(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<MouseButton>(name, _buttonNames, _buttonPrefix);
+		return StringUtils::readEnum<MouseButton>(name, _buttonPrefix);
 	}
 
-	const std::string& MouseImpl::getButtonName(MouseButton button) noexcept
+	std::string_view MouseImpl::getButtonName(MouseButton button) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(button), _buttonNames);
+		return StringUtils::getEnumName(button);
 	}
 
 	const std::string MouseImpl::_analogPrefix = "MouseAnalog.";
-	const std::array<std::string, toUnderlying(MouseAnalog::Count)> MouseImpl::_analogNames =
-	{
-		"Position",
-		"Scroll"
-	};
 
 	std::optional<MouseAnalog> MouseImpl::readAnalog(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<MouseAnalog>(name, _analogNames, _analogPrefix);
+		return StringUtils::readEnum<MouseAnalog>(name, _analogPrefix);
 	}
 
-	const std::string& MouseImpl::getAnalogName(MouseAnalog analog) noexcept
+	std::string_view MouseImpl::getAnalogName(MouseAnalog analog) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(analog), _analogNames);
+		return StringUtils::getEnumName(analog);
 	}
 
 	std::optional<MouseInputEvent> MouseImpl::readEvent(std::string_view name) noexcept
@@ -648,7 +538,7 @@ namespace darmok
 		return MouseImpl::readButton(name);
 	}
 
-	const std::string& Mouse::getButtonName(MouseButton button) noexcept
+	std::string_view Mouse::getButtonName(MouseButton button) noexcept
 	{
 		return MouseImpl::getButtonName(button);
 	}
@@ -658,7 +548,7 @@ namespace darmok
 		return MouseImpl::readAnalog(name);
 	}
 
-	const std::string& Mouse::getAnalogName(MouseAnalog analog) noexcept
+	std::string_view Mouse::getAnalogName(MouseAnalog analog) noexcept
 	{
 		return MouseImpl::getAnalogName(analog);
 	}
@@ -901,50 +791,27 @@ namespace darmok
 	}
 
 	const std::string GamepadImpl::_buttonPrefix = "GamepadButton.";
-	const std::array<std::string, toUnderlying(GamepadButton::Count)> GamepadImpl::_buttonNames =
-	{
-		"A",
-		"B",
-		"X",
-		"Y",
-		"LeftBumper",
-		"RightBumper",
-		"Select",
-		"Start",
-		"LeftThumb",
-		"LeftThumb",
-		"Up",
-		"Right",
-		"Down",
-		"Left",
-		"Guide"
-	};
 
 	std::optional<GamepadButton> GamepadImpl::readButton(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<GamepadButton>(name, _buttonNames, _buttonPrefix);
+		return StringUtils::readEnum<GamepadButton>(name, _buttonPrefix);
 	}
 
-	const std::string& GamepadImpl::getButtonName(GamepadButton button) noexcept
+	std::string_view GamepadImpl::getButtonName(GamepadButton button) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(button), _buttonNames);
+		return StringUtils::getEnumName(button);
 	}
 
 	const std::string GamepadImpl::_stickPrefix = "GamepadStick.";
-	const std::array<std::string, toUnderlying(GamepadStick::Count)> GamepadImpl::_stickNames =
-	{
-		"Left",
-		"Right"
-	};
 
 	std::optional<GamepadStick> GamepadImpl::readStick(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<GamepadStick>(name, _stickNames, _stickPrefix);
+		return StringUtils::readEnum<GamepadStick>(name, _stickPrefix);
 	}
 
-	const std::string& GamepadImpl::getStickName(GamepadStick stick) noexcept
+	std::string_view GamepadImpl::getStickName(GamepadStick stick) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(stick), _stickNames);
+		return StringUtils::getEnumName(stick);
 	}
 
 	std::optional<uint8_t> GamepadImpl::readNum(std::string_view name) noexcept
@@ -1019,12 +886,12 @@ namespace darmok
 		return GamepadImpl::readStick(name);
 	}
 
-	const std::string& Gamepad::getButtonName(GamepadButton button) noexcept
+	std::string_view Gamepad::getButtonName(GamepadButton button) noexcept
 	{
 		return GamepadImpl::getButtonName(button);
 	}
 
-	const std::string& Gamepad::getStickName(GamepadStick stick) noexcept
+	std::string_view Gamepad::getStickName(GamepadStick stick) noexcept
 	{
 		return GamepadImpl::getStickName(stick);
 	}
@@ -1419,22 +1286,15 @@ namespace darmok
 	}
 
 	const std::string InputImpl::_dirTypePrefix = "InputDirType.";
-	const std::array<std::string, toUnderlying(InputDirType::Count)> InputImpl::_dirTypeNames =
-	{
-		"Up",
-		"Down",
-		"Left",
-		"Right"
-	};
 
-	const std::string& InputImpl::getDirTypeName(InputDirType type) noexcept
+	std::string_view InputImpl::getDirTypeName(InputDirType type) noexcept
 	{
-		return StringUtils::getEnumName(toUnderlying(type), _dirTypeNames);
+		return StringUtils::getEnumName(type);
 	}
 
 	std::optional<InputDirType> InputImpl::readDirType(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<InputDirType>(name, _dirTypeNames, _dirTypePrefix);
+		return StringUtils::readEnum<InputDirType>(name, _dirTypePrefix);
 	}
 
 	const std::string InputImpl::_keyboardPrefix = "keyboard:";
@@ -1653,7 +1513,7 @@ namespace darmok
 		return InputImpl::readDirType(name);
 	}
 
-	const std::string& Input::getDirTypeName(InputDirType type) noexcept
+	std::string_view Input::getDirTypeName(InputDirType type) noexcept
 	{
 		return InputImpl::getDirTypeName(type);
 	}

@@ -71,8 +71,8 @@ namespace darmok
 		[[nodiscard]] KeyboardImpl& getImpl() noexcept;
 
 		[[nodiscard]] static char keyToAscii(KeyboardKey key, bool upper) noexcept;
-		[[nodiscard]] static const std::string& getKeyName(KeyboardKey key) noexcept;
-		[[nodiscard]] static const std::string& getModifierName(KeyboardModifier mod) noexcept;
+		[[nodiscard]] static std::string_view getKeyName(KeyboardKey key) noexcept;
+		[[nodiscard]] static std::string_view getModifierName(KeyboardModifier mod) noexcept;
 		[[nodiscard]] static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
 
@@ -136,9 +136,9 @@ namespace darmok
 		[[nodiscard]] MouseImpl& getImpl() noexcept;
 
 		[[nodiscard]] static std::optional<MouseButton> readButton(std::string_view name) noexcept;
-		[[nodiscard]] static const std::string& getButtonName(MouseButton button) noexcept;
+		[[nodiscard]] static std::string_view getButtonName(MouseButton button) noexcept;
 		[[nodiscard]] static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
-		[[nodiscard]] static const std::string& getAnalogName(MouseAnalog analog) noexcept;
+		[[nodiscard]] static std::string_view getAnalogName(MouseAnalog analog) noexcept;
 
 	private:
 		std::unique_ptr<MouseImpl> _impl;
@@ -207,9 +207,9 @@ namespace darmok
 		[[nodiscard]] GamepadImpl& getImpl() noexcept;
 
 		[[nodiscard]] static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
-		[[nodiscard]] static const std::string& getButtonName(GamepadButton button) noexcept;
+		[[nodiscard]] static std::string_view getButtonName(GamepadButton button) noexcept;
 		[[nodiscard]] static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
-		[[nodiscard]] static const std::string& getStickName(GamepadStick stick) noexcept;
+		[[nodiscard]] static std::string_view getStickName(GamepadStick stick) noexcept;
 
 	private:
 		std::unique_ptr<GamepadImpl> _impl;
@@ -362,7 +362,7 @@ namespace darmok
 		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<InputDir> readDir(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
-		[[nodiscard]] static const std::string& getDirTypeName(InputDirType type) noexcept;
+		[[nodiscard]] static std::string_view getDirTypeName(InputDirType type) noexcept;
 
 	private:
 		std::unique_ptr<InputImpl> _impl;

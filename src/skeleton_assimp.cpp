@@ -563,25 +563,29 @@ namespace darmok
     {
     }
 
-    static AssimpSceneLoadConfig createAssimpSkeletonSceneLoadConfig() noexcept
+    static AssimpLoader::Config createAssimpSkeletonLoadConfig() noexcept
     {
         return {
             .leftHanded = false
         };
     }
 
-    std::shared_ptr<Skeleton> AssimpSkeletonLoaderImpl::operator()(const std::filesystem::path& path)
+    AssimpSkeletonLoaderImpl::Result AssimpSkeletonLoaderImpl::operator()(const std::filesystem::path& path)
     {
-        auto data = _dataLoader(path);
-        auto sceneConfig = createAssimpSkeletonSceneLoadConfig();
-        sceneConfig.populateArmature = true;
-        sceneConfig.setPath(path);
-        auto scene = _sceneLoader.loadFromMemory(data, sceneConfig);
-        if (!scene)
+        auto dataResult = _dataLoader(path);
+        if (!dataResult)
         {
-            throw new std::runtime_error("could not load assimp scene");
+			return unexpected<std::string>{dataResult.error()};
         }
-        auto ozz = AssimpOzzSkeletonConverter(*scene).createSkeleton();
+        auto assimpConfig = createAssimpSkeletonLoadConfig();
+        assimpConfig.populateArmature = true;
+        assimpConfig.setPath(path);
+        auto assimpResult = _assimpLoader.loadFromMemory(dataResult.value(), assimpConfig);
+        if (!assimpResult)
+        {
+            return unexpected<std::string>{"could not load assimp scene"};
+        }
+        auto ozz = AssimpOzzSkeletonConverter(*assimpResult.value()).createSkeleton();
         return std::make_shared<Skeleton>(std::make_unique<SkeletonImpl>(std::move(ozz)));
     }
 
@@ -590,19 +594,23 @@ namespace darmok
     {
     }
 
-    std::shared_ptr<SkeletalAnimation> AssimpSkeletalAnimationLoaderImpl::operator()(const std::filesystem::path& path)
+    AssimpSkeletalAnimationLoaderImpl::Result AssimpSkeletalAnimationLoaderImpl::operator()(const std::filesystem::path& path)
     {
-        auto sceneConfig = createAssimpSkeletonSceneLoadConfig();
-        sceneConfig.setPath(path);
+        auto assimpConfig = createAssimpSkeletonLoadConfig();
+        assimpConfig.setPath(path);
 
-        auto data = _dataLoader(path);
-        auto scene = _sceneLoader.loadFromMemory(data, sceneConfig);
-        if (!scene)
+        auto dataResult = _dataLoader(path);
+        if (!dataResult)
         {
-            throw new std::runtime_error("could not load assimp scene");
+			return unexpected<std::string>{dataResult.error()};
+        }
+        auto sceneResult = _assimpLoader.loadFromMemory(dataResult.value(), assimpConfig);
+        if (!sceneResult)
+        {
+            return unexpected<std::string>{"could not load assimp scene"};
         }
 
-        auto ozz = AssimpOzzAnimationConverter(*scene).createAnimation();
+        auto ozz = AssimpOzzAnimationConverter(*sceneResult.value()).createAnimation();
         return std::make_shared<SkeletalAnimation>(std::make_unique<SkeletalAnimationImpl>(std::move(ozz)));
     }
 
@@ -616,7 +624,7 @@ namespace darmok
         // empty on purpose
     }
 
-    std::shared_ptr<Skeleton> AssimpSkeletonLoader::operator()(std::filesystem::path path)
+    AssimpSkeletonLoader::Result AssimpSkeletonLoader::operator()(std::filesystem::path path)
     {
         return (*_impl)(path);
     }
@@ -626,16 +634,16 @@ namespace darmok
     {
     }
 
-    AssimpSkeletonFileImporterImpl::OzzSkeleton AssimpSkeletonFileImporterImpl::read(const std::filesystem::path& path, const nlohmann::json& config)
+    expected<AssimpSkeletonFileImporterImpl::OzzSkeleton, std::string> AssimpSkeletonFileImporterImpl::read(const std::filesystem::path& path, const nlohmann::json& config)
     {
-        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
-        loadConfig.populateArmature = true;
-        auto scene = _sceneLoader.loadFromFile(path, loadConfig);
-        if (!scene)
+        auto assimpConfig = createAssimpSkeletonLoadConfig();
+        assimpConfig.populateArmature = true;
+        auto sceneResult = _assimpLoader.loadFromFile(path, assimpConfig);
+        if (!sceneResult)
         {
-            throw std::runtime_error("could not load assimp scene");
+            return unexpected<std::string>{"could not load assimp scene"};
         }
-        AssimpOzzSkeletonConverter converter(*scene);
+        AssimpOzzSkeletonConverter converter(*sceneResult.value());
         converter.setConfig(config);
         return converter.createSkeleton();
     }
@@ -647,7 +655,7 @@ namespace darmok
         {
             return outputs;
         }
-        if (!_sceneLoader.supports(input.path.string()))
+        if (!_assimpLoader.supports(input.path.string()))
         {
             return outputs;
         }
@@ -664,8 +672,12 @@ namespace darmok
 
     void AssimpSkeletonFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
     {
-        auto skel = read(input.path, input.config);
-        AssimpOzzUtils::writeToStream(skel, out, _bufferSize);
+        auto result = read(input.path, input.config);
+		if (!result)
+		{
+			throw std::runtime_error("failed to read skeleton: " + result.error());
+		}
+        AssimpOzzUtils::writeToStream(result.value(), out, _bufferSize);
     }
 
     const std::string& AssimpSkeletonFileImporterImpl::getName() const noexcept
@@ -750,12 +762,16 @@ namespace darmok
         return getOutputPath(input, animName, fixedOutputPath);
     }
 
-    AssimpSkeletalAnimationFileImporterImpl::OzzSkeleton AssimpSkeletalAnimationFileImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
+    expected<AssimpSkeletalAnimationFileImporterImpl::OzzSkeleton, std::string> AssimpSkeletalAnimationFileImporterImpl::loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config)
     {
-        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
+        auto loadConfig = createAssimpSkeletonLoadConfig();
         loadConfig.populateArmature = true;
-        auto skelScene = _sceneLoader.loadFromFile(path, loadConfig);
-        AssimpOzzSkeletonConverter converter(*skelScene);
+        auto assimpResult = _assimpLoader.loadFromFile(path, loadConfig);
+		if (!assimpResult)
+		{
+			return unexpected<std::string>{assimpResult.error()};
+		}
+        AssimpOzzSkeletonConverter converter(*assimpResult.value());
         converter.setConfig(config);
         return converter.createSkeleton();
     }
@@ -776,17 +792,18 @@ namespace darmok
         {
             return false;
         }
-        if (!_sceneLoader.supports(input.path.string()))
+        if (!_assimpLoader.supports(input.path.string()))
         {
             return false;
         }
         _currentInput = input;
-        const AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
-        _currentScene = _sceneLoader.loadFromFile(input.path, loadConfig);
-        if (_currentScene == nullptr)
+        auto assimpConfig = createAssimpSkeletonLoadConfig();
+        auto assimpResult = _assimpLoader.loadFromFile(input.path, assimpConfig);
+        if (!assimpResult)
         {
-            throw std::runtime_error("could not load assimp scene");
+            throw std::runtime_error{ assimpResult.error() };
         }
+		_currentScene = assimpResult.value();
 
         if (dry)
         {
@@ -801,7 +818,12 @@ namespace darmok
         {
             skelPath = input.path.parent_path() / input.dirConfig[_skeletonJsonKey];
         }
-        _currentSkeleton = loadSkeleton(skelPath, input.config);
+        auto skelResult = loadSkeleton(skelPath, input.config);
+		if (!skelResult)
+		{
+			throw std::runtime_error{ skelResult.error() };
+		}
+        _currentSkeleton = std::move(skelResult).value();
 
         nlohmann::json optJson;
         if (input.dirConfig.contains(_optimizationJsonKey))
@@ -1007,10 +1029,15 @@ namespace darmok
     bool AssimpOzzImporter::Load(const char* filename)
     {
         _path = filename;
-        AssimpSceneLoadConfig loadConfig = createAssimpSkeletonSceneLoadConfig();
-        loadConfig.populateArmature = true;
-        _assimpScene = _sceneLoader.loadFromFile(_path, loadConfig);
-        return _assimpScene != nullptr;
+        auto assimpConfig = createAssimpSkeletonLoadConfig();
+        assimpConfig.populateArmature = true;
+        auto assimpResult = _assimpLoader.loadFromFile(_path, assimpConfig);
+        if (!assimpResult)
+        {
+            return false;
+        }
+		_assimpScene = assimpResult.value();
+        return true;
     }
 
     bool AssimpOzzImporter::Import(RawSkeleton* skeleton, const NodeType& types)

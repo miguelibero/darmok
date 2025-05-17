@@ -92,7 +92,9 @@ namespace darmok
 		{
 			return unexpected<std::string>{ error };
 		}
-		return std::make_shared<Resource>(std::move(data));
+		auto res = std::make_shared<Resource>();
+		res->set_data(data.toString());
+		return res;
 	}
 
 	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(bx::AllocatorI& alloc)
@@ -362,10 +364,10 @@ namespace darmok
 			pos.x += glyphSize.x;
 
 			auto& glyph = *data.atlas.add_elements();
-			*glyph.mutable_size() = GlmProtobufUtils::convert(glyphSize);
-			*glyph.mutable_texture_position() = GlmProtobufUtils::convert(pos);
-			*glyph.mutable_offset() = GlmProtobufUtils::convert(glpyhOffset);
-			*glyph.mutable_original_size() = GlmProtobufUtils::convert(glyphOriginalSize);
+			*glyph.mutable_size() = protobuf::convert(glyphSize);
+			*glyph.mutable_texture_position() = protobuf::convert(pos);
+			*glyph.mutable_offset() = protobuf::convert(glpyhOffset);
+			*glyph.mutable_original_size() = protobuf::convert(glyphOriginalSize);
 		}
 		return data;
 	}
@@ -380,6 +382,8 @@ namespace darmok
 	FreetypeFontFileImporterImpl::FreetypeFontFileImporterImpl()
 		: _library(nullptr)
 		, _face(nullptr)
+		, _dataLoader{_alloc}
+		, _texDefLoader{_dataLoader}
 	{
 		auto err = FT_Init_FreeType(&_library);
 		FreetypeUtils::checkError(err);
@@ -442,7 +446,7 @@ namespace darmok
 		_image = std::move(result->image);
 
 		auto basePath = input.getRelativePath().parent_path();
-		auto stem = StringUtils::getFileStem(input.path.filename().string());
+		auto stem = input.path.stem().string();
 
 		_imagePath = basePath;
 		_atlasPath = basePath;
@@ -502,24 +506,9 @@ namespace darmok
 			return;
 		}
 		auto relImagePath = std::filesystem::relative(_imagePath, _atlasPath.parent_path());
-		TextureAtlasDefinition atlasDef
-		{
-			.imagePath = relImagePath,
-			.size = _atlas->image.getSize()
-		};
-		for (auto& [name, glyph] : _atlas->glyphs)
-		{
-			atlasDef.elements.emplace_back(TextureAtlasElement{
-				.name = name,
-				.texturePosition = glyph.texturePosition,
-				.size = glyph.size,
-				.offset = glyph.offset,
-				.originalSize = glyph.originalSize
-			});
-		}
-
+		
 		pugi::xml_document doc;
-		atlasDef.writeTexturePacker(doc);
+		TextureAtlasUtils::writeTexturePacker(*_atlas, doc, _alloc, _texDefLoader, relImagePath);
 		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	}
 

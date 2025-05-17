@@ -27,14 +27,14 @@ namespace darmok
 
     namespace protobuf
     {
-		class AssimpModelImportConfig;
+		class AssimpSceneImportConfig;
 		class Scene;
     }
 
     class DARMOK_EXPORT AssimpSceneDefinitionLoader final : public ISceneDefinitionLoader
     {
     public:
-        using Config = protobuf::AssimpModelImportConfig;
+        using Config = protobuf::AssimpSceneImportConfig;
         using Model = protobuf::Scene;
 
         AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
@@ -51,7 +51,7 @@ namespace darmok
     class DARMOK_EXPORT AssimpFileImporter final : public IFileTypeImporter
     {
     public:
-        using Config = protobuf::AssimpModelImportConfig;
+        using Config = protobuf::AssimpSceneImportConfig;
         AssimpFileImporter(bx::AllocatorI& alloc);
         ~AssimpFileImporter();
         AssimpFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);

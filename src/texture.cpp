@@ -491,7 +491,7 @@ namespace darmok
 
 	glm::uvec2 Texture::getSize() const noexcept
 	{
-		return GlmProtobufUtils::convert(_config.size());
+		return protobuf::convert(_config.size());
 	}
 
 	Texture::TextureType::Enum Texture::getType() const noexcept
@@ -545,8 +545,16 @@ namespace darmok
 		}
 		auto& def = **defResult;
 		auto& config = *def.mutable_config();
-		ProtobufUtils::read(config, input.dirConfig);
-		ProtobufUtils::read(config, input.config);
+		auto result = protobuf::read(config, input.dirConfig);
+		if (!result)
+		{
+			throw std::runtime_error(result.error());
+		}
+		result = protobuf::read(config, input.config);
+		if (!result)
+		{
+			throw std::runtime_error(result.error());
+		}
 		ProtobufFileImporter::writeOutput(def, out);
 	}
 }

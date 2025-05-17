@@ -205,6 +205,7 @@ namespace darmok
 		void setNextRenderer();
 		void requestNextVideoMode();
 		void renderReset();
+		std::string getTimeSuffix() noexcept;
 
 		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
 

@@ -24,19 +24,23 @@ namespace darmok
         }
 
         template<typename T>
-        std::optional<T> loadFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
+        expected<T, std::string> loadFromData(IDataLoader& loader, const std::filesystem::path& path) noexcept
         {
-            auto data = loader(path);
-            std::optional<T> obj;
-            DataOzzStream stream(data);
+            auto dataResult = loader(path);
+			if (!dataResult)
+			{
+                return unexpected<std::string>{dataResult.error()};
+			}            
+            DataOzzStream stream{ dataResult.value() };
             ozz::io::IArchive archive(&stream);
-            if (archive.TestTag<T>())
+            if (!archive.TestTag<T>())
             {
-                archive >> obj.emplace();
+                return unexpected<std::string>{"archive does not contain the type"};
             }
+            T obj;
+            archive >> obj;
             return obj;
         }
-
     };
 
     Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
@@ -194,13 +198,13 @@ namespace darmok
 
     OzzSkeletonLoader::Result OzzSkeletonLoader::operator()(std::filesystem::path path)
     {
-        auto skel = OzzUtils::loadFromData<ozz::animation::Skeleton>(_dataLoader, path);
-        if (!skel)
+        auto skelResult = OzzUtils::loadFromData<ozz::animation::Skeleton>(_dataLoader, path);
+        if (!skelResult)
         {
-            return unexpected<std::string>{"archive doesn't contain a skeleton"};
+            return unexpected<std::string>{skelResult.error()};
         }
         return std::make_shared<Skeleton>(
-            std::make_unique<SkeletonImpl>(std::move(skel.value())));
+            std::make_unique<SkeletonImpl>(std::move(skelResult.value())));
     }
 
     OzzSkeletalAnimationLoader::OzzSkeletalAnimationLoader(IDataLoader& dataLoader) noexcept
@@ -448,7 +452,7 @@ namespace darmok
 
     glm::vec2 OzzSkeletalAnimatorAnimationState::getBlendPosition() const noexcept
     {
-        return GlmProtobufUtils::convert(_def.blend_position());
+        return protobuf::convert(_def.blend_position());
     }
 
     OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept
@@ -804,7 +808,7 @@ namespace darmok
             _state->afterFinished();
         }
 
-        _state.emplace(getOzz(), stateDef, *this);
+        _state.emplace(getOzz(), *stateDef, *this);
         for (auto& listener : listeners)
         {
             listener.onAnimatorStateStarted(_animator, _state->getName());

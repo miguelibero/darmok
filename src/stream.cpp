@@ -6,14 +6,33 @@
 
 namespace darmok
 {
-    std::string StreamUtils::readString(std::istream& input)
+    expected<std::string, std::string> StreamUtils::readString(std::istream& input)
     {
-        return std::string((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+        if (!input)
+        {
+            return unexpected{ "could not open input stream" };
+        }
+
+        input.seekg(0, std::ios::end);
+        auto size = input.tellg();
+        input.seekg(0, std::ios::beg);
+
+        std::string str(size, '\0');
+        if (!input.read(&str.front(), size))
+        {
+            return unexpected{ "could not read input stream" };
+        }
+
+        return str;
     }
 
-    std::string StreamUtils::readString(std::filesystem::path& path)
+    expected<std::string, std::string> StreamUtils::readString(std::filesystem::path& path)
     {
-        std::ifstream input(path);
+        if (!std::filesystem::exists(path))
+        {
+            return unexpected{ "vertex shader not found" };
+        }
+        std::ifstream input{ path, std::ios::binary };
         return readString(input);
     }
 

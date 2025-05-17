@@ -1,14 +1,17 @@
 #include "physics3d_jolt.hpp"
 #include "character_jolt.hpp"
+
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/glm_serialize.hpp>
+
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include <fmt/format.h>
 
 #include <thread>
 #include <cstdarg>
@@ -314,8 +317,8 @@ namespace darmok::physics3d
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
         task.name(_prefix + " " + job->GetName());
 #else
-        task.name(_prefix + " " + StringUtils::binToHex(job));
-#endif
+        task.name(_prefix + " " + fmt::to_string(fmt::ptr(job)));
+#endif   
     }
 
     void JoltJobSystemTaskflow::QueueJobs(Job** jobs, JPH::uint numJobs)
@@ -1842,7 +1845,7 @@ namespace darmok::physics3d
     {
         std::ostringstream ss;
         ss << "Collision(normal=" << glm::to_string(normal) << " contacts=(";
-        ss << StringUtils::join(", ", contacts, [](auto& contact) { return glm::to_string(contact);  }) << "))";
+        ss << StringUtils::join(", ", contacts) << "))";
         return ss.str();
     }
 

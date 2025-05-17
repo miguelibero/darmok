@@ -2,6 +2,7 @@
 
 #include "lua.hpp"
 #include <darmok/utils.hpp>
+#include <darmok/protobuf.hpp>
 
 #include <vector>
 #include <string>
@@ -13,33 +14,29 @@
 
 namespace darmok
 {
-    struct LuaUtils final
+    namespace LuaUtils
     {
-        static bool isArray(const sol::table& table)  noexcept;
+        bool isArray(const sol::table& table)  noexcept;
 
-        static void logError(const std::string& desc, const sol::error& err) noexcept;
+        void logError(const std::string& desc, const sol::error& err) noexcept;
 
-        static bool checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept;
+        bool checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept;
 
-        static std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
+        std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
 
-        template<typename T>
-        static void newEnum(sol::state_view& lua, bool string = false)
-        {
-            return newEnum(lua, magic_enum::enum_type_name<T>(), string);
-        }
+        int deny(lua_State* L);
 
         template<typename T>
-        static void newEnum(sol::state_view& lua, std::string_view name, bool string = false)
+        void newEnum(sol::state_view& lua, std::string_view name, bool string = false)
         {
             auto metatable = lua.create_table_with();
-            auto prefix = std::string(name) + ".";
+            auto prefix = std::string{ name } + ".";
             for (auto val : magic_enum::enum_values<T>())
             {
                 auto valueName = magic_enum::enum_name(val);
                 if (string)
                 {
-                    metatable.set(valueName, prefix + valueName);
+                    metatable.set(valueName, prefix + std::string{ valueName });
                 }
                 else
                 {
@@ -47,16 +44,30 @@ namespace darmok
                 }
             }
             auto table = lua.create_named_table(name);
-            metatable[sol::meta_function::new_index] = LuaUtils::deny;
+            metatable[sol::meta_function::new_index] = deny;
             metatable[sol::meta_function::index] = metatable;
             table[sol::metatable_key] = metatable;
         }
 
-        static int deny(lua_State* L);
+        template<typename T>
+        void newEnum(sol::state_view& lua, bool string = false)
+        {
+            return newEnum<T>(lua, magic_enum::enum_type_name<T>(), string);
+        }
 
+        void configProtobuf(sol::metatable& table, const google::protobuf::Descriptor& desc);
+
+        template<typename T>
+        void newProtobuf(sol::state_view& lua, std::string_view name)
+        {
+            auto usertype = lua.new_usertype<T>(name);
+			auto desc = T::descriptor();
+			sol::metatable table = usertype[sol::metatable_key];
+            configProtobuf(table, *desc);
+        }
     };
 
-    class LuaTableDelegateDefinition
+    class LuaTableDelegateDefinition final
     {
     public:
         LuaTableDelegateDefinition(const std::string& key, const std::string& desc) noexcept;
@@ -67,7 +78,7 @@ namespace darmok
             auto elm = table[_key];
             if (elm.get_type() != sol::type::function)
             {
-                return sol::object(table.lua_state(), true);
+                return sol::object{ table.lua_state(), true };
             }
             sol::protected_function func = elm;
             auto result = func(table, std::forward<Args>(args)...);

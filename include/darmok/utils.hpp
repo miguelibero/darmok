@@ -21,13 +21,13 @@ namespace darmok
 
     void checkError(bx::Error& err);
 
-    class DARMOK_EXPORT Random final
+    class DARMOK_EXPORT RandomGenerator final
     {
     public:
-        Random(uint32_t seed) noexcept;
+        RandomGenerator(uint32_t seed) noexcept;
 
         template<typename T>
-        T generate() noexcept
+        T operator()() noexcept
         {
             _seed = hash(_seed);
             return (T)_seed / (T)UINT32_MAX;
@@ -39,7 +39,7 @@ namespace darmok
         static uint32_t hash(uint32_t input) noexcept;
     };
 
-    struct DARMOK_EXPORT Exec final
+    namespace DARMOK_EXPORT Exec
     {
         struct Result final
         {
@@ -49,8 +49,8 @@ namespace darmok
         };
 
         using Arg = std::variant<const char*, std::string, std::filesystem::path>;
-        static Result run(const std::vector<Arg>& args, const std::filesystem::path& cwd = "");
-        static std::string argsToString(const std::vector<Arg>& args);
+        Result run(const std::vector<Arg>& args, const std::filesystem::path& cwd = "");
+        std::string argsToString(const std::vector<Arg>& args);
     };
 
     std::filesystem::path getTempPath(std::string_view prefix = "") noexcept;

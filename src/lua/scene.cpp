@@ -46,7 +46,7 @@ namespace darmok
 
 	std::string LuaEntity::toString() const noexcept
 	{
-		std::string str = "Entity(" + StringUtils::toString(_entity);
+		std::string str = "Entity(" + std::to_string(_entity);
 		if (!isValid())
 		{
 			str += " invalid";

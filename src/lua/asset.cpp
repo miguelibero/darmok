@@ -4,7 +4,6 @@
 #include "program.hpp"
 #include "texture.hpp"
 #include "material.hpp"
-#include "model.hpp"
 #include "skeleton.hpp"
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
@@ -12,66 +11,64 @@
 #include <darmok/texture.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/skeleton.hpp>
-#include <darmok/model_assimp.hpp>
+#include <darmok/scene_assimp.hpp>
 #include <darmok/audio.hpp>
+#include <darmok/scene_loader.hpp>
 
 namespace darmok
 {	
 	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::string& path)
 	{
-		return assets.getProgramLoader()(path);
+		return assets.getProgramLoader()(path).value();
 	}
 
 	std::shared_ptr<Texture> LuaAssets::loadTexture(AssetContext& assets, const std::string& path)
 	{
-		return assets.getTextureLoader()(path);
+		return assets.getTextureLoader()(path).value();
 	}
 
 	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas(AssetContext& assets, const std::string& path)
 	{
-		return assets.getTextureAtlasLoader()(path);
+		return assets.getTextureAtlasLoader()(path).value();
 	}
 
 	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::string& path)
 	{
-		return assets.getSoundLoader()(path);
+		return assets.getSoundLoader()(path).value();
 	}
 
 	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::string& path)
 	{
-		return assets.getMusicLoader()(path);
+		return assets.getMusicLoader()(path).value();
 	}
 
-	std::shared_ptr<Model> LuaAssets::loadModel1(AssetContext& assets, const std::string& path)
+	void LuaAssets::loadScene(AssetContext& assets, Scene& scene, const std::string& path)
 	{
-		return assets.getModelLoader()(path);
-	}
-
-	std::shared_ptr<Model> LuaAssets::loadModel2(AssetContext& assets, const std::string& path, const AssimpModelImportConfig& config)
-	{
-		auto& loader = assets.getAssimpModelLoader();
-		loader.setConfig(config);
-		return loader(path);
+		auto result = assets.getSceneLoader()(scene, path);
+		if (!result)
+		{
+			throw std::runtime_error("Failed to load scene: " + result.error());
+		}
 	}
 
 	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::string& path)
 	{
-		return assets.getSkeletonLoader()(path);
+		return assets.getSkeletonLoader()(path).value();
 	}
 
 	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::string& path)
 	{
-		return assets.getSkeletalAnimationLoader()(path);
+		return assets.getSkeletalAnimationLoader()(path).value();
 	}
 
 	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssets::loadSkeletalAnimatorDefinition(AssetContext& assets, const std::string& path)
 	{
-		return assets.getSkeletalAnimatorDefinitionLoader()(path);
+		return assets.getSkeletalAnimatorDefinitionLoader()(path).value();
 	}
 
 	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def)
 	{
-		return def.loadAnimations(assets.getSkeletalAnimationLoader());
+		return SkeletalAnimatorUtils::loadAnimations(def, assets.getSkeletalAnimationLoader());
 	}
 
 	void LuaAssets::bind(sol::state_view& lua) noexcept
@@ -81,14 +78,10 @@ namespace darmok
 		LuaTextureAtlas::bind(lua);
 		LuaMaterial::bind(lua);
 		LuaMesh::bind(lua);
-		LuaModel::bind(lua);
 		LuaSkeleton::bind(lua);
 
 		lua.new_usertype<AssetContext>("Assets", sol::no_constructor,
-			"load_model", sol::overload(
-				&LuaAssets::loadModel1,
-				&LuaAssets::loadModel2
-			),
+			"load_scene", &LuaAssets::loadScene,
 			"load_program", &LuaAssets::loadProgram,
 			"load_texture", &LuaAssets::loadTexture,
 			"load_texture_atlas", &LuaAssets::loadTextureAtlas,

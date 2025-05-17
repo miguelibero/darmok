@@ -4,10 +4,12 @@
 #include <darmok/glm.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/viewport.hpp>
+
 #include <array>
 #include <optional>
 #include <string>
 #include <vector>
+#include <ostream>
 
 namespace darmok
 {
@@ -18,7 +20,7 @@ namespace darmok
         glm::vec2 size;
         glm::vec2 origin;
 
-        Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
+        explicit Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] std::vector<Line> toLines() const noexcept;
 
@@ -38,8 +40,8 @@ namespace darmok
         glm::vec3 size;
         glm::vec3 origin;
 
-        Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
-        Cube(const BoundingBox& bbox) noexcept;
+        explicit Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        explicit Cube(const BoundingBox& bbox) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
 
@@ -62,7 +64,7 @@ namespace darmok
         Vertices vertices;
 
         Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
-        Triangle(const Vertices& vertices = {}) noexcept;
+        explicit Triangle(const Vertices& vertices = {}) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] glm::vec3 getNormal() const;
@@ -82,7 +84,7 @@ namespace darmok
         Coordinates coordinates;
 
         TextureTriangle(const glm::vec2& coord1, const glm::vec2& coord2, const glm::vec2& coord3) noexcept;
-        TextureTriangle(const Coordinates& coordinates = {}) noexcept;
+        explicit TextureTriangle(const Coordinates& coordinates = {}) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         TextureTriangle& operator*=(float scale) noexcept;
@@ -99,7 +101,7 @@ namespace darmok
         Triangles triangles;
         glm::vec3 origin;
 
-        Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        explicit Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         Polygon& operator*=(float scale) noexcept;
@@ -114,8 +116,8 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
-        Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
-        Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        explicit Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
+        explicit Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] static const Sphere& standard() noexcept;
@@ -134,8 +136,8 @@ namespace darmok
         glm::vec3 normal;
         float distance;
 
-        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
-        Plane(const Triangle& tri) noexcept;
+        explicit Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
+        explicit Plane(const Triangle& tri) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] Line getNormalLine() const noexcept;
@@ -167,7 +169,7 @@ namespace darmok
         glm::vec2 separation;
         glm::uvec2 amount;
 
-        Grid(const glm::vec2& separation = glm::vec2(1.F)
+        explicit Grid(const glm::vec2& separation = glm::vec2(1.F)
             , const glm::uvec2& amount = glm::uvec2(10)
             , const glm::vec3& normal = glm::vec3(0, 1, 0)
             , const glm::vec3& origin = glm::vec3(0)
@@ -183,7 +185,7 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
-        Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        explicit Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] static const Capsule& standard() noexcept;
 
@@ -223,8 +225,8 @@ namespace darmok
         glm::vec3 origin;
         glm::vec3 direction;
 
-        Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 0, 1)) noexcept;
-        Ray(const Line& line) noexcept;
+        explicit Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 0, 1)) noexcept;
+        explicit Ray(const Line& line) noexcept;
 
         [[nodiscard]] Ray operator*(const glm::mat4& transform) const noexcept;
         Ray& operator*=(const glm::mat4& transform) noexcept;
@@ -255,9 +257,9 @@ namespace darmok
         using Points = std::array<glm::vec3, 2>;
         Points points;
 
-        Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
-        Line(const Points& points) noexcept;
-        Line(const Ray& ray) noexcept;
+        explicit Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
+        explicit Line(const Points& points) noexcept;
+        explicit Line(const Ray& ray) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] Ray toRay() const noexcept;
@@ -302,7 +304,7 @@ namespace darmok
 
         std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
 
-        Frustum(const glm::mat4& mtx = glm::mat4(1), bool inverse = false) noexcept;
+        explicit Frustum(const glm::mat4& mtx = glm::mat4(1), bool inverse = false) noexcept;
 
         [[nodiscard]] const glm::vec3& getCorner(Frustum::CornerType type) const noexcept;
         [[nodiscard]] glm::vec3& getCorner(Frustum::CornerType type) noexcept;
@@ -336,12 +338,12 @@ namespace darmok
 
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
-        BoundingBox(const Cube& cube) noexcept;
-        BoundingBox(const Sphere& sphere) noexcept;
-        BoundingBox(const Capsule& capsule) noexcept;
-        BoundingBox(const Polygon& poly) noexcept;
-        BoundingBox(const Triangle& tri) noexcept;
-        BoundingBox(const Frustum& frust) noexcept;
+        explicit BoundingBox(const Cube& cube) noexcept;
+        explicit BoundingBox(const Sphere& sphere) noexcept;
+        explicit BoundingBox(const Capsule& capsule) noexcept;
+        explicit BoundingBox(const Polygon& poly) noexcept;
+        explicit BoundingBox(const Triangle& tri) noexcept;
+        explicit BoundingBox(const Frustum& frust) noexcept;
 
         [[nodiscard]] bool operator==(const BoundingBox& other) const noexcept;
         [[nodiscard]] bool operator!=(const BoundingBox& other) const noexcept;
@@ -382,73 +384,143 @@ namespace darmok
 
 namespace std
 {
-    inline std::string to_string(const darmok::Rectangle & v)
+    inline string to_string(const darmok::Rectangle & v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Cube& v)
+    inline string to_string(const darmok::Cube& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Triangle& v)
+    inline string to_string(const darmok::Triangle& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Polygon& v)
+    inline string to_string(const darmok::Polygon& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Sphere& v)
+    inline string to_string(const darmok::Sphere& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Plane& v)
+    inline string to_string(const darmok::Plane& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Grid& v)
+    inline string to_string(const darmok::Grid& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Capsule& v)
+    inline string to_string(const darmok::Capsule& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::NormalIntersection& v)
+    inline string to_string(const darmok::NormalIntersection& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::DistanceIntersection& v)
+    inline string to_string(const darmok::DistanceIntersection& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Ray& v)
+    inline string to_string(const darmok::Ray& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Line& v)
+    inline string to_string(const darmok::Line& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::BoundingBox& v)
+    inline string to_string(const darmok::BoundingBox& v)
     {
         return v.toString();
     }
 
-    inline std::string to_string(const darmok::Frustum& v)
+    inline string to_string(const darmok::Frustum& v)
     {
         return v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Rectangle& v)
+    {
+		return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Cube& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Triangle& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Polygon& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Sphere& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Plane& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Grid& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Capsule& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::NormalIntersection& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::DistanceIntersection& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Ray& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Line& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::BoundingBox& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Frustum& v)
+    {
+        return out << v.toString();
     }
 }

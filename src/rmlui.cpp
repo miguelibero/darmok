@@ -68,8 +68,12 @@ namespace darmok
         _dataUniform = bgfx::createUniform("u_rmluiData", bgfx::UniformType::Vec4);
 
         Program::Definition progDef;
-        ProtobufUtils::readStaticMem(progDef, rmlui_program);
-        _program = std::make_unique<Program>(progDef);
+        auto result = protobuf::readStaticMem(progDef, rmlui_program);
+        assert(result);
+        if (result)
+        {
+            _program = std::make_unique<Program>(progDef);
+        }
     }
 
     RmluiRenderInterface::~RmluiRenderInterface() noexcept
@@ -225,7 +229,7 @@ namespace darmok
         auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
         Texture::Config config;
         config.set_format(Texture::Format::RGBA8);
-        *config.mutable_size() = GlmProtobufUtils::convert(glm::uvec2(dimensions.x, dimensions.y));
+        *config.mutable_size() = protobuf::convert(glm::uvec2(dimensions.x, dimensions.y));
 
         DataView data(source.data(), size);
 

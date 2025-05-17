@@ -6,7 +6,7 @@ import "varying.proto";
 import "program.proto";
 import "material.proto";
 
-message AssimpModelImportConfig {
+message AssimpSceneImportConfig {
     VertexLayout vertex_layout = 1;
     optional StandardProgramType.Enum standard_program = 2;
     string program_path = 3;

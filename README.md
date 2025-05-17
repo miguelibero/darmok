@@ -30,10 +30,11 @@ currently using:
 * [cli11](https://github.com/CLIUtils/CLI11) - command line parser
 * [portable-file-dialogs](https://github.com/samhocevar/portable-file-dialogs) - editor native file dialogs
 * [tl-expected](https://github.com/TartanLlama/expected) - expected for C++20
+* [magic_enum](https://github.com/Neargye/magic_enum) automatically convert enum types
+* [fmt](https://github.com/fmtlib/fmt) for string formatting
+* [utfcpp](https://github.com/nemtrif/utfcpp) for string encoding
 
 planned to use:
-
-* [magic_enum](https://github.com/Neargye/magic_enum) automatically convert enum types
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling
     (blocked because of [bgfx#3308](https://github.com/bkaradzic/bgfx/pull/3308)
     and the vcpkg bgfx build not having a profiler feature)
@@ -42,6 +43,7 @@ planned to use:
 * [Box2D](https://box2d.org/) 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
+* [slang](https://github.com/shader-slang/slang) unified shader language that compiles to  the different render backends
 
 Trying to target the following platforms:
 * desktop (windows, macos, linux)
@@ -107,11 +109,17 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * play sounds and music (wav & mp3)
 * editor using imgui
 
+#### Cleanup
+* reorganize headers and sources in same folders
+* rename Utils namespaces to lowercase
+
 #### Upcoming
 * finish editor
     * load model files
     * export asset pack files
     * scene view gizmos
+* slang support
+* move from exceptions to expected when possible
 * fix joltphysics in apple when [rtti](https://github.com/microsoft/vcpkg/pull/43190) feature is added
 * move main thread to taskflow
 * frame limiting

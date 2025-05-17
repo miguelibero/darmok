@@ -9,9 +9,9 @@
       "name": "darmok-coreassetc.exe",
       "args": [
         "--import-input",
-        "${workspaceRoot}/assets/shaders/core",
+        "${workspaceRoot}/assets/shaders/imgui",
         "--import-output",
-        "include/private/generated",
+        "include/private/generated/imgui",
         "--bgfx-shaderc",
         "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
         "--bgfx-shader-include",

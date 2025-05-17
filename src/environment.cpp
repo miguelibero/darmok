@@ -23,8 +23,12 @@ namespace darmok
         _cam = cam;
 
         Program::Definition progDef;
-		ProtobufUtils::readStaticMem(progDef, skybox_program);
-        _program = std::make_unique<Program>(progDef);
+        auto result = protobuf::readStaticMem(progDef, skybox_program);
+        assert(result);
+        if (result)
+        {
+            _program = std::make_unique<Program>(progDef);
+        }
 
         _texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
@@ -75,8 +79,12 @@ namespace darmok
     void GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         Program::Definition progDef;
-		ProtobufUtils::readStaticMem(progDef, grid_program);
-        _program = std::make_unique<Program>(progDef);
+        auto result = protobuf::readStaticMem(progDef, grid_program);
+        assert(result);
+        if (result)
+        {
+            _program = std::make_unique<Program>(progDef);
+        }
 
         _color1Uniform = bgfx::createUniform("u_gridColor1", bgfx::UniformType::Vec4);
         _color2Uniform = bgfx::createUniform("u_gridColor2", bgfx::UniformType::Vec4);

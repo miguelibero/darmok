@@ -16,36 +16,36 @@
 
 namespace darmok
 {
-    enum class ProtobufFormat
+    namespace protobuf
     {
-        Binary,
-        Json
-    };
+        enum class Format
+        {
+            Binary,
+            Json
+        };
 
-    namespace ProtobufUtils
-    {
         using Message = google::protobuf::Message;
 		using Descriptor = google::protobuf::Descriptor;
         using FieldDescriptor = google::protobuf::FieldDescriptor;
 
-        ProtobufFormat getFormat(const std::filesystem::path& path);
-		std::string_view getExtension(ProtobufFormat format);
-        std::optional<ProtobufFormat> getFormat(std::string_view name);
-        std::size_t getHash(const Message& msg);
+        [[nodiscard]] Format getFormat(const std::filesystem::path& path);
+        [[nodiscard]] std::string_view getExtension(Format format);
+        [[nodiscard]] std::optional<Format> getFormat(std::string_view name);
+        [[nodiscard]] std::size_t getHash(const Message& msg);
 
-        const bgfx::Memory* copyMem(const std::string& data);
-        const bgfx::Memory* refMem(const std::string& data);
+        [[nodiscard]] const bgfx::Memory* copyMem(const std::string& data);
+        [[nodiscard]] const bgfx::Memory* refMem(const std::string& data);
 
-        std::pair<std::ifstream, ProtobufFormat> createInputStream(const std::filesystem::path& path);
-        std::ifstream createInputStream(const std::filesystem::path& path, ProtobufFormat format);
-        expected<void, std::string> read(Message& msg, const std::filesystem::path& path);
-        expected<void, std::string> read(Message& msg, std::istream& input, ProtobufFormat format);
-        expected<void, std::string> readJson(Message& msg, std::istream& input);
-        expected<void, std::string> readJson(Message& msg, const nlohmann::json& json);
-        expected<void, std::string> readJson(Message& msg, const FieldDescriptor& field, const nlohmann::json& json);
+        [[nodiscard]] std::pair<std::ifstream, Format> createInputStream(const std::filesystem::path& path);
+        [[nodiscard]] std::ifstream createInputStream(const std::filesystem::path& path, Format format);
+        [[nodiscard]] expected<void, std::string> read(Message& msg, const std::filesystem::path& path);
+        [[nodiscard]] expected<void, std::string> read(Message& msg, std::istream& input, Format format);
+        [[nodiscard]] expected<void, std::string> readJson(Message& msg, std::istream& input);
+        [[nodiscard]] expected<void, std::string> readJson(Message& msg, const nlohmann::json& json);
+        [[nodiscard]] expected<void, std::string> readJson(Message& msg, const FieldDescriptor& field, const nlohmann::json& json);
 
         template<class T>
-        expected<void, std::string> readStaticMem(Message& msg, const T& mem)
+        [[nodiscard]] expected<void, std::string> readStaticMem(Message& msg, const T& mem)
         {
             if (!msg.ParseFromArray(mem, sizeof(T)))
             {
@@ -54,16 +54,16 @@ namespace darmok
             return {};
         }
         
-        std::pair<std::ofstream, ProtobufFormat> createOutputStream(const std::filesystem::path& path);
-        std::ofstream createOutputStream(const std::filesystem::path& path, ProtobufFormat format);
-        expected<void, std::string> write(const Message& msg, const std::filesystem::path& path);
-        expected<void, std::string> write(const Message& msg, std::ostream& output, ProtobufFormat format);
-        expected<void, std::string> writeJson(const Message& msg, std::ostream& output);
-        expected<void, std::string> writeJson(const Message& msg, nlohmann::json& json);
-        expected<void, std::string> writeJson(const Message& msg, const FieldDescriptor& field, nlohmann::json& json);
+        [[nodiscard]] std::pair<std::ofstream, Format> createOutputStream(const std::filesystem::path& path);
+        [[nodiscard]] std::ofstream createOutputStream(const std::filesystem::path& path, Format format);
+        [[nodiscard]] expected<void, std::string> write(const Message& msg, const std::filesystem::path& path);
+        [[nodiscard]] expected<void, std::string> write(const Message& msg, std::ostream& output, Format format);
+        [[nodiscard]] expected<void, std::string> writeJson(const Message& msg, std::ostream& output);
+        [[nodiscard]] expected<void, std::string> writeJson(const Message& msg, nlohmann::json& json);
+        [[nodiscard]] expected<void, std::string> writeJson(const Message& msg, const FieldDescriptor& field, nlohmann::json& json);
 
-        uint32_t getTypeId(const Message& msg);
-        uint32_t getTypeId(const Descriptor& desc);
+        [[nodiscard]] uint32_t getTypeId(const Message& msg);
+        [[nodiscard]] uint32_t getTypeId(const Descriptor& desc);
     }
 
     template<typename Interface>
@@ -83,11 +83,19 @@ namespace darmok
 
         Result operator()(std::filesystem::path path) override
         {
-            auto data = _dataLoader(path);
-            auto format = ProtobufUtils::getFormat(path);
+            auto dataResult = _dataLoader(path);
+			if (!dataResult)
+			{
+				return unexpected<std::string>{ dataResult.error() };
+			}
+            auto format = protobuf::getFormat(path);
             auto res = std::make_shared<Resource>();
-            DataInputStream input(data);
-            ProtobufUtils::read(*res, input, format);
+            DataInputStream input{dataResult.value()};
+            auto readResult = protobuf::read(*res, input, format);
+			if (!readResult)
+			{
+				return unexpected<std::string>{ readResult.error() };
+			}
             return res;
         }
     private:
@@ -100,7 +108,7 @@ namespace darmok
     public:
         ProtobufFileImporter(Loader& loader, const std::string& name) noexcept
             : _loader(loader)
-            , _outputFormat(ProtobufFormat::Binary)
+            , _outputFormat(protobuf::Format::Binary)
         {
         }
 
@@ -111,10 +119,10 @@ namespace darmok
                 return false;
             }
             _outputPath = input.getOutputPath(".pb");
-            std::optional<ProtobufFormat> outputFormat;
+            std::optional<protobuf::Format> outputFormat;
             if (auto jsonOutputFormat = input.getConfigField("outputFormat"))
             {
-                outputFormat = ProtobufUtils::getFormat(jsonOutputFormat->get<std::string_view>());
+                outputFormat = protobuf::getFormat(jsonOutputFormat->get<std::string_view>());
             }
             if (outputFormat)
             {
@@ -122,7 +130,7 @@ namespace darmok
             }
             else
             {
-                _outputFormat = ProtobufUtils::getFormat(_outputPath);
+                _outputFormat = protobuf::getFormat(_outputPath);
             }
             return !_outputPath.empty();
         }
@@ -134,7 +142,7 @@ namespace darmok
 
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override
         {
-            return ProtobufUtils::createOutputStream(outputPath, _outputFormat);
+            return protobuf::createOutputStream(outputPath, _outputFormat);
         }
 
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override
@@ -161,14 +169,18 @@ namespace darmok
 
         void writeOutput(const google::protobuf::Message& msg, std::ostream& out)
         {
-            ProtobufUtils::write(msg, out, _outputFormat);
+            auto result = protobuf::write(msg, out, _outputFormat);
+			if (!result)
+			{
+				throw std::runtime_error(result.error());
+			}
         }
 
     private:
         Loader& _loader;
         std::string _name;
         std::filesystem::path _outputPath;
-        ProtobufFormat _outputFormat;
+        protobuf::Format _outputFormat;
     };
 }
 

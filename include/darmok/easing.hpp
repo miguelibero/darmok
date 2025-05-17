@@ -336,8 +336,7 @@ namespace darmok
         }
 
 
-        static const std::unordered_map<Type, std::string> _typeNames;
-        static const std::string& getTypeName(Type type) noexcept;
+        static std::string_view getTypeName(Type type) noexcept;
         static std::optional<Type> readType(std::string_view name) noexcept;
 
         template<typename T>

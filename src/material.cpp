@@ -46,15 +46,15 @@ namespace darmok
 		auto mat = std::make_shared<Material>();
 	
 		mat->programDefines = ProgramDefines(def->program_defines().begin(), def->program_defines().end());
-		mat->baseColor = GlmProtobufUtils::convert(def->base_color());
-		mat->emissiveColor = GlmProtobufUtils::convert(def->emissive_color());
+		mat->baseColor = protobuf::convert(def->base_color());
+		mat->emissiveColor = protobuf::convert(def->emissive_color());
 		mat->metallicFactor = def->metallic_factor();
 		mat->roughnessFactor = def->roughness_factor();
 		mat->normalScale = def->normal_scale();
 		mat->occlusionStrength = def->occlusion_strength();
 		mat->multipleScattering = def->multiple_scattering();
 		mat->whiteFurnanceFactor = def->white_furnance_factor();
-		mat->specularColor = GlmProtobufUtils::convert(def->specular_color());
+		mat->specularColor = protobuf::convert(def->specular_color());
 		mat->shininess = def->shininess();
 		mat->opacityType = def->opacity_type();
 		mat->twoSided = def->twosided();
@@ -95,23 +95,11 @@ namespace darmok
 			}
 		}
 
-		mat->uniformValues.reserve(def->uniform_values_size());
+		auto& uniformValues = mat->uniformValues;
+		uniformValues.reserve(def->uniform_values_size());
 		for (auto& [key, defVal] : def->uniform_values())
 		{
-			auto& val = mat->uniformValues.emplace(key).first->second;
-
-			if (defVal.has_mat4())
-			{
-				val = GlmProtobufUtils::convert(defVal.mat4());
-			}
-			else if (defVal.has_mat3())
-			{
-				val = GlmProtobufUtils::convert(defVal.mat3());
-			}
-			else if (defVal.has_vec4())
-			{
-				val = GlmProtobufUtils::convert(defVal.vec4());
-			}
+			uniformValues.emplace(key, defVal);			
 		}
 
 		return mat;

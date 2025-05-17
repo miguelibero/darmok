@@ -144,7 +144,7 @@ namespace darmok
             if (auto bounds = CullingUtils::getEntityBounds(scene, entity))
             {
                 _cam->setEntityTransform(entity, encoder);
-                MeshData meshData(bounds.value());
+                MeshData meshData(Cube{ *bounds });
                 meshData.type = MeshData::MeshType::Transient;
                 auto mesh = meshData.createMesh(layout);
                 mesh->render(encoder);
@@ -217,7 +217,7 @@ namespace darmok
     {
         auto& scene = _scene.value();
         auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
-        const Frustum camFrust = _cam->getViewProjectionMatrix();
+        const Frustum camFrust{ _cam->getViewProjectionMatrix() };
         _culled.clear();
         for (auto entity : entities)
         {
@@ -268,7 +268,7 @@ namespace darmok
         auto mainCam = _mainCam ? _mainCam : _cam;
         if (mainCam)
         {
-            const Frustum frust = mainCam->getViewProjectionMatrix();
+            const Frustum frust{ mainCam->getViewProjectionMatrix() };
             for (auto& plane : frust.getPlanes())
             {
                 meshData += MeshData(plane, MeshData::RectangleMeshType::Full);
@@ -286,7 +286,7 @@ namespace darmok
             {
                 if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
                 {
-                    meshData += MeshData(bbox.value(), MeshData::RectangleMeshType::Outline);
+                    meshData += MeshData(Cube{ *bbox }, MeshData::RectangleMeshType::Outline);
                     _cam->setEntityTransform(entity, encoder);
                     _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
                     ++debugColor;

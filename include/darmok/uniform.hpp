@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/glm.hpp>
+#include <darmok/protobuf/material.pb.h>
 
 #include <variant>
 #include <string>
@@ -15,6 +16,7 @@ namespace darmok
     struct DARMOK_EXPORT UniformValue final
     {
         using Variant = std::variant<glm::vec4, glm::mat4, glm::mat3>;
+        using Definition = protobuf::UniformValue;
 
         UniformValue(const UniformValue& other) = default;
         UniformValue(UniformValue&& other) = default;
@@ -23,7 +25,8 @@ namespace darmok
         bool operator==(const UniformValue& other) const = default;
         bool operator!=(const UniformValue& other) const = default;
 
-        UniformValue(const Variant& val) noexcept;
+        UniformValue(const Definition& def) noexcept;
+        UniformValue(const Variant& val = glm::vec4()) noexcept;
         UniformValue(Variant&& val) noexcept;
         UniformValue& operator=(const Variant& val) noexcept;
         UniformValue& operator=(Variant&& val) noexcept;

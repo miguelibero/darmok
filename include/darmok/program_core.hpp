@@ -26,9 +26,10 @@ namespace darmok
 	namespace ProgramCoreUtils
 	{
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
-
 		const RendererProfileMap& getRendererProfiles() noexcept;
-		const protobuf::ProgramProfile& getCurrentProfile(const protobuf::Program& def);
+		expected<std::reference_wrapper<const protobuf::ProgramProfile>, std::string> getCurrentProfile(const protobuf::Program& def);
+		expected<void, std::string> read(protobuf::ProgramSource& src, const std::filesystem::path& path);
+		expected<void, std::string> read(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
 	};
 
 	struct ProgramCompilerConfig final
@@ -47,7 +48,7 @@ namespace darmok
 	public:
 		using Config = ProgramCompilerConfig;
 		ProgramCompiler(const Config& config) noexcept;
-		protobuf::Program operator()(const protobuf::ProgramSource& src);
+		expected<protobuf::Program, std::string> operator()(const protobuf::ProgramSource& src);
 
 	private:
 		Config _config;

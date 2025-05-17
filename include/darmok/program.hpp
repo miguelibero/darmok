@@ -31,15 +31,29 @@ namespace darmok
 		~Program() noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
+		Program(Program&& other) = default;
+		Program& operator=(Program&& other) = default;
 
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
+		template<class T>
+		static [[nodiscard]] Program fromStaticMem(const T& mem)
+		{
+			Definition def;
+			auto result = protobuf::readStaticMem(def, mem);
+			if (!result)
+			{
+				throw std::runtime_error{ result.error()};
+			}
+			return Program{ def };
+		}
+
 	private:
 
-		expected<void, std::string> createShaders(const protobuf::ProgramProfile& profile, const std::string& name);
+		expected<ShaderHandles, std::string> createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name);
 		static bgfx::ShaderHandle findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept;
-		void createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle);
+		expected<bgfx::ProgramHandle, std::string> createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle);
 
 		Defines _allDefines;
 		ShaderHandles _vertexHandles;

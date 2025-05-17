@@ -83,7 +83,7 @@ namespace darmok
         }
         else
         {
-            name += StringUtils::toString(_lightEntity);
+            name += std::to_string(_lightEntity);
             if (_part >= 0)
             {
                 name += " part " + std::to_string(_part);
@@ -220,11 +220,14 @@ namespace darmok
         };
 
         Program::Definition shadowProgDef;
-        ProtobufUtils::readStaticMem(shadowProgDef, shadow_program);
-        _program = std::make_unique<Program>(shadowProgDef);
-
+        auto result = protobuf::readStaticMem(shadowProgDef, shadow_program);
+        if (result)
+        {
+            _program = std::make_unique<Program>(shadowProgDef);
+        }
+        
         Texture::Config texConfig;
-        *texConfig.mutable_size() = GlmProtobufUtils::convert(glm::uvec2(_config.mapSize));
+        *texConfig.mutable_size() = protobuf::convert(glm::uvec2(_config.mapSize));
         texConfig.set_layers(_config.maxPassAmount);
         texConfig.set_format(Texture::Format::D16);
 

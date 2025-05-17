@@ -14,7 +14,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/input.hpp>
 #include <darmok/program.hpp>
-#include <darmok/model_assimp.hpp>
+#include <darmok/scene_assimp.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
 #include <darmok/transform.hpp>

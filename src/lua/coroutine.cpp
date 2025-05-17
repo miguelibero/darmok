@@ -504,7 +504,7 @@ namespace darmok
 		LuaEaseScale::bind(lua);
 		LuaPlayAnimation::bind(lua);
 
-		LuaUtils::newEnumFunc<EasingType>(lua, "EasingType", EasingType::Count, &Easing::getTypeName);
+		LuaUtils::newEnum<EasingType>(lua, "EasingType");
 	}
 
 }

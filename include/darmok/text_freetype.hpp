@@ -32,8 +32,12 @@ namespace darmok
         IDataLoader& _dataLoader;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IFreetypeFontLoader : public IFromDefinitionLoader<IFont, protobuf::FreetypeFont>
+    class DARMOK_EXPORT BX_NO_VTABLE IFreetypeFontLoader : public IFromDefinitionLoader<IFont, protobuf::FreetypeFont>, public IFontLoader
     {
+    public:
+        using IFontLoader::Result;
+        using IFontLoader::Error;
+        using IFontLoader::Resource;
     };
 
     class DARMOK_EXPORT FreetypeFontLoader final : public FromDefinitionLoader<IFreetypeFontLoader, IFreetypeFontDefinitionLoader>

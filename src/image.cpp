@@ -346,7 +346,7 @@ namespace darmok
 
 	ImageEncoding Image::getEncodingForPath(const std::filesystem::path& path) noexcept
 	{
-		auto ext = StringUtils::getFileExt(path.filename().string());
+		auto ext = path.extension().string();
 		if (ext == ".png")
 		{
 			return ImageEncoding::Png;
@@ -471,7 +471,7 @@ namespace darmok
 	Image::TextureConfig Image::getTextureConfig() const noexcept
 	{
 		TextureConfig config;
-		*config.mutable_size() = GlmProtobufUtils::convert(getSize());
+		*config.mutable_size() = protobuf::convert(getSize());
 		config.set_format(protobuf::TextureFormat::Enum(getFormat()));
 		config.set_type(protobuf::TextureType::Enum(getTextureType()));
 		config.set_depth(getDepth());

@@ -5,31 +5,34 @@
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/math.pb.h>
 
+#include <ostream>
+
 #include <glm/detail/type_quat.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <nlohmann/json.hpp>
 
 
 namespace darmok
 {
-	namespace GlmProtobufUtils
+	namespace protobuf
 	{
-		protobuf::Uvec2 convert(const glm::uvec2& v);
-		protobuf::Vec2 convert(const glm::vec2& v);
-		protobuf::Vec3 convert(const glm::vec3& v);
-		protobuf::Vec4 convert(const glm::vec4& v);
-		protobuf::Mat3 convert(const glm::mat3& v);
-		protobuf::Mat4 convert(const glm::mat4& v);
-		protobuf::Color convert(const Color& v);
-		protobuf::Color3 convert(const Color3& v);
+		Uvec2 convert(const glm::uvec2& v);
+		Vec2 convert(const glm::vec2& v);
+		Vec3 convert(const glm::vec3& v);
+		Vec4 convert(const glm::vec4& v);
+		Mat3 convert(const glm::mat3& v);
+		Mat4 convert(const glm::mat4& v);
+		Color convert(const darmok::Color& v);
+		Color3 convert(const darmok::Color3& v);
 
-		glm::uvec2 convert(const protobuf::Uvec2& v);
-		glm::vec2 convert(const protobuf::Vec2& v);
-		glm::vec3 convert(const protobuf::Vec3& v);
-		glm::vec4 convert(const protobuf::Vec4& v);
-		glm::mat3 convert(const protobuf::Mat3& v);
-		glm::mat4 convert(const protobuf::Mat4& v);
-		Color convert(const protobuf::Color& v);
-		Color3 convert(const protobuf::Color3& v);
+		glm::uvec2 convert(const Uvec2& v);
+		glm::vec2 convert(const Vec2& v);
+		glm::vec3 convert(const Vec3& v);
+		glm::vec4 convert(const Vec4& v);
+		glm::mat3 convert(const Mat3& v);
+		glm::mat4 convert(const Mat4& v);
+		darmok::Color convert(const Color& v);
+		darmok::Color3 convert(const Color3& v);
 	}
 }
 
@@ -110,4 +113,26 @@ namespace glm
 			from_json(json[i], mat[i]);
 		}
 	}
+}
+
+namespace std
+{
+	template<glm::length_t L, typename T, glm::qualifier Q = glm::defaultp>
+	inline ostream& operator<<(ostream& out, const glm::vec<L, T, Q>& vec)
+	{
+		return out << glm::to_string(vec);
+	}
+
+	template<typename T, glm::qualifier Q = glm::defaultp>
+	inline ostream& operator<<(ostream& out, const glm::qua<T, Q>& quat)
+	{
+		return out << glm::to_string(quat);
+	}
+
+	template<glm::length_t L1, glm::length_t L2, typename T, glm::qualifier Q = glm::defaultp>
+	inline ostream& operator<<(ostream& out, const glm::mat<L1, L2, T, Q>& mat)
+	{
+		return out << glm::to_string(mat);
+	}
+
 }

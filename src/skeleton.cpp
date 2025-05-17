@@ -220,7 +220,7 @@ namespace darmok
             auto len = glm::length(pos);
             for (auto& anim : state.animations())
             {
-                auto blendPos = GlmProtobufUtils::convert(anim.blend_position());
+                auto blendPos = protobuf::convert(anim.blend_position());
                 auto lenAnim2 = glm::length(blendPos);
                 auto p = lenAnim + lenAnim2;
                 auto a = glm::vec2((len - lenAnim) * p, glm::angle(pos, animPos));
@@ -233,7 +233,7 @@ namespace darmok
             auto a = pos - animPos;
             for (auto& anim : state.animations())
             {
-                auto b = GlmProtobufUtils::convert(anim.blend_position()) - animPos;
+                auto b = protobuf::convert(anim.blend_position()) - animPos;
                 parts.emplace_back(a, b);
             }
         }
@@ -263,7 +263,7 @@ namespace darmok
 
         for (auto& anim : state.animations())
         {
-            auto w = calcBlendWeight(state, pos, GlmProtobufUtils::convert(anim.blend_position()));
+            auto w = calcBlendWeight(state, pos, protobuf::convert(anim.blend_position()));
             weights.push_back(w);
         }
 
@@ -289,7 +289,11 @@ namespace darmok
             for (auto& anim : state.animations())
             {
                 auto& name = anim.name();
-                anims.emplace(name, loader(getAnimationName(name)));
+                auto result = loader(getAnimationName(name));
+                if (result)
+                {
+                    anims.emplace(name, result.value());
+                }
             }
         }
         return anims;
@@ -331,6 +335,12 @@ namespace darmok
         }
 		return nullptr;
     }
+
+    SkeletalAnimatorDefinitionFileImporter::SkeletalAnimatorDefinitionFileImporter() noexcept
+        : ProtobufFileImporter<ISkeletalAnimatorDefinitionLoader>{ _loader, "skeletal-animator" }
+        , _loader{ _dataLoader }
+        {
+        }
 
     Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept
         : _joints(joints)

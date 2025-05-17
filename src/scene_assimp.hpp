@@ -3,10 +3,18 @@
 #include <darmok/vertex_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/program.hpp>
-#include <darmok/model_assimp.hpp>
+#include <darmok/scene_assimp.hpp>
+#include <darmok/image.hpp>
+#include <darmok/texture.hpp>
 #include <darmok/glm.hpp>
 
 #include <darmok/protobuf.hpp>
+#include <darmok/protobuf/scene.pb.h>
+#include <darmok/protobuf/mesh.pb.h>
+#include <darmok/protobuf/material.pb.h>
+#include <darmok/protobuf/texture.pb.h>
+#include <darmok/protobuf/assimp.pb.h>
+#include <darmok/protobuf/light.pb.h>
 
 #include <string_view>
 #include <memory>
@@ -65,20 +73,10 @@ namespace darmok
         static std::shared_ptr<aiScene> fixScene(Assimp::Importer& importer) noexcept;
     };
 
-    namespace protobuf
-    {
-        class Mesh;
-        class Transform;
-        class Camera;
-        class Material;
-        class Texture;
-		class MaterialTextureType;
-    }
-
     class AssimpSceneDefinitionConverter final
     {
     public:
-        using Config = protobuf::AssimpModelImportConfig;
+        using Config = protobuf::AssimpSceneImportConfig;
         using Definition = protobuf::Scene;
         using MeshDefinition = protobuf::Mesh;
         using TransformDefinition = protobuf::Transform;
@@ -131,8 +129,8 @@ namespace darmok
         void updateLight(Definition& def, uint32_t entityId, const aiLight& assimpLight) noexcept;
         bool updateMeshes(Definition& def, uint32_t entityId, const std::regex& regex) noexcept;
 
-        Data createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
-        std::vector<VertexIndex> createIndexData(const aiMesh& assimpMesh) const noexcept;
+        std::string createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
+        std::string createIndexData(const aiMesh& assimpMesh) const noexcept;
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
 
 		uint32_t getNextEntityId(const Definition& def) noexcept;
@@ -143,7 +141,7 @@ namespace darmok
     class AssimpSceneDefinitionLoaderImpl final
     {
     public:
-        using Config = protobuf::AssimpModelImportConfig;
+        using Config = protobuf::AssimpSceneImportConfig;
         using Model = protobuf::Scene;
         using Result = expected<std::shared_ptr<Model>, std::string>;
         AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
@@ -163,8 +161,8 @@ namespace darmok
     {
     public:
         using Input = FileTypeImporterInput;
-        using Config = protobuf::AssimpModelImportConfig;
-        using OutputFormat = ProtobufFormat;
+        using Config = protobuf::AssimpSceneImportConfig;
+        using OutputFormat = protobuf::Format;
         using Dependencies = FileTypeImportDependencies;
         using Definition = protobuf::Scene;
 
@@ -206,6 +204,6 @@ namespace darmok
         static const std::string _loadPathJsonKey;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
-        static VertexLayout loadVertexLayout(const nlohmann::ordered_json& json);
+        static expected<VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

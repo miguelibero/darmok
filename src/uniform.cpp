@@ -1,6 +1,7 @@
 #include <darmok/uniform.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include <stdexcept>
 
@@ -8,6 +9,22 @@
 
 namespace darmok
 {
+	UniformValue::UniformValue(const Definition& def) noexcept
+	{
+		if (def.has_mat4())
+		{
+			*this = protobuf::convert(def.mat4());
+		}
+		else if (def.has_mat3())
+		{
+			*this = protobuf::convert(def.mat3());
+		}
+		else if (def.has_vec4())
+		{
+			*this = protobuf::convert(def.vec4());
+		}
+	}
+
 	UniformValue::UniformValue(const Variant& val) noexcept
 		: _value(val)
 	{

@@ -17,7 +17,7 @@ namespace darmok
 	class ImguiRenderPass final
 	{
 	public:
-		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept;
+		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui);
 		~ImguiRenderPass() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		void render() noexcept;

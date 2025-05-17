@@ -35,13 +35,13 @@ namespace darmok::editor
         bool removeScene(Scene& scene) noexcept;
 
         std::vector<TextureAsset> getTextures() const;
-        std::shared_ptr<TextureDefinition> addTexture();
-        std::string getTextureName(const std::shared_ptr<TextureDefinition>& tex) const;
+        std::shared_ptr<Texture::Definition> addTexture();
+        std::string getTextureName(const std::shared_ptr<Texture::Definition>& tex) const;
         TextureAsset findTexture(const std::shared_ptr<Texture>& tex) const;
-        TextureAsset findTexture(const TextureDefinition& def) const;
+        TextureAsset findTexture(const Texture::Definition& def) const;
         std::shared_ptr<Texture> loadTexture(const TextureAsset& asset);
-        bool removeTexture(TextureDefinition& def) noexcept;
-        bool reloadTexture(TextureDefinition& def);
+        bool removeTexture(Texture::Definition& def) noexcept;
+        bool reloadTexture(Texture::Definition& def);
 
         std::vector<MaterialAsset> getMaterials() const;
         std::shared_ptr<Material> addMaterial();

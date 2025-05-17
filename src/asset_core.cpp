@@ -63,7 +63,7 @@ namespace darmok
                 std::string v = *itr;
                 if (name.empty())
                 {
-                    name = StringUtils::getFileStem(relPath.string());
+                    name = relPath.stem().string();
                 }
                 StringUtils::replace(v, "*", name);
                 outputPath /= v;

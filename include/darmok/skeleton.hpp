@@ -227,7 +227,14 @@ namespace darmok
         OptionalRef<SkeletalAnimator> getAnimator(Entity entity) const noexcept;
     };
 
-    using SkeletalAnimatorDefinitionFileImporter = ProtobufFileImporter<SkeletalAnimator::Definition>;    
+    class SkeletalAnimatorDefinitionFileImporter final : public ProtobufFileImporter<ISkeletalAnimatorDefinitionLoader>
+    {
+    public:
+		SkeletalAnimatorDefinitionFileImporter() noexcept;
+    private:
+		DataLoader _dataLoader;
+        DataSkeletalAnimatorDefinitionLoader _loader;
+    };
 
     struct DARMOK_EXPORT ArmatureJoint final
     {

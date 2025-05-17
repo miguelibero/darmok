@@ -94,16 +94,16 @@ namespace darmok
 
 		std::string writeUvec2List(const std::vector<glm::uvec2>& list) noexcept
 		{
-			return StringUtils::join(" ", list, [](auto& v) {
+			return StringUtils::join(" ", list.begin(), list.end(), [](auto& v) {
 				return std::to_string(v.x) + " " + std::to_string(v.y);
-				});
+			});
 		}
 
 		std::string writeIndexList(const std::vector<int>& list) noexcept
 		{
-			return StringUtils::join(" ", list, [](auto& v) {
+			return StringUtils::join(" ", list.begin(), list.end(), [](auto& v) {
 				return std::to_string(v);
-				});
+			});
 		}
 	}
 
@@ -112,8 +112,8 @@ namespace darmok
 		Bounds getBounds(const Element& elm) noexcept
 		{
 			return {
-				GlmProtobufUtils::convert(elm.original_size()),
-				GlmProtobufUtils::convert(elm.offset())
+				protobuf::convert(elm.original_size()),
+				protobuf::convert(elm.offset())
 			};
 		}
 
@@ -130,18 +130,18 @@ namespace darmok
 			
 			for (auto& pos : positions)
 			{
-				*elm.add_positions() = GlmProtobufUtils::convert(pos * bounds.size);
+				*elm.add_positions() = protobuf::convert(pos * bounds.size);
 				auto texCoord = pos;
 				texCoord.y = texCoord.y ? 0 : 1;
 				texCoord = bounds.offset + texCoord * bounds.size;
-				*elm.add_texture_coords() = GlmProtobufUtils::convert(texCoord);
+				*elm.add_texture_coords() = protobuf::convert(texCoord);
 			}
 			for (auto& idx : indices)
 			{
 				elm.add_indices(idx);
 			}
-			*elm.mutable_texture_position() = GlmProtobufUtils::convert(bounds.offset);
-			auto protoSize = GlmProtobufUtils::convert(bounds.size);
+			*elm.mutable_texture_position() = protobuf::convert(bounds.offset);
+			auto protoSize = protobuf::convert(bounds.size);
 			*elm.mutable_size() = protoSize;
 			*elm.mutable_original_size() = protoSize;
 
@@ -157,8 +157,8 @@ namespace darmok
 
 			const glm::vec2 fatlasSize(textureSize);
 
-			auto pivot = GlmProtobufUtils::convert(elm.pivot());
-			auto originalSize = GlmProtobufUtils::convert(elm.original_size());
+			auto pivot = protobuf::convert(elm.pivot());
+			auto originalSize = protobuf::convert(elm.original_size());
 			auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
 			// don't think this is needed since it's already factored into the position values
 			// baseOffset += glm::vec3(offset, 0);
@@ -175,8 +175,8 @@ namespace darmok
 					auto elmOffset = baseOffset + amountOffset;
 					for (uint32_t i = 0; i < vertexAmount; i++)
 					{
-						auto texPos = GlmProtobufUtils::convert(elm.positions()[i]);
-						auto texCoord = GlmProtobufUtils::convert(elm.texture_coords()[i]);
+						auto texPos = protobuf::convert(elm.positions()[i]);
+						auto texCoord = protobuf::convert(elm.texture_coords()[i]);
 						auto pos = (elmOffset + glm::vec3(texPos.x, float(originalSize.y) - texPos.y, 0)) * config.scale;
 						writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
 						auto ftexCoord = glm::vec2(texCoord) / fatlasSize;
@@ -210,19 +210,19 @@ namespace darmok
 			{
 				return false;
 			}
-			if (GlmProtobufUtils::convert(elm.positions()[0]) != glm::uvec2(elm.size().x(), 0))
+			if (protobuf::convert(elm.positions()[0]) != glm::uvec2(elm.size().x(), 0))
 			{
 				return false;
 			}
-			if (GlmProtobufUtils::convert(elm.positions()[1]) != GlmProtobufUtils::convert(elm.size()))
+			if (protobuf::convert(elm.positions()[1]) != protobuf::convert(elm.size()))
 			{
 				return false;
 			}
-			if (GlmProtobufUtils::convert(elm.positions()[2]) != glm::uvec2(0, elm.size().y()))
+			if (protobuf::convert(elm.positions()[2]) != glm::uvec2(0, elm.size().y()))
 			{
 				return false;
 			}
-			if (GlmProtobufUtils::convert(elm.positions()[3]) != glm::uvec2(0))
+			if (protobuf::convert(elm.positions()[3]) != glm::uvec2(0))
 			{
 				return false;
 			}
@@ -264,15 +264,15 @@ namespace darmok
 			{
 				for (const auto& pos : TextureAtlasDetail::readUvec2List(xmlVertices.text().get()))
 				{
-					*elm.add_positions() = GlmProtobufUtils::convert(pos);
+					*elm.add_positions() = protobuf::convert(pos);
 				}
 			}
 			else
 			{
-				*elm.add_positions() = GlmProtobufUtils::convert(glm::uvec2(size.x(), 0));
+				*elm.add_positions() = protobuf::convert(glm::uvec2(size.x(), 0));
 				*elm.add_positions() = size;
-				*elm.add_positions() = GlmProtobufUtils::convert(glm::uvec2(0, size.y()));
-				*elm.add_positions() = GlmProtobufUtils::convert(glm::uvec2(0));
+				*elm.add_positions() = protobuf::convert(glm::uvec2(0, size.y()));
+				*elm.add_positions() = protobuf::convert(glm::uvec2(0));
 			}
 
 			auto xmlVerticesUV = xml.child("verticesUV");
@@ -280,7 +280,7 @@ namespace darmok
 			{
 				for (const auto& texCoord : TextureAtlasDetail::readUvec2List(xmlVerticesUV.text().get()))
 				{
-					*elm.add_texture_coords() = GlmProtobufUtils::convert(texCoord);
+					*elm.add_texture_coords() = protobuf::convert(texCoord);
 				}
 			}
 			else
@@ -343,7 +343,7 @@ namespace darmok
 			}
 			if (!isRect(elm))
 			{
-				auto convertUvec2 = [](const protobuf::Uvec2& v) { return GlmProtobufUtils::convert(v); };
+				auto convertUvec2 = [](const protobuf::Uvec2& v) { return protobuf::convert(v); };
 
 				if (elm.positions_size() > 0)
 				{
@@ -380,8 +380,8 @@ namespace darmok
 			{
 				return unexpected<std::string>("empty xml node");
 			}
-
-			atlas.set_texture_path(basePath / std::filesystem::path(node.attribute("imagePath").value()));
+			auto path = basePath / std::filesystem::path(node.attribute("imagePath").value());
+			atlas.set_texture_path(path.string());
 
 			glm::uvec2 size {
 				node.attribute("width").as_int(),
@@ -448,7 +448,7 @@ namespace darmok
 				auto& pos = elm.texture_position();
 				auto& size = elm.size();
 				const glm::uvec4 val(pos.x(), pos.y(), size.x(), size.y());
-				auto name = StringUtils::getFileStem(elm.name());
+				auto name = std::filesystem::path{ elm.name() }.stem().string();
 				if (!config.spriteNameFormat.empty())
 				{
 					const std::string origName = name;
@@ -465,7 +465,7 @@ namespace darmok
 				{
 					out << "\n";
 					std::string name = config.boxNameFormat;
-					auto origName = StringUtils::getFileStem(elm.name());
+					auto origName = std::filesystem::path{ elm.name() }.stem().string();
 					StringUtils::replace(name, "*", origName);
 
 					out << "." << name << " {\n";
@@ -476,6 +476,11 @@ namespace darmok
 					out << "}\n";
 				}
 			}
+			if (out.fail())
+			{
+				return unexpected<std::string>{ "failed to write rmlui file" };
+			}
+			return {};
 		}
 	}
 
@@ -798,7 +803,7 @@ namespace darmok
 			{
 				throw std::runtime_error("failed to read texture packer xml: " + texPackResult.error());
 			}
-			atlasDef.set_texture_path(std::filesystem::relative(_texturePath, basePath));
+			atlasDef.set_texture_path(std::filesystem::relative(_texturePath, basePath).string());
 			_sheetData.clear();
 			DataOutputStream out(_sheetData);
 			auto rmluiConfig = readRmluiConfig(input.config);

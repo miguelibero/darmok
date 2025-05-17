@@ -16,7 +16,7 @@
 #endif
 
 #ifdef DARMOK_ASSIMP
-#include <darmok/model_assimp.hpp>
+#include <darmok/scene_assimp.hpp>
 #endif
 
 #ifdef DARMOK_FREETYPE

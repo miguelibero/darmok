@@ -38,8 +38,8 @@ namespace darmok
 
 		static char keyToAscii(KeyboardKey key, bool upper = false) noexcept;
 		
-		static const std::string& getKeyName(KeyboardKey key) noexcept;
-		static const std::string& getModifierName(KeyboardModifier mod) noexcept;
+		static std::string_view getKeyName(KeyboardKey key) noexcept;
+		static std::string_view getModifierName(KeyboardModifier mod) noexcept;
 
 		static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
@@ -57,9 +57,7 @@ namespace darmok
 		OwnRefCollection<IKeyboardListener> _listeners;
 
 		static const std::string _keyPrefix;
-		static const std::array<std::string, toUnderlying(KeyboardKey::Count)> _keyNames;
 		static const std::string _modPrefix;
-		static const std::array<std::string, toUnderlying(KeyboardModifier::Count)> _modNames;
 	};
 
 #pragma endregion Keyboard
@@ -93,9 +91,9 @@ namespace darmok
 		bool setScroll(const glm::vec2& scroll) noexcept;
 		bool setButton(MouseButton button, bool down) noexcept;
 
-		static const std::string& getButtonName(MouseButton button) noexcept;
+		static std::string_view getButtonName(MouseButton button) noexcept;
 		static std::optional<MouseButton> readButton(std::string_view name) noexcept;
-		static const std::string& getAnalogName(MouseAnalog analog) noexcept;
+		static std::string_view getAnalogName(MouseAnalog analog) noexcept;
 		static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
 		static std::optional<MouseInputEvent> readEvent(std::string_view name) noexcept;
 		static std::optional<MouseInputDir> readDir(std::string_view name) noexcept;
@@ -112,9 +110,7 @@ namespace darmok
 		OwnRefCollection<IMouseListener> _listeners;
 
 		static const std::string _buttonPrefix;
-		static const std::array<std::string, toUnderlying(MouseButton::Count)> _buttonNames;
 		static const std::string _analogPrefix;
-		static const std::array<std::string, toUnderlying(MouseAnalog::Count)> _analogNames;
 	};
 
 #pragma endregion Mouse
@@ -149,9 +145,9 @@ namespace darmok
 		bool setButton(GamepadButton button, bool down) noexcept;
 
 		static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
-		static const std::string& getButtonName(GamepadButton button) noexcept;
+		static std::string_view getButtonName(GamepadButton button) noexcept;
 		static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
-		static const std::string& getStickName(GamepadStick stick) noexcept;
+		static std::string_view getStickName(GamepadStick stick) noexcept;
 
 		static std::optional<uint8_t> readNum(std::string_view name) noexcept;
 		static std::optional<GamepadInputEvent> readEvent(std::string_view name) noexcept;
@@ -166,9 +162,7 @@ namespace darmok
 		static const float _stickThreshold;
 
 		static const std::string _buttonPrefix;
-		static const std::array<std::string, toUnderlying(GamepadButton::Count)> _buttonNames;
 		static const std::string _stickPrefix;
-		static const std::array<std::string, toUnderlying(GamepadStick::Count)> _stickNames;
 
 		void clear() noexcept;
 	};
@@ -217,7 +211,7 @@ namespace darmok
 		void onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) override;
 
 		static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
-		static const std::string& getDirTypeName(InputDirType type) noexcept;
+		static std::string_view getDirTypeName(InputDirType type) noexcept;
 		static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
 		static std::optional<InputDir> readDir(std::string_view name) noexcept;
 		static float getDir(const glm::vec2& vec, InputDirType dir) noexcept;
@@ -244,7 +238,6 @@ namespace darmok
 		std::vector<ListenerData> _listeners;
 
 		static const std::string _dirTypePrefix;
-		static const std::array<std::string, toUnderlying(InputDirType::Count)> _dirTypeNames;
 
 		float getDir(const Dir& dir, const Sensitivity& sensi) const noexcept;
 	};

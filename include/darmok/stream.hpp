@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/optional_ref.hpp>
+#include <darmok/expected.hpp>
 
 #include <iostream>
 #include <filesystem>
@@ -11,8 +12,8 @@ namespace darmok
 {
     namespace StreamUtils
     {
-        std::string readString(std::istream& input);
-        std::string readString(std::filesystem::path& path);
+        expected<std::string, std::string> readString(std::istream& input);
+        expected<std::string, std::string> readString(std::filesystem::path& path);
         void copy(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
         void logDebug(const std::string& msg, bool error = false) noexcept;
         void writeUtf8Bom(std::ostream& out);

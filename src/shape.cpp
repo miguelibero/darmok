@@ -36,7 +36,7 @@ namespace darmok
         glm::vec3 v1 = v0 + glm::vec3(size.x, 0, 0);
         glm::vec3 v2 = v0 + glm::vec3(size, 0);
         glm::vec3 v3 = v0 + glm::vec3(0, size.y, 0);
-        return { { v0, v1 }, {v1, v2}, { v2, v3 }, { v3, v0 } };
+        return { Line{ v0, v1 }, Line{v1, v2}, Line{ v2, v3 }, Line{ v3, v0 } };
     }
 
     bool Rectangle::operator==(const Rectangle& other) const noexcept
@@ -1057,7 +1057,7 @@ namespace darmok
         default:
             break;
         }
-        return {};
+        return Plane{};
     }
 
     std::array<Plane, toUnderlying(Frustum::PlaneType::Count)> Frustum::getPlanes() const noexcept

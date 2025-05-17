@@ -44,19 +44,13 @@ namespace darmok
 		}
 	};
 
-	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept
+	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui)
 		: _renderer(renderer)
 		, _imgui(imgui)
-		, _textureUniform{ bgfx::kInvalidHandle }
-		, _lodEnabledUniform{ bgfx::kInvalidHandle }
+		, _lodEnabledUniform{ bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4) }
+		, _textureUniform{ bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler) }
+		, _program{ std::make_unique<Program>(Program::fromStaticMem(imgui_program)) }
 	{
-		ProgramDefinition progDef;
-		progDef.loadStaticMem(imgui_program);
-		_program = std::make_unique<Program>(progDef);
-		
-		_lodEnabledUniform = bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4);
-		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-
 		updateFonts();
 	}
 
@@ -67,9 +61,9 @@ namespace darmok
 		ImGuiIO& iio = ImGui::GetIO();
 		iio.Fonts->GetTexDataAsRGBA32(&data, &width, &height, &bytesPerPixel);
 
-		TextureConfig config;
-		config.format = bgfx::TextureFormat::BGRA8;
-		config.size = glm::uvec2(width, height);
+		Texture::Config config;
+		config.set_format(Texture::Format::BGRA8);
+		*config.mutable_size() = protobuf::convert(glm::uvec2(width, height));
 		DataView dataView(data, width * height * bytesPerPixel);
 		_fontsTexture = std::make_unique<Texture>(dataView, config);
 	}

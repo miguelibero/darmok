@@ -1,5 +1,6 @@
 #include "mesh.hpp"
 #include "glm.hpp"
+#include "utils.hpp"
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
@@ -13,21 +14,9 @@ namespace darmok
 		lua.new_usertype<IMesh>("Mesh", sol::no_constructor
 		);
 
-		lua.new_enum<MeshType>("MeshType", {
-			{ "Static", MeshType::Static },
-			{ "Dynamic", MeshType::Dynamic },
-			{ "Transient", MeshType::Transient }
-		});
-
-		lua.new_enum<RectangleMeshType>("RectangleMeshType", {
-			{ "Full", RectangleMeshType::Full },
-			{ "Outline", RectangleMeshType::Outline }
-		});
-
-		lua.new_enum<LineMeshType>("LineMeshType", {
-			{ "Line", LineMeshType::Line },
-			{ "Arrow", LineMeshType::Arrow }
-		});
+		LuaUtils::newEnum<MeshData::MeshType::Enum>(lua, "MeshType");
+		LuaUtils::newEnum<MeshData::RectangleMeshType::Enum>(lua, "RectangleMeshType");
+		LuaUtils::newEnum<MeshData::LineMeshType::Enum>(lua, "LineMeshType");
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<
@@ -38,10 +27,10 @@ namespace darmok
 				MeshData(const Capsule&),
 				MeshData(const Capsule&, int),
 				MeshData(const Rectangle&),
-				MeshData(const Rectangle&, RectangleMeshType),
+				MeshData(const Rectangle&, MeshData::RectangleMeshType::Enum),
 				MeshData(const Ray&),
 				MeshData(const Line&),
-				MeshData(const Line&, LineMeshType),
+				MeshData(const Line&, MeshData::LineMeshType::Enum),
 				MeshData(const Triangle&)
 			>(),
 			"new_cube", sol::overload(
@@ -52,25 +41,25 @@ namespace darmok
 			"new_capsule", []() { return MeshData(Capsule()); },
 			"new_rectangle", sol::overload(
 				[]() {
-					return MeshData(Rectangle());
+					return MeshData{ Rectangle{} };
 				},
 				[](const glm::uvec2& size) {
-					return MeshData(Rectangle(size));
+					return MeshData{ Rectangle{size} };
 				},
-				[](const glm::uvec2& size, RectangleMeshType type) {
-					return MeshData(Rectangle(size), type);
+				[](const glm::uvec2& size, MeshData::RectangleMeshType::Enum type) {
+					return MeshData{ Rectangle{size}, type };
 				},
 				[](const VarLuaTable<glm::vec2>& size) {
-					return MeshData(Rectangle(LuaGlm::tableGet(size)));
+						return MeshData{ Rectangle{LuaGlm::tableGet(size)} };
 				},
-				[](const VarLuaTable<glm::vec2>& size, RectangleMeshType type) {
-					return MeshData(Rectangle(LuaGlm::tableGet(size)), type);
+				[](const VarLuaTable<glm::vec2>& size, MeshData::RectangleMeshType::Enum type) {
+						return MeshData{ Rectangle{LuaGlm::tableGet(size)}, type };
 				},
-				[](RectangleMeshType type) {
+				[](MeshData::RectangleMeshType::Enum type) {
 					return MeshData(Rectangle(), type);
 				}
 			),
-			"new_arrow", []() { return MeshData(Line(), LineMeshType::Arrow); },
+			"new_arrow", []() { return MeshData{ Line{}, MeshData::LineMeshType::Arrow }; },
 			"default_vertex_layout", sol::property(&MeshData::getDefaultVertexLayout),
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)

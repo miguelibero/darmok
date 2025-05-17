@@ -9,7 +9,7 @@ namespace darmok
 	Texture::Config FrameBuffer::createColorConfig(const glm::uvec2& size) noexcept
 	{
 		Texture::Config config;
-		*config.mutable_size() = GlmProtobufUtils::convert(size);
+		*config.mutable_size() = protobuf::convert(size);
 		config.set_format(Texture::Format::RGBA16F);
 		return config;
 	}
@@ -17,7 +17,7 @@ namespace darmok
 	Texture::Config FrameBuffer::createDepthConfig(const glm::uvec2& size) noexcept
 	{
 		Texture::Config config;
-		*config.mutable_size() = GlmProtobufUtils::convert(size);
+		*config.mutable_size() = protobuf::convert(size);
 		config.set_format(Texture::Format::D16F);
 		return config;
 	}

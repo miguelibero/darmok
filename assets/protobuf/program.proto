@@ -15,19 +15,20 @@ message StandardProgramType {
 }
 
 message ProgramSource {
-    string vertex_shader = 1;
-    string fragment_shader = 2;
-	Varying varying = 3;
+    string name = 1;
+    string vertex_shader = 2;
+    string fragment_shader = 3;
+	Varying varying = 4;
 }
 
-message ProgramVariant {
-    bytes vertex_shader = 1;
-    bytes fragment_shader = 2;
+message Shader {
+    bytes data = 1;
     repeated string defines = 3;
 }
 
 message ProgramProfile {
-    repeated ProgramVariant variants = 1;
+    repeated Shader fragment_shaders = 1;
+    repeated Shader vertex_shaders = 2;
 }
 
 message Program {

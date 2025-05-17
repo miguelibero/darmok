@@ -13,10 +13,14 @@ namespace darmok
 {
     class Skeleton;
     class SkeletalAnimation;
-    struct SkeletalAnimatorDefinition;
     class SkeletalAnimator;
     class ISkeletalAnimatorState;
     class ISkeletalAnimatorTransition;
+
+    namespace protobuf
+    {
+        class SkeletalAnimator;
+    }
 
     class LuaEntity;
     class Scene;
@@ -32,7 +36,7 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
 
-        using Definition = SkeletalAnimatorDefinition;
+        using Definition = protobuf::SkeletalAnimator;
         using AnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
         static void setBlendPosition(SkeletalAnimator& animator, const VarLuaVecTable<glm::vec2>& pos) noexcept;

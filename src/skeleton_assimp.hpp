@@ -1,14 +1,18 @@
 #pragma once
+
+#include <darmok/data.hpp>
+#include <darmok/expected.hpp>
+#include "scene_assimp.hpp"
+
 #include <optional>
 #include <vector>
 #include <string>
 #include <filesystem>
 #include <unordered_map>
 #include <map>
-#include <darmok/data.hpp>
+
 #include <bx/allocator.h>
 #include <bx/file.h>
-#include "model_assimp.hpp"
 #include <ozz/animation/offline/raw_skeleton.h>
 #include <ozz/animation/offline/tools/import2ozz.h>
 #include <ozz/animation/runtime/skeleton.h>
@@ -147,7 +151,7 @@ namespace darmok
     private:
         std::filesystem::path _path;
         std::shared_ptr<aiScene> _assimpScene;
-        AssimpSceneLoader _sceneLoader;
+        AssimpLoader _assimpLoader;
     };
 
     class IDataLoader;
@@ -155,21 +159,23 @@ namespace darmok
     class AssimpSkeletonLoaderImpl final
     {
     public:
+        using Result = expected<std::shared_ptr<Skeleton>, std::string>;
         AssimpSkeletonLoaderImpl(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<Skeleton> operator()(const std::filesystem::path& path);
+        Result operator()(const std::filesystem::path& path);
     private:
         IDataLoader& _dataLoader;
-        AssimpSceneLoader _sceneLoader;
+        AssimpLoader _assimpLoader;
     };
 
     class AssimpSkeletalAnimationLoaderImpl final
     {
     public:
+		using Result = expected<std::shared_ptr<SkeletalAnimation>, std::string>;
         AssimpSkeletalAnimationLoaderImpl(IDataLoader& dataLoader) noexcept;
-        std::shared_ptr<SkeletalAnimation> operator()(const std::filesystem::path& path);
+        Result operator()(const std::filesystem::path& path);
     private:
         IDataLoader& _dataLoader;
-        AssimpSceneLoader _sceneLoader;
+        AssimpLoader _assimpLoader;
     };
 
     class AssimpSkeletonFileImporterImpl final
@@ -179,14 +185,14 @@ namespace darmok
         using OzzSkeleton = ozz::animation::Skeleton;
 
         AssimpSkeletonFileImporterImpl(size_t bufferSize = 4096) noexcept;
-        OzzSkeleton read(const std::filesystem::path& path, const nlohmann::json& config);
+        expected<OzzSkeleton, std::string> read(const std::filesystem::path& path, const nlohmann::json& config);
         std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept;
         std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
     private:
         size_t _bufferSize;
-        AssimpSceneLoader _sceneLoader;
+        AssimpLoader _assimpLoader;
     };
 
     class AssimpSkeletalAnimationFileImporterImpl final
@@ -207,7 +213,7 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
     private:
-        OzzSkeleton loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config);
+        expected<OzzSkeleton, std::string> loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config);
         OptimizationSettings loadOptimizationSettings(const nlohmann::json& config) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept;
@@ -220,7 +226,7 @@ namespace darmok
         std::optional<float> _currentMinKeyframeDuration;
         OptionalRef<std::ostream> _log;
 
-        AssimpSceneLoader _sceneLoader;
+        AssimpLoader _assimpLoader;
         size_t _bufferSize;
 
         static const std::string _skeletonJsonKey;

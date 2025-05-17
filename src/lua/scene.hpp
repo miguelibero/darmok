@@ -76,7 +76,6 @@ namespace darmok
 
 	class App;
 
-	// TODO: make this class static, bind directly to darmok::scene
 	class LuaScene final
 	{
 	public:

@@ -281,7 +281,6 @@ set(LUA_SOURCES
   viewport.cpp
   camera.cpp
   window.cpp
-  model.cpp
   utils.cpp
   skeleton.cpp
   freelook.cpp
@@ -378,9 +377,9 @@ endif()
 
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND HEADERS
-    model_assimp.hpp
+    scene_assimp.hpp
   )
-  list(APPEND SOURCES model_assimp.cpp)
+  list(APPEND SOURCES scene_assimp.cpp)
   if(DARMOK_BUILD_OZZ)
     list(APPEND HEADERS skeleton_assimp.hpp)
     list(APPEND SOURCES skeleton_assimp.cpp)
@@ -557,7 +556,7 @@ add_executable(${ASSETC_NAME}
 )
 list(APPEND EXPORT_TARGETS ${ASSETC_NAME})
 target_link_libraries(${ASSETC_NAME} ${LIB_NAME})
-add_executable(darmok::darmok-modelc ALIAS ${ASSETC_NAME})
+add_executable(darmok::darmok-assetc ALIAS ${ASSETC_NAME})
 set_target_properties(${ASSETC_NAME} PROPERTIES FOLDER ${TOOLS_FOLDER})
 darmok_copy_dynamic_libs(${ASSETC_NAME})
 
@@ -588,6 +587,12 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 # bgfx
 target_link_libraries(${CORE_LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
 set(BGFX_SHADERC_TARGET bgfx::shaderc)
+
+# fmt
+find_package(fmt CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE fmt::fmt)
+target_compile_definitions(${CORE_LIB_NAME} PRIVATE FMT_UNICODE=0)
+target_compile_definitions(${LIB_NAME} PRIVATE FMT_UNICODE=0)
 
 # pugixml
 find_package(pugixml CONFIG REQUIRED)
@@ -620,7 +625,7 @@ set(PROTO_FILES
   scene.proto
   light.proto
   skeleton.proto
-  model.proto
+  assimp.proto
   text.proto
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)

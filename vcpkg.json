@@ -69,6 +69,8 @@
     "cli11",
     "magic-enum",
     "protobuf",
-    "tl-expected"
+    "tl-expected",
+    "fmt",
+    "utfcpp"
   ]
 }

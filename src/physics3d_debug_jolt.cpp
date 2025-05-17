@@ -40,9 +40,9 @@ namespace darmok::physics3d
 
     JoltPhysicsDebugRenderer::JoltPhysicsDebugRenderer() noexcept
         : _colorUniform(bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4))
-        , _program(StandardProgramLoader::load(StandardProgramType::Unlit))
-        , _solidMeshData(MeshType::Transient)
-        , _wireMeshData(MeshType::Transient)
+        , _program(StandardProgramLoader::load(StandardProgramLoader::Type::Unlit))
+        , _solidMeshData(Mesh::MeshType::Transient)
+        , _wireMeshData(Mesh::MeshType::Transient)
     {
         Initialize();
     }
@@ -132,7 +132,7 @@ namespace darmok::physics3d
         _config.font->update(chars);
 
         MeshData meshData;
-        meshData.type = MeshType::Transient;
+        meshData.type = Mesh::MeshType::Transient;
         for (auto& textData : _textData)
         {
             auto textMeshData = Text::createMeshData(textData.content, *_config.font);

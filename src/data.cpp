@@ -1,7 +1,9 @@
 #include <darmok/data.hpp>
 #include <darmok/string.hpp>
+
 #include <bx/allocator.h>
 #include <bx/file.h>
+
 #include <stdexcept>
 #include <sstream>
 #include <algorithm>
@@ -102,8 +104,7 @@ namespace darmok
         std::stringstream ss;
         for (size_t i = 0; i < size; i++)
         {
-            auto& v = ((uint8_t*)ptr)[i];
-            ss << StringUtils::binToHex(v);
+            ss << std::hex << ((uint8_t*)ptr)[i];
         }
         return ss.str();
     }
@@ -113,6 +114,7 @@ namespace darmok
         void* ptr;
         offset = fixOffset(offset, ptr);
         size = fixSize(size, offset);
+        auto uptr = static_cast<uint8_t*>(ptr);
 
         std::string fixVarName(varName);
         std::replace(fixVarName.begin(), fixVarName.end(), '.', '_');
@@ -120,15 +122,15 @@ namespace darmok
 
         ss << "static const uint8_t " << fixVarName << "[" << size << "] = " << std::endl;
         ss << "{" << std::endl;
+        ss << std::hex << std::setfill('0');
         size_t i = 0;
-        for (; i < size; i++)
+        for (; i < size; ++i)
         {
             if (i % 16 == 0)
             {
                 ss << "  ";
             }
-            auto& v = ((uint8_t*)ptr)[i];
-            ss << "0x" << darmok::StringUtils::binToHex(v);
+            ss << "0x" << std::setw(2) << static_cast<int>(uptr[i]);
             if (i < size - 1)
             {
                 ss << ", ";
@@ -380,14 +382,23 @@ namespace darmok
 
     Data Data::fromHex(std::string_view hex, const OptionalRef<bx::AllocatorI>& alloc)
     {
-        static const size_t elmLen = 2;
-        Data data(hex.size() / elmLen, alloc);
+        Data data{ hex.size() / 2, alloc };
         auto ptr = (uint8_t*)data.ptr();
-        for (size_t i = 0; i < data.size(); i++)
+		size_t i = 0;
+        std::istringstream input{ std::string{hex} };
+        while (!input.eof())
         {
-            auto elm = hex.substr(i*elmLen, elmLen);
-            ptr[i] = StringUtils::hexToBin(elm);
+            char high, low;
+            input >> high >> low;
+            if (input.fail())
+            {
+                break;
+            }
+            std::string byteStr{ high, low };
+            ptr[i] = static_cast<uint8_t>(std::stoi(byteStr, nullptr, 16));
+            ++i;
         }
+
         return data;
     }
 

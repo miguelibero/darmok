@@ -1,9 +1,9 @@
-#include "model_assimp.hpp"
+#include "scene_assimp.hpp"
 #include <filesystem>
 #include <fstream>
 #include <map>
 
-#include <darmok/model_assimp.hpp>
+#include <darmok/scene_assimp.hpp>
 #include <darmok/image.hpp>
 #include <darmok/data.hpp>
 #include <darmok/vertex.hpp>
@@ -12,14 +12,6 @@
 #include <darmok/math.hpp>
 #include <darmok/material.hpp>
 #include <darmok/glm_serialize.hpp>
-
-#include <darmok/protobuf/scene.pb.h>
-#include <darmok/protobuf/mesh.pb.h>
-#include <darmok/protobuf/material.pb.h>
-#include <darmok/protobuf/texture.pb.h>
-#include <darmok/protobuf/model.pb.h>
-#include <darmok/protobuf/scene.pb.h>
-#include <darmok/protobuf/light.pb.h>
 
 #include <assimp/vector3.h>
 #include <assimp/mesh.h>
@@ -40,6 +32,11 @@ namespace darmok
         std::string_view getStringView(const aiString& str) noexcept
         {
             return std::string_view(str.data, str.length);
+        }
+
+        std::string getString(const aiString& str) noexcept
+        {
+            return std::string(str.data, str.length);
         }
 
         glm::mat4 convert(const aiMatrix4x4& from) noexcept
@@ -94,7 +91,7 @@ namespace darmok
             };
         }
 
-        bool fixModelImportConfig(IDataLoader& dataLoader, protobuf::AssimpModelImportConfig& config)
+        bool fixImportConfig(IDataLoader& dataLoader, protobuf::AssimpSceneImportConfig& config)
         {
 			auto stride = VaryingUtils::getBgfx(config.vertex_layout()).getStride();
             if (stride == 0)
@@ -107,7 +104,7 @@ namespace darmok
                 else if (config.program_path().empty())
                 {
                     protobuf::Program prog;
-                    auto result = ProtobufUtils::read(prog, config.program_path());
+                    auto result = protobuf::read(prog, config.program_path());
                     if (!result)
                     {
                         return false;
@@ -251,7 +248,7 @@ namespace darmok
     void AssimpSceneDefinitionLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
-        AssimpUtils::fixModelImportConfig(_dataLoader, _config);
+        AssimpUtils::fixImportConfig(_dataLoader, _config);
     }
 
     bool AssimpSceneDefinitionLoaderImpl::supports(const std::filesystem::path& path) const noexcept
@@ -367,16 +364,20 @@ namespace darmok
 
     bool AssimpSceneDefinitionConverter::addAsset(Definition& def, std::string_view path, Message& asset) noexcept
     {
-        auto typeId = ProtobufUtils::getTypeId(asset);
+        auto typeId = protobuf::getTypeId(asset);
         auto& assets = def.mutable_assets()->try_emplace(typeId).first->second;
-        return assets.mutable_assets()->try_emplace(path, asset).second;
+        auto result = assets.mutable_assets()->try_emplace(path);
+		result.first->second.PackFrom(asset);
+        return result.second;
     }
 
     bool AssimpSceneDefinitionConverter::addComponent(Definition& def, uint32_t entityId, Message& comp) noexcept
     {
-        auto typeId = ProtobufUtils::getTypeId(comp);
+        auto typeId = protobuf::getTypeId(comp);
         auto& components = def.mutable_components()->try_emplace(typeId).first->second;
-        return components.mutable_components()->try_emplace(entityId, comp).second;
+        auto result = components.mutable_components()->try_emplace(entityId);
+		result.first->second.PackFrom(comp);
+        return result.second;
     }
 
     bool AssimpSceneDefinitionConverter::updateMeshes(Definition& def, uint32_t entityId, const std::regex& regex) noexcept
@@ -405,7 +406,7 @@ namespace darmok
 
     bool AssimpSceneDefinitionConverter::update(Definition& def) noexcept
     {
-        def.set_name(AssimpUtils::getStringView(_scene.mName));
+        def.set_name(AssimpUtils::getString(_scene.mName));
         auto entityId = getNextEntityId(def);
         if (!_config.root_mesh_regex().empty())
         {
@@ -416,7 +417,7 @@ namespace darmok
 
     bool AssimpSceneDefinitionConverter::updateNode(Definition& def, uint32_t entityId, const aiNode& assimpNode, uint32_t parentEntityId) noexcept
     {
-        std::string name{ AssimpUtils::getStringView(assimpNode.mName) };
+        auto name = AssimpUtils::getString(assimpNode.mName);
         if(!_config.skip_nodes_regex().empty())
         {
             std::regex regex{ _config.skip_nodes_regex() };
@@ -429,7 +430,7 @@ namespace darmok
         protobuf::Transform trans;
         trans.set_name(name);
         trans.set_parent(parentEntityId);
-        *trans.mutable_matrix() = GlmProtobufUtils::convert(
+        *trans.mutable_matrix() = protobuf::convert(
             AssimpUtils::convert(assimpNode.mTransformation)
         );
         addComponent(def, entityId, trans);
@@ -480,8 +481,6 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateCamera(Definition& def, uint32_t entityId, const aiCamera& assimpCam) noexcept
     {
-        CameraDefinition cam;
-
         aiMatrix4x4 mat;
         assimpCam.GetCameraMatrix(mat);
 
@@ -489,8 +488,8 @@ namespace darmok
         {
             protobuf::Transform trans;
             trans.set_parent(entityId);
-            trans.set_name(AssimpUtils::getStringView(assimpCam.mName));
-            *trans.mutable_matrix() = GlmProtobufUtils::convert(AssimpUtils::convert(mat));
+            trans.set_name(AssimpUtils::getString(assimpCam.mName));
+            *trans.mutable_matrix() = protobuf::convert(AssimpUtils::convert(mat));
             entityId = getNextEntityId(def);
             addComponent(def, entityId, trans);
         }
@@ -505,7 +504,7 @@ namespace darmok
 
         CameraDefinition cam;
         auto proj = Math::perspective(fovy, aspect, assimpCam.mClipPlaneNear, assimpCam.mClipPlaneFar);
-		*cam.mutable_projection() = GlmProtobufUtils::convert(proj);
+		*cam.mutable_projection() = protobuf::convert(proj);
 		addComponent(def, entityId, cam);
     }
 
@@ -542,17 +541,17 @@ namespace darmok
     {
         protobuf::Transform trans;
         trans.set_parent(entityId);
-        trans.set_name(AssimpUtils::getStringView(assimpLight.mName));
+        trans.set_name(AssimpUtils::getString(assimpLight.mName));
 
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
         auto mat = glm::translate(glm::mat4(1), pos);
-        *trans.mutable_matrix() = GlmProtobufUtils::convert(mat);
+        *trans.mutable_matrix() = protobuf::convert(mat);
         entityId = getNextEntityId(def);
         addComponent(def, entityId, trans);
 
         auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
         auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
-		auto pbColor = GlmProtobufUtils::convert(color);
+		auto pbColor = protobuf::convert(color);
 
         if (assimpLight.mType == aiLightSource_POINT)
         {
@@ -573,7 +572,7 @@ namespace darmok
 			protobuf::DirectionalLight light;
 			light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-			*light.mutable_direction() = GlmProtobufUtils::convert(AssimpUtils::convert(assimpLight.mDirection));
+			*light.mutable_direction() = protobuf::convert(AssimpUtils::convert(assimpLight.mDirection));
             addComponent(def, entityId, light);
         }
         else if (assimpLight.mType == aiLightSource_SPOT)
@@ -590,7 +589,7 @@ namespace darmok
 			protobuf::AmbientLight light;
             intensity = AssimpUtils::getIntensity(assimpLight.mColorAmbient);
             color = AssimpUtils::convert(assimpLight.mColorAmbient * (1.F / intensity));
-            pbColor = GlmProtobufUtils::convert(color);
+            pbColor = protobuf::convert(color);
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
             addComponent(def, entityId, light);
@@ -718,16 +717,16 @@ namespace darmok
         aiColor4D baseColor;
         if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
         {
-            *matDef.mutable_base_color() = GlmProtobufUtils::convert(AssimpUtils::convert(baseColor));
+            *matDef.mutable_base_color() = protobuf::convert(AssimpUtils::convert(baseColor));
         }
         else if (assimpMat.Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
         {
-            *matDef.mutable_base_color() = GlmProtobufUtils::convert(AssimpUtils::convert(baseColor));
+            *matDef.mutable_base_color() = protobuf::convert(AssimpUtils::convert(baseColor));
         }
         aiColor4D specularColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_SPECULAR, specularColor) == AI_SUCCESS)
         {
-            *matDef.mutable_specular_color() = GlmProtobufUtils::convert(AssimpUtils::convert(specularColor));
+            *matDef.mutable_specular_color() = protobuf::convert(AssimpUtils::convert(specularColor));
         }
         ai_real v = 0;
         if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
@@ -753,7 +752,7 @@ namespace darmok
         aiColor3D emissiveColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
         {
-            *matDef.mutable_emissive_color() = GlmProtobufUtils::convert(AssimpUtils::convert(emissiveColor));
+            *matDef.mutable_emissive_color() = protobuf::convert(AssimpUtils::convert(emissiveColor));
         }
 
         if (_config.has_opacity())
@@ -893,7 +892,7 @@ namespace darmok
         }
     };
 
-    Data AssimpSceneDefinitionConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
+    std::string AssimpSceneDefinitionConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
     {
         auto vertexCount = assimpMesh.mNumVertices;
         auto layout = VaryingUtils::getBgfx(_config.vertex_layout());
@@ -942,7 +941,7 @@ namespace darmok
             }
         }
         updateBoneData(bones, writer);
-        return writer.finish();
+        return writer.finish().toString();
     }
 
     bool AssimpSceneDefinitionConverter::updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept
@@ -991,7 +990,7 @@ namespace darmok
         return true;
     }
 
-    std::vector<VertexIndex> AssimpSceneDefinitionConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
+    std::string AssimpSceneDefinitionConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
     {
         size_t size = 0;
         for(size_t i = 0; i < assimpMesh.mNumFaces; ++i)
@@ -1008,15 +1007,16 @@ namespace darmok
                 indices.push_back(face.mIndices[j]);
             }
         }
-        return indices;
+        return std::string(reinterpret_cast<std::string::value_type>(indices.data()),
+            size * sizeof(VertexIndex) / sizeof(std::string::value_type));
     }
 
     void AssimpSceneDefinitionConverter::updateMesh(Definition& def, MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
     {
-        meshDef.set_name(AssimpUtils::getStringView(assimpMesh.mName));
+        meshDef.set_name(AssimpUtils::getString(assimpMesh.mName));
         auto& bounds = *meshDef.mutable_bounds();
-		*bounds.mutable_min() = GlmProtobufUtils::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
-        *bounds.mutable_max() = GlmProtobufUtils::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
+		*bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
+        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
             
         const std::string name(assimpMesh.mName.C_Str());
         auto skip = false;
@@ -1050,8 +1050,8 @@ namespace darmok
                 boneName = itr->second;
             }
             auto& joint = *armature.add_joints();
-            joint.set_name(boneName);
-            *joint.mutable_inverse_bind_pose() = GlmProtobufUtils::convert(AssimpUtils::convert(bone->mOffsetMatrix));
+            joint.set_name(std::string{ boneName });
+            *joint.mutable_inverse_bind_pose() = protobuf::convert(AssimpUtils::convert(bone->mOffsetMatrix));
         }
 
         meshDef.set_vertices(createVertexData(assimpMesh, bones));
@@ -1142,13 +1142,14 @@ namespace darmok
         // TODO: maybe load material json?
         if (json.contains(_vertexLayoutJsonKey))
         {
-            *config.mutable_vertex_layout() = loadVertexLayout(json[_vertexLayoutJsonKey]);
+            auto layoutResult = loadVertexLayout(json[_vertexLayoutJsonKey]);
+            *config.mutable_vertex_layout() = layoutResult.value();
         }
         if (json.contains(_programPathJsonKey))
         {
             auto programPath = basePath / json[_programPathJsonKey];
             protobuf::ProgramSource src;
-			auto result = ProtobufUtils::read(src, programPath);
+			auto result = protobuf::read(src, programPath);
             if (!result)
             {
                 throw std::runtime_error("failed to load vertex layout from program path");
@@ -1169,18 +1170,18 @@ namespace darmok
         }
         if (json.contains(_programPathJsonKey))
         {
-            config.set_program_path(json[_programPathJsonKey]);
+            config.set_program_path(json[_programPathJsonKey].get<std::string>());
         }
         if (json.contains(_programDefinesJsonKey))
         {
             for (auto& elm : json[_programDefinesJsonKey])
             {
-                config.add_program_defines(elm);
+                config.add_program_defines(elm.get<std::string>());
             }
         }
         if (json.contains(_defaultTextureJsonKey))
         {
-            config.set_default_texture(json[_defaultTextureJsonKey]);
+            config.set_default_texture(json[_defaultTextureJsonKey].get<std::string>());
         }
         if (json.contains(_rootMeshJsonKey))
         {
@@ -1210,16 +1211,22 @@ namespace darmok
         }
     }
 
-    VertexLayout AssimpFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
+    expected<VertexLayout, std::string> AssimpFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
     {
         VertexLayout layout;
+        expected<void, std::string> result;
         if (json.is_string())
         {
-			ProtobufUtils::read(layout, json.get<std::filesystem::path>());
+			result = protobuf::read(layout, json.get<std::filesystem::path>());
+
         }
         else
         {
-            VaryingUtils::read(layout, json);
+            result = VaryingUtils::read(layout, json);
+        }
+        if (!result)
+        {
+            return unexpected(result.error());
         }
         return layout;
     }
@@ -1241,7 +1248,7 @@ namespace darmok
             configJson.update(input.dirConfig);
         }
         loadConfig(configJson, input.basePath, config);
-        AssimpUtils::fixModelImportConfig(_dataLoader, config);
+        AssimpUtils::fixImportConfig(_dataLoader, config);
 
         if (configJson.contains(_outputPathJsonKey))
         {
@@ -1250,11 +1257,11 @@ namespace darmok
         if (configJson.contains(_outputFormatJsonKey))
         {
             std::string_view val{ configJson[_outputFormatJsonKey] };
-            _outputFormat = ProtobufUtils::getFormat(val).value();
+            _outputFormat = protobuf::getFormat(val).value();
         }
         else if (!_outputPath.empty())
         {
-            _outputFormat = ProtobufUtils::getFormat(_outputPath);
+            _outputFormat = protobuf::getFormat(_outputPath);
         }
 
         AssimpLoader::Config sceneConfig;
@@ -1286,8 +1293,8 @@ namespace darmok
         std::vector<std::filesystem::path> outputs;
         if (_outputPath.empty())
         {
-            const std::string stem = StringUtils::getFileStem(input.path.filename().string());
-            _outputPath = stem + std::string{ ProtobufUtils::getExtension(_outputFormat) };
+            const std::string stem = input.path.stem().string();
+            _outputPath = stem + std::string{ protobuf::getExtension(_outputFormat) };
         }
         auto basePath = input.getRelativePath().parent_path();
         outputs.push_back(basePath / _outputPath);
@@ -1311,7 +1318,7 @@ namespace darmok
 
     std::ofstream AssimpFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
     {
-        return ProtobufUtils::createOutputStream(path, _outputFormat);
+        return protobuf::createOutputStream(path, _outputFormat);
     }
 
     void AssimpFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
@@ -1332,7 +1339,11 @@ namespace darmok
         converter.setConfig(input.config);
         converter.update(def);
         _dataLoader.removeBasePath(input.basePath);
-		ProtobufUtils::write(def, out, _outputFormat);
+		auto writeResult = protobuf::write(def, out, _outputFormat);
+        if(!writeResult)
+		{
+			throw std::runtime_error("failed to write output: " + writeResult.error());
+		}
     }
 
     const std::string& AssimpFileImporterImpl::getName() const noexcept

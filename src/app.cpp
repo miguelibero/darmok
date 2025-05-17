@@ -15,6 +15,7 @@
 #include <bx/timer.h>
 #include <bx/file.h>
 #include <bimg/bimg.h>
+#include <fmt/printf.h>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -663,7 +664,7 @@ namespace darmok
 		if ((key == KeyboardKey::Print && modifiers.empty())
 			|| (key == KeyboardKey::KeyP && modifiers == ctrl))
 		{
-			auto filePath = "temp/screenshot-" + StringUtils::getTimeSuffix();
+			auto filePath = "temp/screenshot-" + getTimeSuffix();
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
 			return;
 		}
@@ -679,6 +680,13 @@ namespace darmok
 		}
 	}
 
+	std::string AppImpl::getTimeSuffix() noexcept
+	{
+		time_t val;
+		time(&val);
+		return std::to_string(val);
+	}
+
 	void AppImpl::toggleTaskflowProfile()
 	{
 		if (!_taskExecutor)
@@ -691,7 +699,7 @@ namespace darmok
 			return;
 		}
 		static const std::filesystem::path basePath = "temp";
-		auto suffix = StringUtils::getTimeSuffix();
+		auto suffix = getTimeSuffix();
 		{
 			auto filePath = basePath / ("taskflow-" + suffix + ".json");
 			std::ofstream out(filePath);
@@ -1093,13 +1101,14 @@ namespace darmok
 	}
 
 	void BgfxCallbacks::traceVargs(
-		const char* /* filePath */
-		, uint16_t /* line */
+		const char* filePath
+		, uint16_t line
 		, const char* format
 		, va_list argList
 	)
 	{
-		auto str = StringUtils::vsprintf(format, argList);
+		std::string str;
+		bx::stringPrintfVargs(str, format, argList);
 		bx::debugOutput(bx::StringView(str.data(), str.size()));
 	}
 
@@ -1175,7 +1184,7 @@ namespace darmok
 	)
 	{
 		std::filesystem::path path(filePath);
-		auto ext = StringUtils::getFileExt(path.filename().string());
+		auto ext = path.extension().string();
 		if (ext.empty())
 		{
 			path += ".png";

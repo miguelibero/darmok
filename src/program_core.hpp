@@ -72,7 +72,8 @@ namespace darmok
         std::vector<CompilerOperation> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
         static std::vector<CompilerOperation> getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath = "") noexcept;
     
-        static protobuf::ProgramVariant& getVariant(protobuf::Program& def, const CompilerOperation& op);
+        static protobuf::Shader& getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op);
+
     private:
         IncludePaths _includePaths;
 
@@ -98,7 +99,7 @@ namespace darmok
         using PlatformType = ShaderCompilerPlatformType;
 
         ShaderCompiler(const Config& config) noexcept;
-        void operator()(const Operation& op) const;
+        expected<void, std::string> operator()(const Operation& op) const;
 
         static std::optional<PlatformType> getDefaultPlatform() noexcept;
 
@@ -134,6 +135,5 @@ namespace darmok
         std::filesystem::path _outputPath;
 
         expected<void, std::string> readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path);
-        expected<void, std::string> doReadSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
     };
 }

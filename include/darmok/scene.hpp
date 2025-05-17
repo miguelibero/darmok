@@ -445,3 +445,16 @@ namespace darmok
         OptionalRef<App> _app;
     };
 }
+
+namespace std
+{
+    inline std::string to_string(const darmok::Entity& v)
+    {
+        return to_string(static_cast<uint32_t>(v));
+    }
+
+    inline std::ostream& operator<<(std::ostream& out, const darmok::Entity& v)
+    {
+        return out << to_string(v);
+    }
+}

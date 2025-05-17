@@ -302,7 +302,7 @@ namespace darmok
 		, _progImporter(_importer.addTypeImporter<ProgramFileImporter>())
 	{
 #ifdef DARMOK_ASSIMP
-		_importer.addTypeImporter<AssimpModelFileImporter>(_alloc);
+		_importer.addTypeImporter<AssimpFileImporter>(_alloc);
 #ifdef DARMOK_OZZ
 		_importer.addTypeImporter<SkeletalAnimatorDefinitionFileImporter>();
 		_importer.addTypeImporter<AssimpSkeletonFileImporter>();
