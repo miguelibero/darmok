@@ -13,14 +13,14 @@
 namespace darmok
 {
     DataView::DataView(const void* ptr, size_t size) noexcept
-        : _ptr(ptr)
-        , _size(size)
+        : _ptr{ ptr }
+        , _size{ size }
     {
     }
 
     DataView::DataView(std::string_view str) noexcept
-        : _ptr(str.data())
-        , _size(str.size())
+        : _ptr{ str.data() }
+        , _size{ str.size() }
     {
     }
 
@@ -42,7 +42,7 @@ namespace darmok
 
     const void* DataView::end() const noexcept
     {
-        return ((uint8_t*)_ptr) + _size;
+        return static_cast<const uint8_t*>(_ptr) + _size;
     }
 
     size_t DataView::size() const noexcept
@@ -222,9 +222,9 @@ namespace darmok
     }
 
     Data::Data(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
-        : _ptr(malloc(size, alloc.ptr()))
-        , _size(size)
-        , _alloc(alloc)
+        : _ptr{ malloc(size, alloc.ptr()) }
+        , _size{ size }
+        , _alloc{ alloc }
     {
     }
 
@@ -455,9 +455,9 @@ namespace darmok
     }
 
     Data::Data(Data&& other) noexcept
-        : _ptr(other._ptr)
-        , _size(other._size)
-        , _alloc(other._alloc)
+        : _ptr{ other._ptr }
+        , _size{ other._size }
+        , _alloc{ other._alloc }
     {
         other._ptr = nullptr;
         other._size = 0;
@@ -497,12 +497,12 @@ namespace darmok
         return operator=(std::string_view(str));
     }
 
-    DataLoader::DataLoader(const OptionalRef<bx::AllocatorI>& alloc)
-        : _alloc(alloc)
+    FileDataLoader::FileDataLoader(const OptionalRef<bx::AllocatorI>& alloc)
+        : _alloc{ alloc }
     {
     }
 
-    DataLoader& DataLoader::addBasePath(const std::filesystem::path& basePath) noexcept
+    FileDataLoader& FileDataLoader::addBasePath(const std::filesystem::path& basePath) noexcept
     {
         auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);
         if (itr == _basePaths.end())
@@ -512,7 +512,7 @@ namespace darmok
         return *this;
     }
 
-    bool DataLoader::removeBasePath(const std::filesystem::path& basePath) noexcept
+    bool FileDataLoader::removeBasePath(const std::filesystem::path& basePath) noexcept
     {
         auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);
         if (itr == _basePaths.end())
@@ -523,7 +523,7 @@ namespace darmok
         return true;
     }
 
-    expected<Data, std::string> DataLoader::operator()(const std::filesystem::path& path) noexcept
+    expected<Data, std::string> FileDataLoader::operator()(const std::filesystem::path& path) noexcept
     {
         for (auto& basePath : _basePaths)
         {

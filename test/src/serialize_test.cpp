@@ -52,43 +52,6 @@ namespace
         load(archive, obj);
     }
 
-    struct TestStruct final
-    {
-        int value;
-        std::string str;
-
-        static void bindMeta()
-        {
-            entt::meta<TestStruct>().type("TestStruct"_hs)
-                .data<&TestStruct::value, entt::as_ref_t>("value"_hs)
-                .data<&TestStruct::str, entt::as_ref_t>("str"_hs);
-        }
-    };
-
-    struct TestSerializeStruct final
-    {
-        float value;
-
-        TestSerializeStruct() = default;
-
-        TestSerializeStruct(const TestSerializeStruct& other)
-            : value(other.value)
-        {
-        }
-
-        template<typename Archive>
-        void serialize(Archive& archive)
-        {
-            archive(CEREAL_NVP(value));
-        }
-
-        static void bindMeta()
-        {
-            auto factory = entt::meta<TestSerializeStruct>().type("TestSerializeStruct"_hs);
-            ReflectionSerializeUtils::metaSerialize<TestSerializeStruct>();
-        }
-    };
-
     template<typename Archive, typename T>
     void checkSerialization()
     {

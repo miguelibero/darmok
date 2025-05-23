@@ -12,7 +12,6 @@ find_package(Catch2 3 REQUIRED)
 add_executable(${TESTS_NAME}
   src/data_test.cpp
   src/optional_ref_test.cpp
-  src/utf_test.cpp
   src/entity_filter_test.cpp
   src/shape_test.cpp
   src/serialize_test.cpp

@@ -154,13 +154,13 @@ namespace darmok
         [[nodiscard]] virtual expected<Data, std::string> operator()(const std::filesystem::path& path) = 0;
     };
 
-    class DARMOK_EXPORT DataLoader final : public IDataLoader
+    class DARMOK_EXPORT FileDataLoader final : public IDataLoader
 	{
 	public:
         using Resource = Data;
-        DataLoader(const OptionalRef<bx::AllocatorI>& alloc = nullptr);
+        FileDataLoader(const OptionalRef<bx::AllocatorI>& alloc = nullptr);
 
-        DataLoader& addBasePath(const std::filesystem::path& basePath) noexcept;
+        FileDataLoader& addBasePath(const std::filesystem::path& basePath) noexcept;
         bool removeBasePath(const std::filesystem::path& basePath) noexcept;
 
         [[nodiscard]] expected<Data, std::string> operator()(const std::filesystem::path& path) noexcept override;

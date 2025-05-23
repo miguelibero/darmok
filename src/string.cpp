@@ -170,6 +170,10 @@ namespace darmok::StringUtils
 
 	char32_t toUtf32Char(std::string_view str) noexcept
 	{
+		if (str.empty())
+		{
+			return 0;
+		}
 		auto itr = str.begin();
 		return utf8::next(itr, str.end());
 	}

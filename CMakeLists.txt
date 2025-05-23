@@ -35,6 +35,7 @@ if(MSVC)
   set(ADD_OPTIM_FLAGS "/GS- /Gy /O2 /Oi /Ot")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+  add_compile_options("/utf-8")
 endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ADD_OPTIM_FLAGS}")
@@ -196,7 +197,8 @@ set(SOURCES
   input.cpp
   scene.cpp
   scene_filter.cpp
-  scene_loader.cpp
+  scene_serialize.cpp
+  asset_pack.cpp
   
   texture_atlas.cpp
   material.cpp
@@ -228,7 +230,8 @@ set(HEADERS
   scene_fwd.hpp
   scene.hpp
   scene_filter.hpp
-  scene_loader.hpp
+  scene_serialize.hpp
+  asset_pack.hpp
 
   texture_atlas.hpp
   anim.hpp
@@ -590,9 +593,9 @@ set(BGFX_SHADERC_TARGET bgfx::shaderc)
 
 # fmt
 find_package(fmt CONFIG REQUIRED)
-target_link_libraries(${CORE_LIB_NAME} PRIVATE fmt::fmt)
-target_compile_definitions(${CORE_LIB_NAME} PRIVATE FMT_UNICODE=0)
-target_compile_definitions(${LIB_NAME} PRIVATE FMT_UNICODE=0)
+target_link_libraries(${CORE_LIB_NAME} PUBLIC fmt::fmt)
+# target_compile_definitions(${CORE_LIB_NAME} PUBLIC FMT_UNICODE=0)
+# target_compile_definitions(${LIB_NAME} PUBLIC FMT_UNICODE=0)
 
 # pugixml
 find_package(pugixml CONFIG REQUIRED)
@@ -623,6 +626,7 @@ set(PROTO_FILES
   mesh.proto
   registry.proto
   scene.proto
+  asset.proto
   light.proto
   skeleton.proto
   assimp.proto
@@ -641,6 +645,7 @@ protobuf_generate(
     IMPORT_DIRS "${PROTO_DIR}"
     PROTOC_OUT_DIR "${PROTO_BINARY_DIR}")
 target_link_libraries(${CORE_LIB_NAME} PRIVATE ${PROTO_LIB_NAME})
+add_dependencies(${CORE_LIB_NAME} ${PROTO_LIB_NAME})
 list(APPEND EXPORT_TARGETS ${PROTO_LIB_NAME})
 set_target_properties(${PROTO_LIB_NAME} PROPERTIES FOLDER ${PROJECT_NAME})
 
@@ -773,8 +778,9 @@ if(DARMOK_BUILD_LUA)
 
   find_package(sol2 CONFIG REQUIRED)
   set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
-  target_compile_definitions(sol2 INTERFACE ${SOL_DEFINES})
-  target_link_libraries(${LIB_NAME} PRIVATE sol2)
+  find_path(SOL2_INCLUDE_DIRS "sol/abort.hpp")
+  target_include_directories(${LIB_NAME} PRIVATE ${SOL2_INCLUDE_DIRS})
+  target_compile_definitions(${LIB_NAME} PRIVATE ${SOL_DEFINES})
   list(APPEND VCPKG_MANIFEST_FEATURES "lua")
 endif()
 

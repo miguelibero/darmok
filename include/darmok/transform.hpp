@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/expected.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
@@ -10,6 +11,13 @@
 
 namespace darmok
 {
+    namespace protobuf
+    {
+        class Transform;
+    }
+
+    class AssetPack;
+
     class DARMOK_EXPORT Transform final
     {
     public:
@@ -64,6 +72,10 @@ namespace darmok
         Transform& lookDir(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& lookAt(const glm::vec3& v, const glm::vec3& up = glm::vec3(0, 1, 0)) noexcept;
         Transform& setForward(const glm::vec3& v) noexcept;
+
+        // serialization
+        using Definition = protobuf::Transform;
+		expected<void, std::string> load(const Definition& def, AssetPack& assetPack);
 
     private:
         // should not use PIMPL here since we want consecutive memory

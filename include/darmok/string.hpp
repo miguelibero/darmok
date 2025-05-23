@@ -100,7 +100,7 @@ namespace darmok
             {
                 name = name.substr(prefix.size());
             }
-            return magic_enum::enum_cast<T>(name);
-        }        
+            return magic_enum::enum_cast<T>(name, magic_enum::case_insensitive);
+        }
     };
 }

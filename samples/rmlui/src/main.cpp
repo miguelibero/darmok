@@ -26,17 +26,17 @@ namespace
 	{
 	public:
 		WobbleUpdater(Transform& trans, float speed = 0.1F, float maxAngle = 10.F)
-			: _trans(trans)
-			, _speed(speed)
-			, _maxAngle(maxAngle)
-			, _factor(1.F)
+			: _trans{ trans }
+			, _speed{ speed }
+			, _maxAngle{ maxAngle }
+			, _factor{ 1.F }
 		{
 		}
 
 		void update(float dt) override
 		{
 			auto rot = _trans.getRotation();
-			glm::quat target(glm::radians(_factor * _maxAngle * glm::vec3(1, 1, 1)));
+			glm::quat target{ glm::radians(_factor * _maxAngle * glm::vec3{ 1 }) };
 			rot = Math::rotateTowards(rot, target, _speed * dt);
 			if (rot == target)
 			{
@@ -56,7 +56,7 @@ namespace
 	{
 	public:
 		RmluiSampleAppDelegate(App& app)
-			: _app(app)
+			: _app{ app }
 		{
 		}
 
@@ -78,17 +78,17 @@ namespace
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<RmluiRenderer>();
 
-			glm::uvec2 canvasSize(800, 600);
+			glm::uvec2 canvasSize{ 800, 600 };
 
 			auto canvasEntity = scene.createEntity();
 
 			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);
-			canvasTrans.setScale(glm::vec3(2) / (float)glm::compMax(canvasSize));
-			canvasTrans.setEulerAngles(glm::vec3(0, 0, 30));
+			canvasTrans.setScale(glm::vec3{ 2 } / static_cast<float>(glm::compMax(canvasSize)));
+			canvasTrans.setEulerAngles({ 0, 0, 30 });
 			scene.addSceneComponent<WobbleUpdater>(canvasTrans);
 
 			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);
-			canvas.setOffset(glm::vec3(canvasSize, 0) * -0.5F);
+			canvas.setOffset(glm::vec3{ canvasSize, 0 } *-0.5F);
 			canvas.setInputEnabled(true);
 			canvas.setMousePositionMode(RmluiCanvasMousePositionMode::Absolute);
 			auto& context = canvas.getContext();

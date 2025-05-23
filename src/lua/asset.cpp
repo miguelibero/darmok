@@ -13,7 +13,7 @@
 #include <darmok/skeleton.hpp>
 #include <darmok/scene_assimp.hpp>
 #include <darmok/audio.hpp>
-#include <darmok/scene_loader.hpp>
+#include <darmok/scene_serialize.hpp>
 
 namespace darmok
 {	
@@ -47,7 +47,7 @@ namespace darmok
 		auto result = assets.getSceneLoader()(scene, path);
 		if (!result)
 		{
-			throw std::runtime_error("Failed to load scene: " + result.error());
+			throw std::runtime_error{ "Failed to load scene: " + result.error() };
 		}
 	}
 
@@ -89,8 +89,8 @@ namespace darmok
 			"load_music", &LuaAssets::loadMusic,
 			"load_skeleton", &LuaAssets::loadSkeleton,
 			"load_skeletal_animation", &LuaAssets::loadSkeletalAnimation,
-			"load_skeletal_animator_definition", &LuaAssets::loadSkeletalAnimatorDefinition,
-			"load_skeletal_animations", &LuaAssets::loadSkeletalAnimations
+			"load_skeletal_animator_definition", &LuaAssets::loadSkeletalAnimatorDefinition
+			//"load_skeletal_animations", &LuaAssets::loadSkeletalAnimations
 		);
 	}
 }

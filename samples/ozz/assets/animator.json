@@ -44,7 +44,7 @@
                 }
             ],
             "threshold": 0.2,
-            "blend": "directional"
+            "blend": "Directional"
         },
         "talk": {
             "animation": "Talk01"

@@ -5,6 +5,7 @@ package darmok.protobuf;
 import "google/protobuf/any.proto";
 import "registry.proto";
 import "math.proto";
+import "asset.proto";
 
 message Renderable {
     string mesh_path = 1;
@@ -21,17 +22,9 @@ message Camera {
     Mat4 projection = 1;
 }
 
-message SceneAssets {
-    map<string, google.protobuf.Any> assets = 1;
-}
-
-message SceneComponents {
-    map<uint32, google.protobuf.Any> components = 1;
-}
-
 message Scene {
     string name = 1;
-    map<uint32, SceneComponents> components = 2;
-    map<uint32, SceneAssets> assets = 3;
-    Registry registry = 4;
+    map<uint32, google.protobuf.Any> scene_components = 2;
+    Registry registry = 3;
+    AssetPack assets = 4;
 }

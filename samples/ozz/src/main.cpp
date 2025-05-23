@@ -29,8 +29,8 @@ namespace
 	{
 	public:
 		CircleUpdater(Transform& trans, float speed = 1.f)
-			: _trans(trans)
-			, _speed(speed)
+			: _trans{ trans }
+			, _speed{ speed }
 		{
 		}
 
@@ -49,8 +49,8 @@ namespace
 	{
 	public:
 		OzzSampleAppDelegate(App& app)
-			: _app(app)
-			, _animTime(0.F)
+			: _app{ app }
+			, _animTime{ 0.F }
 		{
 		}
 
@@ -65,8 +65,8 @@ namespace
 			
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
-				.setPosition(glm::vec3(0.f, 2, -2))
-				.lookAt(glm::vec3(0, 1, 0));
+				.setPosition({ 0.f, 2, -2 })
+				.lookAt({ 0, 1, 0 });
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setPerspective(60, 0.3, 1000);
@@ -83,27 +83,26 @@ namespace
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, glm::vec3{ 0, 1, 0 });
 			lightTrans.setParent(lightRootTrans);
-			std::shared_ptr<IMesh> lightMesh = MeshData(Sphere(0.01)).createMesh(unlitProg->getVertexLayout());
+			std::shared_ptr<IMesh> lightMesh = MeshData{ Sphere{0.1} }.createMesh(unlitProg->getVertexLayout());
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
 			scene.addComponent<AmbientLight>(lightEntity, 0.5);
 
-			auto skel = _app.getAssets().getSkeletonLoader()("skeleton.ozz");
+			auto skel = _app.getAssets().getSkeletonLoader()("skeleton.ozz").value();
 
 			auto animEntity = scene.createEntity();
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
 
-			auto animDefResult = _app.getAssets().getSkeletalAnimatorDefinitionLoader()("animator.json");
-			auto animDef = *animDefResult.value();
-			auto anims = SkeletalAnimatorUtils::loadAnimations(animDef, _app.getAssets().getSkeletalAnimationLoader());
-			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, animDef);
+			auto animDef = _app.getAssets().getSkeletalAnimatorDefinitionLoader()("animator.json").value();
+			auto anims = SkeletalAnimatorUtils::loadAnimations(*animDef, _app.getAssets().getSkeletalAnimationLoader());
+			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, *animDef);
 
 			_animator->play("run");
 			// _animator->setPlaybackSpeed(0.05);
 
 			auto skelEntity = scene.createEntity();
-			auto& skelTrans = scene.addComponent<Transform>(skelEntity, glm::vec3(-1, 0, 0));
+			auto& skelTrans = scene.addComponent<Transform>(skelEntity, glm::vec3{ -1, 0, 0 });
 			skelTrans.setParent(animTrans);
 			
 			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
@@ -117,9 +116,8 @@ namespace
 			auto normalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Normal.png").value();
 			auto ambientTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-AmbientOcclusion.png").value();
 
-			auto mat = std::make_shared<Material>(prog);
+			auto mat = std::make_shared<Material>(prog, Colors::fromNumber(0xFAB137FF));
 			mat->programDefines = { "SKINNING_ENABLED" };
-			mat->baseColor = Colors::fromNumber(0xFAB137FF);
 			mat->textures[Material::TextureType::BaseColor] = baseTex;
 			mat->textures[Material::TextureType::MetallicRoughness] = metalTex;
 			mat->textures[Material::TextureType::Normal] = normalTex;
@@ -127,14 +125,14 @@ namespace
 			mat->occlusionStrength = 0.75F;
 			mat->metallicFactor = 1.F;
 
-			_app.getAssets().getSceneLoader()(scene, "model.dml");
+			_app.getAssets().getSceneLoader()(scene, "scene.dml");
 			for (auto entity : scene.getComponents<Renderable>())
 			{
 				scene.getComponent<Renderable>(entity)->setMaterial(mat);
 			}
 
 			auto skinEntity = scene.createEntity();
-			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3(1, 0, 0));
+			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3{ 1, 0, 0 });
 			skinTrans.setParent(animTrans);
 
 			_app.getInput().addListener("talk", _talkInputs, *this);
@@ -160,10 +158,10 @@ namespace
 				return;
 			}
 
-			glm::vec2 dir(
+			glm::vec2 dir{
 				_app.getInput().getAxis(_moveRight, _moveLeft),
 				_app.getInput().getAxis(_moveForward, _moveBackward)
-			);
+			};
 
 			_animator->setBlendPosition(dir);
 			if (glm::length(dir) > 0.1F)

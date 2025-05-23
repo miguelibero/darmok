@@ -113,7 +113,7 @@ namespace darmok
         FT_Face _face;
         FT_Library _library;
         bx::DefaultAllocator _alloc;
-        DataLoader _dataLoader;
+        FileDataLoader _dataLoader;
         DataTextureDefinitionLoader _texDefLoader;
         std::optional<Atlas> _atlas;
         std::optional<Image> _image;

@@ -5,7 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/varying.hpp>
 #include <darmok/program.hpp>
-#include <darmok/scene_loader.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include <memory>
 #include <string>
@@ -46,15 +46,15 @@ namespace darmok
         std::unique_ptr<AssimpSceneDefinitionLoaderImpl> _impl;
     };
 
-    class AssimpFileImporterImpl;
+    class AssimpSceneFileImporterImpl;
 
-    class DARMOK_EXPORT AssimpFileImporter final : public IFileTypeImporter
+    class DARMOK_EXPORT AssimpSceneFileImporter final : public IFileTypeImporter
     {
     public:
         using Config = protobuf::AssimpSceneImportConfig;
-        AssimpFileImporter(bx::AllocatorI& alloc);
-        ~AssimpFileImporter();
-        AssimpFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
+        AssimpSceneFileImporter(bx::AllocatorI& alloc);
+        ~AssimpSceneFileImporter();
+        AssimpSceneFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
         bool startImport(const Input& input, bool dry = false) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         Dependencies getDependencies(const Input& input) override;
@@ -63,6 +63,6 @@ namespace darmok
         void endImport(const Input& input) override;
         const std::string& getName() const noexcept override;
     private:
-        std::unique_ptr<AssimpFileImporterImpl> _impl;
+        std::unique_ptr<AssimpSceneFileImporterImpl> _impl;
     };
 }

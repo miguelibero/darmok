@@ -24,7 +24,7 @@
 namespace darmok
 {
 	LuaEntityComponent::LuaEntityComponent(const sol::table& table) noexcept
-		: _table(table)
+		: _table{ table }
 	{
 	}
 
@@ -39,14 +39,14 @@ namespace darmok
 	}
 
 	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
-		: _entity(entity)
-		, _scene(scene)
+		: _entity{ entity }
+		, _scene{ scene }
 	{
 	}
 
 	std::string LuaEntity::toString() const noexcept
 	{
-		std::string str = "Entity(" + std::to_string(_entity);
+		std::string str{ "Entity(" + std::to_string(_entity) };
 		if (!isValid())
 		{
 			str += " invalid";
@@ -69,7 +69,7 @@ namespace darmok
 		{
 			return scene;
 		}
-		throw std::runtime_error("scene expired");
+		throw std::runtime_error{ "scene expired" };
 	}
 
 	bool LuaEntity::operator==(const LuaEntity& other) const noexcept

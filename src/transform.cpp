@@ -1,5 +1,8 @@
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
+#include <darmok/glm_serialize.hpp>
+#include <darmok/protobuf/scene.pb.h>
+
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -335,5 +338,13 @@ namespace darmok
     const glm::mat4& Transform::getWorldInverse() const noexcept
     {
         return _worldInverse;
+    }
+
+    expected<void, std::string> Transform::load(const Definition& def, AssetPack& assetPack)
+    {
+		setName(def.name());
+        setLocalMatrix(protobuf::convert(def.matrix()));
+        // TODO: find parent
+        return {};
     }
 }

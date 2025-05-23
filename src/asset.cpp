@@ -42,15 +42,15 @@ namespace darmok
 		, _skelAnimLoader{ _ozzSkeletalAnimationLoader }
 #endif		
 #ifdef DARMOK_FREETYPE
-		, _freetypeFontDefLoader(_dataLoader)
-		, _freetypeFontLoader(_freetypeFontDefLoader, _allocator)
-		, _fontLoader(_freetypeFontLoader)
+		, _freetypeFontDefLoader{ _dataLoader }
+		, _freetypeFontLoader{ _freetypeFontDefLoader, _allocator }
+		, _fontLoader{ _freetypeFontLoader }
 #else
-		, _fontLoader(_textureAtlasFontLoader);
+		, _fontLoader{ _textureAtlasFontLoader }
 #endif
 #ifdef DARMOK_MINIAUDIO
-		, _miniaudioSoundLoader(_dataLoader)
-		, _miniaudioMusicLoader(_dataLoader)
+		, _miniaudioSoundLoader{ _dataLoader }
+		, _miniaudioMusicLoader{ _dataLoader }
 #endif
 	{
 		addBasePath("assets");
@@ -62,7 +62,7 @@ namespace darmok
 		return _allocator;
 	}
 
-	[[nodiscard]] IDataLoader& AssetContextImpl::getDataLoader() noexcept
+	IDataLoader& AssetContextImpl::getDataLoader() noexcept
 	{
 		return _dataLoader;
 	}
@@ -302,7 +302,7 @@ namespace darmok
 		, _progImporter(_importer.addTypeImporter<ProgramFileImporter>())
 	{
 #ifdef DARMOK_ASSIMP
-		_importer.addTypeImporter<AssimpFileImporter>(_alloc);
+		_importer.addTypeImporter<AssimpSceneFileImporter>(_alloc);
 #ifdef DARMOK_OZZ
 		_importer.addTypeImporter<SkeletalAnimatorDefinitionFileImporter>();
 		_importer.addTypeImporter<AssimpSkeletonFileImporter>();

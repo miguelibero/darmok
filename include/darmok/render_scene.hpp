@@ -8,6 +8,7 @@
 #include <darmok/asset.hpp>
 #include <darmok/material.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/protobuf/scene.pb.h>
 #include <memory>
 #include <vector>
 #include <optional>
@@ -20,6 +21,7 @@ namespace darmok
     class Camera;
     class App;
     class Scene;
+    class AssetPack;
 
     class DARMOK_EXPORT BX_NO_VTABLE ICameraComponent
     {
@@ -70,6 +72,10 @@ namespace darmok
 
         bool valid() const noexcept;
         bool render(bgfx::Encoder& encoder) const;
+
+        using Definition = protobuf::Renderable;
+
+        expected<void, std::string> load(const Definition& def, AssetPack& assets);
 
     private:
         bool _enabled;

@@ -65,7 +65,7 @@ namespace darmok
 		void shutdown();
 	private:
 		bx::DefaultAllocator _allocator;
-		DataLoader _dataLoader;
+		FileDataLoader _dataLoader;
 		ImageLoader _imageLoader;
 		DataProgramDefinitionLoader _dataProgDefLoader;
 		ProgramLoader _progLoader;

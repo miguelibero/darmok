@@ -3,8 +3,7 @@
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
-#include <darmok/model.hpp>
-#include <darmok/model_assimp.hpp>
+#include <darmok/scene_assimp.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
@@ -20,14 +19,14 @@ namespace
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 100.f)
-			: _trans(trans)
-			, _speed(speed)
+			: _trans{ trans }
+			, _speed{ speed }
 		{
 		}
 
 		void update(float dt) override
 		{
-			_trans.rotate(glm::vec3(0, 0, dt * _speed));
+			_trans.rotate(glm::vec3{ 0, 0, dt * _speed });
 		}
 
 	private:
@@ -39,35 +38,38 @@ namespace
 	{
 	public:
 		AssimpSampleAppDelegate(App& app)
-			: _app(app)
+			: _app{ app }
 		{
 		}
 
 		void init() override
 		{
 			auto scene = _app.addComponent<SceneAppComponent>().getScene();
+			/*
 			_app.getAssets().getAssimpModelLoader().setConfig({
 				.standardProgram = StandardProgramType::ForwardBasic
 			});
-			auto model = _app.getAssets().getModelLoader()("human.dml");
+			*/
+			_app.getAssets().getSceneLoader()(*scene, "human.dml");
 
 			auto ambientLightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(ambientLightEntity, 0.5);
 
-			ModelSceneConfigurer configurer(*scene, _app.getAssets());
-			configurer(*model, [scene](const auto& node, Entity entity) {
-				if (node.name == "human")
+			
+			for (auto entity : scene->getComponents<Transform>())
+			{
+				auto& trans = *scene->getComponent<Transform>(entity);
+				if (trans.getName() == "human")
 				{
-					auto& trans = scene->getOrAddComponent<Transform>(entity);
 					scene->addSceneComponent<RotateUpdater>(trans, 100.f);
 				}
-				auto cam = scene->getComponentInChildren<Camera>(entity);
-				if (cam)
-				{
-					cam->addComponent<ForwardRenderer>();
-					cam->addComponent<LightingRenderComponent>();
-				}
-			});
+			}
+			for (auto entity : scene->getComponents<Camera>())
+			{
+				auto& cam = *scene->getComponent<Camera>(entity);
+				cam.addComponent<ForwardRenderer>();
+				cam.addComponent<LightingRenderComponent>();
+			}
 		}
 	private:
 		App& _app;

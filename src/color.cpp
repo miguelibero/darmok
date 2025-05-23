@@ -161,19 +161,19 @@ namespace darmok
     glm::vec4 Colors::normalize(const Color& color) noexcept
     {
         return glm::vec4{
-            static_cast<float>(color.r / getMaxValue()),
-            static_cast<float>(color.g / getMaxValue()),
-            static_cast<float>(color.b / getMaxValue()),
-            static_cast<float>(color.a / getMaxValue())
+            static_cast<float>(color.r) / getMaxValue(),
+            static_cast<float>(color.g) / getMaxValue(),
+            static_cast<float>(color.b) / getMaxValue(),
+            static_cast<float>(color.a) / getMaxValue()
         };
     }
 
     glm::vec3 Colors::normalize(const Color3& color) noexcept
     {
         return glm::vec3{
-            static_cast<float>(color.r / getMaxValue()),
-            static_cast<float>(color.g / getMaxValue()),
-            static_cast<float>(color.b / getMaxValue())
+            static_cast<float>(color.r) / getMaxValue(),
+            static_cast<float>(color.g) / getMaxValue(),
+            static_cast<float>(color.b) / getMaxValue()
         };
     }
 

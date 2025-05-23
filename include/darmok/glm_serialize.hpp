@@ -48,8 +48,27 @@ namespace glm
 	template<typename T, glm::qualifier Q = glm::defaultp>
 	void from_json(const nlohmann::json& json, glm::vec<2, T, Q>& vec)
 	{
-		json.at("x").get_to(vec.x);
-		json.at("y").get_to(vec.y);
+		if (json.is_number())
+		{
+			vec.x = vec.y = json.get<T>();
+		}
+		else if (json.is_array())
+		{
+			if (json.size() == 1)
+			{
+				vec.x = vec.y = json[0].get<T>();
+			}
+			else
+			{
+				json.at(0).get_to(vec.x);
+				json.at(1).get_to(vec.y);
+			}
+		}
+		else
+		{
+			json.at("x").get_to(vec.x);
+			json.at("y").get_to(vec.y);
+		}
 	}
 
 	template<typename T, glm::qualifier Q = glm::defaultp>
@@ -61,9 +80,30 @@ namespace glm
 	template<typename T, glm::qualifier Q = glm::defaultp>
 	void from_json(const nlohmann::json& json, glm::vec<3, T, Q>& vec)
 	{
-		json.at("x").get_to(vec.x);
-		json.at("y").get_to(vec.y);
-		json.at("z").get_to(vec.z);
+		if (json.is_number())
+		{
+			vec.x = vec.y = vec.z = json.get<T>();
+		}
+		else if (json.is_array())
+		{
+			if (json.size() == 1)
+			{
+				vec.x = vec.y = vec.z = json[0].get<T>();
+			}
+			else
+			{
+				json.at(0).get_to(vec.x);
+				json.at(1).get_to(vec.y);
+				json.at(2).get_to(vec.z);
+			}
+		}
+		else
+		{
+			json.at("x").get_to(vec.x);
+			json.at("y").get_to(vec.y);
+			json.at("z").get_to(vec.z);
+		}
+
 	}
 
 	template<typename T, glm::qualifier Q = glm::defaultp>

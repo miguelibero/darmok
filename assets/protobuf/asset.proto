@@ -1,0 +1,11 @@
+package darmok.protobuf;
+
+import "google/protobuf/any.proto";
+
+message AssetGroup {
+    map<string, google.protobuf.Any> assets = 1;
+}
+
+message AssetPack {
+    map<uint32, AssetGroup> groups = 1;
+}

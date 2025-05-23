@@ -5,6 +5,8 @@
 #include <darmok/camera.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/asset_pack.hpp>
 
 using namespace entt::literals;
 
@@ -90,5 +92,24 @@ namespace darmok
 			return false;
 		}
 		return _mesh->render(encoder);
+	}
+
+	expected<void, std::string> Renderable::load(const Definition& def, AssetPack& assets)
+	{
+		def.mesh_path();
+
+		auto meshResult = assets.getMeshLoader()(def.mesh_path());
+		if (!meshResult)
+		{
+			return unexpected{ meshResult.error() };
+		}
+		_mesh = meshResult.value();
+		auto matResult = assets.getMaterialLoader()(def.material_path());
+		if (!matResult)
+		{
+			return unexpected{ matResult.error() };
+		}
+		_material = matResult.value();
+		return {};
 	}
 }

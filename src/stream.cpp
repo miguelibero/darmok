@@ -8,9 +8,16 @@ namespace darmok
 {
     expected<std::string, std::string> StreamUtils::readString(std::istream& input)
     {
-        if (!input)
+        if (input.fail())
         {
             return unexpected{ "could not open input stream" };
+        }
+
+        if (input.tellg() < 0)
+        {
+            std::ostringstream oss;
+            oss << input.rdbuf();
+            return oss.str();
         }
 
         input.seekg(0, std::ios::end);

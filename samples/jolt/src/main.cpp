@@ -36,7 +36,7 @@ namespace
 	{
 	public:
 		JoltSampleAppDelegate(App& app)
-			: _app(app)
+			: _app{ app }
 		{
 		}
 
@@ -89,7 +89,7 @@ namespace
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape{ {10.F, .5F, 10.F}, {0, -0.25, 0} };
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
-				auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
+				auto floorMesh = MeshData{ floorShape }.createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
 			}
 
@@ -105,7 +105,7 @@ namespace
 					.setPosition({ 2.F, 0.F, 2.F })
 					.setEulerAngles({ 0, 90, 0 });
 
-				_doorMat = std::make_shared<Material>(prog, Color{ 255, 1000, 100, 255 });
+				_doorMat = std::make_shared<Material>(prog, Color{ 255, 100, 100, 255 });
 				_triggerDoorMat = std::make_shared<Material>(prog, Colors::red());
 				auto doorMesh = MeshData{ doorShape }.createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(doorEntity, std::move(doorMesh), _doorMat);
@@ -265,14 +265,14 @@ namespace
 			glm::vec3 dir{ 0 };
 			if (_characterCtrl->isGrounded())
 			{
-				dir.x = _app.getInput().getAxis(_moveRight, _moveLeft);
-				dir.z = _app.getInput().getAxis(_moveForward, _moveBackward);
+				dir.x = _app.getInput().getAxis(_moveLeft, _moveRight);
+				dir.z = _app.getInput().getAxis(_moveBackward, _moveForward);
 
 				if (_camTrans)
 				{
 					auto rot = _camTrans->getEulerAngles();
 					rot.x = rot.z = 0.F; // rotate only in the y axis
-					dir = glm::quat(glm::radians(rot)) * dir;
+					dir = glm::quat{ glm::radians(rot) } *dir;
 				}
 				_characterCtrl->setLinearVelocity(dir * 10.F);
 			}

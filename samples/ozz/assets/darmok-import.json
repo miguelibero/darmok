@@ -11,8 +11,8 @@
             }
         },
         "BasicMotions_DummyModel.fbx": {
-            "model": {
-                "outputPath": "model.dml",
+            "scene": {
+                "outputPath": "scene.dml",
                 "program": "forward",
                 "skipNodes": [
                     "Rig",

@@ -163,7 +163,7 @@ namespace darmok
 		Data _sheetData;
 		OptionalRef<std::ostream> _log;
 		bx::DefaultAllocator _alloc;
-		DataLoader _dataLoader;
+		FileDataLoader _dataLoader;
 		ImageLoader _imgLoader;
 		ImageTextureDefinitionLoader _texLoader;
 

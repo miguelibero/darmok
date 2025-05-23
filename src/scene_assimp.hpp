@@ -10,11 +10,12 @@
 
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/scene.pb.h>
+#include <darmok/protobuf/asset.pb.h>
 #include <darmok/protobuf/mesh.pb.h>
 #include <darmok/protobuf/material.pb.h>
 #include <darmok/protobuf/texture.pb.h>
-#include <darmok/protobuf/assimp.pb.h>
 #include <darmok/protobuf/light.pb.h>
+#include <darmok/protobuf/assimp.pb.h>
 
 #include <string_view>
 #include <memory>
@@ -81,6 +82,7 @@ namespace darmok
         using MeshDefinition = protobuf::Mesh;
         using TransformDefinition = protobuf::Transform;
         using CameraDefinition = protobuf::Camera;
+        using RenderableDefinition = protobuf::Renderable;
         using MaterialDefinition = protobuf::Material;
         using TextureDefinition = protobuf::Texture;
         using TextureType = protobuf::MaterialTextureType;
@@ -92,7 +94,7 @@ namespace darmok
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setConfig(const nlohmann::json& config) noexcept;
-        bool update(Definition& def) noexcept;
+        bool operator()(Definition& def) noexcept;
     private:
         bx::AllocatorI& _allocator;
         OptionalRef<ITextureDefinitionLoader> _texLoader;
@@ -122,7 +124,7 @@ namespace darmok
         std::shared_ptr<TextureDefinition> getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         std::shared_ptr<TextureDefinition> getTexture(Definition& def, const std::string& path) noexcept;
 
-        bool updateNode(Definition& def, uint32_t entityId, const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
+        std::optional<uint32_t> updateNode(Definition& def, const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
         void updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
         void updateMesh(Definition& def, MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
         void updateCamera(Definition& def, uint32_t entityId, const aiCamera& assimpCam) noexcept;
@@ -133,7 +135,7 @@ namespace darmok
         std::string createIndexData(const aiMesh& assimpMesh) const noexcept;
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
 
-		uint32_t getNextEntityId(const Definition& def) noexcept;
+		uint32_t createEntity(Definition& def) noexcept;
 		bool addAsset(Definition& def, std::string_view path, Message& asset) noexcept;
         bool addComponent(Definition& def, uint32_t entityId, Message& comp) noexcept;
     };
@@ -157,7 +159,7 @@ namespace darmok
         AssimpLoader _assimpLoader;
     };
 
-    class AssimpFileImporterImpl final
+    class AssimpSceneFileImporterImpl final
     {
     public:
         using Input = FileTypeImporterInput;
@@ -166,7 +168,7 @@ namespace darmok
         using Dependencies = FileTypeImportDependencies;
         using Definition = protobuf::Scene;
 
-        AssimpFileImporterImpl(bx::AllocatorI& alloc);
+        AssimpSceneFileImporterImpl(bx::AllocatorI& alloc);
         
         bool startImport(const Input& input, bool dry = false);
         std::vector<std::filesystem::path> getOutputs(const Input& input);
@@ -178,7 +180,7 @@ namespace darmok
     private:
         bx::AllocatorI& _alloc;
         bx::FileReader _fileReader;
-        DataLoader _dataLoader;
+        FileDataLoader _dataLoader;
         ImageLoader _imgLoader;
         ImageTextureDefinitionLoader _texLoader;
         DataProgramDefinitionLoader _progLoader;
@@ -187,21 +189,6 @@ namespace darmok
         OutputFormat _outputFormat = OutputFormat::Binary;
         std::filesystem::path _outputPath;
         std::shared_ptr<aiScene> _currentScene;
-
-        static const std::string _outputFormatJsonKey;
-        static const std::string _outputPathJsonKey;
-        static const std::string _vertexLayoutJsonKey;
-        static const std::string _programPathJsonKey;
-        static const std::string _programJsonKey;
-        static const std::string _programDefinesJsonKey;
-        static const std::string _skipMeshesJsonKey;
-        static const std::string _skipNodesJsonKey;
-        static const std::string _embedTexturesJsonKey;
-        static const std::string _defaultTextureJsonKey;
-        static const std::string _rootMeshJsonKey;
-        static const std::string _opacityJsonKey;
-        static const std::string _formatJsonKey;
-        static const std::string _loadPathJsonKey;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
         static expected<VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);

@@ -91,7 +91,18 @@ namespace darmok
 
     class IDataLoader;
 
-	using DataSkeletalAnimatorDefinitionLoader = DataProtobufLoader<ISkeletalAnimatorDefinitionLoader>;
+    class DataSkeletalAnimatorDefinitionLoader final : public ISkeletalAnimatorDefinitionLoader
+    {
+    public:
+        DataSkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader);
+
+        DataSkeletalAnimatorDefinitionLoader(const DataSkeletalAnimatorDefinitionLoader& other) = delete;
+        DataSkeletalAnimatorDefinitionLoader(DataSkeletalAnimatorDefinitionLoader&& other) = delete;
+
+        Result operator()(std::filesystem::path path) override;
+    private:
+		IDataLoader& _dataLoader;
+    };
 
     class SkeletalAnimator;
 
@@ -137,16 +148,20 @@ namespace darmok
     namespace SkeletalAnimatorUtils
     {
         using TweenDefinition = protobuf::SkeletalAnimatorTween;
+        using AnimationDefinition = protobuf::SkeletalAnimatorAnimation;
         using StateDefinition = protobuf::SkeletalAnimatorState;
         using TransitionDefinition = protobuf::SkeletalAnimatorTransition;
+        using BlendType = protobuf::SkeletalAnimatorBlendType;
+        using BlendType = protobuf::SkeletalAnimatorBlendType;
 		using Definition = protobuf::SkeletalAnimator;
         using AnimationMap = SkeletalAnimationMap;
-        float calcTween(const TweenDefinition& tween, float position);
-        float calcBlendWeight(const StateDefinition& state, const glm::vec2& pos, const glm::vec2& animPos);
-        std::vector<float> calcBlendWeights(const StateDefinition& state, const glm::vec2& pos);
-        SkeletalAnimationMap loadAnimations(const Definition& animator, ISkeletalAnimationLoader& loader);
-        OptionalRef<const StateDefinition> getState(const Definition& def, std::string_view name);
-        OptionalRef<const TransitionDefinition> getTransition(const Definition& def, std::string_view src, std::string_view dst);
+        [[nodiscard]] float calcTween(const TweenDefinition& tween, float position);
+        [[nodiscard]] float calcBlendWeight(const StateDefinition& state, const glm::vec2& pos, const glm::vec2& animPos);
+        [[nodiscard]] std::vector<float> calcBlendWeights(const StateDefinition& state, const glm::vec2& pos);
+        [[nodiscard]] SkeletalAnimationMap loadAnimations(const Definition& animator, ISkeletalAnimationLoader& loader);
+        [[nodiscard]] OptionalRef<const StateDefinition> getState(const Definition& def, std::string_view name);
+        [[nodiscard]] OptionalRef<const TransitionDefinition> getTransition(const Definition& def, std::string_view src, std::string_view dst);
+        [[nodiscard]] expected<void, std::string> read(Definition& def, const nlohmann::json& json);
     }
 
     class DARMOK_EXPORT SkeletalAnimator final
@@ -232,7 +247,7 @@ namespace darmok
     public:
 		SkeletalAnimatorDefinitionFileImporter() noexcept;
     private:
-		DataLoader _dataLoader;
+		FileDataLoader _dataLoader;
         DataSkeletalAnimatorDefinitionLoader _loader;
     };
 

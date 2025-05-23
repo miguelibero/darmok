@@ -11,6 +11,7 @@ namespace darmok
 		Texture::Config config;
 		*config.mutable_size() = protobuf::convert(size);
 		config.set_format(Texture::Format::RGBA16F);
+		config.set_type(Texture::TextureType::Texture2D);
 		return config;
 	}
 
@@ -19,15 +20,16 @@ namespace darmok
 		Texture::Config config;
 		*config.mutable_size() = protobuf::convert(size);
 		config.set_format(Texture::Format::D16F);
+		config.set_type(Texture::TextureType::Texture2D);
 		return config;
 	}
 
 	FrameBuffer::FrameBuffer(const glm::uvec2& size, bool depth) noexcept
-		: _colorTex(std::make_shared<Texture>(createColorConfig(size), BGFX_TEXTURE_RT))
-		, _depthTex(depth ? std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT) : nullptr)
+		: _colorTex{ std::make_shared<Texture>(createColorConfig(size), BGFX_TEXTURE_RT) }
+		, _depthTex{ depth ? std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT) : nullptr }
 		, _handle{ bgfx::kInvalidHandle }
 	{
-		std::vector<bgfx::TextureHandle> handles = { _colorTex->getHandle() };
+		std::vector<bgfx::TextureHandle> handles{ _colorTex->getHandle() };
 		if (_depthTex)
 		{
 			handles.push_back(_depthTex->getHandle());
@@ -44,9 +46,9 @@ namespace darmok
 	}
 
 	FrameBuffer::FrameBuffer(FrameBuffer&& other)
-		: _handle(other._handle)
-		, _colorTex(std::move(other._colorTex))
-		, _depthTex(std::move(other._depthTex))
+		: _handle{ other._handle }
+		, _colorTex{ std::move(other._colorTex) }
+		, _depthTex{ std::move(other._depthTex) }
 	{
 		other._handle.idx = bgfx::kInvalidHandle;
 	}
@@ -86,15 +88,15 @@ namespace darmok
 	}
 
 	RenderChain::RenderChain(IRenderChainDelegate& dlg) noexcept
-		: _delegate(dlg)
-		, _running(false)
+		: _delegate{ dlg }
+		, _running{ false }
 	{
 	}
 
 	RenderChain::RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept
-		: _delegate(*dlg)
-		, _delegatePointer(std::move(dlg))
-		, _running(false)
+		: _delegate{ *dlg }
+		, _delegatePointer{ std::move(dlg) }
+		, _running{ false }
 	{
 	}
 
@@ -360,9 +362,9 @@ namespace darmok
 	}
 
 	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority)
-		: _program(prog)
-		, _name(name)
-		, _priority(priority)
+		: _program{ prog }
+		, _name{ name }
+		, _priority{ priority }
 		, _texUniform{ bgfx::kInvalidHandle }
 	{
 		if (!prog)
@@ -384,7 +386,6 @@ namespace darmok
 	void ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
 	{
 		_chain = chain;
-
 		if (isValid(_texUniform))
 		{
 			bgfx::destroy(_texUniform);
@@ -392,8 +393,8 @@ namespace darmok
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 		_basicUniforms.init();
 
-		const Rectangle screen(glm::uvec2(2));
-		_mesh = MeshData(screen).createMesh(_program->getVertexLayout());
+		const Rectangle screen{ glm::uvec2{2} };
+		_mesh = MeshData{ screen }.createMesh(_program->getVertexLayout());
 	}
 
 	void ScreenSpaceRenderPass::shutdown() noexcept

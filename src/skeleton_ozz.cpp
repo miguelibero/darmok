@@ -403,7 +403,9 @@ namespace darmok
     float OzzSkeletalAnimatorAnimationState::getDuration() const noexcept
     {
         auto& anim = getOzz();
-        return anim.duration() / _def.speed();
+        auto speed = _def.speed();
+		speed = speed == 0.f ? 1.f : speed;
+        return anim.duration() / speed;
     }
 
     bool OzzSkeletalAnimatorAnimationState::hasFinished() const noexcept
