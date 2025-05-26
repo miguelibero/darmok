@@ -7,6 +7,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/asset_pack.hpp>
+#include <darmok/scene_serialize.hpp>
 
 using namespace entt::literals;
 
@@ -94,22 +95,27 @@ namespace darmok
 		return _mesh->render(encoder);
 	}
 
-	expected<void, std::string> Renderable::load(const Definition& def, AssetPack& assets)
+	expected<void, std::string> Renderable::load(const Definition& def, IComponentLoadContext& ctxt)
 	{
-		def.mesh_path();
+		if (!def.mesh_path().empty())
+		{
+			auto meshResult = ctxt.getAssets().getMeshLoader()(def.mesh_path());
+			if (!meshResult)
+			{
+				return unexpected{ meshResult.error() };
+			}
+			_mesh = meshResult.value();
+		}
+		if (!def.material_path().empty())
+		{
+			auto matResult = ctxt.getAssets().getMaterialLoader()(def.material_path());
+			if (!matResult)
+			{
+				return unexpected{ matResult.error() };
+			}
+			_material = matResult.value();
+		}
 
-		auto meshResult = assets.getMeshLoader()(def.mesh_path());
-		if (!meshResult)
-		{
-			return unexpected{ meshResult.error() };
-		}
-		_mesh = meshResult.value();
-		auto matResult = assets.getMaterialLoader()(def.material_path());
-		if (!matResult)
-		{
-			return unexpected{ matResult.error() };
-		}
-		_material = matResult.value();
 		return {};
 	}
 }

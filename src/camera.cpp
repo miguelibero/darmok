@@ -8,6 +8,7 @@
 #include <darmok/math.hpp>
 #include <darmok/string.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include "camera.hpp"
 #include "scene.hpp"
@@ -591,6 +592,12 @@ namespace darmok
         }
     }
 
+    expected<void, std::string> CameraImpl::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+		setProjectionMatrix(protobuf::convert(def.projection()));
+        return {};
+    }
+
     Camera::Camera(const glm::mat4& projMatrix) noexcept
         : _impl(std::make_unique<CameraImpl>(*this, projMatrix))
     {
@@ -876,5 +883,10 @@ namespace darmok
     void Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         _impl->beforeRenderEntity(entity, viewId, encoder);
+    }
+
+    expected<void, std::string> Camera::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+        return _impl->load(def, ctxt);
     }
 }

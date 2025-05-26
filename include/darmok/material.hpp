@@ -106,11 +106,11 @@ namespace darmok
     {
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE MaterialLoader final : public FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>
+    class DARMOK_EXPORT MaterialLoader final : public FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>
     {
     public:
         MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
-    protected:
+    private:
         Result create(const std::shared_ptr<Definition>& def) override;
         IProgramLoader& _progLoader;
         ITextureLoader& _texLoader;

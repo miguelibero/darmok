@@ -12,7 +12,7 @@ message AssimpSceneImportConfig {
     string program_path = 3;
     repeated string program_defines = 4;
     bool embed_textures = 5;
-    string default_texture = 6;
+    string default_texture_path = 6;
     repeated string skip_meshes_regex = 7;
     repeated string skip_nodes_regex = 8;
     string root_mesh_regex = 9;

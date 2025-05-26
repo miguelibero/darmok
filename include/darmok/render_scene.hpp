@@ -21,7 +21,7 @@ namespace darmok
     class Camera;
     class App;
     class Scene;
-    class AssetPack;
+    class IComponentLoadContext;
 
     class DARMOK_EXPORT BX_NO_VTABLE ICameraComponent
     {
@@ -75,7 +75,7 @@ namespace darmok
 
         using Definition = protobuf::Renderable;
 
-        expected<void, std::string> load(const Definition& def, AssetPack& assets);
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
     private:
         bool _enabled;

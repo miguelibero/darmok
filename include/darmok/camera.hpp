@@ -6,6 +6,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/expected.hpp>
 
 #include <bgfx/bgfx.h>
 
@@ -17,6 +18,11 @@
 
 namespace darmok
 {
+    namespace protobuf
+    {
+        class Camera;
+	}
+
     class Scene;
     class CameraImpl;
     class Transform;
@@ -28,6 +34,7 @@ namespace darmok
     class EntityView;
     struct Plane;
     struct BoundingBox;
+	class IComponentLoadContext;
 
     using ConstCameraComponentRefs = std::vector<std::reference_wrapper<const ICameraComponent>>;
     using CameraComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
@@ -177,6 +184,10 @@ namespace darmok
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+
+        // serialization
+        using Definition = protobuf::Camera;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
     private:
         std::unique_ptr<CameraImpl> _impl;

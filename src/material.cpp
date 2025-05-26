@@ -64,7 +64,7 @@ namespace darmok
 		{
 			mat->program = StandardProgramLoader::load(def->standard_program());
 		}
-		else if(def->has_program_path())
+		else if(!def->program_path().empty())
 		{
 			auto loadResult = _progLoader(def->program_path());
 			if (!loadResult)

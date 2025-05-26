@@ -278,7 +278,7 @@ namespace darmok
         return model;
     }
 
-    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
+    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const ImportConfig& config,
         bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
         : _scene{ scene }
         , _basePath{ basePath }
@@ -329,9 +329,10 @@ namespace darmok
 
     AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setConfig(const nlohmann::json& config) noexcept
     {
-        if (config.contains("bones"))
+        auto itr = config.find("bones");
+        if (itr != config.end())
         {
-            auto& bonesConfig = config["bones"];
+            auto& bonesConfig = *itr;
             if (bonesConfig.is_array())
             {
                 std::vector<std::string> boneNames = bonesConfig;
@@ -383,12 +384,11 @@ namespace darmok
             {
                 continue;
             }
-            auto mesh = getMesh(def, assimpMesh);
-            auto assimpMaterial = _scene.mMaterials[assimpMesh->mMaterialIndex];
-            auto material = getMaterial(def, assimpMaterial);
+            auto meshPath = getMesh(def, i);
+            auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
             RenderableDefinition renderable;
-			renderable.set_mesh_path(mesh->name());
-			renderable.set_material_path(material->name());
+			renderable.set_mesh_path(meshPath);
+			renderable.set_material_path(matPath);
 			addComponent(def, entityId, renderable);
 
             found = true;
@@ -427,14 +427,14 @@ namespace darmok
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
-            auto assimpMesh = _scene.mMeshes[assimpNode.mMeshes[i]];
-            auto mesh = getMesh(def, assimpMesh);
-            auto assimpMaterial = _scene.mMaterials[assimpMesh->mMaterialIndex];
-            auto material = getMaterial(def, assimpMaterial);
+            auto index = assimpNode.mMeshes[i];
+            auto meshPath = getMesh(def, index);
+            auto assimpMesh = _scene.mMeshes[index];
+            auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
 
             RenderableDefinition renderable;
-            renderable.set_mesh_path(mesh->name());
-            renderable.set_material_path(material->name());
+            renderable.set_mesh_path(meshPath);
+            renderable.set_material_path(matPath);
 			addComponent(def, entityId, renderable);
         }
 
@@ -588,25 +588,26 @@ namespace darmok
         }
     }
 
-    std::shared_ptr<AssimpSceneDefinitionConverter::TextureDefinition> AssimpSceneDefinitionConverter::getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
+    std::string AssimpSceneDefinitionConverter::getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
-        aiString aiPath{ "" };
+        aiString aiPath{};
         if (assimpMat.GetTexture(type, index, &aiPath) != AI_SUCCESS)
         {
-            return nullptr;
+            return {};
         }
-        return getTexture(def, aiPath.C_Str());
+        std::string path{ aiPath.C_Str() };
+        loadTexture(def, path);
+        return path;
     }
 
-    std::shared_ptr<AssimpSceneDefinitionConverter::TextureDefinition> AssimpSceneDefinitionConverter::getTexture(Definition& def, const std::string& path) noexcept
+    bool AssimpSceneDefinitionConverter::loadTexture(Definition& def, const std::string& path) noexcept
     {
-        auto itr = _textures.find(path);
-        if (itr != _textures.end())
+        if (_texturePaths.contains(path))
         {
-            return itr->second;
+            return true;
         }
 
-        std::shared_ptr<TextureDefinition> tex;
+        TextureDefinition texDef;
         auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
@@ -622,15 +623,15 @@ namespace darmok
                 size = static_cast<size_t>(assimpTex->mWidth * assimpTex->mHeight * 4);
                 format = bimg::TextureFormat::RGBA8;
             }
-            auto data = DataView(assimpTex->pcData, size);
-            tex = std::make_shared<TextureDefinition>();
-			tex->set_name(path);
+            DataView data{ assimpTex->pcData, size };
+            texDef.set_name(path);
             // TODO: can we read the texture config?
-            TextureUtils::loadImage(*tex, Image{ data, _allocator, format });
+            TextureUtils::loadImage(texDef, Image{ data, _allocator, format });
+
         }
-        if (!tex && _texLoader)
+        else if (_texLoader)
         {
-            std::filesystem::path fsPath(path);
+            std::filesystem::path fsPath{ path };
             if (fsPath.is_relative())
             {
                 fsPath = _basePath / fsPath;
@@ -638,12 +639,16 @@ namespace darmok
             auto result = (*_texLoader)(fsPath.string());
             if (result)
             {
-                tex = result.value();
+                texDef = *result.value();
             }
         }
-        _textures.emplace(path, tex);
-		addAsset(def, path, *tex);
-        return tex;
+        else
+        {
+            return false;
+        }
+        _texturePaths.insert(path);
+		addAsset(def, path, texDef);
+        return true;
     }
 
     const std::vector<AssimpSceneDefinitionConverter::AssimpMaterialTexture> AssimpSceneDefinitionConverter::_materialTextures =
@@ -661,6 +666,8 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
     {
+        matDef.set_name(AssimpUtils::getString(assimpMat.GetName()));
+
         matDef.set_program_path(_config.program_path());
         for (auto& define : _config.program_defines())
         {
@@ -674,11 +681,12 @@ namespace darmok
         auto& textures = *matDef.mutable_textures();
         for (auto& elm : _materialTextures)
         {
-            if (auto tex = getTexture(def, assimpMat, elm.assimpType, elm.assimpIndex))
+            auto texPath = getTexture(def, assimpMat, elm.assimpType, elm.assimpIndex);
+            if (!texPath.empty())
             {
                 auto& matTex = *textures.Add();
                 matTex.set_type(elm.darmokType);
-				matTex.set_texture_path(tex->name());
+				matTex.set_texture_path(texPath);
             }
         }
 
@@ -687,13 +695,14 @@ namespace darmok
 			return tex.type() == TextureType::BaseColor;
 		});
 
-        if (itr == textures.end() && !_config.default_texture().empty())
+        if (itr == textures.end() && !_config.default_texture_path().empty())
         {
-            if (auto tex = getTexture(def, _config.default_texture()))
+            auto texPath = _config.default_texture_path();
+            if (loadTexture(def, texPath))
             {
 				auto& matTex = *textures.Add();
 				matTex.set_type(TextureType::BaseColor);
-				matTex.set_texture_path(tex->name());
+				matTex.set_texture_path(texPath);
             }
         }
 
@@ -1051,32 +1060,52 @@ namespace darmok
         *meshDef.mutable_layout() = _config.vertex_layout();
     }
     
-    std::shared_ptr<AssimpSceneDefinitionConverter::MeshDefinition> AssimpSceneDefinitionConverter::getMesh(Definition& def, const aiMesh* assimpMesh) noexcept
+    std::string AssimpSceneDefinitionConverter::getMesh(Definition& def, int index) noexcept
     {
-        auto itr = _meshes.find(assimpMesh);
-        if (itr != _meshes.end())
+        if (index < 0 || index > _scene.mNumMeshes)
+        {
+            return {};
+        }
+        const aiMesh* assimpMesh = _scene.mMeshes[index];
+        auto itr = _meshPaths.find(assimpMesh);
+        if (itr != _meshPaths.end())
         {
             return itr->second;
         }
-        auto modelMesh = std::make_shared<MeshDefinition>();
-        updateMesh(def, *modelMesh, *assimpMesh);
-        _meshes.emplace(assimpMesh, modelMesh);
-		addAsset(def, modelMesh->name(), *modelMesh);
-        return modelMesh;
+        MeshDefinition meshDef;
+        updateMesh(def, meshDef, *assimpMesh);
+        auto path = "mesh_" + std::to_string(index);
+        if (meshDef.name().empty())
+        {
+            meshDef.set_name(path);
+        }
+        _meshPaths.emplace(assimpMesh, path);
+		addAsset(def, path, meshDef);
+        return path;
     }
 
-    std::shared_ptr<AssimpSceneDefinitionConverter::MaterialDefinition> AssimpSceneDefinitionConverter::getMaterial(Definition& def, const aiMaterial* assimpMat) noexcept
+    std::string AssimpSceneDefinitionConverter::getMaterial(Definition& def, int index) noexcept
     {
-        auto itr = _materials.find(assimpMat);
-        if (itr != _materials.end())
+        if(index < 0 || index > _scene.mNumMaterials)
+        {
+            return {};
+		}
+		const aiMaterial* assimpMat = _scene.mMaterials[index];
+        auto itr = _materialPaths.find(assimpMat);
+        if (itr != _materialPaths.end())
         {
             return itr->second;
         }
-        auto modelMat = std::make_shared<MaterialDefinition>();
-        updateMaterial(def, *modelMat, *assimpMat);
-        _materials.emplace(assimpMat, modelMat);
-		addAsset(def, modelMat->name(), *modelMat);
-        return modelMat;
+        MaterialDefinition matDef;
+        updateMaterial(def, matDef, *assimpMat);
+        auto path = "material_" + std::to_string(index);
+        if(matDef.name().empty())
+        {
+            matDef.set_name(path);
+		}
+        _materialPaths.emplace(assimpMat, path);
+		addAsset(def, path, matDef);
+        return path;
     }
 
     AssimpSceneDefinitionLoader::AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
@@ -1161,7 +1190,7 @@ namespace darmok
         itr = json.find("defaultTexture");
         if (itr != json.end())
         {
-            config.set_default_texture(itr->get<std::string>());
+            config.set_default_texture_path(itr->get<std::string>());
         }
         itr = json.find("rootMesh");
         if (itr != json.end())

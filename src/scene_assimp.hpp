@@ -77,7 +77,7 @@ namespace darmok
     class AssimpSceneDefinitionConverter final
     {
     public:
-        using Config = protobuf::AssimpSceneImportConfig;
+        using ImportConfig = protobuf::AssimpSceneImportConfig;
         using Definition = protobuf::Scene;
         using MeshDefinition = protobuf::Mesh;
         using TransformDefinition = protobuf::Transform;
@@ -88,7 +88,7 @@ namespace darmok
         using TextureType = protobuf::MaterialTextureType;
         using Message = google::protobuf::Message;
 
-        AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const Config& config,
+        AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const ImportConfig& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
@@ -100,7 +100,7 @@ namespace darmok
         OptionalRef<ITextureDefinitionLoader> _texLoader;
         const aiScene& _scene;
         std::filesystem::path _basePath;
-        Config _config;
+        ImportConfig _config;
         std::unordered_map<std::string, std::string> _boneNames;
         std::vector<std::regex> _skipMeshes;
 
@@ -113,16 +113,16 @@ namespace darmok
 
         static const std::vector<AssimpMaterialTexture> _materialTextures;
 
-        std::unordered_map<const aiMesh*, std::shared_ptr<MeshDefinition>> _meshes;
-        std::unordered_map<const aiMaterial*, std::shared_ptr<MaterialDefinition>> _materials;
-        std::unordered_map<std::string, std::shared_ptr<TextureDefinition>> _textures;
+        std::unordered_map<const aiMesh*, std::string> _meshPaths;
+        std::unordered_map<const aiMaterial*, std::string> _materialPaths;
+        std::unordered_set<std::string> _texturePaths;
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
-        std::shared_ptr<MeshDefinition> getMesh(Definition& def, const aiMesh* assimpMesh) noexcept;
-        std::shared_ptr<MaterialDefinition> getMaterial(Definition& def, const aiMaterial* assimpMaterial) noexcept;
-        std::shared_ptr<TextureDefinition> getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
-        std::shared_ptr<TextureDefinition> getTexture(Definition& def, const std::string& path) noexcept;
+        std::string getMesh(Definition& def, int index) noexcept;
+        std::string getMaterial(Definition& def, int index) noexcept;
+        std::string getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
+        bool loadTexture(Definition& def, const std::string& path) noexcept;
 
         std::optional<uint32_t> updateNode(Definition& def, const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
         void updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;

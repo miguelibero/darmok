@@ -4,6 +4,7 @@
 #include <darmok/expected.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <darmok/protobuf/scene.pb.h>
 
 #include <filesystem>
@@ -16,6 +17,19 @@ namespace darmok
     {
     };
 
+    class Scene;
+    class AssetPack;
+
+    class DARMOK_EXPORT BX_NO_VTABLE IComponentLoadContext
+    {
+    public:
+		virtual ~IComponentLoadContext() = default;
+        virtual AssetPack& getAssets() = 0;
+        virtual Entity getEntity(uint32_t id) const = 0;
+        virtual const Scene& getScene() const = 0;
+        virtual Scene& getScene() = 0;
+    };
+
 	using DataSceneDefinitionLoader = DataProtobufLoader<ISceneDefinitionLoader>;
 
     class Scene;
@@ -26,7 +40,7 @@ namespace darmok
     public:
         using Error = std::string;
 		using Definition = protobuf::Scene;
-        using Result = expected<void, Error>;
+        using Result = expected<Entity, Error>;
         SceneImporter();
 		~SceneImporter();
         Result operator()(Scene& scene, const Definition& def);
@@ -39,7 +53,7 @@ namespace darmok
     {
     public:
         using Error = std::string;
-        using Result = expected<void, Error>;
+        using Result = expected<Entity, Error>;
         using Argument = Arg;
         virtual ~IBasicSceneLoader() = default;
         virtual Result operator()(Scene& scene, Argument arg) = 0;

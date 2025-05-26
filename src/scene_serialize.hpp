@@ -5,26 +5,44 @@
 #include <darmok/protobuf.hpp>
 #include <darmok/asset_pack.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include <string>
 #include <optional>
+#include <variant>
+#include <functional>
 
 namespace darmok
 {
     class Transform;
+    class Camera;
+    class Renderable;
     
-    class SceneArchive final
+    class SceneArchive final : public IComponentLoadContext
     {
-        const protobuf::Scene& _scene;
+        Scene& _scene;
+        const protobuf::Scene& _sceneDef;
 		AssetPack _assetPack;
         size_t _count = 0;
         entt::id_type _type;
+        entt::id_type _entityOffset;
         std::optional<std::string> _error;
+		std::vector<std::function<expected<void, std::string>()>> _loadFunctions;
+
+        // IComponentLoadContext
+        AssetPack& getAssets() override;
+        Entity getEntity(uint32_t id) const override;
+        const Scene& getScene() const override;
+        Scene& getScene() override;
 
     public:
-        SceneArchive(const protobuf::Scene& scene);
+        SceneArchive(const protobuf::Scene& sceneDef, Scene& scene);
+
+        entt::continuous_loader createLoader();
 
         void operator()(std::underlying_type_t<Entity>& count);
+
+        using Components = std::variant<Transform, Renderable>;
 
         template<typename T>
         expected<void, std::string> load(entt::continuous_loader& loader)
@@ -39,71 +57,85 @@ namespace darmok
             return {};
         }
 
+        template<std::size_t I = 0>
+        expected<void, std::string> loadComponents(entt::continuous_loader& loader)
+        {
+            auto result = load<std::variant_alternative_t<I, Components>>(loader);
+            if (!result)
+            {
+                return unexpected{ result.error() };
+            }
+            if constexpr (I + 1 < std::variant_size_v<Components>)
+            {
+                return loadComponents<I + 1>(loader);
+            }
+            return {};
+        }
+
+        expected<Entity, std::string> finishLoad();
+
         template<typename T>
         void operator()(T& obj)
         {
-            if (_error)
+            auto getComponentData = [this]() -> std::pair<uint32_t, const google::protobuf::Any*>
             {
-                return;
-            }
-            using CompMap = google::protobuf::Map<uint32_t, google::protobuf::Any>;
-            auto getComponentData = [this]() -> CompMap::const_iterator
-            {
-                auto& typeComps = _scene.registry().components();
+                auto& typeComps = _sceneDef.registry().components();
                 auto itr = typeComps.find(_type);
                 if (itr == typeComps.end())
                 {
                     _error = "Could not find component type";
-                    return {};
+                    return { 0, nullptr };
                 }
                 auto& comps = itr->second.components();
                 auto itr2 = comps.begin();
                 std::advance(itr2, _count);
+                auto& key = itr2->first;
                 if (itr2 == comps.end())
                 {
                     _error = "Could not find component";
-                    return {};
+                    return {0, nullptr};
                 }
-                return itr2;
+                return { itr2->first, &itr2->second };
             };
 
             if constexpr (std::is_same_v<T, Entity>)
             {
                 if (_type == 0)
                 {
-                    obj = static_cast<Entity>(_count + 1);
+                    obj = getEntity(_count);
                     ++_count;
                 }
                 else
                 {
-                    auto itr = getComponentData();
-                    if (_error)
-                    {
-                        return;
-                    }
-					obj = static_cast<Entity>(itr->first);
+                    auto elm = getComponentData();
+					obj = getEntity(elm.first);
                 }
             }
             else
             {
-				auto itr = getComponentData();
-                if (_error)
+				auto elm = getComponentData();
+                if (!elm.second)
                 {
                     return;
                 }
                 typename T::Definition def;
-                if (!itr->second.UnpackTo(&def))
+                if (!elm.second->UnpackTo(&def))
                 {
                     _error = "Could not unpack component";
                     return;
                 }
-                auto result = obj.load(def, _assetPack);
-                if(!result)
+				auto entity = getEntity(elm.first);
+                auto func = [this, entity, def]() -> expected<void, std::string>
                 {
-                    _error = result.error();
-				}
+                    if (auto comp = _scene.getComponent<T>(entity))
+                    {
+                        return comp->load(def, *this);
+                    }
+                    return {};
+                };
+				_loadFunctions.push_back(std::move(func));
                 ++_count;
-            }        
+            }
         }
     };
 
@@ -113,7 +145,7 @@ namespace darmok
     public:
         using Error = std::string;
         using Definition = protobuf::Scene;
-        using Result = expected<void, Error>;
+        using Result = expected<Entity, Error>;
         Result operator()(Scene& scene, const Definition& def);
     };
 }

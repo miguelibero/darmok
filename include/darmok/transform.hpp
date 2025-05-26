@@ -16,7 +16,7 @@ namespace darmok
         class Transform;
     }
 
-    class AssetPack;
+    class IComponentLoadContext;
 
     class DARMOK_EXPORT Transform final
     {
@@ -75,7 +75,7 @@ namespace darmok
 
         // serialization
         using Definition = protobuf::Transform;
-		expected<void, std::string> load(const Definition& def, AssetPack& assetPack);
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
     private:
         // should not use PIMPL here since we want consecutive memory

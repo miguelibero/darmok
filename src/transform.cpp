@@ -2,6 +2,8 @@
 #include <darmok/math.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/protobuf/scene.pb.h>
+#include <darmok/scene.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/euler_angles.hpp>
@@ -114,7 +116,7 @@ namespace darmok
         }
         if (parent == this)
         {
-            throw std::runtime_error("cannot be parent of itself");
+            throw std::runtime_error{ "cannot be parent of itself" };
         }
         if (_parent)
         {
@@ -340,11 +342,12 @@ namespace darmok
         return _worldInverse;
     }
 
-    expected<void, std::string> Transform::load(const Definition& def, AssetPack& assetPack)
+    expected<void, std::string> Transform::load(const Definition& def, IComponentLoadContext& ctxt)
     {
 		setName(def.name());
         setLocalMatrix(protobuf::convert(def.matrix()));
-        // TODO: find parent
+        auto parentEntity = ctxt.getEntity(def.parent());
+        setParent(ctxt.getScene().getComponent<Transform>(parentEntity));
         return {};
     }
 }

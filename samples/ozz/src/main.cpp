@@ -125,16 +125,18 @@ namespace
 			mat->occlusionStrength = 0.75F;
 			mat->metallicFactor = 1.F;
 
-			_app.getAssets().getSceneLoader()(scene, "scene.dml");
+			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.pb").value();
+			
+			auto skinEntity = scene.createEntity();
+			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3{ 1, 0, 0 });
+			skinTrans.setParent(animTrans);
+			scene.getOrAddComponent<Transform>(skinRoot).setParent(skinTrans);
+
 			for (auto entity : scene.getComponents<Renderable>())
 			{
 				scene.getComponent<Renderable>(entity)->setMaterial(mat);
 			}
-
-			auto skinEntity = scene.createEntity();
-			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3{ 1, 0, 0 });
-			skinTrans.setParent(animTrans);
-
+			
 			_app.getInput().addListener("talk", _talkInputs, *this);
 		}
 
@@ -148,7 +150,6 @@ namespace
 			const bgfx::Stats* stats = bgfx::getStats();
 
 			bgfx::dbgTextPrintf(0, 1, 0x0f, "Blend position: %s", glm::to_string(_animator->getBlendPosition()).c_str());
-
 		}
 
 		void update(float deltaTime) noexcept override

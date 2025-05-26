@@ -4,7 +4,8 @@
 #include <darmok/viewport.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_filter.hpp>
-
+#include <darmok/expected.hpp>
+#include <darmok/protobuf/scene.pb.h>
 
 namespace darmok
 {
@@ -14,6 +15,7 @@ namespace darmok
     class App;
     class Transform;
     struct Ray;
+    class IComponentLoadContext;
 
     using ConstCameraComponentRefs = std::vector<std::reference_wrapper<const ICameraComponent>>;
     using CameraComponentRefs = std::vector<std::reference_wrapper<ICameraComponent>>;
@@ -98,6 +100,8 @@ namespace darmok
         void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
+		using Definition = protobuf::Camera;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
     private:
         Camera& _cam;
         bool _enabled;
