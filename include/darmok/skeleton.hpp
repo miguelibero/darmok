@@ -25,6 +25,7 @@
 namespace darmok
 {
     class SkeletonImpl;
+    class IComponentLoadContext;
 
     class DARMOK_EXPORT Skeleton final
     {
@@ -260,6 +261,9 @@ namespace darmok
     class DARMOK_EXPORT Armature final
     {
     public:
+        using Definition = protobuf::Armature;
+
+        Armature(const Definition& def) noexcept;
         Armature(const std::vector<ArmatureJoint>& joints) noexcept;
         Armature(std::vector<ArmatureJoint>&& joints) noexcept;
         const std::vector<ArmatureJoint>& getJoints() const noexcept;
@@ -268,12 +272,28 @@ namespace darmok
         std::vector<ArmatureJoint> _joints;
     };
 
+    class DARMOK_EXPORT BX_NO_VTABLE IArmatureDefinitionLoader : public ILoader<Armature::Definition>
+    {
+    };
+
+    using DataArmatureDefinitionLoader = DataProtobufLoader<IArmatureDefinitionLoader>;
+
+    class DARMOK_EXPORT BX_NO_VTABLE IArmatureLoader : public IFromDefinitionLoader<Armature, Armature::Definition>
+    {
+    };
+
+    using ArmatureLoader = FromDefinitionLoader<IArmatureLoader, IArmatureDefinitionLoader>;
+
     class DARMOK_EXPORT Skinnable
     {
     public:
         Skinnable(const std::shared_ptr<Armature>& armature = nullptr) noexcept;
         std::shared_ptr<Armature> getArmature() const noexcept;
         void setArmature(const std::shared_ptr<Armature>& armature) noexcept;
+
+        using Definition = protobuf::Skinnable;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+
     private:
         std::shared_ptr<Armature> _armature;
     };

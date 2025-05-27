@@ -10,7 +10,8 @@ message ArmatureJoint {
 }
 
 message Armature {
-    repeated ArmatureJoint joints = 1;
+    string name = 1;
+    repeated ArmatureJoint joints = 2;
 }
 
 message SkeletalAnimatorBlendType {

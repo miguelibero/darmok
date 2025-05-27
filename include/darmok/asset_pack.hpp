@@ -6,6 +6,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
+#include <darmok/skeleton.hpp>
 
 namespace darmok
 {	
@@ -55,6 +56,7 @@ namespace darmok
 		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
 		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept;
 		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept;
+		[[nodiscard]] IArmatureLoader& getArmatureLoader() noexcept;
 
 	private:
 		const Definition& _def;
@@ -62,9 +64,11 @@ namespace darmok
 		AssetPackLoader<ITextureDefinitionLoader> _texDefLoader;
 		AssetPackLoader<IMeshDefinitionLoader> _meshDefLoader;
 		AssetPackLoader<IMaterialDefinitionLoader> _matDefLoader;
+		AssetPackLoader<IArmatureDefinitionLoader> _armDefLoader;
 		ProgramLoader _programLoader;
 		TextureLoader _textureLoader;
 		MeshLoader _meshLoader;
-		MaterialLoader _materialLoader;	
+		MaterialLoader _materialLoader;
+		ArmatureLoader _armatureLoader;
 	};
 }

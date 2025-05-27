@@ -80,9 +80,11 @@ namespace darmok
         using ImportConfig = protobuf::AssimpSceneImportConfig;
         using Definition = protobuf::Scene;
         using MeshDefinition = protobuf::Mesh;
+        using ArmatureDefinition = protobuf::Armature;
         using TransformDefinition = protobuf::Transform;
         using CameraDefinition = protobuf::Camera;
         using RenderableDefinition = protobuf::Renderable;
+        using SkinnableDefinition = protobuf::Skinnable;
         using MaterialDefinition = protobuf::Material;
         using TextureDefinition = protobuf::Texture;
         using TextureType = protobuf::MaterialTextureType;
@@ -114,12 +116,14 @@ namespace darmok
         static const std::vector<AssimpMaterialTexture> _materialTextures;
 
         std::unordered_map<const aiMesh*, std::string> _meshPaths;
+        std::unordered_map<const aiMesh*, std::string> _armaturePaths;
         std::unordered_map<const aiMaterial*, std::string> _materialPaths;
         std::unordered_set<std::string> _texturePaths;
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
         std::string getMesh(Definition& def, int index) noexcept;
+        std::string getArmature(Definition& def, int index) noexcept;
         std::string getMaterial(Definition& def, int index) noexcept;
         std::string getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         bool loadTexture(Definition& def, const std::string& path) noexcept;
@@ -127,6 +131,7 @@ namespace darmok
         std::optional<uint32_t> updateNode(Definition& def, const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
         void updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
         void updateMesh(Definition& def, MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
+        void updateArmature(Definition& def, ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
         void updateCamera(Definition& def, uint32_t entityId, const aiCamera& assimpCam) noexcept;
         void updateLight(Definition& def, uint32_t entityId, const aiLight& assimpLight) noexcept;
         bool updateMeshes(Definition& def, uint32_t entityId, const std::regex& regex) noexcept;
@@ -138,6 +143,7 @@ namespace darmok
 		uint32_t createEntity(Definition& def) noexcept;
 		bool addAsset(Definition& def, std::string_view path, Message& asset) noexcept;
         bool addComponent(Definition& def, uint32_t entityId, Message& comp) noexcept;
+        bool addMeshComponents(Definition& def, uint32_t entityId, int index) noexcept;
     };
 
     class AssimpSceneDefinitionLoaderImpl final

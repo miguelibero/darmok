@@ -619,7 +619,8 @@ namespace darmok
         protobuf::Program def;
         def.set_name(src.name());
         *def.mutable_varying() = src.varying();
-        auto varyingDefPath = getTempPath("darmok.varyingdef.");
+		std::string prefix = "darmok." + src.name() + ".";
+        auto varyingDefPath = getTempPath(prefix + "varyingdef.");
         VaryingUtils::writeBgfx(src.varying(), varyingDefPath);
 
         ShaderCompilerConfig shaderConfig
@@ -654,7 +655,7 @@ namespace darmok
         };
 
         shaderConfig.type = ShaderType::Fragment;
-        shaderConfig.path = getTempPath("darmok.fragment.");
+        shaderConfig.path = getTempPath(prefix + "fragment.");
         auto error = compileShaders(DataView{ src.fragment_shader() });
         if (error)
         {
@@ -662,7 +663,7 @@ namespace darmok
         }
 
         shaderConfig.type = ShaderType::Vertex;
-        shaderConfig.path = getTempPath("darmok.vertex.");
+        shaderConfig.path = getTempPath(prefix + "vertex.");
         error = compileShaders(DataView{ src.vertex_shader() });
         if (error)
         {

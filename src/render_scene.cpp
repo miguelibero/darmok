@@ -14,9 +14,9 @@ using namespace entt::literals;
 namespace darmok
 {
 	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
-		: _mesh(mesh)
-		, _material(material)
-		, _enabled(true)
+		: _mesh{ mesh }
+		, _material{ material }
+		, _enabled{ true }
 	{
 	}
 

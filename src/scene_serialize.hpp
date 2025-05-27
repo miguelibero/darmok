@@ -17,6 +17,7 @@ namespace darmok
     class Transform;
     class Camera;
     class Renderable;
+    class Skinnable;
     
     class SceneArchive final : public IComponentLoadContext
     {
@@ -42,7 +43,7 @@ namespace darmok
 
         void operator()(std::underlying_type_t<Entity>& count);
 
-        using Components = std::variant<Transform, Renderable>;
+        using Components = std::variant<Transform, Renderable, Skinnable>;
 
         template<typename T>
         expected<void, std::string> load(entt::continuous_loader& loader)

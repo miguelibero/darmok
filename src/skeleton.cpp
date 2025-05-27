@@ -11,6 +11,8 @@
 #include <darmok/shape.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/scene_serialize.hpp>
+#include <darmok/asset_pack.hpp>
 
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/vector_angle.hpp>
@@ -374,10 +376,16 @@ namespace darmok
     {
         expected<void, std::string> read(AnimationDefinition& def, const nlohmann::json& json)
         {
+            if (json.is_string())
+            {
+                def.set_name(json.get<std::string>());
+                def.set_loop(true);
+                return {};
+            }
             auto itr = json.find("value");
             if (itr != json.end())
             {
-                auto vec = json["value"].get<glm::vec2>();
+                auto vec = itr->get<glm::vec2>();
 				*def.mutable_blend_position() = protobuf::convert(vec);
             }
             itr = json.find("animation");
@@ -570,6 +578,15 @@ namespace darmok
         {
         }
 
+    Armature::Armature(const Definition& def) noexcept
+    {
+        _joints.reserve(def.joints_size());
+        for (auto& joint : def.joints())
+        {
+            _joints.emplace_back(joint.name(), protobuf::convert(joint.inverse_bind_pose()));
+        }
+    }
+
     Armature::Armature(const std::vector<ArmatureJoint>& joints) noexcept
         : _joints{ joints }
     {
@@ -598,5 +615,16 @@ namespace darmok
     void Skinnable::setArmature(const std::shared_ptr<Armature>& armature) noexcept
     {
         _armature = armature;
+    }
+
+    expected<void, std::string> Skinnable::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+        auto result = ctxt.getAssets().getArmatureLoader()(def.armature_path());
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
+        setArmature(result.value());
+        return {};
     }
 }

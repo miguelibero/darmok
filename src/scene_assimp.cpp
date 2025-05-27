@@ -384,16 +384,37 @@ namespace darmok
             {
                 continue;
             }
-            auto meshPath = getMesh(def, i);
-            auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
-            RenderableDefinition renderable;
-			renderable.set_mesh_path(meshPath);
-			renderable.set_material_path(matPath);
-			addComponent(def, entityId, renderable);
-
-            found = true;
+            if (addMeshComponents(def, entityId, i))
+            {
+                found = true;
+            }
         }
         return found;
+    }
+    bool AssimpSceneDefinitionConverter::addMeshComponents(Definition& def, uint32_t entityId, int index) noexcept
+    {
+        if (index < 0 || index >= _scene.mNumMeshes)
+        {
+            return false;
+        }
+        auto assimpMesh = _scene.mMeshes[index];
+        auto meshPath = getMesh(def, index);
+        auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
+
+        RenderableDefinition renderable;
+        renderable.set_mesh_path(meshPath);
+        renderable.set_material_path(matPath);
+        addComponent(def, entityId, renderable);
+
+        auto armPath = getArmature(def, index);
+        if (!armPath.empty())
+        {
+            SkinnableDefinition skinnable;
+            skinnable.set_armature_path(armPath);
+            addComponent(def, entityId, skinnable);
+        }
+
+        return true;
     }
 
     bool AssimpSceneDefinitionConverter::operator()(Definition& def) noexcept
@@ -428,14 +449,7 @@ namespace darmok
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
             auto index = assimpNode.mMeshes[i];
-            auto meshPath = getMesh(def, index);
-            auto assimpMesh = _scene.mMeshes[index];
-            auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
-
-            RenderableDefinition renderable;
-            renderable.set_mesh_path(meshPath);
-            renderable.set_material_path(matPath);
-			addComponent(def, entityId, renderable);
+            addMeshComponents(def, entityId, index);
         }
 
         for (size_t i = 0; i < _scene.mNumCameras; ++i)
@@ -1035,11 +1049,23 @@ namespace darmok
         }
 
         std::vector<aiBone*> bones;
-        auto& armature = *meshDef.mutable_armature();
+        bones.reserve(assimpMesh.mNumBones);
+        for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
+        {
+            bones.push_back(assimpMesh.mBones[i]);
+        }
+
+        meshDef.set_vertices(createVertexData(assimpMesh, bones));
+        meshDef.set_indices(createIndexData(assimpMesh));
+        *meshDef.mutable_layout() = _config.vertex_layout();
+    }
+
+    void AssimpSceneDefinitionConverter::updateArmature(Definition& def, ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
+    {
         for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
         {
             auto bone = assimpMesh.mBones[i];
-            auto boneName = AssimpUtils::getStringView(bone->mName);
+            auto boneName = AssimpUtils::getString(bone->mName);
             if (!_boneNames.empty())
             {
                 auto itr = std::find_if(_boneNames.begin(), _boneNames.end(),
@@ -1050,19 +1076,15 @@ namespace darmok
                 }
                 boneName = itr->second;
             }
-            auto& joint = *armature.add_joints();
-            joint.set_name(std::string{ boneName });
+            auto& joint = *armDef.add_joints();
+            joint.set_name(boneName);
             *joint.mutable_inverse_bind_pose() = protobuf::convert(AssimpUtils::convert(bone->mOffsetMatrix));
         }
-
-        meshDef.set_vertices(createVertexData(assimpMesh, bones));
-        meshDef.set_indices(createIndexData(assimpMesh));
-        *meshDef.mutable_layout() = _config.vertex_layout();
     }
     
     std::string AssimpSceneDefinitionConverter::getMesh(Definition& def, int index) noexcept
     {
-        if (index < 0 || index > _scene.mNumMeshes)
+        if (index < 0 || index >= _scene.mNumMeshes)
         {
             return {};
         }
@@ -1084,9 +1106,37 @@ namespace darmok
         return path;
     }
 
+    std::string AssimpSceneDefinitionConverter::getArmature(Definition& def, int index) noexcept
+    {
+        if (index < 0 || index >= _scene.mNumMeshes)
+        {
+            return {};
+        }
+        const aiMesh* assimpMesh = _scene.mMeshes[index];
+        auto itr = _armaturePaths.find(assimpMesh);
+        if (itr != _armaturePaths.end())
+        {
+            return itr->second;
+        }
+        ArmatureDefinition armDef;
+        updateArmature(def, armDef, *assimpMesh);
+        if (armDef.joints_size() == 0)
+        {
+            return {};
+        }
+        auto path = "armature_" + std::to_string(index);
+        if (armDef.name().empty())
+        {
+            armDef.set_name(path);
+        }
+        _armaturePaths.emplace(assimpMesh, path);
+        addAsset(def, path, armDef);
+        return path;
+    }
+
     std::string AssimpSceneDefinitionConverter::getMaterial(Definition& def, int index) noexcept
     {
-        if(index < 0 || index > _scene.mNumMaterials)
+        if(index < 0 || index >= _scene.mNumMaterials)
         {
             return {};
 		}

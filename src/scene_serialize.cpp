@@ -2,6 +2,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/skeleton.hpp>
 #include <darmok/render_scene.hpp>
 #include "scene_serialize.hpp"
 

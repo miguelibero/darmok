@@ -8,10 +8,12 @@ namespace darmok
 		, _texDefLoader{ _def }
 		, _meshDefLoader{ _def }
 		, _matDefLoader{ _def }
+		, _armDefLoader{ _def }
 		, _programLoader{ _progDefLoader }
 		, _textureLoader{ _texDefLoader }
 		, _meshLoader{ _meshDefLoader }
 		, _materialLoader{ _matDefLoader, _programLoader, _textureLoader }
+		, _armatureLoader{ _armDefLoader }
 	{
 	}
 
@@ -35,4 +37,8 @@ namespace darmok
 		return _materialLoader;
 	}
 
+	IArmatureLoader& AssetPack::getArmatureLoader() noexcept
+	{
+		return _armatureLoader;
+	}
 }

@@ -6,10 +6,15 @@ import "google/protobuf/any.proto";
 import "registry.proto";
 import "math.proto";
 import "asset.proto";
+import "skeleton.proto";
 
 message Renderable {
     string mesh_path = 1;
     string material_path = 2;
+}
+
+message Skinnable {
+    string armature_path = 1;
 }
 
 message Transform {

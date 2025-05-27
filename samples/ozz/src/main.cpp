@@ -134,7 +134,10 @@ namespace
 
 			for (auto entity : scene.getComponents<Renderable>())
 			{
-				scene.getComponent<Renderable>(entity)->setMaterial(mat);
+				if (entity >= skinRoot)
+				{
+					scene.getComponent<Renderable>(entity)->setMaterial(mat);
+				}
 			}
 			
 			_app.getInput().addListener("talk", _talkInputs, *this);

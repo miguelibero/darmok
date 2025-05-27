@@ -64,8 +64,10 @@ namespace darmok
 	{
 	public:
 		using Definition = protobuf::SkeletalAnimatorAnimation;
-		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations);
+		OzzSkeletalAnimatorAnimationState(const ozz::animation::Skeleton& skel, const Definition& def, const std::shared_ptr<SkeletalAnimation>& anim);
 		OzzSkeletalAnimatorAnimationState(OzzSkeletalAnimatorAnimationState&& other) noexcept;
+
+		static std::optional<OzzSkeletalAnimatorAnimationState> create(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& anims);
 
 		void update(float deltaTime);
 		bool hasLooped() const noexcept;
@@ -89,7 +91,11 @@ namespace darmok
 	class OzzSkeletalAnimatorState final : public ISkeletalAnimatorState
 	{
 	public:
-		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept;
+		using AnimationState = OzzSkeletalAnimatorAnimationState;
+
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, std::vector<AnimationState>&& states) noexcept;
+
+		static std::optional<OzzSkeletalAnimatorState> create(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept;
 
 		void update(float deltaTime, const glm::vec2& blendPosition);
 		std::string_view getName() const noexcept override;
@@ -105,9 +111,9 @@ namespace darmok
 		glm::vec2 getBlendedPosition(float f) const noexcept;
 		float calcDuration() const noexcept;
 
-		using AnimationState = OzzSkeletalAnimatorAnimationState;
+
 		Definition _def;
-		std::vector<AnimationState> _animations;
+		std::vector<AnimationState> _animationStates;
 		ozz::vector<ozz::math::SoaTransform> _locals;
 		ozz::vector<ozz::animation::BlendingJob::Layer> _layers;
 		glm::vec2 _blendPos;
