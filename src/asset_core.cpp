@@ -668,7 +668,7 @@ namespace darmok
                 {
                     std::stringstream ss;
                     ss << "file " << path << " expects missing importer \"" << importerName << "\".";
-                    throw std::runtime_error(ss.str());
+                    throw std::runtime_error{ ss.str() };
                 }
             }
             for (auto& [importerName, importer] : _importers)
@@ -948,7 +948,7 @@ namespace darmok
     }
 
     FileImporter::FileImporter(const fs::path& inputPath)
-        : _impl(std::make_unique<FileImporterImpl>(inputPath))
+        : _impl{ std::make_unique<FileImporterImpl>(inputPath) }
     {
     }
 

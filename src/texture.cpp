@@ -29,7 +29,7 @@ namespace darmok
 	bgfx::TextureInfo TextureUtils::getInfo(const protobuf::TextureConfig& config) noexcept
 	{
 		bgfx::TextureInfo info;
-		auto cubeMap = config.type() == protobuf::TextureType::CubeMap;
+		auto cubeMap = config.type() == Texture::Definition::CubeMap;
 		auto format = static_cast<bgfx::TextureFormat::Enum>(config.format());
 		bgfx::calcTextureSize(info, config.size().x(), config.size().y(),
 			config.depth(), cubeMap, config.mips(), config.layers(), format);
@@ -163,14 +163,14 @@ namespace darmok
 		return magic_enum::enum_cast<bgfx::TextureFormat::Enum>(name);
 	}
 
-	std::string_view Texture::getTypeName(TextureType::Enum type) noexcept
+	std::string_view Texture::getTypeName(Texture::Type type) noexcept
 	{
 		return magic_enum::enum_name(type);
 	}
 
-	std::optional<Texture::TextureType::Enum> Texture::readType(std::string_view name) noexcept
+	std::optional<Texture::Type> Texture::readType(std::string_view name) noexcept
 	{
-		return magic_enum::enum_cast<TextureType::Enum>(name);
+		return magic_enum::enum_cast<Texture::Type>(name);
 	}
 
 	const Texture::FlagMap& Texture::getTextureFlags() noexcept
@@ -310,7 +310,7 @@ namespace darmok
 		: _handle{ bgfx::kInvalidHandle }
 		, _config{ cfg }
 	{
-		if (getType() == TextureType::Unknown)
+		if (getType() == Definition::Unknown)
 		{
 			throw std::runtime_error{ "unknown texture type" };
 		}
@@ -322,13 +322,13 @@ namespace darmok
 		auto format = static_cast<bgfx::TextureFormat::Enum>(_config.format());
 		switch (getType())
 		{
-		case TextureType::CubeMap:
+		case Definition::CubeMap:
 			_handle = bgfx::createTextureCube(w, _config.mips(), _config.layers(), format, flags, mem);
 			break;
-		case TextureType::Texture3D:
+		case Definition::Texture3D:
 			_handle = bgfx::createTexture3D(w, h, _config.depth(), _config.mips(), format, flags, mem);
 			break;
-		case TextureType::Texture2D:
+		case Definition::Texture2D:
 			_handle = bgfx::createTexture2D(w, h, _config.mips(), _config.layers(), format, flags, mem);
 			break;
 		default:
@@ -344,13 +344,13 @@ namespace darmok
 		auto format = static_cast<bgfx::TextureFormat::Enum>(cfg.format());
 		switch (getType())
 		{
-		case TextureType::CubeMap:
+		case Definition::CubeMap:
 			_handle = bgfx::createTextureCube(cfg.size().x(), cfg.mips(), cfg.layers(), format, flags);
 			break;
-		case TextureType::Texture2D:
+		case Definition::Texture2D:
 			_handle = bgfx::createTexture2D(cfg.size().x(), cfg.size().y(), cfg.mips(), cfg.layers(), format, flags);
 			break;
-		case TextureType::Texture3D:
+		case Definition::Texture3D:
 			_handle = bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags);
 			break;
 		default:
@@ -406,7 +406,7 @@ namespace darmok
 
 	expected<void, std::string> Texture::update(const DataView& data, uint8_t mip)
 	{
-		if (getType() == TextureType::Texture3D)
+		if (getType() == Definition::Texture3D)
 		{
 			return update(data, glm::uvec3(getSize(), getDepth()), glm::uvec3(0), mip);
 		}
@@ -418,7 +418,7 @@ namespace darmok
 
 	expected<void, std::string> Texture::update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin, uint8_t mip, uint16_t layer, uint8_t side)
 	{
-		if (getType() == TextureType::Texture3D)
+		if (getType() == Definition::Texture3D)
 		{
 			return unexpected{ "does not work on 3D textures" };
 		}
@@ -431,7 +431,7 @@ namespace darmok
 		{
 			return unexpected{ "data is smaller that expected size" };
 		}
-		if (getType() == TextureType::Texture2D)
+		if (getType() == Definition::Texture2D)
 		{
 			bgfx::updateTexture2D(_handle, layer, mip,
 				origin.x, origin.y, size.x, size.y,
@@ -448,7 +448,7 @@ namespace darmok
 
 	expected<void, std::string> Texture::update(const DataView& data, const glm::uvec3& size, const glm::uvec3& origin, uint8_t mip)
 	{
-		if (getType() != TextureType::Texture3D)
+		if (getType() != Definition::Texture3D)
 		{
 			return unexpected{ "does only work on 3D textures" };
 		}
@@ -493,7 +493,7 @@ namespace darmok
 		return protobuf::convert(_config.size());
 	}
 
-	Texture::TextureType::Enum Texture::getType() const noexcept
+	Texture::Type Texture::getType() const noexcept
 	{
 		return _config.type();
 	}

@@ -7,6 +7,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/component_wise.hpp>
 #include "render_samplers.hpp"
@@ -65,6 +66,14 @@ namespace darmok
         return _shadow;
     }
 
+    expected<void, std::string> PointLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+		setIntensity(def.intensity());
+		setColor(protobuf::convert(def.color()));
+		setRange(def.range());
+        return {};
+    }
+
     DirectionalLight::DirectionalLight(float intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::white3())
@@ -105,6 +114,13 @@ namespace darmok
         return _shadow;
     }
 
+    expected<void, std::string> DirectionalLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+        setIntensity(def.intensity());
+        setColor(protobuf::convert(def.color()));
+        return {};
+    }
+
     AmbientLight::AmbientLight(float intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::white3())
@@ -131,6 +147,13 @@ namespace darmok
     float AmbientLight::getIntensity() const noexcept
     {
         return _intensity;
+    }
+
+    expected<void, std::string> AmbientLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+        setIntensity(def.intensity());
+        setColor(protobuf::convert(def.color()));
+        return {};
     }
 
     SpotLight::SpotLight(float intensity, const Color3& color, float range) noexcept
@@ -207,6 +230,16 @@ namespace darmok
     ShadowType SpotLight::getShadowType() const noexcept
     {
         return _shadow;
+    }
+
+    expected<void, std::string> SpotLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    {
+        setIntensity(def.intensity());
+        setColor(protobuf::convert(def.color()));
+        setRange(def.range());
+        setInnerConeAngle(def.inner_cone_angle());
+        setConeAngle(def.cone_angle());
+        return {};
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept

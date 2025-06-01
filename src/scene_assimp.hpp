@@ -87,7 +87,7 @@ namespace darmok
         using SkinnableDefinition = protobuf::Skinnable;
         using MaterialDefinition = protobuf::Material;
         using TextureDefinition = protobuf::Texture;
-        using TextureType = protobuf::MaterialTextureType;
+        using TextureType = protobuf::MaterialTexture::Type;
         using Message = google::protobuf::Message;
 
         AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const ImportConfig& config,
@@ -110,7 +110,7 @@ namespace darmok
         {
             aiTextureType assimpType;
             unsigned int assimpIndex;
-            TextureType::Enum darmokType;
+            Material::TextureType darmokType;
         };
 
         static const std::vector<AssimpMaterialTexture> _materialTextures;

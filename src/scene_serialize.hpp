@@ -14,11 +14,6 @@
 
 namespace darmok
 {
-    class Transform;
-    class Camera;
-    class Renderable;
-    class Skinnable;
-    
     class SceneArchive final : public IComponentLoadContext
     {
         Scene& _scene;
@@ -28,7 +23,12 @@ namespace darmok
         entt::id_type _type;
         entt::id_type _entityOffset;
         std::optional<std::string> _error;
-		std::vector<std::function<expected<void, std::string>()>> _loadFunctions;
+
+        using Result = expected<void, std::string>;
+        using LoadFunction = std::function<Result(entt::continuous_loader& loader)>;
+		std::vector<LoadFunction> _loadFunctions;
+        using ComponentLoadFunction = std::function<Result()>;
+        std::vector<ComponentLoadFunction> _compLoadFunctions;
 
         // IComponentLoadContext
         AssetPack& getAssets() override;
@@ -37,13 +37,21 @@ namespace darmok
         Scene& getScene() override;
 
     public:
-        SceneArchive(const protobuf::Scene& sceneDef, Scene& scene);
+        SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackFallbacks& assetPackFallbacks = {});
 
         entt::continuous_loader createLoader();
 
         void operator()(std::underlying_type_t<Entity>& count);
-
-        using Components = std::variant<Transform, Renderable, Skinnable>;
+        
+        template<typename T>
+        void registerComponent()
+        {
+            auto func = [this](entt::continuous_loader& loader) -> expected<void, std::string>
+            {
+                return load<T>(loader);
+            };
+            _loadFunctions.push_back(std::move(func));
+        }
 
         template<typename T>
         expected<void, std::string> load(entt::continuous_loader& loader)
@@ -58,18 +66,16 @@ namespace darmok
             return {};
         }
 
-        template<std::size_t I = 0>
         expected<void, std::string> loadComponents(entt::continuous_loader& loader)
         {
-            auto result = load<std::variant_alternative_t<I, Components>>(loader);
-            if (!result)
+            for(auto& func : _loadFunctions)
             {
-                return unexpected{ result.error() };
-            }
-            if constexpr (I + 1 < std::variant_size_v<Components>)
-            {
-                return loadComponents<I + 1>(loader);
-            }
+                auto result = func(loader);
+                if (!result)
+                {
+                    return unexpected{ result.error() };
+                }
+			}
             return {};
         }
 
@@ -134,7 +140,7 @@ namespace darmok
                     }
                     return {};
                 };
-				_loadFunctions.push_back(std::move(func));
+				_compLoadFunctions.push_back(std::move(func));
                 ++_count;
             }
         }
@@ -144,9 +150,12 @@ namespace darmok
     class SceneImporterImpl final
     {
     public:
+        SceneImporterImpl(const AssetPackFallbacks& assetPackFallbacks = {});
         using Error = std::string;
         using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
         Result operator()(Scene& scene, const Definition& def);
+    private:
+        AssetPackFallbacks _assetPackFallbacks;
     };
 }

@@ -2,9 +2,12 @@
 
 #include <darmok/export.h>
 #include <darmok/asset_core.hpp>
+#include <darmok/expected.hpp>
+#include <darmok/scene_fwd.hpp>
 
 #include <memory>
 #include <filesystem>
+#include <string>
 
 #include <bx/allocator.h>
 

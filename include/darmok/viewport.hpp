@@ -19,8 +19,7 @@ namespace darmok
         Viewport(const glm::uvec4& values) noexcept;
         Viewport(glm::uint x, glm::uint y, glm::uint w, glm::uint h) noexcept;
 
-        bool operator==(const Viewport& other) const noexcept;
-        bool operator!=(const Viewport& other) const noexcept;
+        bool operator==(const Viewport& other) const = default;
 
         Viewport operator*(const glm::vec4& factor) const noexcept;
         Viewport& operator*=(const glm::vec4& factor) noexcept;

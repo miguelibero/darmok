@@ -26,6 +26,7 @@ namespace darmok
 		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = protobuf::Program;
+		using Standard = protobuf::StandardProgram;
 
 		Program(const Definition& def);
 		~Program() noexcept;
@@ -65,17 +66,17 @@ namespace darmok
 	class DARMOK_EXPORT StandardProgramLoader final
 	{
 	public:
-		using Type = protobuf::StandardProgramType;
+		using Type = protobuf::StandardProgram::Type;
 		using Definition = protobuf::Program;
-		static std::shared_ptr<Program> load(Type::Enum type);
-		static std::shared_ptr<Definition> loadDefinition(Type::Enum type);
-		static std::optional<Type::Enum> getType(const std::shared_ptr<Program>& prog) noexcept;
-		static std::optional<Type::Enum> getType(const std::shared_ptr<Definition>& def) noexcept;
+		static std::shared_ptr<Program> load(Type type);
+		static std::shared_ptr<Definition> loadDefinition(Type type);
+		static std::optional<Type> getType(const std::shared_ptr<Program>& prog) noexcept;
+		static std::optional<Type> getType(const std::shared_ptr<Definition>& def) noexcept;
 	private:
-		static std::unordered_map<Type::Enum, std::weak_ptr<Definition>> _defCache;
-		static std::unordered_map<Type::Enum, std::weak_ptr<Program>> _cache;
+		static std::unordered_map<Type, std::weak_ptr<Definition>> _defCache;
+		static std::unordered_map<Type, std::weak_ptr<Program>> _cache;
 
-		static expected<void, std::string> loadDefinition(Definition& def, Type::Enum type);
+		static expected<void, std::string> loadDefinition(Definition& def, Type type);
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, Program::Definition>

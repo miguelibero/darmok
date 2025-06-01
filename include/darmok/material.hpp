@@ -28,10 +28,11 @@ namespace darmok
 
     struct DARMOK_EXPORT Material
     {
-        using TextureType = protobuf::MaterialTextureType;
-        using PrimitiveType = protobuf::MaterialPrimitiveType;
-        using OpacityType = protobuf::MaterialOpacityType;
+        using TextureType = protobuf::MaterialTexture::Type;
+        using PrimitiveType = protobuf::Material::PrimitiveType;
+        using OpacityType = protobuf::Material::OpacityType;
         using Definition = protobuf::Material;
+        using TextureDefinition = protobuf::MaterialTexture;
 
         std::shared_ptr<Program> program;
         ProgramDefines programDefines;
@@ -56,11 +57,11 @@ namespace darmok
         uint16_t shininess = 32;
 
 
-        std::unordered_map<TextureType::Enum, std::shared_ptr<Texture>> textures;
+        std::unordered_map<TextureType, std::shared_ptr<Texture>> textures;
 
-        OpacityType::Enum opacityType = OpacityType::Opaque;
+        OpacityType opacityType = protobuf::Material::Opaque;
         bool twoSided = false;
-        PrimitiveType::Enum primitiveType = PrimitiveType::Triangle;
+        PrimitiveType primitiveType = protobuf::Material::Triangle;
 
 
         bool valid() const noexcept;
@@ -82,7 +83,7 @@ namespace darmok
     private:
         using TextureType = Material::TextureType;
 
-        std::unordered_map<TextureType::Enum, TextureUniformKey> _textureUniformKeys;
+        std::unordered_map<TextureType, TextureUniformKey> _textureUniformKeys;
         UniformHandleContainer _uniformHandles;
 
         bgfx::UniformHandle _albedoLutSamplerUniform;
@@ -109,10 +110,10 @@ namespace darmok
     class DARMOK_EXPORT MaterialLoader final : public FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>
     {
     public:
-        MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
+        MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept;
     private:
         Result create(const std::shared_ptr<Definition>& def) override;
-        IProgramLoader& _progLoader;
-        ITextureLoader& _texLoader;
+        ILoader<Program>& _progLoader;
+        ILoader<Texture>& _texLoader;
     };
 }

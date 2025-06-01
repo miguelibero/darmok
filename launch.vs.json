@@ -23,14 +23,16 @@
       "project": "CMakeLists.txt",
       "projectTarget": "darmok-assetc.exe",
       "name": "darmok-assetc.exe",
-      "args": [
-        "--import-input",
-        "${workspaceRoot}/samples/ozz/assets",
-        "--bgfx-shaderc",
-        "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
-        "--bgfx-shader-include",
-        "vcpkg_installed/x64-windows/include/bgfx"
-      ]
+        "args": [
+            "--import-input",
+            "${workspaceRoot}/samples/assimp/assets",
+            "--import-output",
+            "samples/assimp/assets",
+            "--bgfx-shaderc",
+            "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
+            "--bgfx-shader-include",
+            "vcpkg_installed/x64-windows/include/bgfx"
+        ]
     }
   ]
 }

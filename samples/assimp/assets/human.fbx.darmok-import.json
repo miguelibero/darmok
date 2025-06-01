@@ -1,8 +1,8 @@
 {
-    "model": {
-        "outputPath": "human.dml",
-        "program": "forward_basic"
+    "scene": {
+        "outputPath": "human.pb",
+        "program": "ForwardBasic",
+        "shadowType": "Soft"
     },
     "copy": {}
 }
-

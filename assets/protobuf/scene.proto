@@ -24,7 +24,12 @@ message Transform {
 }
 
 message Camera {
-    Mat4 projection = 1;
+    oneof program {
+        float perspective_fovy = 1;
+        Vec2 ortho_center = 2;
+    }
+    float near = 3;
+    float far = 4;
 }
 
 message Scene {

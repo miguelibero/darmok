@@ -20,7 +20,7 @@ namespace darmok
 
 	Material::Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept
 		: program{ prog }
-		, textures{ {TextureType::BaseColor, tex} }
+		, textures{ { Material::TextureDefinition::BaseColor, tex} }
 	{
 	}
 
@@ -30,7 +30,7 @@ namespace darmok
 	{
 	}
 
-	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
+	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept
 		: FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>(defLoader)
 		, _progLoader{ progLoader }
 		, _texLoader{ texLoader }
@@ -126,13 +126,13 @@ namespace darmok
 
 	void MaterialAppComponent::init(App& app)
 	{
-		_textureUniformKeys = std::unordered_map<TextureType::Enum, TextureUniformKey>{
-			{ TextureType::BaseColor, {"s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO}},
-			{ TextureType::MetallicRoughness, { "s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS}},
-			{ TextureType::Normal, { "s_texNormal", RenderSamplers::MATERIAL_NORMAL}},
-			{ TextureType::Occlusion, {"s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION}},
-			{ TextureType::Emissive, { "s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE}},
-			{ TextureType::Specular, { "s_texSpecular", RenderSamplers::MATERIAL_SPECULAR}},
+		_textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
+			{ Material::TextureDefinition::BaseColor, {"s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO}},
+			{ Material::TextureDefinition::MetallicRoughness, { "s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS}},
+			{ Material::TextureDefinition::Normal, { "s_texNormal", RenderSamplers::MATERIAL_NORMAL}},
+			{ Material::TextureDefinition::Occlusion, {"s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION}},
+			{ Material::TextureDefinition::Emissive, { "s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE}},
+			{ Material::TextureDefinition::Specular, { "s_texSpecular", RenderSamplers::MATERIAL_SPECULAR}},
 		};
 		_albedoLutSamplerUniform = bgfx::createUniform("s_texAlbedoLUT", bgfx::UniformType::Sampler);
 		_baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
@@ -221,14 +221,14 @@ namespace darmok
 		{
 			state |= BGFX_STATE_CULL_CCW;
 		}
-		if (mat.primitiveType == Material::PrimitiveType::Line)
+		if (mat.primitiveType == Material::Definition::Line)
 		{
 			state &= ~BGFX_STATE_MSAA;
 			state |= BGFX_STATE_PT_LINES;
 			state |= BGFX_STATE_LINEAA;
 		}
 		auto opa = mat.opacityType;
-		if (opa == Material::OpacityType::Transparent || opa == Material::OpacityType::Mask)
+		if (opa == Material::Definition::Transparent || opa == Material::Definition::Mask)
 		{
 			state |= BGFX_STATE_BLEND_ALPHA;
 		}

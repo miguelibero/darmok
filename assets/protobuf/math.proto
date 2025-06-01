@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package darmok.protobuf;
 
-message EasingType {
-    enum Enum {
+message Easing {
+    enum Type {
         Linear = 0;
         Stepped = 1;
         QuadraticIn = 2;

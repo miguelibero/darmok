@@ -156,25 +156,25 @@ namespace darmok
 		return _vertexLayout;
 	}
 
-    expected<void, std::string> StandardProgramLoader::loadDefinition(Definition& def, Type::Enum type)
+    expected<void, std::string> StandardProgramLoader::loadDefinition(Definition& def, Type type)
     {
         switch (type)
         {
-        case Type::Gui:
+        case protobuf::StandardProgram::Gui:
             return protobuf::readStaticMem(def, gui_program);
-        case Type::Unlit:
+        case protobuf::StandardProgram::Unlit:
             return protobuf::readStaticMem(def, unlit_program);
-        case Type::Forward:
+        case protobuf::StandardProgram::Forward:
             return protobuf::readStaticMem(def, forward_program);
-        case Type::ForwardBasic:
+        case protobuf::StandardProgram::ForwardBasic:
             return protobuf::readStaticMem(def, forward_basic_program);
-        case Type::Tonemap:
+        case protobuf::StandardProgram::Tonemap:
             return protobuf::readStaticMem(def, tonemap_program);
         }
         return unexpected{"undefined standar program type"};
     }
 
-    std::shared_ptr<Program::Definition> StandardProgramLoader::loadDefinition(Type::Enum type)
+    std::shared_ptr<Program::Definition> StandardProgramLoader::loadDefinition(Type type)
     {
         auto itr = _defCache.find(type);
         if (itr != _defCache.end())
@@ -191,7 +191,7 @@ namespace darmok
         return def;
     }
 
-    std::shared_ptr<Program> StandardProgramLoader::load(Type::Enum type)
+    std::shared_ptr<Program> StandardProgramLoader::load(Type type)
     {
         auto itr = _cache.find(type);
         if (itr != _cache.end())
@@ -211,7 +211,7 @@ namespace darmok
         return prog;
     }
 
-    std::optional<StandardProgramLoader::Type::Enum> StandardProgramLoader::getType(const std::shared_ptr<Program>& prog) noexcept
+    std::optional<StandardProgramLoader::Type> StandardProgramLoader::getType(const std::shared_ptr<Program>& prog) noexcept
     {
         auto itr = std::find_if(_cache.begin(), _cache.end(),
             [prog](auto& elm) { return elm.second.lock() == prog; });
@@ -222,7 +222,7 @@ namespace darmok
         return std::nullopt;
     }
 
-    std::optional<StandardProgramLoader::Type::Enum> StandardProgramLoader::getType(const std::shared_ptr<Definition>& def) noexcept
+    std::optional<StandardProgramLoader::Type> StandardProgramLoader::getType(const std::shared_ptr<Definition>& def) noexcept
     {
         auto itr = std::find_if(_defCache.begin(), _defCache.end(),
             [def](auto& elm) { return elm.second.lock() == def; });
@@ -233,6 +233,6 @@ namespace darmok
         return std::nullopt;
     }
 
-    std::unordered_map<StandardProgramLoader::Type::Enum, std::weak_ptr<Program::Definition>> StandardProgramLoader::_defCache;
-    std::unordered_map<StandardProgramLoader::Type::Enum, std::weak_ptr<Program>> StandardProgramLoader::_cache;
+    std::unordered_map<StandardProgramLoader::Type, std::weak_ptr<Program::Definition>> StandardProgramLoader::_defCache;
+    std::unordered_map<StandardProgramLoader::Type, std::weak_ptr<Program>> StandardProgramLoader::_cache;
 }

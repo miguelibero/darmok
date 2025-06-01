@@ -5,10 +5,11 @@ package darmok.protobuf;
 import "varying.proto";
 import "program.proto";
 import "material.proto";
+import "light.proto";
 
 message AssimpSceneImportConfig {
     VertexLayout vertex_layout = 1;
-    optional StandardProgramType.Enum standard_program = 2;
+    optional StandardProgram.Type standard_program = 2;
     string program_path = 3;
     repeated string program_defines = 4;
     bool embed_textures = 5;
@@ -16,5 +17,6 @@ message AssimpSceneImportConfig {
     repeated string skip_meshes_regex = 7;
     repeated string skip_nodes_regex = 8;
     string root_mesh_regex = 9;
-    optional MaterialOpacityType.Enum opacity = 10;
+    optional Material.OpacityType opacity = 10;
+    optional DirectionalLight.ShadowType shadow_type = 11;
 }

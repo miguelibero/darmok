@@ -10,8 +10,8 @@ namespace darmok
 	{
 		Texture::Config config;
 		*config.mutable_size() = protobuf::convert(size);
-		config.set_format(Texture::Format::RGBA16F);
-		config.set_type(Texture::TextureType::Texture2D);
+		config.set_format(Texture::Definition::RGBA16F);
+		config.set_type(Texture::Definition::Texture2D);
 		return config;
 	}
 
@@ -19,8 +19,8 @@ namespace darmok
 	{
 		Texture::Config config;
 		*config.mutable_size() = protobuf::convert(size);
-		config.set_format(Texture::Format::D16F);
-		config.set_type(Texture::TextureType::Texture2D);
+		config.set_format(Texture::Definition::D16F);
+		config.set_type(Texture::Definition::Texture2D);
 		return config;
 	}
 

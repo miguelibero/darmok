@@ -226,15 +226,15 @@ namespace darmok
 			{
 				return unexpected<std::string>("invalid key: " + key);
 			}
-			attrib.set_bgfx(protobuf::BgfxAttrib::Enum(bgfx));
+			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
 			attrib.set_num(3);
-			attrib.set_bgfx_type(protobuf::BgfxAttribType::Float);
+			attrib.set_bgfx_type(protobuf::Bgfx::Float);
 
 			auto group = AttribUtils::getGroup(bgfx);
 			if (group == AttribGroup::Color)
 			{
 				attrib.set_num(4);
-				attrib.set_bgfx_type(protobuf::BgfxAttribType::Uint8);
+				attrib.set_bgfx_type(protobuf::Bgfx::Uint8);
 				attrib.set_normalize(true);
 			}
 			else if (group == AttribGroup::Texture)
@@ -255,7 +255,7 @@ namespace darmok
 			{
 				return unexpected<std::string>("invalid key: " + key);
 			}
-			attrib.set_bgfx(protobuf::BgfxAttrib::Enum(bgfx));
+			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
 			if (json.contains("type"))
 			{
 				auto typeStr = json["type"].get<std::string_view>();
@@ -264,7 +264,7 @@ namespace darmok
 				{
 					return unexpected<std::string>("invalid type: " + key);
 				}
-				attrib.set_bgfx_type(protobuf::BgfxAttribType::Enum(bgfxType));
+				attrib.set_bgfx_type(protobuf::Bgfx::AttribType(bgfxType));
 			}
 			if (json.contains("num"))
 			{
@@ -292,7 +292,7 @@ namespace darmok
 			{
 				attrib.set_name(AttribUtils::getBgfxName(bgfx));
 			}
-			attrib.set_bgfx(protobuf::BgfxAttrib::Enum(bgfx));
+			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
 			auto group = AttribUtils::getGroup(bgfx);
 			if (group == AttribGroup::Color)
 			{
@@ -465,9 +465,9 @@ namespace darmok
 				bool normalize, asInt;
 				bgfxLayout.decode(bgfxAttrib, num, bgfxAttribType, normalize, asInt);
 				auto& attrib = items[offset];
-				attrib.set_bgfx(protobuf::BgfxAttrib::Enum(bgfxAttrib));
+				attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfxAttrib));
 				attrib.set_num(num);
-				attrib.set_bgfx_type(protobuf::BgfxAttribType::Enum(bgfxAttribType));
+				attrib.set_bgfx_type(protobuf::Bgfx::AttribType(bgfxAttribType));
 				attrib.set_normalize(normalize);
 				attrib.set_as_int(asInt);
 			}

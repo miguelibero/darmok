@@ -34,13 +34,13 @@ namespace darmok
 
 	struct TextureAtlasMeshConfig final
 	{
-		using MeshType = protobuf::MeshType;
+		using MeshType = protobuf::Mesh::Type;
 
 		glm::vec3 scale = glm::vec3(1);
 		glm::vec3 offset = glm::vec3(0);
 		Color color = Colors::white();
 		glm::uvec2 amount = glm::uvec2(1);
-		MeshType::Enum type = MeshType::Static;
+		MeshType type = protobuf::Mesh::Static;
 	};
 
 	struct DARMOK_EXPORT TextureAtlasRmluiConfig final

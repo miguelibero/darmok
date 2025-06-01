@@ -4,8 +4,8 @@ package darmok.protobuf;
 
 import "math.proto";
 
-message BgfxAttrib {
-    enum Enum {
+message Bgfx {
+    enum Attrib {
         Position = 0;
         Normal = 1;
         Tangent = 2;
@@ -25,10 +25,8 @@ message BgfxAttrib {
         TexCoord6 = 16;
         TexCoord7 = 17;
     }
-}
 
-message BgfxAttribType {
-    enum Enum {
+    enum AttribType {
         Uint8 = 0;
         Uint10 = 1;
         Int16 = 2;
@@ -38,15 +36,15 @@ message BgfxAttribType {
 }
 
 message VertexAttribute {
-    BgfxAttrib.Enum bgfx = 1;
-    BgfxAttribType.Enum bgfx_type = 2;
+    Bgfx.Attrib bgfx = 1;
+    Bgfx.AttribType bgfx_type = 2;
     uint32 num = 3;
     bool normalize = 4;
     bool as_int = 5;
 }
 
 message FragmentAttribute {
-    BgfxAttrib.Enum bgfx = 1;
+    Bgfx.Attrib bgfx = 1;
     uint32 num = 2;
     string name = 3;
     Vec4 default_value = 4;

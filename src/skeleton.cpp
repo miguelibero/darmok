@@ -60,7 +60,7 @@ namespace darmok
                 layout = MeshData::getDefaultVertexLayout();
             }
             const Line line{ glm::vec3{0}, glm::vec3{1, 0, 0} };
-            _boneMesh = MeshData{ line, MeshData::LineMeshType::Arrow }.createMesh(layout);
+            _boneMesh = MeshData{ line, Mesh::Definition::Arrow }.createMesh(layout);
         }
     }
 
@@ -250,7 +250,7 @@ namespace darmok
     {
         std::vector<std::pair<glm::vec2, glm::vec2>> parts;
         parts.reserve(state.animations_size());
-        if (state.blend() == protobuf::SkeletalAnimatorBlendType::Directional)
+        if (state.blend() == SkeletalAnimator::StateDefinition::Directional)
         {
             auto lenAnim = glm::length(animPos);
             auto len = glm::length(pos);
@@ -416,7 +416,7 @@ namespace darmok
             if (itr != json.end())
             {
                 auto val = itr->get<std::string>();
-                auto easing = StringUtils::readEnum<protobuf::EasingType::Enum>(val);
+                auto easing = StringUtils::readEnum<protobuf::Easing::Type>(val);
                 if (!easing)
                 {
                     return unexpected{ "invalid easing type" };
@@ -426,10 +426,10 @@ namespace darmok
             return {};
         }
 
-        std::optional<BlendType::Enum> getBlendType(const std::string& name) noexcept
+        std::optional<SkeletalAnimator::StateDefinition::BlendType> getBlendType(const std::string& name) noexcept
         {
-            BlendType::Enum val;
-            if (!BlendType::Enum_Parse(name, &val))
+            SkeletalAnimator::StateDefinition::BlendType val;
+            if (!SkeletalAnimator::StateDefinition::BlendType_Parse(name, &val))
             {
                 return std::nullopt;
             }
@@ -619,7 +619,7 @@ namespace darmok
 
     expected<void, std::string> Skinnable::load(const Definition& def, IComponentLoadContext& ctxt)
     {
-        auto result = ctxt.getAssets().getArmatureLoader()(def.armature_path());
+        auto result = ctxt.getAssets().load<Armature>(def.armature_path());
         if (!result)
         {
             return unexpected{ result.error() };

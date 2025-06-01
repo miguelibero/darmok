@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok/export.h>
 #include <darmok/protobuf/asset.pb.h>
 #include <darmok/protobuf.hpp>
 #include <darmok/program.hpp>
@@ -7,11 +8,12 @@
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/skeleton.hpp>
+#include <darmok/optional_ref.hpp>
 
 namespace darmok
 {	
 	template<class Interface>
-	class AssetPackLoader final : public Interface
+	class DARMOK_EXPORT AssetPackLoader final : public Interface
 	{
 	private:
 		const protobuf::AssetPack& _assets;
@@ -46,25 +48,40 @@ namespace darmok
 		}
 	};
 
-	class AssetPack final
+	struct DARMOK_EXPORT AssetPackFallbacks final
+	{
+		OptionalRef<IProgramLoader> programLoader;
+		OptionalRef<ITextureLoader> textureLoader;
+		OptionalRef<IMeshLoader> meshLoader;
+		OptionalRef<IMaterialLoader> materialLoader;
+		OptionalRef<IArmatureLoader> armatureLoader;
+	};
+
+	class DARMOK_EXPORT AssetPack final
 	{
 	public:
 		using Definition = protobuf::AssetPack;
-		AssetPack(const Definition& def);
+		AssetPack(const Definition& def, const AssetPackFallbacks& fallbacks = {});
 
-		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
-		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
-		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept;
-		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept;
-		[[nodiscard]] IArmatureLoader& getArmatureLoader() noexcept;
+		template<class T>
+		[[nodiscard]] expected<std::shared_ptr<T>, std::string> load(const std::filesystem::path& path) noexcept;
 
 	private:
 		const Definition& _def;
+		AssetPackFallbacks _fallbacks;
+
 		AssetPackLoader<IProgramDefinitionLoader> _progDefLoader;
 		AssetPackLoader<ITextureDefinitionLoader> _texDefLoader;
 		AssetPackLoader<IMeshDefinitionLoader> _meshDefLoader;
 		AssetPackLoader<IMaterialDefinitionLoader> _matDefLoader;
 		AssetPackLoader<IArmatureDefinitionLoader> _armDefLoader;
+
+		MultiLoader<ILoader<Program>> _multiProgramLoader;
+		MultiLoader<ILoader<Texture>> _multiTextureLoader;
+		MultiLoader<ILoader<IMesh>> _multiMeshLoader;
+		MultiLoader<ILoader<Material>> _multiMaterialLoader;
+		MultiLoader<ILoader<Armature>> _multiArmatureLoader;
+
 		ProgramLoader _programLoader;
 		TextureLoader _textureLoader;
 		MeshLoader _meshLoader;

@@ -149,7 +149,7 @@ namespace darmok
         auto atlasElm = TextureAtlasUtils::createElement(TextureAtlasBounds{ rect.size, rect.origin });
 
         TextureAtlasMeshConfig config;
-        config.type = MeshData::MeshType::Transient;
+        config.type = Mesh::Definition::Transient;
         auto mesh = TextureAtlasUtils::createSprite(atlasElm, _program->getVertexLayout(), texture->getSize(), config);
 
         auto& encoder = _encoder.value();
@@ -228,7 +228,7 @@ namespace darmok
     {
         auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
         Texture::Config config;
-        config.set_format(Texture::Format::RGBA8);
+        config.set_format(Texture::Definition::RGBA8);
         *config.mutable_size() = protobuf::convert(glm::uvec2(dimensions.x, dimensions.y));
 
         DataView data(source.data(), size);
@@ -463,7 +463,7 @@ namespace darmok
         encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
         auto meshData = MeshData(Rectangle(_canvas.getCurrentSize()));
-        meshData.type = MeshData::MeshType::Transient;
+        meshData.type = Mesh::Definition::Transient;
         auto mesh = meshData.createMesh(_program->getVertexLayout());
 
         static const uint64_t state = 0

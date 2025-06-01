@@ -253,7 +253,7 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->getImpl().init(_scene, app);
+            itr->init(_scene, app);
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
@@ -278,7 +278,7 @@ namespace darmok
         if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.getImpl().init(_scene, _app.value());
+            cam.init(_scene, _app.value());
         }
     }
 
@@ -287,7 +287,7 @@ namespace darmok
         if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.getImpl().shutdown();
+            cam.shutdown();
         }
     }
 
@@ -296,7 +296,7 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->getImpl().render();
+            itr->render();
         }
         _renderChain.render();
     }
@@ -336,7 +336,7 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            viewId = itr->getImpl().renderReset(viewId);
+            viewId = itr->renderReset(viewId);
         }
 
         viewId = _renderChain.renderReset(viewId);
@@ -416,7 +416,7 @@ namespace darmok
 
             for (auto entity : _scene.getUpdateEntities<Camera>())
             {
-                _scene.getComponent<Camera>(entity)->getImpl().update(deltaTime);
+                _scene.getComponent<Camera>(entity)->update(deltaTime);
             }
 
             for (auto& comp : Components(_components))

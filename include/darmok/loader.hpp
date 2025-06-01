@@ -33,8 +33,17 @@ namespace darmok
     using ILoader = IBasicLoader<Type, std::filesystem::path>;
 
     template<typename Interface>
-    class DARMOK_EXPORT ContainerLoader final : public Interface
+    class DARMOK_EXPORT MultiLoader final : public Interface
     {
+    private:
+        std::vector<std::string> splitExtensions(const std::string& exts) const
+        {
+            auto vec = StringUtils::split(exts, ";");
+            std::erase_if(vec, [](const std::string& ext) {
+                return ext.empty();
+            });
+            return vec;
+		}
     public:
         using Resource = Interface::Resource;
         using Result = Interface::Result;
@@ -47,12 +56,12 @@ namespace darmok
         };
         using Elements = std::vector<Element>;
 
-        ContainerLoader(Interface& loader) noexcept
+        MultiLoader(Interface& loader) noexcept
         {
             _loaders.emplace_back(loader);
         }
 
-        ContainerLoader(std::initializer_list<std::reference_wrapper<Interface>> loaders) noexcept
+        MultiLoader(std::initializer_list<std::reference_wrapper<Interface>> loaders) noexcept
         {
             _loaders.reserve(loaders.size());
             for (auto& loader : loaders)
@@ -61,24 +70,25 @@ namespace darmok
             }
         }
 
-        ContainerLoader(const Elements& elements) noexcept
-            : _loaders(elements)
+        MultiLoader(const Elements& elements) noexcept
+            : _loaders{ elements }
         {
         }
 
         void addFront(Interface& loader, const std::string& exts = "") noexcept
         {
-            _loaders.emplace(_loaders.begin(), loader, StringUtils::split(exts, ";"));
+            _loaders.emplace(_loaders.begin(), loader, splitExtensions(exts));
         }
 
         void addBack(Interface& loader, const std::string& exts = "") noexcept
         {
-            _loaders.emplace_back(loader, StringUtils::split(exts, ";"));
+            _loaders.emplace_back(loader, splitExtensions(exts));
         }
 
-        Result operator()(std::filesystem::path path) override
+        Result operator()(std::filesystem::path path) noexcept override
         {
             auto ext = path.extension();
+			std::optional<std::string> error;  
             for (auto& [loader, exts] : _loaders)
             {
                 if (!exts.empty())
@@ -93,8 +103,16 @@ namespace darmok
                 {
                     return res;
                 }
+                else
+                {
+					error = res.error();
+                }
             }
-            return unexpected<Error>{ "all loaders failed" };
+            if (error)
+            {
+				return unexpected{ *error };
+            }
+            return unexpected<Error>{ "no loaders found" };
         }
 
     private:
@@ -217,7 +235,7 @@ namespace darmok
         using DefinitionResult = DefinitionLoader::Result;
 
         FromDefinitionLoader(DefinitionLoader& defLoader) noexcept
-            : _defLoader(defLoader)
+            : _defLoader{ defLoader }
         {
         }
 
@@ -413,5 +431,4 @@ namespace darmok
         std::unordered_map<Argument, std::shared_ptr<Definition>> _defCache;
         std::unordered_map<std::shared_ptr<Definition>, std::weak_ptr<Resource>> _resCache;
     };
-
 }

@@ -1,17 +1,19 @@
 #include <darmok/scene_serialize.hpp>
 #include <darmok/scene.hpp>
+#include "scene_serialize.hpp"
+
 #include <darmok/camera.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/skeleton.hpp>
 #include <darmok/render_scene.hpp>
-#include "scene_serialize.hpp"
+#include <darmok/skeleton.hpp>
+#include <darmok/light.hpp>
 
 namespace darmok
 {
-    SceneArchive::SceneArchive(const protobuf::Scene& sceneDef, Scene& scene)
+    SceneArchive::SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackFallbacks& assetPackFallbacks)
         : _sceneDef{ sceneDef }
         , _scene{ scene }
-		, _assetPack{ sceneDef.assets() }
+		, _assetPack{ sceneDef.assets(), assetPackFallbacks }
         , _count{ 0 }
         , _type{ 0 }
 		, _entityOffset{ 0 }
@@ -71,7 +73,7 @@ namespace darmok
     expected<Entity, std::string> SceneArchive::finishLoad()
     {
         expected<void, std::string> result;
-        for (auto& func : _loadFunctions)
+        for (auto& func : _compLoadFunctions)
         {
             auto funcResult = func();
             if (!funcResult)
@@ -79,7 +81,7 @@ namespace darmok
                 result = std::move(funcResult);
 			}
         }
-        _loadFunctions.clear();
+        _compLoadFunctions.clear();
         if (!result)
         {
 			return unexpected{ result.error() };
@@ -99,9 +101,24 @@ namespace darmok
         return unexpected{ "could not find root entity" };
     }
 
+    SceneImporterImpl::SceneImporterImpl(const AssetPackFallbacks& assetPackFallbacks)
+        : _assetPackFallbacks{ assetPackFallbacks }
+    {
+	}
+
     SceneImporterImpl::Result SceneImporterImpl::operator()(Scene& scene, const Definition& def)
     {
-		SceneArchive archive{ def, scene };
+		SceneArchive archive{ def, scene, _assetPackFallbacks };
+
+		archive.registerComponent<Transform>();
+        archive.registerComponent<Renderable>();
+        archive.registerComponent<Camera>();
+        archive.registerComponent<Skinnable>();
+        archive.registerComponent<PointLight>();
+        archive.registerComponent<DirectionalLight>();
+        archive.registerComponent<SpotLight>();
+        archive.registerComponent<AmbientLight>();
+
 		auto loader = archive.createLoader();
 
         loader.get<entt::entity>(archive);
@@ -114,8 +131,8 @@ namespace darmok
         return archive.finishLoad();
     }
 
-    SceneImporter::SceneImporter()
-        : _impl(std::make_unique<SceneImporterImpl>())
+    SceneImporter::SceneImporter(const AssetPackFallbacks& assetPackFallbacks)
+        : _impl(std::make_unique<SceneImporterImpl>(assetPackFallbacks))
     {
     }
 
@@ -129,8 +146,9 @@ namespace darmok
 		return (*_impl)(scene, def);
     }
 
-    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader)
-		: _defLoader(defLoader)
+    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackFallbacks& assetPackFallbacks)
+        : _defLoader{ defLoader }
+        , _importer{ assetPackFallbacks }
 	{
 	}
 
@@ -141,7 +159,6 @@ namespace darmok
         {
 			return unexpected<Error>{ defResult.error() };
         }
-		SceneImporter importer;
-		return importer(scene, **defResult);
+		return _importer(scene, **defResult);
     }
 }

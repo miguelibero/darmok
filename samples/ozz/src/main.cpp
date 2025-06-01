@@ -111,10 +111,11 @@ namespace
 			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf").value());
 			cam.addComponent<TextRenderer>();
 #endif
-			auto baseTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-BaseColor.png").value();
-			auto metalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Metallic.png").value();
-			auto normalTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-Normal.png").value();
-			auto ambientTex = _app.getAssets().getTextureLoader()("BasicMotions_DummyType01-AmbientOcclusion.png").value();
+			auto& texLoader = _app.getAssets().getTextureLoader();
+			auto baseTex = texLoader("BasicMotions_DummyType01-BaseColor.png").value();
+			auto metalTex = texLoader("BasicMotions_DummyType01-Metallic.png").value();
+			auto normalTex = texLoader("BasicMotions_DummyType01-Normal.png").value();
+			auto ambientTex = texLoader("BasicMotions_DummyType01-AmbientOcclusion.png").value();
 
 			auto mat = std::make_shared<Material>(prog, Colors::fromNumber(0xFAB137FF));
 			mat->programDefines = { "SKINNING_ENABLED" };

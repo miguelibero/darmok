@@ -44,26 +44,26 @@ namespace darmok
 		return create(def.type(), layout, vertices, indices, config);
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
+	std::unique_ptr<IMesh> IMesh::create(Type type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
 	{
 		switch (type)
 		{
-		case MeshType::Dynamic:
+		case Definition::Dynamic:
 			return std::make_unique<DynamicMesh>(layout, vertices, config);
-		case MeshType::Transient:
+		case Definition::Transient:
 			return std::make_unique<TransientMesh>(layout, vertices, config.index32);
 		default:
 			return std::make_unique<Mesh>(layout, vertices, config);
 		}
 	}
 
-	std::unique_ptr<IMesh> IMesh::create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
+	std::unique_ptr<IMesh> IMesh::create(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
 	{
 		switch (type)
 		{
-		case MeshType::Dynamic:
+		case Definition::Dynamic:
 			return std::make_unique<DynamicMesh>(layout, vertices, indices, config);
-		case MeshType::Transient:
+		case Definition::Transient:
 			return std::make_unique<TransientMesh>(layout, vertices, indices, config.index32);
 		default:
 			return std::make_unique<Mesh>(layout, vertices, indices, config);
@@ -421,8 +421,8 @@ namespace darmok
 		return IMesh::create(*def);
 	}
 
-	MeshData::MeshData(MeshType::Enum type) noexcept
-		: type(type)
+	MeshData::MeshData(MeshType type) noexcept
+		: type{ type }
 	{
 	}
 
@@ -508,7 +508,7 @@ namespace darmok
 		20, 21, 22, 22, 23, 20,
 	};
 
-	MeshData::MeshData(const Cube& cube, RectangleMeshType::Enum type) noexcept
+	MeshData::MeshData(const Cube& cube, RectangleType type) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
 			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
@@ -540,7 +540,7 @@ namespace darmok
 		vertices = basicVertices;
 		indices = _cuboidTriangleIndices;
 
-		if (type == RectangleMeshType::Outline)
+		if (type == Mesh::Definition::OutlineRectangle)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -572,11 +572,11 @@ namespace darmok
 		indices = basicIndices;
 	}
 
-	MeshData::MeshData(const Rectangle& rect, RectangleMeshType::Enum type) noexcept
+	MeshData::MeshData(const Rectangle& rect, RectangleType type) noexcept
 	{
 		setupBasicRectangle();
 
-		if (type == RectangleMeshType::Outline)
+		if (type == Mesh::Definition::OutlineRectangle)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -595,11 +595,11 @@ namespace darmok
 		*this *= trans;
 	}
 
-	MeshData::MeshData(const Plane& plane, RectangleMeshType::Enum type, float scale) noexcept
+	MeshData::MeshData(const Plane& plane, RectangleType type, float scale) noexcept
 	{
 		setupBasicRectangle();
 
-		if (type == RectangleMeshType::Outline)
+		if (type == Mesh::Definition::OutlineRectangle)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -609,7 +609,7 @@ namespace darmok
 		*this *= plane.getTransform();
 	}
 
-	MeshData::MeshData(const Frustum& frust, RectangleMeshType::Enum type) noexcept
+	MeshData::MeshData(const Frustum& frust, RectangleType type) noexcept
 	{
 		vertices = {
 			{ frust.getCorner(Frustum::CornerType::FarTopRight),		{ 0, 0 } },
@@ -640,7 +640,7 @@ namespace darmok
 
 		indices = _cuboidTriangleIndices;
 
-		if (type == RectangleMeshType::Outline)
+		if (type == Mesh::Definition::OutlineRectangle)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -877,13 +877,13 @@ namespace darmok
     }
 
 	 MeshData::MeshData(const Ray& ray) noexcept
-		 : MeshData(ray.toLine(), LineMeshType::Arrow)
+		 : MeshData(ray.toLine(), Mesh::Definition::Arrow)
 	 {
 	 }
 
-	MeshData::MeshData(const Line& line, LineMeshType::Enum type) noexcept
+	MeshData::MeshData(const Line& line, LineType type) noexcept
 	{
-		if (type == LineMeshType::Line)
+		if (type == Mesh::Definition::Line)
 		{
 			vertices.emplace_back(line.points[0], glm::vec2{ 0, 0 });
 			vertices.emplace_back(line.points[1], glm::vec2{ 1, 1 });

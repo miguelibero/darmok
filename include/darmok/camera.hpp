@@ -7,6 +7,8 @@
 #include <darmok/math.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/expected.hpp>
+#include <darmok/render_chain.hpp>
+#include <darmok/protobuf/scene.pb.h>
 
 #include <bgfx/bgfx.h>
 
@@ -18,18 +20,10 @@
 
 namespace darmok
 {
-    namespace protobuf
-    {
-        class Camera;
-	}
-
     class Scene;
-    class CameraImpl;
     class Transform;
     class ICameraComponent;
-    class RenderChain;
     struct Ray;
-    struct Viewport;
     struct EntityFilter;
     class EntityView;
     struct Plane;
@@ -55,17 +49,20 @@ namespace darmok
 
     using CameraProjectionData = std::variant<CameraPerspectiveData, CameraOrthoData>;
 
-    class DARMOK_EXPORT Camera final
+    class DARMOK_EXPORT Camera final : IRenderChainDelegate
     {
     public:
         Camera(const glm::mat4& projMatrix = {}) noexcept;
-        ~Camera() noexcept;
-
-        CameraImpl& getImpl() noexcept;
-        const CameraImpl& getImpl() const noexcept;
+        Camera(Camera&& other) noexcept;
 
         Scene& getScene();
         const Scene& getScene() const;
+
+        void init(Scene& scene, App& app);
+        bgfx::ViewId renderReset(bgfx::ViewId viewId);
+        void render();
+		void update(float deltaTime);
+		void shutdown();
 
         entt::id_type getId() const noexcept;
         std::string getName() const noexcept;
@@ -190,6 +187,38 @@ namespace darmok
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
     private:
-        std::unique_ptr<CameraImpl> _impl;
+        glm::mat4 _view;
+        glm::mat4 _proj;
+        glm::mat4 _projInv;
+        CameraProjectionData _projData;
+        std::optional<Viewport> _baseViewport;
+        glm::vec4 _viewport;
+
+		RenderChain _renderChain;
+
+        bool _enabled;
+        std::optional<bool> _updateEnabled;
+        bool _transformChanged;
+
+        EntityFilter _cullingFilter;
+
+        using Components = std::vector<std::shared_ptr<ICameraComponent>>;
+        Components _components;
+
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
+
+        bool updateProjection() noexcept;
+
+        Components::iterator findComponent(entt::id_type type) noexcept;
+        Components::const_iterator findComponent(entt::id_type type) const noexcept;
+
+        Viewport getRenderChainViewport() const noexcept override;
+        OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
+        void onRenderChainChanged() noexcept override;
+
+        void setProjectionMatrix(const glm::mat4& matrix) noexcept;
+        glm::mat4 getScreenViewMatrix() const noexcept;
+        void onTransformChanged();
     };
 }

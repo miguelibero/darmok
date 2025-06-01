@@ -45,16 +45,10 @@ namespace
 		void init() override
 		{
 			auto scene = _app.addComponent<SceneAppComponent>().getScene();
-			/*
-			_app.getAssets().getAssimpModelLoader().setConfig({
-				.standardProgram = StandardProgramType::ForwardBasic
-			});
-			*/
-			_app.getAssets().getSceneLoader()(*scene, "human.dml");
+			_app.getAssets().getSceneLoader()(*scene, "human.pb");
 
 			auto ambientLightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(ambientLightEntity, 0.5);
-
 			
 			for (auto entity : scene->getComponents<Transform>())
 			{

@@ -69,6 +69,12 @@ namespace darmok
     public:
         RenderChain(IRenderChainDelegate& dlg) noexcept;
         RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept;
+
+		RenderChain(const RenderChain& other) = delete;
+		RenderChain& operator=(const RenderChain& other) = delete;
+        RenderChain(RenderChain&& other) = delete;
+		RenderChain& operator=(RenderChain&& other) = delete;
+
         void init();
         void beforeRenderReset() noexcept;
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;

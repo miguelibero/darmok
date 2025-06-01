@@ -4,8 +4,8 @@ package darmok.protobuf;
 
 import "varying.proto";
 
-message StandardProgramType {
-    enum Enum {
+message StandardProgram {
+    enum Type {
         Unlit = 0;
         ForwardBasic = 1;
         Forward = 2;

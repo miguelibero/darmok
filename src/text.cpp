@@ -267,7 +267,7 @@ namespace darmok
 	{
 		if (_prog == nullptr)
 		{
-			_prog = StandardProgramLoader::load(StandardProgramLoader::Type::Gui);
+			_prog = StandardProgramLoader::load(Program::Standard::Gui);
 		}
 	}
 

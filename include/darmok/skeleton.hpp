@@ -152,8 +152,7 @@ namespace darmok
         using AnimationDefinition = protobuf::SkeletalAnimatorAnimation;
         using StateDefinition = protobuf::SkeletalAnimatorState;
         using TransitionDefinition = protobuf::SkeletalAnimatorTransition;
-        using BlendType = protobuf::SkeletalAnimatorBlendType;
-        using BlendType = protobuf::SkeletalAnimatorBlendType;
+        using BlendType = protobuf::SkeletalAnimatorState::BlendType;
 		using Definition = protobuf::SkeletalAnimator;
         using AnimationMap = SkeletalAnimationMap;
         [[nodiscard]] float calcTween(const TweenDefinition& tween, float position);
@@ -169,6 +168,7 @@ namespace darmok
     {
     public:
         using Definition = protobuf::SkeletalAnimator;
+        using StateDefinition = protobuf::SkeletalAnimatorState;
         using AnimationMap = SkeletalAnimationMap;
         using PlaybackState = SkeletalAnimatorPlaybackState;
         SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept;

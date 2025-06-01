@@ -24,8 +24,8 @@ namespace darmok
 		}
 		samplerFlagTable["BORDER_COLOR"] = [](uint32_t v) { return BGFX_SAMPLER_BORDER_COLOR(v); };
 
-		LuaUtils::newEnum<Texture::TextureType::Enum>(lua, "TextureType");
-		LuaUtils::newEnum<Texture::Format::Enum>(lua, "TextureFormat");
+		LuaUtils::newEnum<Texture::Type>(lua, "TextureType");
+		LuaUtils::newEnum<Texture::Format>(lua, "TextureFormat");
 		LuaUtils::newProtobuf<Texture::Config>(lua, "TextureConfig");
 
 		lua.new_usertype<Texture>("Texture",
@@ -39,13 +39,13 @@ namespace darmok
 				{
 					return std::make_shared<Texture>(createSizeConfig(size), flags);
 				},
-				[](const VarLuaTable<glm::uvec2>& size, Texture::Format::Enum format)
+				[](const VarLuaTable<glm::uvec2>& size, Texture::Format format)
 				{
 					auto config = createSizeConfig(size);
 					config.set_format(format);
 					return std::make_shared<Texture>(config);
 				},
-				[](const VarLuaTable<glm::uvec2>& size, Texture::Format::Enum format, uint64_t flags)
+				[](const VarLuaTable<glm::uvec2>& size, Texture::Format format, uint64_t flags)
 				{
 					auto config = createSizeConfig(size);
 					config.set_format(format);

@@ -6,6 +6,7 @@
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
 #include <darmok/shadow_fwd.hpp>
+#include <darmok/protobuf/light.pb.h>
 
 #include <unordered_map>
 
@@ -28,6 +29,10 @@ namespace darmok
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] ShadowType getShadowType() const noexcept;
 
+        // serialization
+        using Definition = protobuf::PointLight;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+
     private:
         float _intensity;
         float _range;
@@ -47,6 +52,10 @@ namespace darmok
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
         [[nodiscard]] ShadowType getShadowType() const noexcept;
+
+        // serialization
+        using Definition = protobuf::DirectionalLight;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
     private:
         float _intensity;
@@ -73,6 +82,10 @@ namespace darmok
         [[nodiscard]] float getInnerConeAngle() const noexcept;
         [[nodiscard]] ShadowType getShadowType() const noexcept;
 
+        // serialization
+        using Definition = protobuf::SpotLight;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+
     private:
         float _intensity;
         float _range;
@@ -92,6 +105,10 @@ namespace darmok
 
         [[nodiscard]] const Color3& getColor() const noexcept;
         [[nodiscard]] float getIntensity() const noexcept;
+
+        // serialization
+        using Definition = protobuf::AmbientLight;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
     private:
         float _intensity;

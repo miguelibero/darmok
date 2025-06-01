@@ -17,7 +17,7 @@ namespace darmok
 	std::shared_ptr<Material> LuaMaterial::create2(const std::shared_ptr<Texture>& tex) noexcept
 	{
 		auto mat = std::make_shared<Material>();
-		mat->textures[MaterialTextureType::BaseColor] = tex;
+		mat->textures[Material::TextureDefinition::BaseColor] = tex;
 		return mat;
 	}
 
@@ -25,7 +25,7 @@ namespace darmok
 	{
 		auto mat = std::make_shared<Material>();
 		mat->program = prog;
-		mat->textures[MaterialTextureType::BaseColor] = tex;
+		mat->textures[Material::TextureDefinition::BaseColor] = tex;
 		return mat;
 	}
 
@@ -39,10 +39,10 @@ namespace darmok
 
 	void LuaMaterial::setTexture1(Material& mat, const std::shared_ptr<Texture>& tex) noexcept
 	{
-		setTexture2(mat, MaterialTextureType::BaseColor, tex);
+		setTexture2(mat, Material::TextureDefinition::BaseColor, tex);
 	}
 
-	void LuaMaterial::setTexture2(Material& mat, MaterialTextureType::Enum type, const std::shared_ptr<Texture>& tex) noexcept
+	void LuaMaterial::setTexture2(Material& mat, MaterialTextureType type, const std::shared_ptr<Texture>& tex) noexcept
 	{
 		mat.textures[type] = tex;
 	}
@@ -54,10 +54,10 @@ namespace darmok
 
 	std::shared_ptr<Texture> LuaMaterial::getTexture1(const Material& mat) noexcept
 	{
-		return getTexture2(mat, MaterialTextureType::BaseColor);
+		return getTexture2(mat, Material::TextureDefinition::BaseColor);
 	}
 
-	std::shared_ptr<Texture> LuaMaterial::getTexture2(const Material& mat, MaterialTextureType::Enum type) noexcept
+	std::shared_ptr<Texture> LuaMaterial::getTexture2(const Material& mat, MaterialTextureType type) noexcept
 	{
 		auto itr = mat.textures.find(type);
 		if (itr == mat.textures.end())
@@ -100,9 +100,9 @@ namespace darmok
 
 	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newEnum<MaterialPrimitiveType::Enum>(lua, "MaterialPrimitiveType");
-		LuaUtils::newEnum<MaterialTextureType::Enum>(lua, "MaterialTextureType");
-		LuaUtils::newEnum<MaterialOpacityType::Enum>(lua, "MaterialOpacityType");
+		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
+		LuaUtils::newEnum<MaterialTextureType>(lua, "MaterialTextureType");
+		LuaUtils::newEnum<MaterialOpacityType>(lua, "MaterialOpacityType");
 
 		lua.new_usertype<Material>("Material",
 			sol::factories(

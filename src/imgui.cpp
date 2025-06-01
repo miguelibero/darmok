@@ -62,8 +62,8 @@ namespace darmok
 		iio.Fonts->GetTexDataAsRGBA32(&data, &width, &height, &bytesPerPixel);
 
 		Texture::Config config;
-		config.set_format(Texture::Format::BGRA8);
-		config.set_type(Texture::TextureType::Texture2D);
+		config.set_format(Texture::Definition::BGRA8);
+		config.set_type(Texture::Definition::Texture2D);
 		*config.mutable_size() = protobuf::convert(glm::uvec2{ width, height });
 		DataView dataView{ data, static_cast<size_t>(width * height * bytesPerPixel) };
 		_fontsTexture = std::make_unique<Texture>(dataView, config);

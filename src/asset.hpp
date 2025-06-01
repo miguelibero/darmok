@@ -71,7 +71,7 @@ namespace darmok
 		ProgramLoader _progLoader;
 		DataTextureDefinitionLoader _dataTexDefLoader;
 		ImageTextureDefinitionLoader _imgTexDefLoader;
-		ContainerLoader<ITextureDefinitionLoader> _texDefLoader;
+		MultiLoader<ITextureDefinitionLoader> _texDefLoader;
 		TextureLoader _texLoader;
 		DataMaterialDefinitionLoader _dataMatDefLoader;
 		MaterialLoader _materialLoader;
@@ -79,18 +79,18 @@ namespace darmok
 		MeshLoader _meshLoader;
 		DataTextureAtlasDefinitionLoader _dataTexAtlasDefLoader;
 		TexturePackerDefinitionLoader _texPackerDefLoader;
-		ContainerLoader<ITextureAtlasDefinitionLoader> _texAtlasDefLoader;
+		MultiLoader<ITextureAtlasDefinitionLoader> _texAtlasDefLoader;
 		TextureAtlasLoader _texAtlasLoader;
 		TextureAtlasFontLoader _texAtlasFontLoader;
-		ContainerLoader<IFontLoader> _fontLoader;
-		ContainerLoader<ISceneDefinitionLoader> _sceneDefLoader;
+		MultiLoader<IFontLoader> _fontLoader;
+		MultiLoader<ISceneDefinitionLoader> _sceneDefLoader;
 		AssimpSceneDefinitionLoader _assimpSceneDefLoader;
 		DataSceneDefinitionLoader _dataSceneDefLoader;
 		SceneLoader _sceneLoader;
 
 #ifdef DARMOK_OZZ
-		ContainerLoader<ISkeletonLoader> _skelLoader;
-		ContainerLoader<ISkeletalAnimationLoader> _skelAnimLoader;
+		MultiLoader<ISkeletonLoader> _skelLoader;
+		MultiLoader<ISkeletalAnimationLoader> _skelAnimLoader;
 		DataSkeletalAnimatorDefinitionLoader _dataSkelAnimDefLoader;
 
 		OzzSkeletonLoader _ozzSkeletonLoader;

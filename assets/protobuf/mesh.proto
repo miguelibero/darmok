@@ -5,31 +5,9 @@ package darmok.protobuf;
 import "varying.proto";
 import "shape.proto";
 
-message MeshType {
-    enum Enum {
-        Static = 0;
-        Dynamic = 1;
-        Transient = 2;
-    }
-}
-
-message RectangleMeshType {
-    enum Enum {
-        Full = 0;
-        Outline = 1;
-    }
-}
-
-message LineMeshType {
-    enum Enum {
-        Line = 0;
-        Arrow = 1;
-    }
-}
-
 message CubeMeshSource {
     Cube shape = 1;
-    RectangleMeshType.Enum type = 2;
+    Mesh.RectangleType type = 2;
 }
 
 message SphereMeshSource {
@@ -44,7 +22,7 @@ message CapsuleMeshSource {
 
 message RectangleMeshSource {
     Rectangle shape = 1;
-    RectangleMeshType.Enum type = 2;
+    Mesh.RectangleType type = 2;
 }
 
 message MeshSource {
@@ -57,8 +35,25 @@ message MeshSource {
 }
 
 message Mesh {
+
+    enum Type {
+        Static = 0;
+        Dynamic = 1;
+        Transient = 2;
+    }
+
+    enum RectangleType {
+        FullRectangle = 0;
+        OutlineRectangle = 1;
+    }
+
+    enum LineType {
+        Line = 0;
+        Arrow = 1;
+    }
+
     string name = 1;
-    MeshType.Enum type = 2;
+    Type type = 2;
     bool index32 = 3;
     VertexLayout layout = 4;
     bytes vertices = 5;

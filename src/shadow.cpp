@@ -22,8 +22,8 @@ namespace darmok
 {
     ShadowRenderPass::ShadowRenderPass()
         : _fb{ bgfx::kInvalidHandle }
-        , _lightEntity(entt::null)
-        , _part(-1)
+        , _lightEntity{ entt::null }
+        , _part{ 0 }
     {
     }
 
@@ -164,7 +164,7 @@ namespace darmok
             {
                 continue;
             }
-            if (renderable->getMaterial()->primitiveType == Material::PrimitiveType::Line)
+            if (renderable->getMaterial()->primitiveType == Material::Definition::Line)
             {
                 continue;
             }
@@ -180,16 +180,16 @@ namespace darmok
     }
 
     ShadowRenderer::ShadowRenderer(const Config& config) noexcept
-        : _config(config)
-        , _crop(1)
+        : _config{ config }
+        , _crop{ 1 }
         , _shadowMapUniform{ bgfx::kInvalidHandle }
         , _shadowData1Uniform{ bgfx::kInvalidHandle }
         , _shadowData2Uniform{ bgfx::kInvalidHandle }
         , _shadowTransBuffer{ bgfx::kInvalidHandle }
         , _shadowLightDataBuffer{ bgfx::kInvalidHandle }
-        , _dirAmount(0)
-        , _spotAmount(0)
-        , _pointAmount(0)
+        , _dirAmount{ 0 }
+        , _spotAmount{0}
+        , _pointAmount{0}
     {
         _shadowTransLayout.begin()
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
@@ -229,7 +229,7 @@ namespace darmok
         Texture::Config texConfig;
         *texConfig.mutable_size() = protobuf::convert(glm::uvec2(_config.mapSize));
         texConfig.set_layers(_config.maxPassAmount);
-        texConfig.set_format(Texture::Format::D16);
+        texConfig.set_format(Texture::Definition::D16);
 
         _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
@@ -440,7 +440,7 @@ namespace darmok
             transWriter.write(bgfx::Attrib::Color2, index, tmtx[2]);
             transWriter.write(bgfx::Attrib::Color3, index, tmtx[3]);
 
-            const glm::vec4 lightData(entity, lightType, toUnderlying(shadowType), 0.F);
+            const glm::vec4 lightData{ entity, lightType, toUnderlying(shadowType), 0.f };
             lightDataWriter.write(bgfx::Attrib::Color0, index, lightData);
 
             ++index;
@@ -535,7 +535,7 @@ namespace darmok
         {
             return lightTrans->getWorldInverse();
         }
-        return glm::mat4(1.F);
+        return glm::mat4{ 1.F };
     }
 
     // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
@@ -557,7 +557,7 @@ namespace darmok
         {
             mtx *= lightTrans->getWorldMatrix();
         }
-        auto bb = Frustum(mtx).getBoundingBox();
+        auto bb = Frustum{ mtx }.getBoundingBox();
         bb.snap(_config.mapSize);
         return bb.getOrtho();
     }
@@ -602,14 +602,14 @@ namespace darmok
     {
         static const std::array<glm::quat, _pointLightFaceAmount> rots
         {
-            glm::vec3(0.F, 0.F, 0.F),
-            glm::vec3(0.F, glm::pi<float>(), 0.F),
-            glm::vec3(0.F, glm::half_pi<float>(), 0.F),
-            glm::vec3(0.F, -glm::half_pi<float>(), 0.F),
-            glm::vec3(glm::half_pi<float>(), 0.F, 0.F),
-            glm::vec3(-glm::half_pi<float>(), 0.F, 0.F),
+            glm::vec3{0.f, 0.f, 0.f},
+            glm::vec3{0.f, glm::pi<float>(), 0.F},
+            glm::vec3{0.f, glm::half_pi<float>(), 0.f},
+            glm::vec3{0.f, -glm::half_pi<float>(), 0.f},
+            glm::vec3{glm::half_pi<float>(), 0.f, 0.f},
+            glm::vec3{-glm::half_pi<float>(), 0.f, 0.f},
         };
-        auto proj = Math::perspective(glm::half_pi<float>(), 1.F, _config.nearPlane, light.getRange());
+        auto proj = Math::perspective(glm::half_pi<float>(), 1.f, _config.nearPlane, light.getRange());
         proj *= glm::mat4_cast(rots[face]);
         return proj;
     }
@@ -685,7 +685,7 @@ namespace darmok
             return;
         }
         MeshData meshData;
-        meshData.type = Mesh::MeshType::Transient;
+        meshData.type = Mesh::Definition::Transient;
         uint8_t debugColor = 0;
 
         auto cascadeAmount = _renderer.getConfig().cascadeAmount;
@@ -693,7 +693,7 @@ namespace darmok
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
         {
             auto cascProjView = _renderer.getCameraProjMatrix(casc);
-            meshData += MeshData(Frustum(cascProjView), MeshData::RectangleMeshType::Outline);
+            meshData += MeshData{ Frustum{cascProjView}, Mesh::Definition::OutlineRectangle };
         }
         _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
         ++debugColor;
@@ -706,7 +706,7 @@ namespace darmok
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
                 auto mtx = _renderer.getDirLightMatrix(lightTrans, casc);
-                meshData += MeshData(Frustum(mtx), MeshData::RectangleMeshType::Outline);
+                meshData += MeshData{ Frustum{mtx}, Mesh::Definition::OutlineRectangle };
             }
 
             glm::vec3 lightPos;
@@ -714,7 +714,7 @@ namespace darmok
             {
                 lightPos = lightTrans->getWorldPosition();
             }
-            meshData += MeshData(Sphere(0.01, lightPos), 8);
+            meshData += MeshData{ Sphere{0.01f, lightPos}, 8 };
 
             _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
             ++debugColor;

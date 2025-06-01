@@ -33,8 +33,12 @@ namespace darmok
 		, _assimpSceneDefLoader{ _dataLoader, _allocator }
 		, _dataSceneDefLoader{ _dataLoader }
 		, _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
-		, _sceneLoader{ _sceneDefLoader }
-
+		, _sceneLoader{ _sceneDefLoader, {
+			.programLoader = _progLoader,
+			.textureLoader = _texLoader,
+			.meshLoader = _meshLoader,
+			.materialLoader = _materialLoader,
+		} }
 #ifdef DARMOK_OZZ
 		, _ozzSkeletonLoader{ _dataLoader }
 		, _ozzSkeletalAnimationLoader{ _dataLoader }

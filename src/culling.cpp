@@ -58,7 +58,7 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _prog = StandardProgramLoader::load(StandardProgramLoader::Type::Unlit);
+        _prog = StandardProgramLoader::load(Program::Standard::Unlit);
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
     }
 
@@ -145,7 +145,7 @@ namespace darmok
             {
                 _cam->setEntityTransform(entity, encoder);
                 MeshData meshData(Cube{ *bounds });
-                meshData.type = MeshData::MeshType::Transient;
+                meshData.type = Mesh::Definition::Transient;
                 auto mesh = meshData.createMesh(layout);
                 mesh->render(encoder);
                 auto occlusion = getQuery(entity);
@@ -271,7 +271,7 @@ namespace darmok
             const Frustum frust{ mainCam->getViewProjectionMatrix() };
             for (auto& plane : frust.getPlanes())
             {
-                meshData += MeshData(plane, MeshData::RectangleMeshType::Full);
+                meshData += MeshData{plane, Mesh::Definition::FullRectangle};
                 _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
                 ++debugColor;
             }
@@ -286,7 +286,7 @@ namespace darmok
             {
                 if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
                 {
-                    meshData += MeshData(Cube{ *bbox }, MeshData::RectangleMeshType::Outline);
+                    meshData += MeshData{ Cube{ *bbox }, Mesh::Definition::OutlineRectangle };
                     _cam->setEntityTransform(entity, encoder);
                     _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
                     ++debugColor;

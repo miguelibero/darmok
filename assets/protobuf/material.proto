@@ -5,32 +5,6 @@ package darmok.protobuf;
 import "math.proto";
 import "program.proto";
 
-message MaterialTextureType {
-    enum Enum {
-        BaseColor = 0;
-        MetallicRoughness = 1;
-        Normal = 2;
-        Occlusion = 3;
-        Emissive = 4;
-        Specular = 5;
-    }
-}
-
-message MaterialPrimitiveType {
-    enum Enum {
-        Triangle = 0;
-        Line = 1;
-    }
-}
-
-message MaterialOpacityType {
-    enum Enum {
-        Opaque = 0;
-        Mask = 1;
-        Transparent = 2;
-    }
-}
-
 message UniformValue {
     oneof value {
         Vec4 vec4 = 1;
@@ -45,8 +19,18 @@ message UniformTextureKey {
 }
 
 message MaterialTexture {
+    
+    enum Type {
+        BaseColor = 0;
+        MetallicRoughness = 1;
+        Normal = 2;
+        Occlusion = 3;
+        Emissive = 4;
+        Specular = 5;
+    }
+
     oneof key {
-        MaterialTextureType.Enum type = 1;
+        Type type = 1;
         UniformTextureKey uniform = 2;
     }
     string texture_path = 3;
@@ -56,15 +40,27 @@ message Material {
     string name = 1;
     oneof program {
         string program_path = 2;
-        StandardProgramType.Enum standard_program = 3;
+        StandardProgram.Type standard_program = 3;
     }
     repeated string program_defines = 4;
     
     repeated MaterialTexture textures = 5;
     map<string, UniformValue> uniform_values = 6;
+
+    enum OpacityType {
+        Opaque = 0;
+        Mask = 1;
+        Transparent = 2;
+    }
     
-    MaterialOpacityType.Enum opacity_type = 7;
-    MaterialPrimitiveType.Enum primitive_type = 8;
+    OpacityType opacity_type = 7;
+
+    enum PrimitiveType {
+        Triangle = 0;
+        Line = 1;
+    }
+
+    PrimitiveType primitive_type = 8;
     bool twoSided = 9;
 
     Color base_color = 10;

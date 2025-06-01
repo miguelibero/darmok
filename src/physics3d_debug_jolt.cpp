@@ -21,7 +21,7 @@
 namespace darmok::physics3d
 {
     JoltMeshBatch::JoltMeshBatch(std::unique_ptr<IMesh>&& mesh) noexcept
-        : mesh(std::move(mesh))
+        : mesh{ std::move(mesh) }
     {
     }
 
@@ -39,10 +39,10 @@ namespace darmok::physics3d
     }
 
     JoltPhysicsDebugRenderer::JoltPhysicsDebugRenderer() noexcept
-        : _colorUniform(bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4))
-        , _program(StandardProgramLoader::load(StandardProgramLoader::Type::Unlit))
-        , _solidMeshData(Mesh::MeshType::Transient)
-        , _wireMeshData(Mesh::MeshType::Transient)
+        : _colorUniform{ bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4) }
+        , _program{ StandardProgramLoader::load(Program::Standard::Unlit) }
+        , _solidMeshData{Mesh::Definition::Transient}
+        , _wireMeshData{Mesh::Definition::Transient}
     {
         Initialize();
     }
@@ -132,7 +132,7 @@ namespace darmok::physics3d
         _config.font->update(chars);
 
         MeshData meshData;
-        meshData.type = Mesh::MeshType::Transient;
+        meshData.type = Mesh::Definition::Transient;
         for (auto& textData : _textData)
         {
             auto textMeshData = Text::createMeshData(textData.content, *_config.font);
@@ -290,8 +290,8 @@ namespace darmok::physics3d
     }
 
     PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Config& config) noexcept
-        : _config(config)
-        , _enabled(false)
+        : _config{ config }
+        , _enabled{false}
     {
     }
 
@@ -341,7 +341,7 @@ namespace darmok::physics3d
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
-        : _impl(std::make_unique<PhysicsDebugRendererImpl>(config))
+        : _impl{ std::make_unique<PhysicsDebugRendererImpl>(config) }
     {
     }
 

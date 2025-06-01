@@ -30,7 +30,7 @@ namespace darmok
 	{
 	public:
 		using TextureConfig = protobuf::TextureConfig;
-		using TextureType = protobuf::TextureType;
+		using TextureType = protobuf::Texture::Type;
 
 		Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
 		Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
@@ -54,7 +54,7 @@ namespace darmok
 		[[nodiscard]] TextureConfig getTextureConfig() const noexcept;
 		[[nodiscard]] DataView getData() const noexcept;		
 		[[nodiscard]] bool isTextureValid(uint64_t flags) const noexcept;
-		[[nodiscard]] TextureType::Enum getTextureType() const noexcept;
+		[[nodiscard]] TextureType getTextureType() const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
 		void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
 		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;

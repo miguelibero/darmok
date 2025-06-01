@@ -14,13 +14,6 @@ message Armature {
     repeated ArmatureJoint joints = 2;
 }
 
-message SkeletalAnimatorBlendType {
-    enum Enum {
-        Cartesian = 0;
-        Directional = 1;
-    }
-}
-
 message SkeletalAnimatorAnimation {
     string name = 1;
     Vec2 blend_position = 2;
@@ -29,14 +22,20 @@ message SkeletalAnimatorAnimation {
 }
 
 message SkeletalAnimatorTween {
-    EasingType.Enum easing = 1;
+    Easing.Type easing = 1;
     float duration = 2;
 }
 
 message SkeletalAnimatorState {
     string name = 1;
     repeated SkeletalAnimatorAnimation animations = 2;
-    SkeletalAnimatorBlendType.Enum blend = 3;
+
+    enum BlendType {
+        Cartesian = 0;
+        Directional = 1;
+    }
+
+    BlendType blend = 3;
     float threshold = 4;
     SkeletalAnimatorTween tween = 5;
     string next_state = 6;

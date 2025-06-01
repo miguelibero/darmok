@@ -21,7 +21,14 @@ message SpotLight {
 message DirectionalLight {
     float intensity = 1;
     Color3 color = 2;
-    Vec3 direction = 3;
+
+    enum ShadowType {
+        None = 0;
+        Hard = 1;
+        Soft = 2;
+    };
+
+    ShadowType shadow_type = 3;
 }
 
 message AmbientLight {

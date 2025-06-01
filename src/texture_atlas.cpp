@@ -201,7 +201,7 @@ namespace darmok
 			}
 
 			const Data vertexData = writer.finish();
-			return IMesh::create(config.type, layout, DataView(vertexData), DataView(totalIndices));
+			return IMesh::create(config.type, layout, DataView{ vertexData }, DataView{ totalIndices });
 		}
 
 		bool isRect(const Element& elm) noexcept

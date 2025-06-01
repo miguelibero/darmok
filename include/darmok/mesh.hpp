@@ -53,7 +53,7 @@ namespace darmok
         using Config = MeshConfig;
         using RenderConfig = MeshRenderConfig;
         using Definition = protobuf::Mesh;
-        using MeshType = protobuf::MeshType;
+        using Type = protobuf::Mesh::Type;
         using Source = protobuf::MeshSource;
 
         virtual ~IMesh() = default;
@@ -62,8 +62,8 @@ namespace darmok
         [[nodiscard]] virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
 
         [[nodiscard]] static std::unique_ptr<IMesh> create(const Definition& def);
-        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
-        [[nodiscard]] static std::unique_ptr<IMesh> create(MeshType::Enum type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
+        [[nodiscard]] static std::unique_ptr<IMesh> create(Type type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
+        [[nodiscard]] static std::unique_ptr<IMesh> create(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
     };
 
     class DARMOK_EXPORT Mesh final : public IMesh
@@ -177,25 +177,25 @@ namespace darmok
     {
         using Vertex = MeshDataVertex;
         using Index = VertexIndex;
-        using MeshType = protobuf::MeshType;
-        using RectangleMeshType = protobuf::RectangleMeshType;
-        using LineMeshType = protobuf::LineMeshType;
+        using MeshType = protobuf::Mesh::Type;
+        using RectangleType = protobuf::Mesh::RectangleType;
+        using LineType = protobuf::Mesh::LineType;
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
-        MeshType::Enum type = MeshType::Static;
+        MeshType type = protobuf::Mesh::Static;
 
-        MeshData(MeshType::Enum type = MeshType::Static) noexcept;
-        MeshData(const Cube& Cube, RectangleMeshType::Enum type = RectangleMeshType::Full) noexcept;
+        MeshData(MeshType type = protobuf::Mesh::Static) noexcept;
+        MeshData(const Cube& Cube, RectangleType type = Mesh::Definition::FullRectangle) noexcept;
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
-        MeshData(const Rectangle& rect, RectangleMeshType::Enum type = RectangleMeshType::Full) noexcept;
-        MeshData(const Plane& plane, RectangleMeshType::Enum type = RectangleMeshType::Full, float scale = 100.F) noexcept;
+        MeshData(const Rectangle& rect, RectangleType type = Mesh::Definition::FullRectangle) noexcept;
+        MeshData(const Plane& plane, RectangleType type = Mesh::Definition::FullRectangle, float scale = 100.F) noexcept;
         MeshData(const Ray& ray) noexcept;
-        MeshData(const Line& line, LineMeshType::Enum type = LineMeshType::Line) noexcept;
+        MeshData(const Line& line, LineType type = Mesh::Definition::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
         MeshData(const Polygon& poly) noexcept;
-        MeshData(const Frustum& frust, RectangleMeshType::Enum type = RectangleMeshType::Outline) noexcept;
+        MeshData(const Frustum& frust, RectangleType type = Mesh::Definition::OutlineRectangle) noexcept;
         MeshData(const Grid& grid) noexcept;
 
         MeshData& operator+=(const MeshData& other) noexcept;

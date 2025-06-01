@@ -10,7 +10,6 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/glm_serialize.hpp>
 
-#include "camera.hpp"
 #include "scene.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -22,25 +21,42 @@ using namespace entt::literals;
 
 namespace darmok
 {
-    CameraImpl::CameraImpl(Camera& cam, const glm::mat4& projMatrix) noexcept
-        : _cam(cam)
-        , _view(1.F)
-        , _proj(projMatrix)
-        , _projInv(glm::inverse(projMatrix))
-        , _enabled(true)
-        , _renderChain(*this)
-        , _transformChanged(false)
-        , _projData(CameraOrthoData{})
-        , _viewport(0.F, 0.F, 1.F, 1.F)
+    Camera::Camera(const glm::mat4& projMatrix) noexcept
+        : _view{ 1.F }
+        , _proj{ projMatrix }
+        , _projInv{ glm::inverse(projMatrix) }
+        , _projData{ CameraOrthoData{} }
+        , _viewport{ 0.F, 0.F, 1.F, 1.F }
+        , _renderChain{ *this }
+        , _enabled{ true }
+        , _transformChanged{ false }
     {
     }
 
-    entt::id_type CameraImpl::getId() const noexcept
+    Camera::Camera(Camera&& other) noexcept
+        : _view{ std::move(other._view) }
+		, _proj{ std::move(other._proj) }
+		, _projInv{ std::move(other._projInv) }
+		, _projData{ std::move(other._projData) }
+		, _baseViewport{ std::move(other._baseViewport) }
+		, _viewport{ std::move(other._viewport) }
+		, _renderChain{ *this }
+		, _enabled{ other._enabled }
+		, _updateEnabled{ std::move(other._updateEnabled) }
+		, _transformChanged{ other._transformChanged }
+		, _cullingFilter{ std::move(other._cullingFilter) }
+		, _components{ std::move(other._components) }
+		, _scene{ std::move(other._scene) }
+		, _app{ std::move(other._app) }
+    {
+    }
+
+    entt::id_type Camera::getId() const noexcept
     {
         return reinterpret_cast<uintptr_t>(static_cast<const void*>(this));
     }
 
-    std::string CameraImpl::getName() const noexcept
+    std::string Camera::getName() const noexcept
     {
         if (auto trans = getTransform())
         {
@@ -49,22 +65,22 @@ namespace darmok
         return fmt::format("{:X}", getId());
     }
 
-    std::string CameraImpl::toString() const noexcept
+    std::string Camera::toString() const noexcept
     {
         return "Camera(" + getName() + ", " + glm::to_string(getProjectionMatrix()) + ")";
     }
 
-    Scene& CameraImpl::getScene()
+    Scene& Camera::getScene()
     {
         return _scene.value();
     }
 
-    const Scene& CameraImpl::getScene() const
+    const Scene& Camera::getScene() const
     {
         return _scene.value();
     }
 
-    bool CameraImpl::isEnabled() const noexcept
+    bool Camera::isEnabled() const noexcept
     {
         if (_updateEnabled)
         {
@@ -73,42 +89,43 @@ namespace darmok
         return _enabled;
     }
 
-    void CameraImpl::setEnabled(bool enabled) noexcept
+    Camera& Camera::setEnabled(bool enabled) noexcept
     {
         _updateEnabled = enabled;
+        return *this;
     }
 
-    RenderChain& CameraImpl::getRenderChain() noexcept
+    RenderChain& Camera::getRenderChain() noexcept
     {
         return _renderChain;
     }
 
-    const RenderChain& CameraImpl::getRenderChain() const noexcept
+    const RenderChain& Camera::getRenderChain() const noexcept
     {
         return _renderChain;
     }
 
-    const glm::mat4& CameraImpl::getProjectionMatrix() const noexcept
+    const glm::mat4& Camera::getProjectionMatrix() const noexcept
     {
         return _proj;
     }
 
-    const glm::mat4& CameraImpl::getProjectionInverse() const noexcept
+    const glm::mat4& Camera::getProjectionInverse() const noexcept
     {
         return _projInv;
     }
 
-    glm::mat4 CameraImpl::getViewProjectionMatrix() const noexcept
+    glm::mat4 Camera::getViewProjectionMatrix() const noexcept
     {
        return getProjectionMatrix() * getViewMatrix();
     }
 
-    glm::mat4 CameraImpl::getViewProjectionInverse() const noexcept
+    glm::mat4 Camera::getViewProjectionInverse() const noexcept
     {
         return getViewInverse() * getProjectionInverse();
     }
 
-    BoundingBox CameraImpl::getPlaneBounds(const Plane& plane) const noexcept
+    BoundingBox Camera::getPlaneBounds(const Plane& plane) const noexcept
     {
         auto botLeftRay = viewportPointToRay(glm::vec3(0));
         auto dbl = botLeftRay.intersect(plane);
@@ -121,21 +138,22 @@ namespace darmok
         return { botLeft, topRight };
     }
 
-    const CameraProjectionData& CameraImpl::getProjection() const noexcept
+    const CameraProjectionData& Camera::getProjection() const noexcept
     {
         return _projData;
     }
 
-    void CameraImpl::setProjection(const CameraProjectionData& data) noexcept
+    Camera& Camera::setProjection(const CameraProjectionData& data) noexcept
     {
         _projData = data;
         if (_app)
         {
             updateProjection();
         }
+        return *this;
     }
 
-    bool CameraImpl::updateProjection() noexcept
+    bool Camera::updateProjection() noexcept
     {
         if (!_app)
         {
@@ -146,7 +164,7 @@ namespace darmok
         if (auto winPersp = std::get_if<CameraPerspectiveData>(ptr))
         {
             float aspect = vp.getAspectRatio();
-            auto proj = Math::perspective(glm::radians(winPersp->fovy), aspect, winPersp->near, winPersp->far);
+            auto proj = Math::perspective(winPersp->fovy, aspect, winPersp->near, winPersp->far);
             setProjectionMatrix(proj);
             return true;
         }
@@ -159,7 +177,7 @@ namespace darmok
         return false;
     }
 
-    void CameraImpl::setProjectionMatrix(const glm::mat4& matrix) noexcept
+    void Camera::setProjectionMatrix(const glm::mat4& matrix) noexcept
     {
         if (_proj == matrix)
         {
@@ -170,7 +188,7 @@ namespace darmok
         _transformChanged = true;
     }
 
-    void CameraImpl::onTransformChanged()
+    void Camera::onTransformChanged()
     {
         for (auto& comp : _components)
         {
@@ -178,32 +196,33 @@ namespace darmok
         }
     }
 
-    void CameraImpl::setCullingFilter(const EntityFilter& filter) noexcept
+    Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept
     {
         _cullingFilter = filter;
+        return *this;
     }
 
-    const EntityFilter& CameraImpl::getCullingFilter() const noexcept
+    const EntityFilter& Camera::getCullingFilter() const noexcept
     {
         return _cullingFilter;
     }
 
-    void CameraImpl::init(Scene& scene, App& app)
+    void Camera::init(Scene& scene, App& app)
     {
         _scene = scene;
         _app = app;
 
-        for(auto comp : Components(_components))
+        for(auto comp : Components{_components})
         {
-            comp->init(_cam, scene, app);
+            comp->init(*this, scene, app);
         }
     }
 
-    bgfx::ViewId CameraImpl::renderReset(bgfx::ViewId viewId)
+    bgfx::ViewId Camera::renderReset(bgfx::ViewId viewId)
     {
         updateProjection();
         _renderChain.beforeRenderReset();
-        for (auto comp : Components(_components))
+        for (auto comp : Components{_components})
         {
             viewId = comp->renderReset(viewId);
         }
@@ -211,22 +230,22 @@ namespace darmok
         return viewId;
     }
 
-    void CameraImpl::render()
+    void Camera::render()
     {
         if (!_enabled)
         {
             return;
         }
-        for (auto comp : Components(_components))
+        for (auto comp : Components{_components})
         {
             comp->render();
         }
     }
 
-    void CameraImpl::shutdown()
+    void Camera::shutdown()
     {
         {
-            auto components = Components(_components);
+            auto components = Components{_components};
             for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
             {
                 (*itr)->shutdown();
@@ -235,14 +254,14 @@ namespace darmok
         _renderChain.shutdown();
     }
 
-    void CameraImpl::update(float deltaTime)
+    void Camera::update(float deltaTime)
     {
         if (_updateEnabled)
         {
             _enabled = _updateEnabled.value();
             _updateEnabled.reset();
         }
-        for (auto comp : Components(_components))
+        for (auto comp : Components{ _components })
         {
             comp->update(deltaTime);
         }
@@ -263,7 +282,7 @@ namespace darmok
         }
     }
 
-    std::string CameraImpl::getViewName(const std::string& baseName) const noexcept
+    std::string Camera::getViewName(const std::string& baseName) const noexcept
     {
         auto name = "Camera " + getName() + ": " + baseName;
         if (_scene)
@@ -273,7 +292,7 @@ namespace darmok
         return name;
     }
 
-    void CameraImpl::configureView(bgfx::ViewId viewId, const std::string& name) const
+    void Camera::configureView(bgfx::ViewId viewId, const std::string& name) const
     {
         bgfx::setViewName(viewId, getViewName(name).c_str());
         uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
@@ -287,13 +306,13 @@ namespace darmok
         vp.configureView(viewId);
     }
 
-    void CameraImpl::setViewTransform(bgfx::ViewId viewId) const noexcept
+    void Camera::setViewTransform(bgfx::ViewId viewId) const noexcept
     {
         auto view = getViewMatrix();
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(_proj));
     }
 
-    void CameraImpl::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
+    void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
     {
         const void* transMtx = nullptr;
         if (_scene)
@@ -309,18 +328,18 @@ namespace darmok
         }
     }
 
-    void CameraImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setViewTransform(viewId);
-        for (auto comp : Components(_components))
+        for (auto comp : Components{_components})
         {
             comp->beforeRenderView(viewId, encoder);
         }
     }
 
-    bool CameraImpl::shouldEntityBeCulled(Entity entity) const noexcept
+    bool Camera::shouldEntityBeCulled(Entity entity) const noexcept
     {
-        for (auto comp : Components(_components))
+        for (auto comp : Components{_components})
         {
             if (comp->shouldEntityBeCulled(entity))
             {
@@ -330,16 +349,16 @@ namespace darmok
         return false;
     }
 
-    void CameraImpl::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    void Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setEntityTransform(entity, encoder);
-        for (auto comp : Components(_components))
+        for (auto comp : Components{_components})
         {
             comp->beforeRenderEntity(entity, viewId, encoder);
         }
     }
 
-    void CameraImpl::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
+    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
     {
         if (auto type = component->getCameraComponentType())
         {
@@ -347,9 +366,10 @@ namespace darmok
         }
         if (_scene)
         {
-            component->init(_cam, _scene.value(), _app.value());
+            component->init(*this, _scene.value(), _app.value());
         }
         _components.emplace_back(std::move(component));
+        return *this;
     }
 
     struct CameraComponentTypeHashFinder final
@@ -366,19 +386,19 @@ namespace darmok
         }
     };
 
-    CameraImpl::Components::iterator CameraImpl::findComponent(entt::id_type type) noexcept
+    Camera::Components::iterator Camera::findComponent(entt::id_type type) noexcept
     {
         return std::find_if(_components.begin(), _components.end(),
             CameraComponentTypeHashFinder{ type });
     }
 
-    CameraImpl::Components::const_iterator CameraImpl::findComponent(entt::id_type type) const noexcept
+    Camera::Components::const_iterator Camera::findComponent(entt::id_type type) const noexcept
     {
         return std::find_if(_components.begin(), _components.end(),
             CameraComponentTypeHashFinder{ type });
     }
 
-    bool CameraImpl::removeComponent(entt::id_type type) noexcept
+    bool Camera::removeComponent(entt::id_type type) noexcept
     {
         auto itr = findComponent(type);
         auto found = itr != _components.end();
@@ -389,13 +409,13 @@ namespace darmok
         return found;
     }
 
-    bool CameraImpl::hasComponent(entt::id_type type) const noexcept
+    bool Camera::hasComponent(entt::id_type type) const noexcept
     {
         auto itr = findComponent(type);
         return itr != _components.end();
     }
 
-    OptionalRef<ICameraComponent> CameraImpl::getComponent(entt::id_type type) noexcept
+    OptionalRef<ICameraComponent> Camera::getComponent(entt::id_type type) noexcept
     {
         auto itr = findComponent(type);
         if (itr == _components.end())
@@ -405,7 +425,7 @@ namespace darmok
         return **itr;
     }
 
-    OptionalRef<const ICameraComponent> CameraImpl::getComponent(entt::id_type type) const noexcept
+    OptionalRef<const ICameraComponent> Camera::getComponent(entt::id_type type) const noexcept
     {
         auto itr = findComponent(type);
         if (itr == _components.end())
@@ -415,7 +435,7 @@ namespace darmok
         return **itr;
     }
 
-    ConstCameraComponentRefs CameraImpl::getComponents() const noexcept
+    ConstCameraComponentRefs Camera::getComponents() const noexcept
     {
         ConstCameraComponentRefs refs;
         refs.reserve(_components.size());
@@ -426,7 +446,7 @@ namespace darmok
         return refs;
     }
 
-    CameraComponentRefs CameraImpl::getComponents() noexcept
+    CameraComponentRefs Camera::getComponents() noexcept
     {
         CameraComponentRefs refs;
         refs.reserve(_components.size());
@@ -437,32 +457,33 @@ namespace darmok
         return refs;
     }
 
-    void CameraImpl::setViewport(const glm::vec4& viewport) noexcept
+    Camera& Camera::setViewport(const glm::vec4& viewport) noexcept
     {
         _viewport = viewport;
+        return *this;
     }
 
-    const glm::vec4& CameraImpl::getViewport() const noexcept
+    const glm::vec4& Camera::getViewport() const noexcept
     {
         return _viewport;
     }
 
-    void CameraImpl::setBaseViewport(const std::optional<Viewport>& viewport) noexcept
+    Camera& Camera::setBaseViewport(const std::optional<Viewport>& viewport) noexcept
     {
-        if(_baseViewport == viewport)
+        if(_baseViewport != viewport)
         {
-            return;
+            _baseViewport = viewport;
+            updateProjection();
         }
-        _baseViewport = viewport;
-        updateProjection();
+        return *this;
     }
 
-    const std::optional<Viewport>& CameraImpl::getBaseViewport() const noexcept
+    const std::optional<Viewport>& Camera::getBaseViewport() const noexcept
     {
         return _baseViewport;
     }
 
-    Viewport CameraImpl::getCombinedViewport() const noexcept
+    Viewport Camera::getCombinedViewport() const noexcept
     {
         Viewport vp;
         if (_baseViewport)
@@ -480,14 +501,14 @@ namespace darmok
         return vp * _viewport;
     }
 
-    OptionalRef<Transform> CameraImpl::getTransform() const noexcept
+    OptionalRef<Transform> Camera::getTransform() const noexcept
     {
         if (!_scene)
         {
             return nullptr;
         }
         ;
-        auto entity = _scene->getEntity(_cam);
+        auto entity = _scene->getEntity(*this);
         if (entity == entt::null)
         {
             return nullptr;
@@ -495,7 +516,7 @@ namespace darmok
         return _scene->getComponent<Transform>(entity);
     }
 
-    glm::mat4 CameraImpl::getViewMatrix() const noexcept
+    glm::mat4 Camera::getViewMatrix() const noexcept
     {
         if (auto trans = getTransform())
         {
@@ -504,7 +525,7 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    glm::mat4 CameraImpl::getViewInverse() const noexcept
+    glm::mat4 Camera::getViewInverse() const noexcept
     {
         if (auto trans = getTransform())
         {
@@ -513,69 +534,69 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    glm::mat4 CameraImpl::getScreenViewMatrix() const noexcept
+    glm::mat4 Camera::getScreenViewMatrix() const noexcept
     {
         // y = -y since screen origin is the top-left corner
         static const glm::vec3 invy(1.F, -1.F, 1.F);
         return glm::scale(glm::mat4(1.F), invy) * getViewMatrix();
     }
 
-    Ray CameraImpl::screenPointToRay(const glm::vec3& point) const noexcept
+    Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
     {
         return Ray::unproject(point, getScreenViewMatrix(), _proj, getCombinedViewport());
     }
 
-    Ray CameraImpl::viewportPointToRay(const glm::vec3& point) const noexcept
+    Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
     {
         return Ray::unproject(point, getScreenViewMatrix(), _proj);
     }
 
-    glm::vec3 CameraImpl::worldToScreenPoint(const glm::vec3& point) const noexcept
+    glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
     {
         return glm::project(point, getScreenViewMatrix(), _proj, getCombinedViewport().getValues());
     }
 
-    glm::vec3 CameraImpl::worldToViewportPoint(const glm::vec3& point) const noexcept
+    glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
     {
         return glm::project(point, getScreenViewMatrix(), _proj, Viewport().getValues());
     }
 
-    glm::vec3 CameraImpl::screenToWorldPoint(const glm::vec3& point) const noexcept
+    glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
     {
         return glm::unProject(point, getScreenViewMatrix(), _proj, getCombinedViewport().getValues());
     }
 
-    glm::vec3 CameraImpl::viewportToWorldPoint(const glm::vec3& point) const noexcept
+    glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
     {
         return glm::unProject(point, getScreenViewMatrix(), _proj, Viewport().getValues());
     }
 
-    glm::vec3 CameraImpl::viewportToScreenPoint(const glm::vec3& point) const noexcept
+    glm::vec3 Camera::viewportToScreenPoint(const glm::vec3& point) const noexcept
     {
         auto z = point.z;
         auto p = getCombinedViewport().viewportToScreenPoint(point);
         return glm::vec3(p, z);
     }
 
-    glm::vec3 CameraImpl::screenToViewportPoint(const glm::vec3& point) const noexcept
+    glm::vec3 Camera::screenToViewportPoint(const glm::vec3& point) const noexcept
     {
         auto z = point.z;
         auto p = getCombinedViewport().screenToViewportPoint(point);
         return glm::vec3(p, z);
     }
 
-    bool CameraImpl::isWorldPointVisible(const glm::vec3& point) const noexcept
+    bool Camera::isWorldPointVisible(const glm::vec3& point) const noexcept
     {
         auto screenPoint = worldToViewportPoint(point);
         return screenPoint.x > 0.F && screenPoint.x < 1.F && screenPoint.y > 0.F && screenPoint.y < 1.F;
     }
 
-    Viewport CameraImpl::getRenderChainViewport() const noexcept
+    Viewport Camera::getRenderChainViewport() const noexcept
     {
         return getCombinedViewport();
     }
 
-    OptionalRef<RenderChain> CameraImpl::getRenderChainParent() const noexcept
+    OptionalRef<RenderChain> Camera::getRenderChainParent() const noexcept
     {
         if (_scene)
         {
@@ -584,7 +605,7 @@ namespace darmok
         return nullptr;
     }
 
-    void CameraImpl::onRenderChainChanged() noexcept
+    void Camera::onRenderChainChanged() noexcept
     {
         if (_app)
         {
@@ -592,96 +613,17 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> CameraImpl::load(const Definition& def, IComponentLoadContext& ctxt)
+    expected<void, std::string> Camera::load(const Definition& def, IComponentLoadContext& ctxt)
     {
-		setProjectionMatrix(protobuf::convert(def.projection()));
+        if (def.has_perspective_fovy())
+        {
+			setPerspective(def.perspective_fovy(), def.near(), def.far());
+        }
+        else
+        {
+			setOrtho(protobuf::convert(def.ortho_center()), def.near(), def.far());
+        }
         return {};
-    }
-
-    Camera::Camera(const glm::mat4& projMatrix) noexcept
-        : _impl(std::make_unique<CameraImpl>(*this, projMatrix))
-    {
-    }
-
-    Camera::~Camera() noexcept
-    {
-        // empty on purpose
-    }
-
-    CameraImpl& Camera::getImpl() noexcept
-    {
-        return *_impl;
-    }
-
-    const CameraImpl& Camera::getImpl() const noexcept
-    {
-        return *_impl;
-    }
-
-    Scene& Camera::getScene()
-    {
-        return _impl->getScene();
-    }
-
-    const Scene& Camera::getScene() const
-    {
-        return _impl->getScene();
-    }
-
-    std::string Camera::getName() const noexcept
-    {
-        return _impl->getName();
-    }
-
-    std::string Camera::getViewName(const std::string& baseName) const noexcept
-    {
-        return _impl->getViewName(baseName);
-    }
-
-    entt::id_type Camera::getId() const noexcept
-    {
-        return _impl->getId();
-    }
-
-    std::string Camera::toString() const noexcept
-    {
-        return _impl->toString();
-    }
-
-    const glm::mat4& Camera::getProjectionMatrix() const noexcept
-    {
-        return _impl->getProjectionMatrix();
-    }
-
-    const glm::mat4& Camera::getProjectionInverse() const noexcept
-    {
-        return _impl->getProjectionInverse();
-    }
-
-    glm::mat4 Camera::getViewProjectionMatrix() const noexcept
-    {
-        return _impl->getViewProjectionMatrix();
-    }
-
-    glm::mat4 Camera::getViewProjectionInverse() const noexcept
-    {
-        return _impl->getViewProjectionInverse();
-    }
-
-    BoundingBox Camera::getPlaneBounds(const Plane& plane) const noexcept
-    {
-        return _impl->getPlaneBounds(plane);
-    }
-
-    const CameraProjectionData& Camera::getProjection() const noexcept
-    {
-        return _impl->getProjection();
-    }
-
-    Camera& Camera::setProjection(const CameraProjectionData& data) noexcept
-    {
-        _impl->setProjection(data);
-        return *this;
     }
 
     Camera& Camera::setPerspective(float fovy, float near, float far) noexcept
@@ -694,199 +636,8 @@ namespace darmok
         return setProjection(CameraOrthoData{ center, near, far });
     }
 
-    Camera& Camera::setViewport(const glm::vec4& viewport) noexcept
-    {
-        _impl->setViewport(viewport);
-        return *this;
-    }
-
-    const glm::vec4& Camera::getViewport() const noexcept
-    {
-        return _impl->getViewport();
-    }
-
-    Camera& Camera::setBaseViewport(const std::optional<Viewport>& viewport) noexcept
-    {
-        _impl->setBaseViewport(viewport);
-        return *this;
-    }
-
-    const std::optional<Viewport>& Camera::getBaseViewport() const noexcept
-    {
-        return _impl->getBaseViewport();
-    }
-
-    Viewport Camera::getCombinedViewport() const noexcept
-    {
-        return _impl->getCombinedViewport();
-    }
-
-    bool Camera::isEnabled() const noexcept
-    {
-        return _impl->isEnabled();
-    }
-
-    Camera& Camera::setEnabled(bool enabled) noexcept
-    {
-        _impl->setEnabled(enabled);
-        return *this;
-    }
-
-    OptionalRef<Transform> Camera::getTransform() const noexcept
-    {
-        return _impl->getTransform();
-    }
-
-    glm::mat4 Camera::getViewMatrix() const noexcept
-    {
-        return _impl->getViewMatrix();
-    }
-
-    glm::mat4 Camera::getViewInverse() const noexcept
-    {
-        return _impl->getViewInverse();
-    }
-
-    Camera& Camera::setCullingFilter(const EntityFilter& filter) noexcept
-    {
-        _impl->setCullingFilter(filter);
-        return *this;
-    }
-
     EntityView Camera::getEntities(const EntityFilter& filter) const
     {
         return getScene().getEntities(filter & getCullingFilter());
-    }
-
-    const EntityFilter& Camera::getCullingFilter() const noexcept
-    {
-        return _impl->getCullingFilter();
-    }
-
-    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& comp) noexcept
-    {
-        _impl->addComponent(std::move(comp));
-        return *this;
-    }
-
-    bool Camera::removeComponent(entt::id_type type) noexcept
-    {
-        return _impl->removeComponent(type);
-    }
-
-    bool Camera::hasComponent(entt::id_type type) const noexcept
-    {
-        return _impl->hasComponent(type);
-    }
-
-    OptionalRef<ICameraComponent> Camera::getComponent(entt::id_type type) noexcept
-    {
-        return _impl->getComponent(type);
-    }
-
-    OptionalRef<const ICameraComponent> Camera::getComponent(entt::id_type type) const noexcept
-    {
-        return _impl->getComponent(type);
-    }
-
-    ConstCameraComponentRefs Camera::getComponents() const noexcept
-    {
-        const auto& impl = *_impl;
-        return impl.getComponents();
-    }
-
-    CameraComponentRefs Camera::getComponents() noexcept
-    {
-        return _impl->getComponents();
-    }
-
-    Ray Camera::screenPointToRay(const glm::vec3& point) const noexcept
-    {
-        return _impl->screenPointToRay(point);
-    }
-
-    Ray Camera::viewportPointToRay(const glm::vec3& point) const noexcept
-    {
-        return _impl->viewportPointToRay(point);
-    }
-
-    glm::vec3 Camera::worldToScreenPoint(const glm::vec3& point) const noexcept
-    {
-        return _impl->worldToScreenPoint(point);
-    }
-
-    glm::vec3 Camera::worldToViewportPoint(const glm::vec3& point) const noexcept
-    {
-        return _impl->worldToViewportPoint(point);
-    }
-
-    glm::vec3 Camera::screenToWorldPoint(const glm::vec3& point) const noexcept
-    {
-        return _impl->screenToWorldPoint(point);
-    }
-
-    glm::vec3 Camera::viewportToWorldPoint(const glm::vec3& point) const noexcept
-    {
-        return _impl->viewportToWorldPoint(point);
-    }
-
-    glm::vec3 Camera::viewportToScreenPoint(const glm::vec3& point) const noexcept
-    {
-        return _impl->viewportToScreenPoint(point);
-    }
-
-    glm::vec3 Camera::screenToViewportPoint(const glm::vec3& point) const noexcept
-    {
-        return _impl->screenToViewportPoint(point);
-    }
-
-    bool Camera::isWorldPointVisible(const glm::vec3& point) const noexcept
-    {
-        return _impl->isWorldPointVisible(point);
-    }
-
-    RenderChain& Camera::getRenderChain() noexcept
-    {
-        return _impl->getRenderChain();
-    }
-
-    const RenderChain& Camera::getRenderChain() const noexcept
-    {
-        return _impl->getRenderChain();
-    }
-    
-    void Camera::configureView(bgfx::ViewId viewId, const std::string& name) const
-    {
-        _impl->configureView(viewId, name);
-    }
-
-    void Camera::setViewTransform(bgfx::ViewId viewId) const noexcept
-    {
-        _impl->setViewTransform(viewId);
-    }
-
-    void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
-    {
-        _impl->setEntityTransform(entity, encoder);
-    }
-
-    bool Camera::shouldEntityBeCulled(Entity entity) const noexcept
-    {
-        return _impl->shouldEntityBeCulled(entity);
-    }
-
-    void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
-    {
-        _impl->beforeRenderView(viewId, encoder);
-    }
-
-    void Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
-    {
-        _impl->beforeRenderEntity(entity, viewId, encoder);
-    }
-
-    expected<void, std::string> Camera::load(const Definition& def, IComponentLoadContext& ctxt)
-    {
-        return _impl->load(def, ctxt);
-    }
+    }    
 }

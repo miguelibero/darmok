@@ -54,8 +54,8 @@ namespace darmok
 	public:
 		using Config = protobuf::TextureConfig;
 		using Definition = protobuf::Texture;
-		using TextureType = protobuf::TextureType;
-		using Format = protobuf::TextureFormat;
+		using Type = protobuf::Texture::Type;
+		using Format = protobuf::Texture::Format;
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
 		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags);
@@ -76,7 +76,7 @@ namespace darmok
 
 		[[nodiscard]] std::string toString() const noexcept;
 		[[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;
-		[[nodiscard]] TextureType::Enum getType() const noexcept;
+		[[nodiscard]] Type getType() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] bgfx::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
@@ -90,8 +90,8 @@ namespace darmok
 
 		[[nodiscard]] static std::string_view getFormatName(bgfx::TextureFormat::Enum format) noexcept;
 		[[nodiscard]] static std::optional<bgfx::TextureFormat::Enum> readFormat(std::string_view name) noexcept;
-		[[nodiscard]] static std::string_view getTypeName(TextureType::Enum type) noexcept;
-		[[nodiscard]] static std::optional<TextureType::Enum> readType(std::string_view name) noexcept;
+		[[nodiscard]] static std::string_view getTypeName(Type type) noexcept;
+		[[nodiscard]] static std::optional<Type> readType(std::string_view name) noexcept;
 		[[nodiscard]] static uint64_t readFlags(const nlohmann::json& json) noexcept;
 
 		using FlagMap = std::unordered_map<std::string, uint64_t>;

@@ -14,9 +14,9 @@ namespace darmok
 		lua.new_usertype<IMesh>("Mesh", sol::no_constructor
 		);
 
-		LuaUtils::newEnum<MeshData::MeshType::Enum>(lua, "MeshType");
-		LuaUtils::newEnum<MeshData::RectangleMeshType::Enum>(lua, "RectangleMeshType");
-		LuaUtils::newEnum<MeshData::LineMeshType::Enum>(lua, "LineMeshType");
+		LuaUtils::newEnum<Mesh::Type>(lua, "MeshType");
+		LuaUtils::newEnum<MeshData::RectangleType>(lua, "RectangleMeshType");
+		LuaUtils::newEnum<MeshData::LineType>(lua, "LineMeshType");
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<
@@ -27,10 +27,10 @@ namespace darmok
 				MeshData(const Capsule&),
 				MeshData(const Capsule&, int),
 				MeshData(const Rectangle&),
-				MeshData(const Rectangle&, MeshData::RectangleMeshType::Enum),
+				MeshData(const Rectangle&, MeshData::RectangleType),
 				MeshData(const Ray&),
 				MeshData(const Line&),
-				MeshData(const Line&, MeshData::LineMeshType::Enum),
+				MeshData(const Line&, MeshData::LineType),
 				MeshData(const Triangle&)
 			>(),
 			"new_cube", sol::overload(
@@ -46,20 +46,20 @@ namespace darmok
 				[](const glm::uvec2& size) {
 					return MeshData{ Rectangle{size} };
 				},
-				[](const glm::uvec2& size, MeshData::RectangleMeshType::Enum type) {
+				[](const glm::uvec2& size, MeshData::RectangleType type) {
 					return MeshData{ Rectangle{size}, type };
 				},
 				[](const VarLuaTable<glm::vec2>& size) {
 						return MeshData{ Rectangle{LuaGlm::tableGet(size)} };
 				},
-				[](const VarLuaTable<glm::vec2>& size, MeshData::RectangleMeshType::Enum type) {
+				[](const VarLuaTable<glm::vec2>& size, MeshData::RectangleType type) {
 						return MeshData{ Rectangle{LuaGlm::tableGet(size)}, type };
 				},
-				[](MeshData::RectangleMeshType::Enum type) {
-					return MeshData(Rectangle(), type);
+				[](MeshData::RectangleType type) {
+					return MeshData{ Rectangle{}, type };
 				}
 			),
-			"new_arrow", []() { return MeshData{ Line{}, MeshData::LineMeshType::Arrow }; },
+			"new_arrow", []() { return MeshData{ Line{}, Mesh::Definition::Arrow }; },
 			"default_vertex_layout", sol::property(&MeshData::getDefaultVertexLayout),
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)

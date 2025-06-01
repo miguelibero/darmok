@@ -13,7 +13,7 @@
 namespace darmok
 {
     SkyboxRenderer::SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept
-        : _texture(texture)
+        : _texture{ texture }
         , _texUniform{ bgfx::kInvalidHandle }
     {
     }
@@ -32,8 +32,8 @@ namespace darmok
 
         _texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
-        Cube screen(glm::uvec3(2));
-        _mesh = MeshData(screen).createMesh(_program->getVertexLayout());
+        Cube screen(glm::uvec3{ 2 });
+        _mesh = MeshData{ screen }.createMesh(_program->getVertexLayout());
     }
 
     void SkyboxRenderer::shutdown() noexcept
@@ -69,7 +69,7 @@ namespace darmok
     }
 
     GridRenderer::GridRenderer(const Config& config) noexcept
-        : _config(config)
+        : _config{ config }
         , _color1Uniform{ bgfx::kInvalidHandle }
         , _color2Uniform{ bgfx::kInvalidHandle }
         , _dataUniform{ bgfx::kInvalidHandle }
@@ -90,8 +90,8 @@ namespace darmok
         _color2Uniform = bgfx::createUniform("u_gridColor2", bgfx::UniformType::Vec4);
         _dataUniform = bgfx::createUniform("u_data", bgfx::UniformType::Vec4);
 
-        static const Rectangle rect(glm::vec2(2.0));
-        _mesh = MeshData(rect, MeshData::RectangleMeshType::Full).createMesh(_program->getVertexLayout());
+        static const Rectangle rect{ glm::vec2{2.0f} };
+        _mesh = MeshData{rect, Mesh::Definition::FullRectangle}.createMesh(_program->getVertexLayout());
         _cam = cam;
     }
 
@@ -125,7 +125,7 @@ namespace darmok
         _mesh->render(encoder);
         auto& proj = _cam->getProjectionMatrix();
         auto depthRange = Math::projDepthRange(proj);
-        glm::vec4 data(depthRange, _config.grids[0].separation, _config.grids[1].separation);
+        glm::vec4 data{ depthRange, _config.grids[0].separation, _config.grids[1].separation };
 
         encoder.setUniform(_color1Uniform, glm::value_ptr(Colors::normalize(_config.grids[0].color)));
         encoder.setUniform(_color2Uniform, glm::value_ptr(Colors::normalize(_config.grids[1].color)));

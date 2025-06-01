@@ -162,18 +162,18 @@ namespace darmok
 		return bgfx::isTextureValid(depth, false, layers, format, flags);
 	}
 
-	Image::TextureType::Enum Image::getTextureType() const noexcept
+	Image::TextureType Image::getTextureType() const noexcept
 	{
 		if (isCubeMap())
 		{
-			return TextureType::CubeMap;
+			return Texture::Definition::CubeMap;
 		}
 		auto depth = getDepth();
 		if (1 < depth)
 		{
-			return TextureType::Texture3D;
+			return Texture::Definition::Texture3D;
 		}
-		return TextureType::Texture2D;
+		return Texture::Definition::Texture2D;
 	}
 
 	bx::AllocatorI& Image::getAllocator() const noexcept
@@ -472,8 +472,8 @@ namespace darmok
 	{
 		TextureConfig config;
 		*config.mutable_size() = protobuf::convert(getSize());
-		config.set_format(protobuf::TextureFormat::Enum(getFormat()));
-		config.set_type(protobuf::TextureType::Enum(getTextureType()));
+		config.set_format(Texture::Format(getFormat()));
+		config.set_type(Texture::Type(getTextureType()));
 		config.set_depth(getDepth());
 		config.set_mips(getMipCount() > 1);
 		config.set_layers(getLayerCount());

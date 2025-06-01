@@ -496,18 +496,40 @@ namespace darmok
             entityId = createEntity(def);
             addComponent(def, entityId, trans);
         }
-
-        auto aspect = assimpCam.mAspect;
-        auto fovy = 0.f;
-        if (aspect != 0.f)
-        {
-            auto fovx = assimpCam.mHorizontalFOV;
-            fovy = 2.f * atan(tan(0.5f * fovx) * aspect);
-        }
-
         CameraDefinition cam;
-        auto proj = Math::perspective(fovy, aspect, assimpCam.mClipPlaneNear, assimpCam.mClipPlaneFar);
-		*cam.mutable_projection() = protobuf::convert(proj);
+		cam.set_near(assimpCam.mClipPlaneNear);
+        cam.set_far(assimpCam.mClipPlaneFar);
+        if (assimpCam.mOrthographicWidth == 0.0f)
+        {
+            auto aspect = assimpCam.mAspect;
+            auto fovy = 0.f;
+            if (aspect != 0.f)
+            {
+                auto fovx = assimpCam.mHorizontalFOV;
+                fovy = 2.f * atan(tan(0.5f * fovx) * aspect);
+            }
+			cam.set_perspective_fovy(fovy);
+        }
+        else
+        {
+            float w = assimpCam.mOrthographicWidth;
+            float h = w / assimpCam.mAspect;
+
+            auto forward = assimpCam.mLookAt;
+            auto right = forward ^ assimpCam.mUp;
+            right.Normalize();
+            auto up = right ^ forward;
+            up.Normalize();
+
+            auto center = assimpCam.mPosition + forward * assimpCam.mClipPlaneNear;
+            auto bottomLeft = center - (right * (w / 2.0f)) - (up * (h / 2.0f));
+            auto offset = center - bottomLeft;
+
+            auto& uv = *cam.mutable_ortho_center();
+            uv.set_x((offset * right) / w);
+            uv.set_y((offset * up) / h);            
+        }
+        
 		addComponent(def, entityId, cam);
     }
 
@@ -546,14 +568,8 @@ namespace darmok
         trans.set_parent(entityId);
         trans.set_name(AssimpUtils::getString(assimpLight.mName));
 
-        if (assimpLight.mPosition != aiVector3D{0})
-        {
-            auto pos = AssimpUtils::convert(assimpLight.mPosition);
-            auto mat = glm::translate(glm::mat4(1), pos);
-            *trans.mutable_matrix() = protobuf::convert(mat);
-            entityId = createEntity(def);
-            addComponent(def, entityId, trans);
-        }
+        auto pos = AssimpUtils::convert(assimpLight.mPosition);
+        auto mat = glm::translate(glm::mat4(1), pos);
 
         auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
         auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
@@ -578,8 +594,11 @@ namespace darmok
 			protobuf::DirectionalLight light;
 			light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-			*light.mutable_direction() = protobuf::convert(AssimpUtils::convert(assimpLight.mDirection));
             addComponent(def, entityId, light);
+
+            auto dir = AssimpUtils::convert(assimpLight.mDirection);
+            glm::mat4 view = glm::lookAt(pos, pos + dir, glm::vec3{0, 1, 0});
+            mat *= glm::inverse(view);
         }
         else if (assimpLight.mType == aiLightSource_SPOT)
         {
@@ -600,6 +619,10 @@ namespace darmok
             *light.mutable_color() = pbColor;
             addComponent(def, entityId, light);
         }
+
+        *trans.mutable_matrix() = protobuf::convert(mat);
+        entityId = createEntity(def);
+        addComponent(def, entityId, trans);
     }
 
     std::string AssimpSceneDefinitionConverter::getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
@@ -667,22 +690,29 @@ namespace darmok
 
     const std::vector<AssimpSceneDefinitionConverter::AssimpMaterialTexture> AssimpSceneDefinitionConverter::_materialTextures =
     {        
-        { AI_MATKEY_BASE_COLOR_TEXTURE, TextureType::BaseColor },
-        { aiTextureType_DIFFUSE, 0, TextureType::BaseColor },
-        { aiTextureType_SPECULAR, 0, TextureType::Specular },
-        { AI_MATKEY_METALLIC_TEXTURE, TextureType::MetallicRoughness },
-        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, TextureType::MetallicRoughness },
-        { aiTextureType_NORMALS, 0, TextureType::Normal },
-        { aiTextureType_AMBIENT_OCCLUSION, 0, TextureType::Occlusion },
-        { aiTextureType_LIGHTMAP, 0, TextureType::Occlusion },
-        { aiTextureType_EMISSIVE, 0, TextureType::Emissive },
+        { AI_MATKEY_BASE_COLOR_TEXTURE, Material::TextureDefinition::BaseColor },
+        { aiTextureType_DIFFUSE, 0, Material::TextureDefinition::BaseColor },
+        { aiTextureType_SPECULAR, 0, Material::TextureDefinition::Specular },
+        { AI_MATKEY_METALLIC_TEXTURE, Material::TextureDefinition::MetallicRoughness },
+        { AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, Material::TextureDefinition::MetallicRoughness },
+        { aiTextureType_NORMALS, 0, Material::TextureDefinition::Normal },
+        { aiTextureType_AMBIENT_OCCLUSION, 0, Material::TextureDefinition::Occlusion },
+        { aiTextureType_LIGHTMAP, 0, Material::TextureDefinition::Occlusion },
+        { aiTextureType_EMISSIVE, 0, Material::TextureDefinition::Emissive },
     };
 
     void AssimpSceneDefinitionConverter::updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
     {
         matDef.set_name(AssimpUtils::getString(assimpMat.GetName()));
 
-        matDef.set_program_path(_config.program_path());
+        if (_config.has_standard_program())
+        {
+            matDef.set_standard_program(_config.standard_program());
+        }
+        else
+        {
+            matDef.set_program_path(_config.program_path());
+        }        
         for (auto& define : _config.program_defines())
         {
 			auto itr = std::find(matDef.program_defines().begin(), matDef.program_defines().end(), define);
@@ -706,7 +736,7 @@ namespace darmok
 
 		auto itr = std::find_if(textures.begin(), textures.end(), [](auto& tex)
 		{
-			return tex.type() == TextureType::BaseColor;
+			return tex.type() == Material::TextureDefinition::BaseColor;
 		});
 
         if (itr == textures.end() && !_config.default_texture_path().empty())
@@ -715,7 +745,7 @@ namespace darmok
             if (loadTexture(def, texPath))
             {
 				auto& matTex = *textures.Add();
-				matTex.set_type(TextureType::BaseColor);
+				matTex.set_type(Material::TextureDefinition::BaseColor);
 				matTex.set_texture_path(texPath);
             }
         }
@@ -782,15 +812,15 @@ namespace darmok
                 std::string alphaMode = aiAlphaMode.C_Str();
                 if (alphaMode == "OPAQUE")
                 {
-                    matDef.set_opacity_type(protobuf::MaterialOpacityType::Opaque);
+                    matDef.set_opacity_type(Material::Definition::Opaque);
                 }
                 else if (alphaMode == "MASK")
                 {
-                    matDef.set_opacity_type(protobuf::MaterialOpacityType::Mask);
+                    matDef.set_opacity_type(Material::Definition::Mask);
                 }
                 else
                 {
-                    matDef.set_opacity_type(protobuf::MaterialOpacityType::Transparent);
+                    matDef.set_opacity_type(Material::Definition::Transparent);
                 }
             }
             else
@@ -801,10 +831,10 @@ namespace darmok
                     switch (blendMode)
                     {
                     case aiBlendMode_Additive:
-                        matDef.set_opacity_type(protobuf::MaterialOpacityType::Transparent);
+                        matDef.set_opacity_type(Material::Definition::Transparent);
                         break;
                     case aiBlendMode_Default:
-                        matDef.set_opacity_type(protobuf::MaterialOpacityType::Opaque);
+                        matDef.set_opacity_type(Material::Definition::Opaque);
                         break;
                     }
                 }
@@ -1219,8 +1249,8 @@ namespace darmok
         if (itr != json.end())
         {
             auto val = itr->get<std::string>();
-            StandardProgramLoader::Type::Enum standard;            
-            if (StandardProgramLoader::Type::Enum_Parse(val, &standard))
+            StandardProgramLoader::Type standard;            
+            if (Program::Standard::Type_Parse(val, &standard))
             {
                 config.set_standard_program(standard);
             }
@@ -1252,8 +1282,8 @@ namespace darmok
         if (itr != json.end())
         {
             auto val = itr->get<std::string>();
-            protobuf::MaterialOpacityType::Enum opacity;
-            if (protobuf::MaterialOpacityType::Enum_Parse(val, &opacity))
+            Material::OpacityType opacity;
+            if (Material::Definition::OpacityType_Parse(val, &opacity))
             {
                 config.set_opacity(opacity);
             }
