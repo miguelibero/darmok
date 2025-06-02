@@ -17,30 +17,30 @@ using namespace entt::literals;
 namespace darmok
 {
     Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent) noexcept
-        : _position()
-        , _rotation()
-        , _scale(1)
-        , _localMatrix(1)
-        , _localInverse(1)
-        , _worldMatrix(1)
-        , _worldInverse(1)
-        , _matrixChanged(false)
-        , _parentChanged(false)
+        : _position{}
+        , _rotation{}
+        , _scale{ 1.f }
+        , _localMatrix{ 1.f }
+        , _localInverse{ 1.f }
+        , _worldMatrix{ 1.f }
+        , _worldInverse{ 1.f }
+        , _matrixChanged{ false }
+        , _parentChanged{ false }
     {
         setParent(parent);
         setLocalMatrix(mat);
     }
 
     Transform::Transform(const glm::vec3& position, const glm::quat& rotation, const glm::vec3& scale, const OptionalRef<Transform>& parent) noexcept
-        : _position(position)
-        , _rotation(rotation)
-        , _scale(scale)
-        , _localMatrix(1)
-        , _localInverse(1)
-        , _worldMatrix(1)
-        , _worldInverse(1)
-        , _matrixChanged(true)
-        , _parentChanged(false)
+        : _position{ position }
+        , _rotation{ rotation }
+        , _scale{ scale }
+        , _localMatrix{ 1.f }
+        , _localInverse{ 1.f }
+        , _worldMatrix{ 1.f }
+        , _worldInverse{ 1.f }
+        , _matrixChanged{ true }
+        , _parentChanged{ false }
     {
         setParent(parent);
     }
@@ -51,7 +51,7 @@ namespace darmok
         {
             _parent->_children.erase(*this);
         }
-        for (auto& child : Children(_children))
+        for (auto& child : Children{ _children })
         {
             child.get().setParent(nullptr);
         }
@@ -59,11 +59,11 @@ namespace darmok
 
     void Transform::reset() noexcept
     {
-        _position = glm::vec3();
-        _rotation = glm::quat();
-        _scale = glm::vec3(1);
-        _localMatrix = glm::mat4(1);
-        _localInverse = glm::mat4(1);
+        _position = glm::vec3{};
+        _rotation = glm::quat{};
+        _scale = glm::vec3{1.f};
+        _localMatrix = glm::mat4{ 1.f };
+        _localInverse = glm::mat4{ 1.f };
         _matrixChanged = true;
     }
 
@@ -150,7 +150,7 @@ namespace darmok
 
     void Transform::setChildrenParentChanged() noexcept
     {
-        for (auto& child : Children(_children))
+        for (auto& child : Children{ _children })
         {
             child.get().setParentChanged();
         }
@@ -183,43 +183,43 @@ namespace darmok
 
     glm::vec3 Transform::getEulerAngles() const noexcept
     {
-        return glm::degrees(glm::eulerAngles(getRotation()));
+        return glm::eulerAngles(getRotation());
     }
 
     glm::vec3 Transform::getForward() const noexcept
     {
-        static const glm::vec3 dir(0, 0, 1);
+        static const glm::vec3 dir{ 0.f, 0.f, 1.f };
         return getRotation() * dir;
     }
 
     glm::vec3 Transform::getRight() const noexcept
     {
-        static const glm::vec3 dir(1, 0, 0);
+        static const glm::vec3 dir{ 1.f, 0.f, 0.f };
         return getRotation() * dir;
     }
 
     glm::vec3 Transform::getUp() const noexcept
     {
-        static const glm::vec3 dir(0, 1, 0);
+        static const glm::vec3 dir{ 0.f, 1.f, 0.f };
         return getRotation() * dir;
     }
 
     Transform& Transform::setEulerAngles(const glm::vec3& v) noexcept
     {
-        setRotation(glm::quat(glm::radians(v)));
+        setRotation(glm::quat{ v });
         return *this;
     }
 
     Transform& Transform::rotate(const glm::vec3& v) noexcept
     {
-        setRotation(getRotation() * glm::quat(glm::radians(v)));
+        setRotation(getRotation() * glm::quat{ v });
         return *this;
     }
 
     Transform& Transform::rotateAround(const glm::vec3& point, const glm::vec3& axis, float angle) noexcept
     {
         auto pos = _position - point;
-        auto quat = glm::angleAxis(glm::radians(angle), glm::normalize(axis));
+        auto quat = glm::angleAxis(angle, glm::normalize(axis));
         setPosition((quat * pos) + point);
         setRotation(quat * _rotation);
         return *this;
@@ -289,15 +289,15 @@ namespace darmok
 
     glm::vec3 Transform::getWorldPosition() const noexcept
     {
-        return glm::vec3(_worldMatrix[3]);
+        return glm::vec3{ _worldMatrix[3] };
     }
 
     glm::vec3 Transform::getWorldScale() const noexcept
     {
         return {
-            glm::length(glm::vec3(_worldMatrix[0])),
-            glm::length(glm::vec3(_worldMatrix[1])),
-            glm::length(glm::vec3(_worldMatrix[2]))
+            glm::length(glm::vec3{_worldMatrix[0]}),
+            glm::length(glm::vec3{_worldMatrix[1]}),
+            glm::length(glm::vec3{_worldMatrix[2]})
         };
     }
 
@@ -308,18 +308,18 @@ namespace darmok
 
     glm::vec3 Transform::getWorldDirection() const noexcept
     {
-        static const glm::vec3& forward = glm::vec3(0.F, 0.F, 1.F);
+        static const glm::vec3 forward{ 0.f, 0.f, 1.f };
         return getWorldRotation() * forward;
     }
 
     glm::vec3 Transform::worldToLocalPoint(const glm::vec3& point) const noexcept
     {
-        return _worldMatrix * glm::vec4(point, 1);
+        return _worldMatrix * glm::vec4{ point, 1.f };
     }
 
     glm::vec3 Transform::localToWorldPoint(const glm::vec3& point) const noexcept
     {
-        return _worldInverse * glm::vec4(point, 1);
+        return _worldInverse * glm::vec4{ point, 1.f };
     }
 
     const glm::mat4& Transform::getLocalMatrix() const noexcept

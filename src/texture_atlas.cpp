@@ -413,12 +413,12 @@ namespace darmok
 			auto texResult = texLoader(imagePath);
 			if (!texResult)
 			{
-				return unexpected<std::string>{ texResult.error() };
+				return unexpected{ texResult.error() };
 			}
 			auto imgResult = TextureUtils::writeImage(*texResult.value(), alloc, imagePath);
 			if (!imgResult)
 			{
-				return unexpected<std::string>{ imgResult.error() };
+				return unexpected{ imgResult.error() };
 			}
 			for (const auto& elm : atlas.elements())
 			{

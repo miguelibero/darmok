@@ -18,5 +18,5 @@ message AssimpSceneImportConfig {
     repeated string skip_nodes_regex = 8;
     string root_mesh_regex = 9;
     optional Material.OpacityType opacity = 10;
-    optional DirectionalLight.ShadowType shadow_type = 11;
+    optional Light.ShadowType shadow_type = 11;
 }

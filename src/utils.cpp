@@ -1,10 +1,11 @@
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
+#include <process.hpp>
+
 #include <sstream>
 #include <stdexcept>
 #include <cstdio>
 #include <array>
-#include <process.hpp>
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -12,20 +13,29 @@
 
 namespace darmok
 {
-	void checkError(bx::Error& err)
+	std::optional<std::string> checkError(bx::Error& err) noexcept
     {
-        if (!err.isOk())
+        if (err.isOk())
         {
-            auto& msg = err.getMessage();
-			std::stringstream ss;
-			ss << std::string_view(msg.getCPtr(), msg.getLength());
-			ss << "( " << err.get().code << ")";
-            throw std::runtime_error(ss.str());
+            return std::nullopt;
         }
+        auto& msg = err.getMessage();
+        std::stringstream ss;
+        ss << std::string_view(msg.getCPtr(), msg.getLength());
+        ss << "( " << err.get().code << ")";
+        return ss.str();
+	}
+
+    void throwIfError(bx::Error& err)
+    {
+        if(auto msg = checkError(err))
+        {
+            throw std::runtime_error{ *msg };
+		}
     }
 
     RandomGenerator::RandomGenerator(uint32_t seed) noexcept
-        : _seed(seed)
+        : _seed{ seed }
     {
     }
 
@@ -103,7 +113,7 @@ namespace darmok
             auto cmd = argsToString(args);
             std::ostringstream out;
             std::ostringstream err;
-            TinyProcessLib::Process process(cmd, path.string(),
+            TinyProcessLib::Process process{ cmd, path.string(),
                 [&out](const char* bytes, size_t n)
                 {
                     out.write(bytes, n);
@@ -112,7 +122,7 @@ namespace darmok
                 {
                     err.write(bytes, n);
                 }
-            );
+            };
             auto code = process.get_exit_status();
             return Result{
                 .out = out.str(),
@@ -124,7 +134,7 @@ namespace darmok
 
     std::filesystem::path getTempPath(std::string_view prefix) noexcept
     {
-        auto filename = std::string(prefix) + "XXXXXX";
+        auto filename = std::string{ prefix } + "XXXXXX";
         auto path = (std::filesystem::temp_directory_path() / filename).string();
         std::vector<char> data;
         data.insert(data.end(), path.begin(), path.end());

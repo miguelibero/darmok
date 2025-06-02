@@ -30,8 +30,8 @@ namespace
 	{
 	public:
 		CircleUpdater(Transform& trans, float speed = 1.f)
-			: _trans(trans)
-			, _speed(speed)
+			: _trans{ trans }
+			, _speed{ speed }
 		{
 		}
 
@@ -50,9 +50,9 @@ namespace
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 50.f)
-			: _trans(trans)
-			, _speed(speed)
-			, _paused(false)
+			: _trans{ trans }
+			, _speed{ speed }
+			, _paused{ false }
 		{
 		}
 
@@ -68,7 +68,7 @@ namespace
 				return;
 			}
 			auto r = _trans.getRotation();
-			r = glm::quat(glm::radians(glm::vec3(0, dt * _speed, 0))) * r;
+			r = glm::quat{ glm::radians(glm::vec3{0.f, dt * _speed, 0.f}) } *r;
 			_trans.setRotation(r);
 		}
 
@@ -82,7 +82,7 @@ namespace
 	{
 	public:
 		PbrSampleAppDelegate(App& app)
-			: _app(app)
+			: _app{ app }
 		{
 			// app.setRendererType(bgfx::RendererType::Direct3D12);
 		}
@@ -92,8 +92,8 @@ namespace
 			_app.setResetFlag(BGFX_RESET_VSYNC);
 
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
-			auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
-			auto unlitProg = StandardProgramLoader::load(StandardProgramType::Unlit);
+			auto prog = StandardProgramLoader::load(Program::Standard::Forward);
+			auto unlitProg = StandardProgramLoader::load(Program::Standard::Unlit);
 			auto& layout = prog->getVertexLayout();
 
 			_cam = createCamera(scene);
@@ -103,73 +103,72 @@ namespace
 			_freelook->addListener(*this);
 
 			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
-				StandardProgramLoader::load(StandardProgramType::Tonemap), "Tonemap");
+				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
 
-			MeshData debugArrowMeshData(Line(), LineMeshType::Arrow);
+			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
 			std::shared_ptr<IMesh> debugArrowMesh = debugArrowMeshData.createMesh(unlitProg->getVertexLayout());
 
-			MeshData debugSphereMeshData(Sphere(0.02F));
+			MeshData debugSphereMeshData{ Sphere{0.02f} };
 			std::shared_ptr<IMesh> debugSphereMesh = debugSphereMeshData.createMesh(unlitProg->getVertexLayout());
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity);
-			lightRootTrans.setPosition(glm::vec3{ 0, 1.5, 2 });
+			lightRootTrans.setPosition(glm::vec3{ 0.f, 1.5f, 2.f });
 			auto pointLightEntity = scene.createEntity();
-			auto& pointLightTrans = scene.addComponent<Transform>(pointLightEntity, glm::vec3{ 0, 1, 0 });
+			auto& pointLightTrans = scene.addComponent<Transform>(pointLightEntity, glm::vec3{ 0.f, 1.f, 0.f });
 			pointLightTrans.setParent(lightRootTrans);
 			scene.addSceneComponent<CircleUpdater>(pointLightTrans);
 			auto& pointLight = scene.addComponent<PointLight>(pointLightEntity, 100);
-			pointLight.setShadowType(ShadowType::Hard);
+			pointLight.setShadowType(LightDefinition::HardShadow);
 			scene.addComponent<Renderable>(pointLightEntity, debugSphereMesh, unlitProg, Colors::green());
 			scene.addComponent<BoundingBox>(pointLightEntity, debugSphereMeshData.getBounds());
 
 			auto dirLightEntity = scene.createEntity();
-			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2, 2, -2 })
-				.lookDir(glm::vec3(0, -1, -1));
+			auto& dirLightTrans = scene.addComponent<Transform>(dirLightEntity, glm::vec3{ -2.f, 2.f, -2.f })
+				.lookDir(glm::vec3{ 0.f, -1.f, -1.f });
 			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 1);
-			dirLight.setShadowType(ShadowType::Soft);
+			dirLight.setShadowType(LightDefinition::SoftShadow);
 			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(dirLightTrans));
 			scene.addComponent<Renderable>(dirLightEntity, debugArrowMesh, unlitProg, Colors::magenta());
 			scene.addComponent<BoundingBox>(dirLightEntity, debugArrowMeshData.getBounds());
 
 			auto spotLightEntity = scene.createEntity();
-			auto& spotLightTrans = scene.addComponent<Transform>(spotLightEntity, glm::vec3{1, 1, -1} * 2.F)
-				.lookAt(glm::vec3(0, 0, 0));
-			auto& spotLight = scene.addComponent<SpotLight>(spotLightEntity, 100).setConeAngle(glm::radians(15.F));
-			spotLight.setShadowType(ShadowType::Hard);
+			auto& spotLightTrans = scene.addComponent<Transform>(spotLightEntity, glm::vec3{ 1.f, 1.f, -1.f } * 2.f)
+				.lookAt(glm::vec3{ 0.f });
+			auto& spotLight = scene.addComponent<SpotLight>(spotLightEntity, 100).setConeAngle(glm::radians(15.f));
+			spotLight.setShadowType(LightDefinition::HardShadow);
 			scene.addComponent<Renderable>(spotLightEntity, debugArrowMesh, unlitProg, Colors::cyan());
 			scene.addComponent<BoundingBox>(spotLightEntity, debugArrowMeshData.getBounds());
-			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(spotLightTrans, -50.F));
+			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(spotLightTrans, -50.f));
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
 
 			auto greenMat = std::make_shared<Material>(prog, Colors::green());
 
-			auto goldMat = std::make_shared<Material>(prog);
-			goldMat->setMetallicFactor(0.5F);
-			goldMat->setBaseColor(Colors::denormalize({ 0.944F, 0.776F, 0.373F, 1.F }));
+			auto goldMat = std::make_shared<Material>(prog, Colors::denormalize({ 0.944f, 0.776f, 0.373f, 1.f }));
+			goldMat->metallicFactor = 0.5f;
 
 			Cube cubeShape;
-			auto cubeMesh = MeshData(cubeShape).createMesh(layout);
+			auto cubeMesh = MeshData{ cubeShape }.createMesh(layout);
 			auto cube = scene.createEntity();
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), greenMat);
 			scene.addComponent<BoundingBox>(cube, cubeShape);
-			scene.addComponent<Transform>(cube, glm::vec3{ 1.F, 1.F, 0 });
+			scene.addComponent<Transform>(cube, glm::vec3{ 1.f, 1.f, 0 });
 
 			Sphere shereShape;
-			MeshData shereMeshData(shereShape);
+			MeshData shereMeshData{ shereShape };
 			auto sphereMesh = shereMeshData.createMesh(layout);
 			auto sphere = scene.createEntity();
 			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), goldMat);
 			scene.addComponent<BoundingBox>(sphere, shereShape);
-			_trans = scene.addComponent<Transform>(sphere, glm::vec3{ -1.F, 1.F, 0 });
+			_trans = scene.addComponent<Transform>(sphere, glm::vec3{ -1.f, 1.f, 0 });
 
 			auto floorEntity = scene.createEntity();
-			Cube floorShape(glm::vec3(10.F, .5F, 10.F), glm::vec3(0, -0.25, 2));
-			auto floorMesh = MeshData(floorShape).createMesh(prog->getVertexLayout());
+			Cube floorShape(glm::vec3{ 10.f, .5f, 10.f }, glm::vec3{ 0, -0.25, 2 });
+			auto floorMesh = MeshData{ floorShape }.createMesh(prog->getVertexLayout());
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
-			floorMat->setProgramDefine("SHADOW_ENABLED");
+			floorMat->programDefines.insert("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 			scene.addComponent<BoundingBox>(floorEntity, floorShape);
 
@@ -186,7 +185,7 @@ namespace
 			{
 				return;
 			}
-			glm::vec3 dir(0);
+			glm::vec3 dir{ 0.f };
 			dir.x = _app.getInput().getAxis(_moveLeft, _moveRight);
 			dir.z = _app.getInput().getAxis(_moveBackward, _moveForward);
 
@@ -253,14 +252,14 @@ namespace
 			auto entity = scene.createEntity();
 
 			scene.addComponent<Transform>(entity)
-				.setPosition({ 0, 4, -4 })
-				.lookAt({ 0, 0, 0 });
+				.setPosition({ 0.f, 4.f, -4.f })
+				.lookAt({ 0.f, 0.f, 0.f });
 
-			auto farPlane = mainCamera ? 100 : 20;
+			auto farPlane = mainCamera ? 100.f: 20.f;
 			auto& cam = scene.addComponent<Camera>(entity)
-				.setPerspective(60, 0.3, farPlane);
+				.setPerspective(glm::radians(60.f), 0.3f, farPlane);
 
-			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
+			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx").value();
 			cam.addComponent<SkyboxRenderer>(skyboxTex);
 			cam.addComponent<GridRenderer>();
 			cam.addComponent<LightingRenderComponent>();

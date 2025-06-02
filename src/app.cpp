@@ -1196,7 +1196,7 @@ namespace darmok
 			bx::Error err;
 			bimg::imageWritePng(&writer, width, height, pitch, data, format, yflip, &err);
 			bx::close(&writer);
-			checkError(err);
+			throwIfError(err);
 		}
 	}
 

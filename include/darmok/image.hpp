@@ -6,6 +6,7 @@
 #include <darmok/image_fwd.hpp>
 #include <darmok/asset_core.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/expected.hpp>
 #include <darmok/protobuf/texture.pb.h>
 
 #include <memory>
@@ -56,9 +57,9 @@ namespace darmok
 		[[nodiscard]] bool isTextureValid(uint64_t flags) const noexcept;
 		[[nodiscard]] TextureType getTextureType() const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
-		void encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
-		[[nodiscard]] Data encode(ImageEncoding encoding) const noexcept;
-		void write(ImageEncoding encoding, std::ostream& stream) const noexcept;
+		[[nodiscard]] expected<void, std::string> encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
+		[[nodiscard]] expected<Data, std::string> encode(ImageEncoding encoding) const noexcept;
+		[[nodiscard]] expected<void, std::string> write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 
 		[[nodiscard]] expected<void, std::string> update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1);
 
@@ -67,7 +68,6 @@ namespace darmok
 		
 	private:
 		bimg::ImageContainer* _container;
-		static const std::unordered_map<bimg::TextureFormat::Enum, std::string> _formatNames;
 
 		void copyContainer(const Image& other) noexcept;
 	};
@@ -95,7 +95,7 @@ namespace darmok
 		bool startImport(const Input& input, bool dry = false) override;
 		Outputs getOutputs(const Input& input) noexcept override;
 		Dependencies getDependencies(const Input& input) noexcept override;
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) noexcept override;
+		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 		void endImport(const Input& input) noexcept override;
 		const std::string& getName() const noexcept override;
 	private:

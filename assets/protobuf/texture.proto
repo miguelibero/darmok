@@ -23,10 +23,9 @@ message TextureConfig {
 message Texture {
 
 	enum Type {
-		Unknown = 0;
-		CubeMap = 1;
-		Texture2D = 2;
-		Texture3D = 3;
+		Texture2D = 0;
+		Texture3D = 1;
+		CubeMap = 2;
 	}
 	enum SamplingType {
         Min = 0; // minification

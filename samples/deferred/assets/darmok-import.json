@@ -1,10 +1,11 @@
 {
     "files": {
         "sponza/Sponza.gltf": {
-            "model": {
+            "scene": {
                 "outputPath": "../Sponza.pb",
-                "program": "forward",
-                "embedTextures": true
+                "program": "Forward",
+                "embedTextures": true,
+                "shadowType": "Soft"
             }
         }
     }

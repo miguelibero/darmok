@@ -22,8 +22,7 @@ namespace darmok
 		auto img = createImage(def, alloc);
 		auto encoding = Image::getEncodingForPath(path);
 		std::ofstream out{ path, std::ios::binary };
-		img.write(encoding, out);
-		return {};
+		return img.write(encoding, out);
 	}
 	 
 	bgfx::TextureInfo TextureUtils::getInfo(const protobuf::TextureConfig& config) noexcept
@@ -310,11 +309,6 @@ namespace darmok
 		: _handle{ bgfx::kInvalidHandle }
 		, _config{ cfg }
 	{
-		if (getType() == Definition::Unknown)
-		{
-			throw std::runtime_error{ "unknown texture type" };
-		}
-
 		// copying the memory of the image becauyse bgfx needs to maintain the memory for some frames
 		const auto mem = data.copyMem();
 		auto w = static_cast<uint16_t>(_config.size().x());
@@ -330,8 +324,6 @@ namespace darmok
 			break;
 		case Definition::Texture2D:
 			_handle = bgfx::createTexture2D(w, h, _config.mips(), _config.layers(), format, flags, mem);
-			break;
-		default:
 			break;
 		}
 	}
@@ -352,9 +344,6 @@ namespace darmok
 			break;
 		case Definition::Texture3D:
 			_handle = bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags);
-			break;
-		default:
-			throw std::runtime_error{ "unknown texture type" };
 			break;
 		}
 	}

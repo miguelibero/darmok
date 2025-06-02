@@ -5,6 +5,11 @@
         }
     },
     "files": {
-        "comic.ttf": "font_atlas"
+        "comic.ttf": {
+            "font_atlas": {
+                "imagePath": "lalal/comic.png",
+                "atlasPath": "lalal/lalal2/comic.xml"
+            }
+        }
     }
 }

@@ -7,6 +7,7 @@
 #include <string>
 #include <variant>
 #include <filesystem>
+#include <optional>
 
 #include <bx/error.h>
 #include <entt/entt.hpp>
@@ -19,7 +20,8 @@ namespace darmok
         return static_cast<std::underlying_type_t<E>>(e);
     }
 
-    void checkError(bx::Error& err);
+    [[nodiscard]] std::optional<std::string> checkError(bx::Error& err) noexcept;
+	void throwIfError(bx::Error& err);
 
     class DARMOK_EXPORT RandomGenerator final
     {

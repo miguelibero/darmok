@@ -401,17 +401,23 @@ namespace darmok
         auto meshPath = getMesh(def, index);
         auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
 
+        auto childEntityId = createEntity(def);
+        TransformDefinition trans;
+        trans.set_name(AssimpUtils::getString(assimpMesh->mName));
+        trans.set_parent(entityId);
+        addComponent(def, childEntityId, trans);
+
         RenderableDefinition renderable;
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
-        addComponent(def, entityId, renderable);
+        addComponent(def, childEntityId, renderable);
 
         auto armPath = getArmature(def, index);
         if (!armPath.empty())
         {
             SkinnableDefinition skinnable;
             skinnable.set_armature_path(armPath);
-            addComponent(def, entityId, skinnable);
+            addComponent(def, childEntityId, skinnable);
         }
 
         return true;
@@ -674,10 +680,11 @@ namespace darmok
                 fsPath = _basePath / fsPath;
             }
             auto result = (*_texLoader)(fsPath.string());
-            if (result)
+            if (!result)
             {
-                texDef = *result.value();
+                return false;
             }
+            texDef = *result.value();
         }
         else
         {
@@ -1318,6 +1325,21 @@ namespace darmok
         {
             config.set_embed_textures(*itr);
         }
+        itr = json.find("shadowType");
+        if (itr != json.end())
+        {
+            auto val = itr->get<std::string>();
+            static const std::string suffix = "Shadow";
+            if (!StringUtils::endsWith(val, suffix))
+            {
+                val += suffix;
+            }
+            protobuf::Light::ShadowType shadowType;
+            if(protobuf::Light::ShadowType_Parse(val, &shadowType))
+            {
+                config.set_shadow_type(shadowType);
+            }
+        }
     }
 
     expected<VertexLayout, std::string> AssimpSceneFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
@@ -1456,7 +1478,7 @@ namespace darmok
 		auto writeResult = protobuf::write(def, out, _outputFormat);
         if(!writeResult)
 		{
-			throw std::runtime_error("failed to write output: " + writeResult.error());
+            throw std::runtime_error{ "failed to write output: " + writeResult.error() };
 		}
     }
 

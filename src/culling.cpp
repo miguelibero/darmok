@@ -242,7 +242,7 @@ namespace darmok
     }
 
     CullingDebugRenderer::CullingDebugRenderer(const OptionalRef<const Camera>& mainCam) noexcept
-        : _mainCam(mainCam)
+        : _mainCam{ mainCam }
     {
     }
 
@@ -271,7 +271,7 @@ namespace darmok
             const Frustum frust{ mainCam->getViewProjectionMatrix() };
             for (auto& plane : frust.getPlanes())
             {
-                meshData += MeshData{plane, Mesh::Definition::FullRectangle};
+                meshData += MeshData{plane, Mesh::Definition::OutlineRectangle};
                 _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
                 ++debugColor;
             }

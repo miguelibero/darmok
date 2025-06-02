@@ -41,9 +41,9 @@ namespace
 			auto& camTrans = scene.addComponent<Transform>(camEntity);
 			auto& cam = scene.addComponent<Camera>(camEntity);
 			/*
-				camTrans.setPosition({ 0.f, -1.f, -1.f {)
-				    .lookAt({ 0, 0, 0 });
-				cam.setViewportPerspective(60, 0.3, 1000);
+				camTrans.setPosition({ 0.f, -1.f, -1.f })
+				    .lookAt({ 0.f, 0.f, 0.f });
+				cam.setViewportPerspective(glm::radians(60.f), 0.3f, 1000.f);
 			*/
 
 			cam.setOrtho();
@@ -53,19 +53,19 @@ namespace
 
 			auto text1Entity = scene.createEntity();
 			_text1 = scene.addComponent<Text>(text1Entity, arial, _textStr);
-			scene.addComponent<Transform>(text1Entity, glm::vec3{ 0, 200, 0 })
-				.setScale(glm::vec3{ 1000 });
+			scene.addComponent<Transform>(text1Entity, glm::vec3{ 0.f, 200.f, 0.f })
+				.setScale(glm::vec3{ 1000.f });
 
 			auto text2Entity = scene.createEntity();
 			_text2 = scene.addComponent<Text>(text2Entity, comic, _textStr);
-			scene.addComponent<Transform>(text2Entity, glm::vec3{ 0, 0, 0 })
-				.setScale(glm::vec3{ 1000 });
+			scene.addComponent<Transform>(text2Entity, glm::vec3{ 0.f, 0.f, 0.f })
+				.setScale(glm::vec3{ 1000.f });
 
 			auto text3Entity = scene.createEntity();
 			_text3 = scene.addComponent<Text>(text3Entity, noto, _textStr);
-			_text3->setContentSize(glm::vec2{ 200, noto->getLineSize() });
-			scene.addComponent<Transform>(text3Entity, glm::vec3(0, -200, 0))
-				.setScale(glm::vec3{ 1000 });
+			_text3->setContentSize(glm::vec2{ 200.f, noto->getLineSize() });
+			scene.addComponent<Transform>(text3Entity, glm::vec3{ 0.f, -200.f, 0.f })
+				.setScale(glm::vec3{ 1000.f });
 		}
 
 		void imguiRender()
@@ -90,7 +90,7 @@ namespace
 		OptionalRef<Text> _text2;
 		OptionalRef<Text> _text3;
 		std::string _textStr = "darmok engine rules!";
-		glm::vec4 _color = glm::vec4(1);
+		glm::vec4 _color{ 1.f };
 	};
 }
 

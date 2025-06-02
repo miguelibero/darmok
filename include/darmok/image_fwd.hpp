@@ -6,6 +6,7 @@ namespace darmok
 	{
 		Tga,
 		Png,
+		Jpg,
 		Exr,
 		Hdr,
 		Dds,

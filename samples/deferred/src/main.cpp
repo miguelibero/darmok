@@ -2,7 +2,6 @@
 
 #include <darmok/app.hpp>
 #include <darmok/scene.hpp>
-#include <darmok/model_assimp.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/light.hpp>
@@ -16,6 +15,7 @@
 #include <darmok/material.hpp>
 #include <darmok/culling.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/scene_serialize.hpp>
 
 namespace
 {
@@ -25,15 +25,15 @@ namespace
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 50.f)
-			: _trans(trans)
-			, _speed(speed)
+			: _trans{ trans }
+			, _speed{ speed }
 		{
 		}
 
 		void update(float dt) override
 		{
 			auto r = _trans.getRotation();
-			r = glm::quat(glm::radians(glm::vec3(dt * _speed, 0, 0))) * r;
+			r = glm::quat{ glm::radians(glm::vec3{ dt * _speed, 0, 0 }) } *r;
 			_trans.setRotation(r);
 		}
 
@@ -47,8 +47,8 @@ namespace
 	{
 	public:
 		DeferredSampleAppDelegate(App& app)
-			: _app(app)
-			, _mouseVel(0)
+			: _app{ app }
+			, _mouseVel{ 0 }
 		{
 		}
 
@@ -68,33 +68,33 @@ namespace
 			freelook.addListener(*this);
 
 			scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
-				StandardProgramLoader::load(StandardProgramLoader::Type::Tonemap), "Tonemap");
+				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
 
 			auto lightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(lightEntity, 0.05);
 
 			auto dirLightEntity = scene->createEntity();
 			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ -7.5, 3.5, 0 })
-				.lookDir(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
+				.lookDir(glm::vec3{ 0, -1, 0 }, glm::vec3{ 0, 0, 1 });
 			auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
-			dirLight.setShadowType(ShadowType::Soft);
+			dirLight.setShadowType(LightDefinition::SoftShadow);
 			scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
-			auto prog = StandardProgramLoader::load(StandardProgramLoader::Type::ForwardBasic);
-			std::shared_ptr<IMesh> arrowMesh = MeshData(Line{}, MeshData::LineMeshType::Arrow).createMesh(prog->getVertexLayout());
+			auto prog = StandardProgramLoader::load(Program::Standard::ForwardBasic);
+			std::shared_ptr<IMesh> arrowMesh = MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout());
 			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)
 			{
 				auto entity = scene->createEntity();
 				auto& light = scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
-				light.setShadowType(ShadowType::Hard);
+				light.setShadowType(LightDefinition::HardShadow);
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
 			_app.getAssets().getSceneLoader()(*scene, "Sponza.pb");
 
-			_mouseVel = glm::vec2(0);
+			_mouseVel = glm::vec2{ 0 };
 		}
 
 	protected:
@@ -145,11 +145,11 @@ namespace
 
 			auto farPlane = mainCamera ? 40 : 20;
 			auto& cam = scene.addComponent<Camera>(entity);
-			cam.setPerspective(60, 0.3, farPlane);
+			cam.setPerspective(glm::radians(60.f), 0.3, farPlane);
 
 			scene.addComponent<Transform>(entity)
-				.setPosition(glm::vec3(0, 1, 0))
-				.lookAt(glm::vec3(-7, 2, 0));
+				.setPosition(glm::vec3{ 0, 1, 0 })
+				.lookAt(glm::vec3{ -7, 2, 0 });
 
 			ShadowRendererConfig shadowConfig;
 			// shadowConfig.mapMargin = glm::vec3(0.1);

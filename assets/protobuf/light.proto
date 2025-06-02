@@ -4,10 +4,19 @@ package darmok.protobuf;
 
 import "math.proto";
 
+message Light {
+    enum ShadowType {
+        NoShadow = 0;
+        HardShadow = 1;
+        SoftShadow = 2;
+    };
+}
+
 message PointLight {
     float intensity = 1;
     Color3 color = 2;
     float range = 3;
+    Light.ShadowType shadow_type = 4;
 }
 
 message SpotLight {
@@ -16,19 +25,13 @@ message SpotLight {
     float range = 3;
     float inner_cone_angle = 4;
     float cone_angle = 5;
+    Light.ShadowType shadow_type = 6;
 }
 
 message DirectionalLight {
     float intensity = 1;
     Color3 color = 2;
-
-    enum ShadowType {
-        None = 0;
-        Hard = 1;
-        Soft = 2;
-    };
-
-    ShadowType shadow_type = 3;
+    Light.ShadowType shadow_type = 3;
 }
 
 message AmbientLight {

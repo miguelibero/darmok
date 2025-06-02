@@ -25,22 +25,22 @@ namespace
 	class WobbleUpdater : public ISceneComponent
 	{
 	public:
-		WobbleUpdater(Transform& trans, float speed = 0.1F, float maxAngle = 10.F)
+		WobbleUpdater(Transform& trans, float speed = 0.1f, float maxAngle = 10.f)
 			: _trans{ trans }
 			, _speed{ speed }
 			, _maxAngle{ maxAngle }
-			, _factor{ 1.F }
+			, _factor{ 1.f }
 		{
 		}
 
 		void update(float dt) override
 		{
 			auto rot = _trans.getRotation();
-			glm::quat target{ glm::radians(_factor * _maxAngle * glm::vec3{ 1 }) };
+			glm::quat target{ glm::radians(_factor * _maxAngle * glm::vec3{ 1.f }) };
 			rot = Math::rotateTowards(rot, target, _speed * dt);
 			if (rot == target)
 			{
-				_factor *= -1.F;
+				_factor *= -1.f;
 			}
 			_trans.setRotation(rot);
 		}
@@ -71,9 +71,9 @@ namespace
 			auto& cam = scene.addComponent<Camera>(camEntity);
 
 			scene.addComponent<Transform>(camEntity)
-				.setPosition({ 0, 0, -3 })
-				.lookAt({ 0, 0, 0 });
-			cam.setPerspective(60, 0.3, 5);
+				.setPosition({ 0.f, 0.f, -3.f })
+				.lookAt({ 0.f, 0.f, 0.f });
+			cam.setPerspective(glm::radians(60.f), 0.3f, 5.f);
 			
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<RmluiRenderer>();
@@ -83,12 +83,12 @@ namespace
 			auto canvasEntity = scene.createEntity();
 
 			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);
-			canvasTrans.setScale(glm::vec3{ 2 } / static_cast<float>(glm::compMax(canvasSize)));
-			canvasTrans.setEulerAngles({ 0, 0, 30 });
+			canvasTrans.setScale(glm::vec3{ 2.f } / static_cast<float>(glm::compMax(canvasSize)));
+			canvasTrans.setEulerAngles(glm::radians(glm::vec3{ 0.f, 0.f, 30.f }));
 			scene.addSceneComponent<WobbleUpdater>(canvasTrans);
 
 			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);
-			canvas.setOffset(glm::vec3{ canvasSize, 0 } *-0.5F);
+			canvas.setOffset(glm::vec3{ canvasSize, 0.f } *-0.5f);
 			canvas.setInputEnabled(true);
 			canvas.setMousePositionMode(RmluiCanvasMousePositionMode::Absolute);
 			auto& context = canvas.getContext();

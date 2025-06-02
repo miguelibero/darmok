@@ -192,11 +192,7 @@ namespace darmok
 		LuaPointLight::bind(lua);
 		LuaSpotLight::bind(lua);
 
-		lua.new_enum<ShadowType>("ShadowType", {
-			{ "None",	ShadowType::None },
-			{ "Soft",	ShadowType::Soft },
-			{ "Hard",	ShadowType::Hard }
-		});
+		LuaUtils::newEnum<LightDefinition::ShadowType>(lua, "ShadowType");
 
 		lua.new_usertype<LightingRenderComponent>("LightingRenderComponent", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<LightingRenderComponent>::value),

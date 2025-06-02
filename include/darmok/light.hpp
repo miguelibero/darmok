@@ -14,6 +14,9 @@ namespace darmok
 {
     class Material;
 
+    using LightDefinition = protobuf::Light;
+	using ShadowType = protobuf::Light::ShadowType;
+
     class DARMOK_EXPORT PointLight final
     {
     public:

@@ -25,9 +25,9 @@
       "name": "darmok-assetc.exe",
         "args": [
             "--import-input",
-            "${workspaceRoot}/samples/assimp/assets",
+            "${workspaceRoot}/samples/text/assets",
             "--import-output",
-            "samples/assimp/assets",
+            "samples/text/assets",
             "--bgfx-shaderc",
             "vcpkg_installed/x64-windows/tools/bgfx/shaderc.exe",
             "--bgfx-shader-include",

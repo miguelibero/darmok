@@ -15,10 +15,10 @@
 namespace darmok
 {
     PointLight::PointLight(float intensity, const Color3& color, float range) noexcept
-        : _intensity(intensity)
-        , _color(color)
-        , _range(range)
-        , _shadow(ShadowType::None)
+        : _intensity{ intensity }
+        , _color{ color }
+        , _range{ range }
+        , _shadow{ LightDefinition::NoShadow }
     {
     }
 
@@ -71,13 +71,14 @@ namespace darmok
 		setIntensity(def.intensity());
 		setColor(protobuf::convert(def.color()));
 		setRange(def.range());
+		setShadowType(def.shadow_type());
         return {};
     }
 
     DirectionalLight::DirectionalLight(float intensity) noexcept
-        : _intensity(intensity)
-        , _color(Colors::white3())
-        , _shadow(ShadowType::None)
+        : _intensity{ intensity }
+        , _color{ Colors::white3() }
+        , _shadow{ LightDefinition::NoShadow }
     {
     }
 
@@ -118,6 +119,7 @@ namespace darmok
     {
         setIntensity(def.intensity());
         setColor(protobuf::convert(def.color()));
+        setShadowType(def.shadow_type());
         return {};
     }
 
@@ -157,12 +159,12 @@ namespace darmok
     }
 
     SpotLight::SpotLight(float intensity, const Color3& color, float range) noexcept
-        : _intensity(intensity)
-        , _color(Colors::white3())
-        , _range(range)
-        , _coneAngle(glm::radians(30.F))
-        , _innerConeAngle(0.F)
-        , _shadow(ShadowType::None)
+        : _intensity{ intensity }
+        , _color{ Colors::white3() }
+        , _range{ range }
+        , _coneAngle{ glm::radians(30.f) }
+        , _innerConeAngle{ 0.f }
+        , _shadow{ LightDefinition::NoShadow }
     {
     }
 
@@ -239,6 +241,7 @@ namespace darmok
         setRange(def.range());
         setInnerConeAngle(def.inner_cone_angle());
         setConeAngle(def.cone_angle());
+        setShadowType(def.shadow_type());
         return {};
     }
 
@@ -327,8 +330,8 @@ namespace darmok
 
     struct DirectionalLightBufferElement final
     {
-        glm::vec4 dir = glm::vec4(0.F);
-        glm::vec3 color = glm::vec4(1.F);
+        glm::vec4 dir{ 0.f };
+        glm::vec3 color{ 1.f };
     };
 
     size_t LightingRenderComponent::updateDirLights() noexcept
@@ -341,7 +344,7 @@ namespace darmok
             if (trans)
             {
                 // elm.dir = -glm::normalize(trans->getWorldPosition());
-                elm.dir = glm::vec4(trans->getWorldDirection(), 0.F);
+                elm.dir = glm::vec4(trans->getWorldDirection(), 0.f);
             }
             elm.dir.w = float(entity);
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
@@ -369,8 +372,8 @@ namespace darmok
 
     struct PointLightBufferElement final
     {
-        glm::vec4 pos = glm::vec4(0.F);
-        glm::vec4 color = glm::vec4(1.F);
+        glm::vec4 pos{ 0.f };
+        glm::vec4 color{ 1.f };
     };
 
     size_t LightingRenderComponent::updatePointLights() noexcept
@@ -381,19 +384,19 @@ namespace darmok
             auto& elm = elms.emplace_back();
             auto& light = _scene->getComponent<const PointLight>(entity).value();
             auto trans = _scene->getComponent<const Transform>(entity);
-            float scale = 1.F;
+            float scale = 1.f;
             if (trans)
             {
-                elm.pos = glm::vec4(trans->getWorldPosition(), 0.F);
+                elm.pos = glm::vec4{ trans->getWorldPosition(), 0.f };
                 scale = glm::compMax(trans->getWorldScale());
             }
             elm.pos.w = float(entity);
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();
-            elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, range);
+            elm.color = glm::vec4{ Colors::normalize(light.getColor()) * intensity, range };
         }
 
-        VertexDataWriter writer(_pointLightsLayout, uint32_t(elms.size()));
+        VertexDataWriter writer{ _pointLightsLayout, static_cast<uint32_t>(elms.size()) };
         uint32_t index = 0;
         for (auto& elm : elms)
         {
@@ -412,10 +415,10 @@ namespace darmok
 
     struct SpotLightBufferElement final
     {
-        glm::vec4 pos = glm::vec4(0.F);
-        glm::vec3 direction = glm::vec3(0.F, 0.F, 1.F);
-        glm::vec4 color = glm::vec4(1.F);
-        glm::vec4 data = glm::vec4(0.F);
+        glm::vec4 pos{ 0.f };
+        glm::vec3 direction{ 0.f, 0.f, 1.f };
+        glm::vec4 color{ 1.f };
+        glm::vec4 data{ 0.f };
     };
 
     size_t LightingRenderComponent::updateSpotLights() noexcept
@@ -426,21 +429,21 @@ namespace darmok
             auto& elm = elms.emplace_back();
             auto& light = _scene->getComponent<const SpotLight>(entity).value();
             auto trans = _scene->getComponent<const Transform>(entity);
-            float scale = 1.F;
+            float scale = 1.f;
             if (trans)
             {
-                elm.pos = glm::vec4(trans->getWorldPosition(), 0.F);
+                elm.pos = glm::vec4(trans->getWorldPosition(), 0.f);
                 scale = glm::compMax(trans->getWorldScale());
                 elm.direction = trans->getWorldDirection();
             }
-            elm.pos.w = float(entity);
+            elm.pos.w = static_cast<float>(entity);
             auto range = light.getRange() * scale;
             auto intensity = light.getIntensity();
-            elm.color = glm::vec4(Colors::normalize(light.getColor()) * intensity, range);
-            elm.data = glm::vec4(light.getConeAngle(), light.getInnerConeAngle(), 0.F, 0.F);
+            elm.color = glm::vec4{ Colors::normalize(light.getColor()) * intensity, range };
+            elm.data = glm::vec4{ light.getConeAngle(), light.getInnerConeAngle(), 0.f, 0.f };
         }
 
-        VertexDataWriter writer(_spotLightsLayout, uint32_t(elms.size()));
+        VertexDataWriter writer{ _spotLightsLayout, static_cast<uint32_t>(elms.size()) };
         uint32_t index = 0;
         for (auto& elm : elms)
         {
@@ -462,18 +465,18 @@ namespace darmok
     void LightingRenderComponent::updateAmbientLights() noexcept
     {
         auto entities = _cam->getEntities<AmbientLight>();
-        _lightData = glm::vec4(0.F);
+        _lightData = glm::vec4{ 0.f };
         for (auto entity : entities)
         {
             const auto& ambientLight = _scene->getComponent<const AmbientLight>(entity).value();
             auto c = Colors::normalize(ambientLight.getColor()) * ambientLight.getIntensity();
-            _lightData += glm::vec4(c, 0.F);
+            _lightData += glm::vec4{ c, 0.f };
         }
     }
 
     void LightingRenderComponent::updateCamera() noexcept
     {
-        _camPos = glm::vec4(0);
+        _camPos = glm::vec4{ 0.f };
         if (!_cam || !_scene)
         {
             return;
@@ -483,7 +486,7 @@ namespace darmok
         {
             if (auto camTrans = _scene->getComponent<const Transform>(camEntity))
             {
-                _camPos = glm::vec4(camTrans->getWorldPosition(), 0);
+                _camPos = glm::vec4{ camTrans->getWorldPosition(), 0.f };
             }
         }
     }
@@ -494,9 +497,9 @@ namespace darmok
         {
             return;
         }
-        _lightCount.x = float(updatePointLights());
-        _lightCount.y = float(updateDirLights());
-        _lightCount.z = float(updateSpotLights());
+        _lightCount.x = static_cast<float>(updatePointLights());
+        _lightCount.y = static_cast<float>(updateDirLights());
+        _lightCount.z = static_cast<float>(updateSpotLights());
         updateAmbientLights();
         updateCamera();
     }
@@ -510,7 +513,7 @@ namespace darmok
         encoder.setBuffer(RenderSamplers::LIGHTS_SPOT, _spotLightBuffer, bgfx::Access::Read);
         encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
 
-        glm::mat3 normalMatrix(1);
+        glm::mat3 normalMatrix{ 1.f };
         if (auto trans = _scene->getComponent<Transform>(entity))
         {
             normalMatrix = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));

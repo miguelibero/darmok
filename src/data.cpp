@@ -502,6 +502,12 @@ namespace darmok
     {
     }
 
+    FileDataLoader& FileDataLoader::setBasePath(const std::filesystem::path& basePath) noexcept
+    {
+		_basePaths = { basePath };
+        return *this;
+    }
+
     FileDataLoader& FileDataLoader::addBasePath(const std::filesystem::path& basePath) noexcept
     {
         auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);

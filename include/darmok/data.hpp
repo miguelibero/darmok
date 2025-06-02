@@ -160,6 +160,7 @@ namespace darmok
         using Resource = Data;
         FileDataLoader(const OptionalRef<bx::AllocatorI>& alloc = nullptr);
 
+        FileDataLoader& setBasePath(const std::filesystem::path& basePath) noexcept;
         FileDataLoader& addBasePath(const std::filesystem::path& basePath) noexcept;
         bool removeBasePath(const std::filesystem::path& basePath) noexcept;
 

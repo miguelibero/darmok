@@ -9,13 +9,13 @@
 namespace darmok
 {
     FreelookController::FreelookController(Camera& cam, const Config& config) noexcept
-        : _config(config)
-        , _enabled(false)
-        , _winCursorMode(WindowCursorMode::Normal)
-        , _cam(cam)
-        , _pos(0)
-        , _rot(0, 0, 0, 1)
-        , _scale(1)
+        : _config{ config }
+        , _enabled{ false }
+        , _winCursorMode{ WindowCursorMode::Normal }
+        , _cam{ cam }
+        , _pos{ 0 }
+        , _rot{ 0, 0, 0, 1 }
+        , _scale{ 1 }
     {
     }
 
@@ -106,10 +106,10 @@ namespace darmok
         {
             return;
         }
-        glm::vec2 lookRot(
+        glm::vec2 lookRot{
             _input->getAxis(_config.lookLeft, _config.lookRight),
             _input->getAxis(_config.lookDown, _config.lookUp)
-        );
+        };
         lookRot *= _config.lookSensitivity * deltaTime;
         lookRot = glm::clamp(lookRot, -_config.maxLookAngle, _config.maxLookAngle);
         lookRot = glm::radians(lookRot);

@@ -42,9 +42,9 @@ namespace darmok
     {
         _renderer = renderer;
 
-        bgfx::Attachment at;
-        at.init(renderer.getTextureHandle(), bgfx::Access::Write, index);
-        _fb = bgfx::createFrameBuffer(1, &at);
+        bgfx::Attachment attach;
+        attach.init(renderer.getTextureHandle(), bgfx::Access::Write, index);
+        _fb = bgfx::createFrameBuffer(1, &attach);
     }
 
     void ShadowRenderPass::shutdown() noexcept
@@ -230,6 +230,7 @@ namespace darmok
         *texConfig.mutable_size() = protobuf::convert(glm::uvec2(_config.mapSize));
         texConfig.set_layers(_config.maxPassAmount);
         texConfig.set_format(Texture::Definition::D16);
+        texConfig.set_type(Texture::Definition::Texture2D);
 
         _tex = std::make_unique<Texture>(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
@@ -334,7 +335,7 @@ namespace darmok
         for (auto entity : _cam->getEntities<DirectionalLight>())
         {
             auto light = _scene->getComponent<const DirectionalLight>(entity);
-            if (light->getShadowType() == ShadowType::None)
+            if (light->getShadowType() == LightDefinition::NoShadow)
             {
                 continue;
             }
@@ -347,7 +348,7 @@ namespace darmok
         for (auto entity : _cam->getEntities<SpotLight>())
         {
             auto light = _scene->getComponent<const SpotLight>(entity);
-            if (light->getShadowType() == ShadowType::None)
+            if (light->getShadowType() == LightDefinition::NoShadow)
             {
                 continue;
             }
@@ -360,7 +361,7 @@ namespace darmok
         for (auto entity : _cam->getEntities<PointLight>())
         {
             auto light = _scene->getComponent<const PointLight>(entity);
-            if (light->getShadowType() == ShadowType::None)
+            if (light->getShadowType() == LightDefinition::NoShadow)
             {
                 continue;
             }
@@ -450,7 +451,7 @@ namespace darmok
         {
             auto light = _scene->getComponent<const DirectionalLight>(entity);
             auto shadowType = light->getShadowType();
-            if (shadowType == ShadowType::None)
+            if (shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
@@ -466,7 +467,7 @@ namespace darmok
         {
             auto light = _scene->getComponent<const SpotLight>(entity);
             auto shadowType = light->getShadowType();
-            if (shadowType == ShadowType::None)
+            if (shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
@@ -479,7 +480,7 @@ namespace darmok
         {
             auto light = _scene->getComponent<const PointLight>(entity);
             auto shadowType = light->getShadowType();
-            if (shadowType == ShadowType::None)
+            if (shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
@@ -535,7 +536,7 @@ namespace darmok
         {
             return lightTrans->getWorldInverse();
         }
-        return glm::mat4{ 1.F };
+        return glm::mat4{ 1.f };
     }
 
     // https://learn.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
@@ -545,7 +546,7 @@ namespace darmok
     {
         if (_camProjs.empty())
         {
-            return glm::mat4(1);
+            return glm::mat4{ 1.f };
         }
         return _camProjs[cascade % _camProjs.size()];
     }
@@ -583,7 +584,7 @@ namespace darmok
 
     glm::mat4 ShadowRenderer::getSpotLightProjMatrix(const SpotLight& light) const noexcept
     {
-        return Math::perspective(light.getConeAngle() * 2.F, 1.F, _config.nearPlane, light.getRange());
+        return Math::perspective(light.getConeAngle() * 2.f, 1.f, _config.nearPlane, light.getRange());
     }
 
     glm::mat4 ShadowRenderer::getSpotLightMapMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept
@@ -603,7 +604,7 @@ namespace darmok
         static const std::array<glm::quat, _pointLightFaceAmount> rots
         {
             glm::vec3{0.f, 0.f, 0.f},
-            glm::vec3{0.f, glm::pi<float>(), 0.F},
+            glm::vec3{0.f, glm::pi<float>(), 0.f},
             glm::vec3{0.f, glm::half_pi<float>(), 0.f},
             glm::vec3{0.f, -glm::half_pi<float>(), 0.f},
             glm::vec3{glm::half_pi<float>(), 0.f, 0.f},
@@ -649,7 +650,7 @@ namespace darmok
         encoder.setBuffer(RenderSamplers::SHADOW_LIGHT_DATA, _shadowLightDataBuffer, bgfx::Access::Read);
         encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, getTextureHandle());
 
-        auto texelSize = 1.F / _config.mapSize;
+        auto texelSize = 1.f / _config.mapSize;
         auto shadowData = glm::vec4{ texelSize, _config.cascadeAmount, _config.bias, _config.normalBias };
         encoder.setUniform(_shadowData1Uniform, glm::value_ptr(shadowData));
         shadowData = glm::vec4{ _dirAmount, _spotAmount, _pointAmount, getShadowMapAmount()};

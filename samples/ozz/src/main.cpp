@@ -50,7 +50,7 @@ namespace
 	public:
 		OzzSampleAppDelegate(App& app)
 			: _app{ app }
-			, _animTime{ 0.F }
+			, _animTime{ 0.f }
 		{
 		}
 
@@ -61,7 +61,7 @@ namespace
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
 
-			auto prog = StandardProgramLoader::load(StandardProgramLoader::Type::Forward);
+			auto prog = StandardProgramLoader::load(Program::Standard::Forward);
 			
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
@@ -69,13 +69,13 @@ namespace
 				.lookAt({ 0, 1, 0 });
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
-				.setPerspective(60, 0.3, 1000);
+				.setPerspective(glm::radians(60.f), 0.3, 1000);
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<LightingRenderComponent>();
 			cam.addComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = scene.addSceneComponent<FreelookController>(cam);
 
-			auto unlitProg = StandardProgramLoader::load(StandardProgramLoader::Type::Unlit);
+			auto unlitProg = StandardProgramLoader::load(Program::Standard::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
 			auto lightRootEntity = scene.createEntity();
@@ -119,12 +119,12 @@ namespace
 
 			auto mat = std::make_shared<Material>(prog, Colors::fromNumber(0xFAB137FF));
 			mat->programDefines = { "SKINNING_ENABLED" };
-			mat->textures[Material::TextureType::BaseColor] = baseTex;
-			mat->textures[Material::TextureType::MetallicRoughness] = metalTex;
-			mat->textures[Material::TextureType::Normal] = normalTex;
-			mat->textures[Material::TextureType::Occlusion] = ambientTex;
-			mat->occlusionStrength = 0.75F;
-			mat->metallicFactor = 1.F;
+			mat->textures[Material::TextureDefinition::BaseColor] = baseTex;
+			mat->textures[Material::TextureDefinition::MetallicRoughness] = metalTex;
+			mat->textures[Material::TextureDefinition::Normal] = normalTex;
+			mat->textures[Material::TextureDefinition::Occlusion] = ambientTex;
+			mat->occlusionStrength = 0.75f;
+			mat->metallicFactor = 1.f;
 
 			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.pb").value();
 			
