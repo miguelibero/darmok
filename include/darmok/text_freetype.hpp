@@ -27,7 +27,7 @@ namespace darmok
     public:
         FreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept;
         [[nodiscard]] Result operator()(std::filesystem::path path) override;
-        static std::string checkFontData(const DataView& data) noexcept;
+        static expected<void, std::string> checkFontData(const DataView& data) noexcept;
     private:
         IDataLoader& _dataLoader;
     };

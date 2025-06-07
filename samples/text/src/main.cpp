@@ -51,21 +51,25 @@ namespace
 			cam.addComponent<ForwardRenderer>();
 			cam.addComponent<TextRenderer>();
 
+			auto baseEntity = scene.createEntity();
+			auto& baseTrans = scene.addComponent<Transform>(baseEntity)
+				.setScale(glm::vec3{ 1000.f });
+
 			auto text1Entity = scene.createEntity();
 			_text1 = scene.addComponent<Text>(text1Entity, arial, _textStr);
-			scene.addComponent<Transform>(text1Entity, glm::vec3{ 0.f, 200.f, 0.f })
-				.setScale(glm::vec3{ 1000.f });
+			scene.addComponent<Transform>(text1Entity, glm::vec3{ 0.f, 0.2f, 0.f })
+				.setParent(baseTrans);
 
 			auto text2Entity = scene.createEntity();
 			_text2 = scene.addComponent<Text>(text2Entity, comic, _textStr);
 			scene.addComponent<Transform>(text2Entity, glm::vec3{ 0.f, 0.f, 0.f })
-				.setScale(glm::vec3{ 1000.f });
+				.setParent(baseTrans);
 
 			auto text3Entity = scene.createEntity();
 			_text3 = scene.addComponent<Text>(text3Entity, noto, _textStr);
 			_text3->setContentSize(glm::vec2{ 200.f, noto->getLineSize() });
-			scene.addComponent<Transform>(text3Entity, glm::vec3{ 0.f, -200.f, 0.f })
-				.setScale(glm::vec3{ 1000.f });
+			scene.addComponent<Transform>(text3Entity, glm::vec3{ 0.f, -0.2f, 0.f })
+				.setParent(baseTrans);
 		}
 
 		void imguiRender()

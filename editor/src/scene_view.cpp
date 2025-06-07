@@ -100,7 +100,7 @@ namespace darmok::editor
             _sceneBuffer = std::make_shared<FrameBuffer>(size);
             _cam->getRenderChain().setOutput(_sceneBuffer);
             _cam->setEnabled(true);
-            _cam->setBaseViewport(Viewport(size));
+            _cam->setBaseViewport(Viewport{ size });
         }
 
         // TODO: maby a bit harsh

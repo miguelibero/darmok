@@ -459,7 +459,11 @@ namespace darmok
 
     Camera& Camera::setViewport(const glm::vec4& viewport) noexcept
     {
-        _viewport = viewport;
+        if (_viewport != viewport)
+        {
+            _viewport = viewport;
+            updateProjection();
+        }
         return *this;
     }
 

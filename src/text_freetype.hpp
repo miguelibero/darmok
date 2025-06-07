@@ -93,7 +93,7 @@ namespace darmok
         bimg::TextureFormat::Enum _imageFormat;
 
         std::map<char32_t, FT_UInt> getIndices(std::u32string_view chars) const;
-        const FT_Bitmap& renderBitmap(FT_UInt index);
+        expected<std::reference_wrapper<const FT_Bitmap>, std::string> renderBitmap(FT_UInt index);
     };
 
     class FreetypeFontFileImporterImpl final

@@ -365,16 +365,16 @@ namespace darmok
 			}
 		}
 
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath)
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, const std::filesystem::path& basePath)
 		{
 			if (doc.empty())
 			{
 				return unexpected<std::string>("empty xml document");
 			}
-			return readTexturePacker(atlas, doc.child("TextureAtlas"), texLoader, basePath);
+			return readTexturePacker(atlas, doc.child("TextureAtlas"), basePath);
 		}
 
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath)
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, const std::filesystem::path& basePath)
 		{
 			if (node.empty())
 			{
@@ -397,28 +397,31 @@ namespace darmok
 			return {};
 		}
 
-		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, bx::AllocatorI& alloc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath) noexcept
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, const std::filesystem::path& basePath, const std::optional<ImageLoadContext>& imgLoad) noexcept
 		{
 			pugi::xml_node decl = doc.prepend_child(pugi::node_declaration);
 			decl.append_attribute("version") = "1.0";
 			decl.append_attribute("encoding") = "utf-8";
 			auto node = doc.append_child("TextureAtlas");
-			return writeTexturePacker(atlas, node, alloc, texLoader, basePath);
+			return writeTexturePacker(atlas, node, basePath, imgLoad);
 		}
 
-		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, bx::AllocatorI& alloc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath) noexcept
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, const std::filesystem::path& basePath, const std::optional<ImageLoadContext>& imgLoad) noexcept
 		{
 			auto imagePath = basePath / atlas.texture_path();
 			node.append_attribute("imagePath") = imagePath.string();
-			auto texResult = texLoader(imagePath);
-			if (!texResult)
+			if (imgLoad)
 			{
-				return unexpected{ texResult.error() };
-			}
-			auto imgResult = TextureUtils::writeImage(*texResult.value(), alloc, imagePath);
-			if (!imgResult)
-			{
-				return unexpected{ imgResult.error() };
+				auto texResult = imgLoad->texLoader(imagePath);
+				if (!texResult)
+				{
+					return unexpected{ texResult.error() };
+				}
+				auto imgResult = TextureUtils::writeImage(*texResult.value(), imgLoad->alloc, imagePath);
+				if (!imgResult)
+				{
+					return unexpected{ imgResult.error() };
+				}
 			}
 			for (const auto& elm : atlas.elements())
 			{
@@ -553,8 +556,8 @@ namespace darmok
 	}
 
 	TexturePackerDefinitionLoader::TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texLoader) noexcept
-		: _dataLoader(dataLoader)
-		, _texLoader(texLoader)
+		: _dataLoader{ dataLoader }
+		, _texLoader{ texLoader }
 	{
 	}
 
@@ -563,7 +566,7 @@ namespace darmok
 		auto dataResult = _dataLoader(path);
 		if (!dataResult)
 		{
-			return unexpected<std::string>{ dataResult.error() };
+			return unexpected{ dataResult.error() };
 		}
 
 		auto data = std::move(dataResult.value());
@@ -572,13 +575,13 @@ namespace darmok
 		auto xmlResult = doc.load_buffer_inplace(data.ptr(), data.size());
 		if (xmlResult.status != pugi::status_ok)
 		{
-			throw std::runtime_error(xmlResult.description());
+			return unexpected<std::string>{ xmlResult.description() };
 		}
 		auto atlasDef = std::make_shared<TextureAtlas::Definition>();
-		auto readResult = TextureAtlasUtils::readTexturePacker(*atlasDef, doc, _texLoader, path.parent_path());
+		auto readResult = TextureAtlasUtils::readTexturePacker(*atlasDef, doc, path.parent_path());
 		if (!readResult)
 		{
-			throw std::runtime_error("failed to read texture packer xml: " + readResult.error());
+			return unexpected<std::string>{"failed to read texture packer xml: " + readResult.error()};
 		}
 		atlasDef->set_texture_path(atlasDef->texture_path());
 		return atlasDef;
@@ -586,7 +589,7 @@ namespace darmok
 
 	TextureAtlasLoader::TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept
 		: FromDefinitionLoader(defLoader)
-		, _texLoader(texLoader)
+		, _texLoader{ texLoader }
 	{
 	}
 
@@ -604,9 +607,7 @@ namespace darmok
 	}
 
 	TexturePackerAtlasFileImporter::TexturePackerAtlasFileImporter(std::filesystem::path exePath) noexcept
-		: _exePath(std::move(exePath))
-		, _imgLoader(_dataLoader, _alloc)
-		, _texLoader(_imgLoader)
+		: _exePath{ std::move(exePath) }
 	{
 		if (_exePath.empty())
 		{
@@ -798,10 +799,10 @@ namespace darmok
 				throw std::runtime_error(xmlResult.description());
 			}
 			TextureAtlas::Definition atlasDef;
-			auto texPackResult = TextureAtlasUtils::readTexturePacker(atlasDef, doc, _texLoader, basePath);
+			auto texPackResult = TextureAtlasUtils::readTexturePacker(atlasDef, doc, basePath);
 			if (!texPackResult)
 			{
-				throw std::runtime_error("failed to read texture packer xml: " + texPackResult.error());
+				throw std::runtime_error{ "failed to read texture packer xml: " + texPackResult.error() };
 			}
 			atlasDef.set_texture_path(std::filesystem::relative(_texturePath, basePath).string());
 			_sheetData.clear();
@@ -811,7 +812,7 @@ namespace darmok
 			auto rmlResult = TextureAtlasUtils::writeRmlui(atlasDef, out, rmluiConfig);
 			if (!rmlResult)
 			{
-				throw std::runtime_error("failed to write rmlui: " + rmlResult.error());
+				throw std::runtime_error{ "failed to write rmlui: " + rmlResult.error() };
 			}
 			_sheetData.resize(out.tellp());
 		}

@@ -70,10 +70,17 @@ namespace darmok
 		void readTexturePacker(Element& elm, const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept;
 		void writeTexturePacker(const Element& elm, pugi::xml_node& xml) noexcept;
 
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "");
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "");
-		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, bx::AllocatorI& alloc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "") noexcept;
-		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, bx::AllocatorI& alloc, ITextureDefinitionLoader& texLoader, const std::filesystem::path& basePath = "") noexcept;
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, const std::filesystem::path& basePath = {});
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, const std::filesystem::path& basePath = {});
+		
+		struct ImageLoadContext final
+		{
+			ITextureDefinitionLoader& texLoader;
+			bx::AllocatorI& alloc;
+		};
+		
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_document& doc, const std::filesystem::path& basePath = {}, const std::optional<ImageLoadContext>& imgLoad = std::nullopt) noexcept;
+		expected<void, std::string> writeTexturePacker(const Atlas& atlas, pugi::xml_node& node, const std::filesystem::path& basePath = {}, const std::optional<ImageLoadContext>& imgLoad = std::nullopt) noexcept;
 		expected<void, std::string> writeRmlui(const Atlas& atlas, std::ostream& out, const RmluiConfig& config) noexcept;
 	}
 
@@ -163,9 +170,6 @@ namespace darmok
 		Data _sheetData;
 		OptionalRef<std::ostream> _log;
 		bx::DefaultAllocator _alloc;
-		FileDataLoader _dataLoader;
-		ImageLoader _imgLoader;
-		ImageTextureDefinitionLoader _texLoader;
 
 		static std::string getTextureFormatExt(const std::string& format) noexcept;
 		static std::string getSheetFormatExt(const std::string& format) noexcept;

@@ -9,8 +9,8 @@ message TextureAtlasElement {
     repeated Uvec2 positions = 2;
     repeated Uvec2 texture_coords = 3;
     repeated uint32 indices = 4;
-    Uvec2 texture_position = 5;
-    Uvec2 size = 6;
+    Uvec2 size = 5;
+    Uvec2 texture_position = 6;
     Vec2 offset = 7;
     Uvec2 original_size = 8;
     Vec2 pivot = 9;

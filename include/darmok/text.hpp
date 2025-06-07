@@ -96,7 +96,6 @@ namespace darmok
         RenderConfig _renderConfig;
     };
 
-    // TODO: add PIMPL class
     class DARMOK_EXPORT TextRenderer final : public ITypeCameraComponent<TextRenderer>
     {
     public:

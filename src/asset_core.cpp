@@ -238,7 +238,7 @@ namespace darmok
         {
             return false;
         }
-        auto config = nlohmann::json::parse(std::ifstream(path));
+        auto config = nlohmann::json::parse(std::ifstream{ path });
 
         HeaderConfig headerConfig;
         if (headerConfig.load(config))
