@@ -26,7 +26,7 @@ namespace
 
 		void update(float dt) override
 		{
-			_trans.rotate(glm::vec3{ 0, 0, dt * _speed });
+			_trans.rotate(glm::radians(glm::vec3{ 0, 0, dt * _speed }));
 		}
 
 	private:

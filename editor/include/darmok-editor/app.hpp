@@ -17,7 +17,7 @@ namespace darmok
     class ImguiAppComponent;
     class Camera;
     class Transform;
-    class Material;
+    struct Material;
     class ProgramDefinition;
 }
 
@@ -29,7 +29,6 @@ namespace darmok::editor
         IEditorAssetsViewDelegate<MaterialAsset>,
         IEditorAssetsViewDelegate<ProgramAsset>,
         IEditorAssetsViewDelegate<MeshAsset>,
-        IEditorAssetsViewDelegate<ModelAsset>,
         IEditorAssetsViewDelegate<SceneAsset>
     {
     public:

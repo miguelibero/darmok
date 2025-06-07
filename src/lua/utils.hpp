@@ -2,6 +2,7 @@
 
 #include "lua.hpp"
 #include <darmok/utils.hpp>
+#include <darmok/string.hpp>
 #include <darmok/protobuf.hpp>
 
 #include <vector>
@@ -18,23 +19,33 @@ namespace darmok
     {
         bool isArray(const sol::table& table)  noexcept;
 
-        void logError(const std::string& desc, const sol::error& err) noexcept;
+        void logError(std::string_view desc, const sol::error& err) noexcept;
 
-        bool checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept;
+        bool checkResult(std::string_view desc, const sol::protected_function_result& result) noexcept;
 
         std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
 
         int deny(lua_State* L);
 
         template<typename T>
-        void newEnum(sol::state_view& lua, std::string_view name, bool string = false)
+        void newEnum(sol::state_view& lua, std::string_view name = {}, bool stringValues = false)
         {
+            auto typeName = magic_enum::enum_type_name<T>();
+            if (name.empty())
+            {
+                name = typeName;
+            }
+            auto valuePrefix = std::string{ typeName } + "_";
             auto metatable = lua.create_table_with();
             auto prefix = std::string{ name } + ".";
             for (auto val : magic_enum::enum_values<T>())
             {
                 auto valueName = magic_enum::enum_name(val);
-                if (string)
+                if (StringUtils::startsWith(valueName, valuePrefix))
+                {
+                    valueName = valueName.substr(valuePrefix.size());
+                }
+                if (stringValues)
                 {
                     metatable.set(valueName, prefix + std::string{ valueName });
                 }
@@ -47,12 +58,6 @@ namespace darmok
             metatable[sol::meta_function::new_index] = deny;
             metatable[sol::meta_function::index] = metatable;
             table[sol::metatable_key] = metatable;
-        }
-
-        template<typename T>
-        void newEnum(sol::state_view& lua, bool string = false)
-        {
-            return newEnum<T>(lua, magic_enum::enum_type_name<T>(), string);
         }
 
         void configProtobuf(sol::metatable& table, const google::protobuf::Descriptor& desc);

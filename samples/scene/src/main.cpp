@@ -111,25 +111,25 @@ namespace
 			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
 			scene.addSceneComponent<FrameAnimationUpdater>();
 
-			_prog = StandardProgramLoader::load(StandardProgramLoader::Type::Unlit);
+			_prog = StandardProgramLoader::load(Program::Standard::Unlit);
 
 			auto cam3d = scene.createEntity();
 			scene.addComponent<Transform>(cam3d)
-				.setPosition(glm::vec3(0.f, 2.f, -2.f))
-				.lookAt(glm::vec3(0, 0, 0));
+				.setPosition(glm::vec3{ 0.f, 2.f, -2.f })
+				.lookAt(glm::vec3{ 0, 0, 0 });
 			scene.addComponent<Camera>(cam3d)
-				.setPerspective(60, 0.3, 1000)
+				.setPerspective(glm::radians(60.f), 0.3f, 1000.f)
 				.setCullingFilter<Culling3D>()
 				.addComponent<ForwardRenderer>();
 
 			auto cam2d = scene.createEntity();
 			scene.addComponent<Camera>(cam2d)
-				.setOrtho(glm::vec2(0))
+				.setOrtho(glm::vec2{ 0.f })
 				.setCullingFilter<Culling2D>()
 				.addComponent<ForwardRenderer>();
 
 			_debugMaterial = std::make_shared<Material>(_prog, Colors::red());
-			_debugMaterial->primitiveType = Material::PrimitiveType::Line;
+			_debugMaterial->primitiveType = Material::Definition::Line;
 
 			createBouncingSprite(scene);
 			createSpriteAnimation(scene);
@@ -141,22 +141,22 @@ namespace
 			auto tex = _app.getAssets().getTextureLoader()("engine.png").value();
 			auto sprite = scene.createEntity();
 			auto& trans = scene.addComponent<Transform>(sprite);
-			float scale = 0.5;
+			float scale = 0.5f;
 			auto& win = _app.getWindow();
 			auto fbScale = win.getFramebufferScale();
 
 			MeshData meshData{ Rectangle{tex->getSize()}};
-			meshData.scalePositions(glm::vec3{ 0.5F } * glm::vec3{ fbScale, 1 });
+			meshData.scalePositions(glm::vec3{ 0.5f } * glm::vec3{ fbScale, 1.f });
 
 			auto mesh = meshData.createMesh(_prog->getVertexLayout());
 			auto mat = std::make_shared<Material>(_prog, tex);
-			mat->opacityType = Material::OpacityType::Transparent;
+			mat->opacityType = Material::Definition::Transparent;
 			scene.addComponent<Renderable>(sprite, std::move(mesh), mat);
 
 			auto spriteBorder = scene.createEntity();
 			auto size = scale * glm::vec2{ tex->getSize() } *fbScale;
-			meshData = MeshData{ Rectangle::standard(), MeshData::RectangleMeshType::Outline };
-			meshData.scalePositions(glm::vec3{ size, 0 });
+			meshData = MeshData{ Rectangle::standard(), Mesh::Definition::OutlineRectangle };
+			meshData.scalePositions(glm::vec3{ size, 0.f });
 			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
 
 			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
@@ -180,17 +180,17 @@ namespace
 
 			TextureAtlasMeshConfig config;
 			config.offset = -glm::vec3{ animBounds.size.x, animBounds.size.y, 0.f } / 2.f;
-			config.scale = glm::vec3{ 2.F } *glm::vec3{ win.getFramebufferScale(), 1 };
-			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1F, config);
+			config.scale = glm::vec3{ 2.f } *glm::vec3{ win.getFramebufferScale(), 1.f };
+			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1f, config);
 			
 			auto material = std::make_shared<Material>(_prog, texAtlas->texture);
-			material->opacityType = Material::OpacityType::Transparent;
+			material->opacityType = Material::Definition::Transparent;
 			auto& renderable = scene.addComponent<Renderable>(anim, material);
 			scene.addComponent<FrameAnimation>(anim, frames, renderable);
 			
 			scene.addComponent<Culling2D>(anim);
 			auto& winSize = win.getPixelSize();
-			scene.addComponent<Transform>(anim, glm::vec3{ winSize, 0 } / 2.f);
+			scene.addComponent<Transform>(anim, glm::vec3{ winSize, 0.f } / 2.f);
 		}
 
 		void createRotatingCube(Scene& scene)

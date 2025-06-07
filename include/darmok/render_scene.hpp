@@ -50,7 +50,7 @@ namespace darmok
         }
     };
 
-    class Material;
+    struct Material;
     class Texture;
     class IMesh;
     class Program;

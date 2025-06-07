@@ -13,7 +13,7 @@ namespace darmok
 	class Scene;
     class IMesh;
     class Texture;
-    class Material;
+    struct Material;
 	class Program;
 
 	class LuaRenderable final

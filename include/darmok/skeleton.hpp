@@ -204,7 +204,7 @@ namespace darmok
     };
 
     class Transform;
-    class Material;
+    struct Material;
     class IFont;
 
     class DARMOK_EXPORT RenderableSkeleton final

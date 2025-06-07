@@ -53,7 +53,7 @@ namespace darmok
     };
 
     class RenderableSkeleton;
-    class Material;
+    struct Material;
     class IMesh;
 
     class LuaRenderableSkeleton final

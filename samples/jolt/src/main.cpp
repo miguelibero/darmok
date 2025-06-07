@@ -45,17 +45,17 @@ namespace
 			_scene = _app.addComponent<SceneAppComponent>().getScene();
 			_scene->addSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
 
-			auto prog = StandardProgramLoader::load(StandardProgramLoader::Type::ForwardBasic);
+			auto prog = StandardProgramLoader::load(Program::Standard::ForwardBasic);
 
 			// camera
 			{
 				auto camEntity = _scene->createEntity();
 
 				_camTrans = _scene->addComponent<Transform>(camEntity)
-					.setPosition({ 0, 5, -10 })
-					.lookAt({ 0, 0, 0 });
+					.setPosition({ 0.f, 5.f, -10.f })
+					.lookAt({ 0.f, 0.f, 0.f });
 				_cam = _scene->addComponent<Camera>(camEntity)
-					.setPerspective(60, 0.3, 1000);
+					.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
 
 				_cam->addComponent<ForwardRenderer>();
 				_cam->addComponent<LightingRenderComponent>();
@@ -79,15 +79,15 @@ namespace
 				_scene->addComponent<Transform>(light)
 					.setPosition({ 1, 2, -2 })
 					.lookDir({ -1, -1, 0 });
-				_scene->addComponent<PointLight>(light, 0.5)
+				_scene->addComponent<PointLight>(light, 0.5f)
 					.setRange(5);
-				_scene->addComponent<DirectionalLight>(light, 0.5);
+				_scene->addComponent<DirectionalLight>(light, 0.5f);
 				_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 			}
 
 			{ // floor
 				auto floorEntity = _scene->createEntity();
-				Cube floorShape{ {10.F, .5F, 10.F}, {0, -0.25, 0} };
+				Cube floorShape{ {10.f, .5f, 10.f}, {0.f, -0.25f, 0.f} };
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
 				auto floorMesh = MeshData{ floorShape }.createMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
@@ -95,15 +95,15 @@ namespace
 
 			{ // door
 				auto doorEntity = _scene->createEntity();
-				Cube doorShape{ {1.5F, 2.F, 0.2F}, {0, 1.F, 0} };
+				Cube doorShape{ {1.5f, 2.f, 0.2f}, {0, 1.f, 0} };
 				PhysicsBodyConfig config;
 				config.trigger = true;
 				config.shape = doorShape;
 				config.motion = PhysicsBodyMotionType::Kinematic;
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
 				_scene->addComponent<Transform>(doorEntity)
-					.setPosition({ 2.F, 0.F, 2.F })
-					.setEulerAngles({ 0, 90, 0 });
+					.setPosition({ 2.f, 0.f, 2.f })
+					.setEulerAngles(glm::radians(glm::vec3{ 0, 90, 0 }));
 
 				_doorMat = std::make_shared<Material>(prog, Color{ 255, 100, 100, 255 });
 				_triggerDoorMat = std::make_shared<Material>(prog, Colors::red());
@@ -116,18 +116,18 @@ namespace
 				_touchedCubeMat = std::make_shared<Material>(prog, Colors::green());
 				_cubeMesh = MeshData{ _cubeShape }.createMesh(prog->getVertexLayout());
 
-				for (auto x = -5.F; x < 5.F; x += 1.1F)
+				for (auto x = -5.f; x < 5.f; x += 1.1f)
 				{
-					for (auto z = -5.F; z < 5.F; z += 1.1F)
+					for (auto z = -5.f; z < 5.f; z += 1.1f)
 					{
-						glm::vec3 rot{ 45 * x, 0.F, 45.F * z };
-						createCube().setPosition({ x, 10.F, z }).setEulerAngles(rot);
+						glm::vec3 rot{ 45 * x, 0.f, 45.f * z };
+						createCube().setPosition({ x, 10.f, z }).setEulerAngles(glm::radians(rot));
 					}
 				}
 			}
 
 			{ // player
-				Capsule playerShape{1.F, 0.5F, { 0.F, 1.F, 0.F }};
+				Capsule playerShape{1.f, 0.5f, { 0.f, 1.f, 0.f }};
 				auto playerEntity = _scene->createEntity();
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 				_characterCtrl->setDelegate(*this);
@@ -251,7 +251,7 @@ namespace
 			{
 				glm::vec2 pos = mouse.getPosition();
 				pos = _app.getWindow().windowToScreenPoint(pos);
-				auto ray = _cam->screenPointToRay({ pos, 0.F });
+				auto ray = _cam->screenPointToRay({ pos, 0.f });
 				auto dist = ray.intersect(_playerMovePlane);
 				if (dist)
 				{
@@ -271,10 +271,10 @@ namespace
 				if (_camTrans)
 				{
 					auto rot = _camTrans->getEulerAngles();
-					rot.x = rot.z = 0.F; // rotate only in the y axis
+					rot.x = rot.z = 0.f; // rotate only in the y axis
 					dir = glm::quat{ glm::radians(rot) } *dir;
 				}
-				_characterCtrl->setLinearVelocity(dir * 10.F);
+				_characterCtrl->setLinearVelocity(dir * 10.f);
 			}
 			else if (!_characterBody)
 			{

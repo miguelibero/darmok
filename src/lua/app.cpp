@@ -41,7 +41,7 @@
 namespace darmok
 {	
 	LuaAppUpdater::LuaAppUpdater(const sol::object& obj) noexcept
-		: _delegate(obj, "update")
+		: _delegate{ obj, "update" }
 	{
 	}
 
@@ -57,8 +57,8 @@ namespace darmok
 	}
 
 	LuaAppUpdaterFilter::LuaAppUpdaterFilter(const sol::object& obj) noexcept
-		: _object(obj)
-		, _type(entt::type_hash<LuaAppUpdater>::value())
+		: _object{ obj }
+		, _type{ entt::type_hash<LuaAppUpdater>::value() }
 	{
 	}
 
@@ -186,14 +186,7 @@ namespace darmok
 			"TRANSPARENT_BACKBUFFER", BGFX_RESET_TRANSPARENT_BACKBUFFER
 		);
 
-		lua.new_enum<bgfx::RendererType::Enum>("RendererType", {
-			{ "Direct3D11", bgfx::RendererType::Direct3D11 },
-			{ "Direct3D12", bgfx::RendererType::Direct3D12 },
-			{ "OpenGL", bgfx::RendererType::OpenGL },
-			{ "OpenGLES", bgfx::RendererType::OpenGLES },
-			{ "Vulkan", bgfx::RendererType::Vulkan },
-			{ "Metal", bgfx::RendererType::Metal },
-		});
+		LuaUtils::newEnum<bgfx::RendererType::Enum>(lua, "RendererType");
 
 		lua.new_usertype<App>("App", sol::no_constructor,
 			"assets", sol::property(sol::resolve<AssetContext&()>(&App::getAssets)),
@@ -222,8 +215,8 @@ namespace darmok
 	}
 
 	LuaError::LuaError(const std::string& msg, const sol::error& error)
-		: _msg(msg)
-		, error(error)
+		: _msg{ msg }
+		, error{ error }
 	{
 	}
 
@@ -233,7 +226,7 @@ namespace darmok
 	}
 
 	LuaAppDelegate::LuaAppDelegate(App& app) noexcept
-		: _impl(std::make_unique<LuaAppDelegateImpl>(app))
+		: _impl{ std::make_unique<LuaAppDelegateImpl>(app) }
 	{
 	}
 
@@ -452,7 +445,7 @@ namespace darmok
 	void LuaAppDelegateImpl::addPackagePath(const std::string& path, bool binary) noexcept
 	{
 		static const char sep = ';';
-		std::string fpath(path);
+		std::string fpath{ path };
 		std::replace(fpath.begin(), fpath.end(), ',', sep);
 		auto& lua = *_lua;
 		auto key = binary ? "cpath" : "path";
@@ -495,7 +488,7 @@ namespace darmok
 			if (!result.valid())
 			{
 				LuaUtils::logError("running init", result);
-				throw LuaError("running init", result);
+				throw LuaError{ "running init", result };
 			}
 		}
 		LuaApp::addUpdater(_app, lua["update"]);
@@ -551,7 +544,7 @@ namespace darmok
 	}
 
 	LuaAppComponent::LuaAppComponent(const sol::table& table) noexcept
-		: _table(table)
+		: _table{ table }
 	{
 	}
 

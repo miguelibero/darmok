@@ -12,7 +12,7 @@
 
 namespace darmok
 {
-    class Material;
+    struct Material;
 
     using LightDefinition = protobuf::Light;
 	using ShadowType = protobuf::Light::ShadowType;

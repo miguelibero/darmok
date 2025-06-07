@@ -115,8 +115,8 @@ namespace darmok
 
 	void LuaKeyboard::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newEnum<KeyboardKey>(lua, true);
-		LuaUtils::newEnum<KeyboardModifier>(lua, true);
+		LuaUtils::newEnum<KeyboardKey>(lua, {}, true);
+		LuaUtils::newEnum<KeyboardModifier>(lua, {}, true);
 
 		lua.new_usertype<KeyboardInputEvent>("KeyboardInputEvent", sol::default_constructor,
 			"key", &KeyboardInputEvent::key,
@@ -259,8 +259,8 @@ namespace darmok
 
 	void LuaMouse::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newEnum<MouseAnalog>(lua, true);
-		LuaUtils::newEnum<MouseButton>(lua, true);
+		LuaUtils::newEnum<MouseAnalog>(lua, {}, true);
+		LuaUtils::newEnum<MouseButton>(lua, {}, true);
 
 		lua.new_usertype<MouseInputEvent>("MouseInputEvent", sol::default_constructor,
 			"key", &MouseInputEvent::button
@@ -466,8 +466,8 @@ namespace darmok
 
 	void LuaGamepad::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newEnum<GamepadButton>(lua, true);
-		LuaUtils::newEnum<GamepadStick>(lua, true);
+		LuaUtils::newEnum<GamepadButton>(lua, {}, true);
+		LuaUtils::newEnum<GamepadStick>(lua, {}, true);
 
 		lua.new_usertype<GamepadInputEvent>("GamepadInputEvent", sol::default_constructor,
 			"key", &GamepadInputEvent::button,

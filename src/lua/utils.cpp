@@ -25,7 +25,7 @@ namespace darmok
 			return key.as<int>() == 1;
 		}
 
-		void logError(const std::string& desc, const sol::error& err) noexcept
+		void logError(std::string_view desc, const sol::error& err) noexcept
 		{
 			std::stringstream ss;
 			ss << "recovered lua error " << desc << ":" << std::endl;
@@ -34,7 +34,7 @@ namespace darmok
 			StreamUtils::logDebug(ss.str(), true);
 		}
 
-		bool checkResult(const std::string& desc, const sol::protected_function_result& result) noexcept
+		bool checkResult(std::string_view desc, const sol::protected_function_result& result) noexcept
 		{
 			if (!result.valid())
 			{
