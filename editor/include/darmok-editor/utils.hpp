@@ -5,6 +5,7 @@
 #include <stack>
 
 #include <imgui.h>
+#include <imgui_stdlib.h>
 #include <magic_enum/magic_enum.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -14,6 +15,21 @@ namespace darmok
     class Program;
     class IMesh;
     class IMeshLoader;
+
+    namespace protobuf
+    {
+        class Vec2;
+        class Vec3;
+        class Quat;
+        class Color;
+        class Color3;
+    }
+}
+
+namespace google::protobuf
+{
+    class Message;
+    class FieldDescriptor;
 }
 
 namespace darmok::editor
@@ -34,69 +50,33 @@ namespace darmok::editor
         Cancel
     };
 
-    struct ImguiUtils final
+    namespace ImguiUtils
     {
-        template<typename T>
-        static bool drawEnumCombo(const char* label, T& value)
-        {
-            auto selectedIdx = toUnderlying(value);
-            bool changed = false;
-            if (ImGui::BeginCombo(label, magic_enum::enum_name(value).c_str()))
-            {
-                for (size_t i = 0; i < size; ++i)
-                {
-                    bool selected = (selectedIdx == i);
-                    auto item = (T)i;
-                    if (ImGui::Selectable(magic_enum::enum_name(item).c_str(), selected))
-                    {
-                        selected = true;
-                        value = item;
-                        changed = true;
-                    }
-                    if (selected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }
-            return changed;
-        }
-
-        template<size_t Size>
-        static bool drawArrayCombo(const char* label, size_t& current, const std::array<std::string, Size>& options) noexcept
-        {
-            auto changed = false;
-            if (ImGui::BeginCombo(label, options[current].c_str()))
-            {
-                for (size_t i = 0; i < options.size(); ++i)
-                {
-                    auto selected = current == i;
-                    if (ImGui::Selectable(options[i].c_str(), selected))
-                    {
-                        changed = true;
-                        selected = true;
-                        current = i;
-                    }
-                    if (selected)
-                    {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
-            }
-            return changed;
-        }
-
-        static const ImVec2& getAssetSize();
-
-        static bool drawAsset(const char* label, bool selected = false);
+        using ComboOptions = std::span<const std::string>;
+        bool drawListCombo(const char* label, size_t& current, ComboOptions options) noexcept;
 
         template<typename T>
-        static ReferenceInputAction drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)
+        bool drawEnumCombo(const char* label, T& value)
+        {
+            auto current = static_cast<size_t>(value);
+            auto options = StringUtils::getEnumValues<T>();
+            if (drawListCombo(label, current, options))
+            {
+                value = static_cast<T>(current);
+                return true;
+            }
+            return false;
+        }
+
+        const ImVec2& getAssetSize();
+
+        bool drawAsset(const char* label, bool selected = false);
+
+        template<typename T>
+        ReferenceInputAction drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)
         {
             ImGui::BeginDisabled(true);
-            ImGui::InputText(label, (char*)name.c_str(), name.size());
+            ImGui::InputText(label, name);
             ImGui::EndDisabled();
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
             {
@@ -119,24 +99,22 @@ namespace darmok::editor
             return action;
         }
 
-        static bool drawSizeInput(const char* label, glm::vec3& v) noexcept;
-        static bool drawPositionInput(const char* label, glm::vec3& v) noexcept;
-        static bool drawRotationInput(const char* label, glm::quat& v) noexcept;
-        static bool drawScaleInput(const char* label, glm::vec3& v) noexcept;
-        static bool drawFileInput(const char* label, std::filesystem::path& path, const std::string& filter = "") noexcept;
-        static bool drawColorInput(const char* label, Color& v) noexcept;
-        static bool drawColorInput(const char* label, Color3& v) noexcept;
+        bool drawFileInput(const char* label, std::filesystem::path& path, std::string_view filter = {}) noexcept;
 
-        static void beginFrame(const char* name) noexcept;
-        static void endFrame() noexcept;
+        using FieldDescriptor = google::protobuf::FieldDescriptor;
+        using Message = google::protobuf::Message;
 
-        static ImVec2 addCursorPos(const ImVec2& delta) noexcept;
-        static ImVec2 addFrameSpacing(const ImVec2& delta) noexcept;
-        static ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
+        bool drawProtobufInputs(const std::unordered_map<std::string, std::string>& labels, Message& msg) noexcept;
+        bool drawProtobufInput(const char* label, const FieldDescriptor& field,Message& msg) noexcept;
+        bool drawProtobufInput(const char* label, const char* field, Message& msg) noexcept;
+        bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
+        bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
 
-    private:
+        void beginFrame(const char* name) noexcept;
+        void endFrame() noexcept;
 
-        static const ImVec2 _frameMargin;
-        static const ImVec2 _framePadding;
+        ImVec2 addCursorPos(const ImVec2& delta) noexcept;
+        ImVec2 addFrameSpacing(const ImVec2& delta) noexcept;
+        ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
     };
 }

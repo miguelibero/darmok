@@ -53,7 +53,8 @@ namespace darmok
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
 		[[nodiscard]] TextureConfig getTextureConfig() const noexcept;
-		[[nodiscard]] DataView getData() const noexcept;		
+		[[nodiscard]] DataView getData() const noexcept;
+		[[nodiscard]] expected<void, std::string> setData(DataView data) noexcept;
 		[[nodiscard]] bool isTextureValid(uint64_t flags) const noexcept;
 		[[nodiscard]] TextureType getTextureType() const noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;

@@ -21,6 +21,7 @@ namespace darmok
 		Vec2 convert(const glm::vec2& v);
 		Vec3 convert(const glm::vec3& v);
 		Vec4 convert(const glm::vec4& v);
+		Quat convert(const glm::quat& v);
 		Mat3 convert(const glm::mat3& v);
 		Mat4 convert(const glm::mat4& v);
 		Color convert(const darmok::Color& v);
@@ -30,6 +31,7 @@ namespace darmok
 		glm::vec2 convert(const Vec2& v);
 		glm::vec3 convert(const Vec3& v);
 		glm::vec4 convert(const Vec4& v);
+		glm::quat convert(const Quat& v);
 		glm::mat3 convert(const Mat3& v);
 		glm::mat4 convert(const Mat4& v);
 		darmok::Color convert(const Color& v);

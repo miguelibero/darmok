@@ -7,15 +7,14 @@
 
 namespace darmok::editor
 {
-    class MeshSourceInspectorEditor final : public ITypeObjectEditor<protobuf::MeshSource>
+    class MeshSourceInspectorEditor final : public ITypeObjectEditor<Mesh::Source>
     {
     public:
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool renderType(protobuf::MeshSource& src) noexcept override;
+        bool renderType(Mesh::Source& src) noexcept override;
     private:
         OptionalRef<EditorApp> _app;
         OptionalRef<ObjectEditorContainer> _container;
-        static const std::array<std::string, std::variant_size_v<protobuf::MeshSource::Content>> _contentOptions;
     };
 }

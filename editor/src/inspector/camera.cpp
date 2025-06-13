@@ -1,11 +1,11 @@
 #include <darmok-editor/inspector/camera.hpp>
 #include <darmok-editor/app.hpp>
-#include <darmok/glm.hpp>
-#include <darmok/render_scene.hpp>
+#include <darmok-editor/utils.hpp>
+#include <darmok/glm_serialize.hpp>
 
-#include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
+#include <array>
 
 namespace darmok::editor
 {
@@ -14,82 +14,66 @@ namespace darmok::editor
         _editors = editors;
     }
 
-    const std::array<std::string, 2> CameraInspectorEditor::_projOptions =
+    bool CameraInspectorEditor::renderType(Camera::Definition& cam) noexcept
     {
-        "Perspective",
-        "Orthographic"
-    };
+        static const std::array<std::string, 2> projOptions
+        {
+            "Perspective",
+            "Orthographic"
+        };
 
-    bool CameraInspectorEditor::renderType(Camera& cam) noexcept
-    {
         auto changed = false;
         if (ImGui::CollapsingHeader("Camera"))
         {
+            size_t currentProj = cam.has_ortho_center() ? 1 : 0;
+            if (ImguiUtils::drawListCombo("Projection", currentProj, projOptions))
             {
-                auto proj = cam.getProjection();
-                size_t currentProj = std::holds_alternative<CameraOrthoData>(proj) ? 1 : 0;
-                if (ImguiUtils::drawArrayCombo("Projection", currentProj, _projOptions))
+                switch (currentProj)
                 {
-                    switch (currentProj)
-                    {
-                    case 0:
-                        proj = CameraPerspectiveData{};
-                        break;
-                    case 1:
-                        proj = CameraOrthoData{};
-                        break;
-                    }
+                case 0:
+                    cam.set_perspective_fovy(glm::radians(60.f));
+                    break;
+                case 1:
+                    *cam.mutable_ortho_center() = protobuf::convert(glm::vec2{ 0.f });
+                    break;
+                }
+                changed = true;
+            }
+            ImguiUtils::beginFrame("Projection Data");
+            if (cam.has_perspective_fovy())
+            {
+                auto fovy = glm::degrees(cam.perspective_fovy());
+                if (ImGui::SliderFloat("Field Of View", &fovy, 0.f, 360.f))
+                {
                     changed = true;
+                    cam.set_perspective_fovy(glm::radians(fovy));
                 }
-                ImguiUtils::beginFrame("Projection Data");
-                if (auto persp = std::get_if<CameraPerspectiveData>(&proj))
+            }
+            else if (cam.has_ortho_center())
+            {
+                if (ImguiUtils::drawProtobufInput("Center", "ortho_center", cam))
                 {
-                    if (ImGui::SliderFloat("Field Of View", &persp->fovy, 0.F, 360.F))
-                    {
-                        changed = true;
-                    }
-                    if (ImGui::InputFloat("Near Plane", &persp->near))
-                    {
-                        changed = true;
-                    }
-                    if (ImGui::InputFloat("Far Plane", &persp->far))
-                    {
-                        changed = true;
-                    }
-                }
-                else if (auto ortho = std::get_if<CameraOrthoData>(&proj))
-                {
-                    if (ImGui::InputFloat2("Center", glm::value_ptr(ortho->center)))
-                    {
-                        changed = true;
-                    }
-                    if (ImGui::InputFloat("Near Plane", &ortho->near))
-                    {
-                        changed = true;
-                    }
-                    if (ImGui::InputFloat("Far Plane", &ortho->far))
-                    {
-                        changed = true;
-                    }
-                }
-                ImguiUtils::endFrame();
-                if (changed)
-                {
-                    cam.setProjection(proj);
+                    changed = true;
                 }
             }
 
+            if (ImguiUtils::drawProtobufInput("Near Plane", "near", cam))
             {
-                auto vp = cam.getViewport();
-                if (ImGui::InputFloat4("Viewport", glm::value_ptr(vp)))
-                {
-                    changed = true;
-                }
-                ImGui::Spacing();
+                changed = true;
+            }
+            if (ImguiUtils::drawProtobufInput("Far Plane", "far", cam))
+            {
+                changed = true;
+            }
+            ImguiUtils::endFrame();
+            if (ImguiUtils::drawProtobufInput("Viewport", "viewport", cam))
+            {
+                changed = true;
             }
 
             if (_editors)
             {
+                /*
                 auto comps = CameraReflectionUtils::getCameraComponents(cam);
                 if (!comps.empty())
                 {
@@ -104,6 +88,7 @@ namespace darmok::editor
                         }
                     }
                 }
+                */
             }
         }
         return changed;

@@ -5,15 +5,15 @@
 
 namespace darmok::editor
 {
-    class CubeInspectorEditor final : public ITypeObjectEditor<Cube>
+    class CubeInspectorEditor final : public ITypeObjectEditor<Cube::Definition>
     {
     public:
-        bool renderType(Cube& cube) noexcept override;
+        bool renderType(Cube::Definition& cube) noexcept override;
     };
 
-    class SphereInspectorEditor final : public ITypeObjectEditor<Sphere>
+    class SphereInspectorEditor final : public ITypeObjectEditor<Sphere::Definition>
     {
     public:
-        bool renderType(Sphere& sphere) noexcept override;
+        bool renderType(Sphere::Definition& sphere) noexcept override;
     };
 }

@@ -5,9 +5,9 @@
 
 namespace darmok::editor
 {
-    class TransformInspectorEditor final : public ITypeObjectEditor<Transform>
+    class TransformInspectorEditor final : public ITypeObjectEditor<Transform::Definition>
     {
     public:
-        bool renderType(Transform& trans) noexcept override;
+        bool renderType(Transform::Definition& trans) noexcept override;
     };
 }

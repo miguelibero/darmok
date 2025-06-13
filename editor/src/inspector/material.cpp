@@ -3,7 +3,6 @@
 #include <darmok-editor/app.hpp>
 
 #include <imgui.h>
-#include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
@@ -17,85 +16,29 @@ namespace darmok::editor
 		_app.reset();
 	}
 
-	bool MaterialInspectorEditor::renderType(Material& mat) noexcept
+	bool MaterialInspectorEditor::renderType(Material::Definition& mat) noexcept
 	{
 		auto changed = false;
-		auto drawTexture = [this, &mat, &changed](const char* label, auto textureType)
-		{
-			if (_app->drawTextureReference(label, mat.textures[textureType]))
-			{
-				changed = true;
-			}
-		};
-
-		auto drawColorTexture = [this, &mat, &changed](const char* label, auto& color, auto textureType)
-		{
-			if (ImguiUtils::drawColorInput(label, color))
-			{
-				changed = true;
-			}
-			if (_app->drawTextureReference(label, mat.textures[textureType]))
-			{
-				changed = true;
-			}
-		};
 
 		if (ImGui::CollapsingHeader("Material"))
 		{
-			if (_app)
-			{
-				if (_app->drawProgramReference("Program", mat.program))
-				{
-					changed = true;
-				}
-			}
-			// pbr
-			drawColorTexture("Base Texture", mat.baseColor, Material::TextureType::BaseColor);
-			if (ImGui::SliderFloat("Metallic Factor", &mat.metallicFactor, 0.F, 1.F))
+			if (ImguiUtils::drawProtobufInput("Specular", "specular_color", mat))
 			{
 				changed = true;
 			}
-			if (ImGui::SliderFloat("Roughness Factor", &mat.roughnessFactor, 0.F, 1.F))
+			if (ImguiUtils::drawProtobufInput("Shininess", "shininess", mat))
 			{
 				changed = true;
 			}
-			drawTexture("Metallic Roughness", Material::TextureType::MetallicRoughness);
-			if (ImGui::SliderFloat("Normal Scale", &mat.normalScale, 0.F, 1.F))
+			if (ImguiUtils::drawProtobufInput("Primitive Type", "primitive_type", mat))
 			{
 				changed = true;
 			}
-			drawTexture("Normal", Material::TextureType::Normal);
-			if (ImGui::SliderFloat("Occlusion Strength", &mat.occlusionStrength, 0.F, 1.F))
+			if (ImguiUtils::drawProtobufInput("Opacity Type", "opacity_type", mat))
 			{
 				changed = true;
 			}
-			if (ImguiUtils::drawColorInput("Emissive Color", mat.emissiveColor))
-			{
-
-				changed = true;
-			}
-			drawTexture("Emissive", Material::TextureType::Emissive);
-			
-			// phong
-			drawColorTexture("Specular", mat.specularColor, Material::TextureType::Specular);
-			{
-				int v = mat.shininess;
-				if (ImGui::SliderInt("Shininess", &v, 0, 256))
-				{
-					mat.shininess = v;
-					changed = true;
-				}
-			}
-
-			if (ImguiUtils::drawEnumCombo("Primitive Type", mat.primitiveType))
-			{
-				changed = true;
-			}
-			if (ImguiUtils::drawEnumCombo("Opacity Type", mat.opacityType))
-			{
-				changed = true;
-			}
-			if (ImGui::Checkbox("Two Sided", &mat.twoSided))
+			if (ImguiUtils::drawProtobufInput("Two Sided", "twosided", mat))
 			{
 				changed = true;
 			}
@@ -104,7 +47,7 @@ namespace darmok::editor
 
 			if (ImGui::Button("Delete"))
 			{
-				proj.removeMaterial(mat);
+				// proj.removeMaterial(mat);
 				changed = true;
 			}
 		}

@@ -8,6 +8,7 @@
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -16,22 +17,23 @@
 namespace darmok::editor
 {
     EditorApp::EditorApp(App& app) noexcept
-        : _app(app)
-        , _sceneView(app)
-        , _textureAssetsView("Textures", "TEXTURE")
-        , _materialAssetsView("Materials", "MATERIAL")
-        , _programAssetsView("Programs", "PROGRAM")
-        , _meshAssetsView("Meshes", "MESH")
-        , _modelAssetsView("Models", "MODEL")
-        , _sceneAssetsView("Scenes", "SCENE")
-        , _proj(app)
-        , _dockLeftId(0)
-        , _dockRightId(0)
-        , _dockCenterId(0)
-        , _dockDownId(0)
-        , _symbolsFont(nullptr)
-        , _scenePlaying(false)
-        , _mainToolbarHeight(0.F)
+        : _app{ app }
+        , _sceneView{ app }
+        , _assetsViews{
+            {"Programs", "PROGRAM", protobuf::getTypeId<Program::Source>() },
+            {"Textures", "TEXTURE", protobuf::getTypeId<Texture::Source>() },
+            {"Meshes", "MESH", protobuf::getTypeId<Mesh::Source>() },
+            {"Materials", "MATERIAL", protobuf::getTypeId<Material::Definition>() },
+            {"Scenes", "SCENE", protobuf::getTypeId<Scene::Definition>() },
+        }
+        , _proj{app}
+        , _dockLeftId{0}
+        , _dockRightId{0}
+        , _dockCenterId{0}
+        , _dockDownId{0}
+        , _symbolsFont{nullptr}
+        , _scenePlaying{false}
+        , _mainToolbarHeight{0.f}
     {
     }
 
@@ -42,7 +44,6 @@ namespace darmok::editor
 
     std::optional<int32_t> EditorApp::setup(const CmdArgs& args) noexcept
     {
-        SceneReflectionUtils::bind();
         _inspectorView.setup();
 
         CLI::App cli{ "darmok editor" };
@@ -75,24 +76,20 @@ namespace darmok::editor
         _proj.init(_progCompConfig);
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(*this);
-        _sceneAssetsView.init(*this);
-        _textureAssetsView.init(*this);
-        _materialAssetsView.init(*this);
-        _programAssetsView.init(*this);
-        _meshAssetsView.init(*this);
-        _modelAssetsView.init(*this);
+        for (auto& assetsView : _assetsViews)
+        {
+            assetsView.init(_proj.getSceneDefinition(), *this);
+        }
     }
 
     void EditorApp::shutdown()
     {
         stopScene();
         _inspectorView.shutdown();
-        _sceneAssetsView.shutdown();
-        _textureAssetsView.shutdown();
-        _materialAssetsView.shutdown();
-        _programAssetsView.shutdown();
-        _meshAssetsView.shutdown();
-        _modelAssetsView.shutdown();
+        for (auto& assetsView : _assetsViews)
+        {
+            assetsView.shutdown();
+        }
         _sceneView.shutdown();
         _proj.shutdown();
         _imgui.reset();
@@ -157,12 +154,10 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
-            ImGui::DockBuilderDockWindow(_sceneAssetsView.getName(), _dockDownId);
-            ImGui::DockBuilderDockWindow(_textureAssetsView.getName(), _dockDownId);
-            ImGui::DockBuilderDockWindow(_materialAssetsView.getName(), _dockDownId);
-            ImGui::DockBuilderDockWindow(_programAssetsView.getName(), _dockDownId);
-            ImGui::DockBuilderDockWindow(_meshAssetsView.getName(), _dockDownId);
-            ImGui::DockBuilderDockWindow(_modelAssetsView.getName(), _dockDownId);
+            for (auto& assetsView : _assetsViews)
+            {
+                ImGui::DockBuilderDockWindow(assetsView.getName().c_str(), _dockDownId);
+            }
         }
     }   
 
@@ -232,9 +227,9 @@ namespace darmok::editor
                 {
                     _proj.save(true);
                 }
-                if (ImGui::MenuItem("Export Asset Pack..."))
+                if (ImGui::MenuItem("Export..."))
                 {
-                    _proj.exportAssetPack();
+                    _proj.exportScene();
                 }
                 if (ImGui::MenuItem("Close", "Ctrl+W"))
                 {
@@ -376,7 +371,7 @@ namespace darmok::editor
 
     void EditorApp::onSceneTreeSceneClicked()
     {
-        onObjectSelected(Entity(entt::null));
+        onObjectSelected(entt::null);
     }
 
     void EditorApp::onObjectSelected(const SelectableObject& obj) noexcept
@@ -398,20 +393,16 @@ namespace darmok::editor
 
     void EditorApp::renderSceneTree()
     {
-        auto scene = _proj.getScene();
-        if (!scene)
-        {
-            return;
-        }
+        auto& scene = _proj.getSceneDefinition();
+
         if (ImGui::Begin(_sceneTreeWindowName))
         {
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-            auto selectedScene = _inspectorView.getSelectedScene();
-            if (selectedScene == scene)
+            if (_inspectorView.isSceneSelected())
             {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            std::string sceneName = _proj.getScene()->getName();
+            std::string sceneName = scene.name();
             if (sceneName.empty())
             {
                 sceneName = "Scene";
@@ -422,8 +413,9 @@ namespace darmok::editor
                 {
                     onSceneTreeSceneClicked();
                 }
-                for (auto& entity : scene->getRootEntities())
+                for (auto& entity : SceneDefinitionUtils::getRootEntities(scene))
                 {
+                    SceneDefinitionUtils::getComponent<Transform>(scene);
                     auto& trans = scene->getComponent<Transform>(entity).value();
                     renderSceneTreeBranch(trans);
                 }
@@ -433,7 +425,7 @@ namespace darmok::editor
             {
                 auto entity = _inspectorView.getSelectedEntity();
                 scene->destroyEntityImmediate(entity, true);
-                onObjectSelected(Entity(entt::null));
+                onObjectSelected(entt::null);
             }
         }
         ImGui::End();
@@ -481,12 +473,11 @@ namespace darmok::editor
         renderSceneTree();
         _inspectorView.render();
         _sceneView.render();
-        _sceneAssetsView.render();
-        _textureAssetsView.render();
-        _materialAssetsView.render();
-        _programAssetsView.render();
-        _meshAssetsView.render();
-        _modelAssetsView.render();
+        for (auto& assetsView : _assetsViews)
+        {
+            assetsView.render();
+
+        }
         _proj.render();
     }
 
@@ -515,239 +506,18 @@ namespace darmok::editor
         return _app.getAssets();
     }
 
-    bool EditorApp::drawSceneReference(const char* label, std::shared_ptr<Scene>& scene)
+    std::optional<std::string> EditorApp::getSelectedAssetPath(uint32_t assetType) const
     {
-        auto name = _proj.getSceneName(scene);
-        auto action = ImguiUtils::drawAssetReference(label, scene, name, "SCENE");
-        if (action == ReferenceInputAction::Changed)
-        {
-            return true;
-        }
-        if (action == ReferenceInputAction::Visit)
-        {
-            onAssetSelected(scene);
-        }
-        return false;
+
     }
 
-    bool EditorApp::drawTextureReference(const char* label, std::shared_ptr<Texture>& tex)
+    std::string EditorApp::getAssetName(uint32_t assetType, const google::protobuf::Any& asset) const
     {
-        auto asset = _proj.findTexture(tex);
-        auto name = _proj.getTextureName(asset);
-        auto action = ImguiUtils::drawAssetReference(label, asset, name, "TEXTURE");
-        if (action == ReferenceInputAction::Changed)
-        {
-            tex = _proj.loadTexture(asset);
-            return true;
-        }
-        if (action == ReferenceInputAction::Visit)
-        {
-            onAssetSelected(asset);
-        }
-        return false;
+
     }
 
-    bool EditorApp::drawMaterialReference(const char* label, std::shared_ptr<Material>& mat)
+    void EditorApp::onAssetPathSelected(uint32_t assetType, const std::string& assetPath)
     {
-        auto name = _proj.getMaterialName(mat);
-        auto action = ImguiUtils::drawAssetReference(label, mat, name, "MATERIAL");
-        if (action == ReferenceInputAction::Changed)
-        {
-            return true;
-        }
-        if (action == ReferenceInputAction::Visit)
-        {
-            onAssetSelected(mat);
-        }
-        return false;
-    }
 
-    bool EditorApp::drawProgramReference(const char* label, std::shared_ptr<Program>& prog)
-    {
-        auto name = _proj.getProgramName(prog);
-        auto asset = _proj.findProgram(prog);
-        auto action = ImguiUtils::drawAssetReference(label, asset, name, "PROGRAM");
-        if (action == ReferenceInputAction::Changed)
-        {
-            // TODO: show progress when compiling program
-            prog = _proj.loadProgram(asset);
-            return true;
-        }
-        if (action == ReferenceInputAction::Visit)
-        {
-            onAssetSelected(asset);
-        }
-        return false;
-    }
-
-    bool EditorApp::drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, const bgfx::VertexLayout& layout)
-    {
-        auto name = _proj.getMeshName(mesh);
-        auto asset = _proj.findMesh(mesh);
-        auto action = ImguiUtils::drawAssetReference(label, asset, name, "MESH");
-        if (action == ReferenceInputAction::Changed)
-        {
-            // TODO: show progress when loading mesh
-            mesh = _proj.loadMesh(asset, layout);
-            return true;
-        }
-        if (action == ReferenceInputAction::Visit)
-        {
-            onAssetSelected(asset);
-        }
-        return false;
-    }
-
-    std::vector<TextureAsset> EditorApp::getAssets(std::type_identity<TextureAsset>) const
-    {
-        return _proj.getTextures();
-    }
-
-    std::optional<TextureAsset> EditorApp::getSelectedAsset(std::type_identity<TextureAsset>) const
-    {
-        return _inspectorView.getSelectedObject<TextureAsset>();
-    }
-
-    std::string EditorApp::getAssetName(const TextureAsset& asset) const
-    {
-        return _proj.getTextureName(asset);
-    }
-
-    void EditorApp::onAssetSelected(const TextureAsset& asset)
-    {
-        onObjectSelected(asset);
-    }
-
-    void EditorApp::addAsset(std::type_identity<TextureAsset>)
-    {
-        _proj.addTexture();
-    }
-
-    std::vector<MaterialAsset> EditorApp::getAssets(std::type_identity<MaterialAsset>) const
-    {
-        return _proj.getMaterials();
-    }
-
-    std::optional<MaterialAsset> EditorApp::getSelectedAsset(std::type_identity<MaterialAsset>) const
-    {
-        return _inspectorView.getSelectedObject<MaterialAsset>();
-    }
-
-    void EditorApp::onAssetSelected(const MaterialAsset& asset)
-    {
-        onObjectSelected(asset);
-        _materialAssetsView.focus();
-    }
-
-    std::string EditorApp::getAssetName(const MaterialAsset& asset) const
-    {
-        return _proj.getMaterialName(asset);
-    }
-
-    void EditorApp::addAsset(std::type_identity<MaterialAsset>)
-    {
-        _proj.addMaterial();
-    }
-
-    std::vector<ProgramAsset> EditorApp::getAssets(std::type_identity<ProgramAsset>) const
-    {
-        return _proj.getPrograms();
-    }
-
-    std::optional<ProgramAsset> EditorApp::getSelectedAsset(std::type_identity<ProgramAsset>) const
-    {
-        return _inspectorView.getSelectedObject<ProgramAsset>();
-    }
-
-    void EditorApp::onAssetSelected(const ProgramAsset& asset)
-    {
-        onObjectSelected(asset);
-        _programAssetsView.focus();
-    }
-
-    std::string EditorApp::getAssetName(const ProgramAsset& asset) const
-    {
-        return _proj.getProgramName(asset);
-    }
-
-    void EditorApp::addAsset(std::type_identity<ProgramAsset>) 
-    {
-        _proj.addProgram();
-    }
-
-    std::vector<MeshAsset> EditorApp::getAssets(std::type_identity<MeshAsset>) const
-    {
-        return _proj.getMeshes();
-    }
-
-    std::optional<MeshAsset> EditorApp::getSelectedAsset(std::type_identity<MeshAsset>) const
-    {
-        return _inspectorView.getSelectedObject<MeshAsset>();
-    }
-
-    std::string EditorApp::getAssetName(const MeshAsset& asset) const
-    {
-        return _proj.getMeshName(asset);
-    }
-
-    void EditorApp::onAssetSelected(const MeshAsset& asset)
-    {
-        onObjectSelected(asset);
-        _meshAssetsView.focus();
-    }
-
-    void EditorApp::addAsset(std::type_identity<MeshAsset>)
-    {
-        _proj.addMesh();
-    }
-
-    std::vector<ModelAsset> EditorApp::getAssets(std::type_identity<ModelAsset>) const
-	{
-		return _proj.getModels();
-	}
-
-    std::optional<ModelAsset> EditorApp::getSelectedAsset(std::type_identity<ModelAsset>) const
-    {
-		return _inspectorView.getSelectedObject<ModelAsset>();  
-    }
-
-    std::string EditorApp::getAssetName(const ModelAsset& asset) const
-    {
-		return _proj.getModelName(asset);
-    }
-
-    void EditorApp::onAssetSelected(const ModelAsset& asset)
-    {
-		onObjectSelected(asset);
-    }
-
-    void EditorApp::addAsset(std::type_identity<ModelAsset>)
-    {
-		_proj.addModel();
-    }
-
-    std::vector<SceneAsset> EditorApp::getAssets(std::type_identity<SceneAsset>) const
-    {
-        return _proj.getScenes();
-    }
-
-    std::optional<SceneAsset> EditorApp::getSelectedAsset(std::type_identity<SceneAsset>) const
-    {
-        return _inspectorView.getSelectedObject<SceneAsset>();
-    }
-
-    std::string EditorApp::getAssetName(const SceneAsset& asset) const
-    {
-        return _proj.getSceneName(asset);
-    }
-
-    void EditorApp::onAssetSelected(const SceneAsset& asset)
-    {
-        onObjectSelected(asset);
-    }
-
-    void EditorApp::addAsset(std::type_identity<SceneAsset>)
-    {
-        _proj.addScene();
     }
 }

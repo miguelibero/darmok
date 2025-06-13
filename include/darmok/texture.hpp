@@ -24,8 +24,10 @@ namespace darmok
 
 	namespace TextureUtils
 	{
+		expected<void, std::string> loadSource(protobuf::Texture& def, const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept;
 		void loadImage(protobuf::Texture& def, const Image& img) noexcept;
-		Image createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept;
+		expected<Image, std::string> createImage(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept;
+		expected<Image, std::string> createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept;
 		expected<void, std::string> writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept;
 		bgfx::TextureInfo getInfo(const protobuf::TextureConfig& config) noexcept;
 		const protobuf::TextureConfig& getEmptyConfig() noexcept;
@@ -54,6 +56,7 @@ namespace darmok
 	public:
 		using Config = protobuf::TextureConfig;
 		using Definition = protobuf::Texture;
+		using Source = protobuf::TextureSource;
 		using Type = protobuf::Texture::Type;
 		using Format = protobuf::Texture::Format;
 

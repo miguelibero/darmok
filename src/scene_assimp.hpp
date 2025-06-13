@@ -90,17 +90,18 @@ namespace darmok
         using TextureType = protobuf::MaterialTexture::Type;
         using Message = google::protobuf::Message;
 
-        AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const ImportConfig& config,
+        AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setConfig(const nlohmann::json& config) noexcept;
-        bool operator()(Definition& def) noexcept;
+        bool operator()() noexcept;
     private:
         bx::AllocatorI& _allocator;
         OptionalRef<ITextureDefinitionLoader> _texLoader;
-        const aiScene& _scene;
+        const aiScene& _assimpScene;
+		SceneDefinitionWrapper _scene;
         std::filesystem::path _basePath;
         ImportConfig _config;
         std::unordered_map<std::string, std::string> _boneNames;
@@ -122,28 +123,28 @@ namespace darmok
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
-        std::string getMesh(Definition& def, int index) noexcept;
-        std::string getArmature(Definition& def, int index) noexcept;
-        std::string getMaterial(Definition& def, int index) noexcept;
-        std::string getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
-        bool loadTexture(Definition& def, const std::string& path) noexcept;
+        std::string getMesh(int index) noexcept;
+        std::string getArmature(int index) noexcept;
+        std::string getMaterial(int index) noexcept;
+        std::string getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
+        bool loadTexture(const std::string& path) noexcept;
 
-        std::optional<uint32_t> updateNode(Definition& def, const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
-        void updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
-        void updateMesh(Definition& def, MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
-        void updateArmature(Definition& def, ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
-        void updateCamera(Definition& def, uint32_t entityId, const aiCamera& assimpCam) noexcept;
-        void updateLight(Definition& def, uint32_t entityId, const aiLight& assimpLight) noexcept;
-        bool updateMeshes(Definition& def, uint32_t entityId, const std::regex& regex) noexcept;
+        std::optional<uint32_t> updateNode(const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
+        void updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
+        void updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
+        void updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
+        void updateCamera(uint32_t entityId, const aiCamera& assimpCam) noexcept;
+        void updateLight(uint32_t entityId, const aiLight& assimpLight) noexcept;
+        bool updateMeshes(uint32_t entityId, const std::regex& regex) noexcept;
+        static void updateTransform(TransformDefinition& trans, const glm::mat4& mat) noexcept;
 
         std::string createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
         std::string createIndexData(const aiMesh& assimpMesh) const noexcept;
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
 
-		uint32_t createEntity(Definition& def) noexcept;
-		bool addAsset(Definition& def, std::string_view path, Message& asset) noexcept;
-        bool addComponent(Definition& def, uint32_t entityId, Message& comp) noexcept;
-        bool addMeshComponents(Definition& def, uint32_t entityId, int index) noexcept;
+
+		
+        bool addMeshComponents(uint32_t entityId, int index, bool addChild) noexcept;
     };
 
     class AssimpSceneDefinitionLoaderImpl final

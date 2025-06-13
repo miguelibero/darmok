@@ -157,6 +157,11 @@ namespace darmok
 			, _container->m_size };
 	}
 
+	expected<void, std::string> Image::setData(DataView data) noexcept
+	{
+		return update({ 0, 0 }, getSize(), data);
+	}
+
 	bool Image::isTextureValid(uint64_t flags) const noexcept
 	{
 		auto depth = getDepth();

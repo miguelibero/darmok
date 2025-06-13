@@ -5,12 +5,12 @@
 
 namespace darmok::editor
 {
-    class ProgramSourceInspectorEditor final : public ITypeObjectEditor<ProgramSource>
+    class ProgramSourceInspectorEditor final : public ITypeObjectEditor<protobuf::ProgramSource>
     {
     public:
         void init(EditorApp& editor, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool renderType(ProgramSource& src) noexcept override;
+        bool renderType(protobuf::ProgramSource& src) noexcept override;
     private:
         OptionalRef<EditorApp> _app;
         static const std::string _shaderFilter;

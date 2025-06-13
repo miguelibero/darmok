@@ -28,7 +28,6 @@ set(EDITOR_HEADERS
   inspector/shape.hpp
   inspector/mesh.hpp
   inspector/texture.hpp
-  inspector/model.hpp
 )
 
 set(EDITOR_SOURCES
@@ -39,6 +38,7 @@ set(EDITOR_SOURCES
   scene_view.cpp
   editor.cpp
   inspector.cpp
+  assets_view.cpp
   inspector/transform.cpp
   inspector/camera.cpp
   inspector/scene.cpp
@@ -49,7 +49,6 @@ set(EDITOR_SOURCES
   inspector/shape.cpp
   inspector/mesh.cpp
   inspector/texture.cpp
-  inspector/model.cpp
 )
 
 set(EDITOR_ASSETS

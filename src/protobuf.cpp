@@ -444,6 +444,16 @@ namespace darmok
         {
             return std::hash<std::string>{}(desc.full_name());
         }
+
+        std::string getTypeUrl(const Message& msg)
+        {
+            return getTypeUrl(*msg.GetDescriptor());
+        }
+
+        std::string getTypeUrl(const Descriptor& desc)
+        {
+            return "type.googleapis.com/" + desc.full_name();
+        }
     }
 }
 

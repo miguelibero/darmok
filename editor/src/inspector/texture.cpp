@@ -4,7 +4,6 @@
 #include <darmok/image.hpp>
 
 #include <imgui.h>
-#include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
@@ -21,18 +20,19 @@ namespace darmok::editor
     const std::string TextureDefinitionInspectorEditor::_imageFilter = "*.png *.jpg *.jpeg *.bmp";
     const glm::vec2 TextureDefinitionInspectorEditor::_maxPreviewSize(200.F);
 
-    bool TextureDefinitionInspectorEditor::renderType(TextureDefinition& def) noexcept
+    bool TextureDefinitionInspectorEditor::renderType(Texture::Source& src) noexcept
     {
         auto changed = false;
 
         if (ImGui::CollapsingHeader("Texture"))
         {
+            if (ImguiUtils::drawProtobufInput("Name", "name", src))
             {
-                if (ImGui::InputText("Name", &def.name))
-                {
-                    changed = true;
-                }
-                ImGui::Spacing();
+                changed = true;
+            }
+            if (ImguiUtils::drawProtobufInput("Format", "format", src))
+            {
+                changed = true;
             }
 
             if (_app)
@@ -43,40 +43,41 @@ namespace darmok::editor
                 std::filesystem::path imgPath;
                 if (ImguiUtils::drawFileInput("Load Image", imgPath, _imageFilter))
                 {
-                    auto& imgLoader = assets.getImageLoader();
-                    if (auto img = imgLoader(imgPath))
+                    if (auto dataResult = assets.getDataLoader()(imgPath))
                     {
-                        def.loadImage(*img);
-                        changed = true;
+                        src.set_image_data(dataResult.value().toString());
+                        _tex.reset();
                     }
                 }
+            }
 
-                auto defPtr = proj.findTexture(def);
-                if (defPtr)
+            if (!_tex)
+            {
+                Texture::Definition def;
+                auto loadResult = TextureUtils::loadSource(def, src, _app->getAssets().getAllocator());
+                if (loadResult)
                 {
-                    auto& texLoader = assets.getTextureLoader();
-                    auto tex = texLoader.loadResource(defPtr);
-                    ImguiTextureData texData(tex->getHandle());
-                    auto size = glm::vec2(tex->getSize());
-                    auto availSize = ImGui::GetContentRegionAvail();
-                    glm::vec2 maxSize(glm::min(_maxPreviewSize.x, availSize.x), glm::min(_maxPreviewSize.y, availSize.y));
-                    auto ratio = glm::min(size.x / maxSize.x, size.y / maxSize.y);
-                    size /= ratio;
-                    ImGui::Image(texData, ImVec2{ size.x, size.y });
+					_tex.emplace(def);
                 }
+            }
 
-                if (ImGui::Button("Apply Changes"))
-                {
-                    proj.reloadTexture(def);
-                }
+            if (_tex)
+            {
+                ImguiTextureData texData{ _tex->getHandle() };
+                glm::vec2 size{ _tex->getSize() };
+                auto availSize = ImGui::GetContentRegionAvail();
+                glm::vec2 maxSize{ glm::min(_maxPreviewSize.x, availSize.x), glm::min(_maxPreviewSize.y, availSize.y) };
+                auto ratio = glm::min(size.x / maxSize.x, size.y / maxSize.y);
+                size /= ratio;
+                ImGui::Image(texData, ImVec2{ size.x, size.y });
+            }
 
-                ImGui::SameLine();
+            ImGui::SameLine();
 
-                if (ImGui::Button("Delete"))
-                {
-                    proj.removeTexture(def);
-                    changed = true;
-                }
+            if (ImGui::Button("Delete"))
+            {
+                // proj.removeTexture(def);
+                changed = true;
             }
         }
         return false;

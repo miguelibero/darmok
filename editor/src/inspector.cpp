@@ -1,4 +1,6 @@
 #include <darmok-editor/inspector.hpp>
+#include <darmok-editor/app.hpp>
+#include <darmok-editor/project.hpp>
 #include <darmok-editor/inspector/transform.hpp>
 #include <darmok-editor/inspector/camera.hpp>
 #include <darmok-editor/inspector/light.hpp>
@@ -9,8 +11,7 @@
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/inspector/mesh.hpp>
 #include <darmok-editor/inspector/texture.hpp>
-#include <darmok-editor/inspector/model.hpp>
-#include <darmok/reflect.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
 #include <imgui_stdlib.h>
@@ -20,7 +21,7 @@ namespace darmok::editor
     const std::string EditorInspectorView::_windowName = "Inspector";
 
     EditorInspectorView::EditorInspectorView()
-    : _selected(Entity(entt::null))
+        : _selected{ entt::null }
     {
     }
 
@@ -35,54 +36,46 @@ namespace darmok::editor
         _editors.add<RenderableInspectorEditor>();
         _editors.add<CubeInspectorEditor>();
         _editors.add<SphereInspectorEditor>();
-        _sceneEditor = _editors.add<SceneInspectorEditor>();
-        _materialEditor = _editors.add<MaterialInspectorEditor>();
-        _programEditor = _editors.add<ProgramSourceInspectorEditor>();
-        _meshEditor = _editors.add<MeshSourceInspectorEditor>();
-        _textureEditor = _editors.add<TextureDefinitionInspectorEditor>();
-        _modelEditor = _editors.add<ModelInspectorEditor>();
+        _editors.add<SceneInspectorEditor>();
+        _editors.add<MaterialInspectorEditor>();
+        _editors.add<ProgramSourceInspectorEditor>();
+        _editors.add<MeshSourceInspectorEditor>();
+        _editors.add<TextureDefinitionInspectorEditor>();
     }
 
     void EditorInspectorView::init(EditorApp& app)
     {
         _editors.init(app);
+		_sceneDef = app.getProject().getSceneDefinition();
     }
 
     void EditorInspectorView::shutdown()
     {
+        _sceneDef.reset();
         _editors.shutdown();
-        _sceneEditor.reset();
-        _materialEditor.reset();
-        _programEditor.reset();
-        _meshEditor.reset();
-        _textureEditor.reset();
-        _modelEditor.reset();
     }
 
-    void EditorInspectorView::selectObject(const SelectableObject& obj, const std::shared_ptr<Scene>& scene)
+    void EditorInspectorView::selectObject(const SelectableObject& obj)
     {
         _selected = obj;
-        _scene = scene;
-    }
-
-    std::shared_ptr<Scene> EditorInspectorView::getSelectedScene() const noexcept
-    {
-        auto ptr = std::get_if<Entity>(&_selected);
-        if (ptr != nullptr && *ptr == entt::null)
-        {
-            return _scene;
-        }
-        if (auto scene = std::get_if<SceneAsset>(&_selected))
-        {
-            return *scene;
-        }
-        return nullptr;
     }
 
     Entity EditorInspectorView::getSelectedEntity() const noexcept
     {
         auto ptr = std::get_if<Entity>(&_selected);
         return ptr == nullptr ? entt::null : *ptr;
+    }
+
+    bool EditorInspectorView::isSceneSelected() const noexcept
+    {
+        auto ptr = std::get_if<Entity>(&_selected);
+		return ptr != nullptr && *ptr == entt::null;
+    }
+
+    OptionalRef<const SelectedAsset> EditorInspectorView::getSelectedAsset() const noexcept
+    {
+        auto ptr = std::get_if<SelectedAsset>(&_selected);
+		return ptr;
     }
 
     const std::string& EditorInspectorView::getWindowName()
@@ -92,39 +85,26 @@ namespace darmok::editor
 
     void EditorInspectorView::render()
     {
+        if (!_sceneDef)
+        {
+            return;
+        }
+        auto& sceneDef = *_sceneDef;
         if (ImGui::Begin(_windowName.c_str()))
         {
             auto entity = getSelectedEntity();
             if (entity != entt::null)
             {
-                auto comps = SceneReflectionUtils::getEntityComponents(*_scene, entity);
+				uint32_t entityId = entt::to_integral(entity);
+                auto comps = SceneDefinitionUtils::getComponents(sceneDef, entityId);
                 _editors.render(comps.begin(), comps.end());
             }
-            else if(auto scene = getSelectedScene())
+            else if (auto selected = getSelectedAsset())
             {
-                _sceneEditor->renderType(*scene);
-            }
-            else if (auto optProg = getSelectedObject<ProgramAsset>())
-            {
-                if (auto ptr = std::get_if<std::shared_ptr<ProgramSource>>(&optProg.value()))
+                if (auto asset = SceneDefinitionUtils::getAsset(sceneDef, selected->type, selected->path))
                 {
-                    if (auto src = *ptr)
-                    {
-                        _programEditor->renderType(*src);
-                    }
+                    _editors.render(*asset);
                 }
-            }
-            else if (renderSelectedSharedAsset<TextureAsset>(_textureEditor))
-            {
-			}
-			else if (renderSelectedSharedAsset<MaterialAsset>(_materialEditor))
-			{
-			}
-			else if (renderSelectedSharedAsset<MeshAsset>(_meshEditor))
-			{
-			}
-			else if (renderSelectedSharedAsset<ModelAsset>(_modelEditor))
-			{
 			}
         }
         ImGui::End();

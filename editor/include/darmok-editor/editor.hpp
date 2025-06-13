@@ -1,10 +1,10 @@
 #pragma once
 
 #include <darmok/optional_ref.hpp>
-
+#include <darmok/protobuf.hpp>
 #include <bx/bx.h>
-#include <entt/entt.hpp>
 #include <imgui.h>
+#include <google/protobuf/any.pb.h>
 
 namespace darmok::editor
 {
@@ -17,9 +17,9 @@ namespace darmok::editor
         virtual ~IObjectEditor() = default;
         virtual void init(EditorApp& app, ObjectEditorContainer& container) {}
         virtual void shutdown() {}
-        virtual entt::type_info getObjectType() const = 0;
-        virtual bool canRender(entt::meta_any& any) const = 0;
-        virtual bool render(entt::meta_any& any) { return false; }
+        virtual std::string getObjectTypeUrl() const = 0;
+        virtual bool canRender(google::protobuf::Any& any) const = 0;
+        virtual bool render(google::protobuf::Any& any) { return false; }
     };
 
     template<typename T>
@@ -28,21 +28,26 @@ namespace darmok::editor
     public:
         virtual bool renderType(T& obj) = 0;
 
-        entt::type_info getObjectType() const override
+        std::string getObjectTypUrl() const override
         {
-            return entt::type_id<T>();
+            return protobuf::getTypeUrl<T>();
         }
 
-        bool canRender(entt::meta_any& any) const override
+        bool canRender(google::protobuf::Any& any) const override
         {
-            return any.type().info() == getObjectType();
+            return any.type_url() == getObjectTypUrl();
         }
 
-        bool render(entt::meta_any& any) override
+        bool render(google::protobuf::Any& any) override
         {
-            if (auto ptr = any.try_cast<T>())
+            T obj;
+            if (any.UnpackTo(&obj))
             {
-                return renderType(*ptr);
+                if (renderType(obj))
+                {
+                    any.PackFrom(obj);
+                    return true;
+                }
             }
             return false;
         }
@@ -83,13 +88,13 @@ namespace darmok::editor
             return render(any);
         }
 
-        bool render(entt::meta_any& obj) const;
+        bool render(google::protobuf::Any& obj) const;
         void add(std::unique_ptr<IObjectEditor>&& editor);
         void init(EditorApp& app);
         void shutdown();
 
     private:
         OptionalRef<EditorApp> _app;
-        std::unordered_map<entt::id_type, std::vector<std::unique_ptr<IObjectEditor>>> _editors;
+        std::unordered_map<std::string, std::vector<std::unique_ptr<IObjectEditor>>> _editors;
     };
 }

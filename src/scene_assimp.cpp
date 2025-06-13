@@ -11,6 +11,7 @@
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
 #include <darmok/material.hpp>
+#include <darmok/transform.hpp>
 #include <darmok/glm_serialize.hpp>
 
 #include <assimp/vector3.h>
@@ -273,14 +274,15 @@ namespace darmok
         auto model = std::make_shared<Model>();
         auto basePath = path.parent_path().string();
 
-        AssimpSceneDefinitionConverter converter{ **sceneResult, basePath, _config, _allocator, _texLoader };
-        converter(*model);
+        AssimpSceneDefinitionConverter converter{ **sceneResult, *model, basePath, _config, _allocator, _texLoader };
+        converter();
         return model;
     }
 
-    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& scene, const std::filesystem::path& basePath, const ImportConfig& config,
+    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
         bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
-        : _scene{ scene }
+        : _assimpScene{ assimpScene }
+		, _scene{ sceneDef }
         , _basePath{ basePath }
         , _config{ config }
         , _allocator{ alloc }
@@ -347,139 +349,115 @@ namespace darmok
         return *this;
     }
 
-    uint32_t AssimpSceneDefinitionConverter::createEntity(Definition& def) noexcept
-    {
-        auto v = def.registry().entities() + 1;
-        def.mutable_registry()->set_entities(v);
-        return v;
-    }
-
-    bool AssimpSceneDefinitionConverter::addAsset(Definition& def, std::string_view path, Message& asset) noexcept
-    {
-        auto typeId = protobuf::getTypeId(asset);
-        auto& assetPack = *def.mutable_assets();
-        auto& assets = assetPack.mutable_groups()->try_emplace(typeId).first->second;
-        auto result = assets.mutable_assets()->try_emplace(path);
-		result.first->second.PackFrom(asset);
-        return result.second;
-    }
-
-    bool AssimpSceneDefinitionConverter::addComponent(Definition& def, uint32_t entityId, Message& comp) noexcept
-    {
-        auto typeId = protobuf::getTypeId(comp);
-        auto& components = def.mutable_registry()->mutable_components()->try_emplace(typeId).first->second;
-        auto result = components.mutable_components()->try_emplace(entityId);
-		result.first->second.PackFrom(comp);
-        return result.second;
-    }
-
-    bool AssimpSceneDefinitionConverter::updateMeshes(Definition& def, uint32_t entityId, const std::regex& regex) noexcept
+    bool AssimpSceneDefinitionConverter::updateMeshes(uint32_t entityId, const std::regex& regex) noexcept
     {
         auto found = false;
-        for (int i = 0; i < _scene.mNumMeshes; ++i)
+        auto addChild = _assimpScene.mNumMeshes > 1;
+        for (int i = 0; i < _assimpScene.mNumMeshes; ++i)
         {
-            auto assimpMesh = _scene.mMeshes[i];
+            auto assimpMesh = _assimpScene.mMeshes[i];
             auto name = assimpMesh->mName.C_Str();
             if (!std::regex_match(name, regex))
             {
                 continue;
             }
-            if (addMeshComponents(def, entityId, i))
+            if (addMeshComponents(entityId, i, addChild))
             {
                 found = true;
             }
         }
         return found;
     }
-    bool AssimpSceneDefinitionConverter::addMeshComponents(Definition& def, uint32_t entityId, int index) noexcept
+    bool AssimpSceneDefinitionConverter::addMeshComponents(uint32_t entityId, int index, bool addChild) noexcept
     {
-        if (index < 0 || index >= _scene.mNumMeshes)
+        if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
             return false;
         }
-        auto assimpMesh = _scene.mMeshes[index];
-        auto meshPath = getMesh(def, index);
-        auto matPath = getMaterial(def, assimpMesh->mMaterialIndex);
-
-        auto childEntityId = createEntity(def);
-        TransformDefinition trans;
-        trans.set_name(AssimpUtils::getString(assimpMesh->mName));
-        trans.set_parent(entityId);
-        addComponent(def, childEntityId, trans);
+        auto assimpMesh = _assimpScene.mMeshes[index];
+        auto meshPath = getMesh(index);
+        auto matPath = getMaterial(assimpMesh->mMaterialIndex);
+        
+        if (addChild)
+        {
+            auto childEntityId = _scene.createEntity();
+            TransformDefinition trans;
+            trans.set_name(AssimpUtils::getString(assimpMesh->mName));
+            trans.set_parent(entityId);
+            *trans.mutable_scale() = protobuf::convert(glm::vec3{ 1.f });
+            _scene.addComponent(childEntityId, trans);
+            entityId = childEntityId;
+        }
 
         RenderableDefinition renderable;
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
-        addComponent(def, childEntityId, renderable);
+        _scene.addComponent(entityId, renderable);
 
-        auto armPath = getArmature(def, index);
+        auto armPath = getArmature(index);
         if (!armPath.empty())
         {
             SkinnableDefinition skinnable;
             skinnable.set_armature_path(armPath);
-            addComponent(def, childEntityId, skinnable);
+            _scene.addComponent(entityId, skinnable);
         }
 
         return true;
     }
-
-    bool AssimpSceneDefinitionConverter::operator()(Definition& def) noexcept
+    
+    bool AssimpSceneDefinitionConverter::operator()() noexcept
     {
-        def.set_name(AssimpUtils::getString(_scene.mName));
-
+        _scene.get().set_name(AssimpUtils::getString(_assimpScene.mName));
         if (!_config.root_mesh_regex().empty())
         {
-            auto entityId = createEntity(def);
-            return updateMeshes(def, entityId, std::regex{ _config.root_mesh_regex() });
+            auto entityId = _scene.createEntity();
+            return updateMeshes(entityId, std::regex{ _config.root_mesh_regex() });
         }
-        return updateNode(def, *_scene.mRootNode).has_value();
+        return updateNode(*_assimpScene.mRootNode).has_value();
     }
 
-    std::optional<uint32_t> AssimpSceneDefinitionConverter::updateNode(Definition& def, const aiNode& assimpNode, uint32_t parentEntityId) noexcept
+    std::optional<uint32_t> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, uint32_t parentEntityId) noexcept
     {
         auto name = AssimpUtils::getString(assimpNode.mName);
         if(AssimpUtils::match(name, _config.skip_nodes_regex()))
         {
             return std::nullopt;
         }
-
-        auto entityId = createEntity(def);
+        auto entityId = _scene.createEntity();
         TransformDefinition trans;
         trans.set_name(name);
         trans.set_parent(parentEntityId);
-        *trans.mutable_matrix() = protobuf::convert(
-            AssimpUtils::convert(assimpNode.mTransformation)
-        );
-        addComponent(def, entityId, trans);
+        TransformUtils::update(trans, AssimpUtils::convert(assimpNode.mTransformation));
+        _scene.addComponent(entityId, trans);
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
             auto index = assimpNode.mMeshes[i];
-            addMeshComponents(def, entityId, index);
+            addMeshComponents(entityId, index, true);
         }
 
-        for (size_t i = 0; i < _scene.mNumCameras; ++i)
+        for (size_t i = 0; i < _assimpScene.mNumCameras; ++i)
         {
-            auto assimpCam = _scene.mCameras[i];
+            auto assimpCam = _assimpScene.mCameras[i];
             if (assimpCam->mName == assimpNode.mName)
             {
-                updateCamera(def, entityId, *assimpCam);
+                updateCamera(entityId, *assimpCam);
                 break;
             }
         }
-        for (size_t i = 0; i < _scene.mNumLights; ++i)
+        for (size_t i = 0; i < _assimpScene.mNumLights; ++i)
         {
-            auto assimpLight = _scene.mLights[i];
+            auto assimpLight = _assimpScene.mLights[i];
             if (assimpLight->mName == assimpNode.mName)
             {
-                updateLight(def, entityId, *assimpLight);
+                updateLight(entityId, *assimpLight);
                 break;
             }
         }
 
         for (size_t i = 0; i < assimpNode.mNumChildren; ++i)
         {
-            if (!updateNode(def, *assimpNode.mChildren[i], entityId))
+            if (!updateNode(*assimpNode.mChildren[i], entityId))
             {
                 continue;
             }
@@ -488,7 +466,7 @@ namespace darmok
         return entityId;
     }
 
-    void AssimpSceneDefinitionConverter::updateCamera(Definition& def, uint32_t entityId, const aiCamera& assimpCam) noexcept
+    void AssimpSceneDefinitionConverter::updateCamera(uint32_t entityId, const aiCamera& assimpCam) noexcept
     {
         aiMatrix4x4 mat;
         assimpCam.GetCameraMatrix(mat);
@@ -498,9 +476,9 @@ namespace darmok
             TransformDefinition trans;
             trans.set_parent(entityId);
             trans.set_name(AssimpUtils::getString(assimpCam.mName));
-            *trans.mutable_matrix() = protobuf::convert(AssimpUtils::convert(mat));
-            entityId = createEntity(def);
-            addComponent(def, entityId, trans);
+            TransformUtils::update(trans, AssimpUtils::convert(mat));
+            entityId = _scene.createEntity();
+            _scene.addComponent(entityId, trans);
         }
         CameraDefinition cam;
 		cam.set_near(assimpCam.mClipPlaneNear);
@@ -536,7 +514,7 @@ namespace darmok
             uv.set_y((offset * up) / h);            
         }
         
-		addComponent(def, entityId, cam);
+		_scene.addComponent(entityId, cam);
     }
 
     float AssimpSceneDefinitionConverter::getLightRange(const glm::vec3& attenuation) noexcept
@@ -568,14 +546,14 @@ namespace darmok
         return glm::max(d1, d2);
     }
 
-    void AssimpSceneDefinitionConverter::updateLight(Definition& def, uint32_t entityId, const aiLight& assimpLight) noexcept
+    void AssimpSceneDefinitionConverter::updateLight(uint32_t entityId, const aiLight& assimpLight) noexcept
     {
         TransformDefinition trans;
         trans.set_parent(entityId);
         trans.set_name(AssimpUtils::getString(assimpLight.mName));
 
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
-        auto mat = glm::translate(glm::mat4(1), pos);
+        auto mat = glm::translate(glm::mat4{ 1.f }, pos);
 
         auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
         auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
@@ -593,14 +571,14 @@ namespace darmok
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
             // we're not supporting different specular color in lights
-			addComponent(def, entityId, light);
+			_scene.addComponent(entityId, light);
         }
         else if (assimpLight.mType == aiLightSource_DIRECTIONAL)
         {
 			protobuf::DirectionalLight light;
 			light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-            addComponent(def, entityId, light);
+            _scene.addComponent(entityId, light);
 
             auto dir = AssimpUtils::convert(assimpLight.mDirection);
             glm::mat4 view = glm::lookAt(pos, pos + dir, glm::vec3{0, 1, 0});
@@ -613,7 +591,7 @@ namespace darmok
             *light.mutable_color() = pbColor;
 			light.set_cone_angle(assimpLight.mAngleOuterCone);
 			light.set_inner_cone_angle(assimpLight.mAngleInnerCone);
-            addComponent(def, entityId, light);
+            _scene.addComponent(entityId, light);
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {
@@ -623,15 +601,15 @@ namespace darmok
             pbColor = protobuf::convert(color);
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-            addComponent(def, entityId, light);
+            _scene.addComponent(entityId, light);
         }
 
-        *trans.mutable_matrix() = protobuf::convert(mat);
-        entityId = createEntity(def);
-        addComponent(def, entityId, trans);
+        TransformUtils::update(trans, mat);
+        entityId = _scene.createEntity();
+        _scene.addComponent(entityId, trans);
     }
 
-    std::string AssimpSceneDefinitionConverter::getTexture(Definition& def, const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
+    std::string AssimpSceneDefinitionConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
         aiString aiPath{};
         if (assimpMat.GetTexture(type, index, &aiPath) != AI_SUCCESS)
@@ -639,11 +617,11 @@ namespace darmok
             return {};
         }
         std::string path{ aiPath.C_Str() };
-        loadTexture(def, path);
+        loadTexture(path);
         return path;
     }
 
-    bool AssimpSceneDefinitionConverter::loadTexture(Definition& def, const std::string& path) noexcept
+    bool AssimpSceneDefinitionConverter::loadTexture(const std::string& path) noexcept
     {
         if (_texturePaths.contains(path))
         {
@@ -651,7 +629,7 @@ namespace darmok
         }
 
         TextureDefinition texDef;
-        auto assimpTex = _scene.GetEmbeddedTexture(path.c_str());
+        auto assimpTex = _assimpScene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
             size_t size = 0;
@@ -691,7 +669,7 @@ namespace darmok
             return false;
         }
         _texturePaths.insert(path);
-		addAsset(def, path, texDef);
+		_scene.addAsset(path, texDef);
         return true;
     }
 
@@ -708,7 +686,7 @@ namespace darmok
         { aiTextureType_EMISSIVE, 0, Material::TextureDefinition::Emissive },
     };
 
-    void AssimpSceneDefinitionConverter::updateMaterial(Definition& def, MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
+    void AssimpSceneDefinitionConverter::updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
     {
         matDef.set_name(AssimpUtils::getString(assimpMat.GetName()));
 
@@ -732,7 +710,7 @@ namespace darmok
         auto& textures = *matDef.mutable_textures();
         for (auto& elm : _materialTextures)
         {
-            auto texPath = getTexture(def, assimpMat, elm.assimpType, elm.assimpIndex);
+            auto texPath = getTexture(assimpMat, elm.assimpType, elm.assimpIndex);
             if (!texPath.empty())
             {
                 auto& matTex = *textures.Add();
@@ -749,7 +727,7 @@ namespace darmok
         if (itr == textures.end() && !_config.default_texture_path().empty())
         {
             auto texPath = _config.default_texture_path();
-            if (loadTexture(def, texPath))
+            if (loadTexture(texPath))
             {
 				auto& matTex = *textures.Add();
 				matTex.set_type(Material::TextureDefinition::BaseColor);
@@ -1063,7 +1041,7 @@ namespace darmok
             size * sizeof(VertexIndex) / sizeof(std::string::value_type));
     }
 
-    void AssimpSceneDefinitionConverter::updateMesh(Definition& def, MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
+    void AssimpSceneDefinitionConverter::updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
     {
         meshDef.set_name(AssimpUtils::getString(assimpMesh.mName));
         auto& bounds = *meshDef.mutable_bounds();
@@ -1097,7 +1075,7 @@ namespace darmok
         *meshDef.mutable_layout() = _config.vertex_layout();
     }
 
-    void AssimpSceneDefinitionConverter::updateArmature(Definition& def, ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
+    void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
     {
         for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
         {
@@ -1119,44 +1097,44 @@ namespace darmok
         }
     }
     
-    std::string AssimpSceneDefinitionConverter::getMesh(Definition& def, int index) noexcept
+    std::string AssimpSceneDefinitionConverter::getMesh(int index) noexcept
     {
-        if (index < 0 || index >= _scene.mNumMeshes)
+        if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
             return {};
         }
-        const aiMesh* assimpMesh = _scene.mMeshes[index];
+        const aiMesh* assimpMesh = _assimpScene.mMeshes[index];
         auto itr = _meshPaths.find(assimpMesh);
         if (itr != _meshPaths.end())
         {
             return itr->second;
         }
         MeshDefinition meshDef;
-        updateMesh(def, meshDef, *assimpMesh);
+        updateMesh(meshDef, *assimpMesh);
         auto path = "mesh_" + std::to_string(index);
         if (meshDef.name().empty())
         {
             meshDef.set_name(path);
         }
         _meshPaths.emplace(assimpMesh, path);
-		addAsset(def, path, meshDef);
+		_scene.addAsset(path, meshDef);
         return path;
     }
 
-    std::string AssimpSceneDefinitionConverter::getArmature(Definition& def, int index) noexcept
+    std::string AssimpSceneDefinitionConverter::getArmature(int index) noexcept
     {
-        if (index < 0 || index >= _scene.mNumMeshes)
+        if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
             return {};
         }
-        const aiMesh* assimpMesh = _scene.mMeshes[index];
+        const aiMesh* assimpMesh = _assimpScene.mMeshes[index];
         auto itr = _armaturePaths.find(assimpMesh);
         if (itr != _armaturePaths.end())
         {
             return itr->second;
         }
         ArmatureDefinition armDef;
-        updateArmature(def, armDef, *assimpMesh);
+        updateArmature(armDef, *assimpMesh);
         if (armDef.joints_size() == 0)
         {
             return {};
@@ -1167,31 +1145,31 @@ namespace darmok
             armDef.set_name(path);
         }
         _armaturePaths.emplace(assimpMesh, path);
-        addAsset(def, path, armDef);
+        _scene.addAsset(path, armDef);
         return path;
     }
 
-    std::string AssimpSceneDefinitionConverter::getMaterial(Definition& def, int index) noexcept
+    std::string AssimpSceneDefinitionConverter::getMaterial(int index) noexcept
     {
-        if(index < 0 || index >= _scene.mNumMaterials)
+        if(index < 0 || index >= _assimpScene.mNumMaterials)
         {
             return {};
 		}
-		const aiMaterial* assimpMat = _scene.mMaterials[index];
+		const aiMaterial* assimpMat = _assimpScene.mMaterials[index];
         auto itr = _materialPaths.find(assimpMat);
         if (itr != _materialPaths.end())
         {
             return itr->second;
         }
         MaterialDefinition matDef;
-        updateMaterial(def, matDef, *assimpMat);
+        updateMaterial(matDef, *assimpMat);
         auto path = "material_" + std::to_string(index);
         if(matDef.name().empty())
         {
             matDef.set_name(path);
 		}
         _materialPaths.emplace(assimpMat, path);
-		addAsset(def, path, matDef);
+		_scene.addAsset(path, matDef);
         return path;
     }
 
@@ -1471,9 +1449,9 @@ namespace darmok
             texLoader = nullptr;
         }
         _dataLoader.addBasePath(input.basePath);
-        AssimpSceneDefinitionConverter converter{ *_currentScene, basePath, *_currentConfig, _alloc, texLoader };
+        AssimpSceneDefinitionConverter converter{ *_currentScene, def, basePath, *_currentConfig, _alloc, texLoader };
         converter.setConfig(input.config);
-        converter(def);
+        converter();
         _dataLoader.removeBasePath(input.basePath);
 		auto writeResult = protobuf::write(def, out, _outputFormat);
         if(!writeResult)

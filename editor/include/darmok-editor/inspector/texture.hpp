@@ -6,14 +6,15 @@
 
 namespace darmok::editor
 {
-    class TextureDefinitionInspectorEditor final : public ITypeObjectEditor<TextureDefinition>
+    class TextureDefinitionInspectorEditor final : public ITypeObjectEditor<Texture::Source>
     {
     public:
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool renderType(TextureDefinition& def) noexcept override;
+        bool renderType(Texture::Source& def) noexcept override;
     private:
         OptionalRef<EditorApp> _app;
+        std::optional<Texture> _tex;
         static const std::string _imageFilter;
         static const glm::vec2 _maxPreviewSize;
     };

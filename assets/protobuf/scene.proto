@@ -6,7 +6,6 @@ import "google/protobuf/any.proto";
 import "registry.proto";
 import "math.proto";
 import "asset.proto";
-import "skeleton.proto";
 
 message Renderable {
     string mesh_path = 1;
@@ -18,9 +17,11 @@ message Skinnable {
 }
 
 message Transform {
-    Mat4 matrix = 1;
-    optional uint32 parent = 2;
-    string name = 3;
+    string name = 1;
+    Vec3 position = 2;
+    Quat rotation = 3;
+    Vec3 scale = 4;
+    optional uint32 parent = 5;
 }
 
 message Camera {
@@ -30,6 +31,7 @@ message Camera {
     }
     float near = 3;
     float far = 4;
+    Vec4 viewport = 5;
 }
 
 message Scene {

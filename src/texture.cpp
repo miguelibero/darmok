@@ -6,20 +6,48 @@
 
 namespace darmok
 {
+	expected<void, std::string> TextureUtils::loadSource(protobuf::Texture& def, const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept
+	{
+		auto result = createImage(src, alloc);
+		if (!result)
+		{
+			return unexpected{ result.error() };
+		}
+		loadImage(def, result.value());
+		return {};
+	}
+
 	void TextureUtils::loadImage(protobuf::Texture& def, const Image& img) noexcept
 	{
 		def.set_data(img.getData().toString());
 		*def.mutable_config() = img.getTextureConfig();
 	}
 
-	Image TextureUtils::createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept
+	expected<Image, std::string> TextureUtils::createImage(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept
 	{
-		return { DataView{ def.data() }, alloc, static_cast<bimg::TextureFormat::Enum>(def.config().format()) };
+		return Image{ DataView{ src.image_data() }, alloc, static_cast<bimg::TextureFormat::Enum>(src.format()) };
+	}
+
+	expected<Image, std::string> TextureUtils::createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept
+	{
+		auto size = protobuf::convert(def.config().size());
+		Image img{ size, alloc, static_cast<bimg::TextureFormat::Enum>(def.config().format()) };
+		auto result = img.setData(DataView{ def.data() });
+		if(!result)
+		{
+			return unexpected{ result.error() };
+		}
+		return img;
 	}
 
 	expected<void, std::string> TextureUtils::writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept
 	{
-		auto img = createImage(def, alloc);
+		auto result = createImage(def, alloc);
+		if (!result)
+		{
+			return unexpected{ result.error() };
+		}
+		auto& img = result.value();
 		auto encoding = Image::getEncodingForPath(path);
 		std::ofstream out{ path, std::ios::binary };
 		return img.write(encoding, out);

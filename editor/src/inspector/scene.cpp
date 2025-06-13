@@ -1,7 +1,7 @@
 #include <darmok-editor/inspector/scene.hpp>
-
+#include <darmok-editor/utils.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <imgui.h>
-#include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
@@ -10,38 +10,14 @@ namespace darmok::editor
         _editors = editors;
     }
 
-    bool SceneInspectorEditor::renderType(Scene& scene) noexcept
+    bool SceneInspectorEditor::renderType(Scene::Definition& scene) noexcept
     {
         auto changed = false;
-
         if (ImGui::CollapsingHeader("Scene"))
         {
+            if (ImguiUtils::drawProtobufInput("Name", "name", scene))
             {
-                auto name = scene.getName();
-                if (ImGui::InputText("Name", &name))
-                {
-                    scene.setName(name);
-                    changed = true;
-                }
-                ImGui::Spacing();
-            }
-
-            if (_editors)
-            {
-                auto comps = SceneReflectionUtils::getSceneComponents(scene);
-                if (!comps.empty())
-                {
-                    if (ImGui::CollapsingHeader("Components"))
-                    {
-                        for (auto& comp : comps)
-                        {
-                            if (_editors->render(comp))
-                            {
-                                changed = true;
-                            }
-                        }
-                    }
-                }
+                changed = true;
             }
         }
         return true;

@@ -26,11 +26,12 @@ message RectangleMeshSource {
 }
 
 message MeshSource {
+    string name = 1;
     oneof value {
-        CubeMeshSource cube = 1;
-        SphereMeshSource sphere = 2;
-        CapsuleMeshSource capsule = 3;
-        RectangleMeshSource rectangle = 4;
+        CubeMeshSource cube = 2;
+        SphereMeshSource sphere = 3;
+        CapsuleMeshSource capsule = 4;
+        RectangleMeshSource rectangle = 5;
     }
 }
 

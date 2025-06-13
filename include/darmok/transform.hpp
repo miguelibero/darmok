@@ -16,6 +16,12 @@ namespace darmok
         class Transform;
     }
 
+    namespace TransformUtils
+    {
+        using Definition = protobuf::Transform;
+        void update(Definition& trans, const glm::mat4& mat) noexcept;
+    }
+
     class IComponentLoadContext;
 
     class DARMOK_EXPORT Transform final

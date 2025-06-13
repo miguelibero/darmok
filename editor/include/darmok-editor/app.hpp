@@ -25,11 +25,7 @@ namespace darmok::editor
 {
     class EditorApp final : 
         public IAppDelegate, public IImguiRenderer,
-        IEditorAssetsViewDelegate<TextureAsset>,
-        IEditorAssetsViewDelegate<MaterialAsset>,
-        IEditorAssetsViewDelegate<ProgramAsset>,
-        IEditorAssetsViewDelegate<MeshAsset>,
-        IEditorAssetsViewDelegate<SceneAsset>
+        IEditorAssetsViewDelegate
     {
     public:
 		EditorApp(App& app) noexcept;
@@ -49,12 +45,6 @@ namespace darmok::editor
         const EditorProject& getProject() const noexcept;
         AssetContext& getAssets() noexcept;
         const AssetContext& getAssets() const noexcept;
-
-        bool drawSceneReference(const char* label, std::shared_ptr<Scene>& scene);
-        bool drawTextureReference(const char* label, std::shared_ptr<Texture>& tex);
-        bool drawMaterialReference(const char* label, std::shared_ptr<Material>& mat);
-        bool drawProgramReference(const char* label, std::shared_ptr<Program>& prog);
-        bool drawMeshReference(const char* label, std::shared_ptr<IMesh>& mesh, const bgfx::VertexLayout& layout);
 
         Entity addEntity() noexcept;
 
@@ -82,12 +72,7 @@ namespace darmok::editor
         EditorProject _proj;
         EditorSceneView _sceneView;
         EditorInspectorView _inspectorView;
-        EditorAssetsView<TextureAsset> _textureAssetsView;
-        EditorAssetsView<MaterialAsset> _materialAssetsView;
-        EditorAssetsView<ProgramAsset> _programAssetsView;
-        EditorAssetsView<MeshAsset> _meshAssetsView;
-        EditorAssetsView<SceneAsset> _sceneAssetsView;
-        EditorAssetsView<ModelAsset> _modelAssetsView;
+        std::vector<EditorAssetsView> _assetsViews;
         bool _scenePlaying;
 
         ImGuiID _dockDownId;
@@ -101,47 +86,10 @@ namespace darmok::editor
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
 
-        // IEditorAssetsViewDelegate<TextureAsset>
-        std::vector<TextureAsset> getAssets(std::type_identity<TextureAsset>) const override;
-        std::optional<TextureAsset> getSelectedAsset(std::type_identity<TextureAsset>) const override;
-        std::string getAssetName(const TextureAsset& asset) const override;
-        void onAssetSelected(const TextureAsset& asset) override;
-        void addAsset(std::type_identity<TextureAsset>) override;
-
-        // IEditorAssetsViewDelegate<MaterialAsset>
-        std::vector<MaterialAsset> getAssets(std::type_identity<MaterialAsset>) const override;
-        std::optional<MaterialAsset> getSelectedAsset(std::type_identity<MaterialAsset>) const override;
-        std::string getAssetName(const MaterialAsset& asset) const override;
-        void onAssetSelected(const MaterialAsset& asset) override;
-        void addAsset(std::type_identity<MaterialAsset>) override;
-
-        // IEditorAssetsViewDelegate<ProgramAsset>
-        std::vector<ProgramAsset> getAssets(std::type_identity<ProgramAsset>) const override;
-        std::optional<ProgramAsset> getSelectedAsset(std::type_identity<ProgramAsset>) const override;
-        std::string getAssetName(const ProgramAsset& asset) const override;
-        void onAssetSelected(const ProgramAsset& asset) override;
-        void addAsset(std::type_identity<ProgramAsset>) override;
-
-        // IEditorAssetsViewDelegate<MeshAsset>
-        std::vector<MeshAsset> getAssets(std::type_identity<MeshAsset>) const override;
-        std::optional<MeshAsset> getSelectedAsset(std::type_identity<MeshAsset>) const override;
-        std::string getAssetName(const MeshAsset& asset) const override;
-        void onAssetSelected(const MeshAsset& asset) override;
-        void addAsset(std::type_identity<MeshAsset>) override;
-
-        // IEditorAssetsViewDelegate<ModelAsset>
-        std::vector<ModelAsset> getAssets(std::type_identity<ModelAsset>) const override;
-        std::optional<ModelAsset> getSelectedAsset(std::type_identity<ModelAsset>) const override;
-        std::string getAssetName(const ModelAsset& asset) const override;
-        void onAssetSelected(const ModelAsset& asset) override;
-        void addAsset(std::type_identity<ModelAsset>) override;
-
-        // IEditorAssetsViewDelegate<SceneAsset>
-        std::vector<SceneAsset> getAssets(std::type_identity<SceneAsset>) const override;
-        std::optional<SceneAsset> getSelectedAsset(std::type_identity<SceneAsset>) const override;
-        std::string getAssetName(const SceneAsset& asset) const override;
-        void onAssetSelected(const SceneAsset& asset) override;
-        void addAsset(std::type_identity<SceneAsset>) override;
+        // IEditorAssetsViewDelegate
+        virtual std::optional<std::string> getSelectedAssetPath(uint32_t assetType) const override;
+        virtual std::string getAssetName(uint32_t assetType, const google::protobuf::Any& asset) const override;
+        virtual void onAssetPathSelected(uint32_t assetType, const std::string& assetPath) override;
 
         void renderMainMenu();
         void renderMainToolbar();

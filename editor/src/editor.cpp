@@ -6,9 +6,9 @@ namespace darmok::editor
     {
     }
 
-    bool ObjectEditorContainer::render(entt::meta_any& obj) const
+    bool ObjectEditorContainer::render(google::protobuf::Any& obj) const
     {
-        auto itr = _editors.find(obj.type().info().hash());
+        auto itr = _editors.find(obj.type_url());
         if (itr == _editors.end())
         {
             return false;
@@ -25,12 +25,12 @@ namespace darmok::editor
 
     void ObjectEditorContainer::add(std::unique_ptr<IObjectEditor>&& editor)
     {
-        auto type = editor->getObjectType();
+        auto typeUrl = editor->getObjectTypeUrl();
         if (_app)
         {
             editor->init(_app.value(), *this);
         }
-        auto& vec = _editors[type.hash()];
+        auto& vec = _editors[typeUrl];
         vec.push_back(std::move(editor));
     }
 

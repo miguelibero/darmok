@@ -16,6 +16,17 @@ using namespace entt::literals;
 
 namespace darmok
 {
+    void TransformUtils::update(Definition& trans, const glm::mat4& mat) noexcept
+    {
+        glm::vec3 pos;
+		glm::quat rot;
+		glm::vec3 scale;
+        Math::decompose(mat, pos, rot, scale);
+		*trans.mutable_position() = protobuf::convert(pos);
+        *trans.mutable_rotation() = protobuf::convert(rot);
+        *trans.mutable_scale() = protobuf::convert(scale);
+    }
+
     Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent) noexcept
         : _position{}
         , _rotation{}
@@ -274,10 +285,7 @@ namespace darmok
     {
         if (_localMatrix != v)
         {
-            glm::vec3 skew{};
-            glm::vec4 perspective{};
-            glm::decompose(v, _scale, _rotation, _position, skew, perspective);
-            // TODO: check skew == [0, 0, 0] && persp == [0, 0, 0, 1]
+            Math::decompose(v, _position, _rotation, _scale);
             // TODO: optimize calculating inverse in next update
             _localMatrix = v;
             _localInverse = glm::inverse(_localMatrix);
@@ -345,7 +353,9 @@ namespace darmok
     expected<void, std::string> Transform::load(const Definition& def, IComponentLoadContext& ctxt)
     {
 		setName(def.name());
-        setLocalMatrix(protobuf::convert(def.matrix()));
+        setPosition(protobuf::convert(def.position()));
+        setScale(protobuf::convert(def.scale()));
+        setRotation(protobuf::convert(def.rotation()));
         auto parentEntity = ctxt.getEntity(def.parent());
         setParent(ctxt.getScene().getComponent<Transform>(parentEntity));
         return {};

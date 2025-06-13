@@ -5,16 +5,16 @@
 
 namespace darmok::editor
 {
-    bool CubeInspectorEditor::renderType(Cube& cube) noexcept
+    bool CubeInspectorEditor::renderType(Cube::Definition& cube) noexcept
     {
         auto changed = false;
         if (ImGui::CollapsingHeader("Cube"))
         {
-            if (ImguiUtils::drawSizeInput("Size", cube.size))
+            if (ImguiUtils::drawProtobufInput("Size", "size", cube))
             {
                 changed = true;
             }
-            if (ImguiUtils::drawPositionInput("Origin", cube.origin))
+            if (ImguiUtils::drawProtobufInput("Origin", "origin", cube))
             {
                 changed = true;
             }
@@ -22,16 +22,16 @@ namespace darmok::editor
         return changed;
     }
 
-    bool SphereInspectorEditor::renderType(Sphere& sphere) noexcept
+    bool SphereInspectorEditor::renderType(Sphere::Definition& sphere) noexcept
     {
         auto changed = false;
         if (ImGui::CollapsingHeader("Sphere"))
         {
-            if (ImGui::InputFloat("Radius", &sphere.radius))
+            if (ImguiUtils::drawProtobufInput("Radius", "radius", sphere))
             {
                 changed = true;
             }
-            if (ImguiUtils::drawPositionInput("Origin", sphere.origin))
+            if (ImguiUtils::drawProtobufInput("Origin", "origin", sphere))
             {
                 changed = true;
             }

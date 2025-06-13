@@ -6,27 +6,27 @@
 
 namespace darmok::editor
 {
-    class PointLightInspectorEditor final : public ITypeObjectEditor<PointLight>
+    class PointLightInspectorEditor final : public ITypeObjectEditor<PointLight::Definition>
     {
     public:
-        bool renderType(PointLight& light) noexcept override;
+        bool renderType(PointLight::Definition& light) noexcept override;
     };
 
-    class DirectionalLightInspectorEditor final : public ITypeObjectEditor<DirectionalLight>
+    class DirectionalLightInspectorEditor final : public ITypeObjectEditor<DirectionalLight::Definition>
     {
     public:
-        bool renderType(DirectionalLight& light) noexcept override;
+        bool renderType(DirectionalLight::Definition& light) noexcept override;
     };
 
-    class SpotLightInspectorEditor final : public ITypeObjectEditor<SpotLight>
+    class SpotLightInspectorEditor final : public ITypeObjectEditor<SpotLight::Definition>
     {
     public:
-        bool renderType(SpotLight& light) noexcept override;
+        bool renderType(SpotLight::Definition& light) noexcept override;
     };
 
-    class AmbientLightInspectorEditor final : public ITypeObjectEditor<AmbientLight>
+    class AmbientLightInspectorEditor final : public ITypeObjectEditor<AmbientLight::Definition>
     {
     public:
-        bool renderType(AmbientLight& light) noexcept override;
+        bool renderType(AmbientLight::Definition& light) noexcept override;
     };
 }

@@ -102,5 +102,22 @@ namespace darmok
             }
             return magic_enum::enum_cast<T>(name, magic_enum::case_insensitive);
         }
+
+        template<typename T>
+        std::unordered_map<T, std::string> getEnumValues()
+        {
+            std::unordered_map<T, std::string> values;
+            auto prefix = std::string{ magic_enum::enum_type_name<T>() } + "_";
+            for (auto value : magic_enum::enum_values<T>())
+            {
+                std::string name{ magic_enum::enum_name(value) };
+                if (StringUtils::startsWith(name, prefix))
+                {
+                    name = name.substr(prefix.size());
+                }
+                values[value] = std::move(name);
+            }
+            return values;
+        }
     };
 }

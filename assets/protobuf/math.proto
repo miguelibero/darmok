@@ -62,6 +62,13 @@ message Vec4 {
     float w = 4;
 }
 
+message Quat {
+    float w = 1;
+    float x = 2;
+    float y = 3;
+    float z = 4;
+}
+
 message Mat3 {
     Vec3 col1 = 1;
     Vec3 col2 = 2;

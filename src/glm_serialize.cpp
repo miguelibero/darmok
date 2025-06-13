@@ -37,6 +37,16 @@ namespace darmok
 		return vec;
 	}
 
+	protobuf::Quat protobuf::convert(const glm::quat& v)
+	{
+		protobuf::Quat quat;
+		quat.set_x(v.x);
+		quat.set_y(v.y);
+		quat.set_z(v.z);
+		quat.set_w(v.w);
+		return quat;
+	}
+
 	protobuf::Mat3 protobuf::convert(const glm::mat3& v)
 	{
 		protobuf::Mat3 mat;
@@ -93,6 +103,11 @@ namespace darmok
 	glm::vec4 protobuf::convert(const protobuf::Vec4& v)
 	{
 		return { v.x(), v.y(), v.z(), v.w() };
+	}
+
+	glm::quat protobuf::convert(const protobuf::Quat& v)
+	{
+		return { v.w(), v.x(), v.y(), v.z() };
 	}
 
 	glm::mat3 protobuf::convert(const protobuf::Mat3& v)

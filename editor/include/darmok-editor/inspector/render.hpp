@@ -6,12 +6,12 @@
 
 namespace darmok::editor
 {
-    class RenderableInspectorEditor final : public ITypeObjectEditor<Renderable>
+    class RenderableInspectorEditor final : public ITypeObjectEditor<Renderable::Definition>
     {
     public:
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool renderType(Renderable& renderable) noexcept override;
+        bool renderType(Renderable::Definition& renderable) noexcept override;
     private:
         OptionalRef<EditorApp> _app;
     };

@@ -26,6 +26,7 @@ namespace darmok
 		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
 		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = protobuf::Program;
+		using Source = protobuf::ProgramSource;
 		using Standard = protobuf::StandardProgram;
 
 		Program(const Definition& def);

@@ -16,17 +16,13 @@ namespace darmok::protobuf
 
 namespace darmok::editor
 {
-    using TextureAsset = std::shared_ptr<protobuf::TextureSource>;
-    using ProgramAsset = std::shared_ptr<protobuf::ProgramSource>;
-    using MaterialAsset = std::shared_ptr<protobuf::MaterialSource>;
-    using MeshAsset = std::shared_ptr<protobuf::MeshSource>;
-    using SceneAsset = std::shared_ptr<Scene>;
+    struct SelectedAsset
+    {
+        uint32_t type;
+        std::string path;
+    };
     using SelectableObject = std::variant<
         Entity,
-        SceneAsset,
-        TextureAsset,
-        ProgramAsset,
-        MaterialAsset,
-        MeshAsset
+        SelectedAsset
     >;
 }

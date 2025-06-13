@@ -30,21 +30,14 @@ namespace darmok
         template<typename T>
         void newEnum(sol::state_view& lua, std::string_view name = {}, bool stringValues = false)
         {
-            auto typeName = magic_enum::enum_type_name<T>();
             if (name.empty())
             {
-                name = typeName;
+                name = magic_enum::enum_type_name<T>();
             }
-            auto valuePrefix = std::string{ typeName } + "_";
             auto metatable = lua.create_table_with();
             auto prefix = std::string{ name } + ".";
-            for (auto val : magic_enum::enum_values<T>())
+            for (auto& [val, valueName] : StringUtils::getEnumValues<T>())
             {
-                auto valueName = magic_enum::enum_name(val);
-                if (StringUtils::startsWith(valueName, valuePrefix))
-                {
-                    valueName = valueName.substr(valuePrefix.size());
-                }
                 if (stringValues)
                 {
                     metatable.set(valueName, prefix + std::string{ valueName });

@@ -1,9 +1,11 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/expected.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/viewport.hpp>
+#include <darmok/protobuf/shape.pb.h>
 
 #include <array>
 #include <optional>
@@ -30,12 +32,16 @@ namespace darmok
         [[nodiscard]] Rectangle operator*(float scale) const noexcept;
 
         [[nodiscard]] bool operator==(const Rectangle& other) const = default;
+
+        // serialization
+        using Definition = protobuf::Rectangle;
+        expected<void, std::string> load(const Definition& def);
     };
 
     struct BoundingBox;
 
     struct DARMOK_EXPORT Cube final
-    {
+    {        
         glm::vec3 size;
         glm::vec3 origin;
 
@@ -51,6 +57,11 @@ namespace darmok
 
         [[nodiscard]] static const Cube& standard() noexcept;
         [[nodiscard]] bool empty() const noexcept;
+
+        // serialization
+        using Definition = protobuf::Cube;
+        expected<void, std::string> load(const Definition& def);
+
     };
 
     struct TextureTriangle;
@@ -120,6 +131,10 @@ namespace darmok
         [[nodiscard]] Sphere operator*(float scale) const noexcept;
 
         [[nodiscard]] bool operator==(const Sphere& other) const = default;
+
+        // serialization
+        using Definition = protobuf::Sphere;
+        expected<void, std::string> load(const Definition& def);
     };
 
     struct BoundingBox;
@@ -152,6 +167,10 @@ namespace darmok
         bool isInFront(const BoundingBox& bbox) const noexcept;
         bool isInFront(const Sphere& sphere) const noexcept;
         bool contains(const glm::vec3& point) const noexcept;
+
+        // serialization
+        using Definition = protobuf::Plane;
+        expected<void, std::string> load(const Definition& def);
     };
 
     struct DARMOK_EXPORT Grid final
@@ -187,6 +206,10 @@ namespace darmok
         [[nodiscard]] Capsule operator*(float scale) const noexcept;
 
         [[nodiscard]] bool operator==(const Capsule& other) const = default;
+
+        // serialization
+        using Definition = protobuf::Capsule;
+        expected<void, std::string> load(const Definition& def);
     };
 
     struct DARMOK_EXPORT NormalIntersection final
@@ -366,6 +389,10 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::mat4 getOrtho() const noexcept;
+
+        // serialization
+        using Definition = protobuf::BoundingBox;
+        expected<void, std::string> load(const Definition& def);
     };
 }
 

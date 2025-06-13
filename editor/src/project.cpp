@@ -7,14 +7,14 @@
 #include <darmok/stream.hpp>
 #include <darmok/material.hpp>
 #include <darmok/program.hpp>
-#include <darmok/mesh_source.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/varying.hpp>
-#include <darmok/model.hpp>
 
 #include <portable-file-dialogs.h>
 
 // default scene
+#include <darmok/scene_serialize.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/environment.hpp>
 #include <darmok/light.hpp>
@@ -36,6 +36,7 @@ namespace darmok::editor
     EditorProject::EditorProject(App& app)
         : _app(app)
         , _tryReset(false)
+        , _sceneWrapper{ _sceneDef }
     {
     }
 
@@ -60,7 +61,7 @@ namespace darmok::editor
         }
         if (_path.empty() || forceNewPath)
         {
-            std::string initialPath(".");
+            std::string initialPath{ "." };
             if (!_path.empty() && std::filesystem::exists(_path))
             {
                 initialPath = _path.string();
@@ -78,10 +79,11 @@ namespace darmok::editor
         {
             return;
         }
+    }
 
-        SerializeContextStack<AssetContext>::push(_app.getAssets());
-        CerealUtils::save(*this, _path);
-        SerializeContextStack<AssetContext>::pop();
+    void EditorProject::exportScene()
+    {
+
     }
 
     void EditorProject::render()
@@ -108,16 +110,14 @@ namespace darmok::editor
 
     void EditorProject::doReset()
     {
-        _path = "";
+        _path.clear();
 
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
-        _scenes.clear();
-        _scenes.insert(_scene);
 
         _scene->destroyEntitiesImmediate();
         configureEditorScene(*_scene);
-        configureDefaultScene(*_scene);
+        configureDefaultScene(_sceneDef);
     }
 
     void EditorProject::open()
@@ -142,19 +142,18 @@ namespace darmok::editor
         {
             return;
         }
-        SerializeContextStack<AssetContext>::push(_app.getAssets());
-        CerealUtils::load(*this, path);
-        SerializeContextStack<AssetContext>::pop();
         _path = path;
     }
 
-    void EditorProject::exportAssetPack(bool forceNewPath)
-    {
-    }
 
     std::shared_ptr<Scene> EditorProject::getScene()
     {
         return _scene;
+    }
+
+    SceneDefinitionWrapper& EditorProject::getSceneDefinition()
+    {
+        return _sceneWrapper;
     }
 
     OptionalRef<Camera> EditorProject::getCamera()
@@ -162,645 +161,8 @@ namespace darmok::editor
         return _cam;
     }
 
-    std::vector<SceneAsset> EditorProject::getScenes() const
-    {
-        return { _scenes.begin(), _scenes.end() };
-    }
-
-    std::shared_ptr<Scene> EditorProject::addScene()
-    {
-        auto scene = std::make_shared<Scene>();
-        scene->setName("New Scene");
-        _scenes.insert(scene);
-        return scene;
-    }
-
-    std::string EditorProject::getSceneName(const std::shared_ptr<Scene>& scene) const
-    {
-        if (scene == nullptr)
-        {
-            return "";
-        }
-        std::string name = scene->getName();
-        if (name.empty())
-        {
-            name = "Unnamed Scene";
-        }
-        return name;
-    }
-
-    bool EditorProject::removeScene(Scene& scene) noexcept
-    {
-        auto ptr = &scene;
-        auto itr = std::find_if(_scenes.begin(), _scenes.end(),
-            [ptr](auto& elm) { return elm.get() == ptr; });
-        if (itr != _scenes.end())
-        {
-            _scenes.erase(itr);
-            return true;
-        }
-        return false;
-    }
-
-    EditorProject::Scenes::iterator EditorProject::findScene(const Scene& scene)
-    {
-        auto ptr = &scene;
-        return std::find_if(_scenes.begin(), _scenes.end(),
-            [ptr](auto& elm) { return elm.get() == ptr; });
-    }
-
-    std::vector<TextureAsset> EditorProject::getTextures() const
-    {
-        return { _textures.begin(), _textures.end() };
-    }
-
-    std::shared_ptr<TextureDefinition> EditorProject::addTexture()
-    {
-        auto tex = std::make_shared<TextureDefinition>();
-        tex->name = "New Texture";
-        _textures.insert(tex);
-        return tex;
-    }
-
-    std::string EditorProject::getTextureName(const std::shared_ptr<TextureDefinition>& tex) const
-    {
-        if (!tex)
-        {
-            return "";
-        }
-        std::string name = tex->name;
-        if (name.empty())
-        {
-            name = "Unnamed Texture";
-        }
-        return name;
-    }
-
-    TextureAsset EditorProject::findTexture(const std::shared_ptr<Texture>& tex) const
-    {
-        auto& loader = _app.getAssets().getTextureLoader();
-        return loader.getDefinition(tex);
-    }
-
-    TextureAsset EditorProject::findTexture(const TextureDefinition& def) const
-    {
-        auto itr = findTextureDefinition(def);
-        if (itr == _textures.end())
-        {
-            return nullptr;
-        }
-        return *itr;
-    }
-
-    std::shared_ptr<Texture> EditorProject::loadTexture(const TextureAsset& asset)
-    {
-        auto& loader = _app.getAssets().getTextureLoader();
-        return loader.loadResource(asset);
-    }
-
-    EditorProject::Textures::iterator EditorProject::findTextureDefinition(const TextureDefinition& def) const
-    {
-        auto ptr = &def;
-        return std::find_if(_textures.begin(), _textures.end(),
-            [ptr](auto& elm) { return elm.get() == ptr; });
-    }
-
-    bool EditorProject::removeTexture(TextureDefinition& def) noexcept
-    {
-        auto itr = findTextureDefinition(def);
-        if (itr != _textures.end())
-        {
-            _textures.erase(itr);
-            return true;
-        }
-        return false;
-    }
-
-    bool EditorProject::reloadTexture(TextureDefinition& def)
-    {
-        auto itr = findTextureDefinition(def);
-        if (itr == _textures.end())
-        {
-            return false;
-        }
-        auto defPtr = *itr;
-        auto& loader = _app.getAssets().getTextureLoader();
-        auto oldTex = loader.getResource(defPtr);
-        if (oldTex == nullptr)
-        {
-            return false;
-        }
-        auto tex = loader.loadResource(defPtr, true);
-        for (const auto& renderRef : getRenderables())
-        {
-            auto mat = renderRef.get().getMaterial();
-            if (!mat)
-            {
-                continue;
-            }
-            auto textures = mat->getTextures();
-            for (auto& [texType, matTex] : textures)
-            {
-                if (matTex == oldTex)
-                {
-                    mat->setTexture(texType, tex);
-                }
-            }
-        }
-        return true;
-    }
-
-    std::vector<MaterialAsset> EditorProject::getMaterials() const
-    {
-        return { _materials.begin(), _materials.end() };
-    }
-
-    std::shared_ptr<Material> EditorProject::addMaterial()
-    {
-        auto mat = std::make_shared<Material>();
-        mat->setName("New Material");
-        _materials.insert(mat);
-        return mat;
-    }
-
-    std::string EditorProject::getMaterialName(const std::shared_ptr<Material>& mat) const
-    {
-        if (!mat)
-        {
-            return "";
-        }
-        std::string name = mat->getName();
-        if (name.empty())
-        {
-            name = "Unnamed Material";
-        }
-        return name;
-    }
-
-    bool EditorProject::removeMaterial(Material& mat) noexcept
-    {
-        auto ptr = &mat;
-        auto itr = std::find_if(_materials.begin(), _materials.end(),
-            [ptr](auto& elm) { return elm.get() == ptr; });
-        if (itr != _materials.end())
-        {
-            _materials.erase(itr);
-            return true;
-        }
-        return false;
-    }
-
-    std::vector<ProgramAsset> EditorProject::getPrograms() const
-    {
-        std::vector<ProgramAsset> progs;
-        auto& typeNames = StandardProgramLoader::getTypeNames();
-        progs.reserve(typeNames.size() + _programs.size());
-        for (auto& [type, name] : typeNames)
-        {
-            progs.emplace_back(type);
-        }
-        for (auto& [src, def] : _programs)
-        {
-            progs.push_back(src);
-        }
-        return progs;
-    }
-
-    EditorProject::Programs::const_iterator EditorProject::findProgramSource(const ProgramSource& src) const
-    {
-        auto ptr = &src;
-        return std::find_if(_programs.begin(), _programs.end(),
-            [ptr](auto& elm) { return elm.first.get() == ptr; });
-    }
-
-    EditorProject::Programs::iterator EditorProject::findProgramSource(const ProgramSource& src)
-    {
-        auto ptr = &src;
-        return std::find_if(_programs.begin(), _programs.end(),
-            [ptr](auto& elm) { return elm.first.get() == ptr; });
-    }
-
-    bool EditorProject::removeProgram(ProgramSource& src) noexcept
-    {
-        auto itr = findProgramSource(src);
-        if (itr != _programs.end())
-        {
-            _programs.erase(itr);
-            return true;
-        }
-        return false;
-    }
-
-    bool EditorProject::reloadProgram(ProgramSource& src)
-    {
-        if (!_progCompiler)
-        {
-            return false;
-        }
-        auto itr = findProgramSource(src);
-        if (itr == _programs.end())
-        {
-            return false;
-        }
-        const auto& oldDef = itr->second;
-        auto newDef = std::make_shared<ProgramDefinition>((*_progCompiler)(src));
-        itr->second = newDef;
-        auto& loader = _app.getAssets().getProgramLoader();
-        auto oldProg = loader.getResource(oldDef);
-        auto newProg = loader.loadResource(newDef);
-        if (oldProg)
-        {
-            for (const auto& renderRef : getRenderables())
-            {
-                auto& render = renderRef.get();
-                auto mat = render.getMaterial();
-                if (mat && mat->getProgram() == oldProg)
-                {
-                    mat->setProgram(newProg);
-                }
-            }
-        }
-        return true;
-    }
-
-    std::string EditorProject::getProgramName(const std::shared_ptr<Program>& prog) const
-    {
-        if (!prog)
-        {
-            return "";
-        }
-        auto def = _app.getAssets().getProgramLoader().getDefinition(prog);
-        std::string name;
-        if (def)
-        {
-            name = def->name;
-        }
-        else if (auto standard = StandardProgramLoader::getType(prog))
-        {
-            name = StandardProgramLoader::getTypeName(standard.value());
-        }
-        if (name.empty())
-        {
-            name = "Unnamed Program";
-        }
-        return name;
-    }
-
-    std::string EditorProject::getProgramName(const ProgramAsset& asset) const
-    {
-        if (auto standard = std::get_if<StandardProgramType>(&asset))
-        {
-            return StandardProgramLoader::getTypeName(*standard);
-        }
-        const auto& ptr = std::get<std::shared_ptr<ProgramSource>>(asset);
-        if (!ptr)
-        {
-            return "";
-        }
-        auto name = ptr->name;
-        if (name.empty())
-        {
-            name = "Unnamed Program";
-        }
-        return name;
-    }
-
-    bool EditorProject::isProgramCached(const ProgramAsset& asset) const noexcept
-    {
-        if (std::holds_alternative<StandardProgramType>(asset))
-        {
-            return true;
-        }
-        const auto& src = std::get<std::shared_ptr<ProgramSource>>(asset);
-        auto itr = _programs.find(src);
-        return itr != _programs.end() && itr->second != nullptr;
-    }
-
-    std::shared_ptr<ProgramSource> EditorProject::addProgram()
-    {
-        auto src = std::make_shared<ProgramSource>();
-        src->name = "New Program";
-        _programs[src] = nullptr;
-        return src;
-    }
-
-    std::shared_ptr<Program> EditorProject::loadProgram(const ProgramAsset& asset)
-    {
-        if (auto standard = std::get_if<StandardProgramType>(&asset))
-        {
-            return StandardProgramLoader::load(*standard);
-        }
-        const auto& src = std::get<std::shared_ptr<ProgramSource>>(asset);
-        auto itr = _programs.find(src);
-        std::shared_ptr<ProgramDefinition> def;
-        if (itr != _programs.end())
-        {
-            def = itr->second;
-        }
-        if(def == nullptr)
-        {
-            if (!_progCompiler)
-            {
-                return nullptr;
-            }
-            def = std::make_shared<ProgramDefinition>((*_progCompiler)(*src));
-        }
-        auto& loader = _app.getAssets().getProgramLoader();
-        return loader.loadResource(def);
-    }
-
-    ProgramAsset EditorProject::findProgram(const std::shared_ptr<Program>& prog) const
-    {
-        if (auto standard = StandardProgramLoader::getType(prog))
-        {
-            return standard.value();
-        }
-        auto& loader = _app.getAssets().getProgramLoader();
-        auto def = loader.getDefinition(prog);
-        if (def)
-        {
-            auto itr = std::find_if(_programs.begin(), _programs.end(),
-                [def](auto& elm) { return elm.second == def; });
-            if (itr != _programs.end())
-            {
-                return itr->first;
-            }
-        }
-        return nullptr;
-    }
-
-    std::vector<MeshAsset> EditorProject::getMeshes() const
-    {
-        std::vector<MeshAsset> meshes;
-        meshes.reserve(_meshes.size());
-        for (auto& [src, def] : _meshes)
-        {
-            meshes.push_back(src);
-        }
-        return meshes;
-    }
-
-    std::string EditorProject::getMeshName(const MeshAsset& asset) const
-    {
-        if (asset == nullptr)
-        {
-            return "";
-        }
-        auto name = asset->name;
-        if (name.empty())
-        {
-            name = "Unnamed Mesh";
-        }
-        return name;
-    }
-
-    std::string EditorProject::getMeshName(const std::shared_ptr<IMesh>& mesh) const
-    {
-        if (!mesh)
-        {
-            return "";
-        }
-        auto& loader = _app.getAssets().getMeshLoader();
-        auto def = loader.getDefinition(mesh);
-        if (!def)
-        {
-            return "";
-        }
-        std::string name = def->name;
-        if (name.empty())
-        {
-            name = "Unnamed Mesh";
-        }
-        return name;
-    }
-
-    bool EditorProject::isMeshCached(const MeshAsset& asset, const bgfx::VertexLayout& layout) const noexcept
-    {
-        auto itr = _meshes.find(asset);
-        if (itr == _meshes.end())
-        {
-            return false;
-        }
-        auto& defs = itr->second;
-        auto itr2 = std::find_if(defs.begin(), defs.end(),
-            [&layout](auto& def) {
-                return def->layout == layout;
-            });
-        return itr2 != defs.end();
-    }
-
-    std::shared_ptr<IMesh> EditorProject::loadMesh(const MeshAsset& asset, const bgfx::VertexLayout& layout)
-    {
-        auto& src = asset;
-        auto itr = _meshes.find(src);
-        std::shared_ptr<MeshDefinition> def;
-        if (itr != _meshes.end())
-        {
-            auto& defs = itr->second;
-            auto itr = std::find_if(defs.begin(), defs.end(),
-                [&layout](auto& def) {
-                    return def->layout == layout;
-                });
-            if (itr != defs.end())
-            {
-                def = *itr;
-            }
-        }
-        if (def == nullptr)
-        {
-            def = src->createDefinition(layout);
-            if (def == nullptr)
-            {
-                return nullptr;
-            }
-            _meshes[src].push_back(def);
-        }
-        auto& loader = _app.getAssets().getMeshLoader();
-        return loader.loadResource(def);
-    }
-
-    std::shared_ptr<MeshSource> EditorProject::addMesh()
-    {
-        auto src = std::make_shared<MeshSource>();
-        src->name = "New Mesh";
-        src->content.emplace<SphereMeshSource>();
-        _meshes[src] = {};
-        return src;
-    }
-
-    EditorProject::Meshes::const_iterator EditorProject::findMeshSource(const MeshSource& src) const
-    {
-        auto ptr = &src;
-        return std::find_if(_meshes.begin(), _meshes.end(),
-            [ptr](auto& elm) { return elm.first.get() == ptr; });
-    }
-
-    EditorProject::Meshes::iterator EditorProject::findMeshSource(const MeshSource& src)
-    {
-        auto ptr = &src;
-        return std::find_if(_meshes.begin(), _meshes.end(),
-            [ptr](auto& elm) { return elm.first.get() == ptr; });
-    }
-
-    bool EditorProject::removeMesh(MeshSource& src) noexcept
-    {
-        auto itr = findMeshSource(src);
-        if (itr != _meshes.end())
-        {
-            _meshes.erase(itr);
-            return true;
-        }
-        return false;
-    }
-
-    std::vector<std::reference_wrapper<Renderable>> EditorProject::getRenderables()
-    {
-        std::vector<std::reference_wrapper<Renderable>> renderables;
-        for (auto scene : _scenes)
-        {
-            for (auto& entity : scene->getComponents<Renderable>())
-            {
-                auto& comp = scene->getComponent<Renderable>(entity).value();
-                renderables.emplace_back(comp);
-            }
-        }
-        return renderables;
-    }
-
-    bool EditorProject::reloadMesh(MeshSource& src)
-    {
-        auto itr = findMeshSource(src);
-        if (itr == _meshes.end())
-        {
-            return false;
-        }
-        auto& defs = itr->second;
-        auto& loader = _app.getAssets().getMeshLoader();
-        using MeshMap = std::unordered_map<bgfx::VertexLayout, std::shared_ptr<IMesh>>;
-        MeshMap oldMeshes;
-        MeshMap newMeshes;
-        oldMeshes.reserve(defs.size());
-        newMeshes.reserve(defs.size());
-        for (const auto& def : defs)
-        {
-            if (auto mesh = loader.getResource(def))
-            {
-                oldMeshes[def->layout] = mesh;
-            }
-        }
-        defs.clear();
-        for (const auto& renderRef : getRenderables())
-        {
-            auto& render = renderRef.get();
-            auto oldMesh = render.getMesh();
-            if (!oldMesh)
-            {
-                continue;
-            }
-
-            auto layout = render.getVertexLayout();
-            auto itr = newMeshes.find(layout);
-            if (itr != newMeshes.end())
-            {
-                render.setMesh(itr->second);
-            }
-            else
-            {
-                auto def = src.createDefinition(layout);
-                defs.push_back(def);
-                auto newMesh = loader.loadResource(def);
-                newMeshes[layout] = newMesh;
-                render.setMesh(newMesh);
-            }
-        }
-        
-        return true;
-    }
-
-    MeshAsset EditorProject::findMesh(const std::shared_ptr<IMesh>& mesh) const
-    {
-        auto& loader = _app.getAssets().getMeshLoader();
-        auto def = loader.getDefinition(mesh);
-        if (!def)
-        {
-            return nullptr;
-        }
-        auto itr = std::find_if(_meshes.begin(), _meshes.end(),
-            [def](auto& elm) {
-                auto& defs = elm.second;
-                return std::find(defs.begin(), defs.end(), def) != defs.end();
-            });
-        if (itr != _meshes.end())
-        {
-            return itr->first;
-        }
-        return nullptr;
-    }
-
-    std::vector<ModelAsset> EditorProject::getModels() const
-    {
-        return { _models.begin(), _models.end() };
-    }
-
-    std::string EditorProject::getModelName(const ModelAsset& asset) const
-    {
-        return asset->name;
-    }
-
-    std::shared_ptr<Model> EditorProject::addModel()
-    {
-        auto model = std::make_shared<Model>();
-        model->name = "New Model";
-        _models.insert(model);
-        return model;
-    }
-
-    bool EditorProject::removeModel(Model& model) noexcept
-    {
-        auto itr = findModel(model);
-        if (itr != _models.end())
-        {
-            _models.erase(itr);
-            return true;
-        }
-        return false;
-    }
-
-    bool EditorProject::reloadModel(Model& model)
-    {
-        return true;
-    }
-
-    EditorProject::Models::iterator EditorProject::findModel(const Model& model)
-    {
-        auto ptr = &model;
-		return std::find_if(_models.begin(), _models.end(),
-			[ptr](auto& elm) { return elm.get() == ptr; });
-    }
-
-    bool EditorProject::shouldCameraRender(const Camera& cam) const noexcept
-    {
-        return _cam.ptr() == &cam;
-    }
-
-    bool EditorProject::shouldEntityBeSerialized(Entity entity) const noexcept
-    {
-        return !isEditorEntity(entity);
-    }
-
-    bool EditorProject::isEditorEntity(Entity entity) const noexcept
-    {
-        if (_scene && _cam && _scene->getEntity(_cam.value()) == entity)
-        {
-            return true;
-        }
-        return false;
-    }
-
     void EditorProject::configureEditorScene(Scene& scene)
     {
-        scene.setDelegate(*this);
-
         static const std::string name = "Editor Camera";
         auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
         auto camEntity = scene.createEntity();
@@ -822,51 +184,73 @@ namespace darmok::editor
         _cam = cam;
     }
 
-    void EditorProject::configureDefaultScene(Scene& scene)
+    void EditorProject::configureDefaultScene(SceneDefinition& scene)
     {
-        scene.setName("Scene");
+        scene.set_name("Scene");
 
         ShadowRendererConfig shadowConfig;
         shadowConfig.cascadeAmount = 3;
 
-        auto camEntity = scene.createEntity();
-        auto& cam = scene.addComponent<Camera>(camEntity)
-            .setPerspective(60.F, 0.3F, 1000.F);
-        cam.addComponent<ShadowRenderer>(shadowConfig);
-        cam.addComponent<LightingRenderComponent>();
-        cam.addComponent<ForwardRenderer>();
-        cam.addComponent<FrustumCuller>();
+        auto camEntity = SceneDefinitionUtils::createEntity(scene);
 
-        scene.addComponent<Transform>(camEntity, glm::vec3(0.F, 1.F, -10.F))
-            .setName("Main Camera");
-        
-        auto ambLightEntity = scene.createEntity();
-        scene.addComponent<AmbientLight>(ambLightEntity, 0.2F);
-        scene.addComponent<Transform>(ambLightEntity)
-            .setName("Ambient Light");
-        
-        auto dirLightEntity = scene.createEntity();
-        scene.addComponent<DirectionalLight>(dirLightEntity, 3.F);
-        scene.addComponent<Transform>(dirLightEntity, glm::vec3(0.F, 3.F, 0.F))
-            .setEulerAngles(glm::vec3(50.F, -30.F, 0.F))
-            .setName("Directional Light");
+        Camera::Definition cam;
+        cam.set_perspective_fovy(glm::radians(60.f));
+        cam.set_near(0.3f);
+        cam.set_far(1000.f);
 
-        auto prog = StandardProgramLoader::load(StandardProgramType::Forward);
+        //cam.addComponent<ShadowRenderer>(shadowConfig);
+        //cam.addComponent<LightingRenderComponent>();
+        //cam.addComponent<ForwardRenderer>();
+        //cam.addComponent<FrustumCuller>();
 
-        auto meshAsset = addMesh();
-        meshAsset->name = "Default Shape";
-        meshAsset->content.emplace<SphereMeshSource>();
-        auto mesh = loadMesh(meshAsset, prog->getVertexLayout());
+        SceneDefinitionUtils::addComponent(scene, camEntity, cam);
 
-        auto mat = addMaterial();
-        mat->setProgram(prog);
-        mat->setName("Default");
-        mat->setBaseColor(Colors::white());
-        mat->setOpacityType(OpacityType::Opaque);
+        Transform::Definition camTrans;
+        camTrans.set_name("Main Camera");
+        *camTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 1.f, -10.f });
+        SceneDefinitionUtils::addComponent(scene, camEntity, camTrans);
 
-        auto cubeEntity = scene.createEntity();
-        scene.addComponent<Renderable>(cubeEntity, mesh, mat);
-        scene.addComponent<Transform>(cubeEntity)
-            .setName("Sphere");
+        auto ambLightEntity = SceneDefinitionUtils::createEntity(scene);
+        AmbientLight::Definition ambLight;
+        ambLight.set_intensity(0.2f);
+        SceneDefinitionUtils::addComponent(scene, ambLightEntity, ambLight);
+        Transform::Definition ambLightTrans;
+        ambLightTrans.set_name("Ambient Light");
+        SceneDefinitionUtils::addComponent(scene, ambLightEntity, ambLightTrans);
+
+        auto dirLightEntity = SceneDefinitionUtils::createEntity(scene);
+        DirectionalLight::Definition dirLight;
+        dirLight.set_intensity(3.f);
+        SceneDefinitionUtils::addComponent(scene, dirLightEntity, dirLight);
+        Transform::Definition dirLightTrans;
+        ambLightTrans.set_name("Directional Light");
+        *ambLightTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 3.f, 0.f });
+        auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
+        *ambLightTrans.mutable_rotation() = protobuf::convert(rot);
+        SceneDefinitionUtils::addComponent(scene, dirLightEntity, dirLightTrans);
+
+        Mesh::Source mesh;
+        mesh.set_name("Default Shape");
+        mesh.mutable_sphere();
+        std::string meshPath = "default_mesh";
+        SceneDefinitionUtils::addAsset(scene, meshPath, mesh);
+
+        Material::Definition mat;
+        mat.set_name("Default");
+        mat.set_standard_program(Program::Standard::Forward);
+        *mat.mutable_base_color() = protobuf::convert(Colors::white());
+        mat.set_opacity_type(Material::Definition::Opaque);
+        std::string matPath = "default_material";
+        SceneDefinitionUtils::addAsset(scene, matPath, mat);
+
+        auto renderableEntity = SceneDefinitionUtils::createEntity(scene);
+        Renderable::Definition renderable;
+        renderable.set_mesh_path(meshPath);
+        renderable.set_material_path(matPath);
+        SceneDefinitionUtils::addComponent(scene, renderableEntity, renderable);
+
+        Transform::Definition renderableTrans;
+        renderableTrans.set_name("Sphere");
+        SceneDefinitionUtils::addComponent(scene, renderableEntity, renderableTrans);
     }
 }

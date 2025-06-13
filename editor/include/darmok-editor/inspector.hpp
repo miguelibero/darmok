@@ -34,52 +34,17 @@ namespace darmok::editor
         void shutdown();
         void render();
 
-        void selectObject(const SelectableObject& obj, const std::shared_ptr<Scene>& scene = nullptr);
+        void selectObject(const SelectableObject& obj);
 
-        std::shared_ptr<Scene> getSelectedScene() const noexcept;
+		bool isSceneSelected() const noexcept;
         Entity getSelectedEntity() const noexcept;
-
-        template<typename T>
-        std::optional<T> getSelectedObject() const noexcept
-        {
-            auto ptr = std::get_if<T>(&_selected);
-            if (ptr == nullptr)
-            {
-                return std::nullopt;
-            }
-            return *ptr;
-        }
+		OptionalRef<const SelectedAsset> getSelectedAsset() const noexcept;
 
         static const std::string& getWindowName();
     private:
-        OptionalRef<SceneInspectorEditor> _sceneEditor;
-        OptionalRef<MaterialInspectorEditor> _materialEditor;
-        OptionalRef<ProgramSourceInspectorEditor> _programEditor;
-        OptionalRef<MeshSourceInspectorEditor> _meshEditor;
-        OptionalRef<TextureDefinitionInspectorEditor> _textureEditor;
-        OptionalRef<ModelInspectorEditor> _modelEditor;
         ObjectEditorContainer _editors;
         static const std::string _windowName;
         SelectableObject _selected;
-        std::shared_ptr<Scene> _scene;
-
-
-        template<typename T, typename E>
-        bool renderSelectedSharedAsset(OptionalRef<E> editor) noexcept
-        {
-            if (!editor)
-            {
-                return false;
-            }
-            if (auto opt = getSelectedObject<T>())
-            {
-                if (auto asset = *opt)
-                {
-                    editor->renderType(*asset);
-                    return true;
-                }
-            }
-            return false;
-        }
+        OptionalRef<Scene::Definition> _sceneDef;
     };
 }

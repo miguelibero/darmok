@@ -44,6 +44,13 @@ namespace darmok
         return { Line{ v0, v1 }, Line{v1, v2}, Line{ v2, v3 }, Line{ v3, v0 } };
     }
 
+    expected<void, std::string> Rectangle::load(const Definition& def)
+    {
+        size = protobuf::convert(def.size());
+        origin = protobuf::convert(def.origin());
+        return {};
+    }
+
     Cube::Cube(const glm::vec3& size, const glm::vec3& origin) noexcept
         : size(size)
         , origin(origin)
@@ -84,6 +91,13 @@ namespace darmok
         Cube cube(*this);
         cube *= scale;
         return cube;
+    }
+
+    expected<void, std::string> Cube::load(const Definition& def)
+    {
+        size = protobuf::convert(def.size());
+        origin = protobuf::convert(def.origin());
+        return {};
     }
 
     Triangle::Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept
@@ -250,6 +264,13 @@ namespace darmok
         return copy;
     }
 
+    expected<void, std::string> Sphere::load(const Definition& def)
+    {
+        origin = protobuf::convert(def.origin());
+        radius = def.radius();
+        return {};
+    }
+
     Plane::Plane(const glm::vec3& normal, float distance) noexcept
         : normal(normal)
         , distance(distance)
@@ -356,6 +377,13 @@ namespace darmok
         distance = glm::dot(normal, origin);
 
         return *this;
+    }
+
+    expected<void, std::string> Plane::load(const Definition& def)
+    {
+        normal = protobuf::convert(def.normal());
+        distance = def.distance();
+        return {};
     }
 
     Ray::Ray(const glm::vec3& origin, const glm::vec3& dir) noexcept
@@ -587,6 +615,14 @@ namespace darmok
         return copy;
     }
 
+    expected<void, std::string> Capsule::load(const Definition& def)
+    {
+        origin = protobuf::convert(def.origin());
+        radius = def.radius();
+        cylinderHeight = def.cylinder_height();
+        return {};
+    }
+
     BoundingBox::BoundingBox() noexcept
         : min(0), max(0)
     {
@@ -805,6 +841,13 @@ namespace darmok
     glm::mat4 BoundingBox::getOrtho() const noexcept
     {
         return Math::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
+    }
+
+    expected<void, std::string> BoundingBox::load(const Definition& def)
+    {
+        min = protobuf::convert(def.min());
+        max = protobuf::convert(def.max());
+        return {};
     }
 
     Frustum::Frustum(const glm::mat4& mtx, bool inverse) noexcept

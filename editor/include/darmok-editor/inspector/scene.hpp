@@ -6,11 +6,11 @@
 
 namespace darmok::editor
 {
-    class SceneInspectorEditor final : public ITypeObjectEditor<Scene>
+    class SceneInspectorEditor final : public ITypeObjectEditor<Scene::Definition>
     {
     public:
         void init(EditorApp& app, ObjectEditorContainer& editors) noexcept override;
-        bool renderType(Scene& scene) noexcept override;
+        bool renderType(Scene::Definition& scene) noexcept override;
     private:
         OptionalRef<ObjectEditorContainer> _editors;
     };

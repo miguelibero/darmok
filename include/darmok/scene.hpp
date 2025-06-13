@@ -51,12 +51,19 @@ namespace darmok
     struct EntityFilter;
     class EntityView;
 
+    namespace protobuf
+    {
+        class Scene;
+    }
+
     using SceneComponentRefs = std::vector<std::reference_wrapper<ISceneComponent>>;
     using ConstSceneComponentRefs = std::vector<std::reference_wrapper<const ISceneComponent>>;
     
     class DARMOK_EXPORT Scene final
     {
     public:
+        using Definition = protobuf::Scene;
+
         Scene() noexcept;
         Scene(App& app) noexcept;
         ~Scene() noexcept;
