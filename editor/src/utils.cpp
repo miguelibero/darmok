@@ -67,7 +67,7 @@ namespace darmok::editor
         return false;
     }
 
-    bool ImguiUtils::drawListCombo(const char* label, size_t& current, std::span<const std::string> options) noexcept
+    bool ImguiUtils::drawListCombo(const char* label, size_t& current, ComboOptions options) noexcept
     {
         auto changed = false;
         if (ImGui::BeginCombo(label, options[current].c_str()))

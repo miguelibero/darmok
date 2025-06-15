@@ -129,13 +129,13 @@ namespace darmok
         std::string getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         bool loadTexture(const std::string& path) noexcept;
 
-        std::optional<uint32_t> updateNode(const aiNode& assimpNode, uint32_t parentEntityId = 0) noexcept;
+        std::optional<Entity> updateNode(const aiNode& assimpNode, Entity parentEntity = entt::null) noexcept;
         void updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
         void updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
         void updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
-        void updateCamera(uint32_t entityId, const aiCamera& assimpCam) noexcept;
-        void updateLight(uint32_t entityId, const aiLight& assimpLight) noexcept;
-        bool updateMeshes(uint32_t entityId, const std::regex& regex) noexcept;
+        void updateCamera(Entity entity, const aiCamera& assimpCam) noexcept;
+        void updateLight(Entity entity, const aiLight& assimpLight) noexcept;
+        bool updateMeshes(Entity entity, const std::regex& regex) noexcept;
         static void updateTransform(TransformDefinition& trans, const glm::mat4& mat) noexcept;
 
         std::string createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
@@ -144,7 +144,7 @@ namespace darmok
 
 
 		
-        bool addMeshComponents(uint32_t entityId, int index, bool addChild) noexcept;
+        bool addMeshComponents(Entity entity, int index, bool addChild) noexcept;
     };
 
     class AssimpSceneDefinitionLoaderImpl final

@@ -1,12 +1,13 @@
 #pragma once
 
+#include <darmok/optional_ref.hpp>
 #include <darmok/protobuf/scene.pb.h>
 
 #include <bx/bx.h>
 
 #include <string>
 
-namespace
+namespace darmok
 {
     class SceneDefinitionWrapper;
 }
@@ -18,7 +19,6 @@ namespace darmok::editor
     public:
         ~IEditorAssetsViewDelegate() = default;
         virtual std::optional<std::string> getSelectedAssetPath(uint32_t assetType) const = 0;
-        virtual std::string getAssetName(uint32_t assetType, const google::protobuf::Any& asset) const = 0;
         virtual void onAssetPathSelected(uint32_t assetType, const std::string& assetPath) = 0;
     };
 

@@ -81,10 +81,6 @@ namespace darmok::editor
     bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::string& path, bool selected)
     {
         std::string name = path;
-        if (!_delegate)
-        {
-            name = _delegate->getAssetName(_assetType, asset);
-        }
         auto selectionChanged = false;
         if (ImguiUtils::drawAsset(name.c_str(), selected))
         {

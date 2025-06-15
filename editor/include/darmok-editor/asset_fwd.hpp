@@ -3,16 +3,7 @@
 #include <darmok/scene_fwd.hpp>
 
 #include <variant>
-#include <memory>
 #include <string>
-
-namespace darmok::protobuf
-{
-    class ProgramSource;
-    class MeshSource;
-    class MaterialSource;
-    class TextureSource;
-}
 
 namespace darmok::editor
 {

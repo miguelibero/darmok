@@ -47,7 +47,7 @@ namespace darmok::editor
         static const char* _confirmNewPopup;
 
         void configureEditorScene(Scene& scene);
-        void configureDefaultScene(SceneDefinition& scene);
+        void configureDefaultScene(SceneDefinitionWrapper& scene);
 
         void doReset();
     };

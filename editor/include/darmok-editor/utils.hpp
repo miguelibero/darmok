@@ -1,13 +1,9 @@
 #pragma once
 
 #include <darmok/utils.hpp>
-
-#include <stack>
+#include <darmok/string.hpp>
 
 #include <imgui.h>
-#include <imgui_stdlib.h>
-#include <magic_enum/magic_enum.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 namespace darmok
 {

@@ -14,14 +14,13 @@
 #include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
-#include <imgui_stdlib.h>
 
 namespace darmok::editor
 {
     const std::string EditorInspectorView::_windowName = "Inspector";
 
     EditorInspectorView::EditorInspectorView()
-        : _selected{ entt::null }
+        : _selected{ Entity{entt::null} }
     {
     }
 
@@ -95,13 +94,12 @@ namespace darmok::editor
             auto entity = getSelectedEntity();
             if (entity != entt::null)
             {
-				uint32_t entityId = entt::to_integral(entity);
-                auto comps = SceneDefinitionUtils::getComponents(sceneDef, entityId);
+                auto comps = sceneDef.getComponents(entity);
                 _editors.render(comps.begin(), comps.end());
             }
             else if (auto selected = getSelectedAsset())
             {
-                if (auto asset = SceneDefinitionUtils::getAsset(sceneDef, selected->type, selected->path))
+                if (auto asset = sceneDef.getAsset(selected->type, selected->path))
                 {
                     _editors.render(*asset);
                 }

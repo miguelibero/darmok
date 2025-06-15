@@ -15,25 +15,38 @@ namespace darmok
     {
     }
 
-    const ConstSceneDefinitionWrapper::Definition& ConstSceneDefinitionWrapper::get() const noexcept
+    const std::string& ConstSceneDefinitionWrapper::getName() const noexcept
     {
-        return *_def;
+		return _def->name();
     }
 
-    std::vector<uint32_t> ConstSceneDefinitionWrapper::getRootEntities() const noexcept
+    std::vector<Entity> ConstSceneDefinitionWrapper::getRootEntities() const noexcept
     {
-        std::vector<uint32_t> entities;
-        for (auto& [entityId, trans] : getTypeComponents<Transform::Definition>())
+        std::vector<Entity> entities;
+        for (auto& [entity, trans] : getTypeComponents<Transform::Definition>())
         {
-            if (trans.parent() == 0)
+            if (!trans.has_parent() || trans.parent() == 0)
             {
-                entities.push_back(entityId);
+                entities.push_back(entity);
             }
         }
         return entities;
     }
 
-    OptionalRef<const ConstSceneDefinitionWrapper::RegistryComponents> ConstSceneDefinitionWrapper::getTypeComponents(uint32_t typeId) const noexcept
+    std::vector<Entity> ConstSceneDefinitionWrapper::getChildren(Entity entity) const noexcept
+    {
+        std::vector<Entity> entities;
+        for (auto& [entity, trans] : getTypeComponents<Transform::Definition>())
+        {
+            if (trans.parent() == entt::to_integral(entity))
+            {
+                entities.push_back(entity);
+            }
+        }
+        return entities;
+    }
+
+    OptionalRef<const ConstSceneDefinitionWrapper::RegistryComponents> ConstSceneDefinitionWrapper::getTypeComponents(IdType typeId) const noexcept
     {
         auto& comps = _def->registry().components();
         auto itr = comps.find(typeId);
@@ -44,7 +57,7 @@ namespace darmok
         return itr->second;
     }
 
-    OptionalRef<const ConstSceneDefinitionWrapper::AssetGroup> ConstSceneDefinitionWrapper::getAssetGroup(uint32_t typeId) const noexcept
+    OptionalRef<const ConstSceneDefinitionWrapper::AssetGroup> ConstSceneDefinitionWrapper::getAssetGroup(IdType typeId) const noexcept
     {
         auto& assetGroups = _def->assets().groups();
         auto itr = assetGroups.find(typeId);
@@ -55,7 +68,7 @@ namespace darmok
         return itr->second;
     }
 
-    std::vector<std::string> ConstSceneDefinitionWrapper::getAssetPaths(uint32_t typeId) const noexcept
+    std::vector<std::string> ConstSceneDefinitionWrapper::getAssetPaths(IdType typeId) const noexcept
     {
         std::vector<std::string> paths;
         auto group = getAssetGroup(typeId);
@@ -77,17 +90,17 @@ namespace darmok
     {
     }
 
-    SceneDefinitionWrapper::Definition& SceneDefinitionWrapper::get() noexcept
+    void SceneDefinitionWrapper::setName(std::string_view name) noexcept
     {
-        return *_def;
+        _def->set_name(std::string{ name });
     }
 
-    uint32_t SceneDefinitionWrapper::createEntity() noexcept
+    Entity SceneDefinitionWrapper::createEntity() noexcept
     {
         auto& reg = *_def->mutable_registry();
         auto v = reg.entities() + 1;
         reg.set_entities(v);
-        return v;
+        return static_cast<Entity>(v);
     }
 
     bool SceneDefinitionWrapper::addAsset(std::string_view path, Message& asset) noexcept
@@ -100,22 +113,22 @@ namespace darmok
         return result.second;
     }
 
-    bool SceneDefinitionWrapper::addComponent(uint32_t entityId, Message& comp) noexcept
+    bool SceneDefinitionWrapper::addComponent(Entity entity, Message& comp) noexcept
     {
         auto typeId = protobuf::getTypeId(comp);
         auto& components = _def->mutable_registry()->mutable_components()->try_emplace(typeId).first->second;
-        auto result = components.mutable_components()->try_emplace(entityId);
+        auto result = components.mutable_components()->try_emplace(entt::to_integral(entity));
         result.first->second.PackFrom(comp);
         return result.second;
     }
 
-    std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getComponents(uint32_t entityId) noexcept
+    std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getComponents(Entity entity) noexcept
     {
         std::vector<std::reference_wrapper<Any>> comps;
         for(auto& [typeId, typeComps] : *_def->mutable_registry()->mutable_components())
         {
             auto& components = *typeComps.mutable_components();
-            auto itr = components.find(entityId);
+            auto itr = components.find(entt::to_integral(entity));
             if (itr != components.end())
             {
                 comps.push_back(std::ref(itr->second));
@@ -124,7 +137,7 @@ namespace darmok
         return comps;
     }
 
-    OptionalRef<SceneDefinitionWrapper::RegistryComponents> SceneDefinitionWrapper::getTypeComponents(uint32_t typeId) noexcept
+    OptionalRef<SceneDefinitionWrapper::RegistryComponents> SceneDefinitionWrapper::getTypeComponents(IdType typeId) noexcept
     {
         auto& comps = *_def->mutable_registry()->mutable_components();
         auto itr = comps.find(typeId);
@@ -135,7 +148,7 @@ namespace darmok
         return itr->second;
     }
 
-    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getComponent(uint32_t entityId, uint32_t typeId) noexcept
+    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getComponent(Entity entity, IdType typeId) noexcept
     {
 		auto typeComps = getTypeComponents(typeId);
         if(!typeComps)
@@ -143,7 +156,7 @@ namespace darmok
             return std::nullopt;
         }
         auto& components = *typeComps->mutable_components();
-        auto itr = components.find(entityId);
+        auto itr = components.find(entt::to_integral(entity));
         if (itr == components.end())
         {
             return std::nullopt;
@@ -151,7 +164,40 @@ namespace darmok
 		return itr->second;
     }
 
-    OptionalRef<SceneDefinitionWrapper::AssetGroup> SceneDefinitionWrapper::getAssetGroup(uint32_t typeId) noexcept
+    bool SceneDefinitionWrapper::destroyEntity(Entity entity) noexcept
+    {
+        bool found = false;
+        for (auto& [typeId, typeComps] : *_def->mutable_registry()->mutable_components())
+        {
+            auto& components = *typeComps.mutable_components();
+            auto itr = components.find(entt::to_integral(entity));
+            if (itr != components.end())
+            {
+                components.erase(itr);
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    bool SceneDefinitionWrapper::removeComponent(Entity entity, IdType typeId) noexcept
+    {
+        auto typeComps = getTypeComponents(typeId);
+        if (!typeComps)
+        {
+            return false;
+        }
+        auto& components = *typeComps->mutable_components();
+        auto itr = components.find(typeId);
+        if (itr == components.end())
+        {
+            return false;
+        }
+        components.erase(itr);
+        return true;
+    }
+
+    OptionalRef<SceneDefinitionWrapper::AssetGroup> SceneDefinitionWrapper::getAssetGroup(IdType typeId) noexcept
     {
         auto& assetGroups = *_def->mutable_assets()->mutable_groups();
         auto itr = assetGroups.find(typeId);
@@ -162,7 +208,7 @@ namespace darmok
         return itr->second;
     }
 
-    std::unordered_map<std::string, OptionalRef<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getAssets(uint32_t typeId) noexcept
+    std::unordered_map<std::string, OptionalRef<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getAssets(IdType typeId) noexcept
     {
         std::unordered_map<std::string, OptionalRef<Any>> assets;
         auto group = getAssetGroup(typeId);
@@ -178,7 +224,7 @@ namespace darmok
         return assets;
     }
 
-    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getAsset(uint32_t typeId, const std::string& path)
+    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getAsset(IdType typeId, const std::string& path)
     {
         auto group = getAssetGroup(typeId);
         if (!group)

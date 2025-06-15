@@ -117,7 +117,7 @@ namespace darmok::editor
 
         _scene->destroyEntitiesImmediate();
         configureEditorScene(*_scene);
-        configureDefaultScene(_sceneDef);
+        configureDefaultScene(_sceneWrapper);
     }
 
     void EditorProject::open()
@@ -164,7 +164,6 @@ namespace darmok::editor
     void EditorProject::configureEditorScene(Scene& scene)
     {
         static const std::string name = "Editor Camera";
-        auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx");
         auto camEntity = scene.createEntity();
         auto& cam = scene.addComponent<Camera>(camEntity);
 
@@ -173,7 +172,10 @@ namespace darmok::editor
             .lookAt(glm::vec3(0))
             .setName(name);
         cam.setPerspective(60.F, 0.3F, 1000.F);
-        cam.addComponent<SkyboxRenderer>(skyboxTex);
+        if (auto skyboxTexResult = _app.getAssets().getTextureLoader()("cubemap.ktx"))
+        {
+            cam.addComponent<SkyboxRenderer>(skyboxTexResult.value());
+        }
         cam.addComponent<GridRenderer>();
         cam.addComponent<LightingRenderComponent>();
         ShadowRendererConfig shadowConfig;
@@ -184,14 +186,14 @@ namespace darmok::editor
         _cam = cam;
     }
 
-    void EditorProject::configureDefaultScene(SceneDefinition& scene)
+    void EditorProject::configureDefaultScene(SceneDefinitionWrapper& scene)
     {
-        scene.set_name("Scene");
+        scene.setName("Scene");
 
         ShadowRendererConfig shadowConfig;
         shadowConfig.cascadeAmount = 3;
 
-        auto camEntity = SceneDefinitionUtils::createEntity(scene);
+        auto camEntity = scene.createEntity();
 
         Camera::Definition cam;
         cam.set_perspective_fovy(glm::radians(60.f));
@@ -203,37 +205,37 @@ namespace darmok::editor
         //cam.addComponent<ForwardRenderer>();
         //cam.addComponent<FrustumCuller>();
 
-        SceneDefinitionUtils::addComponent(scene, camEntity, cam);
+        scene.addComponent(camEntity, cam);
 
         Transform::Definition camTrans;
         camTrans.set_name("Main Camera");
         *camTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 1.f, -10.f });
-        SceneDefinitionUtils::addComponent(scene, camEntity, camTrans);
+        scene.addComponent(camEntity, camTrans);
 
-        auto ambLightEntity = SceneDefinitionUtils::createEntity(scene);
+        auto ambLightEntity = scene.createEntity();
         AmbientLight::Definition ambLight;
         ambLight.set_intensity(0.2f);
-        SceneDefinitionUtils::addComponent(scene, ambLightEntity, ambLight);
+        scene.addComponent(ambLightEntity, ambLight);
         Transform::Definition ambLightTrans;
         ambLightTrans.set_name("Ambient Light");
-        SceneDefinitionUtils::addComponent(scene, ambLightEntity, ambLightTrans);
+        scene.addComponent(ambLightEntity, ambLightTrans);
 
-        auto dirLightEntity = SceneDefinitionUtils::createEntity(scene);
+        auto dirLightEntity = scene.createEntity();
         DirectionalLight::Definition dirLight;
         dirLight.set_intensity(3.f);
-        SceneDefinitionUtils::addComponent(scene, dirLightEntity, dirLight);
+        scene.addComponent(dirLightEntity, dirLight);
         Transform::Definition dirLightTrans;
         ambLightTrans.set_name("Directional Light");
         *ambLightTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 3.f, 0.f });
         auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
         *ambLightTrans.mutable_rotation() = protobuf::convert(rot);
-        SceneDefinitionUtils::addComponent(scene, dirLightEntity, dirLightTrans);
+        scene.addComponent(dirLightEntity, dirLightTrans);
 
         Mesh::Source mesh;
         mesh.set_name("Default Shape");
         mesh.mutable_sphere();
         std::string meshPath = "default_mesh";
-        SceneDefinitionUtils::addAsset(scene, meshPath, mesh);
+        scene.addAsset(meshPath, mesh);
 
         Material::Definition mat;
         mat.set_name("Default");
@@ -241,16 +243,16 @@ namespace darmok::editor
         *mat.mutable_base_color() = protobuf::convert(Colors::white());
         mat.set_opacity_type(Material::Definition::Opaque);
         std::string matPath = "default_material";
-        SceneDefinitionUtils::addAsset(scene, matPath, mat);
+        scene.addAsset(matPath, mat);
 
-        auto renderableEntity = SceneDefinitionUtils::createEntity(scene);
+        auto renderableEntity = scene.createEntity();
         Renderable::Definition renderable;
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
-        SceneDefinitionUtils::addComponent(scene, renderableEntity, renderable);
+        scene.addComponent(renderableEntity, renderable);
 
         Transform::Definition renderableTrans;
         renderableTrans.set_name("Sphere");
-        SceneDefinitionUtils::addComponent(scene, renderableEntity, renderableTrans);
+        scene.addComponent(renderableEntity, renderableTrans);
     }
 }

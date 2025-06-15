@@ -349,7 +349,7 @@ namespace darmok
         return *this;
     }
 
-    bool AssimpSceneDefinitionConverter::updateMeshes(uint32_t entityId, const std::regex& regex) noexcept
+    bool AssimpSceneDefinitionConverter::updateMeshes(Entity entity, const std::regex& regex) noexcept
     {
         auto found = false;
         auto addChild = _assimpScene.mNumMeshes > 1;
@@ -361,14 +361,14 @@ namespace darmok
             {
                 continue;
             }
-            if (addMeshComponents(entityId, i, addChild))
+            if (addMeshComponents(entity, i, addChild))
             {
                 found = true;
             }
         }
         return found;
     }
-    bool AssimpSceneDefinitionConverter::addMeshComponents(uint32_t entityId, int index, bool addChild) noexcept
+    bool AssimpSceneDefinitionConverter::addMeshComponents(Entity entity, int index, bool addChild) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
@@ -380,26 +380,26 @@ namespace darmok
         
         if (addChild)
         {
-            auto childEntityId = _scene.createEntity();
+            auto childEntity = _scene.createEntity();
             TransformDefinition trans;
             trans.set_name(AssimpUtils::getString(assimpMesh->mName));
-            trans.set_parent(entityId);
+            trans.set_parent(entt::to_integral(entity));
             *trans.mutable_scale() = protobuf::convert(glm::vec3{ 1.f });
-            _scene.addComponent(childEntityId, trans);
-            entityId = childEntityId;
+            _scene.addComponent(childEntity, trans);
+            entity = childEntity;
         }
 
         RenderableDefinition renderable;
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
-        _scene.addComponent(entityId, renderable);
+        _scene.addComponent(entity, renderable);
 
         auto armPath = getArmature(index);
         if (!armPath.empty())
         {
             SkinnableDefinition skinnable;
             skinnable.set_armature_path(armPath);
-            _scene.addComponent(entityId, skinnable);
+            _scene.addComponent(entity, skinnable);
         }
 
         return true;
@@ -407,7 +407,7 @@ namespace darmok
     
     bool AssimpSceneDefinitionConverter::operator()() noexcept
     {
-        _scene.get().set_name(AssimpUtils::getString(_assimpScene.mName));
+        _scene.setName(AssimpUtils::getString(_assimpScene.mName));
         if (!_config.root_mesh_regex().empty())
         {
             auto entityId = _scene.createEntity();
@@ -416,24 +416,24 @@ namespace darmok
         return updateNode(*_assimpScene.mRootNode).has_value();
     }
 
-    std::optional<uint32_t> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, uint32_t parentEntityId) noexcept
+    std::optional<Entity> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, Entity parentEntity) noexcept
     {
         auto name = AssimpUtils::getString(assimpNode.mName);
         if(AssimpUtils::match(name, _config.skip_nodes_regex()))
         {
             return std::nullopt;
         }
-        auto entityId = _scene.createEntity();
+        auto entity = _scene.createEntity();
         TransformDefinition trans;
         trans.set_name(name);
-        trans.set_parent(parentEntityId);
+        trans.set_parent(entt::to_integral(parentEntity));
         TransformUtils::update(trans, AssimpUtils::convert(assimpNode.mTransformation));
-        _scene.addComponent(entityId, trans);
+        _scene.addComponent(entity, trans);
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
             auto index = assimpNode.mMeshes[i];
-            addMeshComponents(entityId, index, true);
+            addMeshComponents(entity, index, true);
         }
 
         for (size_t i = 0; i < _assimpScene.mNumCameras; ++i)
@@ -441,7 +441,7 @@ namespace darmok
             auto assimpCam = _assimpScene.mCameras[i];
             if (assimpCam->mName == assimpNode.mName)
             {
-                updateCamera(entityId, *assimpCam);
+                updateCamera(entity, *assimpCam);
                 break;
             }
         }
@@ -450,23 +450,23 @@ namespace darmok
             auto assimpLight = _assimpScene.mLights[i];
             if (assimpLight->mName == assimpNode.mName)
             {
-                updateLight(entityId, *assimpLight);
+                updateLight(entity, *assimpLight);
                 break;
             }
         }
 
         for (size_t i = 0; i < assimpNode.mNumChildren; ++i)
         {
-            if (!updateNode(*assimpNode.mChildren[i], entityId))
+            if (!updateNode(*assimpNode.mChildren[i], entity))
             {
                 continue;
             }
         }
 
-        return entityId;
+        return entity;
     }
 
-    void AssimpSceneDefinitionConverter::updateCamera(uint32_t entityId, const aiCamera& assimpCam) noexcept
+    void AssimpSceneDefinitionConverter::updateCamera(Entity entity, const aiCamera& assimpCam) noexcept
     {
         aiMatrix4x4 mat;
         assimpCam.GetCameraMatrix(mat);
@@ -474,11 +474,11 @@ namespace darmok
         if (!mat.IsIdentity())
         {
             TransformDefinition trans;
-            trans.set_parent(entityId);
+            trans.set_parent(entt::to_integral(entity));
             trans.set_name(AssimpUtils::getString(assimpCam.mName));
             TransformUtils::update(trans, AssimpUtils::convert(mat));
-            entityId = _scene.createEntity();
-            _scene.addComponent(entityId, trans);
+            entity = _scene.createEntity();
+            _scene.addComponent(entity, trans);
         }
         CameraDefinition cam;
 		cam.set_near(assimpCam.mClipPlaneNear);
@@ -514,7 +514,7 @@ namespace darmok
             uv.set_y((offset * up) / h);            
         }
         
-		_scene.addComponent(entityId, cam);
+		_scene.addComponent(entity, cam);
     }
 
     float AssimpSceneDefinitionConverter::getLightRange(const glm::vec3& attenuation) noexcept
@@ -546,10 +546,10 @@ namespace darmok
         return glm::max(d1, d2);
     }
 
-    void AssimpSceneDefinitionConverter::updateLight(uint32_t entityId, const aiLight& assimpLight) noexcept
+    void AssimpSceneDefinitionConverter::updateLight(Entity entity, const aiLight& assimpLight) noexcept
     {
         TransformDefinition trans;
-        trans.set_parent(entityId);
+        trans.set_parent(entt::to_integral(entity));
         trans.set_name(AssimpUtils::getString(assimpLight.mName));
 
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
@@ -571,14 +571,14 @@ namespace darmok
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
             // we're not supporting different specular color in lights
-			_scene.addComponent(entityId, light);
+			_scene.addComponent(entity, light);
         }
         else if (assimpLight.mType == aiLightSource_DIRECTIONAL)
         {
 			protobuf::DirectionalLight light;
 			light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-            _scene.addComponent(entityId, light);
+            _scene.addComponent(entity, light);
 
             auto dir = AssimpUtils::convert(assimpLight.mDirection);
             glm::mat4 view = glm::lookAt(pos, pos + dir, glm::vec3{0, 1, 0});
@@ -591,7 +591,7 @@ namespace darmok
             *light.mutable_color() = pbColor;
 			light.set_cone_angle(assimpLight.mAngleOuterCone);
 			light.set_inner_cone_angle(assimpLight.mAngleInnerCone);
-            _scene.addComponent(entityId, light);
+            _scene.addComponent(entity, light);
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {
@@ -601,12 +601,12 @@ namespace darmok
             pbColor = protobuf::convert(color);
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-            _scene.addComponent(entityId, light);
+            _scene.addComponent(entity, light);
         }
 
         TransformUtils::update(trans, mat);
-        entityId = _scene.createEntity();
-        _scene.addComponent(entityId, trans);
+        entity = _scene.createEntity();
+        _scene.addComponent(entity, trans);
     }
 
     std::string AssimpSceneDefinitionConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept

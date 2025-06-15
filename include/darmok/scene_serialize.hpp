@@ -23,24 +23,26 @@ namespace darmok
         using Any = google::protobuf::Any;
         using AssetGroup = protobuf::AssetGroup;
         using RegistryComponents = protobuf::RegistryComponents;
+        using IdType = entt::id_type;
 
         ConstSceneDefinitionWrapper(const Definition& def) noexcept;
-        const Definition& get() const noexcept;
+        const std::string& getName() const noexcept;
 
-        std::vector<uint32_t> getRootEntities() const noexcept;
-        OptionalRef<const RegistryComponents> getTypeComponents(uint32_t typeId) const noexcept;
-        std::vector<std::reference_wrapper<const Any>> getComponents(uint32_t entityId) const noexcept;        
-        OptionalRef<const Any> getComponent(uint32_t entityId, uint32_t typeId) const noexcept;
+        std::vector<Entity> getRootEntities() const noexcept;
+        std::vector<Entity> getChildren(Entity entity) const noexcept;
+        OptionalRef<const RegistryComponents> getTypeComponents(IdType typeId) const noexcept;
+        std::vector<std::reference_wrapper<const Any>> getComponents(Entity entityId) const noexcept;
+        OptionalRef<const Any> getComponent(Entity entity, IdType typeId) const noexcept;
 
-        OptionalRef<const AssetGroup> getAssetGroup(uint32_t typeId) const noexcept;
-        std::vector<std::string> getAssetPaths(uint32_t typeId) const noexcept;
-        std::unordered_map<std::string, OptionalRef<const Any>> getAssets(uint32_t typeId) const noexcept;
-        OptionalRef<const Any> getAsset(uint32_t typeId, const std::string& path) const noexcept;
+        OptionalRef<const AssetGroup> getAssetGroup(IdType typeId) const noexcept;
+        std::vector<std::string> getAssetPaths(IdType typeId) const noexcept;
+        std::unordered_map<std::string, OptionalRef<const Any>> getAssets(IdType typeId) const noexcept;
+        OptionalRef<const Any> getAsset(IdType typeId, const std::string& path) const noexcept;
 
         template<typename T>
-        std::unordered_map<uint32_t, T> getTypeComponents() const noexcept
+        std::unordered_map<Entity, T> getTypeComponents() const noexcept
         {
-            std::unordered_map<uint32_t, T> comps;
+            std::unordered_map<Entity, T> comps;
             if (auto typeComps = getTypeComponents(protobuf::getTypeId<T>()))
             {
                 for(auto& [entityId, any] : typeComps->components())
@@ -48,7 +50,7 @@ namespace darmok
                     T asset;
                     if (any.UnpackTo(&asset))
                     {
-                        comps[entityId] = std::move(asset);
+                        comps[static_cast<Entity>(entityId)] = std::move(asset);
                     }
 				}
             }
@@ -56,9 +58,9 @@ namespace darmok
         }
 
         template<typename T>
-        std::optional<T> getComponent(uint32_t entityId) const noexcept
+        std::optional<T> getComponent(Entity entity) const noexcept
         {
-            if (auto any = getComponent(entityId, protobuf::getTypeId<T>()))
+            if (auto any = getComponent(entity, protobuf::getTypeId<T>()))
             {
                 T asset;
                 if (any->UnpackTo(&asset))
@@ -117,18 +119,34 @@ namespace darmok
         using RegistryComponents = protobuf::RegistryComponents;
 
         SceneDefinitionWrapper(Definition& def) noexcept;
-        Definition& get() noexcept;
+        void setName(std::string_view name) noexcept;
 
-        uint32_t createEntity() noexcept;
+        Entity createEntity() noexcept;
         bool addAsset(std::string_view path, Message& asset) noexcept;
-        bool addComponent(uint32_t entityId, Message& comp) noexcept;
-        std::vector<std::reference_wrapper<Any>> getComponents(uint32_t entityId) noexcept;
-        OptionalRef<RegistryComponents> getTypeComponents(uint32_t typeId) noexcept;
-        OptionalRef<Any> getComponent(uint32_t entityId, uint32_t typeId) noexcept;
+        bool addComponent(Entity entity, Message& comp) noexcept;
+        std::vector<std::reference_wrapper<Any>> getComponents(Entity entity) noexcept;
+        OptionalRef<RegistryComponents> getTypeComponents(IdType typeId) noexcept;
+        OptionalRef<Any> getComponent(Entity entity, IdType typeId) noexcept;
+        bool destroyEntity(Entity entity) noexcept;
+        bool removeComponent(Entity entity, IdType typeId) noexcept;
 
-        OptionalRef<AssetGroup> getAssetGroup(uint32_t typeId) noexcept;
-        std::unordered_map<std::string, OptionalRef<Any>> getAssets(uint32_t typeId) noexcept;
-        OptionalRef<Any> getAsset(uint32_t typeId, const std::string& path);        
+        OptionalRef<AssetGroup> getAssetGroup(IdType typeId) noexcept;
+        std::unordered_map<std::string, OptionalRef<Any>> getAssets(IdType typeId) noexcept;
+        OptionalRef<Any> getAsset(IdType typeId, const std::string& path);
+
+        template<typename T>
+        std::optional<T> getComponent(Entity entity) const noexcept
+        {
+            if (auto any = ConstSceneDefinitionWrapper::getComponent(entity, protobuf::getTypeId<T>()))
+            {
+                T asset;
+                if (any->UnpackTo(&asset))
+                {
+                    return asset;
+                }
+            }
+            return std::nullopt;
+        }
 
     private:
 		OptionalRef<Definition> _def;

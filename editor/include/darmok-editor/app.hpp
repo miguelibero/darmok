@@ -19,6 +19,11 @@ namespace darmok
     class Transform;
     struct Material;
     class ProgramDefinition;
+
+    namespace protobuf
+    {
+        class Transform;
+    }
 }
 
 namespace darmok::editor
@@ -88,16 +93,17 @@ namespace darmok::editor
 
         // IEditorAssetsViewDelegate
         virtual std::optional<std::string> getSelectedAssetPath(uint32_t assetType) const override;
-        virtual std::string getAssetName(uint32_t assetType, const google::protobuf::Any& asset) const override;
         virtual void onAssetPathSelected(uint32_t assetType, const std::string& assetPath) override;
 
         void renderMainMenu();
         void renderMainToolbar();
         void renderDockspace();
         void renderSceneTree();
-        void renderSceneTreeBranch(Transform& trans);
 
-        void onSceneTreeTransformClicked(Transform& trans);
+        using TransformDefinition = protobuf::Transform;
+
+        void renderSceneTreeBranch(Entity entity);
+        void onSceneTreeTransformClicked(Entity entity);
         void onSceneTreeSceneClicked();
 
         void onObjectSelected(const SelectableObject& obj) noexcept;

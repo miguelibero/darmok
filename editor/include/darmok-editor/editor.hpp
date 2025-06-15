@@ -2,6 +2,7 @@
 
 #include <darmok/optional_ref.hpp>
 #include <darmok/protobuf.hpp>
+
 #include <bx/bx.h>
 #include <imgui.h>
 #include <google/protobuf/any.pb.h>
@@ -28,14 +29,14 @@ namespace darmok::editor
     public:
         virtual bool renderType(T& obj) = 0;
 
-        std::string getObjectTypUrl() const override
+        std::string getObjectTypeUrl() const override
         {
             return protobuf::getTypeUrl<T>();
         }
 
         bool canRender(google::protobuf::Any& any) const override
         {
-            return any.type_url() == getObjectTypUrl();
+            return any.type_url() == getObjectTypeUrl();
         }
 
         bool render(google::protobuf::Any& any) override
@@ -79,13 +80,6 @@ namespace darmok::editor
                 ImGui::PopID();
                 ++i;
             }
-        }
-
-        template<typename T>
-        bool renderType(T& obj)
-        {
-            auto any = entt::forward_as_meta(obj);
-            return render(any);
         }
 
         bool render(google::protobuf::Any& obj) const;

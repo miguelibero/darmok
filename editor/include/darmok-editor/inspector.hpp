@@ -2,7 +2,6 @@
 
 #include <darmok-editor/editor.hpp>
 #include <darmok-editor/asset_fwd.hpp>
-#include <darmok/scene_fwd.hpp>
 #include <darmok/optional_ref.hpp>
 
 #include <memory>
@@ -10,19 +9,12 @@
 
 namespace darmok
 {
-    class Scene;
-    class AssetContext;
+    class SceneDefinitionWrapper;
 }
 
 namespace darmok::editor
 {
     class EditorApp;
-    class SceneInspectorEditor;
-    class MaterialInspectorEditor;
-    class ProgramSourceInspectorEditor;
-    class MeshSourceInspectorEditor;
-    class TextureDefinitionInspectorEditor;
-	class ModelInspectorEditor;
 
     class EditorInspectorView final
     {
@@ -45,6 +37,6 @@ namespace darmok::editor
         ObjectEditorContainer _editors;
         static const std::string _windowName;
         SelectableObject _selected;
-        OptionalRef<Scene::Definition> _sceneDef;
+        OptionalRef<SceneDefinitionWrapper> _sceneDef;
     };
 }

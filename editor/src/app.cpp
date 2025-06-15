@@ -371,22 +371,19 @@ namespace darmok::editor
 
     void EditorApp::onSceneTreeSceneClicked()
     {
-        onObjectSelected(entt::null);
+        onObjectSelected(Entity{});
     }
 
     void EditorApp::onObjectSelected(const SelectableObject& obj) noexcept
     {
-        _inspectorView.selectObject(obj, _proj.getScene());
+        _inspectorView.selectObject(obj);
         auto entity = _inspectorView.getSelectedEntity();
         _sceneView.selectEntity(entity);
     }
 
-    void EditorApp::onSceneTreeTransformClicked(Transform& trans)
+    void EditorApp::onSceneTreeTransformClicked(Entity entity)
     {
-        if (auto scene = _proj.getScene())
-        {
-            onObjectSelected(scene->getEntity(trans));
-        }
+        onObjectSelected(entity);
     }
 
     const char* EditorApp::_sceneTreeWindowName = "Scene Tree";
@@ -402,7 +399,7 @@ namespace darmok::editor
             {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            std::string sceneName = scene.name();
+            std::string sceneName = scene.getName();
             if (sceneName.empty())
             {
                 sceneName = "Scene";
@@ -413,40 +410,42 @@ namespace darmok::editor
                 {
                     onSceneTreeSceneClicked();
                 }
-                for (auto& entity : SceneDefinitionUtils::getRootEntities(scene))
+                for (auto& entity : scene.getRootEntities())
                 {
-                    SceneDefinitionUtils::getComponent<Transform>(scene);
-                    auto& trans = scene->getComponent<Transform>(entity).value();
-                    renderSceneTreeBranch(trans);
+                    renderSceneTreeBranch(entity);
                 }
                 ImGui::TreePop();
             }
             if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete))
             {
                 auto entity = _inspectorView.getSelectedEntity();
-                scene->destroyEntityImmediate(entity, true);
-                onObjectSelected(entt::null);
+                scene.destroyEntity(entity);
+                onObjectSelected(Entity{});
             }
         }
         ImGui::End();
     }
 
-    void EditorApp::renderSceneTreeBranch(Transform& trans)
+    void EditorApp::renderSceneTreeBranch(Entity entity)
     {
-        std::string name = trans.getName();
+        auto& scene = _proj.getSceneDefinition();
+        std::string name;
+        if (auto trans = scene.getComponent<Transform::Definition>(entity))
+        {
+            name = trans->name();
+        }
         if (name.empty())
         {
             name = "Entity";
         }
+        
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-        auto children = trans.getChildren();
+        auto children = scene.getChildren(entity);
         if (children.empty())
         {
             flags |= ImGuiTreeNodeFlags_Leaf;
         }
-        auto selectedEntity = _inspectorView.getSelectedEntity();
-        auto entity = _proj.getScene()->getEntity(trans);
-        if (selectedEntity == entity)
+        if (_inspectorView.getSelectedEntity() == entity)
         {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
@@ -454,11 +453,11 @@ namespace darmok::editor
         {
             if (ImGui::IsItemClicked())
             {
-                onSceneTreeTransformClicked(trans);
+                onSceneTreeTransformClicked(entity);
             }
             for (auto& child : children)
             {
-                renderSceneTreeBranch(child.get());
+                renderSceneTreeBranch(child);
             }
             ImGui::TreePop();
         }
@@ -508,16 +507,15 @@ namespace darmok::editor
 
     std::optional<std::string> EditorApp::getSelectedAssetPath(uint32_t assetType) const
     {
-
-    }
-
-    std::string EditorApp::getAssetName(uint32_t assetType, const google::protobuf::Any& asset) const
-    {
-
+        if (auto selectedAsset = _inspectorView.getSelectedAsset())
+        {
+            return selectedAsset->path;
+        }
+		return std::nullopt;
     }
 
     void EditorApp::onAssetPathSelected(uint32_t assetType, const std::string& assetPath)
     {
-
+		_inspectorView.selectObject(SelectedAsset{ assetType, assetPath });
     }
 }
