@@ -16,6 +16,8 @@
 #include <darmok/protobuf/texture.pb.h>
 #include <darmok/protobuf/light.pb.h>
 #include <darmok/protobuf/assimp.pb.h>
+#include <darmok/protobuf/skeleton.pb.h>
+#include <darmok/protobuf/skeleton.pb.h>
 
 #include <string_view>
 #include <memory>
@@ -111,7 +113,7 @@ namespace darmok
         {
             aiTextureType assimpType;
             unsigned int assimpIndex;
-            Material::TextureType darmokType;
+            protobuf::MaterialTexture::Type darmokType;
         };
 
         static const std::vector<AssimpMaterialTexture> _materialTextures;

@@ -278,7 +278,7 @@ namespace darmok
 
     using DataArmatureDefinitionLoader = DataProtobufLoader<IArmatureDefinitionLoader>;
 
-    class DARMOK_EXPORT BX_NO_VTABLE IArmatureLoader : public IFromDefinitionLoader<Armature, Armature::Definition>
+    class DARMOK_EXPORT BX_NO_VTABLE IArmatureLoader : public IFromDefinitionLoader<ILoader<Armature>, Armature::Definition>
     {
     };
 

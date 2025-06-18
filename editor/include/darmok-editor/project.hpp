@@ -5,6 +5,7 @@
 #include <darmok/program_core.hpp>
 #include <darmok/material.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/asset_pack.hpp>
 
 #include <filesystem>
 #include <unordered_map>
@@ -38,6 +39,7 @@ namespace darmok::editor
         using SceneDefinition = protobuf::Scene;
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneWrapper;
+		AssetPackConfig _assetPackConfig;
         std::optional<ProgramCompiler> _progCompiler;
         bool _tryReset;
 

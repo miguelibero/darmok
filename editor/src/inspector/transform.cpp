@@ -9,7 +9,6 @@
 
 namespace darmok::editor
 {
-    
     bool TransformInspectorEditor::renderType(Transform::Definition& trans) noexcept
     {
         static const std::unordered_map<std::string, std::string> labels

@@ -544,6 +544,23 @@ namespace darmok
 		return *this;
 	}
 
+	TextureDefinitionFromSourceLoader::TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept
+		: FromDefinitionLoader(srcLoader)
+		, _alloc{ alloc }
+	{
+	}
+
+	TextureDefinitionFromSourceLoader::Result TextureDefinitionFromSourceLoader::create(const std::shared_ptr<protobuf::TextureSource>& src)
+	{
+		auto def = std::make_shared<protobuf::Texture>();
+		auto result = TextureUtils::loadSource(*def, *src, _alloc);
+		if(!result)
+		{
+			return unexpected{ result.error() };
+		}
+		return def;
+	}
+
 	TextureFileImporter::TextureFileImporter()
 		: _dataLoader{ _alloc }
 		, _imgLoader{ _dataLoader, _alloc }

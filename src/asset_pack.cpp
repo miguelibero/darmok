@@ -2,17 +2,25 @@
 
 namespace darmok
 {
-	AssetPack::AssetPack(const Definition& def, const AssetPackFallbacks& fallbacks)
+	AssetPack::AssetPack(const Definition& def, const AssetPackConfig& config)
 		: _def{ def }
-		, _fallbacks{ fallbacks }
 		, _progDefLoader{ _def }
 		, _texDefLoader{ _def }
 		, _meshDefLoader{ _def }
 		, _matDefLoader{ _def }
 		, _armDefLoader{ _def }
-		, _programLoader{ _progDefLoader }
-		, _textureLoader{ _texDefLoader }
-		, _meshLoader{ _meshDefLoader }
+		, _progSrcLoader{ _def }
+		, _progDefFromSrcLoader{ _progSrcLoader, config.programCompilerConfig}
+		, _texSrcLoader{ _def }
+		, _texDefFromSrcLoader{ _texSrcLoader, config.alloc ? *config.alloc : _defaultAlloc }
+		, _meshSrcLoader{ _def }
+		, _meshDefFromSrcLoader{ _meshSrcLoader }
+		, _multiProgramDefLoader{ _progDefLoader, _progDefFromSrcLoader }
+		, _multiTextureDefLoader{ _texDefLoader, _texDefFromSrcLoader }
+		, _multiMeshDefLoader{ _meshDefLoader, _meshDefFromSrcLoader }
+		, _programLoader{ _multiProgramDefLoader }
+		, _textureLoader{ _multiTextureDefLoader }
+		, _meshLoader{ _multiMeshDefLoader }
 		, _materialLoader{ _matDefLoader, _multiProgramLoader, _multiTextureLoader }
 		, _armatureLoader{ _armDefLoader }
 		, _multiProgramLoader{ _programLoader }
@@ -21,25 +29,26 @@ namespace darmok
 		, _multiMaterialLoader{ _materialLoader }
 		, _multiArmatureLoader{ _armatureLoader }
 	{
-		if (fallbacks.programLoader)
+		
+		if (config.fallbacks.program)
 		{
-			_multiProgramLoader.addBack(*fallbacks.programLoader);
+			_multiProgramLoader.addBack(*config.fallbacks.program);
 		}
-		if (fallbacks.textureLoader)
+		if (config.fallbacks.texture)
 		{
-			_multiTextureLoader.addBack(*fallbacks.textureLoader);
+			_multiTextureLoader.addBack(*config.fallbacks.texture);
 		}
-		if (fallbacks.meshLoader)
+		if (config.fallbacks.mesh)
 		{
-			_multiMeshLoader.addBack(*fallbacks.meshLoader);
+			_multiMeshLoader.addBack(*config.fallbacks.mesh);
 		}
-		if (fallbacks.materialLoader)
+		if (config.fallbacks.material)
 		{
-			_multiMaterialLoader.addBack(*fallbacks.materialLoader);
+			_multiMaterialLoader.addBack(*config.fallbacks.material);
 		}
-		if (fallbacks.armatureLoader)
+		if (config.fallbacks.armature)
 		{
-			_multiArmatureLoader.addBack(*fallbacks.armatureLoader);
+			_multiArmatureLoader.addBack(*config.fallbacks.armature);
 		}
 	}
 

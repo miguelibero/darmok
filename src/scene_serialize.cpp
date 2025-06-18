@@ -57,6 +57,22 @@ namespace darmok
         return itr->second;
     }
 
+    OptionalRef<const ConstSceneDefinitionWrapper::Any> ConstSceneDefinitionWrapper::getComponent(Entity entity, IdType typeId) const noexcept
+    {
+        auto typeComps = getTypeComponents(typeId);
+        if (!typeComps)
+        {
+            return std::nullopt;
+        }
+        auto& components = typeComps->components();
+        auto itr = components.find(entt::to_integral(entity));
+        if (itr == components.end())
+        {
+            return std::nullopt;
+        }
+        return itr->second;
+    }
+
     OptionalRef<const ConstSceneDefinitionWrapper::AssetGroup> ConstSceneDefinitionWrapper::getAssetGroup(IdType typeId) const noexcept
     {
         auto& assetGroups = _def->assets().groups();
@@ -240,10 +256,10 @@ namespace darmok
         return itr->second;
     }
 
-    SceneArchive::SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackFallbacks& assetPackFallbacks)
+    SceneArchive::SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackConfig& assetPackConfig)
         : _sceneDef{ sceneDef }
         , _scene{ scene }
-		, _assetPack{ sceneDef.assets(), assetPackFallbacks }
+		, _assetPack{ sceneDef.assets(), assetPackConfig }
         , _count{ 0 }
         , _type{ 0 }
 		, _entityOffset{ 0 }
@@ -256,9 +272,17 @@ namespace darmok
         }
     }
 
-    entt::continuous_loader SceneArchive::createLoader()
+    expected<Entity, std::string> SceneArchive::load()
     {
-		return { _scene.getRegistry() };
+		entt::continuous_loader loader{ _scene.getRegistry() };
+        loader.get<entt::entity>(*this);
+        auto result = loadComponents(loader);
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
+        loader.orphans();
+        return finishLoad();
     }
 
     void SceneArchive::operator()(std::underlying_type_t<Entity>& count)
@@ -331,16 +355,15 @@ namespace darmok
         return unexpected{ "could not find root entity" };
     }
 
-    SceneImporterImpl::SceneImporterImpl(const AssetPackFallbacks& assetPackFallbacks)
-        : _assetPackFallbacks{ assetPackFallbacks }
+    SceneImporterImpl::SceneImporterImpl(const AssetPackConfig& assetPackConfig)
+        : _assetPackConfig{ assetPackConfig }
     {
 	}
 
     SceneImporterImpl::Result SceneImporterImpl::operator()(Scene& scene, const Definition& def)
     {
-		SceneArchive archive{ def, scene, _assetPackFallbacks };
-
-		archive.registerComponent<Transform>();
+		SceneArchive archive{ def, scene, _assetPackConfig };
+        archive.registerComponent<Transform>();
         archive.registerComponent<Renderable>();
         archive.registerComponent<Camera>();
         archive.registerComponent<Skinnable>();
@@ -348,21 +371,11 @@ namespace darmok
         archive.registerComponent<DirectionalLight>();
         archive.registerComponent<SpotLight>();
         archive.registerComponent<AmbientLight>();
-
-		auto loader = archive.createLoader();
-
-        loader.get<entt::entity>(archive);
-        auto result = archive.loadComponents(loader);
-        if (!result)
-        {
-            return unexpected{ result.error() };
-        }
-        loader.orphans();
-        return archive.finishLoad();
+        return archive.load();
     }
 
-    SceneImporter::SceneImporter(const AssetPackFallbacks& assetPackFallbacks)
-        : _impl(std::make_unique<SceneImporterImpl>(assetPackFallbacks))
+    SceneImporter::SceneImporter(const AssetPackConfig& assetPackConfig)
+        : _impl(std::make_unique<SceneImporterImpl>(assetPackConfig))
     {
     }
 
@@ -376,9 +389,9 @@ namespace darmok
 		return (*_impl)(scene, def);
     }
 
-    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackFallbacks& assetPackFallbacks)
+    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetPackConfig)
         : _defLoader{ defLoader }
-        , _importer{ assetPackFallbacks }
+        , _importer{ assetPackConfig }
 	{
 	}
 

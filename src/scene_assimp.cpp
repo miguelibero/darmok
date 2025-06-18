@@ -1043,11 +1043,6 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
     {
-        meshDef.set_name(AssimpUtils::getString(assimpMesh.mName));
-        auto& bounds = *meshDef.mutable_bounds();
-		*bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
-        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
-            
         const std::string name(assimpMesh.mName.C_Str());
         auto skip = false;
         for (auto& regex : _skipMeshes)
@@ -1063,6 +1058,14 @@ namespace darmok
             return;
         }
 
+        meshDef.set_name(AssimpUtils::getString(assimpMesh.mName));
+        auto& bounds = *meshDef.mutable_bounds();
+        *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
+        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
+        auto& config = *meshDef.mutable_config();
+        config.set_type(MeshDefinition::Static);
+        *config.mutable_layout() = _config.vertex_layout();
+
         std::vector<aiBone*> bones;
         bones.reserve(assimpMesh.mNumBones);
         for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
@@ -1072,7 +1075,7 @@ namespace darmok
 
         meshDef.set_vertices(createVertexData(assimpMesh, bones));
         meshDef.set_indices(createIndexData(assimpMesh));
-        *meshDef.mutable_layout() = _config.vertex_layout();
+
     }
 
     void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept

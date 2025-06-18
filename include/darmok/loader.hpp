@@ -35,15 +35,6 @@ namespace darmok
     template<typename Interface>
     class DARMOK_EXPORT MultiLoader final : public Interface
     {
-    private:
-        std::vector<std::string> splitExtensions(const std::string& exts) const
-        {
-            auto vec = StringUtils::split(exts, ";");
-            std::erase_if(vec, [](const std::string& ext) {
-                return ext.empty();
-            });
-            return vec;
-		}
     public:
         using Resource = Interface::Resource;
         using Result = Interface::Result;
@@ -56,18 +47,41 @@ namespace darmok
         };
         using Elements = std::vector<Element>;
 
+    private:
+        Elements _loaders;
+
+        std::vector<std::string> splitExtensions(const std::string& exts) const
+        {
+            auto vec = StringUtils::split(exts, ";");
+            std::erase_if(vec, [](const std::string& ext) {
+                return ext.empty();
+            });
+            return vec;
+		}
+
+        void addLoaders()
+        {
+        }
+
+        template<typename T, typename... Rest>
+        void addLoaders(T& first, Rest&... rest)
+        {
+            _loaders.emplace_back(first);
+            addLoaders(rest...);
+        }
+
+    public:
+
         MultiLoader(Interface& loader) noexcept
         {
             _loaders.emplace_back(loader);
         }
 
-        MultiLoader(std::initializer_list<std::reference_wrapper<Interface>> loaders) noexcept
+        template<typename... Args>
+        MultiLoader(Args&... loaders) noexcept
         {
-            _loaders.reserve(loaders.size());
-            for (auto& loader : loaders)
-            {
-                _loaders.emplace_back(loader);
-            }
+            _loaders.reserve(sizeof...(loaders));
+            addLoaders(loaders...);
         }
 
         MultiLoader(const Elements& elements) noexcept
@@ -114,40 +128,35 @@ namespace darmok
             }
             return unexpected<Error>{ "no loaders found" };
         }
-
-    private:
-        Elements _loaders;
     };
 
-    template<typename Type, typename Arg>
-    class DARMOK_EXPORT BX_NO_VTABLE IBasicCachedLoader : public IBasicLoader<Type, Arg>
+    template<typename Interface>
+    class DARMOK_EXPORT BX_NO_VTABLE ICachedLoader : public Interface
     {
     public:
-        using Result = IBasicLoader<Type, Arg>::Result;
-        virtual Result forceLoad(Arg arg) = 0;
+		using Argument = Interface::Argument;
+		using Result = Interface::Result;
+        virtual Result forceLoad(Argument arg) = 0;
 
-        virtual bool clearCache(Arg arg) = 0;
+        virtual bool clearCache(Argument arg) = 0;
         virtual void clearCache() = 0;
         virtual void pruneCache() = 0;
     };
 
-    template<typename Type>
-    using ICachedLoader = IBasicCachedLoader<Type, std::filesystem::path>;
-
-    template<typename Type, typename Arg>
-    class DARMOK_EXPORT BasicCachedLoader : public IBasicCachedLoader<Type, Arg>
+    template<typename Interface>
+    class DARMOK_EXPORT CachedLoader : public ICachedLoader<Interface>
     {
     public:
-        using Resource = Type;
-
-        std::shared_ptr<Resource> forceLoad(Arg arg) override
+        using Resource = Interface::Resource;
+        using Argument = Interface::Argument;
+        std::shared_ptr<Resource> forceLoad(Argument arg) override
         {
             auto res = doLoad(arg);
             _cache[arg] = res;
             return res;
         }
 
-        std::shared_ptr<Resource> operator()(Arg arg)
+        std::shared_ptr<Resource> operator()(Argument arg)
         {
             auto itr = _cache.find(arg);
             if (itr != _cache.end())
@@ -160,7 +169,7 @@ namespace darmok
             return forceLoad(arg);
         }
 
-        bool clearCache(Arg arg) override
+        bool clearCache(Argument arg) override
         {
             auto itr = _cache.find(arg);
             if (itr == _cache.end())
@@ -191,27 +200,25 @@ namespace darmok
             }
         }
     protected:
-        virtual std::shared_ptr<Resource> doLoad(Arg arg) = 0;
+        virtual std::shared_ptr<Resource> doLoad(Argument arg) = 0;
     private:
-        std::unordered_map<Arg, std::weak_ptr<Resource>> _cache;
+        std::unordered_map<Argument, std::weak_ptr<Resource>> _cache;
     };
 
-    template<typename Type>
-    using CachedLoader = BasicCachedLoader<Type, std::filesystem::path>;
-
-    template<typename Type, typename DefinitionType, typename Arg>
-    class DARMOK_EXPORT BX_NO_VTABLE IBasicFromDefinitionLoader : public IBasicCachedLoader<Type, Arg>
+    template<typename Interface, typename DefinitionType>
+    class DARMOK_EXPORT BX_NO_VTABLE IFromDefinitionLoader : public ICachedLoader<Interface>
     {
     public:
-        using Resource = Type;
+        using Resource = ICachedLoader<Interface>::Resource;
+        using Argument = ICachedLoader<Interface>::Argument;
+        using Result = ICachedLoader<Interface>::Result;
         using Definition = DefinitionType;
-        using Result = IBasicCachedLoader<Type, Arg>::Result;
         using DefinitionResult = expected<std::shared_ptr<Definition>, std::string>;
 
         virtual std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) = 0;
         virtual std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) = 0;
         virtual Result loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
-        virtual DefinitionResult loadDefinition(Arg arg, bool force = false) = 0;
+        virtual DefinitionResult loadDefinition(Argument arg, bool force = false) = 0;
         virtual bool clearCache(const std::shared_ptr<Definition>& def) = 0;
 
         std::shared_ptr<Resource> getResource(const Definition& def)
@@ -219,9 +226,6 @@ namespace darmok
             return getResource(std::hash<Resource>{}(def));
         }
     };
-
-    template<typename Type, typename DefinitionType>
-    using IFromDefinitionLoader = IBasicFromDefinitionLoader<Type, DefinitionType, std::filesystem::path>;
 
     template<typename Interface, typename DefinitionLoader>
     class DARMOK_EXPORT FromDefinitionLoader : public Interface

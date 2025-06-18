@@ -50,31 +50,49 @@ namespace darmok
 
 	struct DARMOK_EXPORT AssetPackFallbacks final
 	{
-		OptionalRef<IProgramLoader> programLoader;
-		OptionalRef<ITextureLoader> textureLoader;
-		OptionalRef<IMeshLoader> meshLoader;
-		OptionalRef<IMaterialLoader> materialLoader;
-		OptionalRef<IArmatureLoader> armatureLoader;
+		OptionalRef<IProgramLoader> program;
+		OptionalRef<ITextureLoader> texture;
+		OptionalRef<IMeshLoader> mesh;
+		OptionalRef<IMaterialLoader> material;
+		OptionalRef<IArmatureLoader> armature;
+	};
+
+	struct DARMOK_EXPORT AssetPackConfig final
+	{
+		AssetPackFallbacks fallbacks = {};
+		ProgramCompilerConfig programCompilerConfig;
+		OptionalRef<bx::AllocatorI> alloc;
 	};
 
 	class DARMOK_EXPORT AssetPack final
 	{
 	public:
 		using Definition = protobuf::AssetPack;
-		AssetPack(const Definition& def, const AssetPackFallbacks& fallbacks = {});
+		AssetPack(const Definition& def, const AssetPackConfig& config);
 
 		template<class T>
 		[[nodiscard]] expected<std::shared_ptr<T>, std::string> load(const std::filesystem::path& path) noexcept;
 
 	private:
 		const Definition& _def;
-		AssetPackFallbacks _fallbacks;
+		bx::DefaultAllocator _defaultAlloc;
 
 		AssetPackLoader<IProgramDefinitionLoader> _progDefLoader;
 		AssetPackLoader<ITextureDefinitionLoader> _texDefLoader;
 		AssetPackLoader<IMeshDefinitionLoader> _meshDefLoader;
 		AssetPackLoader<IMaterialDefinitionLoader> _matDefLoader;
 		AssetPackLoader<IArmatureDefinitionLoader> _armDefLoader;
+
+		AssetPackLoader<IProgramSourceLoader> _progSrcLoader;
+		ProgramDefinitionFromSourceLoader _progDefFromSrcLoader;
+		AssetPackLoader<ITextureSourceLoader> _texSrcLoader;
+		TextureDefinitionFromSourceLoader _texDefFromSrcLoader;
+		AssetPackLoader<IMeshSourceLoader> _meshSrcLoader;
+		MeshDefinitionFromSourceLoader _meshDefFromSrcLoader;
+
+		MultiLoader<IProgramDefinitionLoader> _multiProgramDefLoader;
+		MultiLoader<ITextureDefinitionLoader> _multiTextureDefLoader;
+		MultiLoader<IMeshDefinitionLoader> _multiMeshDefLoader;
 
 		MultiLoader<ILoader<Program>> _multiProgramLoader;
 		MultiLoader<ILoader<Texture>> _multiTextureLoader;

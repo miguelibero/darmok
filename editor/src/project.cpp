@@ -116,8 +116,11 @@ namespace darmok::editor
         _scene = scenes.getScene();
 
         _scene->destroyEntitiesImmediate();
-        configureEditorScene(*_scene);
         configureDefaultScene(_sceneWrapper);
+        configureEditorScene(*_scene);
+
+        SceneImporter importer{ _assetPackConfig };
+        importer(*_scene, _sceneDef);
     }
 
     void EditorProject::open()
@@ -145,7 +148,6 @@ namespace darmok::editor
         _path = path;
     }
 
-
     std::shared_ptr<Scene> EditorProject::getScene()
     {
         return _scene;
@@ -168,10 +170,10 @@ namespace darmok::editor
         auto& cam = scene.addComponent<Camera>(camEntity);
 
         scene.addComponent<Transform>(camEntity)
-            .setPosition(glm::vec3(2, 1, -2))
-            .lookAt(glm::vec3(0))
+            .setPosition(glm::vec3{ 2.f, 1.f, -2.f })
+            .lookAt(glm::vec3{ 0 })
             .setName(name);
-        cam.setPerspective(60.F, 0.3F, 1000.F);
+        cam.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
         if (auto skyboxTexResult = _app.getAssets().getTextureLoader()("cubemap.ktx"))
         {
             cam.addComponent<SkyboxRenderer>(skyboxTexResult.value());

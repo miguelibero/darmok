@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <bx/filepath.h>
+#include <darmok/asset_pack.hpp>
 
 #ifdef DARMOK_ASSIMP
 #ifdef DARMOK_OZZ
@@ -33,12 +34,15 @@ namespace darmok
 		, _assimpSceneDefLoader{ _dataLoader, _allocator }
 		, _dataSceneDefLoader{ _dataLoader }
 		, _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
-		, _sceneLoader{ _sceneDefLoader, {
-			.programLoader = _progLoader,
-			.textureLoader = _texLoader,
-			.meshLoader = _meshLoader,
-			.materialLoader = _materialLoader,
-		} }
+		, _sceneLoader{ _sceneDefLoader, AssetPackConfig{
+				.fallbacks = {
+					.program = _progLoader,
+					.texture = _texLoader,
+					.mesh = _meshLoader,
+					.material = _materialLoader,
+				}
+			}
+		}
 #ifdef DARMOK_OZZ
 		, _ozzSkeletonLoader{ _dataLoader }
 		, _ozzSkeletalAnimationLoader{ _dataLoader }

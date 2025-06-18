@@ -54,6 +54,29 @@ namespace darmok
 		Config _config;
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<protobuf::Program>
+	{
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramSourceLoader : public ILoader<protobuf::ProgramSource>
+	{
+	};
+
+	using DataProgramDefinitionLoader = DataProtobufLoader<IProgramDefinitionLoader>;
+
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionFromSourceLoader : public IFromDefinitionLoader<IProgramDefinitionLoader, protobuf::ProgramSource>
+	{
+	};
+
+	class ProgramDefinitionFromSourceLoader final : public FromDefinitionLoader<IProgramDefinitionFromSourceLoader, IProgramSourceLoader>
+	{
+	public:
+		ProgramDefinitionFromSourceLoader(IProgramSourceLoader& srcLoader, const ProgramCompilerConfig& compilerConfig) noexcept;
+	private:
+		Result create(const std::shared_ptr<protobuf::ProgramSource>& src) override;
+		ProgramCompiler _compiler;
+	};
+
 	class ProgramFileImporterImpl;
 
 	class DARMOK_EXPORT ProgramFileImporter final : public IFileTypeImporter
@@ -75,10 +98,4 @@ namespace darmok
 	private:
 		std::unique_ptr<ProgramFileImporterImpl> _impl;
 	};
-
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<protobuf::Program>
-	{
-	};
-
-	using DataProgramDefinitionLoader = DataProtobufLoader<IProgramDefinitionLoader>;
 }

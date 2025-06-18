@@ -778,6 +778,22 @@ namespace darmok
         return name;
     }
 
+    ProgramDefinitionFromSourceLoader::ProgramDefinitionFromSourceLoader(IProgramSourceLoader& srcLoader, const ProgramCompilerConfig& compilerConfig) noexcept
+        : FromDefinitionLoader{ srcLoader }
+        , _compiler{ compilerConfig }
+    {
+    }
+
+    ProgramDefinitionFromSourceLoader::Result ProgramDefinitionFromSourceLoader::create(const std::shared_ptr<protobuf::ProgramSource>& src)
+    {
+        auto result = _compiler(*src);
+        if(!result)
+        {
+            return unexpected{ result.error() };
+		}
+		return std::make_shared<protobuf::Program>(std::move(result.value()));
+    }
+
     ProgramFileImporter::ProgramFileImporter()
         : _impl{ std::make_unique<ProgramFileImporterImpl>() }
     {

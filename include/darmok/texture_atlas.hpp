@@ -126,7 +126,7 @@ namespace darmok
 		ITextureDefinitionLoader& _texLoader;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<TextureAtlas, TextureAtlas::Definition>
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<ILoader<TextureAtlas>, TextureAtlas::Definition>
 	{
 	};
 

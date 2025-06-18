@@ -37,11 +37,12 @@ namespace darmok
 	std::unique_ptr<IMesh> IMesh::create(const Definition& def)
 	{
 		Config config;
-		config.index32 = def.index32();
-		auto layout = VaryingUtils::getBgfx(def.layout());
+		auto& protobufConfig = def.config();
+		config.index32 = protobufConfig.index32();
+		auto layout = VaryingUtils::getBgfx(protobufConfig.layout());
 		DataView vertices{ def.vertices() };
 		DataView indices{ def.indices() };
-		return create(def.type(), layout, vertices, indices, config);
+		return create(protobufConfig.type(), layout, vertices, indices, config);
 	}
 
 	std::unique_ptr<IMesh> IMesh::create(Type type, const bgfx::VertexLayout& layout, DataView vertices, Config config)
@@ -411,11 +412,6 @@ namespace darmok
 		return _layout;
 	}
 
-	MeshLoader::MeshLoader(IMeshDefinitionLoader& defLoader) noexcept
-		: FromDefinitionLoader(defLoader)
-	{
-	}
-
 	MeshLoader::Result MeshLoader::create(const std::shared_ptr<Definition>& def)
 	{
 		return IMesh::create(*def);
@@ -478,10 +474,11 @@ namespace darmok
 	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const
 	{
 		Mesh::Definition def;
-		def.set_type(type);
-		def.set_index32(meshConfig.index32);
+		auto& config = *def.mutable_config();
+		config.set_type(type);
+		config.set_index32(meshConfig.index32);
 
-		VaryingUtils::read(*def.mutable_layout(), vertexLayout);
+		VaryingUtils::read(*config.mutable_layout(), vertexLayout);
 
 		Data vertices;
 		Data indices;
@@ -1280,5 +1277,36 @@ namespace darmok
 		}
 
 		return bb;
+	}
+
+	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const std::shared_ptr<IMesh::Source>& src)
+	{
+		if (!src)
+		{
+			return unexpected<std::string>{ "Mesh source is null" };
+		}
+		auto mesh = std::make_shared<MeshData>();
+		auto layout = VaryingUtils::getBgfx(src->config().layout());
+		MeshConfig config{ .index32 = src->config().index32() };
+		if (src->has_sphere())
+		{
+			auto shape = protobuf::convert(src->sphere().shape());
+			auto def = MeshData{ shape, src->sphere().lod() }.createDefinition(layout, config);
+			return std::make_shared<IMesh::Definition>(std::move(def));
+		}
+		if (src->has_cube())
+		{
+			auto shape = protobuf::convert(src->cube().shape());
+			auto def = MeshData{ shape, src->cube().type() }.createDefinition(layout, config);
+			return std::make_shared<IMesh::Definition>(std::move(def));
+		}
+		if (src->has_capsule())
+		{
+			auto shape = protobuf::convert(src->capsule().shape());
+			auto def = MeshData{ shape, src->capsule().lod() }.createDefinition(layout, config);
+			return std::make_shared<IMesh::Definition>(std::move(def));
+		}
+		
+		return unexpected<std::string>{ "Unsupported mesh type" };
 	}
 }

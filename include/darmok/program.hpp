@@ -80,7 +80,7 @@ namespace darmok
 		static expected<void, std::string> loadDefinition(Definition& def, Type type);
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<Program, Program::Definition>
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramLoader : public IFromDefinitionLoader<ILoader<Program>, Program::Definition>
 	{
 	};
 

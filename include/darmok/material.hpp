@@ -103,7 +103,7 @@ namespace darmok
 
     using DataMaterialDefinitionLoader = DataProtobufLoader<IMaterialDefinitionLoader>;
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public IFromDefinitionLoader<Material, Material::Definition>
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public IFromDefinitionLoader<ILoader<Material>, Material::Definition>
     {
     };
 

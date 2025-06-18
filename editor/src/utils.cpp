@@ -104,9 +104,9 @@ namespace darmok::editor
             }
             auto label = field->name();
             auto itr = labels.find(label);
-            if (itr != labels.end())
+            if (itr == labels.end())
             {
-                label = itr->second;
+                continue;
             }
             if (drawProtobufInput(label.c_str(), *field, msg))
             {
@@ -299,6 +299,7 @@ namespace darmok::editor
                 }
             }
         }
+        return false;
     }
 
     bool ImguiUtils::drawProtobufEnumInput(const char* label, const char* fieldName, Message& msg, std::optional<ComboOptions> options) noexcept

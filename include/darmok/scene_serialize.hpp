@@ -5,7 +5,6 @@
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/scene_fwd.hpp>
-#include <darmok/asset_pack.hpp>
 #include <darmok/protobuf/scene.pb.h>
 
 #include <filesystem>
@@ -157,6 +156,8 @@ namespace darmok
     };
 
     class Scene;
+    class AssetPack;
+    struct AssetPackConfig;
 
     class DARMOK_EXPORT BX_NO_VTABLE IComponentLoadContext
     {
@@ -179,7 +180,7 @@ namespace darmok
         using Error = std::string;
 		using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
-        SceneImporter(const AssetPackFallbacks& assetPackFallbacks);
+        SceneImporter(const AssetPackConfig& assetPackConfig);
 		~SceneImporter();
         Result operator()(Scene& scene, const Definition& def);
     private:
@@ -204,7 +205,7 @@ namespace darmok
     class DARMOK_EXPORT SceneLoader final : public ISceneLoader
     {
     public:
-        SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackFallbacks& assetPackFallbacks = {});
+        SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetPackConfig);
         Result operator()(Scene& scene, std::filesystem::path path);
 
     private:

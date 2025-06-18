@@ -37,7 +37,12 @@ namespace darmok
 	{
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureSourceLoader : public ILoader<protobuf::TextureSource>
+	{
+	};
+
 	using DataTextureDefinitionLoader = DataProtobufLoader<ITextureDefinitionLoader>;
+	using DataTextureSourceLoader = DataProtobufLoader<ITextureSourceLoader>;
 
 	class DARMOK_EXPORT ImageTextureDefinitionLoader final : public ITextureDefinitionLoader
 	{
@@ -114,11 +119,25 @@ namespace darmok
 		static const FlagMap _samplerFlags;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<Texture, Texture::Definition>
+
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<ILoader<Texture>, Texture::Definition>
 	{
 	};
 
 	using TextureLoader = FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>;
+
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionFromSourceLoader : public IFromDefinitionLoader<ITextureDefinitionLoader, Texture::Source>
+	{
+	};
+
+	class TextureDefinitionFromSourceLoader final : public FromDefinitionLoader<ITextureDefinitionFromSourceLoader, ITextureSourceLoader>
+	{
+	public:
+		TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept;
+	private:
+		Result create(const std::shared_ptr<protobuf::TextureSource>& src) override;
+		bx::AllocatorI& _alloc;
+	};
 
 	class DARMOK_EXPORT TextureFileImporter final : public ProtobufFileImporter<ImageTextureDefinitionLoader>
 	{

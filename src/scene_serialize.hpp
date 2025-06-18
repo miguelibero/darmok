@@ -36,23 +36,6 @@ namespace darmok
         const Scene& getScene() const override;
         Scene& getScene() override;
 
-    public:
-        SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackFallbacks& assetPackFallbacks = {});
-
-        entt::continuous_loader createLoader();
-
-        void operator()(std::underlying_type_t<Entity>& count);
-        
-        template<typename T>
-        void registerComponent()
-        {
-            auto func = [this](entt::continuous_loader& loader) -> expected<void, std::string>
-            {
-                return load<T>(loader);
-            };
-            _loadFunctions.push_back(std::move(func));
-        }
-
         template<typename T>
         expected<void, std::string> load(entt::continuous_loader& loader)
         {
@@ -68,18 +51,35 @@ namespace darmok
 
         expected<void, std::string> loadComponents(entt::continuous_loader& loader)
         {
-            for(auto& func : _loadFunctions)
+            for (auto& func : _loadFunctions)
             {
                 auto result = func(loader);
                 if (!result)
                 {
                     return unexpected{ result.error() };
                 }
-			}
+            }
             return {};
         }
 
         expected<Entity, std::string> finishLoad();
+
+    public:
+        SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackConfig& assetPackConfig = {});
+
+        template<typename T>
+        void registerComponent()
+        {
+            auto func = [this](entt::continuous_loader& loader) -> expected<void, std::string>
+            {
+                return load<T>(loader);
+            };
+            _loadFunctions.push_back(std::move(func));
+        }
+
+        expected<Entity, std::string> load();
+
+        void operator()(std::underlying_type_t<Entity>& count);       
 
         template<typename T>
         void operator()(T& obj)
@@ -150,12 +150,12 @@ namespace darmok
     class SceneImporterImpl final
     {
     public:
-        SceneImporterImpl(const AssetPackFallbacks& assetPackFallbacks = {});
+        SceneImporterImpl(const AssetPackConfig& assetPackConfig = {});
         using Error = std::string;
         using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
         Result operator()(Scene& scene, const Definition& def);
     private:
-        AssetPackFallbacks _assetPackFallbacks;
+        AssetPackConfig _assetPackConfig;
     };
 }
