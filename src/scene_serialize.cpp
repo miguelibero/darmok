@@ -203,14 +203,28 @@ namespace darmok
         {
             return false;
         }
-        auto& components = *typeComps->mutable_components();
-        auto itr = components.find(typeId);
-        if (itr == components.end())
+        return typeComps->mutable_components()->erase(typeId) > 0;
+    }
+
+    bool SceneDefinitionWrapper::removeComponent(const Message& comp) noexcept
+    {
+        auto typeId = protobuf::getTypeId(comp);
+        auto typeComps = getTypeComponents(typeId);
+        if (!typeComps)
         {
             return false;
         }
-        components.erase(itr);
-        return true;
+        auto& comps = *typeComps->mutable_components();
+        auto itr = std::find_if(comps.begin(), comps.end(),
+            [&comp](const auto& pair) {
+                return &pair.second == &comp;
+			});
+        if (itr == comps.end())
+        {
+            return false;
+        }
+        comps.erase(itr);
+		return true;
     }
 
     OptionalRef<SceneDefinitionWrapper::AssetGroup> SceneDefinitionWrapper::getAssetGroup(IdType typeId) noexcept
@@ -256,44 +270,98 @@ namespace darmok
         return itr->second;
     }
 
-    SceneArchive::SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackConfig& assetPackConfig)
-        : _sceneDef{ sceneDef }
-        , _scene{ scene }
-		, _assetPack{ sceneDef.assets(), assetPackConfig }
-        , _count{ 0 }
-        , _type{ 0 }
-		, _entityOffset{ 0 }
+    bool SceneDefinitionWrapper::removeAsset(IdType typeId, const std::string& path) noexcept
     {
-        auto view = scene.getRegistry().view<Entity>();
-        if (view.begin() != view.end())
+        auto group = getAssetGroup(typeId);
+        if (!group)
         {
-            auto max = *std::max_element(view.begin(), view.end());
-            _entityOffset = static_cast<entt::id_type>(max) + 1;
+            return false;
         }
+        return group->mutable_assets()->erase(path) > 0;
     }
 
-    expected<Entity, std::string> SceneArchive::load()
+    bool SceneDefinitionWrapper::removeAsset(const Message& asset) noexcept
     {
-		entt::continuous_loader loader{ _scene.getRegistry() };
-        loader.get<entt::entity>(*this);
-        auto result = loadComponents(loader);
+        auto typeId = protobuf::getTypeId(asset);
+        auto group = getAssetGroup(typeId);
+        if (!group)
+        {
+            return false;
+        }
+        auto& assets = *group->mutable_assets();
+        auto itr = std::find_if(assets.begin(), assets.end(),
+            [&asset](const auto& pair) {
+                return &pair.second == &asset;
+            });
+        if (itr == assets.end())
+        {
+            return false;
+        }
+        assets.erase(itr);
+        return true;
+    }
+
+    SceneArchive::SceneArchive(Scene& scene, const AssetPackConfig& assetPackConfig)
+        : _loader{ scene.getRegistry() }
+        , _scene{ scene }
+		, _assetPackConfig{ assetPackConfig }
+        , _count{ 0 }
+        , _type{ 0 }
+    {
+    }
+
+    expected<Entity, std::string> SceneArchive::load(const protobuf::Scene& sceneDef)
+    {
+		_sceneDef = sceneDef;
+        _assetPack.emplace(sceneDef.assets(), _assetPackConfig);
+        _loader.get<entt::entity>(*this);
+        auto result = loadComponents();
         if (!result)
         {
             return unexpected{ result.error() };
         }
-        loader.orphans();
-        return finishLoad();
+        _loader.orphans();
+
+        result = {};
+        for (auto& func : _postLoadFuncs)
+        {
+            auto funcResult = func();
+            if (!funcResult)
+            {
+                result = std::move(funcResult);
+            }
+        }
+        _postLoadFuncs.clear();
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
+
+		ConstSceneDefinitionWrapper def{ sceneDef };
+		auto roots = def.getRootEntities();
+        if(roots.empty())
+        {
+            return unexpected{ "No root entities found in the scene definition." };
+		}
+		return getEntity(entt::to_integral(roots.front()));
     }
 
     void SceneArchive::operator()(std::underlying_type_t<Entity>& count)
     {
+        if(!_sceneDef)
+        {
+            _error = "Scene definition is not loaded.";
+            count = 0;
+            return;
+		}
+		auto& reg = _sceneDef->registry();
         if (_type == 0)
         {
-            count = _sceneDef.registry().entities();
+            count = reg.entities();
         }
         else
         {
-            auto& typeComps = _sceneDef.registry().components();
+            auto& typeComps = reg.components();
             auto itr = typeComps.find(_type);
             if (itr != typeComps.end())
             {
@@ -306,12 +374,12 @@ namespace darmok
 
     AssetPack& SceneArchive::getAssets()
     {
-		return _assetPack;
+		return *_assetPack;
     }
 
     Entity SceneArchive::getEntity(uint32_t id) const
     {
-		return static_cast<Entity>(id + _entityOffset);
+		return _loader.map(static_cast<Entity>(id));
     }
 
     const Scene& SceneArchive::getScene() const
@@ -324,58 +392,26 @@ namespace darmok
         return _scene;
     }
 
-    expected<Entity, std::string> SceneArchive::finishLoad()
+    SceneImporterImpl::SceneImporterImpl(Scene& scene, const AssetPackConfig& assetPackConfig)
+        : _archive{ scene, assetPackConfig }
     {
-        expected<void, std::string> result;
-        for (auto& func : _compLoadFunctions)
-        {
-            auto funcResult = func();
-            if (!funcResult)
-            {
-                result = std::move(funcResult);
-			}
-        }
-        _compLoadFunctions.clear();
-        if (!result)
-        {
-			return unexpected{ result.error() };
-        }
-
-        for(uint32_t id = 0; id < _sceneDef.registry().entities(); ++id)
-        {
-            auto entity = getEntity(id);
-            if (auto trans = _scene.getComponent<Transform>(entity))
-            {
-                if (!trans->getParent())
-                {
-                    return entity;
-                }
-            }
-		}
-        return unexpected{ "could not find root entity" };
-    }
-
-    SceneImporterImpl::SceneImporterImpl(const AssetPackConfig& assetPackConfig)
-        : _assetPackConfig{ assetPackConfig }
-    {
+        _archive.registerComponent<Transform>();
+        _archive.registerComponent<Renderable>();
+        _archive.registerComponent<Camera>();
+        _archive.registerComponent<Skinnable>();
+        _archive.registerComponent<PointLight>();
+        _archive.registerComponent<DirectionalLight>();
+        _archive.registerComponent<SpotLight>();
+        _archive.registerComponent<AmbientLight>();
 	}
 
-    SceneImporterImpl::Result SceneImporterImpl::operator()(Scene& scene, const Definition& def)
+    SceneImporterImpl::Result SceneImporterImpl::operator()(const Scene::Definition& def)
     {
-		SceneArchive archive{ def, scene, _assetPackConfig };
-        archive.registerComponent<Transform>();
-        archive.registerComponent<Renderable>();
-        archive.registerComponent<Camera>();
-        archive.registerComponent<Skinnable>();
-        archive.registerComponent<PointLight>();
-        archive.registerComponent<DirectionalLight>();
-        archive.registerComponent<SpotLight>();
-        archive.registerComponent<AmbientLight>();
-        return archive.load();
+        return _archive.load(def);
     }
 
-    SceneImporter::SceneImporter(const AssetPackConfig& assetPackConfig)
-        : _impl(std::make_unique<SceneImporterImpl>(assetPackConfig))
+    SceneImporter::SceneImporter(Scene& scene, const AssetPackConfig& assetPackConfig)
+        : _impl{ std::make_unique<SceneImporterImpl>(scene, assetPackConfig) }
     {
     }
 
@@ -384,14 +420,14 @@ namespace darmok
         // empty on purpose
     }
 
-    SceneImporter::Result SceneImporter::operator()(Scene& scene, const Definition& def)
+    SceneImporter::Result SceneImporter::operator()(const Scene::Definition& def)
     {
-		return (*_impl)(scene, def);
+		return (*_impl)(def);
     }
 
     SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetPackConfig)
         : _defLoader{ defLoader }
-        , _importer{ assetPackConfig }
+        , _assetPackConfig{ assetPackConfig }
 	{
 	}
 
@@ -402,6 +438,7 @@ namespace darmok
         {
 			return unexpected<Error>{ defResult.error() };
         }
-		return _importer(scene, **defResult);
+        SceneImporter importer{ scene, _assetPackConfig};
+		return importer(*defResult.value());
     }
 }

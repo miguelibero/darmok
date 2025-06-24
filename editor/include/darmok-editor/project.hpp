@@ -26,6 +26,7 @@ namespace darmok::editor
         void exportScene();
         void reset();
         void render();
+        void updateScene();
 
         std::shared_ptr<Scene> getScene();
         SceneDefinitionWrapper& getSceneDefinition();
@@ -35,13 +36,15 @@ namespace darmok::editor
         App& _app;
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
+		std::optional<SceneImporter> _sceneImporter;
+        bool _requestUpdateScene;
 
         using SceneDefinition = protobuf::Scene;
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneWrapper;
 		AssetPackConfig _assetPackConfig;
         std::optional<ProgramCompiler> _progCompiler;
-        bool _tryReset;
+        bool _requestReset;
 
         std::filesystem::path _path;
         std::filesystem::path _exportPath;
@@ -52,5 +55,6 @@ namespace darmok::editor
         void configureDefaultScene(SceneDefinitionWrapper& scene);
 
         void doReset();
+		void doUpdateScene();
     };
 }

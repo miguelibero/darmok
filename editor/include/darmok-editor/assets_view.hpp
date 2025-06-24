@@ -33,7 +33,7 @@ namespace darmok::editor
         void init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate);
         void shutdown();
         void focus();
-        void render();
+        bool render();
     private:
         const uint32_t _assetType;
         const std::string _name;

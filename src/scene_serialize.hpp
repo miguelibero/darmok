@@ -6,6 +6,7 @@
 #include <darmok/asset_pack.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/optional_ref.hpp>
 
 #include <string>
 #include <optional>
@@ -16,19 +17,21 @@ namespace darmok
 {
     class SceneArchive final : public IComponentLoadContext
     {
+        entt::continuous_loader _loader;
         Scene& _scene;
-        const protobuf::Scene& _sceneDef;
-		AssetPack _assetPack;
+        AssetPackConfig _assetPackConfig;
+
+        OptionalRef<const protobuf::Scene> _sceneDef;
+		std::optional<AssetPack> _assetPack;
         size_t _count = 0;
         entt::id_type _type;
-        entt::id_type _entityOffset;
         std::optional<std::string> _error;
 
         using Result = expected<void, std::string>;
-        using LoadFunction = std::function<Result(entt::continuous_loader& loader)>;
-		std::vector<LoadFunction> _loadFunctions;
+        using LoadFunction = std::function<Result()>;
+		std::vector<LoadFunction> _loadFuncs;
         using ComponentLoadFunction = std::function<Result()>;
-        std::vector<ComponentLoadFunction> _compLoadFunctions;
+        std::vector<ComponentLoadFunction> _postLoadFuncs;
 
         // IComponentLoadContext
         AssetPack& getAssets() override;
@@ -37,11 +40,11 @@ namespace darmok
         Scene& getScene() override;
 
         template<typename T>
-        expected<void, std::string> load(entt::continuous_loader& loader)
+        expected<void, std::string> loadComponent()
         {
             using Def = typename T::Definition;
             _type = protobuf::getTypeId(*Def::descriptor());
-            loader.get<T>(*this);
+            _loader.get<T>(*this);
             if (_error)
             {
                 return unexpected{ *_error };
@@ -49,11 +52,11 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> loadComponents(entt::continuous_loader& loader)
+        expected<void, std::string> loadComponents()
         {
-            for (auto& func : _loadFunctions)
+            for (auto& func : _loadFuncs)
             {
-                auto result = func(loader);
+                auto result = func();
                 if (!result)
                 {
                     return unexpected{ result.error() };
@@ -62,31 +65,34 @@ namespace darmok
             return {};
         }
 
-        expected<Entity, std::string> finishLoad();
-
     public:
-        SceneArchive(const protobuf::Scene& sceneDef, Scene& scene, const AssetPackConfig& assetPackConfig = {});
+        SceneArchive(Scene& scene, const AssetPackConfig& assetPackConfig = {});
 
         template<typename T>
         void registerComponent()
         {
-            auto func = [this](entt::continuous_loader& loader) -> expected<void, std::string>
+            auto func = [this]() -> expected<void, std::string>
             {
-                return load<T>(loader);
+                return loadComponent<T>();
             };
-            _loadFunctions.push_back(std::move(func));
+            _loadFuncs.push_back(std::move(func));
         }
 
-        expected<Entity, std::string> load();
+        expected<Entity, std::string> load(const protobuf::Scene& sceneDef);
 
         void operator()(std::underlying_type_t<Entity>& count);       
 
         template<typename T>
         void operator()(T& obj)
         {
+            if(!_sceneDef)
+            {
+                _error = "Scene definition not set";
+                return;
+			}
             auto getComponentData = [this]() -> std::pair<uint32_t, const google::protobuf::Any*>
             {
-                auto& typeComps = _sceneDef.registry().components();
+                auto& typeComps = _sceneDef->registry().components();
                 auto itr = typeComps.find(_type);
                 if (itr == typeComps.end())
                 {
@@ -109,8 +115,8 @@ namespace darmok
             {
                 if (_type == 0)
                 {
-                    obj = getEntity(_count);
                     ++_count;
+                    obj = static_cast<Entity>(_count);
                 }
                 else
                 {
@@ -131,7 +137,8 @@ namespace darmok
                     _error = "Could not unpack component";
                     return;
                 }
-				auto entity = getEntity(elm.first);
+                /* TODO: check if we can guarantee the order of entities
+                auto entity = getEntity(elm.first);
                 auto func = [this, entity, def]() -> expected<void, std::string>
                 {
                     if (auto comp = _scene.getComponent<T>(entity))
@@ -140,7 +147,13 @@ namespace darmok
                     }
                     return {};
                 };
-				_compLoadFunctions.push_back(std::move(func));
+                _postLoadFuncs.push_back(std::move(func));
+                */
+				auto result = obj.load(def, *this);
+                if(!result)
+                {
+                    _error = result.error();
+				}
                 ++_count;
             }
         }
@@ -150,12 +163,12 @@ namespace darmok
     class SceneImporterImpl final
     {
     public:
-        SceneImporterImpl(const AssetPackConfig& assetPackConfig = {});
+        SceneImporterImpl(Scene& scene, const AssetPackConfig& assetPackConfig = {});
         using Error = std::string;
         using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
-        Result operator()(Scene& scene, const Definition& def);
+        Result operator()(const Scene::Definition& def);
     private:
-        AssetPackConfig _assetPackConfig;
+		SceneArchive _archive;
     };
 }

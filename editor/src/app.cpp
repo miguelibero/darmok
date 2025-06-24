@@ -470,14 +470,16 @@ namespace darmok::editor
         renderDockspace();
         renderMainToolbar();
         renderSceneTree();
-        _inspectorView.render();
+        if (_inspectorView.render())
+        {
+            _proj.updateScene();
+        }
+        _proj.render();
         _sceneView.render();
         for (auto& assetsView : _assetsViews)
         {
             assetsView.render();
-
         }
-        _proj.render();
     }
 
     void EditorApp::update(float deltaTime)

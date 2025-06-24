@@ -634,6 +634,11 @@ namespace darmok
         return { getRegistry(), EntityFilter(typeId) & filter };
     }
 
+    bool Scene::isEntityAlive(Entity entity) const noexcept
+    {
+        return getRegistry().valid(entity);
+    }
+
     bool Scene::removeComponent(Entity entity, entt::id_type typeId) noexcept
     {
         return _impl->removeComponent(entity, typeId);

@@ -144,7 +144,7 @@ set(CORE_SOURCES
   shape.cpp
   shape_serialize.cpp
   texture.cpp
-  mesh.cpp
+  mesh_core.cpp
   vertex.cpp
   varying.cpp
   viewport.cpp
@@ -169,7 +169,7 @@ set(CORE_HEADERS
   math.hpp
   shape.hpp
   shape_serialize.hpp
-  mesh.hpp
+  mesh_core.hpp
   color_fwd.hpp
   color.hpp
   image_fwd.hpp
@@ -204,6 +204,7 @@ set(SOURCES
   material.cpp
   anim.cpp
   program.cpp
+  mesh.cpp
 
   transform.cpp
   camera.cpp
@@ -237,6 +238,7 @@ set(HEADERS
   anim.hpp
   material.hpp
   program.hpp
+  mesh.hpp
 
   transform.hpp
   camera.hpp

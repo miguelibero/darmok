@@ -69,17 +69,22 @@ namespace darmok::editor
         }
 
         template<typename Itr>
-        void render(Itr begin, Itr end)
+        bool render(Itr begin, Itr end)
         {
             int i = 0;
+			bool changed = false;
             for (auto itr = begin; itr != end; ++itr)
             {
                 auto& elm = *itr;
                 ImGui::PushID(i);
-                render(elm);
+                if (render(elm))
+                {
+                    changed = true;
+                }
                 ImGui::PopID();
                 ++i;
             }
+            return changed;
         }
 
         bool render(google::protobuf::Any& obj) const;

@@ -82,29 +82,37 @@ namespace darmok::editor
         return _windowName;
     }
 
-    void EditorInspectorView::render()
+    bool EditorInspectorView::render()
     {
         if (!_sceneDef)
         {
-            return;
+            return false;
         }
         auto& sceneDef = *_sceneDef;
+		bool changed = false;
         if (ImGui::Begin(_windowName.c_str()))
         {
             auto entity = getSelectedEntity();
             if (entity != entt::null)
             {
                 auto comps = sceneDef.getComponents(entity);
-                _editors.render(comps.begin(), comps.end());
+                if (_editors.render(comps.begin(), comps.end()))
+                {
+                    changed = true;
+                }
             }
             else if (auto selected = getSelectedAsset())
             {
                 if (auto asset = sceneDef.getAsset(selected->type, selected->path))
                 {
-                    _editors.render(*asset);
+                    if (_editors.render(*asset))
+                    {
+                        changed = true;
+                    }
                 }
 			}
         }
         ImGui::End();
+        return changed;
     }
 }

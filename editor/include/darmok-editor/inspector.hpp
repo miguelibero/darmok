@@ -24,7 +24,7 @@ namespace darmok::editor
         void setup();
         void init(EditorApp& app);
         void shutdown();
-        void render();
+        bool render();
 
         void selectObject(const SelectableObject& obj);
 

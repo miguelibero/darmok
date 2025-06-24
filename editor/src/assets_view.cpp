@@ -36,13 +36,14 @@ namespace darmok::editor
         ImGui::SetWindowFocus(_name.c_str());
     }
 
-    void EditorAssetsView::render()
+    bool EditorAssetsView::render()
     {
         static const ImVec2 cellPadding{ 10.0f, 10.0f };
         if (!_scene)
         {
-            return;
+            return false;
         }
+        bool changed = false;
         if (ImGui::Begin(_name.c_str()))
         {
             auto winSize = ImGui::GetWindowSize();
@@ -62,7 +63,10 @@ namespace darmok::editor
                 {
                     ImGui::PushID(i);
                     ImGui::TableNextColumn();
-                    drawAsset(*asset, path, selectedPath == path);
+                    if (drawAsset(*asset, path, selectedPath == path))
+                    {
+                        changed = true;
+                    }
                     ImGui::PopID();
                     ++i;
                 }
@@ -76,6 +80,7 @@ namespace darmok::editor
             }
         }
         ImGui::End();
+        return changed;
     }
 
     bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::string& path, bool selected)
@@ -98,7 +103,7 @@ namespace darmok::editor
         }
         if (selectionChanged && selected)
         {
-            // onAssetSelected(asset);
+			_delegate->onAssetPathSelected(_assetType, path);
         }
         return selected;
     }

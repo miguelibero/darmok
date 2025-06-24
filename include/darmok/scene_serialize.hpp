@@ -128,10 +128,13 @@ namespace darmok
         OptionalRef<Any> getComponent(Entity entity, IdType typeId) noexcept;
         bool destroyEntity(Entity entity) noexcept;
         bool removeComponent(Entity entity, IdType typeId) noexcept;
+        bool removeComponent(const Message& comp) noexcept;
 
         OptionalRef<AssetGroup> getAssetGroup(IdType typeId) noexcept;
         std::unordered_map<std::string, OptionalRef<Any>> getAssets(IdType typeId) noexcept;
         OptionalRef<Any> getAsset(IdType typeId, const std::string& path);
+        bool removeAsset(IdType typeId, const std::string& path) noexcept;
+        bool removeAsset(const Message& asset) noexcept;
 
         template<typename T>
         std::optional<T> getComponent(Entity entity) const noexcept
@@ -145,6 +148,32 @@ namespace darmok
                 }
             }
             return std::nullopt;
+        }
+
+        template<typename T>
+        std::optional<T> getAsset(const std::string& path) const noexcept
+        {
+            if (auto any = getAsset(protobuf::getTypeId<T>(), path))
+            {
+                T asset;
+                if (any->UnpackTo(&asset))
+                {
+                    return asset;
+                }
+            }
+            return std::nullopt;
+        }
+
+        template<typename T>
+        bool removeAsset(const std::string& path) const noexcept
+        {
+			return removeAsset(protobuf::getTypeId<T>(), path);
+        }
+
+        template<typename T>
+        bool removeComponent(Entity entity) const noexcept
+        {
+            return removeComponent(entity, protobuf::getTypeId<T>());
         }
 
     private:
@@ -180,9 +209,9 @@ namespace darmok
         using Error = std::string;
 		using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
-        SceneImporter(const AssetPackConfig& assetPackConfig);
+        SceneImporter(Scene& scene, const AssetPackConfig& assetPackConfig);
 		~SceneImporter();
-        Result operator()(Scene& scene, const Definition& def);
+        Result operator()(const Definition& def);
     private:
 		std::unique_ptr<SceneImporterImpl> _impl;
     };
@@ -210,7 +239,7 @@ namespace darmok
 
     private:
 		ISceneDefinitionLoader& _defLoader;
-        SceneImporter _importer;
+        const AssetPackConfig& _assetPackConfig;
     };
 
 }

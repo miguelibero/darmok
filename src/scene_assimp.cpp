@@ -1062,9 +1062,8 @@ namespace darmok
         auto& bounds = *meshDef.mutable_bounds();
         *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
         *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
-        auto& config = *meshDef.mutable_config();
-        config.set_type(MeshDefinition::Static);
-        *config.mutable_layout() = _config.vertex_layout();
+        meshDef.set_type(MeshDefinition::Static);
+        *meshDef.mutable_layout() = _config.vertex_layout();
 
         std::vector<aiBone*> bones;
         bones.reserve(assimpMesh.mNumBones);

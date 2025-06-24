@@ -14,7 +14,7 @@ namespace darmok
 		, _texSrcLoader{ _def }
 		, _texDefFromSrcLoader{ _texSrcLoader, config.alloc ? *config.alloc : _defaultAlloc }
 		, _meshSrcLoader{ _def }
-		, _meshDefFromSrcLoader{ _meshSrcLoader }
+		, _meshDefFromSrcLoader{ _meshSrcLoader, _multiProgramDefLoader }
 		, _multiProgramDefLoader{ _progDefLoader, _progDefFromSrcLoader }
 		, _multiTextureDefLoader{ _texDefLoader, _texDefFromSrcLoader }
 		, _multiMeshDefLoader{ _meshDefLoader, _meshDefFromSrcLoader }

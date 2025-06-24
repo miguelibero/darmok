@@ -4,6 +4,7 @@ package darmok.protobuf;
 
 import "varying.proto";
 import "shape.proto";
+import "program.proto";
 
 message CubeMeshSource {
     Cube shape = 1;
@@ -25,12 +26,6 @@ message RectangleMeshSource {
     Mesh.RectangleType type = 2;
 }
 
-message MeshConfig {
-    Mesh.Type type = 2;
-    bool index32 = 3;
-    VertexLayout layout = 4;
-}
-
 message MeshSource {
     string name = 1;
     oneof value {
@@ -39,7 +34,12 @@ message MeshSource {
         CapsuleMeshSource capsule = 4;
         RectangleMeshSource rectangle = 5;
     }
-    MeshConfig config = 6;
+    Mesh.Type type = 6;
+    bool index32 = 7;
+    oneof program {
+        string program_path = 8;
+        StandardProgram.Type standard_program = 9;
+    }
 }
 
 message Mesh {
@@ -60,8 +60,10 @@ message Mesh {
     }
 
     string name = 1;
-    MeshConfig config = 2;
-    bytes vertices = 3;
-    bytes indices = 4;
-    BoundingBox bounds = 5;
+    Mesh.Type type = 2;
+    bool index32 = 3;
+    VertexLayout layout = 4;
+    bytes vertices = 5;
+    bytes indices = 6;
+    BoundingBox bounds = 7;
 }

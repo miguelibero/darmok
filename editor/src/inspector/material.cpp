@@ -22,6 +22,35 @@ namespace darmok::editor
 
 		if (ImGui::CollapsingHeader("Material"))
 		{
+			if (ImguiUtils::drawProtobufInput("Base color", "base_color", mat))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawProtobufInput("Emissive color", "emissive_color", mat))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawProtobufInput("Metallic factor", "metallic_factor", mat))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawProtobufInput("Roughness factor", "roughness_factor", mat))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawProtobufInput("Normal scale", "normal_scale", mat))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawProtobufInput("Occlusion Strength", "occlusion_strength", mat))
+			{
+				changed = true;
+			}
+			if (ImguiUtils::drawProtobufInput("Multiple scattering", "multiple_scattering", mat))
+			{
+				changed = true;
+			}
+
 			if (ImguiUtils::drawProtobufInput("Specular", "specular_color", mat))
 			{
 				changed = true;
@@ -43,11 +72,11 @@ namespace darmok::editor
 				changed = true;
 			}
 			
-			auto proj = _app->getProject();
+			auto& proj = _app->getProject();
 
 			if (ImGui::Button("Delete"))
 			{
-				// proj.removeMaterial(mat);
+				proj.getSceneDefinition().removeAsset(mat);
 				changed = true;
 			}
 		}

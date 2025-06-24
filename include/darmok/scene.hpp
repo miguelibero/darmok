@@ -185,6 +185,8 @@ namespace darmok
             return getEntities<T>(getUpdateFilter());
         }
 
+        bool isEntityAlive(Entity entity) const noexcept;
+
         template<typename T>
         bool hasComponent(Entity entity) const noexcept
         {

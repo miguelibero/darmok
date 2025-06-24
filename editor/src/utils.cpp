@@ -70,7 +70,12 @@ namespace darmok::editor
     bool ImguiUtils::drawListCombo(const char* label, size_t& current, ComboOptions options) noexcept
     {
         auto changed = false;
-        if (ImGui::BeginCombo(label, options[current].c_str()))
+        std::string currentOption;
+        if (current >= 0 && options.size() > current)
+        {
+            currentOption = options[current];
+        }
+        if (ImGui::BeginCombo(label, currentOption.c_str()))
         {
             for (size_t i = 0; i < options.size(); ++i)
             {
@@ -327,8 +332,8 @@ namespace darmok::editor
                 if (StringUtils::startsWith(value, prefix))
                 {
                     value = value.substr(prefix.size());
-                    defaultOptions.push_back(std::move(value));
                 }
+                defaultOptions.push_back(std::move(value));
             }
             options = defaultOptions;
         }

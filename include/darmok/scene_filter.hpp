@@ -222,7 +222,6 @@ namespace darmok
             return _adapter.view.get().contains(entity);
         }
 
-
         bool tryNextContainer() noexcept
         {
             if (_contItr == _adapter.endContItr)

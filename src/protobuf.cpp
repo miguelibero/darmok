@@ -13,6 +13,10 @@ namespace darmok
             {
                 return Format::Json;
             }
+            if (path.extension() == ".xml")
+            {
+                return Format::Json;
+            }
             return Format::Binary;
         }
 
