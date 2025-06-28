@@ -12,7 +12,34 @@ namespace darmok
 {
     namespace fs = std::filesystem;
 
-    const ProgramCoreUtils::RendererProfileMap& ProgramCoreUtils::getRendererProfiles() noexcept
+    ConstProgramDefinitionWrapper::ConstProgramDefinitionWrapper(const Definition& def)
+        : _def{ def }
+    {
+    }
+
+    expected<std::reference_wrapper<const ConstProgramDefinitionWrapper::Profile>, std::string> ConstProgramDefinitionWrapper::getCurrentProfile()
+    {
+        auto render = bgfx::getRendererType();
+        auto& rendererProfiles = getRendererProfiles();
+        auto itr = rendererProfiles.find(render);
+        if (itr == rendererProfiles.end())
+        {
+            return unexpected{ std::string{"could not find renderer profiles"} };
+        }
+        auto& profiles = _def.profiles();
+        for (auto& profileName : itr->second)
+        {
+            auto itr = profiles.find(profileName);
+            if (itr == profiles.end())
+            {
+                continue;
+            }
+            return itr->second;
+        }
+        return unexpected{ std::string{"no valid profile found"} };
+    }
+
+    const ConstProgramDefinitionWrapper::RendererProfileMap& ConstProgramDefinitionWrapper::getRendererProfiles() noexcept
     {
         static const RendererProfileMap profiles
         {
@@ -26,34 +53,24 @@ namespace darmok
         return profiles;
     }
 
-    expected<std::reference_wrapper<const protobuf::ProgramProfile>, std::string> ProgramCoreUtils::getCurrentProfile(const protobuf::Program& def)
+    ProgramSourceWrapper::ProgramSourceWrapper(Source& src)
+        : _src{ src }
     {
-        auto render = bgfx::getRendererType();
-        auto& rendererProfiles = getRendererProfiles();
-        auto itr = rendererProfiles.find(render);
-        if (itr == rendererProfiles.end())
-        {
-            return unexpected{ std::string{"could not find renderer profiles"} };
-        }
-        auto& profiles = def.profiles();
-        for (auto& profileName : itr->second)
-        {
-            auto itr = profiles.find(profileName);
-            if (itr == profiles.end())
-            {
-                continue;
-            }
-            return itr->second;
-        }
-        return unexpected{ std::string{"no valid profile found"} };
     }
 
-    expected<void, std::string> ProgramCoreUtils::read(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath)
+    expected<void, std::string> ProgramSourceWrapper::read(const std::filesystem::path& path)
+    {
+        auto basePath = path.parent_path();
+        auto json = nlohmann::ordered_json::parse(std::ifstream(path));
+        return read(json, basePath);
+    }
+
+    expected<void, std::string> ProgramSourceWrapper::read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath)
     {       
         auto itr = json.find("name");
         if (itr != json.end())
         {
-            src.set_name(itr->get<std::string>());
+            _src.set_name(itr->get<std::string>());
         }
         itr = json.find("vertexShader");
         if (itr != json.end())
@@ -64,7 +81,7 @@ namespace darmok
             {
 				return unexpected{ readResult.error() };
             }
-            *src.mutable_vertex_shader() = std::move(readResult).value();
+            *_src.mutable_vertex_shader() = std::move(readResult).value();
         }
         itr = json.find("fragmentShader");
         if (itr != json.end())
@@ -75,26 +92,26 @@ namespace darmok
             {
                 return unexpected{ readResult.error() };
             }
-            *src.mutable_fragment_shader() = std::move(readResult).value();
+            *_src.mutable_fragment_shader() = std::move(readResult).value();
         }
         expected<void, std::string> result;
-        auto& varying = *src.mutable_varying();
         itr = json.find("varyingDef");
+        VaryingDefinitionWrapper varying{ *_src.mutable_varying() };
         if (itr != json.end())
         {
             if (itr->is_string())
             {
                 fs::path varyingPath = basePath / itr->get<std::string>();
-                result = std::move(VaryingUtils::read(varying, varyingPath));
+                result = std::move(varying.read(varyingPath));
             }
             else
             {
-                result = std::move(VaryingUtils::read(varying, *itr));
+                result = std::move(varying.read(*itr));
             }
         }
         else
         {
-            result = std::move(VaryingUtils::read(varying, json));
+            result = std::move(varying.read(json));
         }
         return result;
     }
@@ -317,7 +334,7 @@ namespace darmok
         auto defineCombs = CollectionUtils::combinations(defines);
         std::vector<CompilerOperation> ops;
 
-        auto& rendererProfiles = ProgramCoreUtils::getRendererProfiles();
+        auto& rendererProfiles = ProgramDefinitionWrapper::getRendererProfiles();
         auto& renderers = getSupportedRenderers();
 
         auto baseOutputStr = baseOutputPath.string();
@@ -532,18 +549,18 @@ namespace darmok
     {
         // maybe switch to arrays to avoid ordered_json
         auto basePath = path.parent_path();
-
+        ProgramSourceWrapper srcWrapper{ src };
         if (fs::is_regular_file(path) && path.extension() == ".json")
         {
             auto pathJson = nlohmann::ordered_json::parse(std::ifstream(path));
-            auto result = ProgramCoreUtils::read(src, pathJson, basePath);
+            auto result = srcWrapper.read(pathJson, basePath);
             if (!result)
             {
                 return result;
             }
         }
 
-        auto result = ProgramCoreUtils::read(src, json, basePath);
+        auto result = srcWrapper.read(json, basePath);
         if (!result)
         {
             return result;
@@ -580,7 +597,8 @@ namespace darmok
         if (!src.has_varying())
         {
             auto varyingPath = basePath / (stem + ".varyingdef");
-            auto result = VaryingUtils::read(*src.mutable_varying(), varyingPath);
+            VaryingDefinitionWrapper varying{ *src.mutable_varying() };
+            auto result = varying.read(varyingPath);
             if (!result)
             {
                 return result;
@@ -621,7 +639,8 @@ namespace darmok
         *def.mutable_varying() = src.varying();
 		std::string prefix = "darmok." + src.name() + ".";
         auto varyingDefPath = getTempPath(prefix + "varyingdef.");
-        VaryingUtils::writeBgfx(src.varying(), varyingDefPath);
+        ConstVaryingDefinitionWrapper varying{ src.varying() };
+        varying.writeBgfx(varyingDefPath);
 
         ShaderCompilerConfig shaderConfig
         {

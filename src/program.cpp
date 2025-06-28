@@ -54,9 +54,9 @@ namespace darmok
     }
 
 	Program::Program(const Definition& def)
-        : _vertexLayout{ VaryingUtils::getBgfx(def.varying().vertex()) }
+        : _vertexLayout{ ConstVertexLayoutWrapper{ def.varying().vertex() }.getBgfx() }
 	{
-        auto profileResult = ProgramCoreUtils::getCurrentProfile(def);
+        auto profileResult = ConstProgramDefinitionWrapper{ def }.getCurrentProfile();
 		if (!profileResult)
 		{
 			throw std::runtime_error{ profileResult.error() };

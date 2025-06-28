@@ -23,13 +23,39 @@ namespace darmok
 
 	using ProgramDefines = std::unordered_set<std::string>;
 
-	namespace ProgramCoreUtils
+	class ConstProgramDefinitionWrapper
 	{
+	public:
+		using Definition = protobuf::Program;
+		using Profile = protobuf::ProgramProfile;
+		ConstProgramDefinitionWrapper(const Definition& def);
+
+		expected<std::reference_wrapper<const Profile>, std::string> getCurrentProfile();
+
 		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
-		const RendererProfileMap& getRendererProfiles() noexcept;
-		expected<std::reference_wrapper<const protobuf::ProgramProfile>, std::string> getCurrentProfile(const protobuf::Program& def);
-		expected<void, std::string> read(protobuf::ProgramSource& src, const std::filesystem::path& path);
-		expected<void, std::string> read(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
+		static const RendererProfileMap& getRendererProfiles() noexcept;
+	private:
+		const Definition& _def;
+	};
+
+	class ProgramDefinitionWrapper final : public ConstProgramDefinitionWrapper
+	{
+	public:
+		ProgramDefinitionWrapper(Definition& def);
+	private:
+		const Definition& _def;
+	};
+
+	class ProgramSourceWrapper final
+	{
+	public:
+		using Source = protobuf::ProgramSource;
+		ProgramSourceWrapper(Source& src);
+
+		expected<void, std::string> read(const std::filesystem::path& path);
+		expected<void, std::string> read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
+	private:
+		Source& _src;
 	};
 
 	struct ProgramCompilerConfig final

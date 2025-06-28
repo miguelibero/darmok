@@ -16,15 +16,48 @@ using namespace entt::literals;
 
 namespace darmok
 {
-    void TransformUtils::update(Definition& trans, const glm::mat4& mat) noexcept
+    ConstTransformDefinitionWrapper::ConstTransformDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
+    {
+    }
+
+    glm::mat4 ConstTransformDefinitionWrapper::getLocalMatrix() noexcept
+    {
+        return Math::transform(
+            protobuf::convert(_def.position()),
+            protobuf::convert(_def.rotation()),
+            protobuf::convert(_def.scale())
+        );
+    }
+
+    TransformDefinitionWrapper::TransformDefinitionWrapper(Definition& def) noexcept
+        : ConstTransformDefinitionWrapper(def)
+        , _def{ def }
+    {
+    }
+
+    TransformDefinitionWrapper& TransformDefinitionWrapper::setLocalMatrix(const glm::mat4& mat) noexcept
     {
         glm::vec3 pos;
-		glm::quat rot;
-		glm::vec3 scale;
+        glm::quat rot;
+        glm::vec3 scale;
         Math::decompose(mat, pos, rot, scale);
-		*trans.mutable_position() = protobuf::convert(pos);
-        *trans.mutable_rotation() = protobuf::convert(rot);
-        *trans.mutable_scale() = protobuf::convert(scale);
+        *_def.mutable_position() = protobuf::convert(pos);
+        *_def.mutable_rotation() = protobuf::convert(rot);
+        *_def.mutable_scale() = protobuf::convert(scale);
+        return *this;
+    }
+
+    TransformDefinitionWrapper& TransformDefinitionWrapper::setParent(Entity parentEntity) noexcept
+    {
+        _def.set_parent(entt::to_integral(parentEntity));
+        return *this;
+    }
+
+    TransformDefinitionWrapper& TransformDefinitionWrapper::setName(const std::string& name) noexcept
+    {
+        _def.set_name(name);
+        return *this;
     }
 
     Transform::Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent) noexcept

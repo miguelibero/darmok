@@ -38,7 +38,7 @@ namespace darmok
 	{
 		Config config;
 		config.index32 = def.index32();
-		auto layout = VaryingUtils::getBgfx(def.layout());
+		auto layout = ConstVertexLayoutWrapper{ def.layout() }.getBgfx();
 		DataView vertices{ def.vertices() };
 		DataView indices{ def.indices() };
 		return create(def.type(), layout, vertices, indices, config);
@@ -480,7 +480,7 @@ namespace darmok
 		def.set_type(type);
 		def.set_index32(meshConfig.index32);
 
-		VaryingUtils::read(*def.mutable_layout(), vertexLayout);
+		VertexLayoutWrapper{ *def.mutable_layout() }.read(vertexLayout);
 
 		Data vertices;
 		Data indices;

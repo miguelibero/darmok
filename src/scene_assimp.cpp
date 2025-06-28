@@ -94,7 +94,7 @@ namespace darmok
 
         bool fixImportConfig(IDataLoader& dataLoader, protobuf::AssimpSceneImportConfig& config)
         {
-			auto stride = VaryingUtils::getBgfx(config.vertex_layout()).getStride();
+            auto stride = ConstVertexLayoutWrapper{ config.vertex_layout() }.getBgfx().getStride();
             if (stride == 0)
             {
                 if (config.has_standard_program())
@@ -425,9 +425,11 @@ namespace darmok
         }
         auto entity = _scene.createEntity();
         TransformDefinition trans;
-        trans.set_name(name);
-        trans.set_parent(entt::to_integral(parentEntity));
-        TransformUtils::update(trans, AssimpUtils::convert(assimpNode.mTransformation));
+        TransformDefinitionWrapper{ trans }
+            .setName(name)
+            .setParent(parentEntity)
+            .setLocalMatrix(AssimpUtils::convert(assimpNode.mTransformation));
+
         _scene.addComponent(entity, trans);
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
@@ -474,9 +476,10 @@ namespace darmok
         if (!mat.IsIdentity())
         {
             TransformDefinition trans;
-            trans.set_parent(entt::to_integral(entity));
-            trans.set_name(AssimpUtils::getString(assimpCam.mName));
-            TransformUtils::update(trans, AssimpUtils::convert(mat));
+            TransformDefinitionWrapper{ trans }
+                .setParent(entity)
+                .setName(AssimpUtils::getString(assimpCam.mName))
+                .setLocalMatrix(AssimpUtils::convert(mat));
             entity = _scene.createEntity();
             _scene.addComponent(entity, trans);
         }
@@ -548,10 +551,6 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateLight(Entity entity, const aiLight& assimpLight) noexcept
     {
-        TransformDefinition trans;
-        trans.set_parent(entt::to_integral(entity));
-        trans.set_name(AssimpUtils::getString(assimpLight.mName));
-
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
         auto mat = glm::translate(glm::mat4{ 1.f }, pos);
 
@@ -604,7 +603,12 @@ namespace darmok
             _scene.addComponent(entity, light);
         }
 
-        TransformUtils::update(trans, mat);
+        TransformDefinition trans;
+        TransformDefinitionWrapper{ trans }
+            .setParent(entity)
+            .setName(AssimpUtils::getString(assimpLight.mName))
+            .setLocalMatrix(mat);
+
         entity = _scene.createEntity();
         _scene.addComponent(entity, trans);
     }
@@ -928,7 +932,7 @@ namespace darmok
     std::string AssimpSceneDefinitionConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
     {
         auto vertexCount = assimpMesh.mNumVertices;
-        auto layout = VaryingUtils::getBgfx(_config.vertex_layout());
+        auto layout = ConstVertexLayoutWrapper{ _config.vertex_layout() }.getBgfx();
         VertexDataWriter writer(layout, vertexCount, _allocator);
 
         std::vector<glm::vec3> tangents;
@@ -1325,9 +1329,9 @@ namespace darmok
         }
     }
 
-    expected<VertexLayout, std::string> AssimpSceneFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
+    expected<protobuf::VertexLayout, std::string> AssimpSceneFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
     {
-        VertexLayout layout;
+        protobuf::VertexLayout layout;
         expected<void, std::string> result;
         if (json.is_string())
         {
@@ -1335,7 +1339,7 @@ namespace darmok
         }
         else
         {
-            result = VaryingUtils::read(layout, json);
+            result = VertexLayoutWrapper{ layout }.read(json);
         }
         if (!result)
         {

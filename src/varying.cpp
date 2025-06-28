@@ -217,518 +217,572 @@ namespace darmok
 		}
 	}
 
-	namespace VaryingUtils
+	ConstVertexAttributeWrapper::ConstVertexAttributeWrapper(const Definition& def)
+		: _def{ def }
 	{
-		expected<void, std::string> read(VertexAttribute& attrib, const std::string& key) noexcept
-		{
-			auto bgfx = AttribUtils::getBgfx(key);
-			if (bgfx == bgfx::Attrib::Count)
-			{
-				return unexpected<std::string>("invalid key: " + key);
-			}
-			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
-			attrib.set_num(3);
-			attrib.set_bgfx_type(protobuf::Bgfx::Float);
+	}
 
-			auto group = AttribUtils::getGroup(bgfx);
-			if (group == AttribGroup::Color)
+	void ConstVertexAttributeWrapper::addToBgfx(bgfx::VertexLayout& layout) noexcept
+	{
+		auto bgfx = bgfx::Attrib::Enum(_def.bgfx());
+		auto bgfxType = bgfx::AttribType::Enum(_def.bgfx_type());
+		layout.add(bgfx, _def.num(), bgfxType, _def.normalize(), _def.as_int());
+	}
+
+	VertexAttributeWrapper::VertexAttributeWrapper(Definition& def)
+		: ConstVertexAttributeWrapper{ def }
+		, _def{ def }
+	{
+	}
+
+	expected<void, std::string> VertexAttributeWrapper::read(const std::string& key) noexcept
+	{
+		auto bgfx = AttribUtils::getBgfx(key);
+		if (bgfx == bgfx::Attrib::Count)
+		{
+			return unexpected<std::string>("invalid key: " + key);
+		}
+		_def.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
+		_def.set_num(3);
+		_def.set_bgfx_type(protobuf::Bgfx::Float);
+
+		auto group = AttribUtils::getGroup(bgfx);
+		if (group == AttribGroup::Color)
+		{
+			_def.set_num(4);
+			_def.set_bgfx_type(protobuf::Bgfx::Uint8);
+			_def.set_normalize(true);
+		}
+		else if (group == AttribGroup::Texture)
+		{
+			_def.set_num(2);
+		}
+		else if (group == AttribGroup::Skinning)
+		{
+			_def.set_num(4);
+		}
+		return {};
+	}
+
+	expected<void, std::string>VertexAttributeWrapper::read(const std::string& key, const nlohmann::json& json) noexcept
+	{
+		auto bgfx = AttribUtils::getBgfx(key);
+		if (bgfx == bgfx::Attrib::Count)
+		{
+			return unexpected<std::string>("invalid key: " + key);
+		}
+		_def.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
+		if (json.contains("type"))
+		{
+			auto typeStr = json["type"].get<std::string_view>();
+			auto bgfxType = AttribUtils::getBgfxType(typeStr);
+			if (bgfxType == bgfx::AttribType::Count)
 			{
-				attrib.set_num(4);
-				attrib.set_bgfx_type(protobuf::Bgfx::Uint8);
-				attrib.set_normalize(true);
+				return unexpected<std::string>("invalid type: " + key);
 			}
-			else if (group == AttribGroup::Texture)
+			_def.set_bgfx_type(protobuf::Bgfx::AttribType(bgfxType));
+		}
+		if (json.contains("num"))
+		{
+			_def.set_num(json["num"]);
+		}
+		if (json.contains("normalize"))
+		{
+			_def.set_normalize(json["normalize"]);
+		}
+		if (json.contains("int"))
+		{
+			_def.set_as_int(json["int"]);
+		}
+		return {};
+	}
+
+	FragmentAttributeWrapper::FragmentAttributeWrapper(Definition& def)
+		: _def{ def }
+	{
+	}
+
+	expected<void, std::string> FragmentAttributeWrapper::read(const std::string& key) noexcept
+	{
+		auto bgfx = AttribUtils::getBgfx(key);
+		if (bgfx == bgfx::Attrib::Count)
+		{
+			_def.set_name(key);
+		}
+		else
+		{
+			_def.set_name(AttribUtils::getBgfxName(bgfx));
+		}
+		_def.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
+		auto group = AttribUtils::getGroup(bgfx);
+		if (group == AttribGroup::Color)
+		{
+			_def.set_num(4);
+			auto def = _def.mutable_default_value();
+			def->set_x(1);
+			def->set_y(1);
+			def->set_z(1);
+			def->set_w(1);
+		}
+		else if (group == AttribGroup::Texture)
+		{
+			_def.set_num(2);
+			auto def = _def.mutable_default_value();
+			def->set_x(0);
+			def->set_y(0);
+		}
+		else if (bgfx == bgfx::Attrib::Indices)
+		{
+			_def.set_num(4);
+			auto def = _def.mutable_default_value();
+			def->set_x(-1);
+			def->set_y(-1);
+			def->set_z(-1);
+			def->set_w(-1);
+		}
+		else if (bgfx == bgfx::Attrib::Weight)
+		{
+			_def.set_num(4);
+			auto def = _def.mutable_default_value();
+			def->set_x(1);
+			def->set_y(0);
+			def->set_z(0);
+			def->set_w(0);
+		}
+		else if (bgfx == bgfx::Attrib::Normal)
+		{
+			_def.set_num(3);
+			auto def = _def.mutable_default_value();
+			def->set_x(0);
+			def->set_y(0);
+			def->set_z(1);
+		}
+		else if (bgfx == bgfx::Attrib::Tangent)
+		{
+			_def.set_num(3);
+			auto def = _def.mutable_default_value();
+			def->set_x(1);
+			def->set_y(0);
+			def->set_z(0);
+		}
+		else if (bgfx == bgfx::Attrib::Bitangent)
+		{
+			_def.set_num(3);
+			auto def = _def.mutable_default_value();
+			def->set_x(0);
+			def->set_y(1);
+			def->set_z(0);
+		}
+		else
+		{
+			_def.set_num(3);
+			auto def = _def.mutable_default_value();
+			def->set_x(0);
+			def->set_y(0);
+			def->set_z(0);
+		}
+		return {};
+	}
+
+	expected<void, std::string> FragmentAttributeWrapper::read(const std::string& key, const nlohmann::json& json) noexcept
+	{
+		auto result = read(key);
+		if (!result)
+		{
+			return result;
+		}
+		auto type = json.type();
+
+		auto setDefaultArray = [this](const nlohmann::json& json)
 			{
-				attrib.set_num(2);
-			}
-			else if (group == AttribGroup::Skinning)
-			{
-				attrib.set_num(4);
-			}
+				auto def = _def.mutable_default_value();
+				auto size = json.size();
+				if (0 < size)
+				{
+					def->set_x(json[0]);
+				}
+				if (1 < size)
+				{
+					def->set_y(json[1]);
+				}
+				if (2 < size)
+				{
+					def->set_z(json[2]);
+				}
+				if (3 < size)
+				{
+					def->set_w(json[3]);
+				}
+				_def.set_num(size);
+				return size;
+			};
+
+		if (type == nlohmann::json::value_t::array)
+		{
+			auto defaultValue = json.get<std::vector<float>>();
+			setDefaultArray(defaultValue);
+		}
+		if (type != nlohmann::json::value_t::object)
+		{
+			_def.set_num(json);
 			return {};
 		}
-
-		expected<void, std::string> read(VertexAttribute& attrib, const std::string& key, const nlohmann::json& json) noexcept
+		if (json.contains("default"))
 		{
-			auto bgfx = AttribUtils::getBgfx(key);
-			if (bgfx == bgfx::Attrib::Count)
-			{
-				return unexpected<std::string>("invalid key: " + key);
-			}
-			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
-			if (json.contains("type"))
-			{
-				auto typeStr = json["type"].get<std::string_view>();
-				auto bgfxType = AttribUtils::getBgfxType(typeStr);
-				if (bgfxType == bgfx::AttribType::Count)
-				{
-					return unexpected<std::string>("invalid type: " + key);
-				}
-				attrib.set_bgfx_type(protobuf::Bgfx::AttribType(bgfxType));
-			}
-			if (json.contains("num"))
-			{
-				attrib.set_num(json["num"]);
-			}
-			if (json.contains("normalize"))
-			{
-				attrib.set_normalize(json["normalize"]);
-			}
-			if (json.contains("int"))
-			{
-				attrib.set_as_int(json["int"]);
-			}
-			return {};
+			auto defaultValue = json["default"].get<std::vector<float>>();
+			setDefaultArray(defaultValue);
 		}
-
-		expected<void, std::string> read(FragmentAttribute& attrib, const std::string& key) noexcept
+		if (json.contains("num"))
 		{
-			auto bgfx = AttribUtils::getBgfx(key);
-			if (bgfx == bgfx::Attrib::Count)
-			{
-				attrib.set_name(key);
-			}
-			else
-			{
-				attrib.set_name(AttribUtils::getBgfxName(bgfx));
-			}
-			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfx));
-			auto group = AttribUtils::getGroup(bgfx);
-			if (group == AttribGroup::Color)
-			{
-				attrib.set_num(4);
-				auto def = attrib.mutable_default_value();
-				def->set_x(1);
-				def->set_y(1);
-				def->set_z(1);
-				def->set_w(1);
-			}
-			else if (group == AttribGroup::Texture)
-			{
-				attrib.set_num(2);
-				auto def = attrib.mutable_default_value();
-				def->set_x(0);
-				def->set_y(0);
-			}
-			else if (bgfx == bgfx::Attrib::Indices)
-			{
-				attrib.set_num(4);
-				auto def = attrib.mutable_default_value();
-				def->set_x(-1);
-				def->set_y(-1);
-				def->set_z(-1);
-				def->set_w(-1);
-			}
-			else if (bgfx == bgfx::Attrib::Weight)
-			{
-				attrib.set_num(4);
-				auto def = attrib.mutable_default_value();
-				def->set_x(1);
-				def->set_y(0);
-				def->set_z(0);
-				def->set_w(0);
-			}
-			else if (bgfx == bgfx::Attrib::Normal)
-			{
-				attrib.set_num(3);
-				auto def = attrib.mutable_default_value();
-				def->set_x(0);
-				def->set_y(0);
-				def->set_z(1);
-			}
-			else if (bgfx == bgfx::Attrib::Tangent)
-			{
-				attrib.set_num(3);
-				auto def = attrib.mutable_default_value();
-				def->set_x(1);
-				def->set_y(0);
-				def->set_z(0);
-			}
-			else if (bgfx == bgfx::Attrib::Bitangent)
-			{
-				attrib.set_num(3);
-				auto def = attrib.mutable_default_value();
-				def->set_x(0);
-				def->set_y(1);
-				def->set_z(0);
-			}
-			else
-			{
-				attrib.set_num(3);
-				auto def = attrib.mutable_default_value();
-				def->set_x(0);
-				def->set_y(0);
-				def->set_z(0);
-			}
-			return {};
+			_def.set_num(json["num"]);
 		}
+		return {};
+	}
 
-		expected<void, std::string> read(FragmentAttribute& attrib, const std::string& key, const nlohmann::json& json) noexcept
+	ConstVertexLayoutWrapper::ConstVertexLayoutWrapper(const Definition& def)
+		: _def{ def }
+	{
+	}
+
+	bgfx::VertexLayout ConstVertexLayoutWrapper::getBgfx(const AttribGroups& disabledGroups) noexcept
+	{
+		bgfx::VertexLayout bgfxLayout;
+		bgfxLayout.begin();
+		for (auto& attib : _def.attributes())
 		{
-			auto result = read(attrib, key);
-			if (!result)
+			auto bgfx = bgfx::Attrib::Enum(attib.bgfx());
+			if (AttribUtils::inGroups(bgfx, disabledGroups))
 			{
-				return result;
+				continue;
 			}
-			auto type = json.type();
-
-			auto setDefaultArray = [&attrib](const nlohmann::json& json)
-				{
-					auto def = attrib.mutable_default_value();
-					auto size = json.size();
-					if (0 < size)
-					{
-						def->set_x(json[0]);
-					}
-					if (1 < size)
-					{
-						def->set_y(json[1]);
-					}
-					if (2 < size)
-					{
-						def->set_z(json[2]);
-					}
-					if (3 < size)
-					{
-						def->set_w(json[3]);
-					}
-					attrib.set_num(size);
-					return size;
-				};
-
-			if (type == nlohmann::json::value_t::array)
-			{
-				auto defaultValue = json.get<std::vector<float>>();
-				setDefaultArray(defaultValue);
-			}
-			if (type != nlohmann::json::value_t::object)
-			{
-				attrib.set_num(json);
-				return {};
-			}
-			if (json.contains("default"))
-			{
-				auto defaultValue = json["default"].get<std::vector<float>>();
-				setDefaultArray(defaultValue);
-			}
-			if (json.contains("num"))
-			{
-				attrib.set_num(json["num"]);
-			}
-			return {};
+			ConstVertexAttributeWrapper{ attib }.addToBgfx(bgfxLayout);
 		}
+		bgfxLayout.end();
+		return bgfxLayout;
+	}
 
-		void addVertexAttribute(bgfx::VertexLayout& layout, const VertexAttribute& attrib) noexcept
+	bgfx::VertexLayout ConstVertexLayoutWrapper::getBgfx(const AttribDefines& defines) noexcept
+	{
+		AttribGroups disabledGroups;
+		AttribUtils::getDisabledGroups(defines, disabledGroups);
+		return getBgfx(disabledGroups);
+	}
+
+	VertexLayoutWrapper::VertexLayoutWrapper(Definition& def)
+		: ConstVertexLayoutWrapper(def)
+		, _def{ def }
+	{
+	}
+
+	void VertexLayoutWrapper::read(const bgfx::VertexLayout& bgfxLayout) noexcept
+	{
+		std::map<uint16_t, Attribute> items;
+		for (auto i = 0; i < bgfx::Attrib::Count; i++)
 		{
-			auto bgfx = bgfx::Attrib::Enum(attrib.bgfx());
-			auto bgfxType = bgfx::AttribType::Enum(attrib.bgfx_type());
-			layout.add(bgfx, attrib.num(), bgfxType, attrib.normalize(), attrib.as_int());
+			const auto bgfxAttrib = static_cast<bgfx::Attrib::Enum>(i);
+			if (!bgfxLayout.has(bgfxAttrib))
+			{
+				continue;
+			}
+			auto offset = bgfxLayout.getOffset(bgfxAttrib);
+			bgfx::AttribType::Enum bgfxAttribType;
+			uint8_t num;
+			bool normalize, asInt;
+			bgfxLayout.decode(bgfxAttrib, num, bgfxAttribType, normalize, asInt);
+			auto& attrib = items[offset];
+			attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfxAttrib));
+			attrib.set_num(num);
+			attrib.set_bgfx_type(protobuf::Bgfx::AttribType(bgfxAttribType));
+			attrib.set_normalize(normalize);
+			attrib.set_as_int(asInt);
 		}
-
-		bgfx::VertexLayout getBgfx(const VertexLayout& layout, const AttribGroups& disabledGroups) noexcept
+		for (auto& [_, attrib] : items)
 		{
-			bgfx::VertexLayout bgfxLayout;
-			bgfxLayout.begin();
-			for (auto& attib : layout.attributes())
-			{
-				auto bgfx = bgfx::Attrib::Enum(attib.bgfx());
-				if (AttribUtils::inGroups(bgfx, disabledGroups))
-				{
-					continue;
-				}
-				addVertexAttribute(bgfxLayout, attib);
-			}
-			bgfxLayout.end();
-			return bgfxLayout;
+			*_def.add_attributes() = attrib;
 		}
+	}
 
-		bgfx::VertexLayout getBgfx(const VertexLayout& layout, const AttribDefines& defines) noexcept
+	expected<void, std::string> VertexLayoutWrapper::read(const nlohmann::ordered_json& json) noexcept
+	{
+		auto type = json.type();
+		if (type == nlohmann::json::value_t::object)
 		{
-			AttribGroups disabledGroups;
-			AttribUtils::getDisabledGroups(defines, disabledGroups);
-			return getBgfx(layout, disabledGroups);
-		}
-
-		void read(VertexLayout& layout, const bgfx::VertexLayout& bgfxLayout) noexcept
-		{
-			std::map<uint16_t, VertexAttribute> items;
-			for (auto i = 0; i < bgfx::Attrib::Count; i++)
-			{
-				const auto bgfxAttrib = static_cast<bgfx::Attrib::Enum>(i);
-				if (!bgfxLayout.has(bgfxAttrib))
-				{
-					continue;
-				}
-				auto offset = bgfxLayout.getOffset(bgfxAttrib);
-				bgfx::AttribType::Enum bgfxAttribType;
-				uint8_t num;
-				bool normalize, asInt;
-				bgfxLayout.decode(bgfxAttrib, num, bgfxAttribType, normalize, asInt);
-				auto& attrib = items[offset];
-				attrib.set_bgfx(protobuf::Bgfx::Attrib(bgfxAttrib));
-				attrib.set_num(num);
-				attrib.set_bgfx_type(protobuf::Bgfx::AttribType(bgfxAttribType));
-				attrib.set_normalize(normalize);
-				attrib.set_as_int(asInt);
-			}
-			for (auto& [_, attrib] : items)
-			{
-				*layout.add_attributes() = attrib;
-			}
-		}
-
-		expected<void, std::string> read(VertexLayout& layout, const nlohmann::ordered_json& json) noexcept
-		{
-			auto type = json.type();
-			if (type == nlohmann::json::value_t::object)
-			{
-				for (auto& elm : json.items())
-				{
-					auto& attrib = *layout.add_attributes();
-					auto result = read(attrib, elm.key(), elm.value());
-					if (!result)
-					{
-						return result;
-					}
-				}
-				return {};
-			}
-			if (type != nlohmann::json::value_t::array)
-			{
-				return {};
-			}
-			for (auto& elm : json)
-			{
-				auto& attrib = *layout.add_attributes();
-				if (elm.is_object())
-				{
-					auto result = read(attrib, elm["name"], elm);
-					if (!result)
-					{
-						return result;
-					}
-				}
-				else
-				{
-					auto result = read(attrib, elm);
-					if (!result)
-					{
-						return result;
-					}
-				}
-			}
-			return {};
-		}
-
-		bgfx::Attrib::Enum getUnusedAttrib(const FragmentLayout& layout, const std::vector<bgfx::Attrib::Enum>& used) noexcept
-		{
-			for (auto i = bgfx::Attrib::TexCoord0; i < bgfx::Attrib::TexCoord7; i = (bgfx::Attrib::Enum)(i + 1))
-			{
-				auto itr1 = std::find(used.begin(), used.end(), i);
-				if (itr1 != used.end())
-				{
-					continue;
-				}
-				auto& attributes = layout.attributes();
-				auto itr2 = std::find_if(attributes.begin(), attributes.end(), [i](auto& elm) { return elm.bgfx() == i; });
-				if (itr2 == attributes.end())
-				{
-					return i;
-				}
-			}
-			return bgfx::Attrib::Count;
-		}
-
-		expected<void, std::string> read(FragmentLayout& layout, const nlohmann::ordered_json& json) noexcept
-		{
-			auto type = json.type();
-			if (type == nlohmann::json::value_t::object)
-			{
-				for (auto& elm : json.items())
-				{
-					auto& attrib = *layout.add_attributes();
-					auto result = read(attrib, elm.key(), elm.value());
-					if (!result)
-					{
-						return result;
-					}
-				}
-				return {};
-			}
-			if (type != nlohmann::json::value_t::array)
-			{
-				return unexpected<std::string>{"invalid json type"};
-			}
-			for (auto& elm : json)
-			{
-				auto& attrib = *layout.add_attributes();
-				auto type = elm.type();
-				if (type == nlohmann::json::value_t::object)
-				{
-					auto result = read(attrib, elm["name"], elm);
-					if (!result)
-					{
-						return result;
-					}
-				}
-				else if (type == nlohmann::json::value_t::array)
-				{
-					auto result = read(attrib, elm[0], elm[1]);
-					if (!result)
-					{
-						return result;
-					}
-				}
-				else
-				{
-					auto result = read(attrib, elm);
-					if (!result)
-					{
-						return result;
-					}
-				}
-			}
-			return {};
-		}
-
-		expected<void, std::string> read(VaryingDefinition& varying, const nlohmann::ordered_json& json) noexcept
-		{
-			constexpr std::string_view vertexJsonKey = "vertex";
-			constexpr std::string_view fragmentJsonKey = "fragment";
-
 			for (auto& elm : json.items())
 			{
-				if (elm.key().starts_with(vertexJsonKey))
+				auto& attrib = *_def.add_attributes();
+				VertexAttributeWrapper wrapper{ attrib };
+				auto result = wrapper.read(elm.key(), elm.value());
+				if (!result)
 				{
-					auto result = read(*varying.mutable_vertex(), elm.value());
-					if (!result)
-					{
-						return result;
-					}
-				}
-				else if (elm.key().starts_with(fragmentJsonKey))
-				{
-					auto result = read(*varying.mutable_fragment(), elm.value());
-					if (!result)
-					{
-						return result;
-					}
+					return result;
 				}
 			}
 			return {};
 		}
-
-		expected<void, std::string> read(VaryingDefinition& varying, const std::filesystem::path& path) noexcept
+		if (type != nlohmann::json::value_t::array)
 		{
-			auto [input, format] = protobuf::createInputStream(path);
-			if (format == protobuf::Format::Json)
-			{
-				return read(varying, nlohmann::ordered_json::parse(input));
-			}
-			return protobuf::read(varying, input, format);
+			return {};
 		}
-
-		std::string getBgfxTypeName(bgfx::Attrib::Enum val) noexcept
+		for (auto& elm : json)
 		{
-			if (val == bgfx::Attrib::Indices)
-			{
-				return "BLENDINDICES";
-			}
-			if (val == bgfx::Attrib::Weight)
-			{
-				return "BLENDWEIGHT";
-			}
-			if (val == bgfx::Attrib::Bitangent)
-			{
-				return "BINORMAL";
-			}
-			return StringUtils::toUpper(AttribUtils::getBgfxName(val));
-		}
+			auto& attrib = *_def.add_attributes();
+			VertexAttributeWrapper wrapper{ attrib };
 
-		std::string getBgfxVarTypeName(uint8_t num) noexcept
-		{
-			if (num <= 1)
+			if (elm.is_object())
 			{
-				return "float";
-			}
-			return "vec" + std::to_string(num);
-		}
-
-		void writeBgfx(const VaryingDefinition& varying, std::ostream& out, const AttribGroups& disabledGroups) noexcept
-		{
-			static const std::string instrEnd = ";";
-			std::vector<bgfx::Attrib::Enum> usedTypes;
-			for (auto& attrib : varying.fragment().attributes())
-			{
-				auto bgfxAttrib = bgfx::Attrib::Enum(attrib.bgfx());
-				if (AttribUtils::inGroups(bgfxAttrib, disabledGroups))
+				auto result = wrapper.read(elm["name"], elm);
+				if (!result)
 				{
-					continue;
+					return result;
 				}
-				if (bgfxAttrib == bgfx::Attrib::Position || bgfxAttrib == bgfx::Attrib::Count)
+			}
+			else
+			{
+				auto result = wrapper.read(elm);
+				if (!result)
 				{
-					bgfxAttrib = getUnusedAttrib(varying.fragment(), usedTypes);
+					return result;
 				}
-				usedTypes.push_back(bgfxAttrib);
-				out << getBgfxVarTypeName(attrib.num()) << " v_" << attrib.name();
-				out << " : " << getBgfxTypeName(bgfxAttrib);
-				if (attrib.has_default_value())
+			}
+		}
+		return {};
+	}
+
+	ConstFragmentLayoutWrapper::ConstFragmentLayoutWrapper(const Definition& def)
+		: _def{ def }
+	{
+	}
+
+	bgfx::Attrib::Enum ConstFragmentLayoutWrapper::getUnusedAttrib(const std::vector<bgfx::Attrib::Enum>& used) noexcept
+	{
+		for (auto i = bgfx::Attrib::TexCoord0; i < bgfx::Attrib::TexCoord7; i = (bgfx::Attrib::Enum)(i + 1))
+		{
+			auto itr1 = std::find(used.begin(), used.end(), i);
+			if (itr1 != used.end())
+			{
+				continue;
+			}
+			auto& attributes = _def.attributes();
+			auto itr2 = std::find_if(attributes.begin(), attributes.end(), [i](auto& elm) { return elm.bgfx() == i; });
+			if (itr2 == attributes.end())
+			{
+				return i;
+			}
+		}
+		return bgfx::Attrib::Count;
+	}
+
+	FragmentLayoutWrapper::FragmentLayoutWrapper(Definition& def)
+		: ConstFragmentLayoutWrapper(def)
+		, _def{ def }
+	{
+	}
+
+	expected<void, std::string> FragmentLayoutWrapper::read(const nlohmann::ordered_json& json) noexcept
+	{
+		auto type = json.type();
+		if (type == nlohmann::json::value_t::object)
+		{
+			for (auto& elm : json.items())
+			{
+				auto& attrib = *_def.add_attributes();
+				FragmentAttributeWrapper wrapper{ attrib };
+				auto result = wrapper.read(elm.key(), elm.value());
+				if (!result)
 				{
-					auto& def = attrib.default_value();
-					auto size = attrib.num();
-					if (size == 1)
+					return result;
+				}
+			}
+			return {};
+		}
+		if (type != nlohmann::json::value_t::array)
+		{
+			return unexpected<std::string>{"invalid json type"};
+		}
+		for (auto& elm : json)
+		{
+			auto& attrib = *_def.add_attributes();
+			auto type = elm.type();
+			FragmentAttributeWrapper wrapper{ attrib };
+			if (type == nlohmann::json::value_t::object)
+			{
+				auto result = wrapper.read(elm["name"], elm);
+				if (!result)
+				{
+					return result;
+				}
+			}
+			else if (type == nlohmann::json::value_t::array)
+			{
+				auto result = wrapper.read(elm[0], elm[1]);
+				if (!result)
+				{
+					return result;
+				}
+			}
+			else
+			{
+				auto result = wrapper.read(elm);
+				if (!result)
+				{
+					return result;
+				}
+			}
+		}
+		return {};
+	}
+
+	ConstVaryingDefinitionWrapper::ConstVaryingDefinitionWrapper(const Definition def)
+		: _def{ def }
+	{
+	}
+
+	void ConstVaryingDefinitionWrapper::writeBgfx(std::ostream& out, const AttribGroups& disabledGroups) noexcept
+	{
+		static const std::string instrEnd = ";";
+		std::vector<bgfx::Attrib::Enum> usedTypes;
+		for (auto& attrib : _def.fragment().attributes())
+		{
+			auto bgfxAttrib = bgfx::Attrib::Enum(attrib.bgfx());
+			if (AttribUtils::inGroups(bgfxAttrib, disabledGroups))
+			{
+				continue;
+			}
+			if (bgfxAttrib == bgfx::Attrib::Position || bgfxAttrib == bgfx::Attrib::Count)
+			{
+				ConstFragmentLayoutWrapper wrapper{ _def.fragment() };
+				bgfxAttrib = wrapper.getUnusedAttrib(usedTypes);
+			}
+			usedTypes.push_back(bgfxAttrib);
+			out << getBgfxVarTypeName(attrib.num()) << " v_" << attrib.name();
+			out << " : " << getBgfxTypeName(bgfxAttrib);
+			if (attrib.has_default_value())
+			{
+				auto& def = attrib.default_value();
+				auto size = attrib.num();
+				if (size == 1)
+				{
+					out << def.x();
+				}
+				else if (size > 0)
+				{
+					out << " = vec" << size << "(" << def.x();
+					if (size > 1)
 					{
-						out << def.x();
+						out << ", " << def.y();
 					}
-					else if (size > 0)
+					if (size > 2)
 					{
-						out << " = vec" << size << "(" << def.x();
-						if (size > 1)
-						{
-							out << ", " << def.y();
-						}
-						if (size > 2)
-						{
-							out << ", " << def.z();
-						}
-						if (size > 3)
-						{
-							out << ", " << def.w();
-						}
-						out << ")";
+						out << ", " << def.z();
 					}
+					if (size > 3)
+					{
+						out << ", " << def.w();
+					}
+					out << ")";
 				}
-				out << instrEnd << std::endl;
 			}
-			out << std::endl;
-			for (auto& attrib : varying.vertex().attributes())
+			out << instrEnd << std::endl;
+		}
+		out << std::endl;
+		for (auto& attrib : _def.vertex().attributes())
+		{
+			auto bgfxAttrib = bgfx::Attrib::Enum(attrib.bgfx());
+			if (AttribUtils::inGroups(bgfxAttrib, disabledGroups))
 			{
-				auto bgfxAttrib = bgfx::Attrib::Enum(attrib.bgfx());
-				if (AttribUtils::inGroups(bgfxAttrib, disabledGroups))
-				{
-					continue;
-				}
-				out << getBgfxVarTypeName(attrib.num()) << " a_" << AttribUtils::getBgfxName(bgfxAttrib);
-				out << " : " << getBgfxTypeName(bgfxAttrib) << instrEnd << std::endl;
+				continue;
 			}
-
-			// TODO: support instance attributes
-			// vec4 i_data0 : TEXCOORD7;
-			// https://bkaradzic.github.io/bgfx/tools.html#vertex-shader-attributes
+			out << getBgfxVarTypeName(attrib.num()) << " a_" << AttribUtils::getBgfxName(bgfxAttrib);
+			out << " : " << getBgfxTypeName(bgfxAttrib) << instrEnd << std::endl;
 		}
 
-		void writeBgfx(const VaryingDefinition& varying, std::ostream& out, const AttribDefines& defines) noexcept
+		// TODO: support instance attributes
+		// vec4 i_data0 : TEXCOORD7;
+		// https://bkaradzic.github.io/bgfx/tools.html#vertex-shader-attributes
+	}
+
+	void ConstVaryingDefinitionWrapper::writeBgfx(std::ostream& out, const AttribDefines& defines) noexcept
+	{
+		AttribGroups disabledGroups;
+		AttribUtils::getDisabledGroups(defines, disabledGroups);
+		writeBgfx(out, disabledGroups);
+	}
+
+	void ConstVaryingDefinitionWrapper::writeBgfx(const std::filesystem::path& path) noexcept
+	{
+		std::ofstream out{ path };
+		writeBgfx(out);
+	}
+
+	std::string ConstVaryingDefinitionWrapper::getBgfxTypeName(bgfx::Attrib::Enum val) noexcept
+	{
+		if (val == bgfx::Attrib::Indices)
 		{
-			AttribGroups disabledGroups;
-			AttribUtils::getDisabledGroups(defines, disabledGroups);
-			writeBgfx(varying, out, disabledGroups);
+			return "BLENDINDICES";
 		}
-
-		void writeBgfx(const VaryingDefinition& varying, const std::filesystem::path& path) noexcept
+		if (val == bgfx::Attrib::Weight)
 		{
-			std::ofstream out(path);
-			writeBgfx(varying, out);
+			return "BLENDWEIGHT";
 		}
+		if (val == bgfx::Attrib::Bitangent)
+		{
+			return "BINORMAL";
+		}
+		return StringUtils::toUpper(AttribUtils::getBgfxName(val));
+	}
+
+	std::string ConstVaryingDefinitionWrapper::getBgfxVarTypeName(uint8_t num) noexcept
+	{
+		if (num <= 1)
+		{
+			return "float";
+		}
+		return "vec" + std::to_string(num);
+	}
+
+	VaryingDefinitionWrapper::VaryingDefinitionWrapper(Definition def)
+		: ConstVaryingDefinitionWrapper(def)
+		, _def{ def }
+	{
+	}
+
+	expected<void, std::string> VaryingDefinitionWrapper::read(const nlohmann::ordered_json& json) noexcept
+	{
+		constexpr std::string_view vertexJsonKey = "vertex";
+		constexpr std::string_view fragmentJsonKey = "fragment";
+
+		for (auto& elm : json.items())
+		{
+			if (elm.key().starts_with(vertexJsonKey))
+			{
+				VertexLayoutWrapper wrapper{ *_def.mutable_vertex() };
+				auto result = wrapper.read(elm.value());
+				if (!result)
+				{
+					return result;
+				}
+			}
+			else if (elm.key().starts_with(fragmentJsonKey))
+			{
+				FragmentLayoutWrapper wrapper{ *_def.mutable_fragment() };
+				auto result = wrapper.read(elm.value());
+				if (!result)
+				{
+					return result;
+				}
+			}
+		}
+		return {};
+	}
+
+	expected<void, std::string> VaryingDefinitionWrapper::read(const std::filesystem::path& path) noexcept
+	{
+		auto [input, format] = protobuf::createInputStream(path);
+		if (format == protobuf::Format::Json)
+		{
+			return read(nlohmann::ordered_json::parse(input));
+		}
+		return protobuf::read(_def, input, format);
 	}
 }
 
@@ -747,8 +801,8 @@ namespace bgfx
 
 std::string to_string(const bgfx::VertexLayout& bgfxLayout) noexcept
 {
-	darmok::VertexLayout layout;
-	darmok::VaryingUtils::read(layout, bgfxLayout);
+	darmok::protobuf::VertexLayout layout;
+	darmok::VertexLayoutWrapper{ layout }.read(bgfxLayout);
 	return std::string("VertexLayout:\n") + layout.DebugString();
 }
 

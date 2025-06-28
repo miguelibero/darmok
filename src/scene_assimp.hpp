@@ -17,7 +17,7 @@
 #include <darmok/protobuf/light.pb.h>
 #include <darmok/protobuf/assimp.pb.h>
 #include <darmok/protobuf/skeleton.pb.h>
-#include <darmok/protobuf/skeleton.pb.h>
+#include <darmok/protobuf/varying.pb.h>
 
 #include <string_view>
 #include <memory>
@@ -200,6 +200,6 @@ namespace darmok
         std::shared_ptr<aiScene> _currentScene;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
-        static expected<VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);
+        static expected<protobuf::VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

@@ -16,11 +16,26 @@ namespace darmok
         class Transform;
     }
 
-    namespace TransformUtils
+    class ConstTransformDefinitionWrapper
     {
+    public:
         using Definition = protobuf::Transform;
-        void update(Definition& trans, const glm::mat4& mat) noexcept;
-    }
+        ConstTransformDefinitionWrapper(const Definition& def) noexcept;
+        glm::mat4 getLocalMatrix() noexcept;
+    private:
+        const Definition& _def;
+    };
+
+    class TransformDefinitionWrapper final : public ConstTransformDefinitionWrapper
+    {
+    public:
+        TransformDefinitionWrapper(Definition& def) noexcept;
+        TransformDefinitionWrapper& setLocalMatrix(const glm::mat4& mat) noexcept;
+        TransformDefinitionWrapper& setParent(Entity parentEntity) noexcept;
+        TransformDefinitionWrapper& setName(const std::string& name) noexcept;
+    private:
+        Definition& _def;
+    };
 
     class IComponentLoadContext;
 

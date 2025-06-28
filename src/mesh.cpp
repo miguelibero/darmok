@@ -36,7 +36,7 @@ namespace darmok
 			return unexpected<std::string>{ "No program found for mesh source" };
 		}
 
-		auto layout = VaryingUtils::getBgfx(progDef->varying().vertex());
+		auto layout = ConstVertexLayoutWrapper{ progDef->varying().vertex() }.getBgfx();
 
 		std::shared_ptr<IMesh::Definition> defPtr;
 		MeshConfig config{ .index32 = src->index32() };
