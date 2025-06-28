@@ -417,7 +417,7 @@ namespace darmok
 				{
 					return unexpected{ texResult.error() };
 				}
-				auto imgResult = TextureUtils::writeImage(*texResult.value(), imgLoad->alloc, imagePath);
+				auto imgResult = TextureDefinitionWrapper{ *texResult.value() }.writeImage(imgLoad->alloc, imagePath);
 				if (!imgResult)
 				{
 					return unexpected{ imgResult.error() };

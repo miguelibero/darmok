@@ -54,7 +54,7 @@ namespace darmok::editor
             if (!_tex)
             {
                 Texture::Definition def;
-                auto loadResult = TextureUtils::loadSource(def, src, _app->getAssets().getAllocator());
+                auto loadResult = TextureDefinitionWrapper{ def }.loadSource(src, _app->getAssets().getAllocator());
                 if (loadResult)
                 {
 					_tex.emplace(def);

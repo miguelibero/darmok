@@ -22,16 +22,40 @@ namespace darmok
 {
 	const uint64_t defaultTextureLoadFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
 
-	namespace TextureUtils
+	class ConstTextureSourceWrapper
 	{
-		expected<void, std::string> loadSource(protobuf::Texture& def, const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept;
-		void loadImage(protobuf::Texture& def, const Image& img) noexcept;
-		expected<Image, std::string> createImage(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept;
-		expected<Image, std::string> createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept;
-		expected<void, std::string> writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept;
-		bgfx::TextureInfo getInfo(const protobuf::TextureConfig& config) noexcept;
-		const protobuf::TextureConfig& getEmptyConfig() noexcept;
-	}
+	public:
+		using Source = protobuf::TextureSource;
+		ConstTextureSourceWrapper(const Source& src) noexcept;
+
+		expected<Image, std::string> createImage(bx::AllocatorI& alloc) noexcept;
+	private:
+		const Source& _src;
+	};
+
+	class ConstTextureDefinitionWrapper
+	{
+	public:
+		using Definition = protobuf::Texture;
+		ConstTextureDefinitionWrapper(const Definition& def) noexcept;
+
+		expected<Image, std::string> createImage(bx::AllocatorI& alloc) noexcept;
+		expected<void, std::string> writeImage(bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept;
+
+	private:
+		const Definition& _def;
+	};
+
+	class TextureDefinitionWrapper final : public ConstTextureDefinitionWrapper
+	{
+	public:
+		TextureDefinitionWrapper(Definition& def) noexcept;
+
+		expected<void, std::string> loadSource(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept;
+		expected<void, std::string> loadImage(const Image& img) noexcept;
+	private:
+		Definition& _def;
+	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<protobuf::Texture>
 	{
@@ -93,6 +117,9 @@ namespace darmok
 		[[nodiscard]] uint32_t getStorageSize() const noexcept;
 		[[nodiscard]] uint8_t getMipsCount() const noexcept;
 		[[nodiscard]] uint8_t getBitsPerPixel() const noexcept;
+
+		bgfx::TextureInfo getInfo() const noexcept;
+		static const protobuf::TextureConfig& getEmptyConfig() noexcept;
 
 		Texture& setName(std::string_view name) noexcept;
 

@@ -647,8 +647,11 @@ namespace darmok
             DataView data{ assimpTex->pcData, size };
             texDef.set_name(path);
             // TODO: can we read the texture config?
-            TextureUtils::loadImage(texDef, Image{ data, _allocator, format });
-
+            auto imgResult = TextureDefinitionWrapper{ texDef }.loadImage(Image{ data, _allocator, format });
+            if (!imgResult)
+            {
+                return false;
+            }
         }
         else if (_texLoader)
         {

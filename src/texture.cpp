@@ -6,43 +6,36 @@
 
 namespace darmok
 {
-	expected<void, std::string> TextureUtils::loadSource(protobuf::Texture& def, const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept
+	ConstTextureSourceWrapper::ConstTextureSourceWrapper(const Source& src) noexcept
+		: _src{ src }
 	{
-		auto result = createImage(src, alloc);
+	}
+
+	expected<Image, std::string> ConstTextureSourceWrapper::createImage(bx::AllocatorI& alloc) noexcept
+	{
+		return Image{ DataView{ _src.image_data() }, alloc, static_cast<bimg::TextureFormat::Enum>(_src.format()) };
+	}
+
+	ConstTextureDefinitionWrapper::ConstTextureDefinitionWrapper(const Definition& def) noexcept
+		: _def{ def }
+	{
+	}
+
+	expected<Image, std::string> ConstTextureDefinitionWrapper::createImage(bx::AllocatorI& alloc) noexcept
+	{
+		auto size = protobuf::convert(_def.config().size());
+		Image img{ size, alloc, static_cast<bimg::TextureFormat::Enum>(_def.config().format()) };
+		auto result = img.setData(DataView{ _def.data() });
 		if (!result)
-		{
-			return unexpected{ result.error() };
-		}
-		loadImage(def, result.value());
-		return {};
-	}
-
-	void TextureUtils::loadImage(protobuf::Texture& def, const Image& img) noexcept
-	{
-		def.set_data(img.getData().toString());
-		*def.mutable_config() = img.getTextureConfig();
-	}
-
-	expected<Image, std::string> TextureUtils::createImage(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept
-	{
-		return Image{ DataView{ src.image_data() }, alloc, static_cast<bimg::TextureFormat::Enum>(src.format()) };
-	}
-
-	expected<Image, std::string> TextureUtils::createImage(const protobuf::Texture& def, bx::AllocatorI& alloc) noexcept
-	{
-		auto size = protobuf::convert(def.config().size());
-		Image img{ size, alloc, static_cast<bimg::TextureFormat::Enum>(def.config().format()) };
-		auto result = img.setData(DataView{ def.data() });
-		if(!result)
 		{
 			return unexpected{ result.error() };
 		}
 		return img;
 	}
 
-	expected<void, std::string> TextureUtils::writeImage(const protobuf::Texture& def, bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept
+	expected<void, std::string> ConstTextureDefinitionWrapper::writeImage(bx::AllocatorI& alloc, const std::filesystem::path& path) noexcept
 	{
-		auto result = createImage(def, alloc);
+		auto result = createImage(alloc);
 		if (!result)
 		{
 			return unexpected{ result.error() };
@@ -52,22 +45,29 @@ namespace darmok
 		std::ofstream out{ path, std::ios::binary };
 		return img.write(encoding, out);
 	}
-	 
-	bgfx::TextureInfo TextureUtils::getInfo(const protobuf::TextureConfig& config) noexcept
+
+	TextureDefinitionWrapper::TextureDefinitionWrapper(Definition& def) noexcept
+		: ConstTextureDefinitionWrapper{ def }
+		, _def { def }
 	{
-		bgfx::TextureInfo info;
-		auto cubeMap = config.type() == Texture::Definition::CubeMap;
-		auto format = static_cast<bgfx::TextureFormat::Enum>(config.format());
-		bgfx::calcTextureSize(info, config.size().x(), config.size().y(),
-			config.depth(), cubeMap, config.mips(), config.layers(), format);
-		return info;
 	}
 
-	const protobuf::TextureConfig& TextureUtils::getEmptyConfig() noexcept
+	expected<void, std::string> TextureDefinitionWrapper::loadSource(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept
 	{
-		static const protobuf::TextureConfig config;
-		return config;
+		auto result = ConstTextureSourceWrapper{ src }.createImage(alloc);
+		if (!result)
+		{
+			return unexpected{ result.error() };
+		}
+		return loadImage(result.value());
 	}
+
+	expected<void, std::string> TextureDefinitionWrapper::loadImage(const Image& img) noexcept
+	{
+		_def.set_data(img.getData().toString());
+		*_def.mutable_config() = img.getTextureConfig();
+		return {};
+	}	
 
 	ImageTextureDefinitionLoader::ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept
 		: _imgLoader{ imgLoader }
@@ -105,7 +105,11 @@ namespace darmok
 
 		auto def = std::make_shared<Texture::Definition>();
 		def->set_flags(_loadFlags);
-		TextureUtils::loadImage(*def, *img);
+		auto loadResult = TextureDefinitionWrapper{ *def }.loadImage(*img);
+		if (!loadResult)
+		{
+			return unexpected{ loadResult.error() };
+		}
 		return def;
 	}
 
@@ -386,7 +390,7 @@ namespace darmok
 		, _config{ other._config }
 	{
 		other._handle.idx = bgfx::kInvalidHandle;
-		other._config = TextureUtils::getEmptyConfig();
+		other._config = getEmptyConfig();
 	}
 
 	Texture& Texture::operator=(Texture&& other) noexcept
@@ -394,7 +398,7 @@ namespace darmok
 		_handle = other._handle;
 		_config = other._config;
 		other._handle.idx = bgfx::kInvalidHandle;
-		other._config = TextureUtils::getEmptyConfig();
+		other._config = getEmptyConfig();
 		return *this;
 	}
 
@@ -406,19 +410,35 @@ namespace darmok
 		}
 	}
 
+	bgfx::TextureInfo Texture::getInfo() const noexcept
+	{
+		bgfx::TextureInfo info;
+		auto cubeMap = _config.type() == Texture::Definition::CubeMap;
+		auto format = static_cast<bgfx::TextureFormat::Enum>(_config.format());
+		bgfx::calcTextureSize(info, _config.size().x(), _config.size().y(),
+			_config.depth(), cubeMap, _config.mips(), _config.layers(), format);
+		return info;
+	}
+
+	const protobuf::TextureConfig& Texture::getEmptyConfig() noexcept
+	{
+		static const protobuf::TextureConfig config;
+		return config;
+	}
+
 	uint32_t Texture::getStorageSize() const noexcept
 	{
-		return TextureUtils::getInfo(_config).storageSize;
+		return getInfo().storageSize;
 	}
 
 	uint8_t Texture::getMipsCount() const noexcept
 	{
-		return TextureUtils::getInfo(_config).numMips;
+		return getInfo().numMips;
 	}
 
 	uint8_t Texture::getBitsPerPixel() const noexcept
 	{
-		return TextureUtils::getInfo(_config).bitsPerPixel;
+		return getInfo().bitsPerPixel;
 	}
 
 	expected<void, std::string> Texture::update(const DataView& data, uint8_t mip)
@@ -553,7 +573,7 @@ namespace darmok
 	TextureDefinitionFromSourceLoader::Result TextureDefinitionFromSourceLoader::create(const std::shared_ptr<protobuf::TextureSource>& src)
 	{
 		auto def = std::make_shared<protobuf::Texture>();
-		auto result = TextureUtils::loadSource(*def, *src, _alloc);
+		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, _alloc);
 		if(!result)
 		{
 			return unexpected{ result.error() };
