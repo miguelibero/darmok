@@ -69,6 +69,14 @@ namespace darmok::editor
             return scene->addComponent<T>(entity, std::forward<A>(args)...);
         }
 
+		std::optional<std::string> getAssetDragType(uint32_t assetType) const noexcept;
+
+        template<typename T>
+        std::optional<std::string> getAssetDragType() const noexcept
+        {
+            return getAssetDragType(protobuf::getTypeId<T>());
+        }
+
     private:
         App& _app;
         ProgramCompilerConfig _progCompConfig;
@@ -98,11 +106,11 @@ namespace darmok::editor
         void renderMainMenu();
         void renderMainToolbar();
         void renderDockspace();
-        void renderSceneTree();
+        bool renderSceneTree();
 
         using TransformDefinition = protobuf::Transform;
 
-        void renderSceneTreeBranch(Entity entity);
+        bool renderSceneTreeBranch(Entity entity);
         void onSceneTreeTransformClicked(Entity entity);
         void onSceneTreeSceneClicked();
 

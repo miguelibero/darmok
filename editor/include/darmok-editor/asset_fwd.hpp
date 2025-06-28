@@ -7,13 +7,14 @@
 
 namespace darmok::editor
 {
-    struct SelectedAsset
+    struct AssetHandler
     {
         uint32_t type;
         std::string path;
     };
+
     using SelectableObject = std::variant<
         Entity,
-        SelectedAsset
+        AssetHandler
     >;
 }

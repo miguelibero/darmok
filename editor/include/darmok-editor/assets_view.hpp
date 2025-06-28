@@ -30,6 +30,9 @@ namespace darmok::editor
         EditorAssetsView(std::string_view name, std::string_view dragType, uint32_t assetType);
 
         const std::string& getName() const;
+		uint32_t getAssetType() const;
+		const std::string getDragType() const;
+
         void init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate);
         void shutdown();
         void focus();

@@ -9,6 +9,7 @@
 
 #include <portable-file-dialogs.h>
 #include <imgui_stdlib.h>
+#include <fmt/format.h>
 
 namespace darmok::editor
 {
@@ -35,6 +36,125 @@ namespace darmok::editor
         auto drawList = ImGui::GetWindowDrawList();
         drawList->AddRect(min, max, borderColor, 0.0f, 0, 2.0f);
         return selected;
+    }
+
+    ReferenceInputAction ImguiUtils::drawAssetReferenceInput(const char* label, std::string& assetPath, const char* dragType)
+    {
+        ImGui::BeginDisabled(true);
+        ImGui::InputText(label, &assetPath);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
+        {
+            return ReferenceInputAction::Visit;
+        }
+
+        auto action = ReferenceInputAction::None;
+        dragType = dragType == nullptr ? label : dragType;
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+            {
+                std::string::size_type len = payload->DataSize / sizeof(std::string::value_type);
+				assetPath = std::string{ static_cast<const char*>(payload->Data), len };
+                action = ReferenceInputAction::Changed;
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        return action;
+    }
+
+    ReferenceInputAction ImguiUtils::drawProtobufAssetReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, const char* dragType) noexcept
+    {
+        auto refl = msg.GetReflection();
+        auto assetPath = refl->GetString(msg, &field);
+        auto result = drawAssetReferenceInput(label, assetPath, dragType);
+        if (result == ReferenceInputAction::Changed)
+        {
+            refl->SetString(&msg, &field, assetPath);
+        }
+        return result;
+    }
+
+
+    ReferenceInputAction ImguiUtils::drawProtobufAssetReferenceInput(const char* label, const char* fieldName, Message& msg, const char* dragType) noexcept
+    {
+        auto field = msg.GetDescriptor()->FindFieldByName(fieldName);
+        if (!field)
+        {
+            return ReferenceInputAction::None;
+        }
+        return drawProtobufAssetReferenceInput(label, *field, msg, dragType);
+    }
+
+
+    ReferenceInputAction ImguiUtils::drawEntityReferenceInput(const char* label, Entity& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef) noexcept
+    {
+        std::string name;
+        if (entity != entt::null)
+        {
+            if (sceneDef)
+            {
+                if (auto trans = sceneDef->getComponent<protobuf::Transform>(entity))
+                {
+                    name = trans->name();
+                }
+            }
+            if (name.empty())
+            {
+                name = fmt::format("Missing {}", entt::to_integral(entity));
+            }
+        }
+
+        ImGui::BeginDisabled(true);
+        ImGui::InputText(label, &name);
+        ImGui::EndDisabled();
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
+        {
+            return ReferenceInputAction::Visit;
+        }
+
+        auto action = ReferenceInputAction::None;
+        static constexpr const char* dragType = "ENTITY";
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+            {
+                IM_ASSERT(payload->DataSize == sizeof(Entity));
+                entity = *static_cast<Entity*>(payload->Data);
+                action = ReferenceInputAction::Changed;
+            }
+            ImGui::EndDragDropTarget();
+        }
+
+        return action;
+    }
+
+    ReferenceInputAction ImguiUtils::drawProtobufEntityReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef) noexcept
+    {
+        auto refl = msg.GetReflection();
+        if (field.cpp_type() != FieldDescriptor::CPPTYPE_UINT32)
+        {
+            return ReferenceInputAction::None;
+        }
+
+        auto entity = Entity{ refl->GetUInt32(msg, &field) };
+        auto result = drawEntityReferenceInput(label, entity, sceneDef);
+        if (result == ReferenceInputAction::Changed)
+        {
+            refl->SetUInt32(&msg, &field, entt::to_integral(entity));
+        }
+        return result;
+    }
+
+    ReferenceInputAction ImguiUtils::drawProtobufEntityReferenceInput(const char* label, const char* fieldName, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef) noexcept
+    {
+        auto field = msg.GetDescriptor()->FindFieldByName(fieldName);
+        if (!field)
+        {
+            return ReferenceInputAction::None;
+        }
+        return drawProtobufEntityReferenceInput(label, *field, msg, sceneDef);
     }
 
     bool ImguiUtils::drawFileInput(const char* label, std::filesystem::path& path, std::string_view filter) noexcept

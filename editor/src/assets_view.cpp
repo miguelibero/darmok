@@ -20,6 +20,16 @@ namespace darmok::editor
         return _name;
     }
 
+    uint32_t EditorAssetsView::getAssetType() const
+    {
+		return _assetType;
+    }
+
+    const std::string EditorAssetsView::getDragType() const
+    {
+        return _dragType;
+    }
+
     void EditorAssetsView::init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate)
     {
         _scene = scene;
@@ -56,7 +66,7 @@ namespace darmok::editor
                 std::optional<std::string> selectedPath;
                 if (_delegate)
                 {
-                    _delegate->getSelectedAssetPath(_assetType);
+                    selectedPath = _delegate->getSelectedAssetPath(_assetType);
                 }
                 int i = 0;
                 for (auto [path, asset] : _scene->getAssets(_assetType))
@@ -96,7 +106,7 @@ namespace darmok::editor
         {
             if (!path.empty())
             {
-                auto accepted = ImGui::SetDragDropPayload(_dragType.c_str(), path.c_str(), path.size());
+                auto accepted = ImGui::SetDragDropPayload(_dragType.c_str(), path.c_str(), sizeof(std::string::value_type) * path.size());
                 ImguiUtils::drawAsset(name.c_str(), accepted);
             }
             ImGui::EndDragDropSource();

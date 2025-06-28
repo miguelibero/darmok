@@ -27,6 +27,7 @@ namespace darmok
     class DARMOK_EXPORT Transform final
     {
     public:
+        // needed to guarantee parent-children refs
         static constexpr auto in_place_delete = true;
 
         Transform(const glm::mat4& mat, const OptionalRef<Transform>& parent = std::nullopt) noexcept;

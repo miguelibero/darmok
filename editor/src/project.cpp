@@ -251,6 +251,11 @@ namespace darmok::editor
         *camTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 1.f, -10.f });
         scene.addComponent(camEntity, camTrans);
 
+        auto lightsEntity = scene.createEntity();
+        Transform::Definition lightsTrans;
+        lightsTrans.set_name("Lighting");
+        scene.addComponent(lightsEntity, lightsTrans);
+
         auto ambLightEntity = scene.createEntity();
         AmbientLight::Definition ambLight;
         ambLight.set_intensity(0.2f);
@@ -258,6 +263,7 @@ namespace darmok::editor
         scene.addComponent(ambLightEntity, ambLight);
         Transform::Definition ambLightTrans;
         ambLightTrans.set_name("Ambient Light");
+        ambLightTrans.set_parent(entt::to_integral(lightsEntity));
         *ambLightTrans.mutable_scale() = scale;
         scene.addComponent(ambLightEntity, ambLightTrans);
 
@@ -268,6 +274,7 @@ namespace darmok::editor
         scene.addComponent(dirLightEntity, dirLight);
         Transform::Definition dirLightTrans;
         dirLightTrans.set_name("Directional Light");
+        dirLightTrans.set_parent(entt::to_integral(lightsEntity));
         *dirLightTrans.mutable_scale() = scale;
         *dirLightTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 3.f, 0.f });
         auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };

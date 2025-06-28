@@ -71,9 +71,9 @@ namespace darmok::editor
 		return ptr != nullptr && *ptr == entt::null;
     }
 
-    OptionalRef<const SelectedAsset> EditorInspectorView::getSelectedAsset() const noexcept
+    OptionalRef<const AssetHandler> EditorInspectorView::getSelectedAsset() const noexcept
     {
-        auto ptr = std::get_if<SelectedAsset>(&_selected);
+        auto ptr = std::get_if<AssetHandler>(&_selected);
 		return ptr;
     }
 

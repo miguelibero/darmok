@@ -201,8 +201,19 @@ namespace darmok::editor
         {
             trans.setParent(parentTrans);
         }
-
         return entity;
+    }
+
+    std::optional<std::string> EditorApp::getAssetDragType(uint32_t assetType) const noexcept
+    {
+        for (auto& assetsView : _assetsViews)
+        {
+            if (assetsView.getAssetType() == assetType)
+            {
+                return assetsView.getDragType();
+            }
+        }
+        return std::nullopt;
     }
 
     void EditorApp::renderMainMenu()
@@ -388,10 +399,10 @@ namespace darmok::editor
 
     const char* EditorApp::_sceneTreeWindowName = "Scene Tree";
 
-    void EditorApp::renderSceneTree()
+    bool EditorApp::renderSceneTree()
     {
         auto& scene = _proj.getSceneDefinition();
-
+        auto changed = false;
         if (ImGui::Begin(_sceneTreeWindowName))
         {
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
@@ -412,21 +423,28 @@ namespace darmok::editor
                 }
                 for (auto& entity : scene.getRootEntities())
                 {
-                    renderSceneTreeBranch(entity);
+                    if (renderSceneTreeBranch(entity))
+                    {
+                        changed = true;
+                    }
                 }
                 ImGui::TreePop();
             }
             if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete))
             {
                 auto entity = _inspectorView.getSelectedEntity();
-                scene.destroyEntity(entity);
-                onObjectSelected(Entity{});
+                if (scene.destroyEntity(entity))
+                {
+                    onObjectSelected(Entity{});
+                    changed = true;
+                }
             }
         }
         ImGui::End();
+        return changed;
     }
 
-    void EditorApp::renderSceneTreeBranch(Entity entity)
+    bool EditorApp::renderSceneTreeBranch(Entity entity)
     {
         auto& scene = _proj.getSceneDefinition();
         std::string name;
@@ -449,7 +467,39 @@ namespace darmok::editor
         {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
-        if (ImGui::TreeNodeEx(name.c_str(), flags))
+
+        auto treeExpanded = ImGui::TreeNodeEx(name.c_str(), flags);
+        auto changed = false;
+
+        static constexpr const char* dragType = "ENTITY";
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+        {
+            ImGui::TextUnformatted(name.c_str());
+            ImGui::SetDragDropPayload(dragType, &entity, sizeof(Entity));
+            ImGui::EndDragDropSource();
+        }
+        else if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+            {
+                IM_ASSERT(payload->DataSize == sizeof(Entity));
+                auto droppedEntity = *static_cast<Entity*>(payload->Data);
+                if (droppedEntity != entity)
+                {
+                    if (auto trans = scene.getComponent<Transform::Definition>(droppedEntity))
+                    {
+                        auto entityId = entt::to_integral(entity);
+                        if (trans->parent() != entityId)
+                        {
+                            trans->set_parent(entityId);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+        if (treeExpanded)
         {
             if (ImGui::IsItemClicked())
             {
@@ -457,23 +507,37 @@ namespace darmok::editor
             }
             for (auto& child : children)
             {
-                renderSceneTreeBranch(child);
+                if (renderSceneTreeBranch(child))
+                {
+                    changed = true;
+                }
             }
             ImGui::TreePop();
         }
+
+        return changed;
     }
 
     void EditorApp::imguiRender()
     {
+        auto changed = false;
         _sceneView.beforeRender();
         renderMainMenu();
         renderDockspace();
         renderMainToolbar();
-        renderSceneTree();
+        if (renderSceneTree())
+        {
+            changed = true;
+        }
         if (_inspectorView.render())
+        {
+            changed = true;
+        }
+        if (changed)
         {
             _proj.updateScene();
         }
+
         _proj.render();
         _sceneView.render();
         for (auto& assetsView : _assetsViews)
@@ -518,6 +582,6 @@ namespace darmok::editor
 
     void EditorApp::onAssetPathSelected(uint32_t assetType, const std::string& assetPath)
     {
-		_inspectorView.selectObject(SelectedAsset{ assetType, assetPath });
+		_inspectorView.selectObject(AssetHandler{ assetType, assetPath });
     }
 }

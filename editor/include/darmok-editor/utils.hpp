@@ -2,6 +2,8 @@
 
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
+#include <darmok/optional_ref.hpp>
+#include <darmok-editor/asset_fwd.hpp>
 
 #include <imgui.h>
 
@@ -11,6 +13,7 @@ namespace darmok
     class Program;
     class IMesh;
     class IMeshLoader;
+    class ConstSceneDefinitionWrapper;
 
     namespace protobuf
     {
@@ -68,40 +71,20 @@ namespace darmok::editor
 
         bool drawAsset(const char* label, bool selected = false);
 
-        template<typename T>
-        ReferenceInputAction drawAssetReference(const char* label, T& value, std::string name, const char* dragType = nullptr)
-        {
-            ImGui::BeginDisabled(true);
-            ImGui::InputText(label, name);
-            ImGui::EndDisabled();
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
-            {
-                return ReferenceInputAction::Visit;
-            }
-
-            auto action = ReferenceInputAction::None;
-            dragType = dragType == nullptr ? label : dragType;
-            if (ImGui::BeginDragDropTarget())
-            {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
-                {
-                    IM_ASSERT(payload->DataSize == sizeof(T));
-                    value = *(T*)payload->Data;
-                    action = ReferenceInputAction::Changed;
-                }
-                ImGui::EndDragDropTarget();
-            }
-
-            return action;
-        }
-
-        bool drawFileInput(const char* label, std::filesystem::path& path, std::string_view filter = {}) noexcept;
-
         using FieldDescriptor = google::protobuf::FieldDescriptor;
         using Message = google::protobuf::Message;
 
+        ReferenceInputAction drawAssetReferenceInput(const char* label, std::string& assetPath, const char* dragType = nullptr);
+        ReferenceInputAction drawProtobufAssetReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, const char* dragType = nullptr) noexcept;
+        ReferenceInputAction drawProtobufAssetReferenceInput(const char* label, const char* field, Message& msg, const char* dragType = nullptr) noexcept;
+
+        ReferenceInputAction drawEntityReferenceInput(const char* label, Entity& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
+        ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
+        ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const char* field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
+
+        bool drawFileInput(const char* label, std::filesystem::path& path, std::string_view filter = {}) noexcept;
         bool drawProtobufInputs(const std::unordered_map<std::string, std::string>& labels, Message& msg) noexcept;
-        bool drawProtobufInput(const char* label, const FieldDescriptor& field,Message& msg) noexcept;
+        bool drawProtobufInput(const char* label, const FieldDescriptor& field, Message& msg) noexcept;
         bool drawProtobufInput(const char* label, const char* field, Message& msg) noexcept;
         bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;

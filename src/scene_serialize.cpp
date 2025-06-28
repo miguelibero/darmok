@@ -36,11 +36,11 @@ namespace darmok
     std::vector<Entity> ConstSceneDefinitionWrapper::getChildren(Entity entity) const noexcept
     {
         std::vector<Entity> entities;
-        for (auto& [entity, trans] : getTypeComponents<Transform::Definition>())
+        for (auto& [childEntity, trans] : getTypeComponents<Transform::Definition>())
         {
             if (trans.parent() == entt::to_integral(entity))
             {
-                entities.push_back(entity);
+                entities.push_back(childEntity);
             }
         }
         return entities;

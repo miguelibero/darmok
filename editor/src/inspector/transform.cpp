@@ -1,5 +1,7 @@
 #include <darmok-editor/inspector/transform.hpp>
 #include <darmok-editor/utils.hpp>
+#include <darmok-editor/app.hpp>
+#include <darmok-editor/project.hpp>
 
 #include <darmok/glm.hpp>
 #include <darmok/transform.hpp>
@@ -9,6 +11,16 @@
 
 namespace darmok::editor
 {
+    void TransformInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
+    {
+        _app = app;
+    }
+
+    void TransformInspectorEditor::shutdown()
+    {
+        _app.reset();
+    }
+
     bool TransformInspectorEditor::renderType(Transform::Definition& trans) noexcept
     {
         static const std::unordered_map<std::string, std::string> labels
@@ -23,6 +35,12 @@ namespace darmok::editor
         if (ImGui::CollapsingHeader("Transform"))
         {
             if (ImguiUtils::drawProtobufInputs(labels, trans))
+            {
+                changed = true;
+            }
+            auto& sceneDef = _app->getProject().getSceneDefinition();
+            auto result = ImguiUtils::drawProtobufEntityReferenceInput("Parent", "parent", trans, sceneDef);
+            if (result == ReferenceInputAction::Changed)
             {
                 changed = true;
             }
