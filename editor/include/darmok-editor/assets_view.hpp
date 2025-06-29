@@ -26,12 +26,13 @@ namespace darmok::editor
     {
     public:
         using SceneDefinition = protobuf::Scene;
+		using Message = google::protobuf::Message;
 
-        EditorAssetsView(std::string_view name, std::string_view dragType, uint32_t assetType);
+        EditorAssetsView(std::string_view title, std::string_view assetName, const Message& prototype);
 
-        const std::string& getName() const;
+        const std::string& getTitle() const;
 		uint32_t getAssetType() const;
-		const std::string getDragType() const;
+		const std::string& getDragType() const;
 
         void init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate);
         void shutdown();
@@ -39,8 +40,9 @@ namespace darmok::editor
         bool render();
     private:
         const uint32_t _assetType;
-        const std::string _name;
-        const std::string _dragType;
+		google::protobuf::Any _prototype;
+        const std::string _title;
+        const std::string _assetName;
         OptionalRef<SceneDefinitionWrapper> _scene;
         OptionalRef<IEditorAssetsViewDelegate> _delegate;
 

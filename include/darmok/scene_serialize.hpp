@@ -121,8 +121,9 @@ namespace darmok
         void setName(std::string_view name) noexcept;
 
         Entity createEntity() noexcept;
-        bool addAsset(std::string_view path, Message& asset) noexcept;
-        bool addComponent(Entity entity, Message& comp) noexcept;
+        bool setAsset(std::string_view path, const Message& asset) noexcept;
+        std::string addAsset(std::string_view pathPrefix, const Message& asset) noexcept;
+        bool setComponent(Entity entity, const Message& comp) noexcept;
         std::vector<std::reference_wrapper<Any>> getComponents(Entity entity) noexcept;
         OptionalRef<RegistryComponents> getTypeComponents(IdType typeId) noexcept;
         OptionalRef<Any> getComponent(Entity entity, IdType typeId) noexcept;

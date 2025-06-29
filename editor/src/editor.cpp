@@ -1,4 +1,5 @@
 #include <darmok-editor/editor.hpp>
+#include <darmok-editor/utils.hpp>
 
 namespace darmok::editor
 {
@@ -6,9 +7,10 @@ namespace darmok::editor
     {
     }
 
-    bool ObjectEditorContainer::render(google::protobuf::Any& obj) const
+    bool ObjectEditorContainer::render(google::protobuf::Message& obj, bool withTitle) const
     {
-        auto itr = _editors.find(obj.type_url());
+		auto typeUrl = protobuf::getTypeUrl(obj);
+        auto itr = _editors.find(typeUrl);
         if (itr == _editors.end())
         {
             return false;
@@ -17,7 +19,16 @@ namespace darmok::editor
         {
             if (editor->canRender(obj))
             {
-                return editor->render(obj);
+                if (withTitle && !ImguiUtils::beginFrame(editor->getTitle().c_str()))
+                {
+                    return false;
+                }
+                auto result = editor->render(obj);
+                if (withTitle)
+                {
+                    ImguiUtils::endFrame();
+                }
+                return result;
             }
         }
         return false;

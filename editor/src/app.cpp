@@ -20,11 +20,11 @@ namespace darmok::editor
         : _app{ app }
         , _sceneView{ app }
         , _assetsViews{
-            {"Programs", "PROGRAM", protobuf::getTypeId<Program::Source>() },
-            {"Textures", "TEXTURE", protobuf::getTypeId<Texture::Source>() },
-            {"Meshes", "MESH", protobuf::getTypeId<Mesh::Source>() },
-            {"Materials", "MATERIAL", protobuf::getTypeId<Material::Definition>() },
-            {"Scenes", "SCENE", protobuf::getTypeId<Scene::Definition>() },
+            {"Programs", "Program", Program::Source{} },
+            {"Textures", "Texture", Texture::Source{} },
+            {"Meshes", "Mesh", Mesh::Source{} },
+            {"Materials", "Material", Material::Definition{} },
+            {"Scenes", "Sene", Scene::Definition{} },
         }
         , _proj{app}
         , _dockLeftId{0}
@@ -156,7 +156,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
             for (auto& assetsView : _assetsViews)
             {
-                ImGui::DockBuilderDockWindow(assetsView.getName().c_str(), _dockDownId);
+                ImGui::DockBuilderDockWindow(assetsView.getTitle().c_str(), _dockDownId);
             }
         }
     }   

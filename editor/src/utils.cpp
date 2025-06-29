@@ -495,54 +495,23 @@ namespace darmok::editor
         return action;
     }
 
-    ImVec2 ImguiUtils::addCursorPos(const ImVec2& delta) noexcept
-    {
-        auto pos = ImGui::GetCursorPos();
-        pos = ImVec2(pos.x + delta.x, pos.y + delta.y);
-        ImGui::SetCursorPos(pos);
-        return pos;
-    }
-
-    ImVec2 ImguiUtils::addFrameSpacing(const ImVec2& delta) noexcept
-    {
-        auto pos = addCursorPos(delta);
-        auto size = ImGui::GetContentRegionAvail();
-        size.x -= delta.x * 2.F;
-        ImGui::SetNextItemWidth(size.x);
-        return pos;
-    }
-
     namespace ImguiUtils
     {
-        const ImVec2 _frameMargin = { 0.F, 10.F };
-        const ImVec2 _framePadding = { 10.F, 10.F };
+        const float frameIndent = 10.f;
     }
 
-    void ImguiUtils::beginFrame(const char* name) noexcept
+    bool ImguiUtils::beginFrame(const char* name) noexcept
     {
-        addFrameSpacing(_frameMargin);
-        addFrameSpacing(_framePadding);
-
-        ImGui::BeginGroup();
-
-        ImGui::Text("%s", name);
+		auto result = ImGui::CollapsingHeader(name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth);
+        if (result)
+        {
+            ImGui::Indent(ImguiUtils::frameIndent);
+        }
+        return result;
     }
 
     void ImguiUtils::endFrame() noexcept
     {
-        ImGui::EndGroup();
-
-        auto start = ImGui::GetItemRectMin();
-        start.x -= _framePadding.x;
-        start.y -= _framePadding.y;
-
-        auto end = ImGui::GetItemRectMax();
-        end.x += _framePadding.x;
-        end.y += _framePadding.y;
-
-        ImGui::GetWindowDrawList()->AddRect(start, end, IM_COL32(40, 40, 40, 255));
-
-        addCursorPos(ImVec2{ 0, _framePadding.y });
-        addCursorPos(ImVec2{ 0, _frameMargin.y });
+        ImGui::Unindent(ImguiUtils::frameIndent);
     }
 }

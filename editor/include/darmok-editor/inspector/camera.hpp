@@ -9,6 +9,7 @@ namespace darmok::editor
     class CameraInspectorEditor final : public ITypeObjectEditor<Camera::Definition>
     {
     public:
+        std::string getTitle() const noexcept override;
         void init(EditorApp& app, ObjectEditorContainer& editors) noexcept override;
         bool renderType(Camera::Definition& cam) noexcept override;
     private:

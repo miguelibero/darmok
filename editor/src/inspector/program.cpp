@@ -18,18 +18,30 @@ namespace darmok::editor
         _app.reset();
     }
 
+    std::string ProgramSourceInspectorEditor::getTitle() const noexcept
+    {
+        return "Program";
+    }
+
     const std::string ProgramSourceInspectorEditor::_shaderFilter = "*.txt *.sc";
 
     bool ProgramSourceInspectorEditor::renderType(protobuf::ProgramSource& src) noexcept
     {
         auto changed = false;
-        if (ImGui::CollapsingHeader("Program"))
+
+        if (ImguiUtils::drawProtobufInput("Name", "name", src))
         {
-            if (ImguiUtils::drawProtobufInput("Name", "name", src))
+            changed = true;
+        }
+
+        if (ImGui::Button("Delete"))
+        {
+            if (_app->getProject().getSceneDefinition().removeAsset(src))
             {
                 changed = true;
             }
         }
+
         return changed;
     }
 }

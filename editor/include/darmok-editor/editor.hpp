@@ -18,9 +18,10 @@ namespace darmok::editor
         virtual ~IObjectEditor() = default;
         virtual void init(EditorApp& app, ObjectEditorContainer& container) {}
         virtual void shutdown() {}
+        virtual std::string getTitle() const noexcept = 0;
         virtual std::string getObjectTypeUrl() const = 0;
-        virtual bool canRender(google::protobuf::Any& any) const = 0;
-        virtual bool render(google::protobuf::Any& any) { return false; }
+        virtual bool canRender(const google::protobuf::Message& msg) const = 0;
+        virtual bool render(google::protobuf::Message& msg) { return false; }
     };
 
     template<typename T>
@@ -34,14 +35,25 @@ namespace darmok::editor
             return protobuf::getTypeUrl<T>();
         }
 
-        bool canRender(google::protobuf::Any& any) const override
+        bool canRender(const google::protobuf::Message& msg) const override
         {
-            return any.type_url() == getObjectTypeUrl();
+            auto typeUrl = getObjectTypeUrl();
+            if (!protobuf::isAny(msg))
+            {
+                return protobuf::getTypeUrl(msg) == typeUrl;
+            }
+            return static_cast<const google::protobuf::Any&>(msg).type_url() == typeUrl;
         }
 
-        bool render(google::protobuf::Any& any) override
+        bool render(google::protobuf::Message& msg) override
         {
+            if (!protobuf::isAny(msg))
+            {
+				return renderType(static_cast<T&>(msg));
+            }
+
             T obj;
+            auto& any = static_cast<google::protobuf::Any&>(msg);
             if (any.UnpackTo(&obj))
             {
                 if (renderType(obj))
@@ -77,7 +89,7 @@ namespace darmok::editor
             {
                 auto& elm = *itr;
                 ImGui::PushID(i);
-                if (render(elm))
+                if (render(elm, true))
                 {
                     changed = true;
                 }
@@ -87,7 +99,7 @@ namespace darmok::editor
             return changed;
         }
 
-        bool render(google::protobuf::Any& obj) const;
+        bool render(google::protobuf::Message& obj, bool withTitle = false) const;
         void add(std::unique_ptr<IObjectEditor>&& editor);
         void init(EditorApp& app);
         void shutdown();

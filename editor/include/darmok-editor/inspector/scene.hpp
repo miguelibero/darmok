@@ -9,6 +9,7 @@ namespace darmok::editor
     class SceneInspectorEditor final : public ITypeObjectEditor<Scene::Definition>
     {
     public:
+        std::string getTitle() const noexcept override;
         void init(EditorApp& app, ObjectEditorContainer& editors) noexcept override;
         bool renderType(Scene::Definition& scene) noexcept override;
     private:

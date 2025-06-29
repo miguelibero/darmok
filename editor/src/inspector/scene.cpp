@@ -10,16 +10,20 @@ namespace darmok::editor
         _editors = editors;
     }
 
+    std::string SceneInspectorEditor::getTitle() const noexcept
+    {
+        return "Scene";
+    }
+
     bool SceneInspectorEditor::renderType(Scene::Definition& scene) noexcept
     {
         auto changed = false;
-        if (ImGui::CollapsingHeader("Scene"))
+ 
+        if (ImguiUtils::drawProtobufInput("Name", "name", scene))
         {
-            if (ImguiUtils::drawProtobufInput("Name", "name", scene))
-            {
-                changed = true;
-            }
+            changed = true;
         }
+
         return true;
     }
 }

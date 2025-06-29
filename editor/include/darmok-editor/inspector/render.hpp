@@ -9,6 +9,7 @@ namespace darmok::editor
     class RenderableInspectorEditor final : public ITypeObjectEditor<Renderable::Definition>
     {
     public:
+        std::string getTitle() const noexcept override;
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
         bool renderType(Renderable::Definition& renderable) noexcept override;

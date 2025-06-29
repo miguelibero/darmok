@@ -8,6 +8,7 @@ namespace darmok::editor
     class ProgramSourceInspectorEditor final : public ITypeObjectEditor<protobuf::ProgramSource>
     {
     public:
+        std::string getTitle() const noexcept override;
         void init(EditorApp& editor, ObjectEditorContainer& container) override;
         void shutdown() override;
         bool renderType(protobuf::ProgramSource& src) noexcept override;

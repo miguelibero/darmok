@@ -385,21 +385,21 @@ namespace darmok
             trans.set_name(AssimpUtils::getString(assimpMesh->mName));
             trans.set_parent(entt::to_integral(entity));
             *trans.mutable_scale() = protobuf::convert(glm::vec3{ 1.f });
-            _scene.addComponent(childEntity, trans);
+            _scene.setComponent(childEntity, trans);
             entity = childEntity;
         }
 
         RenderableDefinition renderable;
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
-        _scene.addComponent(entity, renderable);
+        _scene.setComponent(entity, renderable);
 
         auto armPath = getArmature(index);
         if (!armPath.empty())
         {
             SkinnableDefinition skinnable;
             skinnable.set_armature_path(armPath);
-            _scene.addComponent(entity, skinnable);
+            _scene.setComponent(entity, skinnable);
         }
 
         return true;
@@ -430,7 +430,7 @@ namespace darmok
             .setParent(parentEntity)
             .setLocalMatrix(AssimpUtils::convert(assimpNode.mTransformation));
 
-        _scene.addComponent(entity, trans);
+        _scene.setComponent(entity, trans);
 
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
@@ -481,7 +481,7 @@ namespace darmok
                 .setName(AssimpUtils::getString(assimpCam.mName))
                 .setLocalMatrix(AssimpUtils::convert(mat));
             entity = _scene.createEntity();
-            _scene.addComponent(entity, trans);
+            _scene.setComponent(entity, trans);
         }
         CameraDefinition cam;
 		cam.set_near(assimpCam.mClipPlaneNear);
@@ -517,7 +517,7 @@ namespace darmok
             uv.set_y((offset * up) / h);            
         }
         
-		_scene.addComponent(entity, cam);
+		_scene.setComponent(entity, cam);
     }
 
     float AssimpSceneDefinitionConverter::getLightRange(const glm::vec3& attenuation) noexcept
@@ -570,14 +570,14 @@ namespace darmok
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
             // we're not supporting different specular color in lights
-			_scene.addComponent(entity, light);
+			_scene.setComponent(entity, light);
         }
         else if (assimpLight.mType == aiLightSource_DIRECTIONAL)
         {
 			protobuf::DirectionalLight light;
 			light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-            _scene.addComponent(entity, light);
+            _scene.setComponent(entity, light);
 
             auto dir = AssimpUtils::convert(assimpLight.mDirection);
             glm::mat4 view = glm::lookAt(pos, pos + dir, glm::vec3{0, 1, 0});
@@ -590,7 +590,7 @@ namespace darmok
             *light.mutable_color() = pbColor;
 			light.set_cone_angle(assimpLight.mAngleOuterCone);
 			light.set_inner_cone_angle(assimpLight.mAngleInnerCone);
-            _scene.addComponent(entity, light);
+            _scene.setComponent(entity, light);
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
         {
@@ -600,7 +600,7 @@ namespace darmok
             pbColor = protobuf::convert(color);
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
-            _scene.addComponent(entity, light);
+            _scene.setComponent(entity, light);
         }
 
         TransformDefinition trans;
@@ -610,7 +610,7 @@ namespace darmok
             .setLocalMatrix(mat);
 
         entity = _scene.createEntity();
-        _scene.addComponent(entity, trans);
+        _scene.setComponent(entity, trans);
     }
 
     std::string AssimpSceneDefinitionConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept

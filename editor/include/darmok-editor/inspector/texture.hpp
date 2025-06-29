@@ -9,6 +9,7 @@ namespace darmok::editor
     class TextureDefinitionInspectorEditor final : public ITypeObjectEditor<Texture::Source>
     {
     public:
+        std::string getTitle() const noexcept override;
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
         bool renderType(Texture::Source& def) noexcept override;

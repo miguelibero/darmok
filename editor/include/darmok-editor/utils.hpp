@@ -58,11 +58,23 @@ namespace darmok::editor
         bool drawEnumCombo(const char* label, T& value)
         {
             auto current = static_cast<size_t>(value);
-            auto options = StringUtils::getEnumValues<T>();
+            auto enumValues = StringUtils::getEnumValues<T>();
+            std::vector<std::string> options;
+			options.reserve(enumValues.size());
+            for (auto& [val, name] : enumValues)
+            {
+                options.push_back(name);
+            }
             if (drawListCombo(label, current, options))
             {
-                value = static_cast<T>(current);
-                return true;
+                auto currentOption = options[current];
+                auto itr = std::find_if(enumValues.begin(), enumValues.end(),
+					[&currentOption](const auto& pair) { return pair.second == currentOption; });
+                if(itr != enumValues.end())
+                {
+                    value = itr->first;
+                    return true;
+                }
             }
             return false;
         }
@@ -89,11 +101,9 @@ namespace darmok::editor
         bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
 
-        void beginFrame(const char* name) noexcept;
+        bool beginFrame(const char* name) noexcept;
         void endFrame() noexcept;
 
-        ImVec2 addCursorPos(const ImVec2& delta) noexcept;
-        ImVec2 addFrameSpacing(const ImVec2& delta) noexcept;
         ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
     };
 }

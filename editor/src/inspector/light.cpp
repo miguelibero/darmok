@@ -16,90 +16,98 @@ namespace darmok::editor
         };;
     };
 
+    std::string PointLightInspectorEditor::getTitle() const noexcept
+    {
+		return "Point Light";
+    }
+
     bool PointLightInspectorEditor::renderType(PointLight::Definition& light) noexcept
     {
         auto changed = false;
-        if (ImGui::CollapsingHeader("Point Light"))
+        if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
         {
-            if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufInput("Range", "range", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufInput("Color", "color", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufEnumInput("Shadow", "shadow_type", light, LightEditorUtils::shadowTypeLabels))
-            {
-                changed = true;
-            }
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Range", "range", light))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Color", "color", light))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufEnumInput("Shadow", "shadow_type", light, LightEditorUtils::shadowTypeLabels))
+        {
+            changed = true;
         }
         return changed;
+    }
+
+    std::string DirectionalLightInspectorEditor::getTitle() const noexcept
+    {
+        return "Directional Light";
     }
 
     bool DirectionalLightInspectorEditor::renderType(DirectionalLight::Definition& light) noexcept
     {
         auto changed = false;
-        if (ImGui::CollapsingHeader("Directional Light"))
+        if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
         {
-            if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufInput("Color", "color", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufEnumInput("Shadow", "shadow_type", light, LightEditorUtils::shadowTypeLabels))
-            {
-                changed = true;
-            }
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Color", "color", light))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufEnumInput("Shadow", "shadow_type", light, LightEditorUtils::shadowTypeLabels))
+        {
+            changed = true;
         }
         return changed;
+    }
+
+    std::string SpotLightInspectorEditor::getTitle() const noexcept
+    {
+        return "Spot Light";
     }
 
     bool SpotLightInspectorEditor::renderType(SpotLight::Definition& light) noexcept
     {
         auto changed = false;
-        if (ImGui::CollapsingHeader("Spot Light"))
+        if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
         {
-            if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufInput("Range", "range", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufInput("Color", "color", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufEnumInput("Shadow", "shadow_type", light, LightEditorUtils::shadowTypeLabels))
-            {
-                changed = true;
-            }
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Range", "range", light))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Color", "color", light))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufEnumInput("Shadow", "shadow_type", light, LightEditorUtils::shadowTypeLabels))
+        {
+            changed = true;
         }
         return changed;
+    }
+
+    std::string AmbientLightInspectorEditor::getTitle() const noexcept
+    {
+        return "Ambient Light";
     }
 
     bool AmbientLightInspectorEditor::renderType(AmbientLight::Definition& light) noexcept
     {
         auto changed = false;
-        if (ImGui::CollapsingHeader("Ambient Light"))
+        if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
         {
-            if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
-            {
-                changed = true;
-            }
-            if (ImguiUtils::drawProtobufInput("Color", "color", light))
-            {
-                changed = true;
-            }
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Color", "color", light))
+        {
+            changed = true;
         }
         return changed;
     }

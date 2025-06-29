@@ -455,7 +455,7 @@ namespace darmok
 
 	void MeshData::exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept
 	{
-		VertexDataWriter writer(vertexLayout, uint32_t(vertices.size()));
+		VertexDataWriter writer{ vertexLayout, static_cast<uint32_t>(vertices.size()) };
 
 		uint32_t i = 0;
 		for (auto& vertex : vertices)
@@ -471,7 +471,7 @@ namespace darmok
 		vertexData = writer.finish();
 		
 		// TODO: support int32 indices
-		indexData = DataView(indices);
+		indexData = DataView{ indices };
 	}
 
 	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& meshConfig) const

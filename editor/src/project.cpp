@@ -239,7 +239,7 @@ namespace darmok::editor
         //cam.addComponent<ForwardRenderer>();
         //cam.addComponent<FrustumCuller>();
 
-        scene.addComponent(camEntity, cam);
+        scene.setComponent(camEntity, cam);
 
         auto scale = protobuf::convert(glm::vec3{ 1.f });
         auto white = protobuf::convert(Colors::white());
@@ -249,29 +249,29 @@ namespace darmok::editor
 		*camTrans.mutable_scale() = scale;
         camTrans.set_name("Main Camera");
         *camTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 1.f, -10.f });
-        scene.addComponent(camEntity, camTrans);
+        scene.setComponent(camEntity, camTrans);
 
         auto lightsEntity = scene.createEntity();
         Transform::Definition lightsTrans;
         lightsTrans.set_name("Lighting");
-        scene.addComponent(lightsEntity, lightsTrans);
+        scene.setComponent(lightsEntity, lightsTrans);
 
         auto ambLightEntity = scene.createEntity();
         AmbientLight::Definition ambLight;
         ambLight.set_intensity(0.2f);
         *ambLight.mutable_color() = white3;
-        scene.addComponent(ambLightEntity, ambLight);
+        scene.setComponent(ambLightEntity, ambLight);
         Transform::Definition ambLightTrans;
         ambLightTrans.set_name("Ambient Light");
         ambLightTrans.set_parent(entt::to_integral(lightsEntity));
         *ambLightTrans.mutable_scale() = scale;
-        scene.addComponent(ambLightEntity, ambLightTrans);
+        scene.setComponent(ambLightEntity, ambLightTrans);
 
         auto dirLightEntity = scene.createEntity();
         DirectionalLight::Definition dirLight;
         dirLight.set_intensity(3.f);
         *dirLight.mutable_color() = white3;
-        scene.addComponent(dirLightEntity, dirLight);
+        scene.setComponent(dirLightEntity, dirLight);
         Transform::Definition dirLightTrans;
         dirLightTrans.set_name("Directional Light");
         dirLightTrans.set_parent(entt::to_integral(lightsEntity));
@@ -279,7 +279,7 @@ namespace darmok::editor
         *dirLightTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 3.f, 0.f });
         auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
         *dirLightTrans.mutable_rotation() = protobuf::convert(rot);
-        scene.addComponent(dirLightEntity, dirLightTrans);
+        scene.setComponent(dirLightEntity, dirLightTrans);
 
         Mesh::Source mesh;
 		mesh.set_standard_program(Program::Standard::Forward);
@@ -288,7 +288,7 @@ namespace darmok::editor
         sphere.mutable_shape()->set_radius(1.f);
         sphere.set_lod(32);
         std::string meshPath = "default_mesh";
-        scene.addAsset(meshPath, mesh);
+        scene.setAsset(meshPath, mesh);
 
         Material::Definition mat;
         mat.set_name("Default");
@@ -296,17 +296,17 @@ namespace darmok::editor
         *mat.mutable_base_color() = white;
         mat.set_opacity_type(Material::Definition::Opaque);
         std::string matPath = "default_material";
-        scene.addAsset(matPath, mat);
+        scene.setAsset(matPath, mat);
 
         auto renderableEntity = scene.createEntity();
         Renderable::Definition renderable;
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
-        scene.addComponent(renderableEntity, renderable);
+        scene.setComponent(renderableEntity, renderable);
 
         Transform::Definition renderableTrans;
         renderableTrans.set_name("Sphere");
         *renderableTrans.mutable_scale() = scale;
-        scene.addComponent(renderableEntity, renderableTrans);
+        scene.setComponent(renderableEntity, renderableTrans);
     }
 }

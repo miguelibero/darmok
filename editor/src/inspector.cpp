@@ -35,6 +35,8 @@ namespace darmok::editor
         _editors.add<RenderableInspectorEditor>();
         _editors.add<CubeInspectorEditor>();
         _editors.add<SphereInspectorEditor>();
+        _editors.add<CapsuleInspectorEditor>();
+        _editors.add<RectangleInspectorEditor>();
         _editors.add<SceneInspectorEditor>();
         _editors.add<MaterialInspectorEditor>();
         _editors.add<ProgramSourceInspectorEditor>();
@@ -105,7 +107,7 @@ namespace darmok::editor
             {
                 if (auto asset = sceneDef.getAsset(selected->type, selected->path))
                 {
-                    if (_editors.render(*asset))
+                    if (_editors.render(*asset, true))
                     {
                         changed = true;
                     }

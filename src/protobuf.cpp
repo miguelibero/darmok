@@ -1,6 +1,8 @@
 #include <darmok/protobuf.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/string.hpp>
 #include <google/protobuf/util/json_util.h>
+#include <google/protobuf/any.h>
 #include <magic_enum/magic_enum.hpp>
 
 namespace darmok
@@ -439,9 +441,11 @@ namespace darmok
             return {};
         }
 
+        static constexpr std::string_view typeUrlPrefix = "type.googleapis.com/";
+
         uint32_t getTypeId(const Message& msg)
         {
-            return getTypeId(*msg.GetDescriptor());
+            return std::hash<std::string>{}(getFullName(msg));
         }
 
         uint32_t getTypeId(const Descriptor& desc)
@@ -449,14 +453,37 @@ namespace darmok
             return std::hash<std::string>{}(desc.full_name());
         }
 
+        std::string getFullName(const Message& msg)
+        {
+            if (isAny(msg))
+            {
+                auto fullName = static_cast<const google::protobuf::Any&>(msg).type_url();
+                if (StringUtils::startsWith(fullName, typeUrlPrefix))
+                {
+                    fullName = fullName.substr(typeUrlPrefix.size());
+                }
+                return fullName;
+            }
+            return msg.GetDescriptor()->full_name();
+        }
+
         std::string getTypeUrl(const Message& msg)
         {
+            if (isAny(msg))
+            {
+                return static_cast<const google::protobuf::Any&>(msg).type_url();
+            }
             return getTypeUrl(*msg.GetDescriptor());
         }
 
         std::string getTypeUrl(const Descriptor& desc)
         {
-            return "type.googleapis.com/" + desc.full_name();
+            return std::string{ typeUrlPrefix } + desc.full_name();
+        }
+
+        bool isAny(const Message& msg)
+        {
+            return msg.GetDescriptor()->full_name() == "google.protobuf.Any";
         }
     }
 }

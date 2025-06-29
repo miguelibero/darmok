@@ -64,8 +64,10 @@ namespace darmok
 
         [[nodiscard]] uint32_t getTypeId(const Message& msg);
         [[nodiscard]] uint32_t getTypeId(const Descriptor& desc);
+        [[nodiscard]] std::string getFullName(const Message& msg);
         [[nodiscard]] std::string getTypeUrl(const Message& msg);
         [[nodiscard]] std::string getTypeUrl(const Descriptor& desc);
+        [[nodiscard]] bool isAny(const Message& msg);
 
         template<class T>
         [[nodiscard]] uint32_t getTypeId()

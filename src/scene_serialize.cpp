@@ -8,6 +8,8 @@
 #include <darmok/skeleton.hpp>
 #include <darmok/light.hpp>
 
+#include <fmt/format.h>
+
 namespace darmok
 {
     ConstSceneDefinitionWrapper::ConstSceneDefinitionWrapper(const Definition& def) noexcept
@@ -119,22 +121,62 @@ namespace darmok
         return static_cast<Entity>(v);
     }
 
-    bool SceneDefinitionWrapper::addAsset(std::string_view path, Message& asset) noexcept
+    bool SceneDefinitionWrapper::setAsset(std::string_view path, const Message& asset) noexcept
     {
         auto typeId = protobuf::getTypeId(asset);
         auto& assetPack = *_def->mutable_assets();
         auto& assets = assetPack.mutable_groups()->try_emplace(typeId).first->second;
         auto result = assets.mutable_assets()->try_emplace(path);
-        result.first->second.PackFrom(asset);
+        if(protobuf::isAny(asset))
+        {
+			result.first->second = static_cast<const Any&>(asset);
+		}
+        else
+        {
+            result.first->second.PackFrom(asset);
+        }
         return result.second;
     }
 
-    bool SceneDefinitionWrapper::addComponent(Entity entity, Message& comp) noexcept
+
+    std::string SceneDefinitionWrapper::addAsset(std::string_view pathPrefix, const Message& asset) noexcept
+    {
+        auto typeId = protobuf::getTypeId(asset);
+        auto& assetPack = *_def->mutable_assets();
+        auto& assets = *assetPack.mutable_groups()->try_emplace(typeId).first->second.mutable_assets();
+		std::string path{ pathPrefix };
+        auto itr = assets.find(path);
+        auto i = 0;
+        while (itr != assets.end())
+        {
+            path = fmt::format("{}_{}", pathPrefix, ++i);
+            itr = assets.find(path);
+        }
+        if (protobuf::isAny(asset))
+        {
+            assets.emplace(path, static_cast<const Any&>(asset));
+        }
+        else
+        {
+            assets.emplace(path, Any{}).first->second.PackFrom(asset);
+        }
+
+        return path;
+    }
+
+    bool SceneDefinitionWrapper::setComponent(Entity entity, const Message& comp) noexcept
     {
         auto typeId = protobuf::getTypeId(comp);
         auto& components = _def->mutable_registry()->mutable_components()->try_emplace(typeId).first->second;
         auto result = components.mutable_components()->try_emplace(entt::to_integral(entity));
-        result.first->second.PackFrom(comp);
+        if (protobuf::isAny(comp))
+        {
+            result.first->second = static_cast<const Any&>(comp);
+        }
+        else
+        {
+            result.first->second.PackFrom(comp);
+        }
         return result.second;
     }
 

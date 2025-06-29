@@ -10,6 +10,7 @@ namespace darmok::editor
     class MeshSourceInspectorEditor final : public ITypeObjectEditor<Mesh::Source>
     {
     public:
+        std::string getTitle() const noexcept override;
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
         bool renderType(Mesh::Source& src) noexcept override;

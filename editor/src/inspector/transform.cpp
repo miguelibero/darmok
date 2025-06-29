@@ -21,6 +21,11 @@ namespace darmok::editor
         _app.reset();
     }
 
+    std::string TransformInspectorEditor::getTitle() const noexcept
+    {
+		return "Transform";
+    }
+
     bool TransformInspectorEditor::renderType(Transform::Definition& trans) noexcept
     {
         static const std::unordered_map<std::string, std::string> labels
@@ -32,18 +37,15 @@ namespace darmok::editor
         };
 
         auto changed = false;
-        if (ImGui::CollapsingHeader("Transform"))
+        if (ImguiUtils::drawProtobufInputs(labels, trans))
         {
-            if (ImguiUtils::drawProtobufInputs(labels, trans))
-            {
-                changed = true;
-            }
-            auto& sceneDef = _app->getProject().getSceneDefinition();
-            auto result = ImguiUtils::drawProtobufEntityReferenceInput("Parent", "parent", trans, sceneDef);
-            if (result == ReferenceInputAction::Changed)
-            {
-                changed = true;
-            }
+            changed = true;
+        }
+        auto& sceneDef = _app->getProject().getSceneDefinition();
+        auto result = ImguiUtils::drawProtobufEntityReferenceInput("Parent", "parent", trans, sceneDef);
+        if (result == ReferenceInputAction::Changed)
+        {
+            changed = true;
         }
         return changed;
     }

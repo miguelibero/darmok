@@ -5,19 +5,21 @@
 #include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
+#include <fmt/format.h>
 
 namespace darmok::editor
 {
-    EditorAssetsView::EditorAssetsView(std::string_view name, std::string_view dragType, uint32_t assetType)
-        : _name{ name }
-        , _dragType{ dragType }
-        , _assetType{ assetType }
+    EditorAssetsView::EditorAssetsView(std::string_view title, std::string_view assetName, const Message& prototype)
+        : _title{ title }
+        , _assetName{ assetName }
+        , _assetType{ protobuf::getTypeId(prototype)}
     {
+        _prototype.PackFrom(prototype);
     }
 
-    const std::string& EditorAssetsView::getName() const
+    const std::string& EditorAssetsView::getTitle() const
     {
-        return _name;
+        return _title;
     }
 
     uint32_t EditorAssetsView::getAssetType() const
@@ -25,9 +27,9 @@ namespace darmok::editor
 		return _assetType;
     }
 
-    const std::string EditorAssetsView::getDragType() const
+    const std::string& EditorAssetsView::getDragType() const
     {
-        return _dragType;
+        return _assetName;
     }
 
     void EditorAssetsView::init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate)
@@ -43,7 +45,7 @@ namespace darmok::editor
 
     void EditorAssetsView::focus()
     {
-        ImGui::SetWindowFocus(_name.c_str());
+        ImGui::SetWindowFocus(_title.c_str());
     }
 
     bool EditorAssetsView::render()
@@ -54,7 +56,7 @@ namespace darmok::editor
             return false;
         }
         bool changed = false;
-        if (ImGui::Begin(_name.c_str()))
+        if (ImGui::Begin(_title.c_str()))
         {
             auto winSize = ImGui::GetWindowSize();
             float colWidth = ImguiUtils::getAssetSize().x + (2 * cellPadding.x);
@@ -62,7 +64,7 @@ namespace darmok::editor
             if (cols > 0)
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cellPadding);
-                ImGui::BeginTable(_name.c_str(), cols);
+                ImGui::BeginTable(_title.c_str(), cols);
                 std::optional<std::string> selectedPath;
                 if (_delegate)
                 {
@@ -83,7 +85,8 @@ namespace darmok::editor
                 ImGui::TableNextColumn();
                 if (ImguiUtils::drawAsset("+"))
                 {
-                    // addAsset();
+                    auto newAssetPathPrefix = fmt::format("new_{}", StringUtils::toLower(_assetName));
+					_scene->addAsset(newAssetPathPrefix, _prototype);
                 }
                 ImGui::EndTable();
                 ImGui::PopStyleVar();
@@ -102,11 +105,12 @@ namespace darmok::editor
             selected = !selected;
             selectionChanged = true;
         }
-        if (!_dragType.empty() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+		auto& dragType = getDragType();
+        if (!dragType.empty() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
             if (!path.empty())
             {
-                auto accepted = ImGui::SetDragDropPayload(_dragType.c_str(), path.c_str(), sizeof(std::string::value_type) * path.size());
+                auto accepted = ImGui::SetDragDropPayload(dragType.c_str(), path.c_str(), sizeof(std::string::value_type) * path.size());
                 ImguiUtils::drawAsset(name.c_str(), accepted);
             }
             ImGui::EndDragDropSource();
