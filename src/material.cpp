@@ -13,6 +13,77 @@
 
 namespace darmok
 {
+	ConstMaterialDefinitionWrapper::ConstMaterialDefinitionWrapper(const Definition& def) noexcept
+		: _def{ def }
+	{
+	}
+
+	std::optional<std::string> ConstMaterialDefinitionWrapper::getTexturePath(TextureType textureType) noexcept
+	{
+		auto& textures = _def.textures();
+		auto itr = std::find_if(textures.begin(), textures.end(),
+			[textureType](const Material::TextureDefinition& tex) {
+				return tex.type() == textureType;
+			});
+		if (itr != textures.end())
+		{
+			return itr->texture_path();
+		}
+		return std::nullopt;
+	}
+
+	std::optional<std::string> ConstMaterialDefinitionWrapper::getTexturePath(const TextureUniformKey& uniformKey) noexcept
+	{
+		auto& textures = _def.textures();
+		auto itr = std::find_if(textures.begin(), textures.end(),
+			[uniformKey](const Material::TextureDefinition& tex) {
+				return tex.has_uniform() && tex.uniform().SerializeAsString() == uniformKey.SerializeAsString();
+			});
+		if (itr != textures.end())
+		{
+			return itr->texture_path();
+		}
+		return std::nullopt;
+	}
+
+	MaterialDefinitionWrapper::MaterialDefinitionWrapper(Definition& def) noexcept
+		: ConstMaterialDefinitionWrapper(def)
+		, _def{ def }
+	{
+	}
+
+	void MaterialDefinitionWrapper::setTexturePath(TextureType textureType, const std::string& texturePath) noexcept
+	{
+		auto& textures = *_def.mutable_textures();
+		auto itr = std::find_if(textures.begin(), textures.end(),
+			[textureType](const Material::TextureDefinition& tex) {
+				return tex.has_type() && tex.type() == textureType;
+			});
+		OptionalRef<Material::TextureDefinition> texDef;
+		if (itr != textures.end())
+		{
+			texDef = textures.Add();
+			texDef->set_type(textureType);
+		}
+		texDef->set_texture_path(texturePath);
+	}
+
+	void MaterialDefinitionWrapper::setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept
+	{
+		auto& textures = *_def.mutable_textures();
+		auto itr = std::find_if(textures.begin(), textures.end(),
+			[uniformKey](const Material::TextureDefinition& tex) {
+				return tex.has_uniform() && tex.uniform().SerializeAsString() == uniformKey.SerializeAsString();
+			});
+		OptionalRef<Material::TextureDefinition> texDef;
+		if (itr != textures.end())
+		{
+			texDef = textures.Add();
+			*texDef->mutable_uniform() = uniformKey;
+		}
+		texDef->set_texture_path(texturePath);
+	}
+
 	bool Material::valid() const noexcept
 	{
 		return program && isValid(program->getHandle(programDefines));
@@ -88,10 +159,7 @@ namespace darmok
 			}
 			else if (defTex.has_uniform())
 			{
-				TextureUniformKey key;
-				key.name = defTex.uniform().name();
-				key.stage = defTex.uniform().stage();
-				mat->uniformTextures[key] = tex;
+				mat->uniformTextures[defTex.uniform()] = tex;
 			}
 		}
 
@@ -127,12 +195,12 @@ namespace darmok
 	void MaterialAppComponent::init(App& app)
 	{
 		_textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
-			{ Material::TextureDefinition::BaseColor, {"s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO}},
-			{ Material::TextureDefinition::MetallicRoughness, { "s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS}},
-			{ Material::TextureDefinition::Normal, { "s_texNormal", RenderSamplers::MATERIAL_NORMAL}},
-			{ Material::TextureDefinition::Occlusion, {"s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION}},
-			{ Material::TextureDefinition::Emissive, { "s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE}},
-			{ Material::TextureDefinition::Specular, { "s_texSpecular", RenderSamplers::MATERIAL_SPECULAR}},
+			{ Material::TextureDefinition::BaseColor, Texture::createUniformKey("s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO)},
+			{ Material::TextureDefinition::MetallicRoughness, Texture::createUniformKey("s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS) },
+			{ Material::TextureDefinition::Normal, Texture::createUniformKey("s_texNormal", RenderSamplers::MATERIAL_NORMAL) },
+			{ Material::TextureDefinition::Occlusion, Texture::createUniformKey("s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION) },
+			{ Material::TextureDefinition::Emissive, Texture::createUniformKey("s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE) },
+			{ Material::TextureDefinition::Specular, Texture::createUniformKey("s_texSpecular", RenderSamplers::MATERIAL_SPECULAR)},
 		};
 		_albedoLutSamplerUniform = bgfx::createUniform("s_texAlbedoLUT", bgfx::UniformType::Sampler);
 		_baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);

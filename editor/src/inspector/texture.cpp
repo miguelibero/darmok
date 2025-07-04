@@ -23,7 +23,7 @@ namespace darmok::editor
     }
 
     const std::string TextureDefinitionInspectorEditor::_imageFilter = "*.png *.jpg *.jpeg *.bmp";
-    const glm::vec2 TextureDefinitionInspectorEditor::_maxPreviewSize(200.F);
+    const glm::vec2 TextureDefinitionInspectorEditor::_maxPreviewSize{ 200.F };
 
     bool TextureDefinitionInspectorEditor::renderType(Texture::Source& src) noexcept
     {
@@ -66,16 +66,8 @@ namespace darmok::editor
 
         if (_tex)
         {
-            ImguiTextureData texData{ _tex->getHandle() };
-            glm::vec2 size{ _tex->getSize() };
-            auto availSize = ImGui::GetContentRegionAvail();
-            glm::vec2 maxSize{ glm::min(_maxPreviewSize.x, availSize.x), glm::min(_maxPreviewSize.y, availSize.y) };
-            auto ratio = glm::min(size.x / maxSize.x, size.y / maxSize.y);
-            size /= ratio;
-            ImGui::Image(texData, ImVec2{ size.x, size.y });
+			ImguiUtils::drawTexturePreview(*_tex, _maxPreviewSize);
         }
-
-        ImGui::SameLine();
 
         if (ImGui::Button("Delete"))
         {

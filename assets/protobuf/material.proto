@@ -4,6 +4,7 @@ package darmok.protobuf;
 
 import "math.proto";
 import "program.proto";
+import "texture.proto";
 
 message UniformValue {
     oneof value {
@@ -13,13 +14,7 @@ message UniformValue {
     }
 }
 
-message UniformTextureKey {
-    string name = 1;
-    uint32 stage = 2;
-}
-
 message MaterialTexture {
-    
     enum Type {
         BaseColor = 0;
         MetallicRoughness = 1;
@@ -31,7 +26,7 @@ message MaterialTexture {
 
     oneof key {
         Type type = 1;
-        UniformTextureKey uniform = 2;
+        TextureUniformKey uniform = 2;
     }
     string texture_path = 3;
 }

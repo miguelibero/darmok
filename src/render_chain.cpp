@@ -437,7 +437,7 @@ namespace darmok
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept
 	{
-		_uniformTextures.emplace(TextureUniformKey{ name, stage }, texture);
+		_uniformTextures.emplace(Texture::createUniformKey(name, stage), texture);
 		return *this;
 	}
 

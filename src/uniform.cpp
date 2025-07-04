@@ -137,23 +137,6 @@ namespace darmok
 		encoder.setUniform(_randomUniform, glm::value_ptr(_randomValues));
 	}
 
-	bool TextureUniformKey::operator==(const TextureUniformKey& other) const noexcept
-	{
-		return name == other.name && stage == other.stage;
-	}
-
-	bool TextureUniformKey::operator!=(const TextureUniformKey& other) const noexcept
-	{
-		return !operator==(other);
-	}
-
-	size_t TextureUniformKey::hash() const noexcept
-	{
-		size_t hash = 0;
-		hashCombine(hash, name, stage);
-		return hash;
-	}
-
 	UniformHandleContainer::~UniformHandleContainer() noexcept
 	{
 		shutdown();
@@ -203,8 +186,8 @@ namespace darmok
 
 	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept
 	{
-		auto handle = getHandle({ key.name, bgfx::UniformType::Sampler });
-		encoder.setTexture(key.stage, handle, tex->getHandle());
+		auto handle = getHandle({ key.name(), bgfx::UniformType::Sampler});
+		encoder.setTexture(key.stage(), handle, tex->getHandle());
 	}
 
 	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const std::string& name, const UniformValue& val) const noexcept

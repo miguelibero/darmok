@@ -49,16 +49,8 @@ namespace darmok
         Variant _value;
     };
 
-    struct TextureUniformKey final
-    {
-        std::string name;
-        uint8_t stage = 0;
+    using TextureUniformKey = protobuf::TextureUniformKey;
 
-        bool operator==(const TextureUniformKey& other) const noexcept;
-        bool operator!=(const TextureUniformKey& other) const noexcept;
-
-        size_t hash() const noexcept;
-    };
 
     class BasicUniforms final
     {
@@ -118,17 +110,5 @@ namespace darmok
         bgfx::UniformHandle getHandle(const Key& key) const noexcept;
 
         mutable std::unordered_map<Key, bgfx::UniformHandle, Key::Hash> _handles;
-    };
-}
-
-namespace std
-{
-    template<>
-    struct hash<darmok::TextureUniformKey>
-    {
-        size_t operator()(const darmok::TextureUniformKey& key) const noexcept
-        {
-            return key.hash();
-        }
     };
 }

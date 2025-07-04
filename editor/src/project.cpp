@@ -245,6 +245,7 @@ namespace darmok::editor
         auto white = protobuf::convert(Colors::white());
         auto white3 = protobuf::convert(Colors::white3());
 
+
         Transform::Definition camTrans;
 		*camTrans.mutable_scale() = scale;
         camTrans.set_name("Main Camera");
@@ -254,6 +255,7 @@ namespace darmok::editor
         auto lightsEntity = scene.createEntity();
         Transform::Definition lightsTrans;
         lightsTrans.set_name("Lighting");
+        *lightsTrans.mutable_scale() = scale;
         scene.setComponent(lightsEntity, lightsTrans);
 
         auto ambLightEntity = scene.createEntity();

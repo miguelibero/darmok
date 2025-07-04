@@ -13,7 +13,14 @@ namespace darmok
 
 	expected<Image, std::string> ConstTextureSourceWrapper::createImage(bx::AllocatorI& alloc) noexcept
 	{
-		return Image{ DataView{ _src.image_data() }, alloc, static_cast<bimg::TextureFormat::Enum>(_src.format()) };
+		try
+		{
+			return Image{ DataView{ _src.image_data() }, alloc, static_cast<bimg::TextureFormat::Enum>(_src.format()) };
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected{ std::string{ ex.what() } };
+		}
 	}
 
 	ConstTextureDefinitionWrapper::ConstTextureDefinitionWrapper(const Definition& def) noexcept
@@ -261,6 +268,13 @@ namespace darmok
 	uint64_t Texture::getBorderColorFlag(const Color& color) noexcept
 	{
 		return BGFX_SAMPLER_BORDER_COLOR(Colors::toNumber(color));
+	}
+
+	Texture::Source Texture::createSource() noexcept
+	{
+		Source src;
+		src.set_format(Texture::Definition::RGB8);
+		return src;
 	}
 
 	uint64_t Texture::readFlags(const nlohmann::json& json) noexcept
@@ -562,6 +576,14 @@ namespace darmok
 			bgfx::setName(_handle, name.data(), int32_t(name.size()));
 		}
 		return *this;
+	}
+
+	Texture::UniformKey Texture::createUniformKey(const std::string & name, uint8_t stage) noexcept
+	{
+		UniformKey key;
+		key.set_name(name);
+		key.set_stage(stage);
+		return key;
 	}
 
 	TextureDefinitionFromSourceLoader::TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept

@@ -69,7 +69,7 @@ namespace darmok
         glm::vec3 localToWorldPoint(const glm::vec3& point) const noexcept;
 
         OptionalRef<Transform> getParent() const noexcept;
-        Transform& setParent(const OptionalRef<Transform>& parent);
+        Transform& setParent(const OptionalRef<Transform>& parent) noexcept;
 
         using Children = std::unordered_set<std::reference_wrapper<Transform>>;
         const Children& getChildren() const noexcept;

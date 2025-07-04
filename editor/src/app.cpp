@@ -21,7 +21,7 @@ namespace darmok::editor
         , _sceneView{ app }
         , _assetsViews{
             {"Programs", "Program", Program::Source{} },
-            {"Textures", "Texture", Texture::Source{} },
+            {"Textures", "Texture", Texture::createSource() },
             {"Meshes", "Mesh", Mesh::Source{} },
             {"Materials", "Material", Material::Definition{} },
             {"Scenes", "Sene", Scene::Definition{} },
@@ -417,6 +417,10 @@ namespace darmok::editor
             }
             if (ImGui::TreeNodeEx(sceneName.c_str(), flags))
             {
+                if (renderEntityDragDropTarget(Entity{ 0 }))
+                {
+                    changed = true;
+                }
                 if (ImGui::IsItemClicked())
                 {
                     onSceneTreeSceneClicked();
@@ -471,33 +475,18 @@ namespace darmok::editor
         auto treeExpanded = ImGui::TreeNodeEx(name.c_str(), flags);
         auto changed = false;
 
-        static constexpr const char* dragType = "ENTITY";
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
             ImGui::TextUnformatted(name.c_str());
-            ImGui::SetDragDropPayload(dragType, &entity, sizeof(Entity));
+            ImGui::SetDragDropPayload(entityDragType, &entity, sizeof(Entity));
             ImGui::EndDragDropSource();
         }
-        else if (ImGui::BeginDragDropTarget())
+        else
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+            if (renderEntityDragDropTarget(entity))
             {
-                IM_ASSERT(payload->DataSize == sizeof(Entity));
-                auto droppedEntity = *static_cast<Entity*>(payload->Data);
-                if (droppedEntity != entity)
-                {
-                    if (auto trans = scene.getComponent<Transform::Definition>(droppedEntity))
-                    {
-                        auto entityId = entt::to_integral(entity);
-                        if (trans->parent() != entityId)
-                        {
-                            trans->set_parent(entityId);
-                            changed = true;
-                        }
-                    }
-                }
+                changed = true;
             }
-            ImGui::EndDragDropTarget();
         }
         if (treeExpanded)
         {
@@ -515,6 +504,37 @@ namespace darmok::editor
             ImGui::TreePop();
         }
 
+        return changed;
+    }
+
+    bool EditorApp::renderEntityDragDropTarget(Entity entity)
+    {
+        if (!ImGui::BeginDragDropTarget())
+        {
+            return false;
+        }
+        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(entityDragType);
+        bool changed = false;
+        if (payload)
+        {
+            IM_ASSERT(payload->DataSize == sizeof(Entity));
+            auto droppedEntity = *static_cast<Entity*>(payload->Data);
+            if (droppedEntity != entity)
+            {
+                auto& scene = _proj.getSceneDefinition();
+                if (auto trans = scene.getComponent<Transform::Definition>(droppedEntity))
+                {
+                    auto entityId = entt::to_integral(entity);
+                    if (trans->parent() != entityId)
+                    {
+                        trans->set_parent(entityId);
+                        scene.setComponent(droppedEntity, *trans);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
         return changed;
     }
 

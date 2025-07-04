@@ -14,7 +14,7 @@
 
 namespace darmok
 {
-    class ConstSceneDefinitionWrapper
+    class DARMOK_EXPORT ConstSceneDefinitionWrapper
     {
     public:
         using Definition = protobuf::Scene;
@@ -108,7 +108,7 @@ namespace darmok
         OptionalRef<const Definition> _def;
     };
 
-	class SceneDefinitionWrapper final : public ConstSceneDefinitionWrapper
+	class DARMOK_EXPORT SceneDefinitionWrapper final : public ConstSceneDefinitionWrapper
     {
     public:
         using Definition = protobuf::Scene;

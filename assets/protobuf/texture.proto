@@ -20,6 +20,11 @@ message TextureSource {
     uint64 flags = 4;
 }
 
+message TextureUniformKey {
+    string name = 1;
+    uint32 stage = 2;
+}
+
 message Texture {
 	enum Type {
 		Texture2D = 0;

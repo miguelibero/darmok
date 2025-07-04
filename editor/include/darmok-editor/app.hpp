@@ -36,6 +36,8 @@ namespace darmok::editor
 		EditorApp(App& app) noexcept;
         ~EditorApp() noexcept;
 
+        static constexpr const char* entityDragType = "Entity";
+
         // IAppDelegate
         std::optional<int32_t> setup(const CmdArgs& args) noexcept override;
         void init() override;
@@ -110,6 +112,7 @@ namespace darmok::editor
 
         using TransformDefinition = protobuf::Transform;
 
+        bool renderEntityDragDropTarget(Entity entity);
         bool renderSceneTreeBranch(Entity entity);
         void onSceneTreeTransformClicked(Entity entity);
         void onSceneTreeSceneClicked();

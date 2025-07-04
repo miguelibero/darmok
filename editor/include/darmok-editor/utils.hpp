@@ -2,6 +2,7 @@
 
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
+#include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok-editor/asset_fwd.hpp>
 
@@ -14,6 +15,8 @@ namespace darmok
     class IMesh;
     class IMeshLoader;
     class ConstSceneDefinitionWrapper;
+    class Texture;
+    class AssetContext;
 
     namespace protobuf
     {
@@ -83,12 +86,18 @@ namespace darmok::editor
 
         bool drawAsset(const char* label, bool selected = false);
 
+        void drawTexturePreview(const Texture& tex, const glm::vec2& maxSize = {}) noexcept;
+
         using FieldDescriptor = google::protobuf::FieldDescriptor;
         using Message = google::protobuf::Message;
+
+        void drawReferenceInput(const char* label, std::string& value) noexcept;
 
         ReferenceInputAction drawAssetReferenceInput(const char* label, std::string& assetPath, const char* dragType = nullptr);
         ReferenceInputAction drawProtobufAssetReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, const char* dragType = nullptr) noexcept;
         ReferenceInputAction drawProtobufAssetReferenceInput(const char* label, const char* field, Message& msg, const char* dragType = nullptr) noexcept;
+
+        ReferenceInputAction drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetContext& assets, const glm::vec2& maxSize = {});
 
         ReferenceInputAction drawEntityReferenceInput(const char* label, Entity& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
         ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;

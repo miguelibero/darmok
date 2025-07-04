@@ -154,21 +154,25 @@ namespace darmok
         return _parent;
     }
 
-    Transform& Transform::setParent(const OptionalRef<Transform>& parent)
+    Transform& Transform::setParent(const OptionalRef<Transform>& parent) noexcept
     {
         if (_parent == parent)
         {
             return *this;
         }
-        if (parent == this)
-        {
-            throw std::runtime_error{ "cannot be parent of itself" };
-        }
+
         if (_parent)
         {
             _parent->_children.erase(*this);
         }
-        _parent = parent;
+        if (parent == this)
+        {
+            _parent.reset();
+        }
+        else
+        {
+            _parent = parent;
+        }
         if (_parent)
         {
             _parent->_children.emplace(*this);
@@ -392,7 +396,8 @@ namespace darmok
         setScale(protobuf::convert(def.scale()));
         setRotation(protobuf::convert(def.rotation()));
         auto parentEntity = ctxt.getEntity(def.parent());
-        setParent(ctxt.getScene().getComponent<Transform>(parentEntity));
+        auto parentTrans = ctxt.getScene().getComponent<Transform>(parentEntity);
+        setParent(parentTrans);
         return {};
     }
 }

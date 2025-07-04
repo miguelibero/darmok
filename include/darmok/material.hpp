@@ -26,6 +26,32 @@ namespace darmok
     class Program;
     class App;
 
+    class DARMOK_EXPORT ConstMaterialDefinitionWrapper
+    {
+    public:
+		using Definition = protobuf::Material;
+        using TextureType = protobuf::MaterialTexture::Type;
+		ConstMaterialDefinitionWrapper(const Definition& def) noexcept;
+
+        std::optional<std::string> getTexturePath(TextureType textureType) noexcept;
+        std::optional<std::string> getTexturePath(const TextureUniformKey& uniformKey) noexcept;
+    private:
+        const Definition& _def;
+
+    };
+
+    class DARMOK_EXPORT MaterialDefinitionWrapper final : public ConstMaterialDefinitionWrapper
+    {
+    public:
+        MaterialDefinitionWrapper(Definition& def) noexcept;
+
+        void setTexturePath(TextureType textureType, const std::string& texturePath) noexcept;
+        void setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept;
+    private:
+        Definition& _def;
+
+    };
+
     struct DARMOK_EXPORT Material
     {
         using TextureType = protobuf::MaterialTexture::Type;

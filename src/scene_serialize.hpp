@@ -137,7 +137,9 @@ namespace darmok
                     _error = "Could not unpack component";
                     return;
                 }
-                /* TODO: check if we can guarantee the order of entities
+
+                // we need to delay the load() calls to guarantee that
+                // all the components are present before
                 auto entity = getEntity(elm.first);
                 auto func = [this, entity, def]() -> expected<void, std::string>
                 {
@@ -148,12 +150,7 @@ namespace darmok
                     return {};
                 };
                 _postLoadFuncs.push_back(std::move(func));
-                */
-				auto result = obj.load(def, *this);
-                if(!result)
-                {
-                    _error = result.error();
-				}
+
                 ++_count;
             }
         }

@@ -33,7 +33,7 @@ namespace darmok
     using AttribDefines = std::unordered_set<std::string>;
     using AttribGroups = std::unordered_set<AttribGroup>;
 
-    class ConstVertexAttributeWrapper
+    class DARMOK_EXPORT ConstVertexAttributeWrapper
     {
     public:
         using Definition = protobuf::VertexAttribute;
@@ -44,7 +44,7 @@ namespace darmok
         const Definition& _def;
     };
 
-    class VertexAttributeWrapper final : public ConstVertexAttributeWrapper
+    class DARMOK_EXPORT VertexAttributeWrapper final : public ConstVertexAttributeWrapper
     {
     public:
         VertexAttributeWrapper(Definition& def);
@@ -55,7 +55,7 @@ namespace darmok
         Definition& _def;
     };
 
-    class FragmentAttributeWrapper
+    class DARMOK_EXPORT FragmentAttributeWrapper
     {
     public:
         using Definition = protobuf::FragmentAttribute;
@@ -68,7 +68,7 @@ namespace darmok
         Definition& _def;
     };
 
-    class ConstVertexLayoutWrapper
+    class DARMOK_EXPORT ConstVertexLayoutWrapper
     {
     public:
         using Definition = protobuf::VertexLayout;
@@ -81,7 +81,7 @@ namespace darmok
         const Definition& _def;
     };
 
-    class VertexLayoutWrapper final : public ConstVertexLayoutWrapper
+    class DARMOK_EXPORT VertexLayoutWrapper final : public ConstVertexLayoutWrapper
     {
     public:
         VertexLayoutWrapper(Definition& def);
@@ -92,7 +92,7 @@ namespace darmok
         Definition& _def;
     };
 
-    class ConstFragmentLayoutWrapper
+    class DARMOK_EXPORT ConstFragmentLayoutWrapper
     {
     public:
         using Definition = protobuf::FragmentLayout;
@@ -104,7 +104,7 @@ namespace darmok
         const Definition& _def;
     };
 
-    class FragmentLayoutWrapper final : public ConstFragmentLayoutWrapper
+    class DARMOK_EXPORT FragmentLayoutWrapper final : public ConstFragmentLayoutWrapper
     {
     public:
         FragmentLayoutWrapper(Definition& def);
@@ -114,7 +114,7 @@ namespace darmok
         Definition& _def;
     };
 
-    class ConstVaryingDefinitionWrapper
+    class DARMOK_EXPORT ConstVaryingDefinitionWrapper
     {
     public:
         using Definition = protobuf::Varying;

@@ -38,29 +38,89 @@ namespace darmok::editor
         return selected;
     }
 
+    void ImguiUtils::drawTexturePreview(const Texture& tex, const glm::vec2& maxSize)
+    {
+        ImguiTextureData texData{ tex.getHandle() };
+        glm::vec2 size{ tex.getSize() };
+        auto imAvailSize = ImGui::GetContentRegionAvail();
+		glm::vec2 availSize{ imAvailSize.x, imAvailSize.y };
+        if(maxSize != glm::vec2{ 0.F })
+        {
+            availSize = glm::min(availSize, maxSize);
+		}
+        auto ratio = glm::min(size.x / availSize.x, size.y / availSize.y);
+        size /= ratio;
+        ImGui::Image(texData, ImVec2{ size.x, size.y });
+    }
+
+    void ImguiUtils::drawReferenceInput(const char* label, std::string& value) noexcept
+    {
+        ImVec4 bg = ImGui::GetStyle().Colors[ImGuiCol_FrameBg];
+        bg.w *= 0.5f;
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, bg);
+        ImGui::InputText(label, &value, ImGuiInputTextFlags_ReadOnly);
+        ImGui::PopStyleColor();
+	}
+
+    namespace ImguiUtils
+    {
+        ReferenceInputAction handleAssetReferenceInput(std::string& assetPath, const char* dragType)
+        {
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+            {
+                return ReferenceInputAction::Visit;
+            }
+            if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Delete))
+            {
+                assetPath.clear();
+                return ReferenceInputAction::Changed;
+            }
+
+            auto action = ReferenceInputAction::None;
+            if(dragType == nullptr)
+            {
+                return action;
+			}
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+                {
+                    std::string::size_type len = payload->DataSize / sizeof(std::string::value_type);
+                    assetPath = std::string{ static_cast<const char*>(payload->Data), len };
+                    action = ReferenceInputAction::Changed;
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            return action;
+        }
+    }
+
     ReferenceInputAction ImguiUtils::drawAssetReferenceInput(const char* label, std::string& assetPath, const char* dragType)
     {
-        ImGui::BeginDisabled(true);
-        ImGui::InputText(label, &assetPath);
-        ImGui::EndDisabled();
-        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
-        {
-            return ReferenceInputAction::Visit;
-        }
+        drawReferenceInput(label, assetPath);
+		return handleAssetReferenceInput(assetPath, dragType);
+    }
 
-        auto action = ReferenceInputAction::None;
-        dragType = dragType == nullptr ? label : dragType;
-        if (ImGui::BeginDragDropTarget())
+    ReferenceInputAction ImguiUtils::drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetContext& assets, const glm::vec2& maxSize)
+    {
+        drawReferenceInput(label, assetPath);
+        auto action = handleAssetReferenceInput(assetPath, "Texture");
+        if(action == ReferenceInputAction::Changed)
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+            if (auto result = assets.getTextureLoader()(assetPath))
             {
-                std::string::size_type len = payload->DataSize / sizeof(std::string::value_type);
-				assetPath = std::string{ static_cast<const char*>(payload->Data), len };
-                action = ReferenceInputAction::Changed;
+                tex = result.value();
             }
-            ImGui::EndDragDropTarget();
+            else
+            {
+                tex.reset();
+            }
+		}
+        if (tex)
+        {
+            drawTexturePreview(*tex, maxSize);
         }
-
         return action;
     }
 
@@ -106,19 +166,21 @@ namespace darmok::editor
             }
         }
 
-        ImGui::BeginDisabled(true);
-        ImGui::InputText(label, &name);
-        ImGui::EndDisabled();
+        drawReferenceInput(label, name);
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && ImGui::IsMouseDoubleClicked(0))
         {
             return ReferenceInputAction::Visit;
         }
+        if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Delete))
+        {
+            entity = entt::null;
+            return ReferenceInputAction::Changed;
+        }
 
         auto action = ReferenceInputAction::None;
-        static constexpr const char* dragType = "ENTITY";
         if (ImGui::BeginDragDropTarget())
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(EditorApp::entityDragType))
             {
                 IM_ASSERT(payload->DataSize == sizeof(Entity));
                 entity = *static_cast<Entity*>(payload->Data);
@@ -142,7 +204,14 @@ namespace darmok::editor
         auto result = drawEntityReferenceInput(label, entity, sceneDef);
         if (result == ReferenceInputAction::Changed)
         {
-            refl->SetUInt32(&msg, &field, entt::to_integral(entity));
+            if (entity == entt::null)
+            {
+                refl->ClearField(&msg, &field);
+            }
+            else
+            {
+                refl->SetUInt32(&msg, &field, entt::to_integral(entity));
+            }
         }
         return result;
     }

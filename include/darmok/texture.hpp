@@ -88,6 +88,7 @@ namespace darmok
 		using Source = protobuf::TextureSource;
 		using Type = protobuf::Texture::Type;
 		using Format = protobuf::Texture::Format;
+		using UniformKey = protobuf::TextureUniformKey;
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
 		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags);
@@ -100,6 +101,8 @@ namespace darmok
 		~Texture() noexcept;
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
+
+		static UniformKey createUniformKey(const std::string& name, uint8_t stage) noexcept;
 
 		[[nodiscard]] expected<void, std::string> update(const DataView& data, uint8_t mip = 0);
 		[[nodiscard]] expected<void, std::string> update(const DataView& data, const glm::uvec2& size, const glm::uvec2& origin = glm::uvec2(0), uint8_t mip = 0, uint16_t layer = 0, uint8_t side = 0);
@@ -139,6 +142,8 @@ namespace darmok
 		[[nodiscard]] static const FlagMap& getSamplerFlags() noexcept;
 		[[nodiscard]] static uint64_t getBorderColorFlag(const Color& color) noexcept;
 
+		static Source createSource() noexcept;
+
 	private:
 		bgfx::TextureHandle _handle;
 		Config _config;
@@ -177,5 +182,16 @@ namespace darmok
 		ImageLoader _imgLoader;
 		ImageTextureDefinitionLoader _defLoader;
 	};
+}
 
+namespace std
+{
+	template<>
+	struct hash<darmok::Texture::UniformKey>
+	{
+		size_t operator()(const darmok::Texture::UniformKey& key) const noexcept
+		{
+			return hash<std::string>{}(key.SerializeAsString());
+		}
+	};
 }
