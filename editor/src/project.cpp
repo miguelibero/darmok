@@ -142,11 +142,14 @@ namespace darmok::editor
     void EditorProject::doUpdateScene()
     {
         _requestUpdateScene = false;
-        if (_sceneImporter)
+        if (!_sceneImporter)
         {
-            (*_sceneImporter)(_sceneDef);
-            _app.getOrAddComponent<SceneAppComponent>().update(0.f);
+            return;
         }
+        _assets.emplace(_sceneDef.assets(), _assetPackConfig);
+        (*_sceneImporter)(_sceneDef);
+        _app.getOrAddComponent<SceneAppComponent>().update(0.f);
+
     }
 
     void EditorProject::open()
@@ -177,7 +180,9 @@ namespace darmok::editor
         if (!result)
         {
             StreamUtils::logDebug("error reading scene: " + result.error());
+            return;
         }
+        updateScene();
     }
 
     std::shared_ptr<Scene> EditorProject::getScene()
@@ -194,6 +199,11 @@ namespace darmok::editor
     {
         return _cam;
     }
+
+    AssetPack& EditorProject::getAssets()
+    {
+        return *_assets;
+	}
 
     void EditorProject::configureEditorScene(Scene& scene)
     {

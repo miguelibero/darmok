@@ -55,22 +55,6 @@ namespace darmok::editor
 
         Entity addEntity() noexcept;
 
-        template<typename T, typename... A>
-        OptionalRef<T> addEntityComponent(A&&... args) noexcept
-        {
-            auto scene = _proj.getScene();
-            if (!scene)
-            {
-                return nullptr;
-            }
-            auto entity = _inspectorView.getSelectedEntity();
-            if (entity == entt::null)
-            {
-                return nullptr;
-            }
-            return scene->addComponent<T>(entity, std::forward<A>(args)...);
-        }
-
 		std::optional<std::string> getAssetDragType(uint32_t assetType) const noexcept;
 
         template<typename T>
@@ -109,6 +93,7 @@ namespace darmok::editor
         void renderMainToolbar();
         void renderDockspace();
         bool renderSceneTree();
+        void renderAboutDialog();
 
         using TransformDefinition = protobuf::Transform;
 
@@ -125,26 +110,6 @@ namespace darmok::editor
 
         Entity getSelectedEntity() noexcept;
 
-        template<typename T, typename... A>
-        void drawEntityComponentMenu(const char* name, A&&... args) noexcept
-        {
-            auto scene = _proj.getScene();
-            auto disabled = true;
-            if (scene)
-            {
-                auto entity = _inspectorView.getSelectedEntity();
-                if (entity != entt::null && !scene->hasComponent<T>(entity))
-                {
-                    disabled = false;
-                }
-            }
-            ImGui::BeginDisabled(disabled);
-            if (ImGui::MenuItem(name))
-            {
-                addEntityComponent<T>(std::forward<A>(args)...);
-            }
-            ImGui::EndDisabled();
-        }
-
+        void drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
     };
 }

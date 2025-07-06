@@ -182,6 +182,14 @@ namespace darmok
 		ImageLoader _imgLoader;
 		ImageTextureDefinitionLoader _defLoader;
 	};
+
+	namespace protobuf
+	{
+		inline bool operator==(const TextureUniformKey& lhs, const TextureUniformKey& rhs) noexcept
+		{
+			return lhs.SerializeAsString() == rhs.SerializeAsString();
+		}
+	}
 }
 
 namespace std

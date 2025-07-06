@@ -177,4 +177,20 @@ namespace darmok::StringUtils
 		auto itr = str.begin();
 		return utf8::next(itr, str.end());
 	}
+
+	void camelCaseToHumanReadable(std::string& str) noexcept
+	{
+		std::string result;
+		result.reserve(str.size() + 5);
+		for (size_t i = 0; i < str.size(); ++i)
+		{
+			auto chr = str[i];
+			if (i > 0 && std::isupper(chr) && std::islower(str[i - 1]))
+			{
+				result += ' ';
+			}
+			result += std::tolower(chr);
+		}
+		str = std::move(result);
+	}
 }

@@ -67,6 +67,6 @@ message Material {
     bool multiple_scattering = 16;
     float white_furnance_factor = 17;
 
-    Color specular_color = 18;
+    Color3 specular_color = 18;
     uint32 shininess = 19;
 }

@@ -18,6 +18,7 @@ message TextureSource {
     bytes image_data = 2;
     Texture.Format format = 3;
     uint64 flags = 4;
+	bool mips = 5;
 }
 
 message TextureUniformKey {

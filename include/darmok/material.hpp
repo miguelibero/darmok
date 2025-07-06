@@ -2,7 +2,6 @@
 
 #include <darmok/export.h>
 #include <darmok/color.hpp>
-#include <darmok/asset.hpp>
 #include <darmok/program.hpp>
 #include <darmok/app.hpp>
 #include <darmok/uniform.hpp>
@@ -45,11 +44,13 @@ namespace darmok
     public:
         MaterialDefinitionWrapper(Definition& def) noexcept;
 
-        void setTexturePath(TextureType textureType, const std::string& texturePath) noexcept;
-        void setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept;
+        bool setTexturePath(TextureType textureType, const std::string& texturePath) noexcept;
+        bool setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept;
     private:
         Definition& _def;
 
+        using MaterialTextures = google::protobuf::RepeatedPtrField<darmok::protobuf::MaterialTexture>;
+        bool setTexturePath(MaterialTextures& textures, MaterialTextures::iterator itr, const std::string& texturePath) noexcept;
     };
 
     struct DARMOK_EXPORT Material
@@ -81,7 +82,6 @@ namespace darmok
         // Phong
         Color3 specularColor = {};
         uint16_t shininess = 32;
-
 
         std::unordered_map<TextureType, std::shared_ptr<Texture>> textures;
 

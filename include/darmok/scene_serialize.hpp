@@ -32,11 +32,13 @@ namespace darmok
         OptionalRef<const RegistryComponents> getTypeComponents(IdType typeId) const noexcept;
         std::vector<std::reference_wrapper<const Any>> getComponents(Entity entityId) const noexcept;
         OptionalRef<const Any> getComponent(Entity entity, IdType typeId) const noexcept;
+		std::optional<Entity> getEntity(const Message& comp) const noexcept;
 
         OptionalRef<const AssetGroup> getAssetGroup(IdType typeId) const noexcept;
         std::vector<std::string> getAssetPaths(IdType typeId) const noexcept;
         std::unordered_map<std::string, OptionalRef<const Any>> getAssets(IdType typeId) const noexcept;
         OptionalRef<const Any> getAsset(IdType typeId, const std::string& path) const noexcept;
+        std::optional<std::string> getAssetPath(const Message& asset) const noexcept;
 
         template<typename T>
         std::unordered_map<Entity, T> getTypeComponents() const noexcept

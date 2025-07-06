@@ -50,17 +50,19 @@ namespace darmok::editor
                 {
                     src.set_image_data(dataResult.value().toString());
                     _tex.reset();
+                    changed = true;
                 }
             }
         }
 
         if (!_tex)
         {
-            Texture::Definition def;
-            auto loadResult = TextureDefinitionWrapper{ def }.loadSource(src, _app->getAssets().getAllocator());
-            if (loadResult)
+            if (auto assetPath = _app->getProject().getSceneDefinition().getAssetPath(src))
             {
-				_tex.emplace(def);
+                if (auto loadResult = _app->getProject().getAssets().load<Texture>(*assetPath))
+                {
+                    _tex = loadResult.value();
+                }
             }
         }
 
@@ -77,6 +79,6 @@ namespace darmok::editor
             }
         }
 
-        return false;
+        return changed;
     }
 }

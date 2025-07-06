@@ -25,6 +25,7 @@ namespace darmok
         [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
         [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
         [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
+        void camelCaseToHumanReadable(std::string& str) noexcept;
 
         template<typename Iter, typename Callback>
         [[nodiscard]] std::string join(std::string_view sep, Iter begin, Iter end, Callback&& callback) noexcept
@@ -58,14 +59,14 @@ namespace darmok
         [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
         [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;
         
-        std::string_view trimLeft(std::string_view str) noexcept;
-        std::string_view trimRight(std::string_view str) noexcept;
-        std::string_view trim(std::string_view str) noexcept;
+        [[nodiscard]] std::string_view trimLeft(std::string_view str) noexcept;
+        [[nodiscard]] std::string_view trimRight(std::string_view str) noexcept;
+        [[nodiscard]] std::string_view trim(std::string_view str) noexcept;
 
-		std::u32string toUtf32(std::string_view str) noexcept;
-        char32_t toUtf32Char(std::string_view str) noexcept;
-		std::string toUtf8(std::u32string_view str) noexcept;
-		std::string toUtf8(char32_t chr) noexcept;
+        [[nodiscard]] std::u32string toUtf32(std::string_view str) noexcept;
+        [[nodiscard]] char32_t toUtf32Char(std::string_view str) noexcept;
+        [[nodiscard]] std::string toUtf8(std::u32string_view str) noexcept;
+        [[nodiscard]] std::string toUtf8(char32_t chr) noexcept;
 
         template<typename Callback>
         bool regexReplace(std::string& str, const std::regex& pattern, Callback&& callback)
@@ -88,13 +89,13 @@ namespace darmok
         }
 
         template<typename T>
-        std::string_view getEnumName(T val) noexcept
+        [[nodiscard]] std::string_view getEnumName(T val) noexcept
         {
 			return magic_enum::enum_name(val);
         }
 
         template<typename T>
-        std::optional<T> readEnum(std::string_view name, std::string_view prefix = {}) noexcept
+        [[nodiscard]] std::optional<T> readEnum(std::string_view name, std::string_view prefix = {}) noexcept
         {
             if (startsWith(name, prefix))
             {
@@ -104,7 +105,7 @@ namespace darmok
         }
 
         template<typename T>
-        std::unordered_map<T, std::string> getEnumValues()
+        [[nodiscard]] std::unordered_map<T, std::string> getEnumValues()
         {
             std::unordered_map<T, std::string> values;
             auto prefix = std::string{ magic_enum::enum_type_name<T>() } + "_";

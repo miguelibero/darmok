@@ -49,7 +49,7 @@ namespace darmok
 
 	void LuaMaterial::setTexture3(Material& mat, const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& tex) noexcept
 	{
-		mat.uniformTextures[{name, stage}] = tex;
+		mat.uniformTextures[Texture::createUniformKey(name, stage)] = tex;
 	}
 
 	std::shared_ptr<Texture> LuaMaterial::getTexture1(const Material& mat) noexcept
@@ -69,7 +69,7 @@ namespace darmok
 
 	std::shared_ptr<Texture> LuaMaterial::getTexture3(const Material& mat, const std::string& name, uint8_t stage) noexcept
 	{
-		auto itr = mat.uniformTextures.find({name, stage});
+		auto itr = mat.uniformTextures.find(Texture::createUniformKey(name, stage));
 		if (itr == mat.uniformTextures.end())
 		{
 			return nullptr;

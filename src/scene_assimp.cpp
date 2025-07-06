@@ -760,7 +760,7 @@ namespace darmok
         {
             *matDef.mutable_base_color() = protobuf::convert(AssimpUtils::convert(baseColor));
         }
-        aiColor4D specularColor;
+        aiColor3D specularColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_SPECULAR, specularColor) == AI_SUCCESS)
         {
             *matDef.mutable_specular_color() = protobuf::convert(AssimpUtils::convert(specularColor));

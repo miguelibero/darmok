@@ -68,6 +68,7 @@ namespace darmok
         [[nodiscard]] std::string getTypeUrl(const Message& msg);
         [[nodiscard]] std::string getTypeUrl(const Descriptor& desc);
         [[nodiscard]] bool isAny(const Message& msg);
+        [[nodiscard]] std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc);
 
         template<class T>
         [[nodiscard]] uint32_t getTypeId()

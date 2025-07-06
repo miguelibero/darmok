@@ -12,25 +12,31 @@ namespace darmok::editor
 	{
 	}
 
-	bool MaterialTextureEditor::render(Material::Definition& mat, AssetContext& assets) noexcept
+	bool MaterialTextureEditor::render(Material::Definition& mat, AssetPack& assets) noexcept
 	{
+		static const glm::vec2 maxPreviewSize{ 100.F };
+
 		bool changed = false;
 		MaterialDefinitionWrapper wrapper{ mat };
 		std::string assetPath = wrapper.getTexturePath(_type).value_or("");
-		auto action = ImguiUtils::drawTextureReferenceInput(_label.c_str(), assetPath, _tex, assets);
+		auto action = ImguiUtils::drawTextureReferenceInput(_label.c_str(), assetPath, _tex, assets, maxPreviewSize);
 		if (action == ReferenceInputAction::Changed)
 		{
+			wrapper.setTexturePath(_type, assetPath);
 			changed = true;
 		}
+
 		return changed;
 	}
 
 	void MaterialInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
 	{
 		_app = app;
-		for(auto& [val, name] : StringUtils::getEnumValues<Material::TextureDefinition::Type>())
+		for(auto [val, name] : StringUtils::getEnumValues<Material::TextureDefinition::Type>())
 		{
-			_textureEditors.emplace(val, name, val);
+			StringUtils::camelCaseToHumanReadable(name);
+			name = name + " Texture";
+			_textureEditors.emplace(val, MaterialTextureEditor{ name, val });
 		}
 	}
 
@@ -52,12 +58,48 @@ namespace darmok::editor
 		{
 			return false;
 		}
-		return itr->second.render(mat, _app->getAssets());
+		return itr->second.render(mat, _app->getProject().getAssets());
 	}
+
+	enum class EditorStandardProgramType
+	{
+		Custom,
+		Unlit,
+		ForwardBasic,
+		Forward,
+		Gui,
+		Tonemap,
+	};
 
 	bool MaterialInspectorEditor::renderType(Material::Definition& mat) noexcept
 	{
 		auto changed = false;
+
+		auto standardProgram = EditorStandardProgramType::Custom;
+		if (mat.has_standard_program())
+		{
+			standardProgram = static_cast<EditorStandardProgramType>(1 + mat.standard_program());
+		}
+		if(ImguiUtils::drawEnumCombo("Program", standardProgram))
+		{
+			changed = true;
+			if (standardProgram == EditorStandardProgramType::Custom)
+			{
+				mat.clear_standard_program();
+			}
+			else
+			{
+				mat.set_standard_program(StandardProgramLoader::Type{ toUnderlying(standardProgram) - 1 });
+			}
+		}
+		if (standardProgram == EditorStandardProgramType::Custom)
+		{
+			auto action = ImguiUtils::drawProtobufAssetReferenceInput("Program Path", "program_path", mat, "Program");
+			if (action == ReferenceInputAction::Changed)
+			{
+				changed = true;
+			}
+		}
 
 		if (ImguiUtils::drawProtobufInput("Base color", "base_color", mat))
 		{
@@ -68,11 +110,11 @@ namespace darmok::editor
 			changed = true;
 		}
 
-		if (ImguiUtils::drawProtobufInput("Metallic factor", "metallic_factor", mat))
+		if (ImguiUtils::drawProtobufSliderInput("Metallic factor", "metallic_factor", mat, 0.f, 1.f))
 		{
 			changed = true;
 		}
-		if (ImguiUtils::drawProtobufInput("Roughness factor", "roughness_factor", mat))
+		if (ImguiUtils::drawProtobufSliderInput("Roughness factor", "roughness_factor", mat, 0.f, 1.f))
 		{
 			changed = true;
 		}
@@ -90,7 +132,7 @@ namespace darmok::editor
 			changed = true;
 		}
 
-		if (ImguiUtils::drawProtobufInput("Normal scale", "normal_scale", mat))
+		if (ImguiUtils::drawProtobufSliderInput("Normal scale", "normal_scale", mat, 0.f, 1.f))
 		{
 			changed = true;
 		}
@@ -99,11 +141,11 @@ namespace darmok::editor
 			changed = true;
 		}
 
-		if (ImguiUtils::drawProtobufInput("Occlusion Strength", "occlusion_strength", mat))
+		if (ImguiUtils::drawProtobufSliderInput("Occlusion Strength", "occlusion_strength", mat, 0.f, 1.f))
 		{
 			changed = true;
 		}
-		if (ImguiUtils::drawProtobufInput("Multiple scattering", "multiple_scattering", mat))
+		if (ImguiUtils::drawProtobufSliderInput("Multiple scattering", "multiple_scattering", mat, 0.f, 1.f))
 		{
 			changed = true;
 		}
@@ -121,7 +163,7 @@ namespace darmok::editor
 			changed = true;
 		}
 
-		if (ImguiUtils::drawProtobufInput("Shininess", "shininess", mat))
+		if (ImguiUtils::drawProtobufSliderInput("Shininess", "shininess", mat, 2, 500))
 		{
 			changed = true;
 		}

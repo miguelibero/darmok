@@ -6,13 +6,18 @@
 #include <unordered_map>
 #include <memory>
 
+namespace darmok
+{
+    class AssetPack;
+}
+
 namespace darmok::editor
 {
     class MaterialTextureEditor final
     {
     public:
         MaterialTextureEditor(std::string_view label, Material::TextureDefinition::Type type);
-        bool render(Material::Definition& mat, AssetContext& assets) noexcept;
+        bool render(Material::Definition& mat, AssetPack& assets) noexcept;
     private:
 		std::string _label;
 		Material::TextureDefinition::Type _type;

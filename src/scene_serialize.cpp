@@ -75,6 +75,29 @@ namespace darmok
         return itr->second;
     }
 
+    std::optional<Entity> ConstSceneDefinitionWrapper::getEntity(const Message& comp) const noexcept
+    {
+        auto typeId = protobuf::getTypeId(comp);
+        auto typeComps = getTypeComponents(typeId);
+        if (!typeComps)
+        {
+            return std::nullopt;
+        }
+        Any anyComp;
+        if (!anyComp.PackFrom(comp))
+        {
+            return std::nullopt;
+        }
+        for (auto& [entity, any] : typeComps->components())
+        {
+            if (any.SerializeAsString() == anyComp.SerializeAsString())
+            {
+                return Entity{ entity };
+            }
+        }
+		return std::nullopt;
+    }
+
     OptionalRef<const ConstSceneDefinitionWrapper::AssetGroup> ConstSceneDefinitionWrapper::getAssetGroup(IdType typeId) const noexcept
     {
         auto& assetGroups = _def->assets().groups();
@@ -100,6 +123,30 @@ namespace darmok
             paths.push_back(path);
         }
         return paths;
+    }
+
+
+    std::optional<std::string> ConstSceneDefinitionWrapper::getAssetPath(const Message& asset) const noexcept
+    {
+        auto typeId = protobuf::getTypeId(asset);
+        auto group = getAssetGroup(typeId);
+        if (!group)
+        {
+            return std::nullopt;
+        }
+        Any anyAsset;
+        if (!anyAsset.PackFrom(asset))
+        {
+            return std::nullopt;
+        }
+        for (const auto& [path, any] : group->assets())
+        {
+            if (any.SerializeAsString() == anyAsset.SerializeAsString())
+            {
+                return path;
+            }
+        }
+        return std::nullopt;
     }
 
     SceneDefinitionWrapper::SceneDefinitionWrapper(Definition& def) noexcept

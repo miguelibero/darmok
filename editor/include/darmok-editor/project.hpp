@@ -31,6 +31,7 @@ namespace darmok::editor
         std::shared_ptr<Scene> getScene();
         SceneDefinitionWrapper& getSceneDefinition();
         OptionalRef<Camera> getCamera();
+        AssetPack& getAssets();
 
     private:
         App& _app;
@@ -43,6 +44,7 @@ namespace darmok::editor
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneWrapper;
 		AssetPackConfig _assetPackConfig;
+        std::optional<AssetPack> _assets;
         std::optional<ProgramCompiler> _progCompiler;
         bool _requestReset;
 

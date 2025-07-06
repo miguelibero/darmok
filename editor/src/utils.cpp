@@ -38,7 +38,7 @@ namespace darmok::editor
         return selected;
     }
 
-    void ImguiUtils::drawTexturePreview(const Texture& tex, const glm::vec2& maxSize)
+    void ImguiUtils::drawTexturePreview(const Texture& tex, const glm::vec2& maxSize) noexcept
     {
         ImguiTextureData texData{ tex.getHandle() };
         glm::vec2 size{ tex.getSize() };
@@ -102,13 +102,13 @@ namespace darmok::editor
 		return handleAssetReferenceInput(assetPath, dragType);
     }
 
-    ReferenceInputAction ImguiUtils::drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetContext& assets, const glm::vec2& maxSize)
+    ReferenceInputAction ImguiUtils::drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetPack& assets, const glm::vec2& maxSize)
     {
         drawReferenceInput(label, assetPath);
         auto action = handleAssetReferenceInput(assetPath, "Texture");
-        if(action == ReferenceInputAction::Changed)
+        if(action == ReferenceInputAction::Changed || (!assetPath.empty() && tex == nullptr))
         {
-            if (auto result = assets.getTextureLoader()(assetPath))
+            if (auto result = assets.load<Texture>(assetPath))
             {
                 tex = result.value();
             }
@@ -496,6 +496,85 @@ namespace darmok::editor
         return false;
     }
 
+    bool ImguiUtils::drawProtobufSliderInput(const char* label, const char* fieldName, Message& msg, double min, double max) noexcept
+    {
+        auto field = msg.GetDescriptor()->FindFieldByName(fieldName);
+        if (!field)
+        {
+            return false;
+        }
+        return drawProtobufSliderInput(label, *field, msg, min, max);
+    }
+
+    bool ImguiUtils::drawProtobufSliderInput(const char* label, const FieldDescriptor& field, Message& msg, double min, double max) noexcept
+    {
+        const auto* refl = msg.GetReflection();
+        switch (field.cpp_type())
+        {
+        case FieldDescriptor::CPPTYPE_INT32:
+        {
+            auto v = refl->GetInt32(msg, &field);
+            if (ImGui::SliderInt(label, &v, min, max))
+            {
+                refl->SetInt32(&msg, &field, v);
+                return true;
+            }
+            return false;
+        }
+        case FieldDescriptor::CPPTYPE_INT64:
+        {
+            auto v = refl->GetInt64(msg, &field);
+            if (ImGui::SliderScalar(label, ImGuiDataType_S64, &v, &min, &max))
+            {
+                refl->SetInt64(&msg, &field, v);
+                return true;
+            }
+            return false;
+        }
+        case FieldDescriptor::CPPTYPE_UINT32:
+        {
+            auto v = refl->GetUInt32(msg, &field);
+            if (ImGui::SliderScalar(label, ImGuiDataType_U32, &v, &min, &max))
+            {
+                refl->SetUInt32(&msg, &field, v);
+                return true;
+            }
+            return false;
+        }
+        case FieldDescriptor::CPPTYPE_UINT64:
+        {
+            auto v = refl->GetUInt64(msg, &field);
+            if (ImGui::SliderScalar(label, ImGuiDataType_U64, &v, &min, &max))
+            {
+                refl->SetUInt64(&msg, &field, v);
+                return true;
+            }
+            return false;
+        }
+        case FieldDescriptor::CPPTYPE_DOUBLE:
+        {
+            auto v = refl->GetDouble(msg, &field);
+            if (ImGui::SliderScalar(label, ImGuiDataType_Double, &v, &min, &max))
+            {
+                refl->SetDouble(&msg, &field, v);
+                return true;
+            }
+            return false;
+        }
+        case FieldDescriptor::CPPTYPE_FLOAT:
+        {
+            auto v = refl->GetFloat(msg, &field);
+            if (ImGui::SliderFloat(label, &v, min, max))
+            {
+                refl->SetFloat(&msg, &field, v);
+                return true;
+            }
+            return false;
+        }
+        }
+        return false;
+    }
+
     bool ImguiUtils::drawProtobufEnumInput(const char* label, const char* fieldName, Message& msg, std::optional<ComboOptions> options) noexcept
     {
         auto field = msg.GetDescriptor()->FindFieldByName(fieldName);
@@ -513,17 +592,9 @@ namespace darmok::editor
         if (!options)
         {
             auto enumDesc = refl->GetEnum(msg, &field)->type();
-            auto prefix = enumDesc->full_name() + "_";
-            defaultOptions.reserve(enumDesc->value_count());
-            for (int i = 0; i < enumDesc->value_count(); ++i)
-            {
-                auto value = enumDesc->value(i)->name();
-                if (StringUtils::startsWith(value, prefix))
-                {
-                    value = value.substr(prefix.size());
-                }
-                defaultOptions.push_back(std::move(value));
-            }
+            defaultOptions = protobuf::getEnumValues(*enumDesc);
+            std::transform(defaultOptions.begin(), defaultOptions.end(),
+                defaultOptions.begin(), [](auto& v) { StringUtils::camelCaseToHumanReadable(v); return v; });
             options = defaultOptions;
         }
 

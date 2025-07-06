@@ -177,30 +177,21 @@ namespace darmok::editor
 
     Entity EditorApp::getSelectedEntity() noexcept
     {
-        auto scene = _proj.getScene();
-        if (!scene)
-        {
-            return entt::null;
-        }
         return _inspectorView.getSelectedEntity();
     }
 
     Entity EditorApp::addEntity() noexcept
     {
-        auto scene = _proj.getScene();
-        if (!scene)
-        {
-            return entt::null;
-        }
-        auto entity = scene->createEntity();
-        auto& trans = scene->addComponent<Transform>(entity);
-        trans.setName("New Entity");
-
+        auto& sceneDef = _proj.getSceneDefinition();
+        auto entity = sceneDef.createEntity();
+        Transform::Definition trans;
+        trans.set_name("New Entity");
         auto parentEntity = _inspectorView.getSelectedEntity();
-        if (auto parentTrans = scene->getComponent<Transform>(parentEntity))
+        if(parentEntity != entt::null)
         {
-            trans.setParent(parentTrans);
-        }
+            trans.set_parent(entt::to_integral(parentEntity));
+		}
+        sceneDef.setComponent(entity, trans);
         return entity;
     }
 
@@ -266,14 +257,14 @@ namespace darmok::editor
                 ImGui::BeginDisabled(disabled);
                 if (ImGui::BeginMenu("Add"))
                 {
-                    drawEntityComponentMenu<Renderable>("Renderable");
-                    drawEntityComponentMenu<Camera>("Camera");
+                    drawEntityComponentMenu("Renderable", Renderable::Definition{});
+                    drawEntityComponentMenu("Camera", Camera::Definition{});
                     if (ImGui::BeginMenu("Light"))
                     {
-                        drawEntityComponentMenu<PointLight>("Point Light");
-                        drawEntityComponentMenu<DirectionalLight>("Directional Light");
-                        drawEntityComponentMenu<SpotLight>("Spot Light");
-                        drawEntityComponentMenu<AmbientLight>("Ambient Light");
+                        drawEntityComponentMenu("Point Light", PointLight::Definition{});
+                        drawEntityComponentMenu("Directional Light", DirectionalLight::Definition{});
+                        drawEntityComponentMenu("Spot Light", SpotLight::Definition{});
+                        drawEntityComponentMenu("Ambient Light", AmbientLight::Definition{});
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
@@ -285,11 +276,33 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("About darmok"))
                 {
+                    renderAboutDialog();
                 }
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
         }
+    }
+
+    void EditorApp::drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
+    {
+        auto& scene = _proj.getSceneDefinition();
+        auto disabled = true;
+        auto entity = _inspectorView.getSelectedEntity();
+        if (entity != entt::null && !scene.getComponent(entity, protobuf::getTypeId(comp)))
+        {
+            disabled = false;
+        }
+        ImGui::BeginDisabled(disabled);
+        if (ImGui::MenuItem(name))
+        {
+            scene.setComponent(entity, comp);
+        }
+        ImGui::EndDisabled();
+    }
+
+    void EditorApp::renderAboutDialog()
+    {
     }
 
     void EditorApp::renderMainToolbar()

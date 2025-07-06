@@ -52,36 +52,55 @@ namespace darmok
 	{
 	}
 
-	void MaterialDefinitionWrapper::setTexturePath(TextureType textureType, const std::string& texturePath) noexcept
+	bool MaterialDefinitionWrapper::setTexturePath(MaterialTextures& textures, MaterialTextures::iterator itr, const std::string& texturePath) noexcept
+	{
+		if (texturePath.empty())
+		{
+			if (itr != textures.end())
+			{
+				textures.erase(itr);
+				return true;
+			}
+			return false;
+		}
+		if (itr->texture_path() != texturePath)
+		{
+			itr->set_texture_path(texturePath);
+			return true;
+		}
+		return false;
+	}
+
+	bool MaterialDefinitionWrapper::setTexturePath(TextureType textureType, const std::string& texturePath) noexcept
 	{
 		auto& textures = *_def.mutable_textures();
 		auto itr = std::find_if(textures.begin(), textures.end(),
 			[textureType](const Material::TextureDefinition& tex) {
 				return tex.has_type() && tex.type() == textureType;
 			});
-		OptionalRef<Material::TextureDefinition> texDef;
-		if (itr != textures.end())
+		if (itr == textures.end())
 		{
-			texDef = textures.Add();
+			auto texDef = textures.Add();
 			texDef->set_type(textureType);
+			itr = textures.end() - 1;
 		}
-		texDef->set_texture_path(texturePath);
+		return setTexturePath(textures, itr, texturePath);
 	}
 
-	void MaterialDefinitionWrapper::setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept
+	bool MaterialDefinitionWrapper::setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept
 	{
 		auto& textures = *_def.mutable_textures();
 		auto itr = std::find_if(textures.begin(), textures.end(),
 			[uniformKey](const Material::TextureDefinition& tex) {
 				return tex.has_uniform() && tex.uniform().SerializeAsString() == uniformKey.SerializeAsString();
 			});
-		OptionalRef<Material::TextureDefinition> texDef;
-		if (itr != textures.end())
+		if (itr == textures.end())
 		{
-			texDef = textures.Add();
+			auto texDef = textures.Add();
 			*texDef->mutable_uniform() = uniformKey;
+			itr = textures.end() - 1;
 		}
-		texDef->set_texture_path(texturePath);
+		return setTexturePath(textures, itr, texturePath);
 	}
 
 	bool Material::valid() const noexcept

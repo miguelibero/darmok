@@ -485,6 +485,23 @@ namespace darmok
         {
             return msg.GetDescriptor()->full_name() == "google.protobuf.Any";
         }
+
+        std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc)
+        {
+            std::vector<std::string> values;
+            auto prefix = enumDesc.full_name() + "_";
+            values.reserve(enumDesc.value_count());
+            for (int i = 0; i < enumDesc.value_count(); ++i)
+            {
+                auto value = enumDesc.value(i)->name();
+                if (StringUtils::startsWith(value, prefix))
+                {
+                    value = value.substr(prefix.size());
+                }
+                values.push_back(std::move(value));
+            }
+            return values;
+        }
     }
 }
 

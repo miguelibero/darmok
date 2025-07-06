@@ -61,12 +61,17 @@ namespace darmok
 
 	expected<void, std::string> TextureDefinitionWrapper::loadSource(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept
 	{
-		auto result = ConstTextureSourceWrapper{ src }.createImage(alloc);
-		if (!result)
+		auto createResult = ConstTextureSourceWrapper{ src }.createImage(alloc);
+		if (!createResult)
 		{
-			return unexpected{ result.error() };
+			return unexpected{ createResult.error() };
 		}
-		return loadImage(result.value());
+		auto loadResult = loadImage(createResult.value());
+		if(loadResult && src.mips())
+		{
+			_def.mutable_config()->set_mips(true);
+		}
+		return loadResult;
 	}
 
 	expected<void, std::string> TextureDefinitionWrapper::loadImage(const Image& img) noexcept

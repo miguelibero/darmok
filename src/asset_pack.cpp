@@ -29,7 +29,6 @@ namespace darmok
 		, _multiMaterialLoader{ _materialLoader }
 		, _multiArmatureLoader{ _armatureLoader }
 	{
-		
 		if (config.fallbacks.program)
 		{
 			_multiProgramLoader.addBack(*config.fallbacks.program);

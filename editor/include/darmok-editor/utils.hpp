@@ -16,7 +16,7 @@ namespace darmok
     class IMeshLoader;
     class ConstSceneDefinitionWrapper;
     class Texture;
-    class AssetContext;
+    class AssetPack;
 
     namespace protobuf
     {
@@ -97,7 +97,7 @@ namespace darmok::editor
         ReferenceInputAction drawProtobufAssetReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, const char* dragType = nullptr) noexcept;
         ReferenceInputAction drawProtobufAssetReferenceInput(const char* label, const char* field, Message& msg, const char* dragType = nullptr) noexcept;
 
-        ReferenceInputAction drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetContext& assets, const glm::vec2& maxSize = {});
+        ReferenceInputAction drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetPack& assets, const glm::vec2& maxSize = {});
 
         ReferenceInputAction drawEntityReferenceInput(const char* label, Entity& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
         ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
@@ -107,6 +107,8 @@ namespace darmok::editor
         bool drawProtobufInputs(const std::unordered_map<std::string, std::string>& labels, Message& msg) noexcept;
         bool drawProtobufInput(const char* label, const FieldDescriptor& field, Message& msg) noexcept;
         bool drawProtobufInput(const char* label, const char* field, Message& msg) noexcept;
+        bool drawProtobufSliderInput(const char* label, const FieldDescriptor& field, Message& msg, double min, double max) noexcept;
+        bool drawProtobufSliderInput(const char* label, const char* field, Message& msg, double min, double max) noexcept;
         bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
 
