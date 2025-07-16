@@ -21,9 +21,9 @@ namespace bx
 
 namespace darmok
 {
-    class ITextureDefinitionLoader;
     class IDataLoader;
     class AssimpSceneDefinitionLoaderImpl;
+    class ITextureDefinitionLoader;
 
     namespace protobuf
     {
@@ -36,6 +36,7 @@ namespace darmok
     public:
         using Config = protobuf::AssimpSceneImportConfig;
         using Model = protobuf::Scene;
+
 
         AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         ~AssimpSceneDefinitionLoader() noexcept;

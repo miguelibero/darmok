@@ -70,11 +70,6 @@ namespace darmok
         std::unique_ptr<AudioSystemImpl> _impl;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISoundLoader : public ILoader<Sound>
-    {
-    };
-
-    class DARMOK_EXPORT BX_NO_VTABLE IMusicLoader : public ILoader<Music>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE ISoundLoader : public ILoader<Sound>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IMusicLoader : public ILoader<Music>{};
 }

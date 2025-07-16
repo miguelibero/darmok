@@ -9,71 +9,87 @@
 #include <filesystem>
 #include <string>
 
+#include <bx/bx.h>
 #include <bx/allocator.h>
 
 namespace darmok
 {
-	class App;
-	class AssetContextImpl;
-
 	class IDataLoader;
-	class IImageLoader;
+	class ISceneLoader;
 	class IProgramLoader;
 	class IMeshLoader;
 	class ITextureLoader;
 	class ITextureAtlasLoader;
 	class IMaterialLoader;
+	class IArmatureLoader;
 	class IFontLoader;
-	class ISceneLoader;
-
-#ifdef DARMOK_OZZ
 	class ISkeletonLoader;
 	class ISkeletalAnimationLoader;
 	class ISkeletalAnimatorDefinitionLoader;
-#endif
-
-#ifdef DARMOK_MINIAUDIO
 	class ISoundLoader;
 	class IMusicLoader;
-#endif
+	class IImageLoader;
 
-	class DARMOK_EXPORT AssetContext final
+	class DARMOK_EXPORT BX_NO_VTABLE IAssetContext
 	{
 	public:
-		AssetContext() noexcept;
+		virtual ~IAssetContext() = default;
+
+		[[nodiscard]] virtual bx::AllocatorI& getAllocator() noexcept = 0;
+		[[nodiscard]] virtual IProgramLoader& getProgramLoader() noexcept = 0;
+		[[nodiscard]] virtual ITextureLoader& getTextureLoader() noexcept = 0;
+		[[nodiscard]] virtual IMeshLoader& getMeshLoader() noexcept = 0;
+		[[nodiscard]] virtual IMaterialLoader& getMaterialLoader() noexcept = 0;
+		[[nodiscard]] virtual IArmatureLoader& getArmatureLoader() noexcept = 0;
+		[[nodiscard]] virtual ITextureAtlasLoader& getTextureAtlasLoader() noexcept = 0;
+		[[nodiscard]] virtual ISceneLoader& getSceneLoader() noexcept = 0;
+		[[nodiscard]] virtual IFontLoader& getFontLoader() noexcept = 0;
+		[[nodiscard]] virtual ISkeletonLoader& getSkeletonLoader() noexcept = 0;
+		[[nodiscard]] virtual ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept = 0;
+		[[nodiscard]] virtual ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept = 0;
+		[[nodiscard]] virtual ISoundLoader& getSoundLoader() noexcept = 0;
+		[[nodiscard]] virtual IMusicLoader& getMusicLoader() noexcept = 0;
+	};
+
+	class AssetContextImpl;
+
+	struct AssetContextConfig final
+	{
+		IDataLoader& dataLoader;
+		bx::AllocatorI& allocator;
+	};
+
+	class DARMOK_EXPORT AssetContext final : public IAssetContext
+	{
+	public:
+		using Config = AssetContextConfig;
+		AssetContext(Config&& config) noexcept;
 		~AssetContext() noexcept;
 		AssetContext(const AssetContext&) = delete;
 		AssetContext(AssetContext&&) = delete;
 		AssetContext& operator=(const AssetContext&) = delete;
 		AssetContext& operator=(AssetContext&&) = delete;
 
+
 		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
-		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept;
-		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept;
-		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept;
-		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept;
-		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept;
-		[[nodiscard]] IFontLoader& getFontLoader() noexcept;
-		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept;
-
-#ifdef DARMOK_OZZ
-		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
-		[[nodiscard]] ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept;
-#endif
-
-#ifdef DARMOK_MINIAUDIO
-		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept;
-		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept;
-#endif
+		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept override;
+		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept override;
+		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept override;
+		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept override;
+		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept override;
+		[[nodiscard]] IArmatureLoader& getArmatureLoader() noexcept override;
+		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept override;
+		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
+		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
+		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;
+		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept override;
+		[[nodiscard]] ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept override;
+		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept override;
+		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept override;
 
 		[[nodiscard]] AssetContextImpl& getImpl() noexcept;
 		[[nodiscard]] const AssetContextImpl& getImpl() const noexcept;
-
-		AssetContext& addBasePath(const std::filesystem::path& path) noexcept;
-		bool removeBasePath(const std::filesystem::path& path) noexcept;
 
 	private:
 		std::unique_ptr<AssetContextImpl> _impl;

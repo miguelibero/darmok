@@ -3,39 +3,26 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/data.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/program.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/texture.hpp>
+#include <darmok/material.hpp>
 
 #include <imgui.h>
 #include <fmt/format.h>
 
 namespace darmok::editor
 {
-    EditorAssetsView::EditorAssetsView(std::string_view title, std::string_view assetName, const Message& prototype)
-        : _title{ title }
-        , _assetName{ assetName }
-        , _assetType{ protobuf::getTypeId(prototype)}
-    {
-        _prototype.PackFrom(prototype);
-    }
-
-    const std::string& EditorAssetsView::getTitle() const
-    {
-        return _title;
-    }
-
-    uint32_t EditorAssetsView::getAssetType() const
-    {
-		return _assetType;
-    }
-
-    const std::string& EditorAssetsView::getDragType() const
-    {
-        return _assetName;
-    }
-
     void EditorAssetsView::init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate)
     {
         _scene = scene;
         _delegate = delegate;
+    }
+
+    const std::string& EditorAssetsView::getTitle()
+    {
+		static const std::string title = "Assets";
+        return title;
     }
 
     void EditorAssetsView::shutdown()
@@ -45,7 +32,7 @@ namespace darmok::editor
 
     void EditorAssetsView::focus()
     {
-        ImGui::SetWindowFocus(_title.c_str());
+        ImGui::SetWindowFocus(getTitle().c_str());
     }
 
     bool EditorAssetsView::render()
@@ -56,7 +43,7 @@ namespace darmok::editor
             return false;
         }
         bool changed = false;
-        if (ImGui::Begin(_title.c_str()))
+        if (ImGui::Begin(getTitle().c_str()))
         {
             auto winSize = ImGui::GetWindowSize();
             float colWidth = ImguiUtils::getAssetSize().x + (2 * cellPadding.x);
@@ -64,14 +51,14 @@ namespace darmok::editor
             if (cols > 0)
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cellPadding);
-                ImGui::BeginTable(_title.c_str(), cols);
-                std::optional<std::string> selectedPath;
+                ImGui::BeginTable(getTitle().c_str(), cols);
+                std::optional<std::filesystem::path> selectedPath;
                 if (_delegate)
                 {
-                    selectedPath = _delegate->getSelectedAssetPath(_assetType);
+                    selectedPath = _delegate->getSelectedAssetPath();
                 }
                 int i = 0;
-                for (auto [path, asset] : _scene->getAssets(_assetType))
+                for (auto [path, asset] : _scene->getAssets())
                 {
                     ImGui::PushID(i);
                     ImGui::TableNextColumn();
@@ -83,11 +70,6 @@ namespace darmok::editor
                     ++i;
                 }
                 ImGui::TableNextColumn();
-                if (ImguiUtils::drawAsset("+"))
-                {
-                    auto newAssetPathPrefix = fmt::format("new_{}", StringUtils::toLower(_assetName));
-					_scene->addAsset(newAssetPathPrefix, _prototype);
-                }
                 ImGui::EndTable();
                 ImGui::PopStyleVar();
             }
@@ -96,28 +78,29 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::string& path, bool selected)
+    bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::filesystem::path& path, bool selected)
     {
-        std::string name = path;
+        std::string name = path.filename().string();
         auto selectionChanged = false;
         if (ImguiUtils::drawAsset(name.c_str(), selected))
         {
             selected = !selected;
             selectionChanged = true;
         }
-		auto& dragType = getDragType();
-        if (!dragType.empty() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+		auto dragType = _delegate->getAssetDragType(protobuf::getTypeId(asset));
+        if (dragType && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
             if (!path.empty())
             {
-                auto accepted = ImGui::SetDragDropPayload(dragType.c_str(), path.c_str(), sizeof(std::string::value_type) * path.size());
+				auto pathStr = path.string();
+                auto accepted = ImGui::SetDragDropPayload(dragType->c_str(), pathStr.c_str(), sizeof(std::string::value_type) * pathStr.size());
                 ImguiUtils::drawAsset(name.c_str(), accepted);
             }
             ImGui::EndDragDropSource();
         }
         if (selectionChanged && selected)
         {
-			_delegate->onAssetPathSelected(_assetType, path);
+			_delegate->onAssetPathSelected(path);
         }
         return selected;
     }

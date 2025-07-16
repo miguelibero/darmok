@@ -55,7 +55,6 @@ namespace darmok::editor
 
         Entity addEntity() noexcept;
 
-		std::optional<std::string> getAssetDragType(uint32_t assetType) const noexcept;
 
         template<typename T>
         std::optional<std::string> getAssetDragType() const noexcept
@@ -71,7 +70,7 @@ namespace darmok::editor
         EditorProject _proj;
         EditorSceneView _sceneView;
         EditorInspectorView _inspectorView;
-        std::vector<EditorAssetsView> _assetsViews;
+        EditorAssetsView _assetsView;
         bool _scenePlaying;
 
         ImGuiID _dockDownId;
@@ -86,8 +85,9 @@ namespace darmok::editor
         static const char* _sceneTreeWindowName;
 
         // IEditorAssetsViewDelegate
-        virtual std::optional<std::string> getSelectedAssetPath(uint32_t assetType) const override;
-        virtual void onAssetPathSelected(uint32_t assetType, const std::string& assetPath) override;
+        std::optional<std::filesystem::path> getSelectedAssetPath() const override;
+        void onAssetPathSelected(const std::filesystem::path& assetPath) override;
+        std::optional<std::string> getAssetDragType(uint32_t assetType) const override;
 
         void renderMainMenu();
         void renderMainToolbar();

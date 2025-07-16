@@ -246,11 +246,10 @@ namespace darmok
         void setupBasicRectangle() noexcept;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public IFromDefinitionLoader<ILoader<IMesh>, Mesh::Definition>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public ILoader<IMesh>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshFromDefinitionLoader : public IFromDefinitionLoader<IMeshLoader, Mesh::Definition>{};
 
-    class DARMOK_EXPORT MeshLoader final : public FromDefinitionLoader<IMeshLoader, IMeshDefinitionLoader>
+    class DARMOK_EXPORT MeshLoader final : public FromDefinitionLoader<IMeshFromDefinitionLoader, IMeshDefinitionLoader>
     {
     public:
         using FromDefinitionLoader::FromDefinitionLoader;
@@ -258,9 +257,5 @@ namespace darmok
         Result create(const std::shared_ptr<Definition>& def) override;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionFromSourceLoader : public IFromDefinitionLoader<IMeshDefinitionLoader, IMesh::Source>
-    {
-    };
-
-
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionFromSourceLoader : public IFromDefinitionLoader<IMeshDefinitionLoader, IMesh::Source>{};
 }

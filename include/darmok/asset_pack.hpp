@@ -1,17 +1,23 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/asset.hpp>
 #include <darmok/protobuf/asset.pb.h>
 #include <darmok/protobuf.hpp>
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/texture_atlas.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/skeleton.hpp>
+#include <darmok/audio.hpp>
+#include <darmok/text.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/optional_ref.hpp>
 
+
 namespace darmok
-{	
+{
 	template<class Interface>
 	class DARMOK_EXPORT AssetPackLoader final : public Interface
 	{
@@ -28,19 +34,14 @@ namespace darmok
 
 		[[nodiscard]] Result operator()(std::filesystem::path path) override
 		{
-			auto typeId = protobuf::getTypeId<Resource>();
-			auto itr = _assets.groups().find(typeId);
-			if(itr == _assets.groups().end())
-			{
-				return unexpected{ "type not found" };
-			}
-			auto itr2 = itr->second.assets().find(path.string());	
-			if(itr2 == itr->second.assets().end())
+			auto& assets = _assets.assets();
+			auto itr = assets.find(path.string());
+			if (itr == assets.end())
 			{
 				return unexpected{ "path not found" };
 			}
 			auto def = std::make_shared<Resource>();
-			if(!itr2->second.UnpackTo(def.get()))
+			if (!itr->second.UnpackTo(def.get()))
 			{
 				return unexpected{ "failed to unpack" };
 			}
@@ -48,33 +49,37 @@ namespace darmok
 		}
 	};
 
-	struct DARMOK_EXPORT AssetPackFallbacks final
-	{
-		OptionalRef<IProgramLoader> program;
-		OptionalRef<ITextureLoader> texture;
-		OptionalRef<IMeshLoader> mesh;
-		OptionalRef<IMaterialLoader> material;
-		OptionalRef<IArmatureLoader> armature;
-	};
-
 	struct DARMOK_EXPORT AssetPackConfig final
 	{
-		AssetPackFallbacks fallbacks = {};
 		ProgramCompilerConfig programCompilerConfig;
-		OptionalRef<bx::AllocatorI> alloc;
+		OptionalRef<IAssetContext> fallback;
 	};
 
-	class DARMOK_EXPORT AssetPack final
+	class DARMOK_EXPORT AssetPack final : public IAssetContext
 	{
 	public:
 		using Definition = protobuf::AssetPack;
 		AssetPack(const Definition& def, const AssetPackConfig& config);
 
-		template<class T>
-		[[nodiscard]] expected<std::shared_ptr<T>, std::string> load(const std::filesystem::path& path) noexcept;
+		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept override;
+		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept override;
+		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept override;
+		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept override;
+		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept override;
+		[[nodiscard]] IArmatureLoader& getArmatureLoader() noexcept override;
+		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept override;
+		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
+		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
+		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;
+		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept override;
+		[[nodiscard]] ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept override;
+		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept override;
+		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept override;
 
 	private:
+
 		const Definition& _def;
+		bx::AllocatorI& _alloc;
 		bx::DefaultAllocator _defaultAlloc;
 
 		AssetPackLoader<IProgramDefinitionLoader> _progDefLoader;
@@ -82,6 +87,7 @@ namespace darmok
 		AssetPackLoader<IMeshDefinitionLoader> _meshDefLoader;
 		AssetPackLoader<IMaterialDefinitionLoader> _matDefLoader;
 		AssetPackLoader<IArmatureDefinitionLoader> _armDefLoader;
+		AssetPackLoader<ISceneDefinitionLoader> _sceneDefLoader;
 
 		AssetPackLoader<IProgramSourceLoader> _progSrcLoader;
 		ProgramDefinitionFromSourceLoader _progDefFromSrcLoader;
@@ -94,16 +100,24 @@ namespace darmok
 		MultiLoader<ITextureDefinitionLoader> _multiTextureDefLoader;
 		MultiLoader<IMeshDefinitionLoader> _multiMeshDefLoader;
 
-		MultiLoader<ILoader<Program>> _multiProgramLoader;
-		MultiLoader<ILoader<Texture>> _multiTextureLoader;
-		MultiLoader<ILoader<IMesh>> _multiMeshLoader;
-		MultiLoader<ILoader<Material>> _multiMaterialLoader;
-		MultiLoader<ILoader<Armature>> _multiArmatureLoader;
+		MultiLoader<IProgramLoader> _multiProgramLoader;
+		MultiLoader<ITextureLoader> _multiTextureLoader;
+		MultiLoader<IMeshLoader> _multiMeshLoader;
+		MultiLoader<IMaterialLoader> _multiMaterialLoader;
+		MultiLoader<IArmatureLoader> _multiArmatureLoader;
+		MultiLoader<ITextureAtlasLoader> _multiTexAtlasLoader;
+		MultiLoader<IFontLoader> _multiFontLoader;
+		MultiLoader<ISkeletonLoader> _multiSkelLoader;
+		MultiLoader<ISkeletalAnimationLoader> _multiSkelAnimLoader;
+		MultiLoader<ISkeletalAnimatorDefinitionLoader> _multiSkelAnimDefLoader;
+		MultiLoader<ISoundLoader> _multiSoundLoader;
+		MultiLoader<IMusicLoader> _multiMusicLoader;
 
 		ProgramLoader _programLoader;
 		TextureLoader _textureLoader;
 		MeshLoader _meshLoader;
 		MaterialLoader _materialLoader;
 		ArmatureLoader _armatureLoader;
+		SceneLoader _sceneLoader;
 	};
 }

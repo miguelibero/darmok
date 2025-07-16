@@ -108,7 +108,7 @@ namespace darmok::editor
         auto action = handleAssetReferenceInput(assetPath, "Texture");
         if(action == ReferenceInputAction::Changed || (!assetPath.empty() && tex == nullptr))
         {
-            if (auto result = assets.load<Texture>(assetPath))
+            if (auto result = assets.getTextureLoader()(assetPath))
             {
                 tex = result.value();
             }

@@ -143,6 +143,9 @@ namespace darmok
 		void setPaused(bool paused) noexcept;
 		[[nodiscard]] bool isPaused() const noexcept;
 
+		void addAssetsBasePath(const std::filesystem::path& path) noexcept;
+		void removeAssetsBasePath(const std::filesystem::path& path) noexcept;
+
 		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
@@ -210,6 +213,8 @@ namespace darmok
 		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
 
 		// first since it contains the allocator
+		FileDataLoader _dataLoader;
+		bx::DefaultAllocator _allocator;
 		AssetContext _assets;
 
 		AppRunResult _runResult;

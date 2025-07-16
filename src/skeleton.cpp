@@ -619,7 +619,7 @@ namespace darmok
 
     expected<void, std::string> Skinnable::load(const Definition& def, IComponentLoadContext& ctxt)
     {
-        auto result = ctxt.getAssets().load<Armature>(def.armature_path());
+        auto result = ctxt.getAssets().getArmatureLoader()(def.armature_path());
         if (!result)
         {
             return unexpected{ result.error() };

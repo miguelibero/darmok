@@ -57,26 +57,17 @@ namespace darmok::editor
 
         if (!_tex)
         {
-            if (auto assetPath = _app->getProject().getSceneDefinition().getAssetPath(src))
+            Texture::Definition def;
+			TextureDefinitionWrapper defWrapper{ def };
+            if (auto result = defWrapper.loadSource(src, _app->getProject().getAssets().getAllocator()))
             {
-                if (auto loadResult = _app->getProject().getAssets().load<Texture>(*assetPath))
-                {
-                    _tex = loadResult.value();
-                }
+				_tex = std::make_shared<Texture>(def);
             }
         }
 
         if (_tex)
         {
 			ImguiUtils::drawTexturePreview(*_tex, _maxPreviewSize);
-        }
-
-        if (ImGui::Button("Delete"))
-        {
-            if (_app->getProject().getSceneDefinition().removeAsset(src))
-            {
-                changed = true;
-            }
         }
 
         return changed;

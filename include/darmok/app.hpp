@@ -10,9 +10,10 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <filesystem>
 
-#include <bgfx/bgfx.h>
 #include <bx/bx.h>
+#include <bgfx/bgfx.h>
 #include <entt/entt.hpp>
 
 #ifndef DARMOK_IMPLEMENT_MAIN
@@ -192,6 +193,9 @@ namespace darmok
 
 		void setPaused(bool paused) noexcept;
 		bool isPaused() const noexcept;
+
+		void addAssetsBasePath(const std::filesystem::path& path) noexcept;
+		void removeAssetsBasePath(const std::filesystem::path& path) noexcept;
 
 		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;

@@ -75,77 +75,98 @@ namespace darmok
         return itr->second;
     }
 
-    std::optional<Entity> ConstSceneDefinitionWrapper::getEntity(const Message& comp) const noexcept
+    std::optional<Entity> ConstSceneDefinitionWrapper::getEntity(const Any& anyComp) const noexcept
     {
-        auto typeId = protobuf::getTypeId(comp);
+        auto typeId = protobuf::getTypeId(anyComp);
         auto typeComps = getTypeComponents(typeId);
         if (!typeComps)
         {
             return std::nullopt;
         }
-        Any anyComp;
-        if (!anyComp.PackFrom(comp))
+		auto& comps = typeComps->components();
+        auto itr = std::find_if(comps.begin(), comps.end(),
+            [&anyComp](const auto& pair) {
+                return &pair.second == &anyComp;
+            });
+        if (itr != comps.end())
         {
-            return std::nullopt;
-        }
-        for (auto& [entity, any] : typeComps->components())
-        {
-            if (any.SerializeAsString() == anyComp.SerializeAsString())
-            {
-                return Entity{ entity };
-            }
+            return Entity{ itr->first };
         }
 		return std::nullopt;
     }
 
-    OptionalRef<const ConstSceneDefinitionWrapper::AssetGroup> ConstSceneDefinitionWrapper::getAssetGroup(IdType typeId) const noexcept
+    std::vector<std::filesystem::path> ConstSceneDefinitionWrapper::getAssetPaths(IdType typeId) const noexcept
     {
-        auto& assetGroups = _def->assets().groups();
-        auto itr = assetGroups.find(typeId);
-        if (itr == assetGroups.end())
+        auto& assetPack = _def->assets();
+        std::vector<std::filesystem::path> paths;
+        paths.reserve(assetPack.assets_size());
+        for (auto& [path, any] : assetPack.assets())
         {
-            return std::nullopt;
-        }
-        return itr->second;
-    }
-
-    std::vector<std::string> ConstSceneDefinitionWrapper::getAssetPaths(IdType typeId) const noexcept
-    {
-        std::vector<std::string> paths;
-        auto group = getAssetGroup(typeId);
-        if (!group)
-        {
-            return paths;
-        }
-        paths.reserve(group->assets_size());
-        for (auto& [path, asset] : group->assets())
-        {
+            if(protobuf::getTypeId(any) != typeId)
+            {
+                continue;
+			}
             paths.push_back(path);
         }
         return paths;
     }
 
-
-    std::optional<std::string> ConstSceneDefinitionWrapper::getAssetPath(const Message& asset) const noexcept
+    std::unordered_map<std::filesystem::path, OptionalRef<const ConstSceneDefinitionWrapper::Any>> ConstSceneDefinitionWrapper::getAssets(IdType typeId) const noexcept
     {
-        auto typeId = protobuf::getTypeId(asset);
-        auto group = getAssetGroup(typeId);
-        if (!group)
+        auto& assetPack = _def->assets();
+        std::unordered_map<std::filesystem::path, OptionalRef<const Any>> assets;
+        assets.reserve(assetPack.assets_size());
+        for (auto& [path, any] : assetPack.assets())
         {
-            return std::nullopt;
-        }
-        Any anyAsset;
-        if (!anyAsset.PackFrom(asset))
-        {
-            return std::nullopt;
-        }
-        for (const auto& [path, any] : group->assets())
-        {
-            if (any.SerializeAsString() == anyAsset.SerializeAsString())
+            if (typeId != 0 || protobuf::getTypeId(any) != typeId)
             {
-                return path;
+                continue;
             }
+            assets[path] = any;
         }
+        return assets;
+    }
+
+    std::unordered_map<std::filesystem::path, OptionalRef<const ConstSceneDefinitionWrapper::Any>> ConstSceneDefinitionWrapper::getAssets(const std::filesystem::path& parentPath) const noexcept
+    {
+        auto& assetPack = _def->assets();
+        std::unordered_map<std::filesystem::path, OptionalRef<const Any>> assets;
+        assets.reserve(assetPack.assets_size());
+        for (auto& [pathStr, any] : assetPack.assets())
+        {
+            std::filesystem::path path{ pathStr };
+            if (path.parent_path() != parentPath)
+            {
+                continue;
+            }
+            assets[path] = any;
+        }
+        return assets;
+    }
+
+    OptionalRef<const ConstSceneDefinitionWrapper::Any> ConstSceneDefinitionWrapper::getAsset(const std::filesystem::path& path) const noexcept
+    {
+        auto& assetPack = _def->assets();
+        auto itr = assetPack.assets().find(path.string());
+        if (itr == assetPack.assets().end())
+        {
+            return std::nullopt;
+        }
+		return itr->second;
+    }
+
+    std::optional<std::filesystem::path> ConstSceneDefinitionWrapper::getAssetPath(const Any& anyAsset) const noexcept
+    {
+        auto& assetPack = _def->assets();
+		auto& assets = assetPack.assets();
+        auto itr = std::find_if(assets.begin(), assets.end(),
+            [&anyAsset](const auto& pair) {
+                return &pair.second == &anyAsset;
+			});
+        if(itr != assets.end())
+        {
+            return itr->first;
+		}
         return std::nullopt;
     }
 
@@ -172,8 +193,7 @@ namespace darmok
     {
         auto typeId = protobuf::getTypeId(asset);
         auto& assetPack = *_def->mutable_assets();
-        auto& assets = assetPack.mutable_groups()->try_emplace(typeId).first->second;
-        auto result = assets.mutable_assets()->try_emplace(path);
+        auto result = assetPack.mutable_assets()->try_emplace(path);
         if(protobuf::isAny(asset))
         {
 			result.first->second = static_cast<const Any&>(asset);
@@ -190,7 +210,7 @@ namespace darmok
     {
         auto typeId = protobuf::getTypeId(asset);
         auto& assetPack = *_def->mutable_assets();
-        auto& assets = *assetPack.mutable_groups()->try_emplace(typeId).first->second.mutable_assets();
+        auto& assets = *assetPack.mutable_assets();
 		std::string path{ pathPrefix };
         auto itr = assets.find(path);
         auto i = 0;
@@ -295,9 +315,9 @@ namespace darmok
         return typeComps->mutable_components()->erase(typeId) > 0;
     }
 
-    bool SceneDefinitionWrapper::removeComponent(const Message& comp) noexcept
+    bool SceneDefinitionWrapper::removeComponent(const Any& anyComp) noexcept
     {
-        auto typeId = protobuf::getTypeId(comp);
+        auto typeId = protobuf::getTypeId(anyComp);
         auto typeComps = getTypeComponents(typeId);
         if (!typeComps)
         {
@@ -305,8 +325,8 @@ namespace darmok
         }
         auto& comps = *typeComps->mutable_components();
         auto itr = std::find_if(comps.begin(), comps.end(),
-            [&comp](const auto& pair) {
-                return &pair.second == &comp;
+            [&anyComp](const auto& pair) {
+                return &pair.second == &anyComp;
 			});
         if (itr == comps.end())
         {
@@ -316,71 +336,63 @@ namespace darmok
 		return true;
     }
 
-    OptionalRef<SceneDefinitionWrapper::AssetGroup> SceneDefinitionWrapper::getAssetGroup(IdType typeId) noexcept
+    std::unordered_map<std::filesystem::path, OptionalRef<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getAssets(IdType typeId) noexcept
     {
-        auto& assetGroups = *_def->mutable_assets()->mutable_groups();
-        auto itr = assetGroups.find(typeId);
-        if (itr == assetGroups.end())
+		auto& assetPack = *_def->mutable_assets();
+        std::unordered_map<std::filesystem::path, OptionalRef<Any>> assets;
+        assets.reserve(assetPack.assets_size());
+        for (auto& [path, any] : *assetPack.mutable_assets())
         {
-            return std::nullopt;
-        }
-        return itr->second;
-    }
-
-    std::unordered_map<std::string, OptionalRef<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getAssets(IdType typeId) noexcept
-    {
-        std::unordered_map<std::string, OptionalRef<Any>> assets;
-        auto group = getAssetGroup(typeId);
-        if (!group)
-        {
-            return assets;
-        }
-        assets.reserve(group->assets_size());
-        for (auto& [path, asset] : *group->mutable_assets())
-        {
-            assets[path] = asset;
+            if(typeId != 0 || protobuf::getTypeId(any) != typeId)
+            {
+                continue;
+			}
+            assets[path] = any;
         }
         return assets;
     }
 
-    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getAsset(IdType typeId, const std::string& path)
+    std::unordered_map<std::filesystem::path, OptionalRef<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getAssets(const std::filesystem::path& parentPath) noexcept
     {
-        auto group = getAssetGroup(typeId);
-        if (!group)
+        auto& assetPack = *_def->mutable_assets();
+        std::unordered_map<std::filesystem::path, OptionalRef<Any>> assets;
+        assets.reserve(assetPack.assets_size());
+        for (auto& [pathStr, any] : *assetPack.mutable_assets())
         {
-            return std::nullopt;
+            std::filesystem::path path{ pathStr };
+            if (path.parent_path() != parentPath)
+            {
+                continue;
+            }
+            assets[path] = any;
         }
-        auto& assets = *group->mutable_assets();
-        auto itr = assets.find(path);
+        return assets;
+    }
+
+    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getAsset(const std::filesystem::path& path)
+    {
+        auto& assets = *_def->mutable_assets()->mutable_assets();
+        auto itr = assets.find(path.string());
         if (itr == assets.end())
         {
             return std::nullopt;
         }
+
         return itr->second;
     }
 
-    bool SceneDefinitionWrapper::removeAsset(IdType typeId, const std::string& path) noexcept
+    bool SceneDefinitionWrapper::removeAsset(const std::filesystem::path& path) noexcept
     {
-        auto group = getAssetGroup(typeId);
-        if (!group)
-        {
-            return false;
-        }
-        return group->mutable_assets()->erase(path) > 0;
+        return _def->mutable_assets()->mutable_assets()->erase(path.string()) > 0;
     }
 
-    bool SceneDefinitionWrapper::removeAsset(const Message& asset) noexcept
+    bool SceneDefinitionWrapper::removeAsset(const Any& anyAsset) noexcept
     {
-        auto typeId = protobuf::getTypeId(asset);
-        auto group = getAssetGroup(typeId);
-        if (!group)
-        {
-            return false;
-        }
-        auto& assets = *group->mutable_assets();
+		auto anyStr = anyAsset.SerializeAsString();
+        auto& assets = *_def->mutable_assets()->mutable_assets();
         auto itr = std::find_if(assets.begin(), assets.end(),
-            [&asset](const auto& pair) {
-                return &pair.second == &asset;
+            [&anyAsset](const auto& pair) {
+                return &pair.second == &anyAsset;
             });
         if (itr == assets.end())
         {
@@ -390,10 +402,10 @@ namespace darmok
         return true;
     }
 
-    SceneArchive::SceneArchive(Scene& scene, const AssetPackConfig& assetPackConfig)
+    SceneArchive::SceneArchive(Scene& scene, const AssetPackConfig& assetConfig)
         : _loader{ scene.getRegistry() }
         , _scene{ scene }
-		, _assetPackConfig{ assetPackConfig }
+        , _assetConfig{ assetConfig }
         , _count{ 0 }
         , _type{ 0 }
     {
@@ -402,7 +414,7 @@ namespace darmok
     expected<Entity, std::string> SceneArchive::load(const protobuf::Scene& sceneDef)
     {
 		_sceneDef = sceneDef;
-        _assetPack.emplace(sceneDef.assets(), _assetPackConfig);
+        _assetPack.emplace(sceneDef.assets(), _assetConfig);
         _loader.get<entt::entity>(*this);
         auto result = loadComponents();
         if (!result)
@@ -461,9 +473,9 @@ namespace darmok
         _count = 0;
     }
 
-    AssetPack& SceneArchive::getAssets()
+    IAssetContext& SceneArchive::getAssets()
     {
-		return *_assetPack;
+		return _assetPack.value();
     }
 
     Entity SceneArchive::getEntity(uint32_t id) const
@@ -481,8 +493,8 @@ namespace darmok
         return _scene;
     }
 
-    SceneImporterImpl::SceneImporterImpl(Scene& scene, const AssetPackConfig& assetPackConfig)
-        : _archive{ scene, assetPackConfig }
+    SceneImporterImpl::SceneImporterImpl(Scene& scene, const AssetPackConfig& assetConfig)
+        : _archive{ scene, assetConfig }
     {
         _archive.registerComponent<Transform>();
         _archive.registerComponent<Renderable>();
@@ -499,8 +511,8 @@ namespace darmok
         return _archive.load(def);
     }
 
-    SceneImporter::SceneImporter(Scene& scene, const AssetPackConfig& assetPackConfig)
-        : _impl{ std::make_unique<SceneImporterImpl>(scene, assetPackConfig) }
+    SceneImporter::SceneImporter(Scene& scene, const AssetPackConfig& assetConfig)
+        : _impl{ std::make_unique<SceneImporterImpl>(scene, assetConfig) }
     {
     }
 
@@ -514,20 +526,35 @@ namespace darmok
 		return (*_impl)(def);
     }
 
-    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetPackConfig)
+    SceneLoaderImpl::SceneLoaderImpl(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)
         : _defLoader{ defLoader }
-        , _assetPackConfig{ assetPackConfig }
+        , _assetConfig{ assetConfig }
+    {
+    }
+
+    expected<Entity, std::string> SceneLoaderImpl::operator()(Scene& scene, std::filesystem::path path)
+    {
+        auto defResult = _defLoader(path);
+        if (!defResult)
+        {
+            return unexpected<std::string>{ defResult.error() };
+        }
+        SceneImporter importer{ scene, _assetConfig };
+        return importer(*defResult.value());
+    }
+
+    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)
+		: _impl{ std::make_unique<SceneLoaderImpl>(defLoader, assetConfig) }
 	{
 	}
 
+    SceneLoader::~SceneLoader()
+    {
+        // empty on purpose
+    }
+
     SceneLoader::Result SceneLoader::operator()(Scene& scene, std::filesystem::path path)
     {
-		auto defResult = _defLoader(path);
-        if (!defResult)
-        {
-			return unexpected<Error>{ defResult.error() };
-        }
-        SceneImporter importer{ scene, _assetPackConfig};
-		return importer(*defResult.value());
+        return (*_impl)(scene, path);
     }
 }

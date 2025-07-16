@@ -38,9 +38,7 @@ namespace darmok
         };
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IFontLoader : public ILoader<IFont>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE IFontLoader : public ILoader<IFont>{};
 
     struct DARMOK_EXPORT TextRenderConfig
     {
@@ -126,7 +124,6 @@ namespace darmok
         std::shared_ptr<TextureAtlas> _atlas;
     };
 
-    class ITextureAtlasLoader;
     class App;
 
     class DARMOK_EXPORT TextureAtlasFontLoader final : public IFontLoader

@@ -55,13 +55,8 @@ namespace darmok
         std::unique_ptr<SkeletalAnimationImpl> _impl;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletonLoader : public ILoader<Skeleton>
-    {
-    };
-
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimationLoader : public ILoader<SkeletalAnimation>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletonLoader : public ILoader<Skeleton>{};
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimationLoader : public ILoader<SkeletalAnimation>{};
 
     class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorState
     {
@@ -86,9 +81,7 @@ namespace darmok
 
     using SkeletalAnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorDefinitionLoader : public ILoader<protobuf::SkeletalAnimator>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE ISkeletalAnimatorDefinitionLoader : public ILoader<protobuf::SkeletalAnimator>{};
 
     class IDataLoader;
 
@@ -272,17 +265,12 @@ namespace darmok
         std::vector<ArmatureJoint> _joints;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IArmatureDefinitionLoader : public ILoader<Armature::Definition>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE IArmatureDefinitionLoader : public ILoader<Armature::Definition>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IArmatureLoader : public ILoader<Armature>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IArmatureFromDefinitionLoader : public IFromDefinitionLoader<IArmatureLoader, Armature::Definition>{};
+    using ArmatureLoader = FromDefinitionLoader<IArmatureFromDefinitionLoader, IArmatureDefinitionLoader>;
 
     using DataArmatureDefinitionLoader = DataProtobufLoader<IArmatureDefinitionLoader>;
-
-    class DARMOK_EXPORT BX_NO_VTABLE IArmatureLoader : public IFromDefinitionLoader<ILoader<Armature>, Armature::Definition>
-    {
-    };
-
-    using ArmatureLoader = FromDefinitionLoader<IArmatureLoader, IArmatureDefinitionLoader>;
 
     class DARMOK_EXPORT Skinnable
     {

@@ -180,14 +180,6 @@ namespace darmok::editor
 			changed = true;
 		}
 			
-		auto& proj = _app->getProject();
-
-		if (ImGui::Button("Delete"))
-		{
-			proj.getSceneDefinition().removeAsset(mat);
-			changed = true;
-		}
-
 		return changed;
 	}
 }

@@ -57,13 +57,8 @@ namespace darmok
 		Definition& _def;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<protobuf::Texture>
-	{
-	};
-
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureSourceLoader : public ILoader<protobuf::TextureSource>
-	{
-	};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<protobuf::Texture>{};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureSourceLoader : public ILoader<protobuf::TextureSource>{};
 
 	using DataTextureDefinitionLoader = DataProtobufLoader<ITextureDefinitionLoader>;
 	using DataTextureSourceLoader = DataProtobufLoader<ITextureSourceLoader>;
@@ -151,16 +146,11 @@ namespace darmok
 		static const FlagMap _samplerFlags;
 	};
 
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public ILoader<Texture>{};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureFromDefinitionLoader : public IFromDefinitionLoader<ITextureLoader, Texture::Definition>{};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionFromSourceLoader : public IFromDefinitionLoader<ITextureDefinitionLoader, Texture::Source>{};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public IFromDefinitionLoader<ILoader<Texture>, Texture::Definition>
-	{
-	};
-
-	using TextureLoader = FromDefinitionLoader<ITextureLoader, ITextureDefinitionLoader>;
-
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionFromSourceLoader : public IFromDefinitionLoader<ITextureDefinitionLoader, Texture::Source>
-	{
-	};
+	using TextureLoader = FromDefinitionLoader<ITextureFromDefinitionLoader, ITextureDefinitionLoader>;
 
 	class TextureDefinitionFromSourceLoader final : public FromDefinitionLoader<ITextureDefinitionFromSourceLoader, ITextureSourceLoader>
 	{

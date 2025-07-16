@@ -158,23 +158,25 @@ namespace darmok
 	}
 
 	AppImpl::AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
-		: _app(app)
-		, _delegateFactory(std::move(factory))
-		, _runResult(AppRunResult::Continue)
-		, _running(false)
-		, _paused(false)
-		, _renderReset(false)
-		, _debugFlags(BGFX_DEBUG_NONE)
-		, _resetFlags(BGFX_RESET_NONE)
-		, _clearColor(Colors::fromNumber(0x303030ff))
-		, _activeResetFlags(BGFX_RESET_NONE)
-		, _lastUpdate(0)
-		, _updateConfig(AppUpdateConfig::getDefaultConfig())
-		, _plat(Platform::get())
-		, _window(_plat)
-		, _renderSize(0)
-		, _rendererType(bgfx::RendererType::Count)
+		: _assets{ { _dataLoader, _allocator } }
+		, _app{ app }
+		, _delegateFactory{ std::move(factory) }
+		, _runResult{ AppRunResult::Continue }
+		, _running{ false }
+		, _paused{ false }
+		, _renderReset{ false }
+		, _debugFlags{ BGFX_DEBUG_NONE }
+		, _resetFlags{ BGFX_RESET_NONE }
+		, _clearColor{ Colors::fromNumber(0x303030ff) }
+		, _activeResetFlags{ BGFX_RESET_NONE }
+		, _lastUpdate{ 0 }
+		, _updateConfig{ AppUpdateConfig::getDefaultConfig() }
+		, _plat{ Platform::get() }
+		, _window{ _plat }
+		, _renderSize{ 0 }
+		, _rendererType{ bgfx::RendererType::Count }
 	{
+		addAssetsBasePath("assets");
 	}
 
 	Input& AppImpl::getInput() noexcept
@@ -270,6 +272,16 @@ namespace darmok
 	bool AppImpl::isPaused() const noexcept
 	{
 		return _paused;
+	}
+
+	void AppImpl::addAssetsBasePath(const std::filesystem::path& path) noexcept
+	{
+		_dataLoader.addBasePath(path);
+	}
+
+	void AppImpl::removeAssetsBasePath(const std::filesystem::path& path) noexcept
+	{
+		_dataLoader.removeBasePath(path);
 	}
 
 	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept
@@ -964,6 +976,16 @@ namespace darmok
 	bool App::isPaused() const noexcept
 	{
 		return _impl->isPaused();
+	}
+
+	void App::addAssetsBasePath(const std::filesystem::path& path) noexcept
+	{
+		_impl->addAssetsBasePath(path);
+	}
+
+	void App::removeAssetsBasePath(const std::filesystem::path& path) noexcept
+	{
+		_impl->addAssetsBasePath(path);
 	}
 
 	void App::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept

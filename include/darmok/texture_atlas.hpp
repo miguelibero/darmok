@@ -84,7 +84,6 @@ namespace darmok
 		expected<void, std::string> writeRmlui(const Atlas& atlas, std::ostream& out, const RmluiConfig& config) noexcept;
 	}
 
-	class ITextureLoader;
 	class Texture;
 	struct AnimationFrame;
 
@@ -106,14 +105,9 @@ namespace darmok
 		std::vector<AnimationFrame> createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix = "", float frameDuration = 1.f / 30.f, const MeshConfig& config = {}) const noexcept;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasDefinitionLoader : public ILoader<protobuf::TextureAtlas>
-	{
-	};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasDefinitionLoader : public ILoader<protobuf::TextureAtlas>{};
 
 	using DataTextureAtlasDefinitionLoader = DataProtobufLoader<ITextureAtlasDefinitionLoader>;
-
-	class ITextureLoader;
-	class ITextureDefinitionLoader;
 
 	class DARMOK_EXPORT TexturePackerDefinitionLoader final : public ITextureAtlasDefinitionLoader
 	{
@@ -126,11 +120,10 @@ namespace darmok
 		ITextureDefinitionLoader& _texLoader;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public IFromDefinitionLoader<ILoader<TextureAtlas>, TextureAtlas::Definition>
-	{
-	};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasLoader : public ILoader<TextureAtlas>{};
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureAtlasFromDefinitionLoader : public IFromDefinitionLoader<ITextureAtlasLoader, TextureAtlas::Definition>{};
 
-	class DARMOK_EXPORT TextureAtlasLoader : public FromDefinitionLoader<ITextureAtlasLoader, ITextureAtlasDefinitionLoader>
+	class DARMOK_EXPORT TextureAtlasLoader : public FromDefinitionLoader<ITextureAtlasFromDefinitionLoader, ITextureAtlasDefinitionLoader>
 	{
 	public:
 		TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept;

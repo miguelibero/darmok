@@ -80,19 +80,11 @@ namespace darmok
 		Config _config;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<protobuf::Program>
-	{
-	};
-
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramSourceLoader : public ILoader<protobuf::ProgramSource>
-	{
-	};
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionLoader : public ILoader<protobuf::Program>{};
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramSourceLoader : public ILoader<protobuf::ProgramSource>{};
+	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionFromSourceLoader : public IFromDefinitionLoader<IProgramDefinitionLoader, protobuf::ProgramSource>{};
 
 	using DataProgramDefinitionLoader = DataProtobufLoader<IProgramDefinitionLoader>;
-
-	class DARMOK_EXPORT BX_NO_VTABLE IProgramDefinitionFromSourceLoader : public IFromDefinitionLoader<IProgramDefinitionLoader, protobuf::ProgramSource>
-	{
-	};
 
 	class ProgramDefinitionFromSourceLoader final : public FromDefinitionLoader<IProgramDefinitionFromSourceLoader, IProgramSourceLoader>
 	{

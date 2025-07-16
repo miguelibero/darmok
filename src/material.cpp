@@ -121,7 +121,7 @@ namespace darmok
 	}
 
 	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept
-		: FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>(defLoader)
+		: FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>(defLoader)
 		, _progLoader{ progLoader }
 		, _texLoader{ texLoader }
 	{

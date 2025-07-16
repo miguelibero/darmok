@@ -18,8 +18,9 @@ namespace darmok::editor
     {
     public:
         ~IEditorAssetsViewDelegate() = default;
-        virtual std::optional<std::string> getSelectedAssetPath(uint32_t assetType) const = 0;
-        virtual void onAssetPathSelected(uint32_t assetType, const std::string& assetPath) = 0;
+        virtual std::optional<std::filesystem::path> getSelectedAssetPath() const = 0;
+        virtual void onAssetPathSelected(const std::filesystem::path& assetPath) = 0;
+        virtual std::optional<std::string> getAssetDragType(uint32_t typeId) const = 0;
     };
 
     class EditorAssetsView final
@@ -28,25 +29,18 @@ namespace darmok::editor
         using SceneDefinition = protobuf::Scene;
 		using Message = google::protobuf::Message;
 
-        EditorAssetsView(std::string_view title, std::string_view assetName, const Message& prototype);
-
-        const std::string& getTitle() const;
-		uint32_t getAssetType() const;
-		const std::string& getDragType() const;
+        static const std::string& getTitle();
 
         void init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate);
         void shutdown();
         void focus();
         bool render();
     private:
-        const uint32_t _assetType;
-		google::protobuf::Any _prototype;
-        const std::string _title;
-        const std::string _assetName;
         OptionalRef<SceneDefinitionWrapper> _scene;
         OptionalRef<IEditorAssetsViewDelegate> _delegate;
+		std::map<uint32_t, std::string> _assetDragTypes;
 
-        bool drawAsset(const google::protobuf::Any& asset, const std::string& path, bool selected);
+        bool drawAsset(const google::protobuf::Any& asset, const std::filesystem::path& path, bool selected);
     };
     
 }

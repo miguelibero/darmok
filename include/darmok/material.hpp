@@ -123,17 +123,11 @@ namespace darmok
         std::shared_ptr<Texture> _defaultTexture;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMaterialDefinitionLoader : public ILoader<Material::Definition>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialDefinitionLoader : public ILoader<Material::Definition>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public  ILoader<Material>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IMaterialFromDefinitionLoader : public IFromDefinitionLoader<IMaterialLoader, Material::Definition>{};
 
-    using DataMaterialDefinitionLoader = DataProtobufLoader<IMaterialDefinitionLoader>;
-
-    class DARMOK_EXPORT BX_NO_VTABLE IMaterialLoader : public IFromDefinitionLoader<ILoader<Material>, Material::Definition>
-    {
-    };
-
-    class DARMOK_EXPORT MaterialLoader final : public FromDefinitionLoader<IMaterialLoader, IMaterialDefinitionLoader>
+    class DARMOK_EXPORT MaterialLoader final : public FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>
     {
     public:
         MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept;
@@ -142,4 +136,6 @@ namespace darmok
         ILoader<Program>& _progLoader;
         ILoader<Texture>& _texLoader;
     };
+
+    using DataMaterialDefinitionLoader = DataProtobufLoader<IMaterialDefinitionLoader>;
 }

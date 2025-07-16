@@ -33,6 +33,20 @@ namespace darmok
     using ILoader = IBasicLoader<Type, std::filesystem::path>;
 
     template<typename Interface>
+    class DARMOK_EXPORT EmptyLoader final : public Interface
+    {
+    public:
+        using Resource = Interface::Resource;
+        using Result = Interface::Result;
+        using Error = Interface::Error;
+
+        Result operator()(std::filesystem::path path) noexcept override
+        {
+			return unexpected<Error>{ "empty" };
+        }
+    };
+
+    template<typename Interface>
     class DARMOK_EXPORT MultiLoader final : public Interface
     {
     public:

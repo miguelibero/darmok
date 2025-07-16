@@ -73,9 +73,7 @@ namespace darmok
 		void copyContainer(const Image& other) noexcept;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE IImageLoader : public ILoader<Image>
-	{
-	};
+	class DARMOK_EXPORT BX_NO_VTABLE IImageLoader : public ILoader<Image>{};
 
 	class IDataLoader;
 

@@ -506,7 +506,7 @@ namespace darmok
 
 		if (std::filesystem::is_directory(cfg.outputPath))
 		{
-			_app.getAssets().addBasePath(cfg.outputPath);
+			_app.addAssetsBasePath(cfg.outputPath);
 		}
 		return true;
 	}

@@ -32,10 +32,13 @@
 
 namespace darmok
 {
+	class IAssetContext;
+
 	class AssetContextImpl final
 	{
 	public:
-		AssetContextImpl();
+		using Config = AssetContextConfig;
+		AssetContextImpl(IAssetContext& assets, Config&& config);
 		IDataLoader& getDataLoader() noexcept;
 		IImageLoader& getImageLoader() noexcept;
 		IProgramLoader& getProgramLoader() noexcept;
@@ -43,29 +46,21 @@ namespace darmok
 		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
 		IMaterialLoader& getMaterialLoader() noexcept;
 		IMeshLoader& getMeshLoader() noexcept;
+		IArmatureLoader& getArmatureLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
 		ISceneLoader& getSceneLoader() noexcept;
 		bx::AllocatorI& getAllocator() noexcept;
-
-#ifdef DARMOK_OZZ
 		ISkeletonLoader& getSkeletonLoader() noexcept;
 		ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;
 		ISkeletalAnimatorDefinitionLoader& getSkeletalAnimatorDefinitionLoader() noexcept;
-#endif
-
-#ifdef DARMOK_MINIAUDIO
 		ISoundLoader& getSoundLoader() noexcept;
 		IMusicLoader& getMusicLoader() noexcept;
-#endif
 
-		void addBasePath(const std::filesystem::path& path) noexcept;
-		bool removeBasePath(const std::filesystem::path& path) noexcept;
 		void init(App& app);
 		void update();
 		void shutdown();
 	private:
-		bx::DefaultAllocator _allocator;
-		FileDataLoader _dataLoader;
+		Config _config;
 		ImageLoader _imageLoader;
 		DataProgramDefinitionLoader _dataProgDefLoader;
 		ProgramLoader _progLoader;
@@ -77,6 +72,8 @@ namespace darmok
 		MaterialLoader _materialLoader;
 		DataMeshDefinitionLoader _dataMeshDefLoader;
 		MeshLoader _meshLoader;
+		DataArmatureDefinitionLoader _dataArmDefLoader;
+		ArmatureLoader _armatureLoader;
 		DataTextureAtlasDefinitionLoader _dataTexAtlasDefLoader;
 		TexturePackerDefinitionLoader _texPackerDefLoader;
 		MultiLoader<ITextureAtlasDefinitionLoader> _texAtlasDefLoader;
@@ -88,11 +85,11 @@ namespace darmok
 		DataSceneDefinitionLoader _dataSceneDefLoader;
 		SceneLoader _sceneLoader;
 
-#ifdef DARMOK_OZZ
 		MultiLoader<ISkeletonLoader> _skelLoader;
 		MultiLoader<ISkeletalAnimationLoader> _skelAnimLoader;
 		DataSkeletalAnimatorDefinitionLoader _dataSkelAnimDefLoader;
 
+#ifdef DARMOK_OZZ
 		OzzSkeletonLoader _ozzSkeletonLoader;
 		OzzSkeletalAnimationLoader _ozzSkeletalAnimationLoader;
 #endif
@@ -105,6 +102,9 @@ namespace darmok
 #ifdef DARMOK_MINIAUDIO
 		MiniaudioSoundLoader _miniaudioSoundLoader;
 		MiniaudioMusicLoader _miniaudioMusicLoader;
+#else
+		EmptyLoader<ISoundLoader> _emptySoundLoader;
+		EmptyLoader<IMusicLoader> _emptyMusicLoader;
 #endif
 	};
 }

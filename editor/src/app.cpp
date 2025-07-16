@@ -19,13 +19,6 @@ namespace darmok::editor
     EditorApp::EditorApp(App& app) noexcept
         : _app{ app }
         , _sceneView{ app }
-        , _assetsViews{
-            {"Programs", "Program", Program::Source{} },
-            {"Textures", "Texture", Texture::createSource() },
-            {"Meshes", "Mesh", Mesh::Source{} },
-            {"Materials", "Material", Material::Definition{} },
-            {"Scenes", "Sene", Scene::Definition{} },
-        }
         , _proj{app}
         , _dockLeftId{0}
         , _dockRightId{0}
@@ -76,20 +69,14 @@ namespace darmok::editor
         _proj.init(_progCompConfig);
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(*this);
-        for (auto& assetsView : _assetsViews)
-        {
-            assetsView.init(_proj.getSceneDefinition(), *this);
-        }
+        _assetsView.init(_proj.getSceneDefinition(), *this);
     }
 
     void EditorApp::shutdown()
     {
         stopScene();
         _inspectorView.shutdown();
-        for (auto& assetsView : _assetsViews)
-        {
-            assetsView.shutdown();
-        }
+        _assetsView.shutdown();
         _sceneView.shutdown();
         _proj.shutdown();
         _imgui.reset();
@@ -154,10 +141,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
-            for (auto& assetsView : _assetsViews)
-            {
-                ImGui::DockBuilderDockWindow(assetsView.getTitle().c_str(), _dockDownId);
-            }
+            ImGui::DockBuilderDockWindow(_assetsView.getTitle().c_str(), _dockDownId);
         }
     }   
 
@@ -195,14 +179,18 @@ namespace darmok::editor
         return entity;
     }
 
-    std::optional<std::string> EditorApp::getAssetDragType(uint32_t assetType) const noexcept
+    std::optional<std::string> EditorApp::getAssetDragType(uint32_t assetType) const 
     {
-        for (auto& assetsView : _assetsViews)
+        static const std::unordered_map<uint16_t, std::string> dragTypes = {
+            { protobuf::getTypeId<Program::Source>(), "PROGRAM" },
+            { protobuf::getTypeId<Texture::Source>(), "TEXTURE" },
+            { protobuf::getTypeId<Mesh::Source>(), "MESH" },
+            { protobuf::getTypeId<Material::Definition>(), "MATERIAL" },
+        };
+        auto itr = dragTypes.find(assetType);
+        if (itr != dragTypes.end())
         {
-            if (assetsView.getAssetType() == assetType)
-            {
-                return assetsView.getDragType();
-            }
+            return itr->second;
         }
         return std::nullopt;
     }
@@ -573,10 +561,7 @@ namespace darmok::editor
 
         _proj.render();
         _sceneView.render();
-        for (auto& assetsView : _assetsViews)
-        {
-            assetsView.render();
-        }
+        _assetsView.render();
     }
 
     void EditorApp::update(float deltaTime)
@@ -604,17 +589,13 @@ namespace darmok::editor
         return _app.getAssets();
     }
 
-    std::optional<std::string> EditorApp::getSelectedAssetPath(uint32_t assetType) const
+    std::optional<std::filesystem::path> EditorApp::getSelectedAssetPath() const
     {
-        if (auto selectedAsset = _inspectorView.getSelectedAsset())
-        {
-            return selectedAsset->path;
-        }
-		return std::nullopt;
+        return _inspectorView.getSelectedAssetPath();
     }
 
-    void EditorApp::onAssetPathSelected(uint32_t assetType, const std::string& assetPath)
+    void EditorApp::onAssetPathSelected(const std::filesystem::path& assetPath)
     {
-		_inspectorView.selectObject(AssetHandler{ assetType, assetPath });
+		_inspectorView.selectObject(assetPath);
     }
 }

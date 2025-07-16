@@ -19,10 +19,10 @@ namespace darmok
     {
         entt::continuous_loader _loader;
         Scene& _scene;
-        AssetPackConfig _assetPackConfig;
+        AssetPackConfig _assetConfig;
 
         OptionalRef<const protobuf::Scene> _sceneDef;
-		std::optional<AssetPack> _assetPack;
+        std::optional<AssetPack> _assetPack;
         size_t _count = 0;
         entt::id_type _type;
         std::optional<std::string> _error;
@@ -34,7 +34,7 @@ namespace darmok
         std::vector<ComponentLoadFunction> _postLoadFuncs;
 
         // IComponentLoadContext
-        AssetPack& getAssets() override;
+        IAssetContext& getAssets() override;
         Entity getEntity(uint32_t id) const override;
         const Scene& getScene() const override;
         Scene& getScene() override;
@@ -66,7 +66,7 @@ namespace darmok
         }
 
     public:
-        SceneArchive(Scene& scene, const AssetPackConfig& assetPackConfig = {});
+        SceneArchive(Scene& scene, const AssetPackConfig& assetConfig);
 
         template<typename T>
         void registerComponent()
@@ -160,12 +160,22 @@ namespace darmok
     class SceneImporterImpl final
     {
     public:
-        SceneImporterImpl(Scene& scene, const AssetPackConfig& assetPackConfig = {});
+        SceneImporterImpl(Scene& scene, const AssetPackConfig& assetConfig);
         using Error = std::string;
         using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
         Result operator()(const Scene::Definition& def);
     private:
 		SceneArchive _archive;
+    };
+
+    class SceneLoaderImpl final
+    {
+    public:
+        SceneLoaderImpl(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig);
+        expected<Entity, std::string> operator()(Scene& scene, std::filesystem::path path);
+    private:
+        ISceneDefinitionLoader& _defLoader;
+        AssetPackConfig _assetConfig;
     };
 }

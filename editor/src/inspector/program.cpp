@@ -34,14 +34,6 @@ namespace darmok::editor
             changed = true;
         }
 
-        if (ImGui::Button("Delete"))
-        {
-            if (_app->getProject().getSceneDefinition().removeAsset(src))
-            {
-                changed = true;
-            }
-        }
-
         return changed;
     }
 }

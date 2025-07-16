@@ -73,10 +73,13 @@ namespace darmok::editor
 		return ptr != nullptr && *ptr == entt::null;
     }
 
-    OptionalRef<const AssetHandler> EditorInspectorView::getSelectedAsset() const noexcept
+    std::optional<std::filesystem::path> EditorInspectorView::getSelectedAssetPath() const noexcept
     {
-        auto ptr = std::get_if<AssetHandler>(&_selected);
-		return ptr;
+        if (auto ptr = std::get_if<std::filesystem::path>(&_selected))
+        {
+            return *ptr;
+        }
+		return std::nullopt;
     }
 
     const std::string& EditorInspectorView::getWindowName()
@@ -103,9 +106,9 @@ namespace darmok::editor
                     changed = true;
                 }
             }
-            else if (auto selected = getSelectedAsset())
+            else if (auto selectedPath = getSelectedAssetPath())
             {
-                if (auto asset = sceneDef.getAsset(selected->type, selected->path))
+                if (auto asset = sceneDef.getAsset(*selectedPath))
                 {
                     if (_editors.render(*asset, true))
                     {

@@ -20,7 +20,6 @@ namespace darmok
         using Definition = protobuf::Scene;
         using Message = google::protobuf::Message;
         using Any = google::protobuf::Any;
-        using AssetGroup = protobuf::AssetGroup;
         using RegistryComponents = protobuf::RegistryComponents;
         using IdType = entt::id_type;
 
@@ -32,13 +31,13 @@ namespace darmok
         OptionalRef<const RegistryComponents> getTypeComponents(IdType typeId) const noexcept;
         std::vector<std::reference_wrapper<const Any>> getComponents(Entity entityId) const noexcept;
         OptionalRef<const Any> getComponent(Entity entity, IdType typeId) const noexcept;
-		std::optional<Entity> getEntity(const Message& comp) const noexcept;
+		std::optional<Entity> getEntity(const Any& anyComp) const noexcept;
 
-        OptionalRef<const AssetGroup> getAssetGroup(IdType typeId) const noexcept;
-        std::vector<std::string> getAssetPaths(IdType typeId) const noexcept;
-        std::unordered_map<std::string, OptionalRef<const Any>> getAssets(IdType typeId) const noexcept;
-        OptionalRef<const Any> getAsset(IdType typeId, const std::string& path) const noexcept;
-        std::optional<std::string> getAssetPath(const Message& asset) const noexcept;
+        std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
+        std::vector<std::filesystem::path> getAssetPaths(IdType typeId) const noexcept;
+        std::unordered_map<std::filesystem::path, OptionalRef<const Any>> getAssets(IdType typeId) const noexcept;
+        std::unordered_map<std::filesystem::path, OptionalRef<const Any>> getAssets(const std::filesystem::path& parentPath) const noexcept;
+        OptionalRef<const Any> getAsset(const std::filesystem::path& path) const noexcept;
 
         template<typename T>
         std::unordered_map<Entity, T> getTypeComponents() const noexcept
@@ -94,7 +93,7 @@ namespace darmok
         }
 
         template<typename T>
-        std::optional<T> getAsset(const std::string& path) const noexcept
+        std::optional<T> getAsset(const std::filesystem::path& path) const noexcept
         {
             if (auto any = getAsset(protobuf::getTypeId<T>(), path))
             {
@@ -116,7 +115,6 @@ namespace darmok
         using Definition = protobuf::Scene;
         using Message = google::protobuf::Message;
         using Any = google::protobuf::Any;
-        using AssetGroup = protobuf::AssetGroup;
         using RegistryComponents = protobuf::RegistryComponents;
 
         SceneDefinitionWrapper(Definition& def) noexcept;
@@ -131,13 +129,13 @@ namespace darmok
         OptionalRef<Any> getComponent(Entity entity, IdType typeId) noexcept;
         bool destroyEntity(Entity entity) noexcept;
         bool removeComponent(Entity entity, IdType typeId) noexcept;
-        bool removeComponent(const Message& comp) noexcept;
+        bool removeComponent(const Any& anyComp) noexcept;
 
-        OptionalRef<AssetGroup> getAssetGroup(IdType typeId) noexcept;
-        std::unordered_map<std::string, OptionalRef<Any>> getAssets(IdType typeId) noexcept;
-        OptionalRef<Any> getAsset(IdType typeId, const std::string& path);
-        bool removeAsset(IdType typeId, const std::string& path) noexcept;
-        bool removeAsset(const Message& asset) noexcept;
+        std::unordered_map<std::filesystem::path, OptionalRef<Any>> getAssets(IdType typeId = 0) noexcept;
+        std::unordered_map<std::filesystem::path, OptionalRef<Any>> getAssets(const std::filesystem::path& parentPath) noexcept;
+        OptionalRef<Any> getAsset(const std::filesystem::path& path);
+        bool removeAsset(const std::filesystem::path& path) noexcept;
+        bool removeAsset(const Any& anyAsset) noexcept;
 
         template<typename T>
         std::optional<T> getComponent(Entity entity) const noexcept
@@ -154,9 +152,9 @@ namespace darmok
         }
 
         template<typename T>
-        std::optional<T> getAsset(const std::string& path) const noexcept
+        std::optional<T> getAsset(const std::filesystem::path& path) const noexcept
         {
-            if (auto any = getAsset(protobuf::getTypeId<T>(), path))
+            if (auto any = getAsset(path))
             {
                 T asset;
                 if (any->UnpackTo(&asset))
@@ -168,7 +166,7 @@ namespace darmok
         }
 
         template<typename T>
-        bool removeAsset(const std::string& path) const noexcept
+        bool removeAsset(const std::filesystem::path& path) const noexcept
         {
 			return removeAsset(protobuf::getTypeId<T>(), path);
         }
@@ -183,19 +181,15 @@ namespace darmok
 		OptionalRef<Definition> _def;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISceneDefinitionLoader : public ILoader<protobuf::Scene>
-    {
-    };
-
+    using ISceneDefinitionLoader = ILoader<protobuf::Scene>;
     class Scene;
-    class AssetPack;
-    struct AssetPackConfig;
+    class IAssetContext;
 
     class DARMOK_EXPORT BX_NO_VTABLE IComponentLoadContext
     {
     public:
 		virtual ~IComponentLoadContext() = default;
-        virtual AssetPack& getAssets() = 0;
+        virtual IAssetContext& getAssets() = 0;
         virtual Entity getEntity(uint32_t id) const = 0;
         virtual const Scene& getScene() const = 0;
         virtual Scene& getScene() = 0;
@@ -205,6 +199,7 @@ namespace darmok
 
     class Scene;
     class SceneImporterImpl;
+    class AssetPackConfig;
 
     class SceneImporter final
     {
@@ -212,7 +207,7 @@ namespace darmok
         using Error = std::string;
 		using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
-        SceneImporter(Scene& scene, const AssetPackConfig& assetPackConfig);
+        SceneImporter(Scene& scene, const AssetPackConfig& assetConfig);
 		~SceneImporter();
         Result operator()(const Definition& def);
     private:
@@ -234,15 +229,17 @@ namespace darmok
     {
     };
 
+    class SceneLoaderImpl;
+
     class DARMOK_EXPORT SceneLoader final : public ISceneLoader
     {
     public:
-        SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetPackConfig);
+        SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig);
+        ~SceneLoader();
         Result operator()(Scene& scene, std::filesystem::path path);
 
     private:
-		ISceneDefinitionLoader& _defLoader;
-        const AssetPackConfig& _assetPackConfig;
+        std::unique_ptr<SceneLoaderImpl> _impl;
     };
 
 }

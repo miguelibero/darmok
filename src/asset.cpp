@@ -12,67 +12,62 @@
 
 namespace darmok
 {
-	AssetContextImpl::AssetContextImpl()
-		: _dataLoader{ _allocator }
-		, _imageLoader{ _dataLoader, _allocator }
-		, _dataProgDefLoader{ _dataLoader }
-		, _dataTexDefLoader{ _dataLoader }
+	AssetContextImpl::AssetContextImpl(IAssetContext& assets, Config&& config)
+		: _config{ std::move(config) }
+		, _imageLoader{ getDataLoader(), getAllocator() }
+		, _dataProgDefLoader{ getDataLoader() }
+		, _dataTexDefLoader{ getDataLoader() }
 		, _imgTexDefLoader{ _imageLoader }
 		, _texDefLoader{ _imgTexDefLoader, _dataTexDefLoader }
-		, _dataMeshDefLoader{ _dataLoader }
+		, _dataMeshDefLoader{ getDataLoader() }
 		, _progLoader{ _dataProgDefLoader }
 		, _texLoader{ _texDefLoader }
-		, _dataMatDefLoader{ _dataLoader }
+		, _dataMatDefLoader{ getDataLoader() }
 		, _materialLoader{ _dataMatDefLoader, _progLoader, _texLoader }
 		, _meshLoader{ _dataMeshDefLoader }
-		, _dataTexAtlasDefLoader{ _dataLoader }
-		, _texPackerDefLoader{ _dataLoader, _texDefLoader }
+		, _dataArmDefLoader{ getDataLoader() }
+		, _armatureLoader{ _dataArmDefLoader }
+		, _dataTexAtlasDefLoader{ getDataLoader() }
+		, _texPackerDefLoader{ getDataLoader(), _texDefLoader }
 		, _texAtlasDefLoader{ _texPackerDefLoader, _dataTexAtlasDefLoader }
 		, _texAtlasLoader{ { _texPackerDefLoader }, _texLoader }
 		, _texAtlasFontLoader{ _texAtlasLoader }
-		, _dataSkelAnimDefLoader{ _dataLoader }
-		, _assimpSceneDefLoader{ _dataLoader, _allocator }
-		, _dataSceneDefLoader{ _dataLoader }
+		, _dataSkelAnimDefLoader{ getDataLoader() }
+		, _assimpSceneDefLoader{ getDataLoader(), getAllocator() }
+		, _dataSceneDefLoader{ getDataLoader() }
 		, _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
-		, _sceneLoader{ _sceneDefLoader, AssetPackConfig{
-				.fallbacks = {
-					.program = _progLoader,
-					.texture = _texLoader,
-					.mesh = _meshLoader,
-					.material = _materialLoader,
-				}
-			}
-		}
+		, _sceneLoader{ _sceneDefLoader, {
+			
+		} }
 #ifdef DARMOK_OZZ
-		, _ozzSkeletonLoader{ _dataLoader }
-		, _ozzSkeletalAnimationLoader{ _dataLoader }
+		, _ozzSkeletonLoader{ getDataLoader() }
+		, _ozzSkeletalAnimationLoader{ getDataLoader() }
 		, _skelLoader{ _ozzSkeletonLoader }
 		, _skelAnimLoader{ _ozzSkeletalAnimationLoader }
 #endif		
 #ifdef DARMOK_FREETYPE
-		, _freetypeFontDefLoader{ _dataLoader }
-		, _freetypeFontLoader{ _freetypeFontDefLoader, _allocator }
-		, _fontLoader{ _freetypeFontLoader }
+		, _freetypeFontDefLoader{ getDataLoader() }
+		, _freetypeFontLoader{ _freetypeFontDefLoader, getAllocator() }
+		, _fontLoader{ _freetypeFontLoader, _texAtlasFontLoader }
 #else
-		, _fontLoader{ _textureAtlasFontLoader }
+		, _fontLoader{ _texAtlasFontLoader }
 #endif
 #ifdef DARMOK_MINIAUDIO
-		, _miniaudioSoundLoader{ _dataLoader }
-		, _miniaudioMusicLoader{ _dataLoader }
+		, _miniaudioSoundLoader{ getDataLoader() }
+		, _miniaudioMusicLoader{ getDataLoader() }
 #endif
 	{
-		addBasePath("assets");
 		_fontLoader.addFront(_texAtlasFontLoader, ".xml");
 	}
 
 	bx::AllocatorI& AssetContextImpl::getAllocator() noexcept
 	{
-		return _allocator;
+		return _config.allocator;
 	}
 
 	IDataLoader& AssetContextImpl::getDataLoader() noexcept
 	{
-		return _dataLoader;
+		return _config.dataLoader;
 	}
 	
 	IImageLoader& AssetContextImpl::getImageLoader() noexcept
@@ -103,6 +98,11 @@ namespace darmok
 	IMeshLoader& AssetContextImpl::getMeshLoader() noexcept
 	{
 		return _meshLoader;
+	}
+
+	IArmatureLoader& AssetContextImpl::getArmatureLoader() noexcept
+	{
+		return _armatureLoader;
 	}
 
 	IFontLoader& AssetContextImpl::getFontLoader() noexcept
@@ -144,16 +144,6 @@ namespace darmok
 	}
 #endif
 
-	void AssetContextImpl::addBasePath(const std::filesystem::path& path) noexcept
-	{
-		_dataLoader.addBasePath(path);
-	}
-
-	bool AssetContextImpl::removeBasePath(const std::filesystem::path& path) noexcept
-	{
-		return _dataLoader.removeBasePath(path);
-	}
-
 	void AssetContextImpl::init(App& app)
 	{
 		_freetypeFontLoader.init(app);
@@ -175,8 +165,8 @@ namespace darmok
 		_freetypeFontLoader.shutdown();
 	}
 
-	AssetContext::AssetContext() noexcept
-		: _impl(std::make_unique<AssetContextImpl>())
+	AssetContext::AssetContext(Config&& config) noexcept
+		: _impl{ std::make_unique<AssetContextImpl>(*this, std::move(config)) }
 	{
 	}
 
@@ -219,6 +209,11 @@ namespace darmok
 		return _impl->getMaterialLoader();
 	}
 
+	IArmatureLoader& AssetContext::getArmatureLoader() noexcept
+	{
+		return _impl->getArmatureLoader();
+	}
+
 	ISceneLoader& AssetContext::getSceneLoader() noexcept
 	{
 		return _impl->getSceneLoader();
@@ -229,7 +224,6 @@ namespace darmok
 		return _impl->getFontLoader();
 	}
 
-#ifdef DARMOK_OZZ
 	ISkeletonLoader& AssetContext::getSkeletonLoader() noexcept
 	{
 		return _impl->getSkeletonLoader();
@@ -244,9 +238,7 @@ namespace darmok
 	{
 		return _impl->getSkeletalAnimatorDefinitionLoader();
 	}
-#endif
-
-#ifdef DARMOK_MINIAUDIO
+	
 	ISoundLoader& AssetContext::getSoundLoader() noexcept
 	{
 		return _impl->getSoundLoader();
@@ -256,7 +248,6 @@ namespace darmok
 	{
 		return _impl->getMusicLoader();
 	}
-#endif
 
 	bx::AllocatorI& AssetContext::getAllocator() noexcept
 	{
@@ -271,17 +262,6 @@ namespace darmok
 	const AssetContextImpl& AssetContext::getImpl() const noexcept
 	{
 		return *_impl;
-	}
-
-	AssetContext& AssetContext::addBasePath(const std::filesystem::path& path) noexcept
-	{
-		_impl->addBasePath(path);
-		return *this;
-	}
-
-	bool AssetContext::removeBasePath(const std::filesystem::path& path) noexcept
-	{
-		return _impl->removeBasePath(path);
 	}
 
 	DarmokAssetFileImporter::DarmokAssetFileImporter(const CommandLineFileImporterConfig& config)
