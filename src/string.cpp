@@ -147,6 +147,20 @@ namespace darmok::StringUtils
 		return count;
 	}
 
+	size_t replace(std::string& str, char src, char dst) noexcept
+	{
+		size_t count = 0;
+		for (char& ch : str)
+		{
+			if (ch == src)
+			{
+				ch = dst;
+				++count;
+			}
+		}
+		return count;
+	}
+
 	std::u32string toUtf32(std::string_view str) noexcept
 	{
 		std::u32string result;

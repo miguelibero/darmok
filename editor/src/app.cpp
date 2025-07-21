@@ -141,7 +141,7 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
-            ImGui::DockBuilderDockWindow(_assetsView.getTitle().c_str(), _dockDownId);
+            ImGui::DockBuilderDockWindow(_assetsView.getWindowName().c_str(), _dockDownId);
         }
     }   
 
@@ -177,22 +177,6 @@ namespace darmok::editor
 		}
         sceneDef.setComponent(entity, trans);
         return entity;
-    }
-
-    std::optional<std::string> EditorApp::getAssetDragType(uint32_t assetType) const 
-    {
-        static const std::unordered_map<uint16_t, std::string> dragTypes = {
-            { protobuf::getTypeId<Program::Source>(), "PROGRAM" },
-            { protobuf::getTypeId<Texture::Source>(), "TEXTURE" },
-            { protobuf::getTypeId<Mesh::Source>(), "MESH" },
-            { protobuf::getTypeId<Material::Definition>(), "MATERIAL" },
-        };
-        auto itr = dragTypes.find(assetType);
-        if (itr != dragTypes.end())
-        {
-            return itr->second;
-        }
-        return std::nullopt;
     }
 
     void EditorApp::renderMainMenu()
@@ -236,6 +220,30 @@ namespace darmok::editor
                 if (ImGui::MenuItem("Add Entity"))
                 {
                     addEntity();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Asset"))
+            {
+                if (ImGui::BeginMenu("Add"))
+                {
+                    if (ImGui::MenuItem("Program"))
+                    {
+                        _assetsView.addAsset<Program::Source>();
+                    }
+                    if (ImGui::MenuItem("Texture"))
+                    {
+                        _assetsView.addAsset<Texture::Source>();
+                    }
+                    if (ImGui::MenuItem("Mesh"))
+                    {
+                        _assetsView.addAsset<Mesh::Source>();
+                    }
+                    if (ImGui::MenuItem("Material"))
+                    {
+                        _assetsView.addAsset<Material::Definition>();
+                    }
+					ImGui::EndMenu();
                 }
                 ImGui::EndMenu();
             }

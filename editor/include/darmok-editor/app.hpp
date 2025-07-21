@@ -55,11 +55,10 @@ namespace darmok::editor
 
         Entity addEntity() noexcept;
 
-
         template<typename T>
         std::optional<std::string> getAssetDragType() const noexcept
         {
-            return getAssetDragType(protobuf::getTypeId<T>());
+            return _assetsView.getAssetDragType(protobuf::getTypeId<T>());
         }
 
     private:
@@ -87,7 +86,6 @@ namespace darmok::editor
         // IEditorAssetsViewDelegate
         std::optional<std::filesystem::path> getSelectedAssetPath() const override;
         void onAssetPathSelected(const std::filesystem::path& assetPath) override;
-        std::optional<std::string> getAssetDragType(uint32_t assetType) const override;
 
         void renderMainMenu();
         void renderMainToolbar();

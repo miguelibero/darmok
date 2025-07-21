@@ -105,6 +105,8 @@ namespace darmok
             }
             return std::nullopt;
         }
+    protected:
+        static std::optional<std::filesystem::path> getChildPath(const std::filesystem::path& path, const std::filesystem::path& parentPath) noexcept;
     private:
         OptionalRef<const Definition> _def;
     };
@@ -121,8 +123,8 @@ namespace darmok
         void setName(std::string_view name) noexcept;
 
         Entity createEntity() noexcept;
-        bool setAsset(std::string_view path, const Message& asset) noexcept;
-        std::string addAsset(std::string_view pathPrefix, const Message& asset) noexcept;
+        bool setAsset(const std::filesystem::path& path, const Message& asset) noexcept;
+        std::filesystem::path addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept;
         bool setComponent(Entity entity, const Message& comp) noexcept;
         std::vector<std::reference_wrapper<Any>> getComponents(Entity entity) noexcept;
         OptionalRef<RegistryComponents> getTypeComponents(IdType typeId) noexcept;

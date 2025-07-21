@@ -89,12 +89,13 @@ namespace darmok
         bool twoSided = false;
         PrimitiveType primitiveType = protobuf::Material::Triangle;
 
-
         bool valid() const noexcept;
 
         Material() = default;
         Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept;
         Material(std::shared_ptr<Program> prog, const Color& color) noexcept;
+
+        [[nodiscard]] static Definition createDefinition() noexcept;
     };
 
     class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>

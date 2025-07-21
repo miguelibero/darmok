@@ -89,6 +89,8 @@ namespace darmok
         [[nodiscard]] std::string toString() const noexcept override;
         bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
         [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+
+        [[nodiscard]] static Source createSource() noexcept;
     private:
         bgfx::VertexLayout _layout;
         bgfx::VertexBufferHandle _vertexBuffer;

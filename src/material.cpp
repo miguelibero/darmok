@@ -120,6 +120,15 @@ namespace darmok
 	{
 	}
 
+	Material::Definition Material::createDefinition() noexcept
+	{
+		Definition def;
+		def.set_standard_program(Program::Standard::Forward);
+		*def.mutable_base_color() = protobuf::convert(Colors::white());
+		def.set_opacity_type(Material::Definition::Opaque);
+		return def;
+	}
+
 	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept
 		: FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>(defLoader)
 		, _progLoader{ progLoader }

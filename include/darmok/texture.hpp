@@ -116,8 +116,9 @@ namespace darmok
 		[[nodiscard]] uint8_t getMipsCount() const noexcept;
 		[[nodiscard]] uint8_t getBitsPerPixel() const noexcept;
 
-		bgfx::TextureInfo getInfo() const noexcept;
-		static const protobuf::TextureConfig& getEmptyConfig() noexcept;
+		[[nodiscard]] bgfx::TextureInfo getInfo() const noexcept;
+		[[nodiscard]] static const protobuf::TextureConfig& getEmptyConfig() noexcept;
+		[[nodiscard]] static Source createSource() noexcept;
 
 		Texture& setName(std::string_view name) noexcept;
 
@@ -136,8 +137,6 @@ namespace darmok
 		[[nodiscard]] static std::optional<uint64_t> readSamplerFlag(std::string_view name) noexcept;
 		[[nodiscard]] static const FlagMap& getSamplerFlags() noexcept;
 		[[nodiscard]] static uint64_t getBorderColorFlag(const Color& color) noexcept;
-
-		static Source createSource() noexcept;
 
 	private:
 		bgfx::TextureHandle _handle;

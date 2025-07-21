@@ -3,6 +3,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/shape_serialize.hpp>
 #include <darmok/data.hpp>
+#include <darmok/protobuf/program.pb.h>
 #include <glm/gtx/component_wise.hpp>
 
 #include <array>
@@ -108,6 +109,18 @@ namespace darmok
 	const bgfx::VertexLayout& Mesh::getVertexLayout() const noexcept
 	{
 		return _layout;
+	}
+
+	Mesh::Source Mesh::createSource() noexcept
+	{
+		Source src;
+		src.set_standard_program(protobuf::StandardProgram::Forward);
+		src.set_name("Default Shape");
+		auto& sphere = *src.mutable_sphere();
+		sphere.mutable_shape()->set_radius(1.f);
+		sphere.set_lod(32);
+
+		return src;
 	}
 
 	Mesh::~Mesh() noexcept

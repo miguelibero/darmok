@@ -111,6 +111,34 @@ namespace darmok
         return paths;
     }
 
+    std::optional<std::filesystem::path> ConstSceneDefinitionWrapper::getChildPath(const std::filesystem::path& path, const std::filesystem::path& parentPath) noexcept
+    {
+        static const char sep = '/';
+
+        auto normalize = [](const std::filesystem::path& path)
+        {
+            auto str = path.lexically_normal().string();
+            StringUtils::replace(str, std::filesystem::path::preferred_separator, sep);
+            return str;
+        };
+
+        auto pathStr = normalize(path);
+        auto parentPathStr = normalize(parentPath);
+        if (parentPathStr == ".")
+        {
+            parentPathStr.clear();
+        }
+
+        auto pos = pathStr.find(parentPathStr);
+        if (pos != 0)
+        {
+            return std::nullopt;
+        }
+        pos += parentPathStr.size();
+        auto endPos = pathStr.find(sep, pos);
+        return pathStr.substr(pos, endPos);
+    }
+
     std::unordered_map<std::filesystem::path, OptionalRef<const ConstSceneDefinitionWrapper::Any>> ConstSceneDefinitionWrapper::getAssets(IdType typeId) const noexcept
     {
         auto& assetPack = _def->assets();
@@ -135,11 +163,14 @@ namespace darmok
         for (auto& [pathStr, any] : assetPack.assets())
         {
             std::filesystem::path path{ pathStr };
-            if (path.parent_path() != parentPath)
+            if (path.parent_path() == parentPath)
             {
-                continue;
+                assets[path] = any;
             }
-            assets[path] = any;
+            else if(auto childPath = getChildPath(path, parentPath))
+            {
+                assets[*childPath] = nullptr;
+			}
         }
         return assets;
     }
@@ -189,11 +220,11 @@ namespace darmok
         return static_cast<Entity>(v);
     }
 
-    bool SceneDefinitionWrapper::setAsset(std::string_view path, const Message& asset) noexcept
+    bool SceneDefinitionWrapper::setAsset(const std::filesystem::path& path, const Message& asset) noexcept
     {
         auto typeId = protobuf::getTypeId(asset);
         auto& assetPack = *_def->mutable_assets();
-        auto result = assetPack.mutable_assets()->try_emplace(path);
+        auto result = assetPack.mutable_assets()->try_emplace(path.string());
         if(protobuf::isAny(asset))
         {
 			result.first->second = static_cast<const Any&>(asset);
@@ -206,17 +237,17 @@ namespace darmok
     }
 
 
-    std::string SceneDefinitionWrapper::addAsset(std::string_view pathPrefix, const Message& asset) noexcept
+    std::filesystem::path SceneDefinitionWrapper::addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept
     {
         auto typeId = protobuf::getTypeId(asset);
         auto& assetPack = *_def->mutable_assets();
         auto& assets = *assetPack.mutable_assets();
-		std::string path{ pathPrefix };
+		std::string path{ pathPrefix.string() };
         auto itr = assets.find(path);
         auto i = 0;
         while (itr != assets.end())
         {
-            path = fmt::format("{}_{}", pathPrefix, ++i);
+            path = fmt::format("{}_{}", pathPrefix.string(), ++i);
             itr = assets.find(path);
         }
         if (protobuf::isAny(asset))
@@ -343,7 +374,7 @@ namespace darmok
         assets.reserve(assetPack.assets_size());
         for (auto& [path, any] : *assetPack.mutable_assets())
         {
-            if(typeId != 0 || protobuf::getTypeId(any) != typeId)
+            if(typeId != 0 && protobuf::getTypeId(any) != typeId)
             {
                 continue;
 			}
@@ -354,17 +385,25 @@ namespace darmok
 
     std::unordered_map<std::filesystem::path, OptionalRef<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getAssets(const std::filesystem::path& parentPath) noexcept
     {
+        auto ppath = parentPath;
+        if (ppath == ".")
+        {
+            ppath = std::filesystem::path{};
+        }
         auto& assetPack = *_def->mutable_assets();
         std::unordered_map<std::filesystem::path, OptionalRef<Any>> assets;
         assets.reserve(assetPack.assets_size());
         for (auto& [pathStr, any] : *assetPack.mutable_assets())
         {
             std::filesystem::path path{ pathStr };
-            if (path.parent_path() != parentPath)
+            if (path.parent_path() == ppath)
             {
-                continue;
+                assets[path] = any;
             }
-            assets[path] = any;
+			else if (auto childPath = getChildPath(path, ppath))
+            {
+                assets[*childPath] = nullptr;
+            }
         }
         return assets;
     }

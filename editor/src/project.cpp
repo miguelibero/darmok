@@ -255,7 +255,6 @@ namespace darmok::editor
         auto white = protobuf::convert(Colors::white());
         auto white3 = protobuf::convert(Colors::white3());
 
-
         Transform::Definition camTrans;
 		*camTrans.mutable_scale() = scale;
         camTrans.set_name("Main Camera");
@@ -293,21 +292,14 @@ namespace darmok::editor
         *dirLightTrans.mutable_rotation() = protobuf::convert(rot);
         scene.setComponent(dirLightEntity, dirLightTrans);
 
-        Mesh::Source mesh;
-		mesh.set_standard_program(Program::Standard::Forward);
-        mesh.set_name("Default Shape");
-		auto& sphere = *mesh.mutable_sphere();
-        sphere.mutable_shape()->set_radius(1.f);
-        sphere.set_lod(32);
-        std::string meshPath = "default_mesh";
+        auto mesh = Mesh::createSource();
+		mesh.set_name("Default Mesh");
+        std::string meshPath = "default/mesh";
         scene.setAsset(meshPath, mesh);
 
-        Material::Definition mat;
+        auto mat = Material::createDefinition();
         mat.set_name("Default");
-        mat.set_standard_program(Program::Standard::Forward);
-        *mat.mutable_base_color() = white;
-        mat.set_opacity_type(Material::Definition::Opaque);
-        std::string matPath = "default_material";
+        std::string matPath = "default/material";
         scene.setAsset(matPath, mat);
 
         auto renderableEntity = scene.createEntity();

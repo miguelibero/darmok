@@ -17,22 +17,28 @@ namespace darmok::editor
     {
         _scene = scene;
         _delegate = delegate;
+
+        addAssetType("program",     Program::createSource());
+        addAssetType("texture",     Texture::createSource());
+        addAssetType("mesh",        Mesh::createSource());
+        addAssetType("material",    Material::createDefinition());
     }
 
-    const std::string& EditorAssetsView::getTitle()
+    const std::string& EditorAssetsView::getWindowName()
     {
-		static const std::string title = "Assets";
-        return title;
+		static const std::string name = "###Assets";
+        return name;
     }
 
     void EditorAssetsView::shutdown()
     {
         _delegate.reset();
+        _assetTypes.clear();
     }
 
     void EditorAssetsView::focus()
     {
-        ImGui::SetWindowFocus(getTitle().c_str());
+        ImGui::SetWindowFocus(getWindowName().c_str());
     }
 
     bool EditorAssetsView::render()
@@ -43,7 +49,39 @@ namespace darmok::editor
             return false;
         }
         bool changed = false;
-        if (ImGui::Begin(getTitle().c_str()))
+
+        std::string title{ "Assets" };
+        if (!_currentPath.empty())
+        {
+            title += " - " + _currentPath.string();
+        }
+
+        title += getWindowName();
+
+        std::optional<std::filesystem::path> selectedPath;
+        if (_delegate)
+        {
+            selectedPath = _delegate->getSelectedAssetPath();
+        }
+
+        int i = 0;
+        auto drawItem = [&i, this, &selectedPath](const std::filesystem::path& path, OptionalRef<SceneDefinitionWrapper::Any> asset)
+        {
+            ImGui::PushID(i);
+            ImGui::TableNextColumn();
+            if (!asset)
+            {
+                drawFolder(path, selectedPath == path);
+            }
+            else
+            {
+                drawAsset(*asset, path, selectedPath == path);
+            }
+            ImGui::PopID();
+            ++i;
+        };
+
+        if (ImGui::Begin(title.c_str()))
         {
             auto winSize = ImGui::GetWindowSize();
             float colWidth = ImguiUtils::getAssetSize().x + (2 * cellPadding.x);
@@ -51,23 +89,15 @@ namespace darmok::editor
             if (cols > 0)
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cellPadding);
-                ImGui::BeginTable(getTitle().c_str(), cols);
-                std::optional<std::filesystem::path> selectedPath;
-                if (_delegate)
+                ImGui::BeginTable("main", cols);
+                auto assets = _scene->getAssets(_currentPath);
+                if (!_currentPath.empty())
                 {
-                    selectedPath = _delegate->getSelectedAssetPath();
+                    drawItem("..", nullptr);
                 }
-                int i = 0;
-                for (auto [path, asset] : _scene->getAssets())
+                for (auto [path, asset] : assets)
                 {
-                    ImGui::PushID(i);
-                    ImGui::TableNextColumn();
-                    if (drawAsset(*asset, path, selectedPath == path))
-                    {
-                        changed = true;
-                    }
-                    ImGui::PopID();
-                    ++i;
+                    drawItem(path, asset);
                 }
                 ImGui::TableNextColumn();
                 ImGui::EndTable();
@@ -76,6 +106,26 @@ namespace darmok::editor
         }
         ImGui::End();
         return changed;
+    }
+
+    bool EditorAssetsView::drawFolder(const std::filesystem::path& path, bool selected)
+    {
+        std::string name = path.filename().string();
+        auto selectionChanged = false;
+        if (ImguiUtils::drawAsset(name.c_str(), selected))
+        {
+            selected = !selected;
+            selectionChanged = true;
+        }
+        if (selectionChanged && selected)
+        {
+            _delegate->onAssetPathSelected(path);
+        }
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        {
+            _currentPath = (_currentPath / path).lexically_normal();
+        }
+        return selected;
     }
 
     bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::filesystem::path& path, bool selected)
@@ -87,7 +137,7 @@ namespace darmok::editor
             selected = !selected;
             selectionChanged = true;
         }
-		auto dragType = _delegate->getAssetDragType(protobuf::getTypeId(asset));
+		auto dragType = getAssetDragType(protobuf::getTypeId(asset));
         if (dragType && ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
             if (!path.empty())
@@ -103,5 +153,39 @@ namespace darmok::editor
 			_delegate->onAssetPathSelected(path);
         }
         return selected;
+    }
+
+    std::optional<std::string> EditorAssetsView::getAssetTypeName(uint32_t assetType) const noexcept
+    {
+        auto itr = _assetTypes.find(assetType);
+        if (itr != _assetTypes.end())
+        {
+            return itr->second.name;
+        }
+        return std::nullopt;
+    }
+
+    std::filesystem::path EditorAssetsView::addAsset(uint32_t assetType)
+    {
+        auto pathPrefix = _currentPath.string() + "/";
+        if (auto name = getAssetTypeName(assetType))
+        {
+            pathPrefix = pathPrefix + *name;
+        }
+        auto itr = _assetTypes.find(assetType);
+        if (itr != _assetTypes.end())
+        {
+            return _scene->addAsset(pathPrefix, *itr->second.prototype);
+        }
+        return {};
+    }
+
+    std::optional<std::string> EditorAssetsView::getAssetDragType(uint32_t assetType) const noexcept
+    {
+        if (auto name = getAssetTypeName(assetType))
+        {
+            return StringUtils::toUpper(*name);
+        }
+        return std::nullopt;
     }
 }

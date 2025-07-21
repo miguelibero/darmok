@@ -21,6 +21,7 @@ namespace darmok
         [[nodiscard]] bool contains(std::string_view sv, std::string_view part) noexcept;
         [[nodiscard]] bool contains(std::string_view sv, std::string_view::value_type part) noexcept;
         size_t replace(std::string& str, std::string_view src, std::string_view dst) noexcept;
+        size_t replace(std::string& str, char src, char dst) noexcept;
 
         [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
         [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;

@@ -51,6 +51,8 @@ namespace darmok
 			return Program{ def };
 		}
 
+		[[nodiscard]] static Source createSource() noexcept;
+
 	private:
 
 		expected<ShaderHandles, std::string> createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name);
