@@ -11,7 +11,7 @@ namespace darmok::editor
         return "Cube";
     }
 
-    bool CubeInspectorEditor::renderType(Cube::Definition& cube) noexcept
+    CubeInspectorEditor::RenderResult CubeInspectorEditor::renderType(Cube::Definition& cube) noexcept
     {
         auto changed = false;
 
@@ -32,7 +32,7 @@ namespace darmok::editor
         return "Sphere";
     }
 
-    bool SphereInspectorEditor::renderType(Sphere::Definition& sphere) noexcept
+    CubeInspectorEditor::RenderResult SphereInspectorEditor::renderType(Sphere::Definition& sphere) noexcept
     {
         auto changed = false;
  
@@ -53,7 +53,7 @@ namespace darmok::editor
         return "Capsule";
     }
 
-    bool CapsuleInspectorEditor::renderType(Capsule::Definition& capsule) noexcept
+    CubeInspectorEditor::RenderResult CapsuleInspectorEditor::renderType(Capsule::Definition& capsule) noexcept
     {
         auto changed = false;
         if (ImguiUtils::drawProtobufInput("Cylinder height", "cylinder_height", capsule))
@@ -77,7 +77,7 @@ namespace darmok::editor
         return "Rectangle";
     }
 
-    bool RectangleInspectorEditor::renderType(Rectangle::Definition& rect) noexcept
+    CubeInspectorEditor::RenderResult RectangleInspectorEditor::renderType(Rectangle::Definition& rect) noexcept
     {
         auto changed = false;
         if (ImguiUtils::drawProtobufInput("Size", "size", rect))

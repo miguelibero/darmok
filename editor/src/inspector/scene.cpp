@@ -15,7 +15,7 @@ namespace darmok::editor
         return "Scene";
     }
 
-    bool SceneInspectorEditor::renderType(Scene::Definition& scene) noexcept
+    SceneInspectorEditor::RenderResult SceneInspectorEditor::renderType(Scene::Definition& scene) noexcept
     {
         auto changed = false;
  

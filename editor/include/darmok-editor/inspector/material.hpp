@@ -24,17 +24,15 @@ namespace darmok::editor
         std::shared_ptr<Texture> _tex;
     };
 
-    class MaterialInspectorEditor final : public ITypeObjectEditor<Material::Definition>
+    class MaterialInspectorEditor final : public AssetObjectEditor<Material::Definition>
     {
     public:
-        std::string getTitle() const noexcept override;
         void init(EditorApp& app, ObjectEditorContainer& container) override;
         void shutdown() override;
-        bool renderType(Material::Definition& mat) noexcept override;
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(Material::Definition& mat) noexcept override;
     private:
-        OptionalRef<EditorApp> _app;
 		std::unordered_map<Material::TextureDefinition::Type, MaterialTextureEditor> _textureEditors;
-
         bool renderTextureInput(Material::Definition& mat, Material::TextureDefinition::Type type) noexcept;
     };
 }

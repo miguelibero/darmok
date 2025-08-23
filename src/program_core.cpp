@@ -730,7 +730,11 @@ namespace darmok
         _config->read(input.config, input.basePath);
 
         _src.emplace();
-        readSource(*_src, input.config, input.path);
+        auto result = readSource(*_src, input.config, input.path);
+        if (!result)
+        {
+            return false;
+        }
 
         _outputPath = input.getOutputPath(".bin");
         return true;

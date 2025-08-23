@@ -11,22 +11,12 @@
 
 namespace darmok::editor
 {
-    void TransformInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
-    {
-        _app = app;
-    }
-
-    void TransformInspectorEditor::shutdown()
-    {
-        _app.reset();
-    }
-
     std::string TransformInspectorEditor::getTitle() const noexcept
     {
 		return "Transform";
     }
 
-    bool TransformInspectorEditor::renderType(Transform::Definition& trans) noexcept
+    TransformInspectorEditor::RenderResult TransformInspectorEditor::renderType(Transform::Definition& trans) noexcept
     {
         static const std::unordered_map<std::string, std::string> labels
         {

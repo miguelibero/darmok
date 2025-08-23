@@ -5,31 +5,31 @@
 
 namespace darmok::editor
 {
-    class CubeInspectorEditor final : public ITypeObjectEditor<Cube::Definition>
+    class CubeInspectorEditor final : public ObjectEditor<Cube::Definition>
     {
     public:
-        std::string getTitle() const noexcept override;
-        bool renderType(Cube::Definition& cube) noexcept override;
+		std::string getTitle() const noexcept override;
+        RenderResult renderType(Cube::Definition& cube) noexcept override;
     };
 
-    class SphereInspectorEditor final : public ITypeObjectEditor<Sphere::Definition>
+    class SphereInspectorEditor final : public ObjectEditor<Sphere::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(Sphere::Definition& sphere) noexcept override;
+        RenderResult renderType(Sphere::Definition& sphere) noexcept override;
     };
 
-    class CapsuleInspectorEditor final : public ITypeObjectEditor<Capsule::Definition>
+    class CapsuleInspectorEditor final : public ObjectEditor<Capsule::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(Capsule::Definition& capsule) noexcept override;
+        RenderResult renderType(Capsule::Definition& capsule) noexcept override;
     };
 
-    class RectangleInspectorEditor final : public ITypeObjectEditor<Rectangle::Definition>
+    class RectangleInspectorEditor final : public ObjectEditor<Rectangle::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(Rectangle::Definition& rect) noexcept override;
+        RenderResult renderType(Rectangle::Definition& rect) noexcept override;
     };
 }

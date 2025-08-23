@@ -129,7 +129,11 @@ namespace darmok::physics3d
         {
             chars.insert(textData.content.begin(), textData.content.end());
         }
-        _config.font->update(chars);
+        auto updateResult = _config.font->update(chars);
+        if (!updateResult)
+        {
+            return;
+		}
 
         MeshData meshData;
         meshData.type = Mesh::Definition::Transient;

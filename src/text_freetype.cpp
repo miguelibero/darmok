@@ -578,10 +578,10 @@ namespace darmok
 		if (outputIndex == 0)
 		{
 			auto encoding = Image::getEncodingForPath(_imagePath);
-			auto writeResult = _image->write(encoding, out);
-			if (!writeResult)
+			auto imgWriteResult = _image->write(encoding, out);
+			if (!imgWriteResult)
 			{			
-				throw std::runtime_error{ writeResult.error() };
+				throw std::runtime_error{ imgWriteResult.error() };
 			}
 			return;
 		}
@@ -591,7 +591,11 @@ namespace darmok
 
 		pugi::xml_document doc;
 		_dataLoader.setBasePath(_baseOutputPath);
-		TextureAtlasUtils::writeTexturePacker(*_atlas, doc);
+		auto atlasWriteResult = TextureAtlasUtils::writeTexturePacker(*_atlas, doc);
+		if (!atlasWriteResult)
+		{
+			throw std::runtime_error{ atlasWriteResult.error() };
+		}
 		doc.save(out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	}
 

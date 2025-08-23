@@ -81,13 +81,21 @@ namespace darmok
         {
             _allDefines.insert(defines.begin(), defines.end());
             auto fragHandle = findBestShader(defines, _fragmentHandles);
-            createHandle(defines, vertHandle, fragHandle);
+            auto result = createHandle(defines, vertHandle, fragHandle);
+            if(!result)
+            {
+                throw std::runtime_error{ result.error() };
+			}
         }
         for (auto& [defines, fragHandle] : _fragmentHandles)
         {
             _allDefines.insert(defines.begin(), defines.end());
             auto vertHandle = findBestShader(defines, _vertexHandles);
-            createHandle(defines, vertHandle, fragHandle);
+            auto result = createHandle(defines, vertHandle, fragHandle);
+            if (!result)
+            {
+                throw std::runtime_error{ result.error() };
+            }
         }
     }
 
@@ -192,7 +200,11 @@ namespace darmok
         }
 
         auto def = std::make_shared<Program::Definition>();
-        loadDefinition(*def, type);
+        auto result = loadDefinition(*def, type);
+        if(!result)
+        {
+            return nullptr;
+		}
         _defCache[type] = def;
         return def;
     }

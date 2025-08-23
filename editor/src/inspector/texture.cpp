@@ -7,16 +7,6 @@
 
 namespace darmok::editor
 {
-    void TextureDefinitionInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
-    {
-        _app = app;
-    }
-
-    void TextureDefinitionInspectorEditor::shutdown()
-    {
-        _app.reset();
-    }
-
     std::string TextureDefinitionInspectorEditor::getTitle() const noexcept
     {
         return "Texture";
@@ -25,7 +15,7 @@ namespace darmok::editor
     const std::string TextureDefinitionInspectorEditor::_imageFilter = "*.png *.jpg *.jpeg *.bmp";
     const glm::vec2 TextureDefinitionInspectorEditor::_maxPreviewSize{ 200.F };
 
-    bool TextureDefinitionInspectorEditor::renderType(Texture::Source& src) noexcept
+    TextureDefinitionInspectorEditor::RenderResult TextureDefinitionInspectorEditor::renderType(Texture::Source& src) noexcept
     {
         auto changed = false;
 

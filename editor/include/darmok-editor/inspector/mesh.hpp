@@ -7,15 +7,10 @@
 
 namespace darmok::editor
 {
-    class MeshSourceInspectorEditor final : public ITypeObjectEditor<Mesh::Source>
+    class MeshSourceInspectorEditor final : public AssetObjectEditor<Mesh::Source>
     {
     public:
         std::string getTitle() const noexcept override;
-        void init(EditorApp& app, ObjectEditorContainer& container) override;
-        void shutdown() override;
-        bool renderType(Mesh::Source& src) noexcept override;
-    private:
-        OptionalRef<EditorApp> _app;
-        OptionalRef<ObjectEditorContainer> _container;
+        RenderResult renderType(Mesh::Source& src) noexcept override;
     };
 }

@@ -8,16 +8,6 @@
 
 namespace darmok::editor
 {
-    void ProgramSourceInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
-    {
-        _app = app;
-    }
-
-    void ProgramSourceInspectorEditor::shutdown()
-    {
-        _app.reset();
-    }
-
     std::string ProgramSourceInspectorEditor::getTitle() const noexcept
     {
         return "Program";
@@ -25,15 +15,13 @@ namespace darmok::editor
 
     const std::string ProgramSourceInspectorEditor::_shaderFilter = "*.txt *.sc";
 
-    bool ProgramSourceInspectorEditor::renderType(protobuf::ProgramSource& src) noexcept
+    ProgramSourceInspectorEditor::RenderResult ProgramSourceInspectorEditor::renderType(protobuf::ProgramSource& src) noexcept
     {
         auto changed = false;
-
         if (ImguiUtils::drawProtobufInput("Name", "name", src))
         {
             changed = true;
         }
-
         return changed;
     }
 }

@@ -10,22 +10,12 @@
 
 namespace darmok::editor
 {
-	void RenderableInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
-	{
-		_app = app;
-	}
-
-	void RenderableInspectorEditor::shutdown()
-	{
-		_app.reset();
-	}
-
 	std::string RenderableInspectorEditor::getTitle() const noexcept
 	{
 		return "Renderable";
 	}
 
-	bool RenderableInspectorEditor::renderType(Renderable::Definition& renderable) noexcept
+	RenderableInspectorEditor::RenderResult RenderableInspectorEditor::renderType(Renderable::Definition& renderable) noexcept
 	{
 		auto changed = false;
 

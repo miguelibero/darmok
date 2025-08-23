@@ -314,7 +314,7 @@ namespace darmok
 		}
 		for (auto& [font, chars] : fontChars)
 		{
-			font->update(chars);
+			auto updateResult = font->update(chars);
 		}
 		for (auto entity : entities)
 		{

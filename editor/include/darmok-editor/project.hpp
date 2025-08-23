@@ -29,9 +29,13 @@ namespace darmok::editor
         void updateScene();
 
         std::shared_ptr<Scene> getScene();
+        std::shared_ptr<const Scene> getScene() const;
         SceneDefinitionWrapper& getSceneDefinition();
+        const SceneDefinitionWrapper& getSceneDefinition() const;
         OptionalRef<Camera> getCamera();
+        OptionalRef<const Camera> getCamera() const;
         AssetPack& getAssets();
+        const AssetPack& getAssets() const;
 
     private:
         App& _app;

@@ -14,12 +14,7 @@ namespace darmok::editor
         return "Camera";
     }
 
-    void CameraInspectorEditor::init(EditorApp& app, ObjectEditorContainer& editors) noexcept
-    {
-        _editors = editors;
-    }
-
-    bool CameraInspectorEditor::renderType(Camera::Definition& cam) noexcept
+    CameraInspectorEditor::RenderResult CameraInspectorEditor::renderType(Camera::Definition& cam) noexcept
     {
         static const std::array<std::string, 2> projOptions
         {
@@ -75,25 +70,22 @@ namespace darmok::editor
             changed = true;
         }
 
-        if (_editors)
+        /*
+        auto comps = CameraReflectionUtils::getCameraComponents(cam);
+        if (!comps.empty())
         {
-            /*
-            auto comps = CameraReflectionUtils::getCameraComponents(cam);
-            if (!comps.empty())
+            if (ImGui::CollapsingHeader("Components"))
             {
-                if (ImGui::CollapsingHeader("Components"))
+                for (auto& comp : comps)
                 {
-                    for (auto& comp : comps)
+                    if (_editors->render(comp))
                     {
-                        if (_editors->render(comp))
-                        {
-                            changed = true;
-                        }
+                        changed = true;
                     }
                 }
             }
-            */
         }
+        */
         return changed;
     }
 }

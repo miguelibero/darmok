@@ -6,14 +6,10 @@
 
 namespace darmok::editor
 {
-    class TransformInspectorEditor final : public ITypeObjectEditor<Transform::Definition>
+    class TransformInspectorEditor final : public ComponentObjectEditor<Transform::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        void init(EditorApp& app, ObjectEditorContainer& container) override;
-        void shutdown() override;
-        bool renderType(Transform::Definition& trans) noexcept override;
-    private:
-        OptionalRef<EditorApp> _app;
+        RenderResult renderType(Transform::Definition& trans) noexcept override;
     };
 }

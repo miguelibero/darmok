@@ -190,12 +190,27 @@ namespace darmok::editor
         return _scene;
     }
 
+    std::shared_ptr<const Scene> EditorProject::getScene() const
+    {
+        return _scene;
+    }
+
     SceneDefinitionWrapper& EditorProject::getSceneDefinition()
     {
         return _sceneWrapper;
     }
 
+    const SceneDefinitionWrapper& EditorProject::getSceneDefinition() const
+    {
+		return _sceneWrapper;
+    }
+
     OptionalRef<Camera> EditorProject::getCamera()
+    {
+        return _cam;
+    }
+
+    OptionalRef<const Camera> EditorProject::getCamera() const
     {
         return _cam;
     }
@@ -204,6 +219,11 @@ namespace darmok::editor
     {
         return *_assets;
 	}
+
+    const AssetPack& EditorProject::getAssets() const
+    {
+        return *_assets;
+    }
 
     void EditorProject::configureEditorScene(Scene& scene)
     {

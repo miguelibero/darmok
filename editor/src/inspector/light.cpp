@@ -21,7 +21,7 @@ namespace darmok::editor
 		return "Point Light";
     }
 
-    bool PointLightInspectorEditor::renderType(PointLight::Definition& light) noexcept
+    PointLightInspectorEditor::RenderResult PointLightInspectorEditor::renderType(PointLight::Definition& light) noexcept
     {
         auto changed = false;
         if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
@@ -48,7 +48,7 @@ namespace darmok::editor
         return "Directional Light";
     }
 
-    bool DirectionalLightInspectorEditor::renderType(DirectionalLight::Definition& light) noexcept
+    DirectionalLightInspectorEditor::RenderResult DirectionalLightInspectorEditor::renderType(DirectionalLight::Definition& light) noexcept
     {
         auto changed = false;
         if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
@@ -71,7 +71,7 @@ namespace darmok::editor
         return "Spot Light";
     }
 
-    bool SpotLightInspectorEditor::renderType(SpotLight::Definition& light) noexcept
+    SpotLightInspectorEditor::RenderResult SpotLightInspectorEditor::renderType(SpotLight::Definition& light) noexcept
     {
         auto changed = false;
         if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))
@@ -98,7 +98,7 @@ namespace darmok::editor
         return "Ambient Light";
     }
 
-    bool AmbientLightInspectorEditor::renderType(AmbientLight::Definition& light) noexcept
+    AmbientLightInspectorEditor::RenderResult AmbientLightInspectorEditor::renderType(AmbientLight::Definition& light) noexcept
     {
         auto changed = false;
         if (ImguiUtils::drawProtobufInput("Intensity", "intensity", light))

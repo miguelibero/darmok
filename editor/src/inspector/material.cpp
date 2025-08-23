@@ -31,7 +31,7 @@ namespace darmok::editor
 
 	void MaterialInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
 	{
-		_app = app;
+		AssetObjectEditor<Material::Definition>::init(app, container);	
 		for(auto [val, name] : StringUtils::getEnumValues<Material::TextureDefinition::Type>())
 		{
 			StringUtils::camelCaseToHumanReadable(name);
@@ -42,7 +42,7 @@ namespace darmok::editor
 
 	void MaterialInspectorEditor::shutdown()
 	{
-		_app.reset();
+		AssetObjectEditor<Material::Definition>::shutdown();
 		_textureEditors.clear();
 	}
 
@@ -71,7 +71,7 @@ namespace darmok::editor
 		Tonemap,
 	};
 
-	bool MaterialInspectorEditor::renderType(Material::Definition& mat) noexcept
+	MaterialInspectorEditor::RenderResult MaterialInspectorEditor::renderType(Material::Definition& mat) noexcept
 	{
 		auto changed = false;
 

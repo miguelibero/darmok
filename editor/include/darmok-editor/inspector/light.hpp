@@ -6,31 +6,31 @@
 
 namespace darmok::editor
 {
-    class PointLightInspectorEditor final : public ITypeObjectEditor<PointLight::Definition>
+    class PointLightInspectorEditor final : public ComponentObjectEditor<PointLight::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(PointLight::Definition& light) noexcept override;
+        RenderResult renderType(PointLight::Definition& light) noexcept override;
     };
 
-    class DirectionalLightInspectorEditor final : public ITypeObjectEditor<DirectionalLight::Definition>
+    class DirectionalLightInspectorEditor final : public ComponentObjectEditor<DirectionalLight::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(DirectionalLight::Definition& light) noexcept override;
+        RenderResult renderType(DirectionalLight::Definition& light) noexcept override;
     };
 
-    class SpotLightInspectorEditor final : public ITypeObjectEditor<SpotLight::Definition>
+    class SpotLightInspectorEditor final : public ComponentObjectEditor<SpotLight::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(SpotLight::Definition& light) noexcept override;
+        RenderResult renderType(SpotLight::Definition& light) noexcept override;
     };
 
-    class AmbientLightInspectorEditor final : public ITypeObjectEditor<AmbientLight::Definition>
+    class AmbientLightInspectorEditor final : public ComponentObjectEditor<AmbientLight::Definition>
     {
     public:
         std::string getTitle() const noexcept override;
-        bool renderType(AmbientLight::Definition& light) noexcept override;
+        RenderResult renderType(AmbientLight::Definition& light) noexcept override;
     };
 }

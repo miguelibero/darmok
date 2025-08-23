@@ -7,18 +7,6 @@
 
 namespace darmok::editor
 {
-    void MeshSourceInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
-    {
-        _app = app;
-        _container = container;
-    }
-
-    void MeshSourceInspectorEditor::shutdown()
-    {
-        _app.reset();
-        _container.reset();
-    }
-
     enum class MeshSourceValueType
     {
         Cube,
@@ -33,7 +21,7 @@ namespace darmok::editor
         return "Mesh";
     }
 
-    bool MeshSourceInspectorEditor::renderType(Mesh::Source& src) noexcept
+    MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderType(Mesh::Source& src) noexcept
     {
         auto changed = false;
 
