@@ -28,20 +28,18 @@ namespace darmok::editor
             changed = true;
         }
 
-        if (_app)
-        {
-            auto& proj = _app->getProject();
-            auto& assets = _app->getAssets();
 
-            std::filesystem::path imgPath;
-            if (ImguiUtils::drawFileInput("Load Image", imgPath, _imageFilter))
+        auto& proj = getProject();
+        auto& assets = getApp().getAssets();
+
+        std::filesystem::path imgPath;
+        if (ImguiUtils::drawFileInput("Load Image", imgPath, _imageFilter))
+        {
+            if (auto dataResult = assets.getDataLoader()(imgPath))
             {
-                if (auto dataResult = assets.getDataLoader()(imgPath))
-                {
-                    src.set_image_data(dataResult.value().toString());
-                    _tex.reset();
-                    changed = true;
-                }
+                src.set_image_data(dataResult.value().toString());
+                _tex.reset();
+                changed = true;
             }
         }
 
@@ -49,7 +47,7 @@ namespace darmok::editor
         {
             Texture::Definition def;
 			TextureDefinitionWrapper defWrapper{ def };
-            if (auto result = defWrapper.loadSource(src, _app->getProject().getAssets().getAllocator()))
+            if (auto result = defWrapper.loadSource(src, assets.getAllocator()))
             {
 				_tex = std::make_shared<Texture>(def);
             }

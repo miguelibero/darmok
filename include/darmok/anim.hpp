@@ -8,11 +8,11 @@
 
 namespace darmok
 {
-    class IMesh;
+    class Mesh;
 
     struct AnimationFrame final
     {
-        std::shared_ptr<IMesh> mesh;
+        std::shared_ptr<Mesh> mesh;
         float duration;
     };
 

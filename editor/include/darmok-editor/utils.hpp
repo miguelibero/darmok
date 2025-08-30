@@ -10,10 +10,6 @@
 
 namespace darmok
 {
-    class Material;
-    class Program;
-    class IMesh;
-    class IMeshLoader;
     class ConstSceneDefinitionWrapper;
     class Texture;
     class AssetPack;

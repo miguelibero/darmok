@@ -12,19 +12,19 @@ using namespace entt::literals;
 
 namespace darmok
 {
-	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 		: _mesh{ mesh }
 		, _material{ material }
 		, _enabled{ true }
 	{
 	}
 
-	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept
 		: Renderable(mesh, std::make_shared<Material>(program, texture))
 	{
 	}
 
-	Renderable::Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept
 		: Renderable(mesh, std::make_shared<Material>(program, color))
 	{
 	}
@@ -34,12 +34,12 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<IMesh> Renderable::getMesh() const noexcept
+	std::shared_ptr<Mesh> Renderable::getMesh() const noexcept
 	{
 		return _mesh;
 	}
 
-	Renderable& Renderable::setMesh(const std::shared_ptr<IMesh>& mesh) noexcept
+	Renderable& Renderable::setMesh(const std::shared_ptr<Mesh>& mesh) noexcept
 	{
 		_mesh = mesh;
 		return *this;

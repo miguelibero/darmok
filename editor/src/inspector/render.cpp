@@ -21,11 +21,10 @@ namespace darmok::editor
 
 		std::string meshDragType;
 		std::string materialDragType;
-		if (_app)
-		{
-			meshDragType = _app->getAssetDragType<Mesh::Source>().value_or("");
-			materialDragType = _app->getAssetDragType<Material::Definition>().value_or("");
-		}
+
+		meshDragType = getApp().getAssetDragType<Mesh::Source>().value_or("");
+		materialDragType = getApp().getAssetDragType<Material::Definition>().value_or("");
+
 		auto result = ImguiUtils::drawProtobufAssetReferenceInput("Mesh", "mesh_path", renderable, meshDragType.c_str());
 		if (result == ReferenceInputAction::Changed)
 		{

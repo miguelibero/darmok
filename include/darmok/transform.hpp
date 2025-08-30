@@ -99,6 +99,8 @@ namespace darmok
         using Definition = protobuf::Transform;
 		expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
+        static Definition createDefinition() noexcept;
+
     private:
         // should not use PIMPL here since we want consecutive memory
         glm::vec3 _position;

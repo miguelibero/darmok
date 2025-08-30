@@ -75,6 +75,14 @@ namespace darmok
         return {};
     }
 
+    PointLight::Definition PointLight::createDefinition() noexcept
+    {
+        Definition def;
+        def.set_intensity(1.f);
+        *def.mutable_color() = protobuf::convert(Colors::white3());
+        return def;
+    }
+
     DirectionalLight::DirectionalLight(float intensity) noexcept
         : _intensity{ intensity }
         , _color{ Colors::white3() }
@@ -123,6 +131,14 @@ namespace darmok
         return {};
     }
 
+    DirectionalLight::Definition DirectionalLight::createDefinition() noexcept
+    {
+        Definition def;
+        def.set_intensity(1.f);
+        *def.mutable_color() = protobuf::convert(Colors::white3());
+        return def;
+    }
+
     AmbientLight::AmbientLight(float intensity) noexcept
         : _intensity(intensity)
         , _color(Colors::white3())
@@ -156,6 +172,14 @@ namespace darmok
         setIntensity(def.intensity());
         setColor(protobuf::convert(def.color()));
         return {};
+    }
+
+    AmbientLight::Definition AmbientLight::createDefinition() noexcept
+    {
+        Definition def;
+        def.set_intensity(1.f);
+        *def.mutable_color() = protobuf::convert(Colors::white3());
+        return def;
     }
 
     SpotLight::SpotLight(float intensity, const Color3& color, float range) noexcept
@@ -243,6 +267,14 @@ namespace darmok
         setConeAngle(def.cone_angle());
         setShadowType(def.shadow_type());
         return {};
+    }
+
+    SpotLight::Definition SpotLight::createDefinition() noexcept
+    {
+        Definition def;
+        def.set_intensity(1.f);
+        *def.mutable_color() = protobuf::convert(Colors::white3());
+        return def;
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept

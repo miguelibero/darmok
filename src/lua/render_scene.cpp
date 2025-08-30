@@ -8,7 +8,7 @@
 
 namespace darmok
 {
-	Renderable& LuaRenderable::addEntityComponent1(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh) noexcept
+	Renderable& LuaRenderable::addEntityComponent1(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh);
 	}
@@ -18,17 +18,17 @@ namespace darmok
 		return entity.addComponent<Renderable>(material);
 	}
 
-	Renderable& LuaRenderable::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Material>& material) noexcept
+	Renderable& LuaRenderable::addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh, material);
 	}
 
-	Renderable& LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept
+	Renderable& LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh, prog, texture);
 	}
 
-	Renderable& LuaRenderable::addEntityComponent5(LuaEntity& entity, const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& prog, const Color& color) noexcept
+	Renderable& LuaRenderable::addEntityComponent5(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& prog, const Color& color) noexcept
 	{
 		return entity.addComponent<Renderable>(mesh, prog, color);
 	}

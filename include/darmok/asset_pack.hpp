@@ -15,7 +15,6 @@
 #include <darmok/scene_serialize.hpp>
 #include <darmok/optional_ref.hpp>
 
-
 namespace darmok
 {
 	template<class Interface>
@@ -23,6 +22,7 @@ namespace darmok
 	{
 	private:
 		const protobuf::AssetPack& _assets;
+		std::unordered_set<std::filesystem::path> _loadedPaths;
 	public:
 		using Result = Interface::Result;
 		using Resource = Interface::Resource;
@@ -76,6 +76,7 @@ namespace darmok
 		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept override;
 		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept override;
 
+		expected<void, std::string> reload(const std::filesystem::path& path);
 	private:
 
 		const Definition& _def;

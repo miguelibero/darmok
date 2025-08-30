@@ -29,11 +29,11 @@ namespace darmok::physics3d
 {
     struct JoltMeshBatch final : public JPH::RefTarget<JoltMeshBatch>, public JPH::RefTargetVirtual
     {
-        JoltMeshBatch(std::unique_ptr<IMesh>&& mesh) noexcept;
+        JoltMeshBatch(std::unique_ptr<Mesh>&& mesh) noexcept;
         void AddRef() noexcept override;
         void Release() noexcept override;
 
-        std::unique_ptr<IMesh> mesh;
+        std::unique_ptr<Mesh> mesh;
     };
 
     class PhysicsSystemImpl;
@@ -77,8 +77,8 @@ namespace darmok::physics3d
 
         JoltPhysicsDebugRenderer() noexcept;
         void doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder);
-        std::unique_ptr<IMesh> createMesh(const MeshData& meshData);
-        void renderMesh(const IMesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
+        std::unique_ptr<Mesh> createMesh(const MeshData& meshData);
+        void renderMesh(const Mesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderSubmit(EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
         void renderText();

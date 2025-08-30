@@ -31,7 +31,7 @@ namespace darmok::editor
         {
             changed = true;
         }
-        auto& sceneDef = _app->getProject().getSceneDefinition();
+        auto& sceneDef = getProject().getSceneDefinition();
         auto result = ImguiUtils::drawProtobufEntityReferenceInput("Parent", "parent", trans, sceneDef);
         if (result == ReferenceInputAction::Changed)
         {

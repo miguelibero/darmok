@@ -226,18 +226,25 @@ namespace darmok
         using Resource = ICachedLoader<Interface>::Resource;
         using Argument = ICachedLoader<Interface>::Argument;
         using Result = ICachedLoader<Interface>::Result;
+        using Error = ICachedLoader<Interface>::Error;
         using Definition = DefinitionType;
         using DefinitionResult = expected<std::shared_ptr<Definition>, std::string>;
 
-        virtual std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) = 0;
-        virtual std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) = 0;
+        virtual std::shared_ptr<Definition> getDefinition(const Resource& res) = 0;
+        virtual std::shared_ptr<Resource> getResource(const Definition& def) = 0;
         virtual Result loadResource(const std::shared_ptr<Definition>& def, bool force = false) = 0;
+        virtual Result reloadResource(const Definition& def) = 0;
         virtual DefinitionResult loadDefinition(Argument arg, bool force = false) = 0;
-        virtual bool clearCache(const std::shared_ptr<Definition>& def) = 0;
+        virtual bool clearCache(const Definition& def) = 0;
 
-        std::shared_ptr<Resource> getResource(const Definition& def)
+        Result reload(Argument arg)
         {
-            return getResource(std::hash<Resource>{}(def));
+			auto defResult = loadDefinition(arg);
+            if (!defResult)
+            {
+                return unexpected<Error>{ defResult.error() };
+            }
+			return reloadResource(*defResult.value());
         }
     };
 
@@ -280,9 +287,11 @@ namespace darmok
             return loadResource(defResult.value(), true);
         }
 
-        bool isCached(const std::shared_ptr<Definition>& def) const noexcept
+        bool isCached(const Definition& def) const noexcept
         {
-            auto itr = _resCache.find(def);
+            auto ptr = &def;
+            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+                [ptr](auto& elm) { return elm.first.get() == ptr; });
             return itr != _resCache.end();
         }
 
@@ -292,10 +301,11 @@ namespace darmok
             return itr != _defCache.end();
         }
 
-        bool isCached(const std::shared_ptr<Resource>& res) const noexcept
+        bool isCached(const Resource& res) const noexcept
         {
+            auto ptr = &res;
             auto itr = std::find_if(_resCache.begin(), _resCache.end(),
-                [res](auto& elm) { return elm.second.lock() == res; });
+                [ptr](auto& elm) { return elm.second.lock().get() == ptr; });
             return itr != _resCache.end();
         }
 
@@ -317,9 +327,11 @@ namespace darmok
             return defResult;
         }
 
-        std::shared_ptr<Resource> getResource(const std::shared_ptr<Definition>& def) override
+        std::shared_ptr<Resource> getResource(const Definition& def) override
         {
-            auto itr = _resCache.find(def);
+            auto ptr = &def;
+            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+                [ptr](auto& elm) { return elm.first.get() == ptr; });
             if (itr != _resCache.end())
             {
                 if (auto res = itr->second.lock())
@@ -334,7 +346,7 @@ namespace darmok
         {
             if (!force)
             {
-                if (auto res = getResource(def))
+                if (auto res = getResource(*def))
                 {
                     return res;
                 }
@@ -347,15 +359,64 @@ namespace darmok
             return result;
         }
 
-        std::shared_ptr<Definition> getDefinition(const std::shared_ptr<Resource>& res) noexcept override
+
+        DefinitionResult reloadDefinition(const Definition& def)
         {
-            if (!res)
+            auto ptr = &def;
+            auto itr = std::find_if(_defCache.begin(), _defCache.end(),
+                [ptr](auto& elm) { return elm.second.get() == ptr; });
+            if (itr == _defCache.end())
             {
-                return nullptr;
+                return unexpected<Error>{ "definition not found in cache" };
             }
+            return loadDefinition(itr->first, true);
+        }
+
+        Result reloadResource(const Definition& def) override
+        {
+            auto ptr = &def;
+            auto itrRes = std::find_if(_resCache.begin(), _resCache.end(),
+                [ptr](auto& elm) { return elm.first.get() == ptr; });
+            if(itrRes == _resCache.end())
+            {
+                return unexpected<Error>{ "resource not found in cache" };
+			}
+			auto res = itrRes->second.lock();
+            if(!res)
+            {
+                return unexpected<Error>{ "resource has been freed" };
+			}
+            auto itrDef = std::find_if(_defCache.begin(), _defCache.end(),
+                [ptr](auto& elm) { return elm.second.get() == ptr; });
+            if (itrDef == _defCache.end())
+            {
+                return unexpected<Error>{ "definition not found in cache" };
+            }
+            auto arg = itrDef->first;
+            auto defResult = _defLoader(arg);
+            if (!defResult)
+            {
+                return unexpected<Error>{ defResult.error() };
+            }
+			auto newDef = defResult.value();
+            auto result = load(*res, newDef);
+            if(!result)
+            {
+                return unexpected<Error>{ result.error() };
+			}
+            _resCache.erase(itrRes);
+			_resCache[newDef] = res;
+            _defCache.erase(itrDef);
+            _defCache[arg] = newDef;
+            return res;
+        }
+
+        std::shared_ptr<Definition> getDefinition(const Resource& res) noexcept override
+        {
+            auto ptr = &res;
             auto itr = std::find_if(_resCache.begin(), _resCache.end(),
-                [res](auto& elm) {
-                    return elm.second.lock() == res;
+                [ptr](auto& elm) {
+                    return elm.second.lock().get() == ptr;
                 });
             if (itr != _resCache.end())
             {
@@ -380,21 +441,25 @@ namespace darmok
             return true;
         }
 
-        bool clearCache(const std::shared_ptr<Definition>& def) override
+        bool clearCache(const Definition& def) override
         {
-            if (!def)
-            {
-                return false;
-            }
+			auto ptr = &def;
             auto itr = std::find_if(_defCache.begin(), _defCache.end(),
-                [&def](auto& elm) { return elm.second == def; });
+                [ptr](auto& elm) { return elm.second.get() == ptr; });
             auto found = itr != _defCache.end();
             if (found)
             {
                 _defCache.erase(itr);
             }
-            auto size = _resCache.erase(def);
-            return found || size > 0;
+            auto itr2 = std::find_if(_resCache.begin(), _resCache.end(),
+				[ptr](auto& elm) { return elm.first.get() == ptr; });
+            ;
+            if (itr2 != _resCache.end())
+            {
+                found = true;
+                _resCache.erase(itr2);
+            }
+            return found;
         }
 
         void clearCache() noexcept
@@ -431,19 +496,45 @@ namespace darmok
         }
 
     protected:
+
         virtual Result create(const std::shared_ptr<Definition>& def)
         {
+            if constexpr (std::is_constructible_v<Resource, std::shared_ptr<Definition>>)
+            {
+                return std::make_shared<Resource>(def);
+            }
             if constexpr (std::is_constructible_v<Resource, Definition>)
             {
                 return std::make_shared<Resource>(*def);
             }
-            else if constexpr (std::is_constructible_v<Resource, std::shared_ptr<Definition>>)
-            {
-                return std::make_shared<Resource>(def);
-            }
-            // TODO: check for static Resource::create methods
             return unexpected<Error>{"could not create resource"};
         }
+
+        virtual expected<void, Error> load(Resource& res, const std::shared_ptr<Definition>& def)
+        {
+            if constexpr (std::is_move_assignable_v<Resource>)
+            {
+				auto result = create(def);
+                if (!result)
+                {
+                    return unexpected<Error>{ result.error() };
+                }
+                res = std::move(*result.value());
+				return {};
+            }
+            if constexpr (std::is_copy_assignable_v<Resource>)
+            {
+                auto result = create(def);
+                if (!result)
+                {
+                    return unexpected<Error>{ result.error() };
+                }
+                res = *result.value();
+                return {};
+            }
+            return unexpected<Error>{"could not load resource"};
+        }
+
     private:
         DefinitionLoader& _defLoader;
         std::unordered_map<Argument, std::shared_ptr<Definition>> _defCache;

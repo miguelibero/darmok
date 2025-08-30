@@ -2,7 +2,8 @@
 
 #include <darmok/optional_ref.hpp>
 #include <darmok/protobuf.hpp>
-#include <darmok/scene_fwd.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include <bx/bx.h>
 #include <imgui.h>
@@ -36,15 +37,21 @@ namespace darmok::editor
 
         void init(EditorApp& app, ObjectEditorContainer& container) override;
 		void shutdown() override;
-    protected:
-
+    private:
         OptionalRef<EditorApp> _app;
         OptionalRef<ObjectEditorContainer> _container;
 
+    protected:
         EditorProject& getProject() noexcept;
         const EditorProject& getProject() const noexcept;
-        RenderResult renderChild(google::protobuf::Message& msg) noexcept;
+		EditorApp& getApp() noexcept;
+        const EditorApp& getApp() const noexcept;
+        Scene& getScene() noexcept;
+        const Scene& getScene() const noexcept;
+		IComponentLoadContext& getComponentLoadContext() noexcept;
 
+        expected<void, std::string> reloadAsset(const std::filesystem::path& path) noexcept;
+        RenderResult renderChild(google::protobuf::Message& msg) noexcept;
         std::optional<Entity> getEntity(const Any& anyComp) const noexcept;
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
     };
@@ -56,8 +63,8 @@ namespace darmok::editor
 		using Any = BaseObjectEditor::Any;
     protected:
         virtual RenderResult renderType(T& obj) noexcept { return false; };
-		virtual RenderResult beforeRenderAny(Any& any, Message& msg) noexcept { return false; }
-        virtual RenderResult afterRenderAny(Any& any, Message& msg) noexcept { return false; }
+		virtual RenderResult beforeRenderAny(Any& any, T& obj) noexcept { return false; }
+        virtual RenderResult afterRenderAny(Any& any, T& obj, bool changed) noexcept { return false; }
 
     public:
 
@@ -91,7 +98,7 @@ namespace darmok::editor
             }
 
             auto changed = false;
-			auto result = beforeRenderAny(any, msg);
+			auto result = beforeRenderAny(any, obj);
             if(!result)
             {
                 return unexpected{ std::move(result).error() };
@@ -103,42 +110,57 @@ namespace darmok::editor
                 return unexpected{ std::move(result).error() };
             }
             changed |= *result;
-            result = afterRenderAny(any, msg);
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
-            changed |= *result;
+			std::optional<Any> oldAny;
             if (changed)
             {
+				oldAny.emplace().CopyFrom(any);
                 if (!any.PackFrom(obj))
                 {
                     return unexpected<std::string>{"failed to pack any"};
                 }
-                return true;
             }
-            return false;
+            result = afterRenderAny(any, obj, changed);
+            if (!result)
+            {
+                if(oldAny)
+                {
+                    any.CopyFrom(*oldAny);
+				}
+                return unexpected{ std::move(result).error() };
+            }
+            changed |= *result;
+            return changed;
         }
     };
 
     template<typename T>
-    class BX_NO_VTABLE ComponentObjectEditor : public ObjectEditor<T>
+    class BX_NO_VTABLE ComponentObjectEditor : public ObjectEditor<typename T::Definition>
     {
     protected:
         std::optional<Entity> _entity;
-		using RenderResult = ObjectEditor<T>::RenderResult;
-        using Message = ObjectEditor<T>::Message;
-        using Any = ObjectEditor<T>::Any;
+		using Definition = typename T::Definition;
+		using RenderResult = ObjectEditor<Definition>::RenderResult;
+        using Message = ObjectEditor<Definition>::Message;
+        using Any = ObjectEditor<Definition>::Any;
 
-        RenderResult render(google::protobuf::Message& msg) noexcept override
-        {
-			return ObjectEditor<T>::render(msg);
-        }
-
-        RenderResult beforeRenderAny(Any& any, Message& msg) noexcept override
+        RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
         {
             _entity = BaseObjectEditor::getEntity(any);
-            return ObjectEditor<T>::beforeRenderAny(any, msg);
+            return ObjectEditor<Definition>::beforeRenderAny(any, def);
+        }
+
+        RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
+        {
+            if(changed && _entity)
+            {
+                auto& comp = BaseObjectEditor::getScene().getOrAddComponent<T>(*_entity);
+                auto result = comp.load(def, BaseObjectEditor::getComponentLoadContext());
+                if(!result)
+                {
+                    return unexpected{ std::move(result).error() };
+				}
+			}
+            return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
         }
     };
 
@@ -151,16 +173,23 @@ namespace darmok::editor
         using Message = ObjectEditor<T>::Message;
         using Any = ObjectEditor<T>::Any;
 
-        RenderResult render(google::protobuf::Message& msg) noexcept override
-        {
-            _path.reset();
-            return ObjectEditor<T>::render(msg);
-        }
-
-        RenderResult beforeRenderAny(Any& any, Message& msg) noexcept override
+        RenderResult beforeRenderAny(Any& any, T& def) noexcept override
         {
             _path = BaseObjectEditor::getAssetPath(any);
-            return ObjectEditor<T>::beforeRenderAny(any, msg);
+            return ObjectEditor<T>::beforeRenderAny(any, def);
+        }
+
+        RenderResult afterRenderAny(Any& any, T& def, bool changed) noexcept override
+        {
+            if (changed && _path)
+            {
+                auto result = BaseObjectEditor::reloadAsset(*_path);
+                if(!result)
+                {
+                    return unexpected{ std::move(result).error() };
+				}
+            }
+            return ObjectEditor<T>::afterRenderAny(any, def, changed);
         }
     };
 

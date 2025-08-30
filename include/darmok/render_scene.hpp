@@ -52,18 +52,18 @@ namespace darmok
 
     struct Material;
     class Texture;
-    class IMesh;
+    class Mesh;
     class Program;
 
     class DARMOK_EXPORT Renderable final
     {
     public:
-        Renderable(const std::shared_ptr<IMesh>& mesh = nullptr, const std::shared_ptr<Material>& material = nullptr) noexcept;
-        Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
-        Renderable(const std::shared_ptr<IMesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept;
+        Renderable(const std::shared_ptr<Mesh>& mesh = nullptr, const std::shared_ptr<Material>& material = nullptr) noexcept;
+        Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
+        Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept;
         Renderable(const std::shared_ptr<Material>& material) noexcept;
-        std::shared_ptr<IMesh> getMesh() const noexcept;
-        Renderable& setMesh(const std::shared_ptr<IMesh>& mesh) noexcept;
+        std::shared_ptr<Mesh> getMesh() const noexcept;
+        Renderable& setMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
         std::shared_ptr<Material> getMaterial() const noexcept;
         Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
         bool isEnabled() const noexcept;
@@ -79,7 +79,7 @@ namespace darmok
 
     private:
         bool _enabled;
-        std::shared_ptr<IMesh> _mesh;
+        std::shared_ptr<Mesh> _mesh;
         std::shared_ptr<Material> _material;
     };
 }

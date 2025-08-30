@@ -192,16 +192,24 @@ namespace darmok
     public:
 		virtual ~IComponentLoadContext() = default;
         virtual IAssetContext& getAssets() = 0;
-        virtual Entity getEntity(uint32_t id) const = 0;
         virtual const Scene& getScene() const = 0;
         virtual Scene& getScene() = 0;
+
+        virtual Entity getEntity(uint32_t id) const = 0;
     };
 
 	using DataSceneDefinitionLoader = DataProtobufLoader<ISceneDefinitionLoader>;
 
     class Scene;
     class SceneImporterImpl;
+    class AssetPack;
     class AssetPackConfig;
+
+    struct ComponentRef final
+    {
+        Entity entity;
+        uint32_t type;
+    };
 
     class SceneImporter final
     {
@@ -212,6 +220,9 @@ namespace darmok
         SceneImporter(Scene& scene, const AssetPackConfig& assetConfig);
 		~SceneImporter();
         Result operator()(const Definition& def);
+
+		IComponentLoadContext& getComponentLoadContext() noexcept;
+		AssetPack& getAssetPack() noexcept;
     private:
 		std::unique_ptr<SceneImporterImpl> _impl;
     };

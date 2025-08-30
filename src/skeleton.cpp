@@ -40,7 +40,7 @@ namespace darmok
         return *_impl;
     }
     
-    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept
+    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<Mesh>& boneMesh) noexcept
         : _boneMesh{ boneMesh }
         , _material{ mat }
     {

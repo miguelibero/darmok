@@ -121,7 +121,7 @@ namespace darmok
     };
 
     class Program;
-    class IMesh;
+    class Mesh;
 
     class DARMOK_EXPORT ScreenSpaceRenderPass final : public IRenderChainStep
     {
@@ -146,7 +146,7 @@ namespace darmok
         OptionalRef<FrameBuffer> _writeTex;
         OptionalRef<RenderChain> _chain;
         std::shared_ptr<Program> _program;
-        std::unique_ptr<IMesh> _mesh;
+        std::unique_ptr<Mesh> _mesh;
         bgfx::UniformHandle _texUniform;
         BasicUniforms _basicUniforms;
         std::optional<bgfx::ViewId> _viewId;

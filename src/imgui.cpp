@@ -173,10 +173,11 @@ namespace darmok
 
 			const DataView vertData{ &drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert) };
 			const DataView idxData{ &drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx) };
-			std::optional<TransientMesh> mesh;
+			std::optional<Mesh> mesh;
 			try
 			{
-				mesh.emplace(layout, vertData, idxData);
+				MeshConfig config{ .type = Mesh::Definition::Transient };
+				mesh.emplace(layout, vertData, idxData, config);
 			}
 			catch (...)
 			{

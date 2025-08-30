@@ -35,7 +35,6 @@ namespace darmok
 
         // IComponentLoadContext
         IAssetContext& getAssets() override;
-        Entity getEntity(uint32_t id) const override;
         const Scene& getScene() const override;
         Scene& getScene() override;
 
@@ -65,8 +64,15 @@ namespace darmok
             return {};
         }
 
+        std::pair<uint32_t, const google::protobuf::Any*> getComponentData();
+
     public:
         SceneArchive(Scene& scene, const AssetPackConfig& assetConfig);
+
+        // IComponentLoadContext
+        Entity getEntity(uint32_t id) const override;
+
+        AssetPack& getAssetPack();
 
         template<typename T>
         void registerComponent()
@@ -90,27 +96,6 @@ namespace darmok
                 _error = "Scene definition not set";
                 return;
 			}
-            auto getComponentData = [this]() -> std::pair<uint32_t, const google::protobuf::Any*>
-            {
-                auto& typeComps = _sceneDef->registry().components();
-                auto itr = typeComps.find(_type);
-                if (itr == typeComps.end())
-                {
-                    _error = "Could not find component type";
-                    return { 0, nullptr };
-                }
-                auto& comps = itr->second.components();
-                auto itr2 = comps.begin();
-                std::advance(itr2, _count);
-                auto& key = itr2->first;
-                if (itr2 == comps.end())
-                {
-                    _error = "Could not find component";
-                    return {0, nullptr};
-                }
-                return { itr2->first, &itr2->second };
-            };
-
             if constexpr (std::is_same_v<T, Entity>)
             {
                 if (_type == 0)
@@ -165,6 +150,9 @@ namespace darmok
         using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
         Result operator()(const Scene::Definition& def);
+
+        IComponentLoadContext& getComponentLoadContext() noexcept;
+        AssetPack& getAssetPack() noexcept;
     private:
 		SceneArchive _archive;
     };

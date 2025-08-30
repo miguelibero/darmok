@@ -97,7 +97,7 @@ namespace darmok
         MeshConfig meshConfig;
         meshConfig.index32 = true;
         auto mesh = std::make_unique<Mesh>(_program->getVertexLayout(), vertData, idxData, meshConfig);
-        Rml::CompiledGeometryHandle handle = mesh->getVertexHandle().idx + 1;
+        Rml::CompiledGeometryHandle handle = mesh->getVertexHandleIndex() + 1;
         _meshes.emplace(handle, std::move(mesh));
         return handle;
     }

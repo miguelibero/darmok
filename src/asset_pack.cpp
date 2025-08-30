@@ -120,4 +120,43 @@ namespace darmok
 	{
 		return _multiMusicLoader;
 	}
+
+	namespace
+	{
+		template<typename T, typename E>
+		expected<void, E> expectedVoid(expected<T, E>&& v)
+		{
+			if (!v)
+			{
+				return unexpected{ std::move(v).error() };
+			}
+			return {};
+		}
+	}
+
+	expected<void, std::string> AssetPack::reload(const std::filesystem::path& path)
+	{
+		auto& assets = _def.assets();
+		auto itr = assets.find(path.string());
+		if (itr == assets.end())
+		{
+			return unexpected{ "path not found" };
+		}
+		auto& asset = itr->second;
+		auto typeId = protobuf::getTypeId(asset);
+		if (typeId == protobuf::getTypeId<Mesh::Source>())
+		{
+			auto result = _meshDefFromSrcLoader.reload(path);
+			if(!result)
+			{
+				return unexpected{ result.error() };
+			}
+			return expectedVoid(_meshLoader.reload(path));
+		}
+		if (typeId == protobuf::getTypeId<Material::Definition>())
+		{
+			return expectedVoid(_materialLoader.reload(path));
+		}
+		return unexpected{ "type loader not found" };
+	}
 }

@@ -6,7 +6,7 @@
 
 namespace darmok::editor
 {
-    class CameraInspectorEditor final : public ComponentObjectEditor<Camera::Definition>
+    class CameraInspectorEditor final : public ComponentObjectEditor<Camera>
     {
     public:
         std::string getTitle() const noexcept override;

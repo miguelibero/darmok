@@ -400,4 +400,11 @@ namespace darmok
         setParent(parentTrans);
         return {};
     }
+
+    Transform::Definition Transform::createDefinition() noexcept
+    {
+        Transform::Definition def;
+        *def.mutable_scale() = protobuf::convert(glm::vec3{ 1.f });
+        return def;
+    }
 }

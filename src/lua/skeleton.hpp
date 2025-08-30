@@ -54,14 +54,14 @@ namespace darmok
 
     class RenderableSkeleton;
     struct Material;
-    class IMesh;
+    class Mesh;
 
     class LuaRenderableSkeleton final
 	{
     public:
         static RenderableSkeleton& addEntityComponent1(LuaEntity& entity) noexcept;
         static RenderableSkeleton& addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept;
-		static RenderableSkeleton& addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<IMesh>& boneMesh) noexcept;
+		static RenderableSkeleton& addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<Mesh>& boneMesh) noexcept;
 		static OptionalRef<RenderableSkeleton>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const RenderableSkeleton& skel, std::shared_ptr<Scene>& scene) noexcept;
     

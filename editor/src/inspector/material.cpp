@@ -58,7 +58,7 @@ namespace darmok::editor
 		{
 			return false;
 		}
-		return itr->second.render(mat, _app->getProject().getAssets());
+		return itr->second.render(mat, getProject().getAssets());
 	}
 
 	enum class EditorStandardProgramType

@@ -22,14 +22,6 @@
 
 namespace darmok
 {
-    struct DARMOK_EXPORT MeshConfig final
-    {
-        bool index32 = false;
-
-        uint16_t getFlags() const noexcept;
-        size_t getIndexSize() const noexcept;
-    };
-
     struct DARMOK_EXPORT MeshRenderConfig final
     {
         uint8_t vertexStream = 0;
@@ -39,6 +31,19 @@ namespace darmok
         uint32_t numIndices = 0;
 
         void fix(uint32_t maxVertices, uint32_t maxIndices) noexcept;
+    };
+
+    struct DARMOK_EXPORT MeshConfig final
+    {
+        using Definition = protobuf::Mesh;
+        using Type = Definition::Type;
+		Type type = Definition::Static;
+        bool index32 = false;
+
+        uint16_t getFlags() const noexcept;
+        size_t getIndexSize() const noexcept;
+
+		static MeshConfig fromDefinition(const Definition& def) noexcept;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionLoader : public ILoader<protobuf::Mesh>
@@ -51,7 +56,7 @@ namespace darmok
     {
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMesh
+    class DARMOK_EXPORT Mesh final
     {
     public:
         using Config = MeshConfig;
@@ -60,98 +65,79 @@ namespace darmok
         using Type = protobuf::Mesh::Type;
         using Source = protobuf::MeshSource;
 
-        virtual ~IMesh() = default;
-        [[nodiscard]] virtual std::string toString() const noexcept = 0;
-        virtual bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const = 0;
-        [[nodiscard]] virtual const bgfx::VertexLayout& getVertexLayout() const noexcept = 0;
-
-        [[nodiscard]] static std::unique_ptr<IMesh> create(const Definition& def);
-        [[nodiscard]] static std::unique_ptr<IMesh> create(Type type, const bgfx::VertexLayout& layout, DataView vertices, Config config = {});
-        [[nodiscard]] static std::unique_ptr<IMesh> create(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {});
-    };
-
-    class DARMOK_EXPORT Mesh final : public IMesh
-    {
-    public:
-        using Config = MeshConfig;
         Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config = {}) noexcept;
         Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
-        ~Mesh() noexcept;
-        Mesh(Mesh&& other) noexcept;
-        Mesh& operator=(Mesh&& other) noexcept;
-
+        Mesh(const Definition& def);
+        
+        Mesh(Mesh&& other) = default;
+        Mesh& operator=(Mesh&& other) = default;
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
 
-        [[nodiscard]] bgfx::VertexBufferHandle getVertexHandle() const noexcept;
-        [[nodiscard]] bgfx::IndexBufferHandle getIndexHandle() const noexcept;
+        bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
 
-        [[nodiscard]] std::string toString() const noexcept override;
-        bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
-        [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
+        [[nodiscard]] std::string toString() const noexcept;        
+        [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
+        [[nodiscard]] bool empty() const noexcept;
+        [[nodiscard]] uint16_t getVertexHandleIndex() const noexcept;
+
+        // only if dynamic
+        void updateVertices(DataView data, uint32_t offset = 0);
+        void updateIndices(DataView data, uint32_t offset = 0);
 
         [[nodiscard]] static Source createSource() noexcept;
     private:
+        struct StaticVariant final
+        {
+            bgfx::VertexBufferHandle vertexBuffer{ bgfx::kInvalidHandle };
+            bgfx::IndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
+
+            StaticVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
+			~StaticVariant() noexcept;
+			StaticVariant(const StaticVariant& other) = delete;
+			StaticVariant& operator=(const StaticVariant& other) = delete;
+            StaticVariant(StaticVariant&& other);
+            StaticVariant& operator=(StaticVariant&& other);
+            bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+        };
+
+        struct DynamicVariant final
+        {
+            bgfx::DynamicVertexBufferHandle vertexBuffer{ bgfx::kInvalidHandle };
+            bgfx::DynamicIndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
+
+            DynamicVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
+            ~DynamicVariant() noexcept;
+            DynamicVariant(const DynamicVariant& other) = delete;
+            DynamicVariant& operator=(const DynamicVariant& other) = delete;
+            DynamicVariant(DynamicVariant&& other);
+            DynamicVariant& operator=(DynamicVariant&& other);
+            bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+        };
+
+        struct TransientVariant final
+        {
+            bgfx::TransientVertexBuffer vertexBuffer;
+            bgfx::TransientIndexBuffer indexBuffer;
+
+            TransientVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
+            TransientVariant(const TransientVariant& other) = delete;
+            TransientVariant& operator=(const TransientVariant& other) = delete;
+            TransientVariant(TransientVariant&& other) = default;
+            TransientVariant& operator=(TransientVariant&& other) = default;
+            bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+        };
+
+        using Variant = std::variant<StaticVariant, DynamicVariant, TransientVariant>;
+
+        static Variant createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
+
+        Type _type;
+        Variant _variant;
         bgfx::VertexLayout _layout;
-        bgfx::VertexBufferHandle _vertexBuffer;
-        bgfx::IndexBufferHandle _indexBuffer;
-        size_t _vertNum;
-        size_t _idxNum;
-    };
-
-    class DARMOK_EXPORT DynamicMesh final : public IMesh
-    {
-    public:
-        using Config = MeshConfig;
-        DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices = DataView(), Config config = {}) noexcept;
-        DynamicMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
-        ~DynamicMesh() noexcept;
-        DynamicMesh(DynamicMesh&& other) noexcept;
-        DynamicMesh& operator=(DynamicMesh&& other) noexcept;
-
-        DynamicMesh(const DynamicMesh& other) = delete;
-        Mesh& operator=(const DynamicMesh& other) = delete;
-
-        [[nodiscard]] bgfx::DynamicVertexBufferHandle getVertexHandle() const noexcept;
-        [[nodiscard]] bgfx::DynamicIndexBufferHandle getIndexHandle() const noexcept;
-
-        bool empty() const noexcept;
-
-        void updateVertices(DataView data, uint32_t offset = 0) noexcept;
-        void updateIndices(DataView data, uint32_t offset = 0) noexcept;
-
-        [[nodiscard]] std::string toString() const noexcept override;
-        bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
-        [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
-    private:
-        bgfx::VertexLayout _layout;
-        bgfx::DynamicVertexBufferHandle _vertexBuffer;
-        bgfx::DynamicIndexBufferHandle _indexBuffer;
         size_t _idxSize;
         size_t _vertNum;
         size_t _idxNum;
-    };
-
-    class DARMOK_EXPORT TransientMesh final : public IMesh
-    {
-    public:
-         TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, bool index32 = false);
-         TransientMesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, bool index32 = false);
-         TransientMesh(TransientMesh&& other) noexcept;
-         TransientMesh& operator=(TransientMesh&& other) noexcept;
-
-         TransientMesh(const Mesh& other) = delete;
-         TransientMesh& operator=(const TransientMesh& other) = delete;
-
-         [[nodiscard]] std::string toString() const noexcept override;
-         bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept override;
-         [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept override;
-    private:
-        bgfx::VertexLayout _layout;
-        bgfx::TransientVertexBuffer _vertexBuffer;
-        bgfx::TransientIndexBuffer _indexBuffer;
-        uint32_t _vertNum;
-        uint32_t _idxNum;
     };
 
     struct DARMOK_EXPORT MeshDataVertex final
@@ -230,8 +216,8 @@ namespace darmok
         void clear() noexcept;
 
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
-        [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
-        [[nodiscard]] std::unique_ptr<IMesh> createMesh(const bgfx::VertexLayout& vertexLayout, const IMesh::Config& config = {}) const;
+        [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
+        [[nodiscard]] std::unique_ptr<Mesh> createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
         MeshData& convertQuadIndicesToLine() noexcept;
@@ -248,16 +234,10 @@ namespace darmok
         void setupBasicRectangle() noexcept;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public ILoader<IMesh>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshLoader : public ILoader<Mesh>{};
     class DARMOK_EXPORT BX_NO_VTABLE IMeshFromDefinitionLoader : public IFromDefinitionLoader<IMeshLoader, Mesh::Definition>{};
 
-    class DARMOK_EXPORT MeshLoader final : public FromDefinitionLoader<IMeshFromDefinitionLoader, IMeshDefinitionLoader>
-    {
-    public:
-        using FromDefinitionLoader::FromDefinitionLoader;
-    protected:
-        Result create(const std::shared_ptr<Definition>& def) override;
-    };
+    using MeshLoader = FromDefinitionLoader<IMeshFromDefinitionLoader, IMeshDefinitionLoader>;
 
-    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionFromSourceLoader : public IFromDefinitionLoader<IMeshDefinitionLoader, IMesh::Source>{};
+    class DARMOK_EXPORT BX_NO_VTABLE IMeshDefinitionFromSourceLoader : public IFromDefinitionLoader<IMeshDefinitionLoader, Mesh::Source>{};
 }

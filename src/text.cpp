@@ -153,7 +153,8 @@ namespace darmok
 		data.exportData(layout, vertexData, indexData);
 		if (!_mesh)
 		{
-			_mesh.emplace(layout, vertexData, indexData);
+			Mesh::Config config{ .type = Mesh::Definition::Dynamic };
+			_mesh.emplace(layout, vertexData, indexData, config);
 		}
 		else
 		{

@@ -12,6 +12,6 @@ namespace darmok
         MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader) noexcept;
     private:
         IProgramDefinitionLoader& _progDefLoader;
-        Result create(const std::shared_ptr<IMesh::Source>& src) override;
+        Result create(const std::shared_ptr<Mesh::Source>& src) override;
     };
 }

@@ -18,14 +18,14 @@ namespace darmok::editor
     public:
         EditorProject(App& app);
 
-        void init(const ProgramCompilerConfig& progCompilerConfig);
+        expected<void, std::string> init(const ProgramCompilerConfig& progCompilerConfig);
         void shutdown();
 
         void save(bool forceNewPath = false);
         void open();
         void exportScene();
         void reset();
-        void render();
+        expected<void, std::string> render();
         void updateScene();
 
         std::shared_ptr<Scene> getScene();
@@ -34,8 +34,8 @@ namespace darmok::editor
         const SceneDefinitionWrapper& getSceneDefinition() const;
         OptionalRef<Camera> getCamera();
         OptionalRef<const Camera> getCamera() const;
+        IComponentLoadContext& getComponentLoadContext();
         AssetPack& getAssets();
-        const AssetPack& getAssets() const;
 
     private:
         App& _app;
@@ -48,19 +48,21 @@ namespace darmok::editor
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneWrapper;
 		AssetPackConfig _assetPackConfig;
-        std::optional<AssetPack> _assets;
         std::optional<ProgramCompiler> _progCompiler;
         bool _requestReset;
 
         std::filesystem::path _path;
         std::filesystem::path _exportPath;
+
         static const std::vector<std::string> _dialogFilters;
         static const char* _confirmNewPopup;
 
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(SceneDefinitionWrapper& scene);
 
-        void doReset();
-		void doUpdateScene();
+        expected<Entity, std::string> doReset();
+        expected<Entity, std::string> doUpdateScene();
     };
+
+
 }

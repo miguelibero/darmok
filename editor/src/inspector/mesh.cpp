@@ -62,7 +62,12 @@ namespace darmok::editor
             }
             if (ImguiUtils::beginFrame("Sphere"))
             {
-                if (_container->render(sphere))
+                auto result = renderChild(sphere);
+                if (!result)
+                {
+                    return result;
+                }
+                if (*result)
                 {
                     changed = true;
                 }
@@ -84,7 +89,12 @@ namespace darmok::editor
             }
             if (ImguiUtils::beginFrame("Cube"))
             {
-                if (_container->render(cube))
+                auto result = renderChild(cube);
+                if (!result)
+                {
+                    return result;
+                }
+                if (*result)
                 {
                     changed = true;
                 }
@@ -107,7 +117,12 @@ namespace darmok::editor
             }
             if (ImguiUtils::beginFrame("Capsule"))
             {
-                if (_container->render(capsule))
+                auto result = renderChild(capsule);
+                if (!result)
+                {
+                    return result;
+                }
+                if (*result)
                 {
                     changed = true;
                 }
@@ -129,7 +144,12 @@ namespace darmok::editor
             }
             if (ImguiUtils::beginFrame("Rectangle"))
             {
-                if (_container->render(rect))
+                auto result = renderChild(rect);
+                if (!result)
+                {
+                    return result;
+                }
+                if (*result)
                 {
                     changed = true;
                 }

@@ -20,7 +20,7 @@
 
 namespace darmok::physics3d
 {
-    JoltMeshBatch::JoltMeshBatch(std::unique_ptr<IMesh>&& mesh) noexcept
+    JoltMeshBatch::JoltMeshBatch(std::unique_ptr<Mesh>&& mesh) noexcept
         : mesh{ std::move(mesh) }
     {
     }
@@ -160,7 +160,7 @@ namespace darmok::physics3d
         _enabled = enabled;
     }
 
-    void JoltPhysicsDebugRenderer::renderMesh(const IMesh& mesh, EDrawMode mode, const Color& color)
+    void JoltPhysicsDebugRenderer::renderMesh(const Mesh& mesh, EDrawMode mode, const Color& color)
     {
         if (!_encoder)
         {
@@ -271,7 +271,7 @@ namespace darmok::physics3d
         return new JoltMeshBatch(createMesh(data));
     }
 
-    std::unique_ptr<IMesh> JoltPhysicsDebugRenderer::createMesh(const MeshData& meshData)
+    std::unique_ptr<Mesh> JoltPhysicsDebugRenderer::createMesh(const MeshData& meshData)
     {
         return meshData.createMesh(_program->getVertexLayout());
     }

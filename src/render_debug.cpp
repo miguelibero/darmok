@@ -45,7 +45,7 @@ namespace darmok
         return _prog;
     }
 
-    void DebugRenderer::renderMesh(IMesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color, bool lines) noexcept
+    void DebugRenderer::renderMesh(Mesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color, bool lines) noexcept
     {
         static const glm::vec4 noTextures(0);
         encoder.setUniform(_hasTexturesUniform, glm::value_ptr(noTextures));

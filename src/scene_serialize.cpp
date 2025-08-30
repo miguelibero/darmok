@@ -450,6 +450,11 @@ namespace darmok
     {
     }
 
+    AssetPack& SceneArchive::getAssetPack()
+    {
+		return _assetPack.value();
+    }
+
     expected<Entity, std::string> SceneArchive::load(const protobuf::Scene& sceneDef)
     {
 		_sceneDef = sceneDef;
@@ -484,6 +489,27 @@ namespace darmok
             return unexpected{ "No root entities found in the scene definition." };
 		}
 		return getEntity(entt::to_integral(roots.front()));
+    }
+
+    std::pair<uint32_t, const google::protobuf::Any*> SceneArchive::getComponentData()
+    {
+        auto& typeComps = _sceneDef->registry().components();
+        auto itr = typeComps.find(_type);
+        if (itr == typeComps.end())
+        {
+            _error = "Could not find component type";
+            return { 0, nullptr };
+        }
+        auto& comps = itr->second.components();
+        auto itr2 = comps.begin();
+        std::advance(itr2, _count);
+        auto& key = itr2->first;
+        if (itr2 == comps.end())
+        {
+            _error = "Could not find component";
+            return { 0, nullptr };
+        }
+        return { itr2->first, &itr2->second };
     }
 
     void SceneArchive::operator()(std::underlying_type_t<Entity>& count)
@@ -550,6 +576,16 @@ namespace darmok
         return _archive.load(def);
     }
 
+    IComponentLoadContext& SceneImporterImpl::getComponentLoadContext() noexcept
+    {
+		return _archive;
+    }
+
+    AssetPack& SceneImporterImpl::getAssetPack() noexcept
+    {
+		return _archive.getAssetPack();
+    }
+
     SceneImporter::SceneImporter(Scene& scene, const AssetPackConfig& assetConfig)
         : _impl{ std::make_unique<SceneImporterImpl>(scene, assetConfig) }
     {
@@ -563,6 +599,16 @@ namespace darmok
     SceneImporter::Result SceneImporter::operator()(const Scene::Definition& def)
     {
 		return (*_impl)(def);
+    }
+
+    IComponentLoadContext& SceneImporter::getComponentLoadContext() noexcept
+    {
+        return _impl->getComponentLoadContext();
+    }
+
+    AssetPack& SceneImporter::getAssetPack() noexcept
+    {
+        return _impl->getAssetPack();
     }
 
     SceneLoaderImpl::SceneLoaderImpl(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)

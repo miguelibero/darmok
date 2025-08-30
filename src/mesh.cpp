@@ -10,7 +10,7 @@ namespace darmok
 	{
 	}
 
-	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const std::shared_ptr<IMesh::Source>& src)
+	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const std::shared_ptr<Mesh::Source>& src)
 	{
 		if (!src)
 		{
@@ -38,26 +38,34 @@ namespace darmok
 
 		auto layout = ConstVertexLayoutWrapper{ progDef->varying().vertex() }.getBgfx();
 
-		std::shared_ptr<IMesh::Definition> defPtr;
+		std::shared_ptr<Mesh::Definition> defPtr;
 		MeshConfig config{ .index32 = src->index32() };
 		if (src->has_sphere())
 		{
 			auto shape = protobuf::convert(src->sphere().shape());
 			auto def = MeshData{ shape, src->sphere().lod() }.createDefinition(layout, config);
-			defPtr = std::make_shared<IMesh::Definition>(std::move(def));
+			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
 		}
-		if (src->has_cube())
+		else if (src->has_cube())
 		{
 			auto shape = protobuf::convert(src->cube().shape());
 			auto def = MeshData{ shape, src->cube().type() }.createDefinition(layout, config);
-			defPtr = std::make_shared<IMesh::Definition>(std::move(def));
+			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
 		}
-		if (src->has_capsule())
+		else if (src->has_capsule())
 		{
 			auto shape = protobuf::convert(src->capsule().shape());
 			auto def = MeshData{ shape, src->capsule().lod() }.createDefinition(layout, config);
-			defPtr = std::make_shared<IMesh::Definition>(std::move(def));
+			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
 		}
+		/*
+		else if (src->has_rectangle())
+		{
+			auto shape = protobuf::convert(src->rectangle().shape());
+			auto def = MeshData{ shape, src->rectangle().type() }.createDefinition(layout, config);
+			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
+		}
+		*/
 
 		if (defPtr)
 		{

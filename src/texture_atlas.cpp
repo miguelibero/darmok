@@ -148,7 +148,7 @@ namespace darmok
 			return elm;
 		}
 
-		std::unique_ptr<IMesh> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
+		std::unique_ptr<Mesh> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
 		{
 			auto vertexAmount = uint32_t(getVertexAmount(elm));
 			VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
@@ -201,7 +201,8 @@ namespace darmok
 			}
 
 			const Data vertexData = writer.finish();
-			return IMesh::create(config.type, layout, DataView{ vertexData }, DataView{ totalIndices });
+			Mesh::Config meshConfig{ .type = config.type };
+			return std::make_unique<Mesh>(layout, DataView{ vertexData }, DataView{ totalIndices }, meshConfig);
 		}
 
 		bool isRect(const Element& elm) noexcept
@@ -525,7 +526,7 @@ namespace darmok
 		return nullptr;
 	}
 
-	std::unique_ptr<IMesh> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
+	std::unique_ptr<Mesh> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
 	{
 		auto elm = getElement(name);
 		if (!elm)

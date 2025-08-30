@@ -36,6 +36,8 @@ namespace darmok
         using Definition = protobuf::PointLight;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
+        static Definition createDefinition() noexcept;
+
     private:
         float _intensity;
         float _range;
@@ -59,6 +61,8 @@ namespace darmok
         // serialization
         using Definition = protobuf::DirectionalLight;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+
+        static Definition createDefinition() noexcept;
 
     private:
         float _intensity;
@@ -89,6 +93,8 @@ namespace darmok
         using Definition = protobuf::SpotLight;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
+        static Definition createDefinition() noexcept;
+
     private:
         float _intensity;
         float _range;
@@ -112,6 +118,8 @@ namespace darmok
         // serialization
         using Definition = protobuf::AmbientLight;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+
+        static Definition createDefinition() noexcept;
 
     private:
         float _intensity;

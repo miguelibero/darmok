@@ -42,12 +42,17 @@ namespace darmok::editor
     {
     }
 
-    void EditorProject::init(const ProgramCompilerConfig& progCompilerConfig)
+    expected<void, std::string> EditorProject::init(const ProgramCompilerConfig& progCompilerConfig)
     {
-        doReset();
+        auto result = doReset();
+        if (!result)
+        {
+			return unexpected{ result.error() };
+        }
         _progCompiler.emplace(progCompilerConfig);
         _requestReset = false;
         _requestUpdateScene = false;
+        return {};
     }
 
     void EditorProject::shutdown()
@@ -94,7 +99,7 @@ namespace darmok::editor
     {
     }
 
-    void EditorProject::render()
+    expected<void, std::string> EditorProject::render()
     {
         if (_requestReset)
         {
@@ -104,12 +109,21 @@ namespace darmok::editor
         auto action = ImguiUtils::drawConfirmPopup(_confirmNewPopup, "Are you sure you want to create a new project?");
         if (action == ConfirmPopupAction::Ok)
         {
-            doReset();
+            auto result = doReset();
+            if(!result)
+            {
+                return unexpected{ result.error() };
+			}
         }
         if (_requestUpdateScene)
         {
-            doUpdateScene();
+            auto result = doUpdateScene();
+            if (!result)
+            {
+                return unexpected{ result.error() };
+            }
         }
+        return {};
     }
 
     void EditorProject::updateScene()
@@ -124,32 +138,35 @@ namespace darmok::editor
         _requestReset = true;
     }
 
-    void EditorProject::doReset()
+    expected<Entity, std::string> EditorProject::doReset()
     {
         _requestReset = false;
         _path.clear();
 
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
-		_sceneImporter.emplace(*_scene, _assetPackConfig);
 
-        _scene->destroyEntitiesImmediate();
         configureDefaultScene(_sceneWrapper);
+		_sceneImporter.emplace(*_scene, _assetPackConfig);
+        
+        _scene->destroyEntitiesImmediate();
         configureEditorScene(*_scene);
-        doUpdateScene();
+        return doUpdateScene();
     }
 
-    void EditorProject::doUpdateScene()
+    expected<Entity, std::string> EditorProject::doUpdateScene()
     {
         _requestUpdateScene = false;
         if (!_sceneImporter)
         {
-            return;
+            return unexpected<std::string>{"missing importer"};
         }
-        _assets.emplace(_sceneDef.assets(), _assetPackConfig);
-        (*_sceneImporter)(_sceneDef);
-        _app.getOrAddComponent<SceneAppComponent>().update(0.f);
-
+        auto result = (*_sceneImporter)(_sceneDef);
+        if (result)
+        {
+            _app.getOrAddComponent<SceneAppComponent>().update(0.f);
+        }
+        return result;
     }
 
     void EditorProject::open()
@@ -215,14 +232,14 @@ namespace darmok::editor
         return _cam;
     }
 
+    IComponentLoadContext& EditorProject::getComponentLoadContext()
+    {
+        return _sceneImporter->getComponentLoadContext();
+    }
+
     AssetPack& EditorProject::getAssets()
     {
-        return *_assets;
-	}
-
-    const AssetPack& EditorProject::getAssets() const
-    {
-        return *_assets;
+		return _sceneImporter->getAssetPack();
     }
 
     void EditorProject::configureEditorScene(Scene& scene)
@@ -271,42 +288,32 @@ namespace darmok::editor
 
         scene.setComponent(camEntity, cam);
 
-        auto scale = protobuf::convert(glm::vec3{ 1.f });
-        auto white = protobuf::convert(Colors::white());
-        auto white3 = protobuf::convert(Colors::white3());
-
-        Transform::Definition camTrans;
-		*camTrans.mutable_scale() = scale;
+        auto camTrans = Transform::createDefinition();
         camTrans.set_name("Main Camera");
         *camTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 1.f, -10.f });
         scene.setComponent(camEntity, camTrans);
 
         auto lightsEntity = scene.createEntity();
-        Transform::Definition lightsTrans;
+        auto lightsTrans = Transform::createDefinition();
         lightsTrans.set_name("Lighting");
-        *lightsTrans.mutable_scale() = scale;
         scene.setComponent(lightsEntity, lightsTrans);
 
         auto ambLightEntity = scene.createEntity();
-        AmbientLight::Definition ambLight;
+        auto ambLight = AmbientLight::createDefinition();
         ambLight.set_intensity(0.2f);
-        *ambLight.mutable_color() = white3;
         scene.setComponent(ambLightEntity, ambLight);
-        Transform::Definition ambLightTrans;
+        auto ambLightTrans = Transform::createDefinition();
         ambLightTrans.set_name("Ambient Light");
         ambLightTrans.set_parent(entt::to_integral(lightsEntity));
-        *ambLightTrans.mutable_scale() = scale;
         scene.setComponent(ambLightEntity, ambLightTrans);
 
         auto dirLightEntity = scene.createEntity();
-        DirectionalLight::Definition dirLight;
+        auto dirLight = DirectionalLight::createDefinition();
         dirLight.set_intensity(3.f);
-        *dirLight.mutable_color() = white3;
         scene.setComponent(dirLightEntity, dirLight);
-        Transform::Definition dirLightTrans;
+        auto dirLightTrans = Transform::createDefinition();
         dirLightTrans.set_name("Directional Light");
         dirLightTrans.set_parent(entt::to_integral(lightsEntity));
-        *dirLightTrans.mutable_scale() = scale;
         *dirLightTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 3.f, 0.f });
         auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
         *dirLightTrans.mutable_rotation() = protobuf::convert(rot);
@@ -328,9 +335,8 @@ namespace darmok::editor
         renderable.set_material_path(matPath);
         scene.setComponent(renderableEntity, renderable);
 
-        Transform::Definition renderableTrans;
+        auto renderableTrans = Transform::createDefinition();
         renderableTrans.set_name("Sphere");
-        *renderableTrans.mutable_scale() = scale;
         scene.setComponent(renderableEntity, renderableTrans);
     }
 }

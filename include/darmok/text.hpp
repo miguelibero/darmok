@@ -86,7 +86,7 @@ namespace darmok
     private:
         std::shared_ptr<IFont> _font;
         std::u32string _content;
-        std::optional<DynamicMesh> _mesh;
+        std::optional<Mesh> _mesh;
         Color _color;
         bool _changed;
         uint32_t _vertexNum;

@@ -66,7 +66,11 @@ namespace darmok::editor
 
         _imgui = _app.getOrAddComponent<ImguiAppComponent>(*this);
         
-        _proj.init(_progCompConfig);
+        auto projResult = _proj.init(_progCompConfig);
+        if(!projResult)
+        {
+            throw std::runtime_error("failed to initialize project: " + projResult.error());
+		}
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(*this);
         _assetsView.init(_proj.getSceneDefinition(), *this);
@@ -168,7 +172,7 @@ namespace darmok::editor
     {
         auto& sceneDef = _proj.getSceneDefinition();
         auto entity = sceneDef.createEntity();
-        Transform::Definition trans;
+        auto trans = Transform::createDefinition();
         trans.set_name("New Entity");
         auto parentEntity = _inspectorView.getSelectedEntity();
         if(parentEntity != entt::null)
@@ -562,12 +566,18 @@ namespace darmok::editor
         {
             changed = true;
         }
+        /*
         if (changed)
         {
             _proj.updateScene();
         }
+        */
 
-        _proj.render();
+        auto projResult = _proj.render();
+        if (!projResult)
+        {
+            throw std::runtime_error("failed to render project: " + projResult.error());
+        }
         _sceneView.render();
         _assetsView.render();
     }

@@ -6,7 +6,7 @@
 
 namespace darmok::editor
 {
-    class RenderableInspectorEditor final : public ComponentObjectEditor<Renderable::Definition>
+    class RenderableInspectorEditor final : public ComponentObjectEditor<Renderable>
     {
     public:
         std::string getTitle() const noexcept override;

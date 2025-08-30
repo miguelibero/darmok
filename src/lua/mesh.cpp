@@ -11,7 +11,7 @@ namespace darmok
 {
 	void LuaMesh::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<IMesh>("Mesh", sol::no_constructor
+		lua.new_usertype<Mesh>("Mesh", sol::no_constructor
 		);
 
 		LuaUtils::newEnum<Mesh::Type>(lua, "MeshType");
@@ -64,11 +64,11 @@ namespace darmok
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)
 				{ 
-					return std::shared_ptr<IMesh>(data.createMesh(vertexLayout));
+					return std::shared_ptr<Mesh>(data.createMesh(vertexLayout));
 				},
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout, const MeshConfig& config)
 				{
-					return std::shared_ptr<IMesh>(data.createMesh(vertexLayout, config));
+					return std::shared_ptr<Mesh>(data.createMesh(vertexLayout, config));
 				}
 			),
 			"subdivide_density", &MeshData::subdivideDensity,
