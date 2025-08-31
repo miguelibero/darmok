@@ -131,6 +131,20 @@ namespace darmok::editor
         _requestUpdateScene = true;
     }
 
+    Entity EditorProject::addEntity(Entity parentEntity)
+    {
+        auto entity = _sceneWrapper.createEntity();
+        auto trans = Transform::createDefinition();
+        trans.set_name("New Entity");
+        if (parentEntity != entt::null)
+        {
+            trans.set_parent(entt::to_integral(parentEntity));
+        }
+        _sceneWrapper.setComponent(entity, trans);
+        updateScene();
+        return entity;
+    }
+
     const char* EditorProject::_confirmNewPopup = "Confirm New Project";
 
     void EditorProject::reset()

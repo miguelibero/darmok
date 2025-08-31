@@ -19,7 +19,7 @@ namespace darmok
 		}
 		catch (const std::exception& ex)
 		{
-			return unexpected{ std::string{ ex.what() } };
+			return unexpected<std::string>{ ex.what() };
 		}
 	}
 

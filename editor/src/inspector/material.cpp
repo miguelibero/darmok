@@ -12,14 +12,14 @@ namespace darmok::editor
 	{
 	}
 
-	bool MaterialTextureEditor::render(Material::Definition& mat, AssetPack& assets) noexcept
+	bool MaterialTextureEditor::render(Material::Definition& mat, ITextureLoader& loader) noexcept
 	{
 		static const glm::vec2 maxPreviewSize{ 100.F };
 
 		bool changed = false;
 		MaterialDefinitionWrapper wrapper{ mat };
 		std::string assetPath = wrapper.getTexturePath(_type).value_or("");
-		auto action = ImguiUtils::drawTextureReferenceInput(_label.c_str(), assetPath, _tex, assets, maxPreviewSize);
+		auto action = ImguiUtils::drawTextureReferenceInput(_label.c_str(), assetPath, _tex, loader, maxPreviewSize);
 		if (action == ReferenceInputAction::Changed)
 		{
 			wrapper.setTexturePath(_type, assetPath);
@@ -58,7 +58,7 @@ namespace darmok::editor
 		{
 			return false;
 		}
-		return itr->second.render(mat, getProject().getAssets());
+		return itr->second.render(mat, getProject().getAssets().getTextureLoader());
 	}
 
 	enum class EditorStandardProgramType

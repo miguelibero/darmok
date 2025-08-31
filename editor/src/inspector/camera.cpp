@@ -38,36 +38,38 @@ namespace darmok::editor
             }
             changed = true;
         }
-        ImguiUtils::beginFrame("Projection Data");
-        if (cam.has_perspective_fovy())
+        if (ImguiUtils::beginFrame("Projection Data"))
         {
-            auto fovy = glm::degrees(cam.perspective_fovy());
-            if (ImGui::SliderFloat("Field Of View", &fovy, 0.f, 360.f))
+            if (cam.has_perspective_fovy())
             {
-                changed = true;
-                cam.set_perspective_fovy(glm::radians(fovy));
+                auto fovy = glm::degrees(cam.perspective_fovy());
+                if (ImGui::SliderFloat("Field Of View", &fovy, 0.f, 360.f))
+                {
+                    changed = true;
+                    cam.set_perspective_fovy(glm::radians(fovy));
+                }
             }
-        }
-        else if (cam.has_ortho_center())
-        {
-            if (ImguiUtils::drawProtobufInput("Center", "ortho_center", cam))
+            else if (cam.has_ortho_center())
             {
-                changed = true;
+                if (ImguiUtils::drawProtobufInput("Center", "ortho_center", cam))
+                {
+                    changed = true;
+                }
             }
-        }
 
-        if (ImguiUtils::drawProtobufInput("Near Plane", "near", cam))
-        {
-            changed = true;
-        }
-        if (ImguiUtils::drawProtobufInput("Far Plane", "far", cam))
-        {
-            changed = true;
-        }
-        ImguiUtils::endFrame();
-        if (ImguiUtils::drawProtobufInput("Viewport", "viewport", cam))
-        {
-            changed = true;
+            if (ImguiUtils::drawProtobufInput("Near Plane", "near", cam))
+            {
+                changed = true;
+            }
+            if (ImguiUtils::drawProtobufInput("Far Plane", "far", cam))
+            {
+                changed = true;
+            }
+            ImguiUtils::endFrame();
+            if (ImguiUtils::drawProtobufInput("Viewport", "viewport", cam))
+            {
+                changed = true;
+            }
         }
 
         /*

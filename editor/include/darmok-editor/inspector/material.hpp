@@ -8,7 +8,7 @@
 
 namespace darmok
 {
-    class AssetPack;
+    class ITextureLoader;
 }
 
 namespace darmok::editor
@@ -17,7 +17,7 @@ namespace darmok::editor
     {
     public:
         MaterialTextureEditor(std::string_view label, Material::TextureDefinition::Type type);
-        bool render(Material::Definition& mat, AssetPack& assets) noexcept;
+        bool render(Material::Definition& mat, ITextureLoader& loader) noexcept;
     private:
 		std::string _label;
 		Material::TextureDefinition::Type _type;

@@ -48,9 +48,12 @@ namespace darmok::editor
         const EditorApp& getApp() const noexcept;
         Scene& getScene() noexcept;
         const Scene& getScene() const noexcept;
+        SceneDefinitionWrapper& getSceneDefinition() noexcept;
+        const SceneDefinitionWrapper& getSceneDefinition() const noexcept;
 		IComponentLoadContext& getComponentLoadContext() noexcept;
 
         expected<void, std::string> reloadAsset(const std::filesystem::path& path) noexcept;
+        expected<void, std::string> removeAsset(const std::filesystem::path& path) noexcept;
         RenderResult renderChild(google::protobuf::Message& msg) noexcept;
         std::optional<Entity> getEntity(const Any& anyComp) const noexcept;
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
@@ -151,15 +154,33 @@ namespace darmok::editor
 
         RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
         {
-            if(changed && _entity)
+            if (_entity)
             {
-                auto& comp = BaseObjectEditor::getScene().getOrAddComponent<T>(*_entity);
-                auto result = comp.load(def, BaseObjectEditor::getComponentLoadContext());
-                if(!result)
+                auto& scene = BaseObjectEditor::getScene();
+                auto& sceneDef = BaseObjectEditor::getSceneDefinition();
+                auto entity = *_entity;
+                if (ImGui::Button("Remove Component"))
                 {
-                    return unexpected{ std::move(result).error() };
-				}
-			}
+                    if (!sceneDef.removeComponent<Definition>(entity))
+                    {
+                        return unexpected{ "failed to remove scene definition component" };
+                    }
+                    if (!scene.removeComponent<T>(entity))
+                    {
+                        return unexpected{ "failed to remove scene component" };
+                    }
+                    changed = true;
+                }
+                else if (changed)
+                {
+                    auto& comp = scene.getOrAddComponent<T>(entity);
+                    auto result = comp.load(def, BaseObjectEditor::getComponentLoadContext());
+                    if (!result)
+                    {
+                        return unexpected{ std::move(result).error() };
+                    }
+                }
+            }
             return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
         }
     };
@@ -181,13 +202,26 @@ namespace darmok::editor
 
         RenderResult afterRenderAny(Any& any, T& def, bool changed) noexcept override
         {
-            if (changed && _path)
+            if (_path)
             {
-                auto result = BaseObjectEditor::reloadAsset(*_path);
-                if(!result)
+                auto& path = *_path;
+                if (ImGui::Button("Remove Asset"))
                 {
-                    return unexpected{ std::move(result).error() };
-				}
+                    auto& sceneDef = BaseObjectEditor::getSceneDefinition();
+                    if (!sceneDef.removeAsset(path))
+                    {
+                        return unexpected{ "failed to remove scene definition asset" };
+					}
+                    changed = true;
+                }
+                else if (changed)
+                {
+                    auto result = BaseObjectEditor::reloadAsset(path);
+                    if (!result)
+                    {
+                        return unexpected{ std::move(result).error() };
+                    }
+                }
             }
             return ObjectEditor<T>::afterRenderAny(any, def, changed);
         }
@@ -208,30 +242,6 @@ namespace darmok::editor
         }
 
         using RenderResult = expected<bool, std::string>;
-
-        template<typename Itr>
-        RenderResult render(Itr begin, Itr end) noexcept
-        {
-            int i = 0;
-			bool changed = false;
-            for (auto itr = begin; itr != end; ++itr)
-            {
-                auto& elm = *itr;
-                ImGui::PushID(i);
-                auto result = render(elm, true);
-                ImGui::PopID();
-                if (!result)
-                {
-                    return unexpected{ std::move(result).error() };
-                }
-                if(result.value())
-                {
-                    changed = true;
-                }
-                ++i;
-            }
-            return changed;
-        }
 
         RenderResult render(google::protobuf::Message& obj, bool withTitle = false) const noexcept;
         void add(std::unique_ptr<IObjectEditor>&& editor) noexcept;

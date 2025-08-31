@@ -87,37 +87,72 @@ namespace darmok::editor
         return _windowName;
     }
 
-    bool EditorInspectorView::render()
+    EditorInspectorView::RenderResult EditorInspectorView::renderEntity(Entity entity)
     {
         if (!_sceneDef)
         {
-            return false;
+            return unexpected{ "inspector view not initialized" };
         }
-        auto& sceneDef = *_sceneDef;
-		bool changed = false;
+        bool changed = false;
+        int i = 0;
+        for (auto& comp : _sceneDef->getComponents(entity))
+        {
+            ImGui::PushID(i);
+            auto result = _editors.render(comp, true);
+            ImGui::PopID();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            if (result.value())
+            {
+                changed = true;
+            }
+            ++i;
+        }
+        return changed;
+    }
+
+    EditorInspectorView::RenderResult EditorInspectorView::renderAsset(std::filesystem::path path)
+    {
+        if (!_sceneDef)
+        {
+            return unexpected{ "inspector view not initialized" };
+        }
+        auto asset = _sceneDef->getAsset(std::move(path));
+        if(!asset)
+        {
+            return unexpected{ "could not find asset" };
+		}
+        return _editors.render(*asset, true);
+    }
+
+    EditorInspectorView::RenderResult EditorInspectorView::render()
+    {
+        if (!_sceneDef)
+        {
+            return unexpected{ "inspector view not initialized" };
+        }
+		RenderResult result = false;
         if (ImGui::Begin(_windowName.c_str()))
         {
             auto entity = getSelectedEntity();
             if (entity != entt::null)
             {
-                auto comps = sceneDef.getComponents(entity);
-                if (_editors.render(comps.begin(), comps.end()))
-                {
-                    changed = true;
-                }
+                result = renderEntity(entity);
+
             }
             else if (auto selectedPath = getSelectedAssetPath())
             {
-                if (auto asset = sceneDef.getAsset(*selectedPath))
-                {
-                    if (_editors.render(*asset, true))
-                    {
-                        changed = true;
-                    }
-                }
+				result = renderAsset(*selectedPath);
 			}
         }
         ImGui::End();
-        return changed;
+
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        return *result;
     }
 }

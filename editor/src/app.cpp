@@ -168,21 +168,6 @@ namespace darmok::editor
         return _inspectorView.getSelectedEntity();
     }
 
-    Entity EditorApp::addEntity() noexcept
-    {
-        auto& sceneDef = _proj.getSceneDefinition();
-        auto entity = sceneDef.createEntity();
-        auto trans = Transform::createDefinition();
-        trans.set_name("New Entity");
-        auto parentEntity = _inspectorView.getSelectedEntity();
-        if(parentEntity != entt::null)
-        {
-            trans.set_parent(entt::to_integral(parentEntity));
-		}
-        sceneDef.setComponent(entity, trans);
-        return entity;
-    }
-
     void EditorApp::renderMainMenu()
     {
         if (ImGui::BeginMainMenuBar())
@@ -223,7 +208,7 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("Add Entity"))
                 {
-                    addEntity();
+                    _proj.addEntity(_inspectorView.getSelectedEntity());
                 }
                 ImGui::EndMenu();
             }

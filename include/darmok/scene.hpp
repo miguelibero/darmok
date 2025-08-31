@@ -248,7 +248,7 @@ namespace darmok
         template<typename T>
         bool removeComponent(Entity entity) noexcept
         {
-            return removeComponent(entity, entt::type_hash<T>::value()) > 0;
+            return removeComponent(entity, entt::type_hash<T>::value());
         }
 
         template<typename T, typename It>

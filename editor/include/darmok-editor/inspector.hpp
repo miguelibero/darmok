@@ -19,12 +19,13 @@ namespace darmok::editor
     class EditorInspectorView final
     {
     public:
+        using RenderResult = expected<bool, std::string>;
 
         EditorInspectorView();
         void setup();
         void init(EditorApp& app);
         void shutdown();
-        bool render();
+        RenderResult render();
 
         void selectObject(const SelectableObject& obj);
 
@@ -38,5 +39,8 @@ namespace darmok::editor
         static const std::string _windowName;
         SelectableObject _selected;
         OptionalRef<SceneDefinitionWrapper> _sceneDef;
+
+        RenderResult renderEntity(Entity entity);
+        RenderResult renderAsset(std::filesystem::path path);
     };
 }

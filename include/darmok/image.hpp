@@ -57,7 +57,7 @@ namespace darmok
 		[[nodiscard]] expected<void, std::string> setData(DataView data) noexcept;
 		[[nodiscard]] bool isTextureValid(uint64_t flags) const noexcept;
 		[[nodiscard]] TextureType getTextureType() const noexcept;
-		[[nodiscard]] bx::AllocatorI& getAllocator() const noexcept;
+		[[nodiscard]] bx::AllocatorI& getAllocator() const;
 		[[nodiscard]] expected<void, std::string> encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept;
 		[[nodiscard]] expected<Data, std::string> encode(ImageEncoding encoding) const noexcept;
 		[[nodiscard]] expected<void, std::string> write(ImageEncoding encoding, std::ostream& stream) const noexcept;

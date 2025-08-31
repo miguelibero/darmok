@@ -27,6 +27,7 @@ namespace darmok::editor
         void reset();
         expected<void, std::string> render();
         void updateScene();
+        Entity addEntity(Entity parentEntity = entt::null);
 
         std::shared_ptr<Scene> getScene();
         std::shared_ptr<const Scene> getScene() const;

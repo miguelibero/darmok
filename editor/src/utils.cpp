@@ -102,13 +102,13 @@ namespace darmok::editor
 		return handleAssetReferenceInput(assetPath, dragType);
     }
 
-    ReferenceInputAction ImguiUtils::drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, AssetPack& assets, const glm::vec2& maxSize)
+    ReferenceInputAction ImguiUtils::drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, ITextureLoader& loader, const glm::vec2& maxSize)
     {
         drawReferenceInput(label, assetPath);
-        auto action = handleAssetReferenceInput(assetPath, "Texture");
+        auto action = handleAssetReferenceInput(assetPath, "TEXTURE");
         if(action == ReferenceInputAction::Changed || (!assetPath.empty() && tex == nullptr))
         {
-            if (auto result = assets.getTextureLoader()(assetPath))
+            if (auto result = loader(assetPath))
             {
                 tex = result.value();
             }

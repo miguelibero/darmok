@@ -20,17 +20,11 @@ namespace darmok
 	Image::Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
 		: _container{ nullptr }
 	{
-		if(data.empty())
+		if(!data.empty())
 		{
-			throw std::runtime_error{ "got empty data" };
-		}
-
-		bx::Error err;
-		_container = bimg::imageParse(&alloc, data.ptr(), (uint32_t)data.size(), format, &err);
-		throwIfError(err);
-		if (_container == nullptr)
-		{
-			throw std::runtime_error{ "got empty image container" };
+			bx::Error err;
+			_container = bimg::imageParse(&alloc, data.ptr(), (uint32_t)data.size(), format, &err);
+			throwIfError(err);
 		}
 	}
 
@@ -120,15 +114,11 @@ namespace darmok
     Image::Image(bimg::ImageContainer* container)
 		: _container{ container }
 	{
-		if (_container == nullptr)
-		{
-			throw std::runtime_error{ "got empty image container" };
-		}
 	}
 
 	Image::~Image() noexcept
 	{
-		if (_container != nullptr)
+		if (_container)
 		{
 			bimg::imageFree(_container);
 		}
@@ -142,7 +132,7 @@ namespace darmok
 
 	Image& Image::operator=(Image&& other) noexcept
 	{
-		if (_container != nullptr)
+		if (_container)
 		{
 			bimg::imageFree(_container);
 		}
@@ -153,6 +143,10 @@ namespace darmok
 
 	DataView Image::getData() const noexcept
 	{
+		if (!_container)
+		{
+			return {};
+		}
 		return DataView{ _container->m_data
 			, _container->m_size };
 	}
@@ -184,13 +178,21 @@ namespace darmok
 		return Texture::Definition::Texture2D;
 	}
 
-	bx::AllocatorI& Image::getAllocator() const noexcept
+	bx::AllocatorI& Image::getAllocator() const
 	{
+		if (!_container)
+		{
+			throw std::runtime_error("image is empty");
+		}
 		return *_container->m_allocator;
 	}
 
 	expected<void, std::string> Image::encode(ImageEncoding encoding, bx::WriterI& writer) const noexcept
 	{
+		if (!_container)
+		{
+			return unexpected{ "image is empty" };
+		}
 		auto size = getSize();
 		auto info = getTextureInfo();
 		auto bpp = info.bitsPerPixel / 8;
@@ -344,47 +346,74 @@ namespace darmok
 
 	glm::uvec2 Image::getSize() const noexcept
 	{
+		if (!_container)
+		{
+			return {};
+		}
 		return glm::uvec2{ _container->m_width, _container->m_height };
 	}
 
 	uint32_t Image::getDepth() const noexcept
 	{
+		if(!_container)
+		{
+			return 0;
+		}
 		return _container->m_depth;
 	}
 
 	bool Image::isCubeMap() const noexcept
 	{
+		if (!_container)
+		{
+			return false;
+		}
 		return _container->m_cubeMap;
 	}
 
 	uint8_t Image::getMipCount() const noexcept
 	{
+		if (!_container)
+		{
+			return 0;
+		}
 		return _container->m_numMips;
 	}
 
 	uint16_t Image::getLayerCount() const noexcept
 	{
+		if (!_container)
+		{
+			return 0;
+		}
 		return _container->m_numLayers;
 	}
 
 	bimg::TextureFormat::Enum Image::getFormat() const noexcept
 	{
+		if (!_container)
+		{
+			return bimg::TextureFormat::Unknown;
+		}
 		return _container->m_format;
 	}
 
 	bgfx::TextureInfo Image::getTextureInfo() const noexcept
 	{
 		bgfx::TextureInfo info;
-		bgfx::calcTextureSize(
-			info
-			, static_cast<uint16_t>(_container->m_width)
-			, static_cast<uint16_t>(_container->m_height)
-			, static_cast<uint16_t>(_container->m_depth)
-			, _container->m_cubeMap
-			, 1 < _container->m_numMips
-			, _container->m_numLayers
-			, static_cast<bgfx::TextureFormat::Enum>(_container->m_format)
-		);
+		if (_container)
+		{
+			bgfx::calcTextureSize(
+				info
+				, static_cast<uint16_t>(_container->m_width)
+				, static_cast<uint16_t>(_container->m_height)
+				, static_cast<uint16_t>(_container->m_depth)
+				, _container->m_cubeMap
+				, 1 < _container->m_numMips
+				, _container->m_numLayers
+				, static_cast<bgfx::TextureFormat::Enum>(_container->m_format)
+			);
+		}
 		return info;
 	}
 

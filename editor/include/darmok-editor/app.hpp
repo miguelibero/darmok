@@ -53,8 +53,6 @@ namespace darmok::editor
         AssetContext& getAssets() noexcept;
         const AssetContext& getAssets() const noexcept;
 
-        Entity addEntity() noexcept;
-
         template<typename T>
         std::optional<std::string> getAssetDragType() const noexcept
         {

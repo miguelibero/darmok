@@ -343,7 +343,7 @@ namespace darmok
         {
             return false;
         }
-        return typeComps->mutable_components()->erase(typeId) > 0;
+        return typeComps->mutable_components()->erase(entt::to_integral(entity)) > 0;
     }
 
     bool SceneDefinitionWrapper::removeComponent(const Any& anyComp) noexcept
@@ -459,6 +459,8 @@ namespace darmok
     {
 		_sceneDef = sceneDef;
         _assetPack.emplace(sceneDef.assets(), _assetConfig);
+        _type = 0;
+        _count = 0;
         _loader.get<entt::entity>(*this);
         auto result = loadComponents();
         if (!result)

@@ -134,7 +134,7 @@ namespace darmok
 		}
 	}
 
-	expected<void, std::string> AssetPack::reload(const std::filesystem::path& path)
+	expected<void, std::string> AssetPack::removeAsset(const std::filesystem::path& path)
 	{
 		auto& assets = _def.assets();
 		auto itr = assets.find(path.string());
@@ -146,12 +146,66 @@ namespace darmok
 		auto typeId = protobuf::getTypeId(asset);
 		if (typeId == protobuf::getTypeId<Mesh::Source>())
 		{
+			_meshDefFromSrcLoader.clearCache(path);
+			_meshLoader.clearCache(path);
+			return {};
+		}
+		if (typeId == protobuf::getTypeId<Material::Definition>())
+		{
+			_materialLoader.clearCache(path);
+			return {};
+		}
+		return unexpected{ "type loader not found" };
+	}
+
+	expected<void, std::string> AssetPack::reloadAsset(const std::filesystem::path& path)
+	{
+		auto& assets = _def.assets();
+		auto itr = assets.find(path.string());
+		if (itr == assets.end())
+		{
+			return unexpected{ "path not found" };
+		}
+		auto& asset = itr->second;
+		auto typeId = protobuf::getTypeId(asset);
+		if (typeId == protobuf::getTypeId<Texture::Source>())
+		{
+			auto result = _texDefFromSrcLoader.reload(path);
+			if (!result)
+			{
+				return unexpected{ result.error() };
+			}
+			typeId = protobuf::getTypeId<Texture::Definition>();
+		}
+		if (typeId == protobuf::getTypeId<Texture::Definition>())
+		{
+			return expectedVoid(_textureLoader.reload(path));
+		}
+		if (typeId == protobuf::getTypeId<Mesh::Source>())
+		{
 			auto result = _meshDefFromSrcLoader.reload(path);
 			if(!result)
 			{
 				return unexpected{ result.error() };
 			}
+			typeId = protobuf::getTypeId<Mesh::Definition>();
+		}
+		if (typeId == protobuf::getTypeId<Mesh::Definition>())
+		{
 			return expectedVoid(_meshLoader.reload(path));
+		}
+		if (typeId == protobuf::getTypeId<Program::Source>())
+		{
+			auto result = _progDefFromSrcLoader.reload(path);
+			if (!result)
+			{
+				return unexpected{ result.error() };
+			}
+			typeId = protobuf::getTypeId<Program::Definition>();
+		}
+		if (typeId == protobuf::getTypeId<Program::Definition>())
+		{
+			return expectedVoid(_programLoader.reload(path));
 		}
 		if (typeId == protobuf::getTypeId<Material::Definition>())
 		{

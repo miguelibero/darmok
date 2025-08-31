@@ -379,12 +379,12 @@ namespace darmok
                 [ptr](auto& elm) { return elm.first.get() == ptr; });
             if(itrRes == _resCache.end())
             {
-                return unexpected<Error>{ "resource not found in cache" };
+                return nullptr;
 			}
 			auto res = itrRes->second.lock();
             if(!res)
             {
-                return unexpected<Error>{ "resource has been freed" };
+                return nullptr;
 			}
             auto itrDef = std::find_if(_defCache.begin(), _defCache.end(),
                 [ptr](auto& elm) { return elm.second.get() == ptr; });

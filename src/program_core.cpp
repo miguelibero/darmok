@@ -322,6 +322,10 @@ namespace darmok
 
     std::vector<ShaderParser::CompilerOperation> ShaderParser::prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath) const noexcept
     {
+        if (config.path.empty())
+        {
+            return {};
+        }
         shader.write(config.path);
         ShaderDefines defines;
         DataInputStream in{ shader };

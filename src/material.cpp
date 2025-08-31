@@ -168,7 +168,7 @@ namespace darmok
 			auto loadResult = _progLoader(def->program_path());
 			if (!loadResult)
 			{
-				return unexpected{ "failed to load custom program" };
+				return unexpected{ "failed to load custom program: " + loadResult.error()};
 			}
 			mat->program = loadResult.value();
 		}
@@ -178,7 +178,7 @@ namespace darmok
 			auto loadResult = _texLoader(defTex.texture_path());
 			if (!loadResult)
 			{
-				return unexpected{ "failed to load texture" };
+				return unexpected{ "failed to load texture: " + loadResult.error() };
 			}
 			auto tex = loadResult.value();
 			if (defTex.has_type())

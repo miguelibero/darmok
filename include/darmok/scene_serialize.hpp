@@ -168,13 +168,13 @@ namespace darmok
         }
 
         template<typename T>
-        bool removeAsset(const std::filesystem::path& path) const noexcept
+        bool removeAsset(const std::filesystem::path& path) noexcept
         {
 			return removeAsset(protobuf::getTypeId<T>(), path);
         }
 
         template<typename T>
-        bool removeComponent(Entity entity) const noexcept
+        bool removeComponent(Entity entity) noexcept
         {
             return removeComponent(entity, protobuf::getTypeId<T>());
         }

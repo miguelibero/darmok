@@ -76,7 +76,8 @@ namespace darmok
 		[[nodiscard]] ISoundLoader& getSoundLoader() noexcept override;
 		[[nodiscard]] IMusicLoader& getMusicLoader() noexcept override;
 
-		expected<void, std::string> reload(const std::filesystem::path& path);
+		expected<void, std::string> reloadAsset(const std::filesystem::path& path);
+		expected<void, std::string> removeAsset(const std::filesystem::path& path);
 	private:
 
 		const Definition& _def;

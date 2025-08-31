@@ -36,6 +36,16 @@ namespace darmok::editor
         return *getProject().getScene();
     }
 
+    SceneDefinitionWrapper& BaseObjectEditor::getSceneDefinition() noexcept
+    {
+        return getProject().getSceneDefinition();
+    }
+
+    const SceneDefinitionWrapper& BaseObjectEditor::getSceneDefinition() const noexcept
+    {
+        return getProject().getSceneDefinition();
+    }
+
     EditorApp& BaseObjectEditor::getApp() noexcept
     {
         return *_app;
@@ -53,7 +63,12 @@ namespace darmok::editor
 
     expected<void, std::string> BaseObjectEditor::reloadAsset(const std::filesystem::path& path) noexcept
     {
-        return getProject().getAssets().reload(path);
+        return getProject().getAssets().reloadAsset(path);
+    }
+
+    expected<void, std::string> BaseObjectEditor::removeAsset(const std::filesystem::path& path) noexcept
+    {
+        return getProject().getAssets().removeAsset(path);
     }
 
     BaseObjectEditor::RenderResult BaseObjectEditor::renderChild(google::protobuf::Message& msg) noexcept
