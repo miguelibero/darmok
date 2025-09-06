@@ -1,4 +1,4 @@
-#include "input.hpp"
+#include "lua/input.hpp"
 
 namespace darmok
 {

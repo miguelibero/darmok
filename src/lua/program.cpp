@@ -1,5 +1,5 @@
-#include "program.hpp"
-#include "utils.hpp"
+#include "lua/program.hpp"
+#include "lua/utils.hpp"
 #include <darmok/program.hpp>
 
 namespace darmok

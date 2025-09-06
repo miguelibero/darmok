@@ -16,7 +16,7 @@
 #include <darmok/transform.hpp>
 #include <darmok/glm_serialize.hpp>
 #include "generated/shaders/shadow.program.h"
-#include "render_samplers.hpp"
+#include "detail/render_samplers.hpp"
 
 namespace darmok
 {

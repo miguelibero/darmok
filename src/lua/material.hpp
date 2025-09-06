@@ -1,8 +1,9 @@
 #pragma once
 
-#include "lua.hpp"
+#include "lua/lua.hpp"
+#include "lua/glm.hpp"
+
 #include <darmok/protobuf/material.pb.h>
-#include "glm.hpp"
 
 namespace darmok
 {

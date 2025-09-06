@@ -1,13 +1,61 @@
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
 #include <darmok/shape_serialize.hpp>
+#include <darmok/optional_ref.hpp>
+
+#ifdef DARMOK_ASSIMP
+#include "detail/assimp.hpp"
+#include <darmok/mesh_assimp.hpp>
+#include <assimp/scene.h>
+#endif
+
 
 namespace darmok
 {
-	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader) noexcept
+	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader, bx::AllocatorI& allocator) noexcept
 		: FromDefinitionLoader(srcLoader)
 		, _progDefLoader{ progDefLoader }
+		, _allocator{ allocator }
 	{
+	}
+
+	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const protobuf::ExternalMeshSource& external)
+	{
+		DataView data{ external.data() };
+		auto defPtr = std::make_shared<Mesh::Definition>();
+		if (data.empty())
+		{
+			return defPtr;
+		}
+		AssimpLoader loader;
+		auto result = loader.loadFromMemory(data);
+		if (!result)
+		{
+			return unexpected{ result.error() };
+		}
+		auto assimpScene = *result.value();
+		OptionalRef<aiMesh> assimpMesh;
+		for (int i = 0; i < assimpScene.mNumMeshes; ++i)
+		{
+			auto m = assimpScene.mMeshes[i];
+			auto name = m->mName.C_Str();
+			if (name == external.name())
+			{
+				assimpMesh = m;
+				break;
+			}
+		}
+		if (!assimpMesh)
+		{
+			return unexpected<std::string>{ "mesh not found: " + external.name() };
+		}
+		AssimpMeshDefinitionConverter converter{ *assimpMesh , *defPtr, _allocator };
+		auto convResult = converter();
+		if (!convResult)
+		{
+			return unexpected{ convResult.error() };
+		}
+		return defPtr;
 	}
 
 	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const std::shared_ptr<Mesh::Source>& src)
@@ -58,14 +106,18 @@ namespace darmok
 			auto def = MeshData{ shape, src->capsule().lod() }.createDefinition(layout, config);
 			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
 		}
-		/*
 		else if (src->has_rectangle())
 		{
 			auto shape = protobuf::convert(src->rectangle().shape());
 			auto def = MeshData{ shape, src->rectangle().type() }.createDefinition(layout, config);
 			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
 		}
-		*/
+#ifdef DARMOK_ASSIMP
+		else if (src->has_external())
+		{
+			return create(src->external());
+		}
+#endif
 
 		if (defPtr)
 		{

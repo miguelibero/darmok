@@ -1,4 +1,4 @@
-#include "audio.hpp"
+#include "lua/audio.hpp"
 #include <darmok/audio.hpp>
 
 namespace darmok

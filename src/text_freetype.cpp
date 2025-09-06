@@ -7,7 +7,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/program.hpp>
-#include "text_freetype.hpp"
+#include "detail/text_freetype.hpp"
 
 #include <stdexcept>
 #include <pugixml.hpp>

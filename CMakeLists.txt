@@ -383,8 +383,13 @@ endif()
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND HEADERS
     scene_assimp.hpp
+    mesh_assimp.hpp
   )
-  list(APPEND SOURCES scene_assimp.cpp)
+  list(APPEND SOURCES
+    assimp.cpp
+    scene_assimp.cpp
+    mesh_assimp.cpp
+  )
   if(DARMOK_BUILD_OZZ)
     list(APPEND HEADERS skeleton_assimp.hpp)
     list(APPEND SOURCES skeleton_assimp.cpp)
@@ -525,6 +530,7 @@ macro(_darmok_lib_setup TARGET)
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/public>
     PRIVATE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/private>
   )
   set_target_properties(${TARGET} PROPERTIES VERSION ${PROJECT_VERSION})

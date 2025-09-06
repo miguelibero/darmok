@@ -1,10 +1,10 @@
-#include "scene.hpp"
-#include "transform.hpp"
-#include "camera.hpp"
-#include "light.hpp"
-#include "render_scene.hpp"
-#include "scene_filter.hpp"
-#include "freelook.hpp"
+#include "lua/scene.hpp"
+#include "lua/transform.hpp"
+#include "lua/camera.hpp"
+#include "lua/light.hpp"
+#include "lua/render_scene.hpp"
+#include "lua/scene_filter.hpp"
+#include "lua/freelook.hpp"
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
 #include <darmok/render_chain.hpp>

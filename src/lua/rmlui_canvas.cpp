@@ -1,16 +1,19 @@
-#include "rmlui.hpp"
-#include <RmlUi/Core.h>
-#include <RmlUi/Core/DataModelHandle.h>
+#include "lua/rmlui.hpp"
+#include "lua/camera.hpp"
+#include "lua/utils.hpp"
+#include "lua/scene.hpp"
+#include "lua/glm.hpp"
+#include "lua/viewport.hpp"
+#include "detail/rmlui.hpp"
+
 #include <darmok/rmlui.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/string.hpp>
-#include "camera.hpp"
-#include "utils.hpp"
-#include "scene.hpp"
-#include "glm.hpp"
-#include "viewport.hpp"
-#include "../rmlui.hpp"
+
+#include <RmlUi/Core.h>
+#include <RmlUi/Core/DataModelHandle.h>
+
 
 namespace darmok
 {

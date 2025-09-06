@@ -7,8 +7,12 @@ import "program.proto";
 import "material.proto";
 import "light.proto";
 
-message AssimpSceneImportConfig {
+message AssimpMeshImportConfig {
     VertexLayout vertex_layout = 1;
+}
+
+message AssimpSceneImportConfig {
+    AssimpMeshImportConfig mesh_config = 1;
     optional StandardProgram.Type standard_program = 2;
     string program_path = 3;
     repeated string program_defines = 4;

@@ -1,6 +1,6 @@
-#include "mesh.hpp"
-#include "glm.hpp"
-#include "utils.hpp"
+#include "lua/mesh.hpp"
+#include "lua/glm.hpp"
+#include "lua/utils.hpp"
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>

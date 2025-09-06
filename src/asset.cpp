@@ -1,17 +1,11 @@
-#include "asset.hpp"
+#include "detail/asset.hpp"
 
-#include <filesystem>
-#include <bx/filepath.h>
 #include <darmok/asset_pack.hpp>
 
-#ifdef DARMOK_ASSIMP
-#ifdef DARMOK_OZZ
-#include <darmok/skeleton_assimp.hpp>
-#endif
-#endif
 
 namespace darmok
 {
+
 	AssetContextImpl::AssetContextImpl(IAssetContext& assets, Config&& config)
 		: _config{ std::move(config) }
 		, _imageLoader{ getDataLoader(), getAllocator() }

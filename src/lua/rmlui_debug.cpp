@@ -1,7 +1,8 @@
 #ifdef _DEBUG
 
-#include "rmlui.hpp"
-#include "rmlui_debug.hpp"
+#include "lua/rmlui.hpp"
+#include "lua/rmlui_debug.hpp"
+
 #include <darmok/app.hpp>
 #include <darmok/rmlui.hpp>
 #include <darmok/rmlui_debug.hpp>

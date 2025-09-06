@@ -1,9 +1,9 @@
-#include "camera.hpp"
-#include "scene.hpp"
-#include "scene_filter.hpp"
-#include "render_forward.hpp"
-#include "light.hpp"
-#include "culling.hpp"
+#include "lua/camera.hpp"
+#include "lua/scene.hpp"
+#include "lua/scene_filter.hpp"
+#include "lua/render_forward.hpp"
+#include "lua/light.hpp"
+#include "lua/culling.hpp"
 #include <darmok/program.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/camera.hpp>

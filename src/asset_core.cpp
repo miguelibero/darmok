@@ -1,4 +1,4 @@
-#include "asset_core.hpp"
+#include "detail/asset_core.hpp"
 #include <darmok/string.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>

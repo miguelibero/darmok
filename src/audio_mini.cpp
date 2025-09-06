@@ -1,5 +1,5 @@
 #include <darmok/audio.hpp>
-#include "audio_mini.hpp"
+#include "detail/audio_mini.hpp"
 #include <stdexcept>
 #include <bx/bx.h>
 #include <fstream>

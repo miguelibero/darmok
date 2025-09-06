@@ -1,7 +1,7 @@
 
-#include "platform.hpp"
-#include "input.hpp"
-#include "window.hpp"
+#include "detail/platform.hpp"
+#include "detail/input.hpp"
+#include "detail/window.hpp"
 
 namespace darmok
 {

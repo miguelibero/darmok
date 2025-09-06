@@ -12,5 +12,7 @@ namespace darmok::editor
     public:
         std::string getTitle() const noexcept override;
         RenderResult renderType(Mesh::Source& src) noexcept override;
+    private:
+        static const std::string _externalFilter;
     };
 }

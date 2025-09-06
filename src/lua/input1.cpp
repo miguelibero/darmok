@@ -1,6 +1,6 @@
-#include "input.hpp"
-#include "window.hpp"
-#include "utils.hpp"
+#include "lua/input.hpp"
+#include "lua/window.hpp"
+#include "lua/utils.hpp"
 #include <darmok/input.hpp>
 #include <darmok/string.hpp>
 

@@ -1,5 +1,5 @@
-#include "math.hpp"
-#include "glm.hpp"
+#include "lua/math.hpp"
+#include "lua/glm.hpp"
 #include <darmok/math.hpp>
 
 namespace darmok

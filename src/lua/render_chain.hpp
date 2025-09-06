@@ -1,8 +1,8 @@
 #pragma once 
 
-#include "lua.hpp"
-#include "viewport.hpp"
-#include "glm.hpp"
+#include "lua/lua.hpp"
+#include "lua/viewport.hpp"
+#include "lua/glm.hpp"
 
 #include <darmok/optional_ref.hpp>
 

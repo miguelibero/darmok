@@ -1,5 +1,5 @@
-#include "freelook.hpp"
-#include "scene.hpp"
+#include "lua/freelook.hpp"
+#include "lua/scene.hpp"
 #include <darmok/camera.hpp>
 #include <darmok/freelook.hpp>
 

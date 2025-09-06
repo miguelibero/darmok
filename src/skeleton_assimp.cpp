@@ -1,5 +1,5 @@
-#include "skeleton_assimp.hpp"
-#include "skeleton_ozz.hpp"
+#include "detail/skeleton_assimp.hpp"
+#include "detail/skeleton_ozz.hpp"
 #include <darmok/string.hpp>
 #include <darmok/skeleton_assimp.hpp>
 #include <ozz/animation/offline/raw_skeleton.h>

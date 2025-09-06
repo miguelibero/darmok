@@ -1,5 +1,5 @@
-#include "physics3d_jolt.hpp"
-#include "character_jolt.hpp"
+#include "detail/physics3d_jolt.hpp"
+#include "detail/character_jolt.hpp"
 
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>

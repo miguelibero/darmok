@@ -15,7 +15,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/glm_serialize.hpp>
 
-#include "rmlui.hpp"
+#include "detail/rmlui.hpp"
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 

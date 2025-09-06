@@ -10,7 +10,7 @@
 #include <darmok/glm_serialize.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/component_wise.hpp>
-#include "render_samplers.hpp"
+#include "detail/render_samplers.hpp"
 
 namespace darmok
 {

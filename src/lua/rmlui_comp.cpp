@@ -1,11 +1,13 @@
-#include "rmlui.hpp"
-#include <RmlUi/Core.h>
+#include "lua/rmlui.hpp"
+#include "lua/utils.hpp"
+#include "lua/camera.hpp"
+#include "lua/scene.hpp"
+
 #include <darmok/rmlui.hpp>
 #include <darmok/camera.hpp>
 #include <darmok/scene.hpp>
-#include "utils.hpp"
-#include "camera.hpp"
-#include "scene.hpp"
+
+#include <RmlUi/Core.h>
 
 namespace darmok
 {

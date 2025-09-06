@@ -9,7 +9,7 @@
 #include <darmok/glm_serialize.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
-#include "render_samplers.hpp"
+#include "detail/render_samplers.hpp"
 
 namespace darmok
 {

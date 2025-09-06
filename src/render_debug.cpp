@@ -3,7 +3,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/app.hpp>
 #include <darmok/asset.hpp>
-#include "render_samplers.hpp"
+#include "detail/render_samplers.hpp"
 
 namespace darmok
 {

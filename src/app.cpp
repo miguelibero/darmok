@@ -1,8 +1,8 @@
-#include "app.hpp"
-#include "input.hpp"
-#include "window.hpp"
-#include "audio_mini.hpp"
-#include "asset.hpp"
+#include "detail/app.hpp"
+#include "detail/input.hpp"
+#include "detail/window.hpp"
+#include "detail/audio_mini.hpp"
+#include "detail/asset.hpp"
 
 #include <darmok/app.hpp>
 #include <darmok/color.hpp>

@@ -1,5 +1,5 @@
-#include "math.hpp"
-#include "glm.hpp"
+#include "lua/math.hpp"
+#include "lua/glm.hpp"
 #include <darmok/color.hpp>
 #include <glm/gtx/rotate_normalized_axis.hpp>
 #include <glm/gtx/rotate_vector.hpp>

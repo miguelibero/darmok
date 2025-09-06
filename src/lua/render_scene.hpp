@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lua.hpp"
+#include "lua/lua.hpp"
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/color_fwd.hpp>

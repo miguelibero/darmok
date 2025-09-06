@@ -1,6 +1,6 @@
-#include "coroutine.hpp"
-#include "utils.hpp"
-#include "glm.hpp"
+#include "lua/coroutine.hpp"
+#include "lua/utils.hpp"
+#include "lua/glm.hpp"
 #include <darmok/transform.hpp>
 #include <darmok/math.hpp>
 #include <darmok/easing.hpp>

@@ -6,8 +6,7 @@
 #include <darmok/protobuf/program.pb.h>
 #include <glm/gtx/component_wise.hpp>
 
-#include <array>
-#include <mikktspace.h>
+#include "detail/mesh_core.hpp"
 
 namespace darmok
 {
@@ -223,10 +222,9 @@ namespace darmok
 		: _type{ config.type }
 		, _variant{ createVariant(_type, layout, vertices, indices, config) }
 		, _layout{ layout }
-		, _vertNum{ vertices.size() / layout.getStride() }
+		, _vertNum{ layout.getStride() != 0 ? vertices.size() / layout.getStride() : 0 }
 		, _idxNum{ indices.size() / config.getIndexSize() }
 	{
-
 	}
 
 	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
@@ -999,102 +997,94 @@ namespace darmok
 	}
 
 
-	struct MeshDataCalcTangentsOperation final
+	MeshDataCalcTangentsOperation::MeshDataCalcTangentsOperation() noexcept
 	{
-	public:
-		MeshDataCalcTangentsOperation() noexcept
+		_iface.m_getNumFaces = getNumFaces;
+		_iface.m_getNumVerticesOfFace = getNumFaceVertices;
+		_iface.m_getNormal = getNormal;
+		_iface.m_getPosition = getPosition;
+		_iface.m_getTexCoord = getTexCoords;
+		_iface.m_setTSpaceBasic = setTangent;
+
+		_context.m_pInterface = &_iface;
+	}
+
+	void MeshDataCalcTangentsOperation::operator()(MeshData& mesh) noexcept
+	{
+		_context.m_pUserData = &mesh;
+		genTangSpaceDefault(&_context);
+	}
+
+	MeshData& MeshDataCalcTangentsOperation::getMeshDataFromContext(const SMikkTSpaceContext* context) noexcept
+	{
+		return *static_cast<MeshData*>(context->m_pUserData);
+	}
+
+	int MeshDataCalcTangentsOperation::getVertexIndex(const SMikkTSpaceContext* context, int iFace, int iVert) noexcept
+	{
+		MeshData& mesh = getMeshDataFromContext(context);
+		auto faceSize = getNumFaceVertices(context, iFace);
+		auto index = (iFace * faceSize) + iVert;
+		if (mesh.indices.empty())
 		{
-			_iface.m_getNumFaces = getNumFaces;
-			_iface.m_getNumVerticesOfFace = getNumFaceVertices;
-			_iface.m_getNormal = getNormal;
-			_iface.m_getPosition = getPosition;
-			_iface.m_getTexCoord = getTexCoords;
-			_iface.m_setTSpaceBasic = setTangent;
-
-			_context.m_pInterface = &_iface;
+			return index;
 		}
+		return mesh.indices[index];
+	}
 
-		void operator()(MeshData& mesh) noexcept
+	int MeshDataCalcTangentsOperation::getNumFaces(const SMikkTSpaceContext* context) noexcept
+	{
+		MeshData& mesh = getMeshDataFromContext(context);
+		if (mesh.indices.empty())
 		{
-			_context.m_pUserData = &mesh;
-			genTangSpaceDefault(&_context);
+			return mesh.vertices.size() / 3;
 		}
+		return mesh.indices.size() / 3;
+	}
 
-	private:
-		SMikkTSpaceInterface _iface{};
-		SMikkTSpaceContext _context{};
+	int MeshDataCalcTangentsOperation::getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
+	{
+		return 3;
+	}
 
-		static MeshData& getMeshDataFromContext(const SMikkTSpaceContext* context) noexcept
-		{
-			return *static_cast<MeshData*>(context->m_pUserData);
-		}
+	void MeshDataCalcTangentsOperation::getPosition(const SMikkTSpaceContext* context, float outpos[], int iFace, int iVert) noexcept
+	{
+		MeshData& mesh = getMeshDataFromContext(context);
+		auto index = getVertexIndex(context, iFace, iVert);
+		auto& vert = mesh.vertices[index];
+		outpos[0] = vert.position.x;
+		outpos[1] = vert.position.y;
+		outpos[2] = vert.position.z;
+	}
 
-		static int getVertexIndex(const SMikkTSpaceContext* context, int iFace, int iVert) noexcept
-		{
-			MeshData& mesh = getMeshDataFromContext(context);
-			auto faceSize = getNumFaceVertices(context, iFace);
-			auto index = (iFace * faceSize) + iVert;
-			if (mesh.indices.empty())
-			{
-				return index;
-			}
-			return mesh.indices[index];
-		}
+	void MeshDataCalcTangentsOperation::getNormal(const SMikkTSpaceContext* context, float outnormal[], int iFace, int iVert) noexcept
+	{
+		MeshData& mesh = getMeshDataFromContext(context);
+		auto index = getVertexIndex(context, iFace, iVert);
+		auto& vert = mesh.vertices[index];
+		outnormal[0] = vert.normal.x;
+		outnormal[1] = vert.normal.y;
+		outnormal[2] = vert.normal.z;
+	}
 
-		static int getNumFaces(const SMikkTSpaceContext* context) noexcept
-		{
-			MeshData& mesh = getMeshDataFromContext(context);
-			if (mesh.indices.empty())
-			{
-				return mesh.vertices.size() / 3;
-			}
-			return mesh.indices.size() / 3;
-		}
+	void MeshDataCalcTangentsOperation::getTexCoords(const SMikkTSpaceContext* context, float outuv[], int iFace, int iVert) noexcept
+	{
+		MeshData& mesh = getMeshDataFromContext(context);
+		auto index = getVertexIndex(context, iFace, iVert);
+		auto& vert = mesh.vertices[index];
+		outuv[0] = vert.texCoord.x;
+		outuv[1] = vert.texCoord.y;
+	}
 
-		static int getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
-		{
-			return 3;
-		}
-
-		static void getPosition(const SMikkTSpaceContext* context, float outpos[], int iFace, int iVert) noexcept
-		{
-			MeshData& mesh = getMeshDataFromContext(context);
-			auto index = getVertexIndex(context, iFace, iVert);
-			auto& vert = mesh.vertices[index];
-			outpos[0] = vert.position.x;
-			outpos[1] = vert.position.y;
-			outpos[2] = vert.position.z;
-		}
-
-		static void getNormal(const SMikkTSpaceContext* context, float outnormal[], int iFace, int iVert) noexcept
-		{
-			MeshData& mesh = getMeshDataFromContext(context);
-			auto index = getVertexIndex(context, iFace, iVert);
-			auto& vert = mesh.vertices[index];
-			outnormal[0] = vert.normal.x;
-			outnormal[1] = vert.normal.y;
-			outnormal[2] = vert.normal.z;
-		}
-
-		static void getTexCoords(const SMikkTSpaceContext* context, float outuv[], int iFace, int iVert) noexcept
-		{
-			MeshData& mesh = getMeshDataFromContext(context);
-			auto index = getVertexIndex(context, iFace, iVert);
-			auto& vert = mesh.vertices[index];
-			outuv[0] = vert.texCoord.x;
-			outuv[1] = vert.texCoord.y;
-		}
-
-		static void setTangent(const SMikkTSpaceContext* context, const float tangentu[], float fSign, int iFace, int iVert) noexcept
-		{
-			MeshData& mesh = getMeshDataFromContext(context);
-			auto index = getVertexIndex(context, iFace, iVert);
-			auto& vert = mesh.vertices[index];
-			vert.tangent.x = tangentu[0];
-			vert.tangent.y = tangentu[1];
-			vert.tangent.z = tangentu[2];
-		}
-	};
+	void MeshDataCalcTangentsOperation::setTangent(const SMikkTSpaceContext* context, const float tangentu[], float fSign, int iFace, int iVert) noexcept
+	{
+		MeshData& mesh = getMeshDataFromContext(context);
+		auto index = getVertexIndex(context, iFace, iVert);
+		auto& vert = mesh.vertices[index];
+		vert.tangent.x = tangentu[0];
+		vert.tangent.y = tangentu[1];
+		vert.tangent.z = tangentu[2];
+	}
 
 	MeshData& MeshData::calcTangents() noexcept
 	{

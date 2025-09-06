@@ -1,8 +1,8 @@
 #pragma once
 
-#include "lua.hpp"
-#include "glm.hpp"
-#include "utils.hpp"
+#include "lua/lua.hpp"
+#include "lua/glm.hpp"
+#include "lua/utils.hpp"
 
 #include <darmok/optional_ref.hpp>
 #include <darmok/physics3d.hpp>

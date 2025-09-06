@@ -1,8 +1,8 @@
 
 #ifdef _DEBUG
 
-#include "physics3d_debug.hpp"
-#include "physics3d.hpp"
+#include "lua/physics3d_debug.hpp"
+#include "lua/physics3d.hpp"
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/program.hpp>
 #include <darmok/camera.hpp>

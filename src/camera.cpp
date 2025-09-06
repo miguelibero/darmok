@@ -10,7 +10,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/glm_serialize.hpp>
 
-#include "scene.hpp"
+#include "detail/scene.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>

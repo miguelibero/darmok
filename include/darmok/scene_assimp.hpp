@@ -37,7 +37,6 @@ namespace darmok
         using Config = protobuf::AssimpSceneImportConfig;
         using Model = protobuf::Scene;
 
-
         AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
         ~AssimpSceneDefinitionLoader() noexcept;
         AssimpSceneDefinitionLoader& setConfig(const Config& config) noexcept;
@@ -55,7 +54,6 @@ namespace darmok
         using Config = protobuf::AssimpSceneImportConfig;
         AssimpSceneFileImporter(bx::AllocatorI& alloc);
         ~AssimpSceneFileImporter();
-        AssimpSceneFileImporter& setProgramVertexLayoutSuffix(const std::string& suffix);
         bool startImport(const Input& input, bool dry = false) override;
         std::vector<std::filesystem::path> getOutputs(const Input& input) override;
         Dependencies getDependencies(const Input& input) override;

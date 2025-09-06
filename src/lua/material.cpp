@@ -1,6 +1,6 @@
-#include "material.hpp"
-#include "glm.hpp"
-#include "utils.hpp"
+#include "lua/material.hpp"
+#include "lua/glm.hpp"
+#include "lua/utils.hpp"
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>

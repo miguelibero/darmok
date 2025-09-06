@@ -9,7 +9,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/scene_filter.hpp>
-#include "render_samplers.hpp"
+#include "detail/render_samplers.hpp"
 
 namespace darmok
 {

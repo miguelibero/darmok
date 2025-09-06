@@ -1,10 +1,10 @@
-#include "skeleton.hpp"
-#include "scene.hpp"
-#include "material.hpp"
-#include "mesh.hpp"
-#include "asset.hpp"
-#include "render_scene.hpp"
-#include "camera.hpp"
+#include "lua/skeleton.hpp"
+#include "lua/scene.hpp"
+#include "lua/material.hpp"
+#include "lua/mesh.hpp"
+#include "lua/asset.hpp"
+#include "lua/render_scene.hpp"
+#include "lua/camera.hpp"
 #include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/camera.hpp>

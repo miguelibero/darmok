@@ -1,4 +1,4 @@
-#include "scene_assimp.hpp"
+#include "detail/scene_assimp.hpp"
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -13,16 +13,12 @@
 #include <darmok/material.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/mesh_assimp.hpp>
 
 #include <assimp/vector3.h>
-#include <assimp/mesh.h>
 #include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/Importer.hpp>
 #include <assimp/GltfMaterial.h>
-#include <assimp/BaseImporter.h>
 
-#include <mikktspace.h>
 #include <magic_enum/magic_enum.hpp>
 #include <glm/gtx/component_wise.hpp>
 
@@ -30,77 +26,21 @@ namespace darmok
 {
     namespace AssimpUtils
     {
-        std::string_view getStringView(const aiString& str) noexcept
-        {
-            return std::string_view{ str.data, str.length };
-        }
-
-        std::string getString(const aiString& str) noexcept
-        {
-            return std::string{ str.data, str.length };
-        }
-
-        glm::mat4 convert(const aiMatrix4x4& from) noexcept
-        {
-            // the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
-            return glm::mat4{
-                from.a1, from.b1, from.c1, from.d1,
-                from.a2, from.b2, from.c2, from.d2,
-                from.a3, from.b3, from.c3, from.d3,
-                from.a4, from.b4, from.c4, from.d4
-            };
-        }
-
-        glm::vec3 convert(const aiVector3D& vec) noexcept
-        {
-            return glm::vec3{ vec.x, vec.y, vec.z };
-        }
-
-        glm::vec2 convert(const aiVector2D& vec) noexcept
-        {
-            return glm::vec2{ vec.x, vec.y };
-        }
-
-        uint8_t convertColorComp(ai_real v) noexcept
-        {
-            return 255 * v;
-        }
-
-        Color convert(const aiColor4D& c) noexcept
-        {
-            return Color
-            {
-                convertColorComp(c.r),
-                convertColorComp(c.g),
-                convertColorComp(c.b),
-                convertColorComp(c.a),
-            };
-        }
-
         float getIntensity(const aiColor3D& c) noexcept
         {
             return glm::compMax(glm::vec3{ c.r, c.g, c.b });
         }
 
-        Color3 convert(aiColor3D c) noexcept
-        {
-            return Color3
-            {
-                convertColorComp(c.r),
-                convertColorComp(c.g),
-                convertColorComp(c.b)
-            };
-        }
-
         bool fixImportConfig(IDataLoader& dataLoader, protobuf::AssimpSceneImportConfig& config)
         {
-            auto stride = ConstVertexLayoutWrapper{ config.vertex_layout() }.getBgfx().getStride();
+            auto stride = ConstVertexLayoutWrapper{ config.mesh_config().vertex_layout() }.getBgfx().getStride();
             if (stride == 0)
             {
+				auto& layout = *config.mutable_mesh_config()->mutable_vertex_layout();
                 if (config.has_standard_program())
                 {
                     auto def = StandardProgramLoader::loadDefinition(config.standard_program());
-                    *config.mutable_vertex_layout() = def->varying().vertex();
+                    layout = def->varying().vertex();
                 }
                 else if (config.program_path().empty())
                 {
@@ -110,7 +50,7 @@ namespace darmok
                     {
                         return false;
                     }
-                    *config.mutable_vertex_layout() = prog.varying().vertex();
+                    layout = prog.varying().vertex();
                 }
             }
             return stride > 0;
@@ -128,117 +68,7 @@ namespace darmok
             return false;
 		}
     };
-
-    void AssimpLoader::Config::setPath(const std::filesystem::path& path) noexcept
-    {
-        basePath = path.parent_path().string();
-        format = path.extension().string();
-    }
-
-    bool AssimpLoader::supports(const std::filesystem::path& path) const noexcept
-    {
-        Assimp::Importer importer;
-        return importer.IsExtensionSupported(path.extension().string());
-    }
-
-    unsigned int AssimpLoader::getImporterFlags(const Config& config) noexcept
-    {
-        auto flags = // aiProcess_CalcTangentSpace | // produces weird tangents, we use mikktspace instead
-            aiProcess_Triangulate |
-            aiProcess_JoinIdenticalVertices |
-            aiProcess_SortByPType |
-            aiProcess_GenSmoothNormals |
-            aiProcess_GenBoundingBoxes |
-            aiProcess_LimitBoneWeights |
-            // apply UnitScaleFactor to everything
-            aiProcess_GlobalScale;
-
-        if (config.leftHanded)
-        {
-            // assimp (and opengl) is right handed (+Z points towards the camera)
-            // while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
-            flags |= aiProcess_ConvertToLeftHanded;
-        }
-        if (config.populateArmature)
-        {
-            flags |= aiProcess_PopulateArmatureData;
-        }
-        return flags;
-    }
-
-    AssimpLoader::Result AssimpLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
-    {
-        Assimp::Importer importer;
-        const aiScene* ptr = nullptr;
-        if (!config.format.empty())
-        {
-            auto hintImporter = importer.GetImporter(config.format.c_str());
-            if (hintImporter != nullptr)
-            {
-                ptr = hintImporter->ReadFile(&importer, path.string().c_str(), importer.GetIOHandler());
-            }
-        }
-        if(ptr == nullptr)
-        {
-            ptr = importer.ReadFile(path.string(), getImporterFlags(config));
-        }
-        if (ptr == nullptr)
-        {
-            return unexpected{ importer.GetErrorString() };
-        }
-        return fixScene(importer);
-    }
-
-    AssimpLoader::Result AssimpLoader::loadFromMemory(const DataView& data, const Config& config) const
-    {
-        Assimp::Importer importer;
-        if (!config.basePath.empty())
-        {
-            auto path = std::filesystem::path(config.basePath) / "file";
-            if (!config.format.empty())
-            {
-                path += "." + config.format;
-            }
-            importer.SetPropertyString("sourceFilePath", path.string());
-        }
-
-        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), config.format.c_str());
-        if (ptr == nullptr)
-        {
-            return unexpected{ importer.GetErrorString() };
-        }
-        return fixScene(importer);
-    }
-
-    std::shared_ptr<aiScene> AssimpLoader::fixScene(Assimp::Importer& importer) noexcept
-    {
-        auto scene = importer.GetOrphanedScene();
-
-        // https://github.com/assimp/assimp/issues/3240
-        auto scale = importer.GetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f);
-        scale *= importer.GetPropertyFloat(AI_CONFIG_APP_SCALE_KEY, 1.0f);
-
-        // scale camera clip planes, seems to be an assimp bug
-        for (auto i = 0; i < scene->mNumCameras; ++i)
-        {
-            auto cam = scene->mCameras[i];
-            cam->mClipPlaneNear *= scale;
-            cam->mClipPlaneFar *= scale;
-        }
-
-        // scale light parameters
-        for (auto i = 0; i < scene->mNumLights; ++i)
-        {
-            auto light = scene->mLights[i];
-            light->mColorAmbient = light->mColorAmbient * scale;
-            light->mColorDiffuse = light->mColorDiffuse * scale;
-            light->mColorSpecular = light->mColorSpecular * scale;
-            light->mAttenuationLinear /= scale;
-            light->mAttenuationQuadratic /= scale * scale;
-        }
-        return std::shared_ptr<aiScene>(scene);
-    }
-
+    
     AssimpSceneDefinitionLoaderImpl::AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
         : _dataLoader{ dataLoader }
         , _allocator{ allocator }
@@ -275,7 +105,11 @@ namespace darmok
         auto basePath = path.parent_path().string();
 
         AssimpSceneDefinitionConverter converter{ **sceneResult, *model, basePath, _config, _allocator, _texLoader };
-        converter();
+        auto result = converter();
+        if(!result )
+        {
+            return unexpected{ result.error() };
+		}
         return model;
     }
 
@@ -349,7 +183,7 @@ namespace darmok
         return *this;
     }
 
-    bool AssimpSceneDefinitionConverter::updateMeshes(Entity entity, const std::regex& regex) noexcept
+    expected<bool, std::string> AssimpSceneDefinitionConverter::updateMeshes(Entity entity, const std::regex& regex) noexcept
     {
         auto found = false;
         auto addChild = _assimpScene.mNumMeshes > 1;
@@ -361,21 +195,27 @@ namespace darmok
             {
                 continue;
             }
-            if (addMeshComponents(entity, i, addChild))
+            auto result = addMeshComponents(entity, i, addChild);
+            if (!result)
             {
-                found = true;
+				return unexpected{ result.error() };
             }
+            found = true;
         }
         return found;
     }
-    bool AssimpSceneDefinitionConverter::addMeshComponents(Entity entity, int index, bool addChild) noexcept
+    expected<void, std::string> AssimpSceneDefinitionConverter::addMeshComponents(Entity entity, int index, bool addChild) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
-            return false;
+            return unexpected<std::string>{"invalid mesh index"};
         }
         auto assimpMesh = _assimpScene.mMeshes[index];
-        auto meshPath = getMesh(index);
+        auto meshResult = getMesh(index);
+        if(!meshResult)
+        {
+            return unexpected{ meshResult.error() };
+		}
         auto matPath = getMaterial(assimpMesh->mMaterialIndex);
         
         if (addChild)
@@ -390,7 +230,7 @@ namespace darmok
         }
 
         RenderableDefinition renderable;
-        renderable.set_mesh_path(meshPath);
+        renderable.set_mesh_path(meshResult.value());
         renderable.set_material_path(matPath);
         _scene.setComponent(entity, renderable);
 
@@ -402,26 +242,36 @@ namespace darmok
             _scene.setComponent(entity, skinnable);
         }
 
-        return true;
+        return {};
     }
     
-    bool AssimpSceneDefinitionConverter::operator()() noexcept
+    expected<void, std::string> AssimpSceneDefinitionConverter::operator()() noexcept
     {
         _scene.setName(AssimpUtils::getString(_assimpScene.mName));
         if (!_config.root_mesh_regex().empty())
         {
-            auto entityId = _scene.createEntity();
-            return updateMeshes(entityId, std::regex{ _config.root_mesh_regex() });
+            auto entity = _scene.createEntity();
+            auto result = updateMeshes(entity, std::regex{ _config.root_mesh_regex() });
+            if (!result)
+            {
+                return unexpected{ result.error() };
+			}
+            return {};
         }
-        return updateNode(*_assimpScene.mRootNode).has_value();
+        auto result = updateNode(*_assimpScene.mRootNode);
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
+        return {};
     }
 
-    std::optional<Entity> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, Entity parentEntity) noexcept
+    expected<Entity, std::string> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, Entity parentEntity) noexcept
     {
         auto name = AssimpUtils::getString(assimpNode.mName);
         if(AssimpUtils::match(name, _config.skip_nodes_regex()))
         {
-            return std::nullopt;
+            return Entity{};
         }
         auto entity = _scene.createEntity();
         TransformDefinition trans;
@@ -435,7 +285,11 @@ namespace darmok
         for(size_t i = 0; i < assimpNode.mNumMeshes; ++i)
         {
             auto index = assimpNode.mMeshes[i];
-            addMeshComponents(entity, index, true);
+            auto meshResult = addMeshComponents(entity, index, true);
+            if(!meshResult)
+            {
+                return unexpected{ meshResult.error() };
+			}
         }
 
         for (size_t i = 0; i < _assimpScene.mNumCameras; ++i)
@@ -459,10 +313,11 @@ namespace darmok
 
         for (size_t i = 0; i < assimpNode.mNumChildren; ++i)
         {
-            if (!updateNode(*assimpNode.mChildren[i], entity))
+            auto result = updateNode(*assimpNode.mChildren[i], entity);
+            if(!result)
             {
-                continue;
-            }
+                return unexpected{ result.error() };
+			}
         }
 
         return entity;
@@ -833,222 +688,8 @@ namespace darmok
             }
         }
     }
-
-    struct AssimpCalcTangentsOperation final
-    {
-    public:
-        AssimpCalcTangentsOperation() noexcept
-        {
-            _iface.m_getNumFaces = getNumFaces;
-            _iface.m_getNumVerticesOfFace = getNumFaceVertices;
-            _iface.m_getNormal = getNormal;
-            _iface.m_getPosition = getPosition;
-            _iface.m_getTexCoord = getTexCoords;
-            _iface.m_setTSpaceBasic = setTangent;
-
-            _context.m_pInterface = &_iface;
-        }
-
-        std::vector<glm::vec3> operator()(const aiMesh& mesh) noexcept
-        {
-            _mesh = mesh;
-            _tangents.clear();
-            _tangents.resize(mesh.mNumVertices);
-            _context.m_pUserData = this;
-            genTangSpaceDefault(&_context);
-            _mesh.reset();
-            return _tangents;
-        }
-
-    private:
-        SMikkTSpaceInterface _iface{};
-        SMikkTSpaceContext _context{};
-        OptionalRef<const aiMesh> _mesh;
-        std::vector<glm::vec3> _tangents;
-
-        static const aiMesh& getMeshFromContext(const SMikkTSpaceContext* context) noexcept
-        {
-            return *static_cast<AssimpCalcTangentsOperation*>(context->m_pUserData)->_mesh;
-        }
-
-        static int getVertexIndex(const SMikkTSpaceContext* context, int iFace, int iVert) noexcept
-        {
-            auto& mesh = getMeshFromContext(context);
-            return mesh.mFaces[iFace].mIndices[iVert];
-        }
-
-        static int getNumFaces(const SMikkTSpaceContext* context) noexcept
-        {
-            auto& mesh = getMeshFromContext(context);
-            return mesh.mNumFaces;
-        }
-
-        static int getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
-        {
-            auto& mesh = getMeshFromContext(context);
-            return mesh.mFaces[iFace].mNumIndices;
-        }
-
-        static void getPosition(const SMikkTSpaceContext* context, float outpos[], int iFace, int iVert) noexcept
-        {
-            auto& mesh = getMeshFromContext(context);
-            auto index = getVertexIndex(context, iFace, iVert);
-            auto& pos = mesh.mVertices[index];
-            outpos[0] = pos.x;
-            outpos[1] = pos.y;
-            outpos[2] = pos.z;
-        }
-
-        static void getNormal(const SMikkTSpaceContext* context, float outnormal[], int iFace, int iVert) noexcept
-        {
-            auto& mesh = getMeshFromContext(context);
-            auto index = getVertexIndex(context, iFace, iVert);
-            auto& norm = mesh.mNormals[index];
-            outnormal[0] = norm.x;
-            outnormal[1] = norm.y;
-            outnormal[2] = norm.z;
-        }
-
-        static void getTexCoords(const SMikkTSpaceContext* context, float outuv[], int iFace, int iVert) noexcept
-        {
-            auto& mesh = getMeshFromContext(context);
-            auto index = getVertexIndex(context, iFace, iVert);
-            auto& texCoord = mesh.mTextureCoords[0][index];
-            outuv[0] = texCoord.x;
-            outuv[1] = texCoord.y;
-        }
-
-        static void setTangent(const SMikkTSpaceContext* context, const float tangentu[], float fSign, int iFace, int iVert) noexcept
-        {
-            auto& op = *static_cast<AssimpCalcTangentsOperation*>(context->m_pUserData);
-            auto index = getVertexIndex(context, iFace, iVert);
-            auto& tangent = op._tangents[index];
-            tangent.x = tangentu[0];
-            tangent.y = tangentu[1];
-            tangent.z = tangentu[2];
-        }
-    };
-
-    std::string AssimpSceneDefinitionConverter::createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept
-    {
-        auto vertexCount = assimpMesh.mNumVertices;
-        auto layout = ConstVertexLayoutWrapper{ _config.vertex_layout() }.getBgfx();
-        VertexDataWriter writer(layout, vertexCount, _allocator);
-
-        std::vector<glm::vec3> tangents;
-        if (assimpMesh.mTangents == nullptr && layout.has(bgfx::Attrib::Tangent))
-        {
-            AssimpCalcTangentsOperation op;
-            tangents = op(assimpMesh);
-        }
-
-        for(size_t i = 0; i < assimpMesh.mNumVertices; ++i)
-        {
-            if(assimpMesh.mVertices)
-            {
-                writer.write(bgfx::Attrib::Position, i, AssimpUtils::convert(assimpMesh.mVertices[i]));
-            }
-            if(assimpMesh.mNormals)
-            {
-                writer.write(bgfx::Attrib::Normal, i, AssimpUtils::convert(assimpMesh.mNormals[i]));
-            }
-            if(assimpMesh.mTangents)
-            {
-                writer.write(bgfx::Attrib::Tangent, i, AssimpUtils::convert(assimpMesh.mTangents[i]));
-            }
-            else if (tangents.size() > i)
-            {
-                writer.write(bgfx::Attrib::Tangent, i, tangents[i]);
-            }
-            for(size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; j++)
-            {
-                if(assimpMesh.mColors[j])
-                {
-                    auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + j);
-                    writer.write(attrib, i, AssimpUtils::convert(assimpMesh.mColors[j][i]));
-                }
-            }
-            for(size_t j = 0; j < AI_MAX_NUMBER_OF_TEXTURECOORDS; j++)
-            {
-                if(assimpMesh.mTextureCoords[j])
-                {
-                    auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + j);
-                    writer.write(attrib, i, AssimpUtils::convert(assimpMesh.mTextureCoords[j][i]));
-                }
-            }
-        }
-        updateBoneData(bones, writer);
-        return writer.finish().toString();
-    }
-
-    bool AssimpSceneDefinitionConverter::updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept
-    {
-        if (bones.empty())
-        {
-            return false;
-        }
-        if (!writer.getLayout().has(bgfx::Attrib::Weight) && !writer.getLayout().has(bgfx::Attrib::Indices))
-        {
-            return false;
-        }
-
-        std::map<size_t, std::vector<std::pair<size_t, float>>> data;
-        size_t i = 0;
-        for (auto bone : bones)
-        {
-            for (size_t j = 0; j < bone->mNumWeights; j++)
-            {
-                auto& weight = bone->mWeights[j];
-                if (weight.mWeight > 0.F)
-                {
-                    data[weight.mVertexId].emplace_back(i, weight.mWeight);
-                }
-            }
-            ++i;
-        }
-        for (auto& [i, vert] : data)
-        {
-            glm::vec4 weights{ 1, 0, 0, 0 };
-            glm::vec4 indices{ -1 };
-            size_t j = 0;
-            std::sort(vert.begin(), vert.end(), [](auto& a, auto& b) { return a.second > b.second; });
-            for (auto& [index, weight] : vert)
-            {
-                indices[j] = index;
-                weights[j] = weight;
-                if (++j > 3)
-                {
-                    break;
-                }
-            }
-            writer.write(bgfx::Attrib::Indices, i, indices);
-            writer.write(bgfx::Attrib::Weight, i, weights);
-        }
-        return true;
-    }
-
-    std::string AssimpSceneDefinitionConverter::createIndexData(const aiMesh& assimpMesh) const noexcept
-    {
-        size_t size = 0;
-        for(size_t i = 0; i < assimpMesh.mNumFaces; ++i)
-        {
-            size += assimpMesh.mFaces[i].mNumIndices;
-        }
-        std::vector<VertexIndex> indices;
-        indices.reserve(size);
-        for(size_t i = 0; i < assimpMesh.mNumFaces; ++i)
-        {
-            auto& face = assimpMesh.mFaces[i];
-            for(size_t j = 0; j < face.mNumIndices; j++)
-            {
-                indices.push_back(face.mIndices[j]);
-            }
-        }
-        return std::string(reinterpret_cast<std::string::value_type*>(indices.data()),
-            size * sizeof(VertexIndex) / sizeof(std::string::value_type));
-    }
-
-    void AssimpSceneDefinitionConverter::updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
+    
+    expected<void, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
     {
         const std::string name(assimpMesh.mName.C_Str());
         auto skip = false;
@@ -1062,26 +703,11 @@ namespace darmok
         }
         if (skip)
         {
-            return;
+            return {};
         }
 
-        meshDef.set_name(AssimpUtils::getString(assimpMesh.mName));
-        auto& bounds = *meshDef.mutable_bounds();
-        *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMin));
-        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpMesh.mAABB.mMax));
-        meshDef.set_type(MeshDefinition::Static);
-        *meshDef.mutable_layout() = _config.vertex_layout();
-
-        std::vector<aiBone*> bones;
-        bones.reserve(assimpMesh.mNumBones);
-        for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
-        {
-            bones.push_back(assimpMesh.mBones[i]);
-        }
-
-        meshDef.set_vertices(createVertexData(assimpMesh, bones));
-        meshDef.set_indices(createIndexData(assimpMesh));
-
+		AssimpMeshDefinitionConverter converter{ assimpMesh, meshDef, _allocator, _config.mesh_config() };
+        return converter();
     }
 
     void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
@@ -1106,7 +732,7 @@ namespace darmok
         }
     }
     
-    std::string AssimpSceneDefinitionConverter::getMesh(int index) noexcept
+    expected<std::string, std::string> AssimpSceneDefinitionConverter::getMesh(int index) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
@@ -1119,7 +745,11 @@ namespace darmok
             return itr->second;
         }
         MeshDefinition meshDef;
-        updateMesh(meshDef, *assimpMesh);
+        auto result = updateMesh(meshDef, *assimpMesh);
+        if(!result)
+        {
+            return unexpected{ result.error() };
+		}
         auto path = "mesh_" + std::to_string(index);
         if (meshDef.name().empty())
         {
@@ -1219,12 +849,13 @@ namespace darmok
 
     void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
+        auto& layout = *config.mutable_mesh_config()->mutable_vertex_layout();
         // TODO: maybe load material json?
         auto itr = json.find("vertexLayout");
         if (itr != json.end())
         {
             auto layoutResult = loadVertexLayout(*itr);
-            *config.mutable_vertex_layout() = layoutResult.value();
+            layout = layoutResult.value();
         }
         itr = json.find("programPath");
         if (itr != json.end())
@@ -1237,7 +868,7 @@ namespace darmok
             {
                 throw std::runtime_error("failed to load vertex layout from program path");
             }
-            *config.mutable_vertex_layout() = src.varying().vertex();
+            layout = src.varying().vertex();
         }
         itr = json.find("program");
         if (itr != json.end())
@@ -1460,7 +1091,11 @@ namespace darmok
         _dataLoader.addBasePath(input.basePath);
         AssimpSceneDefinitionConverter converter{ *_currentScene, def, basePath, *_currentConfig, _alloc, texLoader };
         converter.setConfig(input.config);
-        converter();
+        auto convertResult = converter();
+        if (!convertResult)
+        {
+            throw std::runtime_error{ "failed to convert scene: " + convertResult.error() };
+        }
         _dataLoader.removeBasePath(input.basePath);
 		auto writeResult = protobuf::write(def, out, _outputFormat);
         if(!writeResult)

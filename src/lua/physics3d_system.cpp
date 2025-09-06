@@ -1,6 +1,6 @@
-#include "physics3d.hpp"
-#include "scene.hpp"
-#include "utils.hpp"
+#include "lua/physics3d.hpp"
+#include "lua/scene.hpp"
+#include "lua/utils.hpp"
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>
 

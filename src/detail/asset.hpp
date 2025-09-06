@@ -17,6 +17,9 @@
 
 #ifdef DARMOK_ASSIMP
 #include <darmok/scene_assimp.hpp>
+#ifdef DARMOK_OZZ
+#include <darmok/skeleton_assimp.hpp>
+#endif
 #endif
 
 #ifdef DARMOK_FREETYPE

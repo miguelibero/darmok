@@ -1,5 +1,5 @@
-#include "render_scene.hpp"
-#include "scene.hpp"
+#include "lua/render_scene.hpp"
+#include "lua/scene.hpp"
 #include <darmok/render_scene.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>

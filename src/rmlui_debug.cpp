@@ -1,11 +1,11 @@
 #ifdef _DEBUG
 
-#include "rmlui_debug.hpp"
+#include "detail/rmlui_debug.hpp"
 #include <RmlUi/Debugger.h>
 #include <darmok/rmlui.hpp>
 #include <darmok/window.hpp>
 #include <darmok/scene.hpp>
-#include "rmlui.hpp"
+#include "detail/rmlui.hpp"
 
 namespace darmok
 {

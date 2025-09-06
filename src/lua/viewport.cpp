@@ -1,5 +1,5 @@
-#include "viewport.hpp"
-#include "glm.hpp"
+#include "lua/viewport.hpp"
+#include "lua/glm.hpp"
 #include <darmok/viewport.hpp>
 
 namespace darmok

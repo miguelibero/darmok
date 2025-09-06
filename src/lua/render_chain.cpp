@@ -1,6 +1,6 @@
-#include "render_chain.hpp"
+#include "lua/render_chain.hpp"
+#include "lua/glm.hpp"
 #include <darmok/render_chain.hpp>
-#include "glm.hpp"
 
 namespace darmok
 {

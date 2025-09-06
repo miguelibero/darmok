@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lua.hpp"
+#include "lua/lua.hpp"
 
 #include <darmok/easing_fwd.hpp>
 #include <darmok/skeleton.hpp>

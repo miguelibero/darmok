@@ -5,6 +5,7 @@ package darmok.protobuf;
 import "varying.proto";
 import "shape.proto";
 import "program.proto";
+import "assimp.proto";
 
 message CubeMeshSource {
     Cube shape = 1;
@@ -26,6 +27,12 @@ message RectangleMeshSource {
     Mesh.RectangleType type = 2;
 }
 
+message ExternalMeshSource {
+    bytes data = 1;
+    string name = 2;
+    AssimpMeshImportConfig config = 3;
+}
+
 message MeshSource {
     string name = 1;
     oneof value {
@@ -33,12 +40,13 @@ message MeshSource {
         SphereMeshSource sphere = 3;
         CapsuleMeshSource capsule = 4;
         RectangleMeshSource rectangle = 5;
+        ExternalMeshSource external = 6;
     }
-    Mesh.Type type = 6;
-    bool index32 = 7;
+    Mesh.Type type = 7;
+    bool index32 = 8;
     oneof program {
-        string program_path = 8;
-        StandardProgram.Type standard_program = 9;
+        string program_path = 9;
+        StandardProgram.Type standard_program = 10;
     }
 }
 

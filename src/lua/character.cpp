@@ -1,7 +1,7 @@
-#include "character.hpp"
-#include "scene.hpp"
-#include "utils.hpp"
-#include "physics3d.hpp"
+#include "lua/character.hpp"
+#include "lua/scene.hpp"
+#include "lua/utils.hpp"
+#include "lua/physics3d.hpp"
 #include <darmok/character.hpp>
 
 namespace darmok::physics3d

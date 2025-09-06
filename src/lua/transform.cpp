@@ -1,5 +1,5 @@
-#include "transform.hpp"
-#include "scene.hpp"
+#include "lua/transform.hpp"
+#include "lua/scene.hpp"
 #include <darmok/transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 

@@ -1,9 +1,9 @@
 #include <darmok/program_core.hpp>
-#include "program_core.hpp"
 #include <darmok/data_stream.hpp>
 #include <darmok/string.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/stream.hpp>
+#include "detail/program_core.hpp"
 
 #include <fmt/format.h>
 #include <magic_enum/magic_enum_format.hpp>

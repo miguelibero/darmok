@@ -1,4 +1,4 @@
-#include "text.hpp"
+#include "lua/text.hpp"
 #include <darmok/text.hpp>
 
 namespace darmok

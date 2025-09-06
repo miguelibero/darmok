@@ -1,9 +1,9 @@
 #pragma once
 
-#include "lua.hpp"
-#include "glm.hpp"
-#include "viewport.hpp"
-#include "utils.hpp"
+#include "lua/lua.hpp"
+#include "lua/glm.hpp"
+#include "lua/viewport.hpp"
+#include "lua/utils.hpp"
 
 #include <darmok/optional_ref.hpp>
 #include <darmok/shape.hpp>

@@ -1,6 +1,6 @@
 
 #include <darmok/physics3d_debug.hpp>
-#include "physics3d_debug_jolt.hpp"
+#include "detail/physics3d_debug_jolt.hpp"
 
 #ifdef JPH_DEBUG_RENDERER
 
@@ -12,7 +12,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/text.hpp>
-#include "physics3d_jolt.hpp"
+#include "detail/physics3d_jolt.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <Jolt/Physics/Body/BodyManager.h>

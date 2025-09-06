@@ -1,4 +1,4 @@
-#include "skeleton_ozz.hpp"
+#include "detail/skeleton_ozz.hpp"
 #include <darmok/skeleton_ozz.hpp>
 #include <darmok/data.hpp>
 #include <darmok/scene.hpp>

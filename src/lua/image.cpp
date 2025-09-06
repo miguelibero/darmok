@@ -1,4 +1,4 @@
-#include "image.hpp"
+#include "lua/image.hpp"
 #include <darmok/image.hpp>
 
 namespace darmok

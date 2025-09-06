@@ -2,7 +2,6 @@
 #include <darmok-editor/app.hpp>
 #include <darmok-editor/utils.hpp>
 #include <darmok/shape_serialize.hpp>
-
 #include <imgui.h>
 
 namespace darmok::editor
@@ -20,6 +19,8 @@ namespace darmok::editor
     {
         return "Mesh";
     }
+
+    const std::string MeshSourceInspectorEditor::_externalFilter = "*.fbx *.glb";
 
     MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderType(Mesh::Source& src) noexcept
     {
@@ -45,6 +46,10 @@ namespace darmok::editor
         else if (src.has_rectangle())
         {
             type = MeshSourceValueType::Rectangle;
+        }
+        else if (src.has_external())
+        {
+            type = MeshSourceValueType::External;
         }
         if (ImguiUtils::drawEnumCombo("Type", type))
         {
@@ -158,6 +163,19 @@ namespace darmok::editor
                     changed = true;
                 }
                 ImguiUtils::endFrame();
+            }
+        }
+        else if (type == MeshSourceValueType::External)
+        {
+            auto& extSrc = *src.mutable_external();
+            std::filesystem::path path;
+            if (ImguiUtils::drawFileInput("Load File", path, _externalFilter))
+            {
+                auto& assets = getApp().getAssets();
+                if (auto dataResult = assets.getDataLoader()(path))
+                {
+                    changed = true;
+                }
             }
         }
         return changed;

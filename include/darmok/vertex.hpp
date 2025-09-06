@@ -1,16 +1,19 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/vertex_fwd.hpp>
 #include <darmok/data.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/glm.hpp>
+
 #include <string_view>
 #include <vector>
 #include <array>
 #include <unordered_set>
 #include <unordered_map>
+
 #include <bgfx/bgfx.h>
-#include <darmok/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace bx

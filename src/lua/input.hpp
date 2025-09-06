@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lua.hpp"
-#include "utils.hpp"
+#include "lua/lua.hpp"
+#include "lua/utils.hpp"
 
 #include <darmok/glm.hpp>
 #include <darmok/optional_ref.hpp>

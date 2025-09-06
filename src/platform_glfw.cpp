@@ -1,8 +1,8 @@
-#include "platform_glfw.hpp"
+#include "detail/platform_glfw.hpp"
 
-#include "input.hpp"
-#include "window.hpp"
-#include "app.hpp"
+#include "detail/input.hpp"
+#include "detail/window.hpp"
+#include "detail/app.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/window.hpp>
 #include <darmok/app.hpp>

@@ -1,6 +1,6 @@
-#include "light.hpp"
-#include "scene.hpp"
-#include "render_scene.hpp"
+#include "lua/light.hpp"
+#include "lua/scene.hpp"
+#include "lua/render_scene.hpp"
 #include <darmok/light.hpp>
 #include <darmok/camera.hpp>
 

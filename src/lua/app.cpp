@@ -1,4 +1,4 @@
-#include "app.hpp"
+#include "lua/app.hpp"
 #include <darmok/app.hpp>
 #include <darmok/lua.hpp>
 #include <darmok/scene.hpp>
@@ -9,16 +9,16 @@
 #include <darmok/stream.hpp>
 #include <darmok/data.hpp>
 
-#include "asset.hpp"
-#include "input.hpp"
-#include "audio.hpp"
-#include "scene.hpp"
-#include "window.hpp"
-#include "math.hpp"
-#include "shape.hpp"
-#include "texture.hpp"
-#include "skeleton.hpp"
-#include "render_chain.hpp"
+#include "lua/asset.hpp"
+#include "lua/input.hpp"
+#include "lua/audio.hpp"
+#include "lua/scene.hpp"
+#include "lua/window.hpp"
+#include "lua/math.hpp"
+#include "lua/shape.hpp"
+#include "lua/texture.hpp"
+#include "lua/skeleton.hpp"
+#include "lua/render_chain.hpp"
 
 #include "generated/lua/string.h"
 #include "generated/lua/table.h"
@@ -28,10 +28,10 @@
 
 #ifdef DARMOK_RMLUI
 #include <darmok/rmlui.hpp>
-#include "rmlui.hpp"
+#include "lua/rmlui.hpp"
 #ifdef _DEBUG
 #define RMLUI_DEBUGGER
-#include "rmlui_debug.hpp"
+#include "lua/rmlui_debug.hpp"
 #endif
 #endif
 

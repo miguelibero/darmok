@@ -1,5 +1,5 @@
-#include "window.hpp"
-#include "platform.hpp"
+#include "detail/window.hpp"
+#include "detail/platform.hpp"
 #include <sstream>
 
 namespace darmok

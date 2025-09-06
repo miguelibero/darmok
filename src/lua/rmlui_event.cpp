@@ -1,5 +1,5 @@
-#include "rmlui.hpp"
-#include "../rmlui.hpp"
+#include "lua/rmlui.hpp"
+#include "detail/rmlui.hpp"
 
 namespace darmok
 {

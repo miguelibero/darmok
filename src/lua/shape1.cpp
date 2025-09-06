@@ -1,5 +1,5 @@
-#include "shape.hpp"
-#include "glm.hpp"
+#include "lua/shape.hpp"
+#include "lua/glm.hpp"
 #include <darmok/shape.hpp>
 
 namespace darmok

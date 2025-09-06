@@ -1,4 +1,4 @@
-#include "scene.hpp"
+#include "detail/scene.hpp"
 #include <darmok/scene.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/transform.hpp>
@@ -11,7 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <fmt/format.h>
 
-#include "camera.hpp"
+#include "detail/camera.hpp"
 
 namespace darmok
 {

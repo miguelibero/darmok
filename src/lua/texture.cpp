@@ -1,5 +1,5 @@
-#include "texture.hpp"
-#include "utils.hpp"
+#include "lua/texture.hpp"
+#include "lua/utils.hpp"
 #include <darmok/texture.hpp>
 #include <darmok/image.hpp>
 #include <darmok/mesh.hpp>

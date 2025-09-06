@@ -7,6 +7,7 @@
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/glm.hpp>
+#include "detail/assimp.hpp"
 
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/scene.pb.h>
@@ -54,28 +55,6 @@ namespace darmok
     class Data;
     class VertexDataWriter;
 
-    class AssimpLoader final
-    {
-    public:
-        struct Config final
-        {
-            bool leftHanded = true;
-            bool populateArmature = false;
-            std::string basePath;
-            std::string format;
-
-            void setPath(const std::filesystem::path& path) noexcept;
-        };
-
-        using Result = expected<std::shared_ptr<aiScene>, std::string>;
-        bool supports(const std::filesystem::path& path) const noexcept;
-        Result loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
-        Result loadFromMemory(const DataView& data, const Config& config = {}) const;
-    private:
-        static unsigned int getImporterFlags(const Config& config = {}) noexcept;
-        static std::shared_ptr<aiScene> fixScene(Assimp::Importer& importer) noexcept;
-    };
-
     class AssimpSceneDefinitionConverter final
     {
     public:
@@ -98,7 +77,7 @@ namespace darmok
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setConfig(const nlohmann::json& config) noexcept;
-        bool operator()() noexcept;
+        expected<void, std::string> operator()() noexcept;
     private:
         bx::AllocatorI& _allocator;
         OptionalRef<ITextureDefinitionLoader> _texLoader;
@@ -125,28 +104,22 @@ namespace darmok
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
 
-        std::string getMesh(int index) noexcept;
+        expected<std::string, std::string> getMesh(int index) noexcept;
         std::string getArmature(int index) noexcept;
         std::string getMaterial(int index) noexcept;
         std::string getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         bool loadTexture(const std::string& path) noexcept;
 
-        std::optional<Entity> updateNode(const aiNode& assimpNode, Entity parentEntity = entt::null) noexcept;
+        expected<Entity, std::string> updateNode(const aiNode& assimpNode, Entity parentEntity = entt::null) noexcept;
         void updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
-        void updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
+        expected<void, std::string> updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
         void updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
         void updateCamera(Entity entity, const aiCamera& assimpCam) noexcept;
         void updateLight(Entity entity, const aiLight& assimpLight) noexcept;
-        bool updateMeshes(Entity entity, const std::regex& regex) noexcept;
-        static void updateTransform(TransformDefinition& trans, const glm::mat4& mat) noexcept;
+        expected<bool, std::string> updateMeshes(Entity entity, const std::regex& regex) noexcept;
 
-        std::string createVertexData(const aiMesh& assimpMesh, const std::vector<aiBone*>& bones) const noexcept;
-        std::string createIndexData(const aiMesh& assimpMesh) const noexcept;
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
-
-
-		
-        bool addMeshComponents(Entity entity, int index, bool addChild) noexcept;
+        expected<void, std::string> addMeshComponents(Entity entity, int index, bool addChild) noexcept;
     };
 
     class AssimpSceneDefinitionLoaderImpl final

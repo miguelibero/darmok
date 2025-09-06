@@ -1,7 +1,7 @@
-#include "imgui.hpp"
-#include "asset.hpp"
-#include "input.hpp"
-#include "platform.hpp"
+#include "detail/imgui.hpp"
+#include "detail/asset.hpp"
+#include "detail/input.hpp"
+#include "detail/platform.hpp"
 #include <darmok/imgui.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/window.hpp>

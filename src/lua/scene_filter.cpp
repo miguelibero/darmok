@@ -1,5 +1,5 @@
-#include "scene_filter.hpp"
-#include "utils.hpp"
+#include "lua/scene_filter.hpp"
+#include "lua/utils.hpp"
 #include <darmok/scene_filter.hpp>
 
 namespace darmok

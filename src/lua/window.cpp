@@ -1,5 +1,5 @@
-#include "window.hpp"
-#include "utils.hpp"
+#include "lua/window.hpp"
+#include "lua/utils.hpp"
 #include <darmok/window.hpp>
 
 namespace darmok

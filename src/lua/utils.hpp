@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lua.hpp"
+#include "lua/lua.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
 #include <darmok/protobuf.hpp>
@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include <optional>
-
 
 #include <entt/entt.hpp>
 #include <magic_enum/magic_enum.hpp>

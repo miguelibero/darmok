@@ -2,7 +2,7 @@
 
 #ifdef _DEBUG
 
-#include "lua.hpp"
+#include "lua/lua.hpp"
 #include <darmok/optional_ref.hpp>
 #include <memory>
 

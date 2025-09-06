@@ -1,5 +1,6 @@
-#include "rmlui.hpp"
-#include "../rmlui.hpp"
+#include "lua/rmlui.hpp"
+#include "detail/rmlui.hpp"
+
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/StyleSheet.h>
 

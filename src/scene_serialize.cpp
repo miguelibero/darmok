@@ -1,6 +1,6 @@
 #include <darmok/scene_serialize.hpp>
 #include <darmok/scene.hpp>
-#include "scene_serialize.hpp"
+#include "detail/scene_serialize.hpp"
 
 #include <darmok/camera.hpp>
 #include <darmok/transform.hpp>
