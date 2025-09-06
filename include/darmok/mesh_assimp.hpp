@@ -22,9 +22,9 @@ namespace darmok
     {
     public:
         using Definition = protobuf::Mesh;
-        using ImportConfig = protobuf::AssimpMeshImportConfig;
+		using VertexLayout = protobuf::VertexLayout;
 
-        AssimpMeshDefinitionConverter(const aiMesh& assimpMesh, Definition& meshDef, bx::AllocatorI& alloc, const ImportConfig& config = {}) noexcept;
+        AssimpMeshDefinitionConverter(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& alloc) noexcept;
         ~AssimpMeshDefinitionConverter();
         expected<void, std::string> operator()() noexcept;
     private:

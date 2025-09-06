@@ -17,15 +17,15 @@ namespace darmok
     {
     public:
         using Definition = AssimpMeshDefinitionConverter::Definition;
-		using ImportConfig = AssimpMeshDefinitionConverter::ImportConfig;
+		using VertexLayout = AssimpMeshDefinitionConverter::VertexLayout;
 
-        AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, Definition& meshDef, bx::AllocatorI& allocator, const ImportConfig& config = {}) noexcept;
+        AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& allocator) noexcept;
         expected<void, std::string> operator()() noexcept;
     private:
         const aiMesh& _assimpMesh;
         Definition& _meshDef;
         bx::AllocatorI& _allocator;
-        ImportConfig _config;
+        VertexLayout _vertexLayout;
 
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
         std::string createVertexData(const std::vector<aiBone*>& bones) const noexcept;

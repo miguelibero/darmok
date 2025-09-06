@@ -80,19 +80,20 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * basic phong
         * PBR metallic-roughness
     * cascaded shadow mapping
-    * spot & point light shadows
+    * ambient, directional, spot & point light shadows
     * camera culling (frustum, occlusion seems to be broken)
+* asset system
+    * sprites and spritesheets
+    * loading models using assimp (FBX, gltf, etc...)
+    * serializing assets into protocol buffers
 * entity component scene using entt
     * transform, camera
     * type filtering
-    * serialization using entt::meta and cereal
+    * serialization using protocol buffers
     * lights
     * free look
-* sprites and spritesheets
-* loading models using assimp (FBX, gltf, etc...)
-* serializing models from assimp into binary using cereal
 * lua scripting
-    * coroutines similar to unity
+    * coroutines with API similar to unity
 * multiple UI options
     * imgui for tooling
     * RmlUI for ingame (support for multiple canvases)
@@ -103,14 +104,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * tool to export asset folders 
     * shaders & vertex layouts
     * copy files
-    * assimp to custom binary model format
+    * assimp to custom protoc model format
     * ozz skeleton & animations
 * dynamic font texture generation
 * play sounds and music (wav & mp3)
 * editor using imgui
-
-#### Cleanup
-* rename Utils namespaces to lowercase
 
 #### Upcoming
 * finish editor
@@ -138,6 +136,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * C++ coroutines could be useful in some places (async asset loading)
 
 #### In the future
+* run clang-tidy
 * fix occlusion culling
 * switch from exceptions to std::expected
 * more unit tests
@@ -146,7 +145,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * instancing
 * 3d physics materials
 * baked shadowmaps
-* switch from cereal to protocol buffers for serialization?
 * multithreaded updates ([Ubisoft](https://www.youtube.com/watch?v=X1T3IQ4N-3g))
 * custom UI module (rmlui is nice but slow)
 * spine animations

@@ -10,11 +10,11 @@
 
 namespace darmok
 {
-    AssimpMeshDefinitionConverterImpl::AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, Definition& meshDef, bx::AllocatorI& allocator, const ImportConfig& config) noexcept
+    AssimpMeshDefinitionConverterImpl::AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& allocator) noexcept
         : _assimpMesh{ assimpMesh }
 		, _meshDef{ meshDef }
+        , _vertexLayout{ layout }
 		, _allocator{ allocator }
-		, _config{ config }
     {
     }
 
@@ -25,7 +25,7 @@ namespace darmok
         *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mAABB.mMin));
         *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mAABB.mMax));
         _meshDef.set_type(Definition::Static);
-        *_meshDef.mutable_layout() = _config.vertex_layout();
+        *_meshDef.mutable_layout() = _vertexLayout;
 
         std::vector<aiBone*> bones;
         bones.reserve(_assimpMesh.mNumBones);
@@ -174,7 +174,7 @@ namespace darmok
     std::string AssimpMeshDefinitionConverterImpl::createVertexData(const std::vector<aiBone*>& bones) const noexcept
     {
         auto vertexCount = _assimpMesh.mNumVertices;
-        auto layout = ConstVertexLayoutWrapper{ _config.vertex_layout() }.getBgfx();
+        auto layout = ConstVertexLayoutWrapper{ _vertexLayout }.getBgfx();
         VertexDataWriter writer(layout, vertexCount, _allocator);
 
         std::vector<glm::vec3> tangents;
@@ -244,8 +244,8 @@ namespace darmok
             size * sizeof(VertexIndex) / sizeof(std::string::value_type));
     }
 
-    AssimpMeshDefinitionConverter::AssimpMeshDefinitionConverter(const aiMesh& assimpMesh, Definition& meshDef, bx::AllocatorI& alloc, const ImportConfig& config) noexcept
-        : _impl{ std::make_unique<AssimpMeshDefinitionConverterImpl>(assimpMesh, meshDef, alloc, config) }
+    AssimpMeshDefinitionConverter::AssimpMeshDefinitionConverter(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& alloc) noexcept
+        : _impl{ std::make_unique<AssimpMeshDefinitionConverterImpl>(assimpMesh, meshDef, layout, alloc) }
     {
     }
 

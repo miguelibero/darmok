@@ -7,20 +7,17 @@ import "program.proto";
 import "material.proto";
 import "light.proto";
 
-message AssimpMeshImportConfig {
-    VertexLayout vertex_layout = 1;
-}
-
 message AssimpSceneImportConfig {
-    AssimpMeshImportConfig mesh_config = 1;
-    optional StandardProgram.Type standard_program = 2;
-    string program_path = 3;
-    repeated string program_defines = 4;
-    bool embed_textures = 5;
-    string default_texture_path = 6;
-    repeated string skip_meshes_regex = 7;
-    repeated string skip_nodes_regex = 8;
-    string root_mesh_regex = 9;
-    optional Material.OpacityType opacity = 10;
-    optional Light.ShadowType shadow_type = 11;
+    oneof program {
+        string program_path = 1;
+        StandardProgram.Type standard_program = 2;
+    }
+    repeated string program_defines = 3;
+    bool embed_textures = 4;
+    string default_texture_path = 5;
+    repeated string skip_meshes_regex = 6;
+    repeated string skip_nodes_regex = 7;
+    string root_mesh_regex = 8;
+    optional Material.OpacityType opacity = 9;
+    optional Light.ShadowType shadow_type = 10;
 }

@@ -31,29 +31,23 @@ namespace darmok
             return glm::compMax(glm::vec3{ c.r, c.g, c.b });
         }
 
-        bool fixImportConfig(IDataLoader& dataLoader, protobuf::AssimpSceneImportConfig& config)
+        OptionalRef<const protobuf::VertexLayout> getVertexLayout(protobuf::AssimpSceneImportConfig& config)
         {
-            auto stride = ConstVertexLayoutWrapper{ config.mesh_config().vertex_layout() }.getBgfx().getStride();
-            if (stride == 0)
+            if (config.has_standard_program())
             {
-				auto& layout = *config.mutable_mesh_config()->mutable_vertex_layout();
-                if (config.has_standard_program())
+                auto def = StandardProgramLoader::loadDefinition(config.standard_program());
+                return def->varying().vertex();
+            }
+            else if (config.program_path().empty())
+            {
+                protobuf::Program prog;
+                auto result = protobuf::read(prog, config.program_path());
+                if (result)
                 {
-                    auto def = StandardProgramLoader::loadDefinition(config.standard_program());
-                    layout = def->varying().vertex();
-                }
-                else if (config.program_path().empty())
-                {
-                    protobuf::Program prog;
-                    auto result = protobuf::read(prog, config.program_path());
-                    if (!result)
-                    {
-                        return false;
-                    }
-                    layout = prog.varying().vertex();
+                    return prog.varying().vertex();
                 }
             }
-            return stride > 0;
+            return std::nullopt;
         }
 
 		bool match(const std::string& str, const google::protobuf::RepeatedPtrField<std::string>& regexes) noexcept
@@ -79,7 +73,6 @@ namespace darmok
     void AssimpSceneDefinitionLoaderImpl::setConfig(const Config& config) noexcept
     {
         _config = config;
-        AssimpUtils::fixImportConfig(_dataLoader, _config);
     }
 
     bool AssimpSceneDefinitionLoaderImpl::supports(const std::filesystem::path& path) const noexcept
@@ -706,7 +699,13 @@ namespace darmok
             return {};
         }
 
-		AssimpMeshDefinitionConverter converter{ assimpMesh, meshDef, _allocator, _config.mesh_config() };
+        auto layout = AssimpUtils::getVertexLayout(_config);
+        if(!layout)
+        {
+            return unexpected<std::string>{ "no valid vertex layout" };
+		}
+
+		AssimpMeshDefinitionConverter converter{ assimpMesh, meshDef, *layout, _allocator };
         return converter();
     }
 
@@ -849,15 +848,7 @@ namespace darmok
 
     void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
-        auto& layout = *config.mutable_mesh_config()->mutable_vertex_layout();
-        // TODO: maybe load material json?
-        auto itr = json.find("vertexLayout");
-        if (itr != json.end())
-        {
-            auto layoutResult = loadVertexLayout(*itr);
-            layout = layoutResult.value();
-        }
-        itr = json.find("programPath");
+        auto itr = json.find("programPath");
         if (itr != json.end())
         {
             auto programPath = basePath / *itr;
@@ -868,7 +859,6 @@ namespace darmok
             {
                 throw std::runtime_error("failed to load vertex layout from program path");
             }
-            layout = src.varying().vertex();
         }
         itr = json.find("program");
         if (itr != json.end())
@@ -996,7 +986,6 @@ namespace darmok
             configJson.update(input.dirConfig);
         }
         loadConfig(configJson, input.basePath, config);
-        AssimpUtils::fixImportConfig(_dataLoader, config);
 
         auto itr = configJson.find("outputPath");
         if (itr != configJson.end())

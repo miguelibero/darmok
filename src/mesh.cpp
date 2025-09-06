@@ -19,7 +19,7 @@ namespace darmok
 	{
 	}
 
-	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const protobuf::ExternalMeshSource& external)
+	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const protobuf::ExternalMeshSource& external, const protobuf::VertexLayout& layout)
 	{
 		DataView data{ external.data() };
 		auto defPtr = std::make_shared<Mesh::Definition>();
@@ -49,7 +49,7 @@ namespace darmok
 		{
 			return unexpected<std::string>{ "mesh not found: " + external.name() };
 		}
-		AssimpMeshDefinitionConverter converter{ *assimpMesh , *defPtr, _allocator };
+		AssimpMeshDefinitionConverter converter{ *assimpMesh , *defPtr, layout, _allocator };
 		auto convResult = converter();
 		if (!convResult)
 		{
@@ -115,7 +115,7 @@ namespace darmok
 #ifdef DARMOK_ASSIMP
 		else if (src->has_external())
 		{
-			return create(src->external());
+			return create(src->external(), progDef->varying().vertex());
 		}
 #endif
 
