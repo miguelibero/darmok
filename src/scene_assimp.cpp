@@ -705,7 +705,7 @@ namespace darmok
             return unexpected<std::string>{ "no valid vertex layout" };
 		}
 
-		AssimpMeshDefinitionConverter converter{ assimpMesh, meshDef, *layout, _allocator };
+		AssimpMeshDefinitionConverter converter{ assimpMesh, *layout, meshDef, _allocator };
         return converter();
     }
 

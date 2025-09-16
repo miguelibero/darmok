@@ -632,7 +632,7 @@ namespace darmok
 		return {};
 	}
 
-	ConstVaryingDefinitionWrapper::ConstVaryingDefinitionWrapper(const Definition def)
+	ConstVaryingDefinitionWrapper::ConstVaryingDefinitionWrapper(const Definition& def)
 		: _def{ def }
 	{
 	}
@@ -740,7 +740,7 @@ namespace darmok
 		return "vec" + std::to_string(num);
 	}
 
-	VaryingDefinitionWrapper::VaryingDefinitionWrapper(Definition def)
+	VaryingDefinitionWrapper::VaryingDefinitionWrapper(Definition& def)
 		: ConstVaryingDefinitionWrapper(def)
 		, _def{ def }
 	{

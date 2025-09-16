@@ -6,14 +6,150 @@
 #include "detail/assimp.hpp"
 #include "detail/mesh_assimp.hpp"
 
+#include <assimp/scene.h>
 #include <assimp/mesh.h>
 
 namespace darmok
 {
-    AssimpMeshDefinitionConverterImpl::AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& allocator) noexcept
+    AssimpMeshSourceConverterImpl::AssimpMeshSourceConverterImpl(DataView data, std::string_view format, Definition& def) noexcept
+        : _data{ data }
+		, _format{ format }
+        , _def{ def }
+    {
+	}
+
+    std::vector<std::string> AssimpMeshSourceConverterImpl::getMeshNames() const noexcept
+    {
+        auto result = loadScene();
+        std::vector<std::string> names;
+        if (!result)
+        {
+            return names;
+        }
+		names.reserve(_scene->mNumMeshes);
+        for (int i = 0; i < _scene->mNumMeshes; ++i)
+        {
+			auto& mesh = *_scene->mMeshes[i];
+            names.push_back(AssimpUtils::getString(mesh.mName));
+        }
+
+        return names;
+    }
+    expected<void, std::string> AssimpMeshSourceConverterImpl::operator()(std::string_view name) noexcept
+    {
+        auto result = loadScene();
+        if (!result)
+        {
+            return result;
+        }
+		OptionalRef<const aiMesh> assimpMesh;
+        for (int i = 0; i < _scene->mNumMeshes; ++i)
+        {
+            auto& m = *_scene->mMeshes[i];
+            if (AssimpUtils::getStringView(m.mName) == name)
+            {
+                assimpMesh = m;
+                break;
+            }
+        }
+        if(!assimpMesh)
+        {
+            return unexpected{ "Mesh not found: " + std::string{name} };
+		}
+
+        auto& vertices = *_def.mutable_vertices();
+		vertices.Reserve(assimpMesh->mNumVertices);
+
+        for (size_t i = 0; i < assimpMesh->mNumVertices; ++i)
+        {
+			auto& v = *vertices.Add();
+			*v.mutable_position() = protobuf::convert(AssimpUtils::convert(assimpMesh->mVertices[i]));
+            *v.mutable_normal() = protobuf::convert(AssimpUtils::convert(assimpMesh->mNormals[i]));
+            if (assimpMesh->mTangents != nullptr)
+            {
+                *v.mutable_tangent() = protobuf::convert(AssimpUtils::convert(assimpMesh->mTangents[i]));
+            }
+            for (size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; j++)
+            {
+                if (assimpMesh->mColors[j])
+                {
+                    auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + j);
+					*v.mutable_color() = protobuf::convert(AssimpUtils::convert(assimpMesh->mColors[j][i]));
+                }
+            }
+            for (size_t j = 0; j < AI_MAX_NUMBER_OF_TEXTURECOORDS; j++)
+            {
+                if (assimpMesh->mTextureCoords[j])
+                {
+                    auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + j);
+                    glm::vec2 texCoord = AssimpUtils::convert(assimpMesh->mTextureCoords[j][i]);
+                    *v.mutable_tex_coord() = protobuf::convert(texCoord);
+                }
+            }
+        }
+
+        auto& indices = *_def.mutable_indices();
+        size_t size = 0;
+        for (size_t i = 0; i < assimpMesh->mNumFaces; ++i)
+        {
+            size += assimpMesh->mFaces[i].mNumIndices;
+        }
+        indices.Reserve(size);
+        for (size_t i = 0; i < assimpMesh->mNumFaces; ++i)
+        {
+            auto& face = assimpMesh->mFaces[i];
+            for (size_t j = 0; j < face.mNumIndices; j++)
+            {
+                indices.Add(face.mIndices[j]);
+            }
+        }
+
+        auto& bounds = *_def.mutable_bounds();
+        *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpMesh->mAABB.mMin));
+        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpMesh->mAABB.mMax));
+
+        return {};
+    }
+
+    expected<void, std::string> AssimpMeshSourceConverterImpl::loadScene() const noexcept
+    {
+        if(_scene)
+        {
+            return {};
+		}
+        AssimpLoader loader;
+		AssimpLoader::Config config;
+		config.format = _format;
+        auto result = loader.loadFromMemory(_data, config);
+        if (!result)
+        {
+			return unexpected{ std::move(result).error() };
+        }
+		_scene = std::move(*result);
+		return {};
+    }
+
+    AssimpMeshSourceConverter::AssimpMeshSourceConverter(DataView data, std::string_view format, Definition& def) noexcept
+        : _impl{ std::make_unique<AssimpMeshSourceConverterImpl>(data, format, def) }
+    {
+    }
+
+    AssimpMeshSourceConverter::~AssimpMeshSourceConverter() = default;
+
+    std::vector<std::string> AssimpMeshSourceConverter::getMeshNames() const noexcept
+    {
+        return _impl->getMeshNames();
+    }
+
+    expected<void, std::string> AssimpMeshSourceConverter::operator()(std::string_view name) noexcept
+    {
+        return _impl->operator()(name);
+    }
+
+    AssimpMeshDefinitionConverterImpl::AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, const VertexLayout& layout, Definition& meshDef, OptionalRef<bx::AllocatorI> allocator) noexcept
         : _assimpMesh{ assimpMesh }
-		, _meshDef{ meshDef }
         , _vertexLayout{ layout }
+        , _meshDef{ meshDef }
 		, _allocator{ allocator }
     {
     }
@@ -175,7 +311,7 @@ namespace darmok
     {
         auto vertexCount = _assimpMesh.mNumVertices;
         auto layout = ConstVertexLayoutWrapper{ _vertexLayout }.getBgfx();
-        VertexDataWriter writer(layout, vertexCount, _allocator);
+        VertexDataWriter writer{ layout, vertexCount, _allocator };
 
         std::vector<glm::vec3> tangents;
         if (_assimpMesh.mTangents == nullptr && layout.has(bgfx::Attrib::Tangent))
@@ -244,8 +380,8 @@ namespace darmok
             size * sizeof(VertexIndex) / sizeof(std::string::value_type));
     }
 
-    AssimpMeshDefinitionConverter::AssimpMeshDefinitionConverter(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& alloc) noexcept
-        : _impl{ std::make_unique<AssimpMeshDefinitionConverterImpl>(assimpMesh, meshDef, layout, alloc) }
+    AssimpMeshDefinitionConverter::AssimpMeshDefinitionConverter(const aiMesh& assimpMesh, const VertexLayout& layout, Definition& meshDef, OptionalRef<bx::AllocatorI> alloc) noexcept
+        : _impl{ std::make_unique<AssimpMeshDefinitionConverterImpl>(assimpMesh, layout, meshDef, alloc) }
     {
     }
 

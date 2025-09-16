@@ -32,12 +32,12 @@ namespace darmok
         auto itr = config.find(key);
         if (itr != config.end())
         {
-            return *itr;
+            return { *itr };
         }
         itr = dirConfig.find(key);
         if (itr != dirConfig.end())
         {
-            return *itr;
+            return { *itr };
         }
         return std::nullopt;
     }

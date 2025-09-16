@@ -45,7 +45,7 @@ namespace darmok
         }
         
     public:
-        VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, const OptionalRef<bx::AllocatorI>& alloc = nullptr) noexcept;
+        VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
         void load(Data&& data) noexcept;
         const bgfx::VertexLayout& getLayout() const noexcept;
         uint32_t getSize() const noexcept;

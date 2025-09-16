@@ -113,25 +113,32 @@ namespace darmok
 
     AssimpLoader::Result AssimpLoaderImpl::loadFromFile(const std::filesystem::path& path, const Config& config) const
     {
-        Assimp::Importer importer;
-        const aiScene* ptr = nullptr;
-        if (!config.format.empty())
+        try
         {
-            auto hintImporter = importer.GetImporter(config.format.c_str());
-            if (hintImporter != nullptr)
+            Assimp::Importer importer;
+            const aiScene* ptr = nullptr;
+            if (!config.format.empty())
             {
-                ptr = hintImporter->ReadFile(&importer, path.string().c_str(), importer.GetIOHandler());
+                auto hintImporter = importer.GetImporter(config.format.c_str());
+                if (hintImporter != nullptr)
+                {
+                    ptr = hintImporter->ReadFile(&importer, path.string().c_str(), importer.GetIOHandler());
+                }
             }
+            if (ptr == nullptr)
+            {
+                ptr = importer.ReadFile(path.string(), getImporterFlags(config));
+            }
+            if (ptr == nullptr)
+            {
+                return unexpected{ importer.GetErrorString() };
+            }
+            return fixScene(importer);
         }
-        if(ptr == nullptr)
+        catch (const std::exception& e)
         {
-            ptr = importer.ReadFile(path.string(), getImporterFlags(config));
+            return unexpected{ e.what() };
         }
-        if (ptr == nullptr)
-        {
-            return unexpected{ importer.GetErrorString() };
-        }
-        return fixScene(importer);
     }
 
     AssimpLoader::Result AssimpLoaderImpl::loadFromMemory(DataView data, const Config& config) const
@@ -147,12 +154,19 @@ namespace darmok
             importer.SetPropertyString("sourceFilePath", path.string());
         }
 
-        auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), config.format.c_str());
-        if (ptr == nullptr)
+        try
         {
-            return unexpected{ importer.GetErrorString() };
+            auto ptr = importer.ReadFileFromMemory(data.ptr(), data.size(), getImporterFlags(config), config.format.c_str());
+            if (ptr == nullptr)
+            {
+                return unexpected{ importer.GetErrorString() };
+            }
+            return fixScene(importer);
         }
-        return fixScene(importer);
+        catch(const std::exception& e)
+        {
+            return unexpected{ e.what() };
+		}
     }
 
     std::shared_ptr<aiScene> AssimpLoaderImpl::fixScene(Assimp::Importer& importer) noexcept

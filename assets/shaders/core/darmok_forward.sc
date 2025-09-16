@@ -35,7 +35,8 @@ vec4 forwardFragment(vec3 V, vec3 normal, vec3 tangent, vec3 fragPos, vec2 texCo
     }
 
     uint pointLights = pointLightCount();
-    for(uint i = 0; i < pointLights; i++)
+    uint i;
+    for(i = 0; i < pointLights; i++)
     {
         PointLight light = getPointLight(i);
         LightData data = calcPointLight(light, fragPos);
@@ -48,7 +49,7 @@ vec4 forwardFragment(vec3 V, vec3 normal, vec3 tangent, vec3 fragPos, vec2 texCo
     }
 
     uint spotLights = spotLightCount();
-    for(uint i = 0; i < spotLights; i++)
+    for(i = 0; i < spotLights; i++)
     {
         SpotLight light = getSpotLight(i);
         LightData data = calcSpotLight(light, fragPos);
@@ -61,7 +62,7 @@ vec4 forwardFragment(vec3 V, vec3 normal, vec3 tangent, vec3 fragPos, vec2 texCo
     }
 
     uint dirLights = dirLightCount();
-    for(uint i = 0; i < dirLights; i++)
+    for(i = 0; i < dirLights; i++)
     {
         DirLight light = getDirLight(i);
         LightData data = calcDirLight(light);

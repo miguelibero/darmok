@@ -97,6 +97,7 @@ list(APPEND CMAKE_MODULE_PATH
   ${LOCAL_MODULE_PATH} ${LOCAL_MODULE_PATH}/lib)
 
 find_package(bgfx CONFIG REQUIRED)
+find_package(lodepng CONFIG REQUIRED)
 
 include(darmokProcessAssets)
 

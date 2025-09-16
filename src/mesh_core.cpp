@@ -3,6 +3,7 @@
 #include <darmok/shape.hpp>
 #include <darmok/shape_serialize.hpp>
 #include <darmok/data.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <darmok/protobuf/program.pb.h>
 #include <glm/gtx/component_wise.hpp>
 
@@ -873,6 +874,22 @@ namespace darmok
 			addVertex(amount.x, y);
 			indices.push_back(i);
 			indices.push_back(i + 1);
+		}
+	}
+
+	MeshData::MeshData(const Definition& def) noexcept
+		: indices{ def.indices().begin(), def.indices().end() }	
+	{
+		vertices.reserve(def.vertices_size());
+		for(auto& v : def.vertices())
+		{
+			vertices.push_back({
+				.position = protobuf::convert(v.position()),
+				.texCoord = protobuf::convert(v.tex_coord()),
+				.normal = protobuf::convert(v.normal()),
+				.tangent = protobuf::convert(v.tangent()),
+				.color = protobuf::convert(v.color()),
+			});
 		}
 	}
 

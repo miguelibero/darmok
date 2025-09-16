@@ -8,10 +8,29 @@
 #include <vector>
 
 struct aiBone;
+struct aiScene;
 
 namespace darmok
 {
     class VertexDataWriter;
+
+    class AssimpMeshSourceConverterImpl final
+    {
+    public:
+        using Definition = AssimpMeshSourceConverter::Definition;
+
+        AssimpMeshSourceConverterImpl(DataView data, std::string_view format, Definition& def) noexcept;
+
+        std::vector<std::string> getMeshNames() const noexcept;
+        expected<void, std::string> operator()(std::string_view name) noexcept;
+    private:
+        DataView _data;
+		std::string _format;
+        Definition& _def;
+        mutable std::shared_ptr<aiScene> _scene;
+
+        expected<void, std::string> loadScene() const noexcept;
+    };
 
     class AssimpMeshDefinitionConverterImpl final
     {
@@ -19,13 +38,13 @@ namespace darmok
         using Definition = AssimpMeshDefinitionConverter::Definition;
 		using VertexLayout = AssimpMeshDefinitionConverter::VertexLayout;
 
-        AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, Definition& meshDef, const VertexLayout& layout, bx::AllocatorI& allocator) noexcept;
+        AssimpMeshDefinitionConverterImpl(const aiMesh& assimpMesh, const VertexLayout& layout, Definition& meshDef, OptionalRef<bx::AllocatorI> = std::nullopt) noexcept;
         expected<void, std::string> operator()() noexcept;
     private:
         const aiMesh& _assimpMesh;
-        Definition& _meshDef;
-        bx::AllocatorI& _allocator;
         VertexLayout _vertexLayout;
+        Definition& _meshDef;
+        OptionalRef<bx::AllocatorI> _allocator;
 
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
         std::string createVertexData(const std::vector<aiBone*>& bones) const noexcept;

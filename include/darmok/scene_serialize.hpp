@@ -72,15 +72,15 @@ namespace darmok
         }
 
         template<typename T>
-        std::vector<std::string> getAssetPaths() const noexcept
+        std::vector<std::filesystem::path> getAssetPaths() const noexcept
         {
             return getAssetPaths(protobuf::getTypeId<T>());
         }
 
         template<typename T>
-        std::unordered_map<std::string, T> getAssets() const noexcept
+        std::unordered_map<std::filesystem::path, T> getAssets() const noexcept
         {
-            std::unordered_map<std::string, T> assets;
+            std::unordered_map<std::filesystem::path, T> assets;
             for (auto& [path, any] : getAssets(protobuf::getTypeId<T>()))
             {
                 T asset;

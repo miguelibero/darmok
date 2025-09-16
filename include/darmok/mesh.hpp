@@ -19,6 +19,5 @@ namespace darmok
         IProgramDefinitionLoader& _progDefLoader;
         bx::AllocatorI& _allocator;
         Result create(const std::shared_ptr<Mesh::Source>& src) override;
-        Result create(const protobuf::ExternalMeshSource& external, const protobuf::VertexLayout& layout);
     };
 }

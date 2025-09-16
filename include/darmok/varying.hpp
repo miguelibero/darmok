@@ -118,7 +118,7 @@ namespace darmok
     {
     public:
         using Definition = protobuf::Varying;
-        ConstVaryingDefinitionWrapper(const Definition def);
+        ConstVaryingDefinitionWrapper(const Definition& def);
 
         void writeBgfx(std::ostream& out, const AttribGroups& disabledGroups = {}) noexcept;
         void writeBgfx(std::ostream& out, const AttribDefines& defines) noexcept;
@@ -133,7 +133,7 @@ namespace darmok
     class VaryingDefinitionWrapper final : public ConstVaryingDefinitionWrapper
     {
     public:
-        VaryingDefinitionWrapper(Definition def);
+        VaryingDefinitionWrapper(Definition& def);
 
         [[nodiscard]] expected<void, std::string> read(const nlohmann::ordered_json& json) noexcept;
         [[nodiscard]] expected<void, std::string> read(const std::filesystem::path& path) noexcept;

@@ -5,6 +5,7 @@ package darmok.protobuf;
 import "varying.proto";
 import "shape.proto";
 import "program.proto";
+import "math.proto";
 
 message CubeMeshSource {
     Cube shape = 1;
@@ -26,19 +27,35 @@ message RectangleMeshSource {
     Mesh.RectangleType type = 2;
 }
 
-message ExternalMeshSource {
-    bytes data = 1;
-    string name = 2;
+message DataMeshSource {
+    message Vertex {
+        Vec3 position = 1;
+        Vec2 tex_coord = 2;
+        Vec3 normal = 3;
+        Vec3 tangent = 4;
+        Color color = 5;
+    }
+
+    message Weight {
+        uint32 vertex_id = 1;
+        float value = 2;
+    }
+
+    repeated Vertex vertices = 1;
+    repeated uint32 indices = 2;
+    repeated Weight weights = 3;
+    BoundingBox bounds = 4;
+    bool has_tangents = 5;
 }
 
 message MeshSource {
     string name = 1;
     oneof value {
-        CubeMeshSource cube = 2;
-        SphereMeshSource sphere = 3;
-        CapsuleMeshSource capsule = 4;
-        RectangleMeshSource rectangle = 5;
-        ExternalMeshSource external = 6;
+        DataMeshSource data = 2;
+        CubeMeshSource cube = 3;
+        SphereMeshSource sphere = 4;
+        CapsuleMeshSource capsule = 5;
+        RectangleMeshSource rectangle = 6;
     }
     Mesh.Type type = 7;
     bool index32 = 8;

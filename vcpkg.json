@@ -15,6 +15,7 @@
         "tools"
       ]
     },
+    "lodepng",
     {
       "name": "imgui",
       "features": [
