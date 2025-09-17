@@ -2,8 +2,11 @@
 #include <darmok-editor/app.hpp>
 #include <darmok-editor/utils.hpp>
 #include <darmok/shape_serialize.hpp>
+#include <darmok/assimp.hpp>
 #include <darmok/mesh_assimp.hpp>
+
 #include <imgui.h>
+#include <assimp/scene.h>
 
 namespace darmok::editor
 {
@@ -31,6 +34,14 @@ namespace darmok::editor
         {
             changed = true;
         }
+
+        auto progResult = renderChild(*src.mutable_program());
+        if (!progResult)
+        {
+            return unexpected{ std::move(progResult).error() };
+        }
+        changed |= *progResult;
+
         MeshSourceValueType type = MeshSourceValueType::Data;
         if (src.has_capsule())
         {
@@ -85,37 +96,82 @@ namespace darmok::editor
         return changed;
     }
 
+    expected<void, std::string> MeshSourceInspectorEditor::loadSceneMesh(protobuf::DataMeshSource& src) noexcept
+    {
+        if (!_externalScene)
+        {
+            return unexpected{ "no scene loaded" };
+        }
+        if (_externalMeshIndex < 0 || _externalMeshIndex >= _externalMeshes.size())
+        {
+            return unexpected{ "invalid mesh index" };
+        }
+        OptionalRef<const aiMesh> assimpMesh;
+        auto& meshName = _externalMeshes[_externalMeshIndex];
+
+        for (size_t i = 0; i < _externalScene->mNumMeshes; i++)
+        {
+            auto& m = _externalScene->mMeshes[i];
+            if (AssimpUtils::getStringView(m->mName) == meshName)
+            {
+                assimpMesh = m;
+                break;
+            }
+        }
+
+        if (!assimpMesh)
+        {
+            return unexpected{ "selected mesh not found in scene" };
+        }
+
+        AssimpMeshSourceConverter convert{ *assimpMesh, src };
+        return convert();
+    }
+
     MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderData(Mesh::Source& src) noexcept
     {
+        auto changed = false;
         auto& dataSrc = *src.mutable_data();
 
-        auto createConverter = [&]()
-        {
-            auto format = _externalPath.extension().string();
-            return AssimpMeshSourceConverter{ _externalData, format, dataSrc };
-        };
-
-        auto changed = false;
-
-        if (ImguiUtils::drawFileInput("Load File", _externalPath, _externalFilter))
+		std::filesystem::path path;
+        FileDialogOptions dialogOptions;
+        dialogOptions.filters = { _externalFilter };
+        if (getApp().drawFileInput("Load File", path, dialogOptions))
         {
             auto& assets = getApp().getAssets();
-            auto result = assets.getDataLoader()(_externalPath);
+            auto dataResult = assets.getDataLoader()(path);
+            if (!dataResult)
+            {
+                return unexpected{ std::move(dataResult).error() };
+            }
+            AssimpLoader loader;
+            AssimpLoader::Config config;
+            config.setPath(path);
+            auto sceneResult = loader.loadFromMemory(dataResult.value(), config);
+            if (!sceneResult)
+            {
+                return unexpected{ std::move(sceneResult).error() };
+            }
+            _externalScene = std::move(*sceneResult);
+            _externalMeshes.clear();
+            _externalMeshIndex = 0;
+            for(size_t i = 0; i < _externalScene->mNumMeshes; i++)
+            {
+                auto& name = _externalScene->mMeshes[i]->mName;
+                _externalMeshes.push_back(AssimpUtils::getString(name));
+			}
+            auto result = loadSceneMesh(dataSrc);
             if (!result)
             {
                 return unexpected{ std::move(result).error() };
             }
-            _externalData = std::move(result).value();
-            auto convert = createConverter();
-            _externalMeshes = convert.getMeshNames();
-            _selectedExternalMeshIndex = 0;
+            changed = true;
         }
         if (!_externalMeshes.empty())
         {
-            if (ImguiUtils::drawListCombo("Mesh Name", _selectedExternalMeshIndex, _externalMeshes))
+            if (ImguiUtils::drawListCombo("Mesh Name", _externalMeshIndex, _externalMeshes))
             {
-                auto convert = createConverter();
-                auto result = convert(_externalMeshes[_selectedExternalMeshIndex]);
+                auto result = loadSceneMesh(dataSrc);
                 if (!result)
                 {
                     return unexpected{ std::move(result).error() };

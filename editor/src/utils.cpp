@@ -5,9 +5,9 @@
 #include <darmok/material.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/window.hpp>
 #include <darmok/glm_serialize.hpp>
 
-#include <portable-file-dialogs.h>
 #include <imgui_stdlib.h>
 #include <fmt/format.h>
 
@@ -224,36 +224,6 @@ namespace darmok::editor
             return ReferenceInputAction::None;
         }
         return drawProtobufEntityReferenceInput(label, *field, msg, sceneDef);
-    }
-
-    bool ImguiUtils::drawFileInput(const char* label, std::filesystem::path& path, std::string_view filter) noexcept
-    {
-        if (ImGui::Button(label))
-        {
-            std::vector<std::string> filters;
-            if (!filter.empty())
-            {
-                filters.push_back({});
-                filters.push_back(std::string{ filter });
-            }
-            auto dialog = pfd::open_file(label, path.string(), filters);
-            // TODO: move this to an update function
-            while (!dialog.ready(1000))
-            {
-                StreamUtils::logDebug("waiting for open dialog...");
-            }
-            if (dialog.result().empty())
-            {
-                return false;
-            }
-            auto resultPath = dialog.result()[0];
-            if (!resultPath.empty())
-            {
-                path = resultPath;
-                return true;
-            }
-        }
-        return false;
     }
 
     bool ImguiUtils::drawListCombo(const char* label, size_t& current, ComboOptions options) noexcept

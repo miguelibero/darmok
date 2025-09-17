@@ -11,6 +11,32 @@
 
 namespace darmok
 {    
+    ILoader<Program::Definition>::Result Program::loadRef(ILoader<Program::Definition>& loader, const protobuf::ProgramRef& ref)
+    {
+        if (ref.has_standard())
+        {
+            return StandardProgramLoader::loadDefinition(ref.standard());
+        }
+        if (ref.has_path())
+        {
+            return loader(ref.path());
+        }
+        return nullptr;
+    }
+
+    ILoader<Program>::Result Program::loadRef(ILoader<Program>& loader, const protobuf::ProgramRef& ref)
+    {
+        if (ref.has_standard())
+        {
+            return StandardProgramLoader::load(ref.standard());
+        }
+        if (ref.has_path())
+        {
+            return loader(ref.path());
+        }
+        return nullptr;
+    }
+
     expected<Program::ShaderHandles, std::string> Program::createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name)
     {		
         ShaderHandles handles;

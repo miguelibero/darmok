@@ -19,23 +19,15 @@ namespace darmok
 			return unexpected<std::string>{ "Mesh source is null" };
 		}
 
-		std::shared_ptr<Program::Definition> progDef;
-		if (src->has_standard_program())
+		auto progResult = Program::loadRef(_progDefLoader, src->program());
+		if (!progResult)
 		{
-			progDef = StandardProgramLoader::loadDefinition(src->standard_program());
+			return unexpected{ progResult.error() };
 		}
-		if (!progDef && src->has_program_path())
-		{
-			auto progResult = _progDefLoader(src->program_path());
-			if (!progResult)
-			{
-				return unexpected{ progResult.error() };
-			}
-			progDef = progResult.value();
-		}
+		auto progDef = progResult.value();
 		if (!progDef)
 		{
-			return unexpected<std::string>{ "No program found for mesh source" };
+			return nullptr;
 		}
 
 		auto layout = ConstVertexLayoutWrapper{ progDef->varying().vertex() }.getBgfx();
@@ -71,12 +63,11 @@ namespace darmok
 			auto def = MeshData{ src->data() }.createDefinition(layout, config);
 			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
 		}
-
-		if (defPtr)
+		else
 		{
-			return defPtr;
+			return unexpected<std::string>{ "Unsupported mesh type" };
 		}
-		
-		return unexpected<std::string>{ "Unsupported mesh type" };
+
+		return defPtr;
 	}
 }

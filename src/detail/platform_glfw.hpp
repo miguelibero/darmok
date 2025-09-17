@@ -28,6 +28,12 @@
 #	define GLFW_EXPOSE_NATIVE_WGL
 #endif //
 
+namespace pfd
+{
+	class open_file;
+	class save_file;
+}
+
 namespace darmok
 {
 	struct MainThreadEntry
@@ -148,11 +154,12 @@ namespace darmok
 			RequestVideoModeInfo,
 			ChangeWindowVideoMode,
 			ChangeWindowCursorMode,
-			ChangeWindowTitle
+			ChangeWindowTitle,
+			OpenFileDialog,
 		};
 
 		PlatformCmd(Type type) noexcept;
-		static void process(PlatformCmd& cmd, PlatformImpl& plat) noexcept;
+		static bool process(PlatformCmd& cmd, PlatformImpl& plat) noexcept;
 
 	private:
 		Type  _type;
@@ -175,7 +182,7 @@ namespace darmok
 	class ChangeWindowVideoModeCmd final : public PlatformCmd
 	{
 	public:
-		ChangeWindowVideoModeCmd(const VideoMode& mode) noexcept;
+		ChangeWindowVideoModeCmd(VideoMode mode) noexcept;
 		void process(PlatformEventQueue& events, GLFWwindow* glfw, const WindowFrameSize& frame) noexcept;
 	private:
 		VideoMode _mode;
@@ -195,10 +202,23 @@ namespace darmok
 	class ChangeWindowTitleCmd final : public PlatformCmd
 	{
 	public:
-		ChangeWindowTitleCmd(const std::string& title) noexcept;
+		ChangeWindowTitleCmd(std::string title) noexcept;
 		void process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
 	private:
 		std::string _title;
+	};
+
+	class OpenFileDialogCmd final : public PlatformCmd
+	{
+	public:
+		OpenFileDialogCmd(FileDialogOptions options, FileDialogCallback callback) noexcept;
+		~OpenFileDialogCmd();
+		bool process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
+	private:
+		FileDialogOptions _options;
+		FileDialogCallback _callback;
+		std::unique_ptr<pfd::open_file> _openDialog;
+		std::unique_ptr<pfd::save_file> _saveDialog;
 	};
 
 #pragma endregion PlatformCmds

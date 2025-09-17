@@ -7,7 +7,7 @@
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/glm.hpp>
-#include "detail/assimp.hpp"
+#include <darmok/assimp.hpp>
 
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/scene.pb.h>

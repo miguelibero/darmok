@@ -40,6 +40,7 @@ namespace darmok::editor
         _editors.add<SceneInspectorEditor>();
         _editors.add<MaterialInspectorEditor>();
         _editors.add<ProgramSourceInspectorEditor>();
+        _editors.add<ProgramRefInspectorEditor>();
         _editors.add<MeshSourceInspectorEditor>();
         _editors.add<TextureDefinitionInspectorEditor>();
     }

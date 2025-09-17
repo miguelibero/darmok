@@ -514,12 +514,15 @@ namespace darmok
         {
             if constexpr (std::is_move_assignable_v<Resource>)
             {
-				auto result = create(def);
+                auto result = create(def);
                 if (!result)
                 {
                     return unexpected<Error>{ result.error() };
                 }
-                res = std::move(*result.value());
+                if (result.value())
+                {
+                    res = std::move(*result.value());
+                }
 				return {};
             }
             if constexpr (std::is_copy_assignable_v<Resource>)
@@ -529,7 +532,10 @@ namespace darmok
                 {
                     return unexpected<Error>{ result.error() };
                 }
-                res = *result.value();
+                if (result.value())
+                {
+                    res = *result.value();
+                }
                 return {};
             }
             return unexpected<Error>{"could not load resource"};

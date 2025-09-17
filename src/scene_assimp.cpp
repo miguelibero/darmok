@@ -13,6 +13,7 @@
 #include <darmok/material.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/mesh_core.hpp>
 #include <darmok/mesh_assimp.hpp>
 
 #include <assimp/vector3.h>
@@ -545,13 +546,14 @@ namespace darmok
     {
         matDef.set_name(AssimpUtils::getString(assimpMat.GetName()));
 
+        auto& progRef = *matDef.mutable_program();
         if (_config.has_standard_program())
         {
-            matDef.set_standard_program(_config.standard_program());
+            progRef.set_standard(_config.standard_program());
         }
         else
         {
-            matDef.set_program_path(_config.program_path());
+            progRef.set_path(_config.program_path());
         }        
         for (auto& define : _config.program_defines())
         {
@@ -684,7 +686,7 @@ namespace darmok
     
     expected<void, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
     {
-        const std::string name(assimpMesh.mName.C_Str());
+        const std::string name = AssimpUtils::getString(assimpMesh.mName);
         auto skip = false;
         for (auto& regex : _skipMeshes)
         {
@@ -705,8 +707,16 @@ namespace darmok
             return unexpected<std::string>{ "no valid vertex layout" };
 		}
 
-		AssimpMeshDefinitionConverter converter{ assimpMesh, *layout, meshDef, _allocator };
-        return converter();
+		MeshData::Definition meshSrc;
+        AssimpMeshSourceConverter converter{ assimpMesh, meshSrc };
+        auto result = converter();
+        if(!result)
+        {
+            return unexpected{ result.error() };
+		}
+		auto bgfxLayout = ConstVertexLayoutWrapper{ *layout }.getBgfx();
+		meshDef = MeshData{ meshSrc }.createDefinition(bgfxLayout);
+        return {};
     }
 
     void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept

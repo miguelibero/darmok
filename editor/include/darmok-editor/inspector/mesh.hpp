@@ -8,6 +8,8 @@
 #include <vector>
 #include <string>
 
+struct aiScene;
+
 namespace darmok::editor
 {
     class MeshSourceInspectorEditor final : public AssetObjectEditor<Mesh::Source>
@@ -17,11 +19,12 @@ namespace darmok::editor
         RenderResult renderType(Mesh::Source& src) noexcept override;
     private:
         static const std::string _externalFilter;
-        std::filesystem::path _externalPath;
-		Data _externalData;
-        std::vector<std::string> _externalMeshes;
-		size_t _selectedExternalMeshIndex = 0;
 
+		std::shared_ptr<aiScene> _externalScene;
+        std::vector<std::string> _externalMeshes;
+		size_t _externalMeshIndex = 0;
+
+        expected<void, std::string> loadSceneMesh(protobuf::DataMeshSource& src) noexcept;
         RenderResult renderData(Mesh::Source& src) noexcept;
         RenderResult renderSphere(Mesh::Source& src) noexcept;
         RenderResult renderCube(Mesh::Source& srce) noexcept;

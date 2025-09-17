@@ -33,14 +33,11 @@ message MaterialTexture {
 
 message Material {
     string name = 1;
-    oneof program {
-        string program_path = 2;
-        StandardProgram.Type standard_program = 3;
-    }
-    repeated string program_defines = 4;
+    ProgramRef program = 2;
+    repeated string program_defines = 3;
     
-    repeated MaterialTexture textures = 5;
-    map<string, UniformValue> uniform_values = 6;
+    repeated MaterialTexture textures = 4;
+    map<string, UniformValue> uniform_values = 5;
 
     enum OpacityType {
         Opaque = 0;
@@ -48,25 +45,25 @@ message Material {
         Transparent = 2;
     }
     
-    OpacityType opacity_type = 7;
+    OpacityType opacity_type = 6;
 
     enum PrimitiveType {
         Triangle = 0;
         Line = 1;
     }
 
-    PrimitiveType primitive_type = 8;
-    bool twoSided = 9;
+    PrimitiveType primitive_type = 7;
+    bool twoSided = 8;
 
-    Color base_color = 10;
-    Color3 emissive_color = 11;
-    float metallic_factor = 12;
-    float roughness_factor = 13;
-    float normal_scale = 14;
-    float occlusion_strength = 15;
-    bool multiple_scattering = 16;
-    float white_furnance_factor = 17;
+    Color base_color = 9;
+    Color3 emissive_color = 10;
+    float metallic_factor = 11;
+    float roughness_factor = 12;
+    float normal_scale = 13;
+    float occlusion_strength = 14;
+    bool multiple_scattering = 15;
+    float white_furnance_factor = 16;
 
-    Color3 specular_color = 18;
-    uint32 shininess = 19;
+    Color3 specular_color = 17;
+    uint32 shininess = 18;
 }

@@ -9,9 +9,8 @@
 #include <darmok/program.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/varying.hpp>
+#include <darmok/window.hpp>
 #include <darmok/protobuf.hpp>
-
-#include <portable-file-dialogs.h>
 
 // default scene
 #include <darmok/scene_serialize.hpp>
@@ -44,7 +43,7 @@ namespace darmok::editor
 
     expected<void, std::string> EditorProject::init(const ProgramCompilerConfig& progCompilerConfig)
     {
-        auto result = doReset();
+        auto result = doResetScene();
         if (!result)
         {
 			return unexpected{ result.error() };
@@ -62,12 +61,22 @@ namespace darmok::editor
         _requestUpdateScene = false;
     }
 
-    void EditorProject::save(bool forceNewPath)
+    expected<void, std::string> EditorProject::doSaveScene()
     {
-        if (!_scene)
+        if (_path.empty())
         {
-            return;
+            return {};
         }
+        auto result = protobuf::write(_sceneDef, _path);
+        if (!result)
+        {
+            StreamUtils::logDebug("error writing scene: " + result.error());
+        }
+		return result;
+    }
+
+    void EditorProject::saveScene(bool forceNewPath)
+    {
         if (_path.empty() || forceNewPath)
         {
             std::string initialPath{ "." };
@@ -75,24 +84,25 @@ namespace darmok::editor
             {
                 initialPath = _path.string();
             }
-            auto dialog = pfd::save_file("Save Project", initialPath,
-                _dialogFilters, pfd::opt::force_path);
 
-            while (!dialog.ready(1000))
+            auto dialogCallback = [this](auto& result)
             {
-                StreamUtils::logDebug("waiting for save dialog...");
-            }
-            _path = dialog.result();
-        }
-        if (_path.empty())
-        {
+                if (!result.empty())
+                {
+                    _path = result[0];
+                }
+                doSaveScene();
+            };
+
+            FileDialogOptions options;
+			options.type = FileDialogType::Save;
+			options.title = "Save Project";
+			options.filters = _dialogFilters;
+			options.defaultPath = initialPath;
+            _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
             return;
         }
-        auto result = protobuf::write(_sceneDef, _path);
-        if (!result)
-        {
-            StreamUtils::logDebug("error writing scene: " + result.error());
-        }
+        doSaveScene();
     }
 
     void EditorProject::exportScene()
@@ -109,7 +119,7 @@ namespace darmok::editor
         auto action = ImguiUtils::drawConfirmPopup(_confirmNewPopup, "Are you sure you want to create a new project?");
         if (action == ConfirmPopupAction::Ok)
         {
-            auto result = doReset();
+            auto result = doResetScene();
             if(!result)
             {
                 return unexpected{ result.error() };
@@ -147,12 +157,12 @@ namespace darmok::editor
 
     const char* EditorProject::_confirmNewPopup = "Confirm New Project";
 
-    void EditorProject::reset()
+    void EditorProject::resetScene()
     {
         _requestReset = true;
     }
 
-    expected<Entity, std::string> EditorProject::doReset()
+    expected<Entity, std::string> EditorProject::doResetScene()
     {
         _requestReset = false;
         _path.clear();
@@ -183,37 +193,46 @@ namespace darmok::editor
         return result;
     }
 
-    void EditorProject::open()
+    expected<void, std::string> EditorProject::reloadScene()
     {
-        if (!_scene)
+        if (_path.empty())
         {
-            return;
+            return {};
         }
-        auto dialog = pfd::open_file("Open Project", ".",
-            _dialogFilters);
-
-        while (!dialog.ready(1000))
-        {
-            StreamUtils::logDebug("waiting for open dialog...");
-        }
-        if (dialog.result().empty())
-        {
-            return;
-        }
-        std::filesystem::path path = dialog.result()[0];
-        if (!std::filesystem::exists(path))
-        {
-            return;
-        }
-        _path = path;
-
-		auto result = protobuf::read(_sceneDef, _path);
+        auto result = protobuf::read(_sceneDef, _path);
         if (!result)
         {
             StreamUtils::logDebug("error reading scene: " + result.error());
-            return;
+            return result;
         }
         updateScene();
+        return {};
+    }
+
+    void EditorProject::openScene()
+    {
+        auto dialogCallback = [this](auto& dialogResult)
+        {
+            if (dialogResult.empty())
+            {
+                return;
+            }
+            std::filesystem::path path{ dialogResult[0] };
+            if (!std::filesystem::exists(path))
+            {
+                return;
+            }
+            _path = path;
+            reloadScene();
+		};
+
+        FileDialogOptions options;
+        options.type = FileDialogType::Open;
+        options.title = "Open Project";
+        options.defaultPath = ".";
+        options.filters = _dialogFilters;
+
+        _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
     }
 
     std::shared_ptr<Scene> EditorProject::getScene()

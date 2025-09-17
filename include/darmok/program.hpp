@@ -19,6 +19,8 @@
 
 namespace darmok
 {
+	class IProgramLoader;
+
 	class DARMOK_EXPORT Program final
 	{
 	public:
@@ -52,6 +54,8 @@ namespace darmok
 		}
 
 		[[nodiscard]] static Source createSource() noexcept;
+		[[nodiscard]] static ILoader<Program::Definition>::Result loadRef(ILoader<Program::Definition>& loader, const protobuf::ProgramRef& ref);
+		[[nodiscard]] static ILoader<Program>::Result loadRef(ILoader<Program>& loader, const protobuf::ProgramRef& ref);
 
 	private:
 

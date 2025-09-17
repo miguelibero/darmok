@@ -63,6 +63,7 @@ namespace darmok
 			WindowError,
 
 			VideoModeInfo,
+			FileDialog,
 
 			Count,
 		};
@@ -206,7 +207,7 @@ namespace darmok
 	class WindowVideoModeEvent final : public PlatformEvent
 	{
 	public:
-		WindowVideoModeEvent(const VideoMode& mode) noexcept;
+		WindowVideoModeEvent(VideoMode mode) noexcept;
 		void process(Window& win) noexcept;
 	private:
 		VideoMode _mode;
@@ -237,6 +238,16 @@ namespace darmok
 		void process(Window& win) noexcept;
 	private:
 		std::string _title;
+	};
+
+	class FileDialogEvent final : public PlatformEvent
+	{
+	public:
+		FileDialogEvent(FileDialogResult result, FileDialogCallback callback) noexcept;
+		void process(Window& win) noexcept;
+	private:
+		FileDialogResult _result;
+		FileDialogCallback _callback;
 	};
 
 	class PlatformEventQueue final
@@ -282,9 +293,10 @@ namespace darmok
 
 		void requestVideoModeInfo() noexcept;
 		void requestWindowDestruction() noexcept;
-		void requestWindowVideoModeChange(const VideoMode& mode) noexcept;
+		void requestWindowVideoModeChange(VideoMode mode) noexcept;
 		void requestWindowCursorModeChange(WindowCursorMode mode) noexcept;
-		void requestWindowTitle(const std::string& title) noexcept;
+		void requestWindowTitle(std::string title) noexcept;
+		void openFileDialog(FileDialogOptions options, FileDialogCallback callback) noexcept;
 
 		[[nodiscard]] void* getWindowHandle() const noexcept;
 		[[nodiscard]] bgfx::NativeWindowHandleType::Enum getWindowHandleType() const noexcept;

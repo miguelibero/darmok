@@ -21,12 +21,14 @@ namespace darmok::editor
         expected<void, std::string> init(const ProgramCompilerConfig& progCompilerConfig);
         void shutdown();
 
-        void save(bool forceNewPath = false);
-        void open();
+        void saveScene(bool forceNewPath = false);
+        void openScene();
+        expected<void, std::string> reloadScene();
         void exportScene();
-        void reset();
-        expected<void, std::string> render();
+        void resetScene();
         void updateScene();
+
+        expected<void, std::string> render();
         Entity addEntity(Entity parentEntity = entt::null);
 
         std::shared_ptr<Scene> getScene();
@@ -61,8 +63,9 @@ namespace darmok::editor
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(SceneDefinitionWrapper& scene);
 
-        expected<Entity, std::string> doReset();
+        expected<Entity, std::string> doResetScene();
         expected<Entity, std::string> doUpdateScene();
+        expected<void, std::string> doSaveScene();
     };
 
 

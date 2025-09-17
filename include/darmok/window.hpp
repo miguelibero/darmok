@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <string>
+#include <filesystem>
 
 
 namespace darmok
@@ -80,6 +81,23 @@ namespace darmok
 
 	class WindowImpl;
 
+	enum class FileDialogType
+	{
+		Open,
+		Save
+	};
+
+	struct DARMOK_EXPORT FileDialogOptions final
+	{
+		FileDialogType type = FileDialogType::Open;
+		std::string title;
+		std::vector<std::string> filters;
+		std::string defaultPath;
+	};
+
+	using FileDialogResult = std::vector<std::filesystem::path>;
+	using FileDialogCallback = std::function<void(const FileDialogResult&)>;
+
 	class DARMOK_EXPORT Window final
 	{
 	public:
@@ -90,11 +108,12 @@ namespace darmok
 		Window& operator=(const Window&) = delete;
 		Window& operator=(Window&&) = delete;
 
-		void requestVideoMode(const VideoMode& mode) noexcept;
+		void requestVideoMode(VideoMode mode) noexcept;
 		void requestCursorMode(WindowCursorMode mode) noexcept;
 		void requestDestruction() noexcept;
 		void requestVideoModeInfo() noexcept;
-		void requestTitle(const std::string& title);
+		void requestTitle(std::string title) noexcept;
+		void openFileDialog(FileDialogOptions options, FileDialogCallback callback) noexcept;
 
 		[[nodiscard]] const std::string& getTitle() const noexcept;
 		[[nodiscard]] float getAspect() const noexcept;

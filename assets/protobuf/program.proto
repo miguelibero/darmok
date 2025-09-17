@@ -14,6 +14,13 @@ message StandardProgram {
     }
 }
 
+message ProgramRef {
+    oneof program {
+        string path = 1;
+        StandardProgram.Type standard = 2;
+    }
+}
+
 message ProgramSource {
     string name = 1;
     string vertex_shader = 2;

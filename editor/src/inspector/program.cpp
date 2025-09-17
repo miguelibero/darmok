@@ -24,4 +24,51 @@ namespace darmok::editor
         }
         return changed;
     }
+
+    std::string ProgramRefInspectorEditor::getTitle() const noexcept
+    {
+		return "Program Ref";
+    }
+
+	enum class EditorStandardProgramType
+	{
+		Custom,
+		Unlit,
+		ForwardBasic,
+		Forward,
+		Gui,
+		Tonemap,
+	};
+
+    ProgramRefInspectorEditor::RenderResult ProgramRefInspectorEditor::renderType(protobuf::ProgramRef& ref) noexcept
+    {
+		auto changed = false;
+		auto standardProgram = EditorStandardProgramType::Custom;
+		if (ref.has_standard())
+		{
+			standardProgram = static_cast<EditorStandardProgramType>(1 + ref.standard());
+		}
+		if (ImguiUtils::drawEnumCombo("Program", standardProgram))
+		{
+			changed = true;
+			if (standardProgram == EditorStandardProgramType::Custom)
+			{
+				ref.clear_standard();
+			}
+			else
+			{
+				ref.set_standard(StandardProgramLoader::Type{ toUnderlying(standardProgram) - 1 });
+			}
+		}
+		if (standardProgram == EditorStandardProgramType::Custom)
+		{
+			auto action = ImguiUtils::drawProtobufAssetReferenceInput("Program Path", "path", ref, "Program");
+			if (action == ReferenceInputAction::Changed)
+			{
+				changed = true;
+			}
+		}
+
+		return changed;
+    }
 }

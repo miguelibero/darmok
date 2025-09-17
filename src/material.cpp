@@ -123,7 +123,7 @@ namespace darmok
 	Material::Definition Material::createDefinition() noexcept
 	{
 		Definition def;
-		def.set_standard_program(Program::Standard::Forward);
+		def.mutable_program()->set_standard(Program::Standard::Forward);
 		*def.mutable_base_color() = protobuf::convert(Colors::white());
 		def.set_opacity_type(Material::Definition::Opaque);
 		return def;
@@ -159,19 +159,12 @@ namespace darmok
 		mat->twoSided = def->twosided();
 		mat->primitiveType = def->primitive_type();
 
-		if (def->has_standard_program())
+		auto progResult = Program::loadRef(_progLoader, def->program());
+		if (!progResult)
 		{
-			mat->program = StandardProgramLoader::load(def->standard_program());
+			return unexpected{ "failed to load program: " + progResult.error() };
 		}
-		else if(!def->program_path().empty())
-		{
-			auto loadResult = _progLoader(def->program_path());
-			if (!loadResult)
-			{
-				return unexpected{ "failed to load custom program: " + loadResult.error()};
-			}
-			mat->program = loadResult.value();
-		}
+		mat->program = progResult.value();
 
 		for (auto& defTex : def->textures())
 		{

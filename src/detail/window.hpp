@@ -40,6 +40,7 @@ namespace darmok
 		void requestVideoMode(const VideoMode& mode) noexcept;
 		void requestCursorMode(WindowCursorMode mode) noexcept;
 		void requestDestruction() noexcept;
+		void openFileDialog(const FileDialogOptions& options, const FileDialogCallback& callback) noexcept;
 
 		glm::vec2 screenToWindowPoint(const glm::vec2& point) const noexcept;
 		glm::vec2 windowToScreenPoint(const glm::vec2& point) const noexcept;

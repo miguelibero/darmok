@@ -59,10 +59,7 @@ message MeshSource {
     }
     Mesh.Type type = 7;
     bool index32 = 8;
-    oneof program {
-        string program_path = 9;
-        StandardProgram.Type standard_program = 10;
-    }
+    ProgramRef program = 9;
 }
 
 message Mesh {

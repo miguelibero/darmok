@@ -1116,7 +1116,11 @@ namespace darmok
 	{
 		if (bgfx::Fatal::DebugCheck == code)
 		{
-			bx::debugBreak();
+			// TODO: is this fatal normal?
+			if (!std::string_view{ str }.starts_with("Destroying already destroyed uniform "))
+			{
+				bx::debugBreak();
+			}
 			return;
 		}
 		throw BgfxFatalException(filePath, line, code, str);

@@ -6,18 +6,21 @@
 #include <darmok/utils.hpp>
 #include <darmok/window.hpp>
 #include <darmok/app.hpp>
+#include <darmok/stream.hpp>
 #include <stdexcept>
 
 #include <bx/mutex.h>
 
 #include <GLFW/glfw3native.h>
 
+#include <portable-file-dialogs.h>
+
 namespace darmok
 {
 #pragma region PlatformCmds
 
 	PlatformCmd::PlatformCmd(Type type) noexcept
-		: _type(type)
+		: _type{ type }
 	{
 	}
 
@@ -42,9 +45,9 @@ namespace darmok
 		events.post<VideoModeInfoEvent>(info);
 	}
 
-	ChangeWindowVideoModeCmd::ChangeWindowVideoModeCmd(const VideoMode& mode) noexcept
+	ChangeWindowVideoModeCmd::ChangeWindowVideoModeCmd(VideoMode mode) noexcept
 		: PlatformCmd(ChangeWindowVideoMode)
-		, _mode(mode)
+		, _mode{ std::move(mode) }
 	{
 	}
 
@@ -156,12 +159,12 @@ namespace darmok
 			_mode.depth = fmode.depth;
 		}
 
-		events.post<WindowVideoModeEvent>(_mode);
+		events.post<WindowVideoModeEvent>(std::move(_mode));
 	}
 
 	ChangeWindowCursorModeCmd::ChangeWindowCursorModeCmd(WindowCursorMode value) noexcept
 		: PlatformCmd(ChangeWindowCursorMode)
-		, _value(value)
+		, _value{ value }
 	{
 	}
 
@@ -191,9 +194,9 @@ namespace darmok
 		events.post<WindowCursorModeEvent>(_value);
 	}
 
-	ChangeWindowTitleCmd::ChangeWindowTitleCmd(const std::string& title) noexcept
+	ChangeWindowTitleCmd::ChangeWindowTitleCmd(std::string title) noexcept
 		: PlatformCmd(ChangeWindowTitle)
-		, _title(title)
+		, _title{ std::move(title) }
 	{
 	}
 
@@ -203,7 +206,56 @@ namespace darmok
 		events.post<WindowTitleEvent>(_title);
 	}
 
-	void PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat) noexcept
+	OpenFileDialogCmd::OpenFileDialogCmd(FileDialogOptions options, FileDialogCallback callback) noexcept
+		: PlatformCmd(OpenFileDialog)
+		, _options{ std::move(options) }
+		, _callback{ std::move(callback) }
+	{
+	}
+
+	OpenFileDialogCmd::~OpenFileDialogCmd() = default;
+
+	bool OpenFileDialogCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
+	{
+		switch (_options.type)
+		{
+			case FileDialogType::Open:
+			{
+				if (!_openDialog)
+				{
+					_openDialog = std::make_unique<pfd::open_file>(_options.title, _options.defaultPath, _options.filters);
+				}
+				if(!_openDialog->ready(0))
+				{
+					return false;
+				}
+				FileDialogResult result;
+				for (auto& path : _openDialog->result())
+				{
+					result.emplace_back(path);
+				}
+				events.post<FileDialogEvent>(std::move(result), std::move(_callback));
+				break;
+			}
+			case FileDialogType::Save:
+			{
+				if (!_saveDialog)
+				{
+					_saveDialog = std::make_unique<pfd::save_file>(_options.title, _options.defaultPath, _options.filters);
+				}
+				if (!_saveDialog->ready(0))
+				{
+					return false;
+				}
+				FileDialogResult result{ _saveDialog->result() };
+				events.post<FileDialogEvent>(std::move(result), std::move(_callback));
+				break;
+			}
+		}
+		return true;
+	}
+
+	bool PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat) noexcept
 	{
 		// explicit cast to avoid virtual method for performance
 		switch (cmd._type)
@@ -223,14 +275,18 @@ namespace darmok
 		case PlatformCmd::ChangeWindowTitle:
 			static_cast<ChangeWindowTitleCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
+		case PlatformCmd::OpenFileDialog:
+			return static_cast<OpenFileDialogCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 		}
+
+		return true;
 	}
 
 #pragma endregion PlatformCmds	
 
 	PlatformImpl::PlatformImpl(Platform& plat) noexcept
-		: _plat(plat)
-		, _window(nullptr)
+		: _plat{ plat }
+		, _window{ nullptr }
 		, _winFrameSize{ glm::uvec2(0), glm::uvec2(0) }
 	{
 	}
@@ -661,12 +717,15 @@ namespace darmok
 			glfwWaitEventsTimeout(0.016);
 			updateGamepads();
 
-			std::lock_guard cmdsLock(_cmdsMutex);
+			std::lock_guard cmdsLock{ _cmdsMutex };
 			while (!_cmds.empty())
 			{
 				std::unique_ptr<PlatformCmd> cmd = std::move(_cmds.front());
 				_cmds.pop();
-				PlatformCmd::process(*cmd, *this);
+				if (!PlatformCmd::process(*cmd, *this))
+				{
+					_cmds.push(std::move(cmd));
+				}
 			}
 		}
 
@@ -811,7 +870,7 @@ namespace darmok
 
 	void PlatformImpl::pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept
 	{
-		std::lock_guard cmdsLock(_cmdsMutex);
+		std::lock_guard cmdsLock{ _cmdsMutex };
 		_cmds.push(std::move(cmd));
 	}
 
@@ -979,9 +1038,9 @@ namespace darmok
 		_impl->pushCmd<RequestVideoModeInfoCmd>();
 	}
 
-	void Platform::requestWindowVideoModeChange(const VideoMode& mode) noexcept
+	void Platform::requestWindowVideoModeChange(VideoMode mode) noexcept
 	{
-		_impl->pushCmd<ChangeWindowVideoModeCmd>(mode);
+		_impl->pushCmd<ChangeWindowVideoModeCmd>(std::move(mode));
 	}
 
 	void Platform::requestWindowCursorModeChange(WindowCursorMode mode) noexcept
@@ -989,9 +1048,14 @@ namespace darmok
 		_impl->pushCmd<ChangeWindowCursorModeCmd>(mode);
 	}
 
-	void Platform::requestWindowTitle(const std::string& title) noexcept
+	void Platform::requestWindowTitle(std::string title) noexcept
 	{
-		_impl->pushCmd<ChangeWindowTitleCmd>(title);
+		_impl->pushCmd<ChangeWindowTitleCmd>(std::move(title));
+	}
+
+	void Platform::openFileDialog(FileDialogOptions options, FileDialogCallback callback) noexcept
+	{
+		_impl->pushCmd<OpenFileDialogCmd>(std::move(options), std::move(callback));
 	}
 
 	void* Platform::getWindowHandle() const noexcept

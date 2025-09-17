@@ -33,7 +33,9 @@ namespace darmok::editor
         auto& assets = getApp().getAssets();
 
         std::filesystem::path imgPath;
-        if (ImguiUtils::drawFileInput("Load Image", imgPath, _imageFilter))
+        FileDialogOptions dialogOptions;
+        dialogOptions.filters = { _imageFilter };
+        if (getApp().drawFileInput("Load Image", imgPath, dialogOptions))
         {
             if (auto dataResult = assets.getDataLoader()(imgPath))
             {

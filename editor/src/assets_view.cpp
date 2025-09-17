@@ -124,6 +124,10 @@ namespace darmok::editor
         if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
         {
             _currentPath = (_currentPath / path).lexically_normal();
+            if(_currentPath == ".")
+            {
+                _currentPath.clear();
+			}
         }
         return selected;
     }

@@ -241,7 +241,7 @@ namespace darmok
 	Mesh::Source Mesh::createSource() noexcept
 	{
 		Source src;
-		src.set_standard_program(protobuf::StandardProgram::Forward);
+		src.mutable_program()->set_standard(protobuf::StandardProgram::Forward);
 		src.set_name("Default Shape");
 		auto& sphere = *src.mutable_sphere();
 		sphere.mutable_shape()->set_radius(1.f);
@@ -363,6 +363,34 @@ namespace darmok
 			writer.write(bgfx::Attrib::Tangent, i, vertex.tangent);
 			writer.write(bgfx::Attrib::Color0, i, vertex.color);
 			++i;
+		}
+
+		std::map<size_t, std::vector<std::pair<size_t, float>>> indexedWeights;
+
+		for (auto& w : weights)
+		{
+			if (w.value > 0.F)
+			{
+				indexedWeights[w.vertexIndex].emplace_back(i, w.value);
+			}
+		}
+		for (auto& [i, vert] : indexedWeights)
+		{
+			glm::vec4 weights{ 1, 0, 0, 0 };
+			glm::vec4 indices{ -1 };
+			size_t j = 0;
+			std::sort(vert.begin(), vert.end(), [](auto& a, auto& b) { return a.second > b.second; });
+			for (auto& [index, weight] : vert)
+			{
+				indices[j] = index;
+				weights[j] = weight;
+				if (++j > 3)
+				{
+					break;
+				}
+			}
+			writer.write(bgfx::Attrib::Indices, i, indices);
+			writer.write(bgfx::Attrib::Weight, i, weights);
 		}
 
 		vertexData = writer.finish();
@@ -891,6 +919,14 @@ namespace darmok
 				.color = protobuf::convert(v.color()),
 			});
 		}
+		weights.reserve(def.weights_size());
+		for (auto& w : def.weights())
+		{
+			weights.push_back({
+				.vertexIndex = w.vertex_id(),
+				.value = w.value()
+			});
+		}
 	}
 
 	MeshData MeshData::operator+(const MeshData& other) const noexcept
@@ -934,6 +970,13 @@ namespace darmok
 		}
 		vertices.reserve(vertices.size() + other.vertices.size());
 		vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
+
+		weights.reserve(weights.size() + other.weights.size());
+		for (auto& w : other.weights)
+		{
+			weights.push_back({ w.vertexIndex + offset, w.value });
+		}
+
 		return *this;
 	}
 

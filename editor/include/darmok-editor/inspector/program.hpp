@@ -13,4 +13,11 @@ namespace darmok::editor
     private:
         static const std::string _shaderFilter;
     };
+
+    class ProgramRefInspectorEditor final : public ObjectEditor<protobuf::ProgramRef>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(protobuf::ProgramRef& ref) noexcept override;
+    };
 }

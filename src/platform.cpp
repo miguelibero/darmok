@@ -174,9 +174,9 @@ namespace darmok
 		win.getImpl().onError(_error);
 	}
 
-	WindowVideoModeEvent::WindowVideoModeEvent(const VideoMode& mode) noexcept
+	WindowVideoModeEvent::WindowVideoModeEvent(VideoMode mode) noexcept
 		: PlatformEvent(Type::WindowVideoMode)
-		, _mode{ mode }
+		, _mode{ std::move(mode) }
 	{
 	}
 
@@ -216,6 +216,21 @@ namespace darmok
 	void WindowTitleEvent::process(Window& win) noexcept
 	{
 		win.getImpl().setTitle(_title);
+	}
+
+	FileDialogEvent::FileDialogEvent(FileDialogResult result, FileDialogCallback callback) noexcept
+		: PlatformEvent(Type::FileDialog)
+		, _result{ std::move(result) }
+		, _callback{ std::move(callback) }
+	{
+	}
+
+	void FileDialogEvent::process(Window& win) noexcept
+	{
+		if (_callback)
+		{
+			_callback(_result);
+		}
 	}
 
 	void PlatformEvent::process(PlatformEvent& ev, Input& input, Window& window) noexcept
@@ -272,6 +287,9 @@ namespace darmok
 			break;
 		case PlatformEvent::Type::VideoModeInfo:
 			static_cast<VideoModeInfoEvent&>(ev).process(window);
+			break;
+		case PlatformEvent::Type::FileDialog:
+			static_cast<FileDialogEvent&>(ev).process(window);
 			break;
 		default:
 			break;

@@ -2,6 +2,7 @@
 
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
+#include <darmok/window.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok-editor/project.hpp>
 #include <darmok-editor/scene_view.hpp>
@@ -52,6 +53,8 @@ namespace darmok::editor
         const EditorProject& getProject() const noexcept;
         AssetContext& getAssets() noexcept;
         const AssetContext& getAssets() const noexcept;
+		const Window& getWindow() const noexcept;   
+        Window& getWindow() noexcept;
 
         template<typename T>
         std::optional<std::string> getAssetDragType() const noexcept
@@ -59,9 +62,12 @@ namespace darmok::editor
             return _assetsView.getAssetDragType(protobuf::getTypeId<T>());
         }
 
+        bool drawFileInput(const char* label, std::filesystem::path& path, FileDialogOptions options) noexcept;
+
     private:
         App& _app;
         ProgramCompilerConfig _progCompConfig;
+        std::unordered_map<void*, std::optional<FileDialogResult>> _fileInputResults;
 
         OptionalRef<ImguiAppComponent> _imgui;
         EditorProject _proj;

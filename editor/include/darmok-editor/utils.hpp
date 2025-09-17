@@ -10,6 +10,7 @@
 
 namespace darmok
 {
+	class Window;
     class ConstSceneDefinitionWrapper;
     class Texture;
     class ITextureLoader;
@@ -99,7 +100,6 @@ namespace darmok::editor
         ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
         ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const char* field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
 
-        bool drawFileInput(const char* label, std::filesystem::path& path, std::string_view filter = {}) noexcept;
         bool drawProtobufInputs(const std::unordered_map<std::string, std::string>& labels, Message& msg) noexcept;
         bool drawProtobufInput(const char* label, const FieldDescriptor& field, Message& msg) noexcept;
         bool drawProtobufInput(const char* label, const char* field, Message& msg) noexcept;

@@ -61,45 +61,16 @@ namespace darmok::editor
 		return itr->second.render(mat, getProject().getAssets().getTextureLoader());
 	}
 
-	enum class EditorStandardProgramType
-	{
-		Custom,
-		Unlit,
-		ForwardBasic,
-		Forward,
-		Gui,
-		Tonemap,
-	};
-
 	MaterialInspectorEditor::RenderResult MaterialInspectorEditor::renderType(Material::Definition& mat) noexcept
 	{
 		auto changed = false;
 
-		auto standardProgram = EditorStandardProgramType::Custom;
-		if (mat.has_standard_program())
+		auto progResult = renderChild(*mat.mutable_program());
+		if(!progResult)
 		{
-			standardProgram = static_cast<EditorStandardProgramType>(1 + mat.standard_program());
+			return unexpected{ std::move(progResult).error() };
 		}
-		if(ImguiUtils::drawEnumCombo("Program", standardProgram))
-		{
-			changed = true;
-			if (standardProgram == EditorStandardProgramType::Custom)
-			{
-				mat.clear_standard_program();
-			}
-			else
-			{
-				mat.set_standard_program(StandardProgramLoader::Type{ toUnderlying(standardProgram) - 1 });
-			}
-		}
-		if (standardProgram == EditorStandardProgramType::Custom)
-		{
-			auto action = ImguiUtils::drawProtobufAssetReferenceInput("Program Path", "program_path", mat, "Program");
-			if (action == ReferenceInputAction::Changed)
-			{
-				changed = true;
-			}
-		}
+		changed |= *progResult;
 
 		if (ImguiUtils::drawProtobufInput("Base color", "base_color", mat))
 		{

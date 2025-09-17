@@ -207,6 +207,11 @@ namespace darmok
 		_plat.requestWindowTitle(title);
 	}
 
+	void WindowImpl::openFileDialog(const FileDialogOptions& options, const FileDialogCallback& callback) noexcept
+	{
+		_plat.openFileDialog(options, callback);
+	}
+
 	void WindowImpl::requestVideoModeInfo() noexcept
 	{
 		_plat.requestVideoModeInfo();
@@ -339,20 +344,24 @@ namespace darmok
 		return _impl->getTitle();
 	}
 
-	void Window::requestTitle(const std::string& title)
+	void Window::requestTitle(std::string title) noexcept
 	{
-		_impl->requestTitle(title);
+		_impl->requestTitle(std::move(title));
 	}
 
+	void Window::openFileDialog(FileDialogOptions options, FileDialogCallback callback) noexcept
+	{
+		_impl->openFileDialog(std::move(options), std::move(callback));
+	}
 
 	void Window::requestVideoModeInfo() noexcept
 	{
 		_impl->requestVideoModeInfo();
 	}
 
-	void Window::requestVideoMode(const VideoMode& mode) noexcept
+	void Window::requestVideoMode(VideoMode mode) noexcept
 	{
-		_impl->requestVideoMode(mode);
+		_impl->requestVideoMode(std::move(mode));
 	}
 
 	void Window::requestCursorMode(WindowCursorMode mode) noexcept

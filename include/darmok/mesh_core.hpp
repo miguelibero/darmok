@@ -149,6 +149,12 @@ namespace darmok
         Color color = Colors::white();
     };
 
+    struct DARMOK_EXPORT MeshDataWeight final
+    {
+		size_t vertexIndex = 0;
+		float value = 0.F;
+    };
+
     class Texture;
     struct Cube;
     struct Sphere;
@@ -169,6 +175,7 @@ namespace darmok
     {
         using Vertex = MeshDataVertex;
         using Index = VertexIndex;
+        using Weight = MeshDataWeight;
         using MeshType = protobuf::Mesh::Type;
         using RectangleType = protobuf::Mesh::RectangleType;
         using LineType = protobuf::Mesh::LineType;
@@ -176,6 +183,7 @@ namespace darmok
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
+		std::vector<Weight> weights;
         MeshType type = protobuf::Mesh::Static;
 
         MeshData(MeshType type = protobuf::Mesh::Static) noexcept;

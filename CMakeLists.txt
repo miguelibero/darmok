@@ -383,6 +383,7 @@ endif()
 
 if(DARMOK_BUILD_ASSIMP)
   list(APPEND HEADERS
+    assimp.hpp
     scene_assimp.hpp
     mesh_assimp.hpp
   )

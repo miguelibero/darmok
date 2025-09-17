@@ -1,4 +1,4 @@
-#include "detail/assimp.hpp"
+#include <darmok/assimp.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/BaseImporter.h>

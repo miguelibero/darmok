@@ -92,6 +92,7 @@ namespace darmok::editor
         _dockCenterId = 0;
         _symbolsFont = nullptr;
         _mainToolbarHeight = 0.F;
+        _fileInputResults.clear();
     }
 
     void EditorApp::imguiSetup()
@@ -176,19 +177,19 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("New", "Ctrl+N"))
                 {
-                    _proj.reset();
+                    _proj.resetScene();
                 }
                 if (ImGui::MenuItem("Open...", "Ctrl+O"))
                 {
-                    _proj.open();
+                    _proj.openScene();
                 }
                 if (ImGui::MenuItem("Save", "Ctrl+S"))
                 {
-                    _proj.save();
+                    _proj.saveScene();
                 }
                 if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
                 {
-                    _proj.save(true);
+                    _proj.saveScene(true);
                 }
                 if (ImGui::MenuItem("Export..."))
                 {
@@ -309,12 +310,12 @@ namespace darmok::editor
             ImGui::BeginGroup();
             if (ImGui::ButtonEx(ICON_MD_SAVE))
             {
-                _proj.save();
+                _proj.saveScene();
             }
             ImGui::SameLine();
             if (ImGui::ButtonEx(ICON_MD_FOLDER_OPEN))
             {
-                _proj.open();
+                _proj.openScene();
             }
             ImGui::EndGroup();
             ImGui::SameLine();
@@ -590,6 +591,48 @@ namespace darmok::editor
     const AssetContext& EditorApp::getAssets() const noexcept
     {
         return _app.getAssets();
+    }
+
+    const Window& EditorApp::getWindow() const noexcept
+    {
+        return _app.getWindow();
+    }
+
+    Window& EditorApp::getWindow() noexcept
+    {
+        return _app.getWindow();
+    }
+
+    bool EditorApp::drawFileInput(const char* label, std::filesystem::path& path, FileDialogOptions options) noexcept
+    {
+        auto buttonPressed = ImGui::Button(label);
+
+        auto ptr = &path;
+        auto itr = _fileInputResults.find(ptr);
+        if (itr != _fileInputResults.end())
+        {
+            if (itr->second)
+            {
+                path = itr->second.value()[0];
+                _fileInputResults.erase(itr);
+                return true;
+            }
+            return false;
+        }
+
+        if (!buttonPressed)
+        {
+            return false;
+        }
+        if(options.title.empty())
+        {
+            options.title = label;
+		}
+        getWindow().openFileDialog(std::move(options), [this, ptr](const auto& result)
+        {
+			_fileInputResults[ptr] = result;
+        });
+        return false;
     }
 
     std::optional<std::filesystem::path> EditorApp::getSelectedAssetPath() const
