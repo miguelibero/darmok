@@ -7,6 +7,7 @@
 #include <darmok/mesh.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/material.hpp>
+#include <darmok/skeleton.hpp>
 
 #include <imgui.h>
 #include <fmt/format.h>
@@ -18,10 +19,11 @@ namespace darmok::editor
         _scene = scene;
         _delegate = delegate;
 
-        addAssetType("program",     Program::createSource());
-        addAssetType("texture",     Texture::createSource());
-        addAssetType("mesh",        Mesh::createSource());
-        addAssetType("material",    Material::createDefinition());
+        addAssetName<Program::Source>("program");
+        addAssetName<Texture::Source>("texture");
+        addAssetName<Mesh::Source>("mesh");
+        addAssetName<Material::Definition>("material");
+        addAssetName<Armature::Definition>("armature");
     }
 
     const std::string& EditorAssetsView::getWindowName()
@@ -33,7 +35,7 @@ namespace darmok::editor
     void EditorAssetsView::shutdown()
     {
         _delegate.reset();
-        _assetTypes.clear();
+        _assetNames.clear();
     }
 
     void EditorAssetsView::focus()
@@ -161,27 +163,23 @@ namespace darmok::editor
 
     std::optional<std::string> EditorAssetsView::getAssetTypeName(uint32_t assetType) const noexcept
     {
-        auto itr = _assetTypes.find(assetType);
-        if (itr != _assetTypes.end())
+        auto itr = _assetNames.find(assetType);
+        if (itr != _assetNames.end())
         {
-            return itr->second.name;
+            return itr->second;
         }
         return std::nullopt;
     }
 
-    std::filesystem::path EditorAssetsView::addAsset(uint32_t assetType)
+    std::filesystem::path EditorAssetsView::addAsset(const Message& msg)
     {
-        auto pathPrefix = _currentPath.string() + "/";
-        if (auto name = getAssetTypeName(assetType))
+        auto path = _currentPath;
+		if (auto name = getAssetTypeName(protobuf::getTypeId(msg)))
         {
-            pathPrefix = pathPrefix + *name;
+            path = path / *name;
         }
-        auto itr = _assetTypes.find(assetType);
-        if (itr != _assetTypes.end())
-        {
-            return _scene->addAsset(pathPrefix, *itr->second.prototype);
-        }
-        return {};
+        return _scene->addAsset(path, msg);
+
     }
 
     std::optional<std::string> EditorAssetsView::getAssetDragType(uint32_t assetType) const noexcept

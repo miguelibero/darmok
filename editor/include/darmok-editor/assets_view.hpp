@@ -42,32 +42,22 @@ namespace darmok::editor
         std::optional<std::string> getAssetDragType(uint32_t assetType) const noexcept;
         std::optional<std::string> getAssetTypeName(uint32_t assetType) const noexcept;
 
-		template<typename T>
-        std::filesystem::path addAsset()
-        {
-            return addAsset(protobuf::getTypeId<T>());
-        }
+        std::filesystem::path addAsset(const Message& msg);
 
     private:
         OptionalRef<SceneDefinitionWrapper> _scene;
         OptionalRef<IEditorAssetsViewDelegate> _delegate;
 		std::filesystem::path _currentPath;
 
-        struct EditorAssetConfig final
-        {
-            std::string name;
-            std::unique_ptr<Message> prototype;
-        };
-        std::unordered_map<uint32_t, EditorAssetConfig> _assetTypes;
+        std::unordered_map<uint32_t, std::string> _assetNames;
 
 		template<typename T>
-        void addAssetType(const char* name, T&& msg)
+        void addAssetName(std::string name)
         {
             auto typeId = protobuf::getTypeId<T>();
-            _assetTypes.emplace(typeId, EditorAssetConfig{ name, std::make_unique<T>(std::move(msg)) });
+            _assetNames.emplace(typeId, std::move(name));
         };
 
-        std::filesystem::path addAsset(uint32_t assetType);
         bool drawFolder(const std::filesystem::path& path, bool selected);
         bool drawAsset(const google::protobuf::Any& asset, const std::filesystem::path& path, bool selected);
     };

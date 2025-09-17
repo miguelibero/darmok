@@ -117,4 +117,9 @@ namespace darmok
 
 		return {};
 	}
+
+	Renderable::Definition Renderable::createDefinition() noexcept
+	{
+		return {};
+	}
 }

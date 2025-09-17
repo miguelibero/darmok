@@ -1,7 +1,6 @@
 #pragma once
 
 #include <darmok-editor/editor.hpp>
-#include <darmok/optional_ref.hpp>
 #include <darmok/camera.hpp>
 
 namespace darmok::editor

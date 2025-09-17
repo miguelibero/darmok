@@ -136,13 +136,13 @@ namespace darmok
             return unexpected{ dataResult.error() };
         }
         auto format = protobuf::getFormat(path);
-        auto res = std::make_shared<Resource>();
+        auto res = std::make_shared<Resource>(SkeletalAnimator::createDefinition());
 
 		expected<void, std::string> result;
         if(format == protobuf::Format::Json)
         {
             auto json = nlohmann::json::parse(dataResult.value().toString());
-			result = SkeletalAnimatorUtils::read(*res, json);
+            result = SkeletalAnimatorDefinitionWrapper{ *res }.read(json);
 		}
         else
         {
@@ -241,20 +241,57 @@ namespace darmok
         encoder.setUniform(_skinningUniform, &_skinning.front(), uint16_t(_skinning.size()));
     }
 
-    float SkeletalAnimatorUtils::calcTween(const TweenDefinition& tween, float position)
+    ConstSkeletalAnimatorTweenDefinitionWrapper::ConstSkeletalAnimatorTweenDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
     {
-        return Easing::apply(static_cast<Easing::Type>(tween.easing()), position, 0.F, 1.F);
     }
 
-    float SkeletalAnimatorUtils::calcBlendWeight(const StateDefinition& state, const glm::vec2& pos, const glm::vec2& animPos)
+    float ConstSkeletalAnimatorTweenDefinitionWrapper::calcTween(float position) const noexcept
+    {
+        return Easing::apply(static_cast<Easing::Type>(_def->easing()), position, 0.F, 1.F);
+    }
+
+    SkeletalAnimatorTweenDefinitionWrapper::SkeletalAnimatorTweenDefinitionWrapper(Definition& def) noexcept
+        : ConstSkeletalAnimatorTweenDefinitionWrapper( def )
+		, _def{ def }
+    {
+    }
+
+    expected<void, std::string> SkeletalAnimatorTweenDefinitionWrapper::read(const nlohmann::json& json) noexcept
+    {
+        auto itr = json.find("duration");
+        if (itr != json.end())
+        {
+            _def->set_duration(itr->get<float>());
+        }
+        itr = json.find("easing");
+        if (itr != json.end())
+        {
+            auto val = itr->get<std::string>();
+            auto easing = StringUtils::readEnum<protobuf::Easing::Type>(val);
+            if (!easing)
+            {
+                return unexpected{ "invalid easing type" };
+            }
+            _def->set_easing(*easing);
+        }
+        return {};
+    }
+
+    ConstSkeletalAnimatorStateDefinitionWrapper::ConstSkeletalAnimatorStateDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
+    {
+    }
+
+    float ConstSkeletalAnimatorStateDefinitionWrapper::calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos) const noexcept
     {
         std::vector<std::pair<glm::vec2, glm::vec2>> parts;
-        parts.reserve(state.animations_size());
-        if (state.blend() == SkeletalAnimator::StateDefinition::Directional)
+        parts.reserve(_def->animations_size());
+        if (_def->blend() == SkeletalAnimator::StateDefinition::Directional)
         {
             auto lenAnim = glm::length(animPos);
             auto len = glm::length(pos);
-            for (auto& anim : state.animations())
+            for (auto& anim : _def->animations())
             {
                 auto blendPos = protobuf::convert(anim.blend_position());
                 auto lenAnim2 = glm::length(blendPos);
@@ -267,7 +304,7 @@ namespace darmok
         else
         {
             auto a = pos - animPos;
-            for (auto& anim : state.animations())
+            for (auto& anim : _def->animations())
             {
                 auto b = protobuf::convert(anim.blend_position()) - animPos;
                 parts.emplace_back(a, b);
@@ -287,7 +324,7 @@ namespace darmok
         return w;
     }
 
-    std::vector<float> SkeletalAnimatorUtils::calcBlendWeights(const StateDefinition& state, const glm::vec2& pos)
+    std::vector<float> ConstSkeletalAnimatorStateDefinitionWrapper::calcBlendWeights(const glm::vec2& pos) const noexcept
     {
         // logic based on the Motion Interpolation explanation here
         // https://runevision.com/thesis/rune_skovbo_johansen_thesis.pdf
@@ -295,23 +332,184 @@ namespace darmok
         // FreeFormCartesian: Gradiend band
         // direct: distance is weight
         std::vector<float> weights;
-        weights.reserve(state.animations_size());
+        weights.reserve(_def->animations_size());
 
-        for (auto& anim : state.animations())
+        for (auto& anim : _def->animations())
         {
-            auto w = calcBlendWeight(state, pos, protobuf::convert(anim.blend_position()));
+            auto w = calcBlendWeight(pos, protobuf::convert(anim.blend_position()));
             weights.push_back(w);
         }
 
         return weights;
     }
 
-    SkeletalAnimationMap SkeletalAnimatorUtils::loadAnimations(const Definition& animator, ISkeletalAnimationLoader& loader)
+    SkeletalAnimatorStateDefinitionWrapper::SkeletalAnimatorStateDefinitionWrapper(Definition& def) noexcept
+        : ConstSkeletalAnimatorStateDefinitionWrapper(def)
+		, _def{ def }
+    {
+    }
+
+
+    std::optional<SkeletalAnimatorStateDefinitionWrapper::Definition::BlendType> SkeletalAnimatorStateDefinitionWrapper::getBlendType(const std::string& name) noexcept
+    {
+        Definition::BlendType val;
+        if (!Definition::BlendType_Parse(name, &val))
+        {
+            return std::nullopt;
+        }
+        return val;
+    }
+
+    expected<void, std::string> SkeletalAnimatorStateDefinitionWrapper::read(const nlohmann::json& json) noexcept
+    {
+        auto itr = json.find("elements");
+        if (itr != json.end())
+        {
+            for (auto& elm : *itr)
+            {
+                auto& anim = *_def->add_animations();
+                auto result = SkeletalAnimatorAnimationDefinitionWrapper{ anim }.read(elm);
+                if (!result)
+                {
+                    return result;
+                }
+            }
+        }
+        itr = json.find("animation");
+        if (itr != json.end())
+        {
+            auto& anim = *_def->add_animations();
+            auto result = SkeletalAnimatorAnimationDefinitionWrapper{ anim }.read(*itr);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        itr = json.find("name");
+        if (itr != json.end())
+        {
+            _def->set_name(itr->get<std::string>());
+        }
+        itr = json.find("threshold");
+        if (itr != json.end())
+        {
+            _def->set_threshold(itr->get<float>());
+        }
+        itr = json.find("blend");
+        if (itr != json.end())
+        {
+            auto blend = getBlendType(itr->get<std::string>());
+            if (!blend)
+            {
+                return unexpected{ "invalid blend type" };
+            }
+            _def->set_blend(*blend);
+        }
+        itr = json.find("tween");
+        if (itr != json.end())
+        {
+            auto result = SkeletalAnimatorTweenDefinitionWrapper{ *_def->mutable_tween() }.read(*itr);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        itr = json.find("nextState");
+        if (itr != json.end())
+        {
+            _def->set_next_state(itr->get<std::string>());
+        }
+        itr = json.find("speed");
+        if (itr != json.end())
+        {
+            _def->set_speed(itr->get<float>());
+        }
+        else
+        {
+            _def->set_speed(1.f);
+        }
+        return {};
+    }
+
+    ConstSkeletalAnimatorAnimationDefinitionWrapper::ConstSkeletalAnimatorAnimationDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
+    {
+    }
+
+    SkeletalAnimatorAnimationDefinitionWrapper::SkeletalAnimatorAnimationDefinitionWrapper(Definition& def) noexcept
+		: ConstSkeletalAnimatorAnimationDefinitionWrapper(def)
+		, _def{ def }
+    {
+    }
+
+    expected<void, std::string> SkeletalAnimatorAnimationDefinitionWrapper::read(const nlohmann::json& json) noexcept
+    {
+        if (json.is_string())
+        {
+            _def->set_name(json.get<std::string>());
+            _def->set_loop(true);
+            return {};
+        }
+        auto itr = json.find("value");
+        if (itr != json.end())
+        {
+            auto vec = itr->get<glm::vec2>();
+            *_def->mutable_blend_position() = protobuf::convert(vec);
+        }
+        itr = json.find("animation");
+        if (itr != json.end())
+        {
+            _def->set_name(itr->get<std::string>());
+        }
+        itr = json.find("loop");
+        if (itr != json.end())
+        {
+            _def->set_loop(itr->get<bool>());
+        }
+        else
+        {
+            _def->set_loop(true);
+        }
+        return {};
+    }
+
+    ConstSkeletalAnimatorTransitionDefinitionWrapper::ConstSkeletalAnimatorTransitionDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
+    {
+    }
+
+    SkeletalAnimatorTransitionDefinitionWrapper::SkeletalAnimatorTransitionDefinitionWrapper(Definition& def) noexcept
+        : ConstSkeletalAnimatorTransitionDefinitionWrapper(def)
+        , _def{ def }
+    {
+    }
+
+    expected<void, std::string> SkeletalAnimatorTransitionDefinitionWrapper::read(const nlohmann::json& json) noexcept
+    {
+        auto result = SkeletalAnimatorTweenDefinitionWrapper{ *_def->mutable_tween() }.read(json);
+        if (!result)
+        {
+            return result;
+        }
+        auto itr = json.find("offset");
+        if (itr != json.end())
+        {
+            _def->set_offset(itr->get<float>());
+        }
+        return {};
+    }
+    
+    ConstSkeletalAnimatorDefinitionWrapper::ConstSkeletalAnimatorDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
+    {
+    }
+
+    ConstSkeletalAnimatorDefinitionWrapper::AnimationMap ConstSkeletalAnimatorDefinitionWrapper::loadAnimations(ISkeletalAnimationLoader& loader) const noexcept
     {
         AnimationMap anims;
-        auto getAnimationName = [&animator](const auto& key)
+        auto getAnimationName = [this](const auto& key)
         {
-            auto& pattern = animator.animation_pattern();
+            auto& pattern = _def->animation_pattern();
             if (pattern.empty())
             {
                 return std::string{ key };
@@ -320,7 +518,7 @@ namespace darmok
             StringUtils::replace(v, "*", key);
             return v;
         };
-        for (auto& state : animator.states())
+        for (auto& state : _def->states())
         {
             for (auto& anim : state.animations())
             {
@@ -335,20 +533,20 @@ namespace darmok
         return anims;
     }
 
-    OptionalRef<const SkeletalAnimatorUtils::StateDefinition> SkeletalAnimatorUtils::getState(const Definition& def, std::string_view name)
+    OptionalRef<const ConstSkeletalAnimatorDefinitionWrapper::StateDefinition> ConstSkeletalAnimatorDefinitionWrapper::getState(std::string_view name) const noexcept
     {
-        auto itr = std::find_if(def.states().begin(), def.states().end(),
+        auto itr = std::find_if(_def->states().begin(), _def->states().end(),
             [name](auto& stateDef) { return stateDef.name() == name; });
-        if (itr == def.states().end())
+        if (itr == _def->states().end())
         {
             return nullptr;
         }
         return *itr;
     }
 
-    OptionalRef<const SkeletalAnimatorUtils::TransitionDefinition> SkeletalAnimatorUtils::getTransition(const Definition& def, std::string_view src, std::string_view dst)
+    OptionalRef<const ConstSkeletalAnimatorDefinitionWrapper::TransitionDefinition> ConstSkeletalAnimatorDefinitionWrapper::getTransition(std::string_view src, std::string_view dst) const noexcept
     {
-        auto& ts = def.transitions();
+        auto& ts = _def->transitions();
         auto itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state() == src && trans.dst_state() == dst; });
 		if (itr != ts.end())
 		{
@@ -372,187 +570,42 @@ namespace darmok
 		return nullptr;
     }
 
-    namespace SkeletalAnimatorUtils
+    SkeletalAnimatorDefinitionWrapper::SkeletalAnimatorDefinitionWrapper(Definition& def) noexcept
+		: ConstSkeletalAnimatorDefinitionWrapper{ def }
+        , _def{ def }
     {
-        expected<void, std::string> read(AnimationDefinition& def, const nlohmann::json& json)
-        {
-            if (json.is_string())
-            {
-                def.set_name(json.get<std::string>());
-                def.set_loop(true);
-                return {};
-            }
-            auto itr = json.find("value");
-            if (itr != json.end())
-            {
-                auto vec = itr->get<glm::vec2>();
-				*def.mutable_blend_position() = protobuf::convert(vec);
-            }
-            itr = json.find("animation");
-            if (itr != json.end())
-            {
-				def.set_name(itr->get<std::string>());
-            }
-            itr = json.find("loop");
-            if (itr != json.end())
-            {
-				def.set_loop(itr->get<bool>());
-            }
-            else
-            {
-                def.set_loop(true);
-            }
-            return {};
-        }
+	}
 
-        expected<void, std::string> read(TweenDefinition& def, const nlohmann::json& json)
+    std::pair<std::string_view, std::string_view> SkeletalAnimatorDefinitionWrapper::parseTransitionKey(std::string_view key) noexcept
+    {
+        const char sep = '>';
+        auto pos = key.find(sep);
+        if (pos == std::string::npos)
         {
-            auto itr = json.find("duration");
-            if (itr != json.end())
-            {
-				def.set_duration(itr->get<float>());
-            }
-            itr = json.find("easing");
-            if (itr != json.end())
-            {
-                auto val = itr->get<std::string>();
-                auto easing = StringUtils::readEnum<protobuf::Easing::Type>(val);
-                if (!easing)
-                {
-                    return unexpected{ "invalid easing type" };
-				}
-				def.set_easing(*easing);
-            }
-            return {};
+            return { {}, key };
         }
-
-        std::optional<SkeletalAnimator::StateDefinition::BlendType> getBlendType(const std::string& name) noexcept
-        {
-            SkeletalAnimator::StateDefinition::BlendType val;
-            if (!SkeletalAnimator::StateDefinition::BlendType_Parse(name, &val))
-            {
-                return std::nullopt;
-            }
-            return val;
-        }
-
-        expected<void, std::string> read(StateDefinition& def, const nlohmann::json& json)
-        {
-            auto itr = json.find("elements");
-            if (itr != json.end())
-            {
-                for (auto& elm : *itr)
-                {
-                    auto& anim = *def.add_animations();
-                    auto result = read(anim, elm);
-                    if(!result)
-                    {
-                        return result;
-					}
-                }
-            }
-            itr = json.find("animation");
-            if (itr != json.end())
-            {
-                auto& anim = *def.add_animations();
-                auto result = read(anim, *itr);
-                if (!result)
-                {
-                    return result;
-                }
-            }
-            itr = json.find("name");
-            if (itr != json.end())
-            {
-                def.set_name(itr->get<std::string>());
-            }
-            itr = json.find("threshold");
-            if (itr != json.end())
-            {
-				def.set_threshold(itr->get<float>());
-            }
-            itr = json.find("blend");
-            if (itr != json.end())
-            {
-                auto blend = getBlendType(itr->get<std::string>());
-                if (!blend)
-                {
-                    return unexpected{ "invalid blend type" };
-                }
-                def.set_blend(*blend);
-            }
-            itr = json.find("tween");
-            if (itr != json.end())
-            {
-                auto result = read(*def.mutable_tween(), *itr);
-                if (!result)
-                {
-                    return result;
-				}
-            }
-            itr = json.find("nextState");
-            if (itr != json.end())
-            {
-				def.set_next_state(itr->get<std::string>());
-            }
-            itr = json.find("speed");
-            if (itr != json.end())
-            {
-				def.set_speed(itr->get<float>());
-            }
-            else
-            {
-				def.set_speed(1.f);
-            }
-            return {};
-        }
-
-        expected<void, std::string> read(TransitionDefinition& def, const nlohmann::json& json)
-        {
-			auto result = read(*def.mutable_tween(), json);
-            if (!result)
-            {
-                return result;
-            }
-            auto itr = json.find("offset");
-            if (itr != json.end())
-            {
-				def.set_offset(itr->get<float>());
-            }
-			return {};
-        }
-
-        std::pair<std::string_view, std::string_view> parseTransitionKey(std::string_view key)
-        {
-            const char sep = '>';
-            auto pos = key.find(sep);
-            if (pos == std::string::npos)
-            {
-                return { {}, key };
-            }
-            return { key.substr(0, pos), key.substr(pos + 1) };
-        }
+        return { key.substr(0, pos), key.substr(pos + 1) };
     }
 
-    expected<void, std::string> SkeletalAnimatorUtils::read(Definition& def, const nlohmann::json& json)
+    expected<void, std::string> SkeletalAnimatorDefinitionWrapper::read(const nlohmann::json& json) noexcept
     {
         auto itr = json.find("animationNamePattern");
         if (itr != json.end())
         {
-            def.set_animation_pattern(itr->get<std::string>());
+            _def->set_animation_pattern(itr->get<std::string>());
         }
         itr = json.find("states");
         if (itr != json.end())
         {
             for (auto& [jsonKey, jsonVal] : itr->items())
             {
-				auto& state = *def.add_states();    
+                auto& state = *_def->add_states();
                 state.set_name(jsonKey);
-                auto result = read(state, jsonVal);
-                if(!result)
+                auto result = SkeletalAnimatorStateDefinitionWrapper{ state }.read(jsonVal);
+                if (!result)
                 {
                     return result;
-				}
+                }
             }
         }
         itr = json.find("transitions");
@@ -561,8 +614,8 @@ namespace darmok
             for (auto& [jsonKey, jsonVal] : itr->items())
             {
                 auto [src, dst] = parseTransitionKey(jsonKey);
-                auto& trans = *def.add_transitions();
-                auto result = read(trans, jsonVal);
+                auto& trans = *_def->add_transitions();
+                auto result = SkeletalAnimatorTransitionDefinitionWrapper{ trans }.read(jsonVal);
                 if (!result)
                 {
                     return result;
@@ -602,6 +655,11 @@ namespace darmok
         return _joints;
     }
 
+    Armature::Definition Armature::createDefinition() noexcept
+    {
+        return {};
+    }
+
     Skinnable::Skinnable(const std::shared_ptr<Armature>& armature) noexcept
         : _armature{ armature }
     {
@@ -625,6 +683,11 @@ namespace darmok
             return unexpected{ result.error() };
         }
         setArmature(result.value());
+        return {};
+    }
+
+    Skinnable::Definition Skinnable::createDefinition() noexcept
+    {
         return {};
     }
 }

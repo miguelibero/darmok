@@ -7,15 +7,15 @@
 
 namespace darmok::editor
 {
-    std::string TextureDefinitionInspectorEditor::getTitle() const noexcept
+    std::string TextureInspectorEditor::getTitle() const noexcept
     {
         return "Texture";
     }
 
-    const std::string TextureDefinitionInspectorEditor::_imageFilter = "*.png *.jpg *.jpeg *.bmp";
-    const glm::vec2 TextureDefinitionInspectorEditor::_maxPreviewSize{ 200.F };
+    const std::string TextureInspectorEditor::_imageFilter = "*.png *.jpg *.jpeg *.bmp";
+    const glm::vec2 TextureInspectorEditor::_maxPreviewSize{ 200.F };
 
-    TextureDefinitionInspectorEditor::RenderResult TextureDefinitionInspectorEditor::renderType(Texture::Source& src) noexcept
+    TextureInspectorEditor::RenderResult TextureInspectorEditor::renderType(Texture::Source& src) noexcept
     {
         auto changed = false;
 

@@ -30,6 +30,7 @@ namespace darmok
 		using Definition = protobuf::Program;
 		using Source = protobuf::ProgramSource;
 		using Standard = protobuf::StandardProgram;
+		using Ref = protobuf::ProgramRef;
 
 		Program(const Definition& def);
 		~Program() noexcept;
@@ -54,8 +55,8 @@ namespace darmok
 		}
 
 		[[nodiscard]] static Source createSource() noexcept;
-		[[nodiscard]] static ILoader<Program::Definition>::Result loadRef(ILoader<Program::Definition>& loader, const protobuf::ProgramRef& ref);
-		[[nodiscard]] static ILoader<Program>::Result loadRef(ILoader<Program>& loader, const protobuf::ProgramRef& ref);
+		[[nodiscard]] static ILoader<Program::Definition>::Result loadRef(ILoader<Program::Definition>& loader, const Ref& ref);
+		[[nodiscard]] static ILoader<Program>::Result loadRef(ILoader<Program>& loader, const Ref& ref);
 
 	private:
 

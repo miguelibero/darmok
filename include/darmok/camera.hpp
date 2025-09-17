@@ -186,6 +186,8 @@ namespace darmok
         using Definition = protobuf::Camera;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
 
+		static Definition createDefinition();
+
     private:
         glm::mat4 _view;
         glm::mat4 _proj;

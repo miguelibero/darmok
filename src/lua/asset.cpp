@@ -68,7 +68,7 @@ namespace darmok
 
 	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def)
 	{
-		return SkeletalAnimatorUtils::loadAnimations(def, assets.getSkeletalAnimationLoader());
+		return ConstSkeletalAnimatorDefinitionWrapper{ def }.loadAnimations(assets.getSkeletalAnimationLoader());
 	}
 
 	void LuaAssets::bind(sol::state_view& lua) noexcept

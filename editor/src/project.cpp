@@ -61,18 +61,17 @@ namespace darmok::editor
         _requestUpdateScene = false;
     }
 
-    expected<void, std::string> EditorProject::doSaveScene()
+    void EditorProject::doSaveScene()
     {
         if (_path.empty())
         {
-            return {};
+            return;
         }
         auto result = protobuf::write(_sceneDef, _path);
         if (!result)
         {
             StreamUtils::logDebug("error writing scene: " + result.error());
         }
-		return result;
     }
 
     void EditorProject::saveScene(bool forceNewPath)
@@ -309,16 +308,7 @@ namespace darmok::editor
 
         auto camEntity = scene.createEntity();
 
-        Camera::Definition cam;
-        cam.set_perspective_fovy(glm::radians(60.f));
-        cam.set_near(0.3f);
-        cam.set_far(1000.f);
-
-        //cam.addComponent<ShadowRenderer>(shadowConfig);
-        //cam.addComponent<LightingRenderComponent>();
-        //cam.addComponent<ForwardRenderer>();
-        //cam.addComponent<FrustumCuller>();
-
+        auto cam = Camera::createDefinition();
         scene.setComponent(camEntity, cam);
 
         auto camTrans = Transform::createDefinition();
@@ -363,7 +353,7 @@ namespace darmok::editor
         scene.setAsset(matPath, mat);
 
         auto renderableEntity = scene.createEntity();
-        Renderable::Definition renderable;
+        auto renderable = Renderable::createDefinition();
         renderable.set_mesh_path(meshPath);
         renderable.set_material_path(matPath);
         scene.setComponent(renderableEntity, renderable);

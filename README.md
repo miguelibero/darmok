@@ -112,7 +112,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming
 * finish editor
-    * load model files
     * export asset pack files
     * scene view gizmos
 * slang support
@@ -133,7 +132,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * possible refactors
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
     * move lua bindings to separate library?
-    * C++ coroutines could be useful in some places (async asset loading)
 
 #### In the future
 * run clang-tidy
@@ -156,6 +154,9 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * animation root motion 
 * [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
 * [slang](https://github.com/shader-slang/slang) shading language support
+* [microsoft cpp-async](https://github.com/microsoft/cpp-async) coroutines
+    * async asset loading
+    * editor actions
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced

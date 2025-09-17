@@ -2,7 +2,6 @@
 
 #include <darmok-editor/editor.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/optional_ref.hpp>
 
 namespace darmok::editor
 {

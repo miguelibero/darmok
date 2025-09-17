@@ -76,6 +76,7 @@ namespace darmok
         using Definition = protobuf::Renderable;
 
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+		static Definition createDefinition() noexcept;
 
     private:
         bool _enabled;

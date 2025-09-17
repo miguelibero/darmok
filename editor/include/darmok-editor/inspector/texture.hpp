@@ -1,14 +1,13 @@
 #pragma once
 
 #include <darmok-editor/editor.hpp>
-#include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 
 #include <memory>
 
 namespace darmok::editor
 {
-    class TextureDefinitionInspectorEditor final : public AssetObjectEditor<Texture::Source>
+    class TextureInspectorEditor final : public AssetObjectEditor<Texture::Source>
     {
     public:
         std::string getTitle() const noexcept override;

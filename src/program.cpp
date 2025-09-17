@@ -11,7 +11,7 @@
 
 namespace darmok
 {    
-    ILoader<Program::Definition>::Result Program::loadRef(ILoader<Program::Definition>& loader, const protobuf::ProgramRef& ref)
+    ILoader<Program::Definition>::Result Program::loadRef(ILoader<Program::Definition>& loader, const Ref& ref)
     {
         if (ref.has_standard())
         {
@@ -24,7 +24,7 @@ namespace darmok
         return nullptr;
     }
 
-    ILoader<Program>::Result Program::loadRef(ILoader<Program>& loader, const protobuf::ProgramRef& ref)
+    ILoader<Program>::Result Program::loadRef(ILoader<Program>& loader, const Ref& ref)
     {
         if (ref.has_standard())
         {

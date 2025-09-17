@@ -5,19 +5,19 @@
 
 namespace darmok::editor
 {
-    class ProgramSourceInspectorEditor final : public AssetObjectEditor<protobuf::ProgramSource>
+    class ProgramSourceInspectorEditor final : public AssetObjectEditor<Program::Source>
     {
     public:
         std::string getTitle() const noexcept override;
-        RenderResult renderType(protobuf::ProgramSource& src) noexcept override;
+        RenderResult renderType(Program::Source& src) noexcept override;
     private:
         static const std::string _shaderFilter;
     };
 
-    class ProgramRefInspectorEditor final : public ObjectEditor<protobuf::ProgramRef>
+    class ProgramRefInspectorEditor final : public ObjectEditor<Program::Ref>
     {
     public:
         std::string getTitle() const noexcept override;
-        RenderResult renderType(protobuf::ProgramRef& ref) noexcept override;
+        RenderResult renderType(Program::Ref& ref) noexcept override;
     };
 }

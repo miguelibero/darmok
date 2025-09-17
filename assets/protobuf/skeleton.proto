@@ -50,7 +50,8 @@ message SkeletalAnimatorTransition {
 }
 
 message SkeletalAnimator {
-    string animation_pattern = 1;
-    repeated SkeletalAnimatorState states = 2;
-    repeated SkeletalAnimatorTransition transitions = 3;
+    string skeleton_path = 1;
+    string animation_pattern = 2;
+    repeated SkeletalAnimatorState states = 3;
+    repeated SkeletalAnimatorTransition transitions = 4;
 }

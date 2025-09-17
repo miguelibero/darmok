@@ -166,7 +166,7 @@ namespace darmok
 		using AnimationMap = SkeletalAnimationMap;
 		using PlaybackState = SkeletalAnimatorPlaybackState;
 
-		SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Definition& def) noexcept;
+		SkeletalAnimatorImpl(SkeletalAnimator& animator) noexcept;
 		~SkeletalAnimatorImpl();
 
 		void addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
@@ -188,6 +188,7 @@ namespace darmok
 		bool play(std::string_view name, float stateSpeed = 1.F) noexcept;
 		void stop() noexcept;
 		void pause() noexcept;
+		void reset() noexcept;
 		PlaybackState getPlaybackState() noexcept;
 
 		void update(float deltaTime);
@@ -197,6 +198,9 @@ namespace darmok
 
 		// ISkeletalAnimationProvider
 		std::shared_ptr<SkeletalAnimation> getAnimation(std::string_view name) noexcept override;
+
+		void load(std::shared_ptr<Skeleton> skeleton, AnimationMap animations, Definition def) noexcept;
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept;
 	private:
 		using TransitionKey = std::pair<std::string, std::string>;
 		AnimationMap _animations;

@@ -2,6 +2,7 @@
 #include <darmok/skeleton_ozz.hpp>
 #include <darmok/data.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/math.hpp>
 #include <darmok/easing.hpp>
 #include <darmok/glm_serialize.hpp>
@@ -223,23 +224,12 @@ namespace darmok
             std::make_unique<SkeletalAnimationImpl>(std::move(anim.value())));
     }
 
-    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator, const std::shared_ptr<Skeleton>& skeleton, const AnimationMap& animations, const Definition& def) noexcept
+    SkeletalAnimatorImpl::SkeletalAnimatorImpl(SkeletalAnimator& animator) noexcept
         : _animator{ animator }
-        , _skeleton{ skeleton }
         , _speed{ 1.f }
         , _paused{ false }
-        , _def{ def }
-        , _animations{ animations }
         , _blendPosition{ 0 }
     {
-        auto& skel = getOzz();
-        _models.resize(skel.num_joints());
-
-        ozz::animation::LocalToModelJob job;
-        job.input = skel.joint_rest_poses();
-        job.output = ozz::make_span(_models);
-        job.skeleton = &skel;
-        job.Run();
     }
 
     SkeletalAnimatorImpl::~SkeletalAnimatorImpl()
@@ -352,7 +342,8 @@ namespace darmok
     float SkeletalAnimatorImpl::getStateDuration(const std::string& name) const noexcept
     {
         auto& anims = const_cast<ISkeletalAnimationProvider&>(static_cast<const ISkeletalAnimationProvider&>(*this));
-        if (auto stateDef = SkeletalAnimatorUtils::getState(_def, name))
+        ConstSkeletalAnimatorDefinitionWrapper anim{ _def };
+        if (auto stateDef = anim.getState(name))
         {
             if (auto state = State::create(getOzz(), *stateDef, anims))
             {
@@ -570,9 +561,11 @@ namespace darmok
         blending.output = ozz::make_span(_locals);
         blending.threshold = _def.threshold();
 
+
+        ConstSkeletalAnimatorTweenDefinitionWrapper tween{ _def.tween() };
         if (_blendPos != blendPosition)
         {
-            auto blendFactor = SkeletalAnimatorUtils::calcTween(_def.tween(), _normalizedTweenTime);
+            auto blendFactor = tween.calcTween(_normalizedTweenTime);
             _oldBlendPos = getBlendedPosition(blendFactor);
             _normalizedTweenTime = 0.f;
             _blendPos = blendPosition;
@@ -582,11 +575,12 @@ namespace darmok
         {
             _normalizedTweenTime = 1.f;
         }
-        auto blendFactor = SkeletalAnimatorUtils::calcTween(_def.tween(), _normalizedTweenTime);
+        auto blendFactor = tween.calcTween(_normalizedTweenTime);
         auto pos = getBlendedPosition(blendFactor);
 
         size_t i = 0;
-        auto weights = SkeletalAnimatorUtils::calcBlendWeights(_def, pos);
+        ConstSkeletalAnimatorStateDefinitionWrapper state{ _def };
+        auto weights = state.calcBlendWeights(pos);
         for (auto& anim : _animationStates)
         {
             if (anim.getBlendPosition() == glm::vec2(0))
@@ -704,7 +698,8 @@ namespace darmok
         }
         _currentState.update(currentStateDeltaTime, blendPosition);
         _normalizedTime += deltaTime / getDuration();
-        auto v = SkeletalAnimatorUtils::calcTween(_def.tween(), _normalizedTime);
+        ConstSkeletalAnimatorTweenDefinitionWrapper tween{ _def.tween() };
+        auto v = tween.calcTween(_normalizedTime);
 
         std::array<ozz::animation::BlendingJob::Layer, 2> layers;
         layers[0].weight = 1.f - v;
@@ -788,7 +783,8 @@ namespace darmok
             return false;
         }
 
-        auto stateDef = SkeletalAnimatorUtils::getState(_def, name);
+        ConstSkeletalAnimatorDefinitionWrapper anim{ _def };
+        auto stateDef = anim.getState(name);
         if (!stateDef)
         {
             return false;
@@ -809,7 +805,8 @@ namespace darmok
 
         if (prevState)
         {
-            auto transConfig = SkeletalAnimatorUtils::getTransition(_def, prevState->getName(), name);
+            ConstSkeletalAnimatorDefinitionWrapper anim{ _def };
+            auto transConfig = anim.getTransition(prevState->getName(), name);
             if (transConfig)
             {
                 auto state = State::create(getOzz(), *stateDef, *this);
@@ -857,6 +854,16 @@ namespace darmok
         _state.reset();
     }
 
+    void SkeletalAnimatorImpl::reset() noexcept
+    {
+        stop();
+		_speed = 1.f;
+        _paused = false;
+		_blendPosition = glm::vec2(0);
+        _transition.reset();
+        _state.reset();
+    }
+
     void SkeletalAnimatorImpl::pause() noexcept
     {
         _paused = !_paused;
@@ -885,10 +892,41 @@ namespace darmok
         return itr->second;
     }
 
-    SkeletalAnimator::~SkeletalAnimator()
+    void SkeletalAnimatorImpl::load(std::shared_ptr<Skeleton> skeleton, AnimationMap animations, Definition def) noexcept
     {
-        // intentionally empty to be able to forward declare the impl
+        reset();
+
+		_skeleton = std::move(skeleton);
+		_animations = std::move(animations);
+        _def = std::move(def);
+
+        auto& skel = getOzz();
+        _models.resize(skel.num_joints());
+        ozz::animation::LocalToModelJob job;
+        job.input = skel.joint_rest_poses();
+        job.output = ozz::make_span(_models);
+        job.skeleton = &skel;
+        job.Run();
     }
+
+    expected<void, std::string> SkeletalAnimatorImpl::load(const Definition& def, IComponentLoadContext& ctxt) noexcept
+    {
+        auto& assets = ctxt.getAssets();
+
+        auto skelResult = assets.getSkeletonLoader()(def.skeleton_path());
+        if (!skelResult)
+        {
+			return unexpected{ skelResult.error() };
+        }
+        ConstSkeletalAnimatorDefinitionWrapper anim{ def };
+        auto animations = anim.loadAnimations(assets.getSkeletalAnimationLoader());
+
+		load(skelResult.value(), std::move(animations), def);
+
+        return {};
+    }
+
+    SkeletalAnimator::~SkeletalAnimator() = default;
 
     glm::mat4 SkeletalAnimator::getJointModelMatrix(const std::string& name) const noexcept
     {
@@ -903,6 +941,16 @@ namespace darmok
     void SkeletalAnimator::update(float deltaTime)
     {
         _impl->update(deltaTime);
+    }
+
+    expected<void, std::string> SkeletalAnimator::load(const Definition& def, IComponentLoadContext& ctxt) noexcept
+    {
+		return _impl->load(def, ctxt);
+    }
+
+    SkeletalAnimator::Definition SkeletalAnimator::createDefinition() noexcept
+    {
+        return {};
     }
 
     glm::mat4 SkeletalAnimatorImpl::getJointModelMatrix(const std::string& joint) const noexcept
@@ -1023,9 +1071,15 @@ namespace darmok
         }
     }
 
-    SkeletalAnimator::SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept
-        : _impl{ std::make_unique<SkeletalAnimatorImpl>(*this, skel, anims, def) }
+    SkeletalAnimator::SkeletalAnimator() noexcept
+        : _impl{ std::make_unique<SkeletalAnimatorImpl>(*this) }
     {
+    }
+
+    SkeletalAnimator::SkeletalAnimator(std::shared_ptr<Skeleton> skel, AnimationMap anims, Definition def) noexcept
+        : _impl{ std::make_unique<SkeletalAnimatorImpl>(*this) }
+    {
+		_impl->load(std::move(skel), std::move(anims), def);
     }
 
     SkeletalAnimator& SkeletalAnimator::addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept

@@ -130,8 +130,6 @@ namespace darmok
         virtual bool operator()(const ISkeletalAnimatorListener& listener) const = 0;
     };
 
-    class SkeletalAnimatorImpl;
-
     enum class SkeletalAnimatorPlaybackState
     {
         Stopped,
@@ -139,23 +137,127 @@ namespace darmok
         Paused
     };
 
-    namespace SkeletalAnimatorUtils
+    class DARMOK_EXPORT ConstSkeletalAnimatorTweenDefinitionWrapper
     {
+    public:
+        using Definition = protobuf::SkeletalAnimatorTween;
+
+        ConstSkeletalAnimatorTweenDefinitionWrapper(const Definition& def) noexcept;
+
+        [[nodiscard]] float calcTween(float position) const noexcept;
+
+    private:
+        OptionalRef<const Definition> _def;
+    };
+
+
+    class DARMOK_EXPORT SkeletalAnimatorTweenDefinitionWrapper final : public ConstSkeletalAnimatorTweenDefinitionWrapper
+    {
+    public:
+        SkeletalAnimatorTweenDefinitionWrapper(Definition& def) noexcept;
+        expected<void, std::string> read(const nlohmann::json& json) noexcept;
+    private:
+        OptionalRef<Definition> _def;
+    };
+
+    class DARMOK_EXPORT ConstSkeletalAnimatorStateDefinitionWrapper
+    {
+    public:
+        using Definition = protobuf::SkeletalAnimatorState;
+
+        ConstSkeletalAnimatorStateDefinitionWrapper(const Definition& def) noexcept;
+
+        [[nodiscard]] float calcBlendWeight(const glm::vec2& pos, const glm::vec2& animPos) const noexcept;
+        [[nodiscard]] std::vector<float> calcBlendWeights(const glm::vec2& pos) const noexcept;
+
+    private:
+        OptionalRef<const Definition> _def;
+    };
+
+    class DARMOK_EXPORT SkeletalAnimatorStateDefinitionWrapper final : public ConstSkeletalAnimatorStateDefinitionWrapper
+    {
+    public:
+        SkeletalAnimatorStateDefinitionWrapper(Definition& def) noexcept;
+        expected<void, std::string> read(const nlohmann::json& json) noexcept;
+    private:
+        OptionalRef<Definition> _def;
+
+        static std::optional<Definition::BlendType> getBlendType(const std::string& name) noexcept;
+    };
+
+    class DARMOK_EXPORT ConstSkeletalAnimatorTransitionDefinitionWrapper
+    {
+    public:
+        using Definition = protobuf::SkeletalAnimatorTransition;
+
+        ConstSkeletalAnimatorTransitionDefinitionWrapper(const Definition& def) noexcept;
+    private:
+        OptionalRef<const Definition> _def;
+    };
+
+    class DARMOK_EXPORT SkeletalAnimatorTransitionDefinitionWrapper final : public ConstSkeletalAnimatorTransitionDefinitionWrapper
+    {
+    public:
+        SkeletalAnimatorTransitionDefinitionWrapper(Definition& def) noexcept;
+        expected<void, std::string> read(const nlohmann::json& json) noexcept;
+    private:
+        OptionalRef<Definition> _def;
+    };
+
+    class DARMOK_EXPORT ConstSkeletalAnimatorAnimationDefinitionWrapper
+    {
+    public:
+        using Definition = protobuf::SkeletalAnimatorAnimation;
+
+        ConstSkeletalAnimatorAnimationDefinitionWrapper(const Definition& def) noexcept;
+    private:
+        OptionalRef<const Definition> _def;
+    };
+
+    class DARMOK_EXPORT SkeletalAnimatorAnimationDefinitionWrapper final : public ConstSkeletalAnimatorAnimationDefinitionWrapper
+    {
+    public:
+        SkeletalAnimatorAnimationDefinitionWrapper(Definition& def) noexcept;
+        expected<void, std::string> read(const nlohmann::json& json) noexcept;
+    private:
+        OptionalRef<Definition> _def;
+    };
+
+    class DARMOK_EXPORT ConstSkeletalAnimatorDefinitionWrapper
+    {
+    public:
         using TweenDefinition = protobuf::SkeletalAnimatorTween;
         using AnimationDefinition = protobuf::SkeletalAnimatorAnimation;
         using StateDefinition = protobuf::SkeletalAnimatorState;
         using TransitionDefinition = protobuf::SkeletalAnimatorTransition;
         using BlendType = protobuf::SkeletalAnimatorState::BlendType;
-		using Definition = protobuf::SkeletalAnimator;
+        using Definition = protobuf::SkeletalAnimator;
         using AnimationMap = SkeletalAnimationMap;
-        [[nodiscard]] float calcTween(const TweenDefinition& tween, float position);
-        [[nodiscard]] float calcBlendWeight(const StateDefinition& state, const glm::vec2& pos, const glm::vec2& animPos);
-        [[nodiscard]] std::vector<float> calcBlendWeights(const StateDefinition& state, const glm::vec2& pos);
-        [[nodiscard]] SkeletalAnimationMap loadAnimations(const Definition& animator, ISkeletalAnimationLoader& loader);
-        [[nodiscard]] OptionalRef<const StateDefinition> getState(const Definition& def, std::string_view name);
-        [[nodiscard]] OptionalRef<const TransitionDefinition> getTransition(const Definition& def, std::string_view src, std::string_view dst);
-        [[nodiscard]] expected<void, std::string> read(Definition& def, const nlohmann::json& json);
-    }
+
+        ConstSkeletalAnimatorDefinitionWrapper(const Definition& def) noexcept;
+
+        [[nodiscard]] AnimationMap loadAnimations(ISkeletalAnimationLoader& loader) const noexcept;
+        [[nodiscard]] OptionalRef<const StateDefinition> getState(std::string_view name) const noexcept;
+        [[nodiscard]] OptionalRef<const TransitionDefinition> getTransition(std::string_view src, std::string_view dst) const noexcept;
+
+    private:
+        OptionalRef<const Definition> _def;
+    };
+
+	class DARMOK_EXPORT SkeletalAnimatorDefinitionWrapper final : public ConstSkeletalAnimatorDefinitionWrapper
+    {
+    public:
+        SkeletalAnimatorDefinitionWrapper(Definition& def) noexcept;
+
+        [[nodiscard]] expected<void, std::string> read(const nlohmann::json& json) noexcept;
+    private:
+        OptionalRef<Definition> _def;
+
+        std::optional<StateDefinition::BlendType> getBlendType(const std::string& name) noexcept;
+        static std::pair<std::string_view, std::string_view> parseTransitionKey(std::string_view key) noexcept;
+    };
+
+    class SkeletalAnimatorImpl;
 
     class DARMOK_EXPORT SkeletalAnimator final
     {
@@ -164,7 +266,8 @@ namespace darmok
         using StateDefinition = protobuf::SkeletalAnimatorState;
         using AnimationMap = SkeletalAnimationMap;
         using PlaybackState = SkeletalAnimatorPlaybackState;
-        SkeletalAnimator(const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept;
+        SkeletalAnimator() noexcept;
+        SkeletalAnimator(std::shared_ptr<Skeleton> skel, AnimationMap anims, Definition def) noexcept;
         ~SkeletalAnimator();
 
         SkeletalAnimator& addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
@@ -192,6 +295,10 @@ namespace darmok
         std::unordered_map<std::string, glm::mat4> getBoneModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
         void update(float deltaTime);
+
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept;
+		static Definition createDefinition() noexcept;
+
     private:
         std::unique_ptr<SkeletalAnimatorImpl> _impl;
     };
@@ -261,6 +368,8 @@ namespace darmok
         Armature(std::vector<ArmatureJoint>&& joints) noexcept;
         const std::vector<ArmatureJoint>& getJoints() const noexcept;
 
+        static Definition createDefinition() noexcept;
+
     private:
         std::vector<ArmatureJoint> _joints;
     };
@@ -281,6 +390,8 @@ namespace darmok
 
         using Definition = protobuf::Skinnable;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+
+        static Definition createDefinition() noexcept;
 
     private:
         std::shared_ptr<Armature> _armature;

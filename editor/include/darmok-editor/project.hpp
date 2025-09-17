@@ -65,7 +65,7 @@ namespace darmok::editor
 
         expected<Entity, std::string> doResetScene();
         expected<Entity, std::string> doUpdateScene();
-        expected<void, std::string> doSaveScene();
+        void doSaveScene();
     };
 
 

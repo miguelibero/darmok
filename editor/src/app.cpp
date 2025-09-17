@@ -195,9 +195,6 @@ namespace darmok::editor
                 {
                     _proj.exportScene();
                 }
-                if (ImGui::MenuItem("Close", "Ctrl+W"))
-                {
-                }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit"))
                 {
@@ -217,21 +214,15 @@ namespace darmok::editor
             {
                 if (ImGui::BeginMenu("Add"))
                 {
-                    if (ImGui::MenuItem("Program"))
+                    drawAssetComponentMenu("Program", Program::createSource());
+                    drawAssetComponentMenu("Texture", Texture::createSource());
+                    drawAssetComponentMenu("Mesh", Mesh::createSource());
+                    drawAssetComponentMenu("Material", Material::createDefinition());
+                    if (ImGui::BeginMenu("Animation"))
                     {
-                        _assetsView.addAsset<Program::Source>();
-                    }
-                    if (ImGui::MenuItem("Texture"))
-                    {
-                        _assetsView.addAsset<Texture::Source>();
-                    }
-                    if (ImGui::MenuItem("Mesh"))
-                    {
-                        _assetsView.addAsset<Mesh::Source>();
-                    }
-                    if (ImGui::MenuItem("Material"))
-                    {
-                        _assetsView.addAsset<Material::Definition>();
+                        drawAssetComponentMenu("Armature", Armature::createDefinition());
+                        drawAssetComponentMenu("Animator", SkeletalAnimator::createDefinition());
+                        ImGui::EndMenu();
                     }
 					ImGui::EndMenu();
                 }
@@ -243,14 +234,20 @@ namespace darmok::editor
                 ImGui::BeginDisabled(disabled);
                 if (ImGui::BeginMenu("Add"))
                 {
-                    drawEntityComponentMenu("Renderable", Renderable::Definition{});
-                    drawEntityComponentMenu("Camera", Camera::Definition{});
+                    drawEntityComponentMenu("Renderable", Renderable::createDefinition());
+                    drawEntityComponentMenu("Camera", Camera::createDefinition());
                     if (ImGui::BeginMenu("Light"))
                     {
-                        drawEntityComponentMenu("Point Light", PointLight::Definition{});
-                        drawEntityComponentMenu("Directional Light", DirectionalLight::Definition{});
-                        drawEntityComponentMenu("Spot Light", SpotLight::Definition{});
-                        drawEntityComponentMenu("Ambient Light", AmbientLight::Definition{});
+                        drawEntityComponentMenu("Point Light", PointLight::createDefinition());
+                        drawEntityComponentMenu("Directional Light", DirectionalLight::createDefinition());
+                        drawEntityComponentMenu("Spot Light", SpotLight::createDefinition());
+                        drawEntityComponentMenu("Ambient Light", AmbientLight::createDefinition());
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Animation"))
+                    {
+                        drawEntityComponentMenu("Skinnable", Skinnable::createDefinition());
+                        drawEntityComponentMenu("Animator", SkeletalAnimator::createDefinition());
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
@@ -267,6 +264,14 @@ namespace darmok::editor
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
+        }
+    }
+
+    void EditorApp::drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept
+    {
+        if (ImGui::MenuItem(name))
+        {
+            _assetsView.addAsset(asset);
         }
     }
 

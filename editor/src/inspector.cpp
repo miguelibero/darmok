@@ -11,6 +11,7 @@
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/inspector/mesh.hpp>
 #include <darmok-editor/inspector/texture.hpp>
+#include <darmok-editor/inspector/skeleton.hpp>
 #include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
@@ -42,7 +43,11 @@ namespace darmok::editor
         _editors.add<ProgramSourceInspectorEditor>();
         _editors.add<ProgramRefInspectorEditor>();
         _editors.add<MeshSourceInspectorEditor>();
-        _editors.add<TextureDefinitionInspectorEditor>();
+        _editors.add<TextureInspectorEditor>();
+        _editors.add<ArmatureInspectorEditor>();
+        _editors.add<SkinnableInspectorEditor>();
+        _editors.add<SkeletalAnimatorDefinitionInspectorEditor>();
+        _editors.add<SkeletalAnimatorInspectorEditor>();
     }
 
     void EditorInspectorView::init(EditorApp& app)

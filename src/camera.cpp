@@ -630,6 +630,21 @@ namespace darmok
         return {};
     }
 
+    Camera::Definition Camera::createDefinition()
+    {
+        Definition def;
+        def.set_perspective_fovy(glm::radians(60.f));
+        def.set_near(0.3f);
+        def.set_far(1000.f);
+
+        //cam.addComponent<ShadowRenderer>(shadowConfig);
+        //cam.addComponent<LightingRenderComponent>();
+        //cam.addComponent<ForwardRenderer>();
+        //cam.addComponent<FrustumCuller>();
+
+        return def;
+    }
+
     Camera& Camera::setPerspective(float fovy, float near, float far) noexcept
     {
         return setProjection(CameraPerspectiveData{ fovy, near, far });
