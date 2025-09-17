@@ -15,6 +15,7 @@
 #include <darmok/glm_serialize.hpp>
 #include <darmok/mesh_core.hpp>
 #include <darmok/mesh_assimp.hpp>
+#include <darmok/skeleton_assimp.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/scene.h>
@@ -721,24 +722,8 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
     {
-        for (size_t i = 0; i < assimpMesh.mNumBones; ++i)
-        {
-            auto bone = assimpMesh.mBones[i];
-            auto boneName = AssimpUtils::getString(bone->mName);
-            if (!_boneNames.empty())
-            {
-                auto itr = std::find_if(_boneNames.begin(), _boneNames.end(),
-                    [&boneName](auto& elm) { return elm.first == boneName; });
-                if (itr == _boneNames.end())
-                {
-                    continue;
-                }
-                boneName = itr->second;
-            }
-            auto& joint = *armDef.add_joints();
-            joint.set_name(boneName);
-            *joint.mutable_inverse_bind_pose() = protobuf::convert(AssimpUtils::convert(bone->mOffsetMatrix));
-        }
+        AssimpArmatureDefinitionConverter convert{ assimpMesh, armDef };
+		(void)convert();
     }
     
     expected<std::string, std::string> AssimpSceneDefinitionConverter::getMesh(int index) noexcept

@@ -2,6 +2,7 @@
 #include "detail/skeleton_ozz.hpp"
 #include <darmok/string.hpp>
 #include <darmok/skeleton_assimp.hpp>
+#include <darmok/glm_serialize.hpp>
 #include <ozz/animation/offline/raw_skeleton.h>
 #include <ozz/animation/offline/raw_animation.h>
 #include <ozz/animation/offline/skeleton_builder.h>
@@ -1111,5 +1112,50 @@ namespace darmok
         float samplingRate, RawFloat4Track* track)
     {
         return false;
+    }
+
+    AssimpArmatureDefinitionConverter::AssimpArmatureDefinitionConverter(const aiMesh& assimpMesh, Definition& def) noexcept
+        : _assimpMesh{ assimpMesh }
+        , _def{ def }
+    {
+    }
+
+    AssimpArmatureDefinitionConverter& AssimpArmatureDefinitionConverter::setBoneNames(const std::vector<std::string>& names) noexcept
+    {
+        _boneNames.clear();
+        for (auto& name : names)
+        {
+            _boneNames.emplace(name, name);
+        }
+        return *this;
+    }
+
+    AssimpArmatureDefinitionConverter& AssimpArmatureDefinitionConverter::setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept
+    {
+        _boneNames = names;
+        return *this;
+    }
+
+    expected<void, std::string> AssimpArmatureDefinitionConverter::operator()() noexcept
+    {
+        for (size_t i = 0; i < _assimpMesh.mNumBones; ++i)
+        {
+            auto bone = _assimpMesh.mBones[i];
+            auto boneName = AssimpUtils::getString(bone->mName);
+            if (!_boneNames.empty())
+            {
+                auto itr = std::find_if(_boneNames.begin(), _boneNames.end(),
+                    [&boneName](auto& elm) { return elm.first == boneName; });
+                if (itr == _boneNames.end())
+                {
+                    continue;
+                }
+                boneName = itr->second;
+            }
+            auto& joint = *_def.add_joints();
+            joint.set_name(boneName);
+            *joint.mutable_inverse_bind_pose() = protobuf::convert(AssimpUtils::convert(bone->mOffsetMatrix));
+        }
+        return {};
     }
 }

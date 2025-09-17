@@ -155,6 +155,11 @@ namespace darmok
 			_materialLoader.clearCache(path);
 			return {};
 		}
+		if (typeId == protobuf::getTypeId<Armature::Definition>())
+		{
+			_armatureLoader.clearCache(path);
+			return {};
+		}
 		return unexpected{ "type loader not found" };
 	}
 
@@ -210,6 +215,10 @@ namespace darmok
 		if (typeId == protobuf::getTypeId<Material::Definition>())
 		{
 			return expectedVoid(_materialLoader.reload(path));
+		}
+		if (typeId == protobuf::getTypeId<Armature::Definition>())
+		{
+			return expectedVoid(_armatureLoader.reload(path));
 		}
 		return unexpected{ "type loader not found" };
 	}

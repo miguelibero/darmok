@@ -19,11 +19,8 @@ namespace darmok::editor
 	{
 		auto changed = false;
 
-		std::string meshDragType;
-		std::string materialDragType;
-
-		meshDragType = getApp().getAssetDragType<Mesh::Source>().value_or("");
-		materialDragType = getApp().getAssetDragType<Material::Definition>().value_or("");
+		auto meshDragType = getApp().getAssetDragType<Mesh::Source>().value_or("");
+		auto materialDragType = getApp().getAssetDragType<Material::Definition>().value_or("");
 
 		auto result = ImguiUtils::drawProtobufAssetReferenceInput("Mesh", "mesh_path", renderable, meshDragType.c_str());
 		if (result == ReferenceInputAction::Changed)

@@ -180,6 +180,15 @@ namespace darmok::editor
             }
         }
 
+        if (dataSrc.vertices_size() > 0)
+        {
+            auto desc = fmt::format("{} vertices, {} indices, {} weights",
+                dataSrc.vertices_size(),
+                dataSrc.indices_size(),
+                dataSrc.weights_size());
+            ImGui::Text(desc.c_str());
+        }
+
 		return changed;
     }
 

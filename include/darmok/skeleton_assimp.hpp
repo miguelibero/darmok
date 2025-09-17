@@ -4,6 +4,8 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/skeleton.hpp>
 
+struct aiMesh;
+
 namespace darmok
 {
     class AssimpSkeletonLoaderImpl;
@@ -49,5 +51,20 @@ namespace darmok
         const std::string& getName() const noexcept override;
     private:
         std::unique_ptr<AssimpSkeletalAnimationFileImporterImpl> _impl;
+    };
+
+    class DARMOK_EXPORT AssimpArmatureDefinitionConverter final
+    {
+    public:
+        using Definition = protobuf::Armature;
+
+        AssimpArmatureDefinitionConverter(const aiMesh& assimpMesh, Definition& def) noexcept;
+        AssimpArmatureDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
+        AssimpArmatureDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
+        expected<void, std::string> operator()() noexcept;
+    private:
+        const aiMesh& _assimpMesh;
+        Definition& _def;
+        std::unordered_map<std::string, std::string> _boneNames;
     };
 }
