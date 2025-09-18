@@ -22,36 +22,11 @@
 #include <assimp/GltfMaterial.h>
 
 #include <magic_enum/magic_enum.hpp>
-#include <glm/gtx/component_wise.hpp>
 
 namespace darmok
 {
     namespace AssimpUtils
     {
-        float getIntensity(const aiColor3D& c) noexcept
-        {
-            return glm::compMax(glm::vec3{ c.r, c.g, c.b });
-        }
-
-        OptionalRef<const protobuf::VertexLayout> getVertexLayout(protobuf::AssimpSceneImportConfig& config)
-        {
-            if (config.has_standard_program())
-            {
-                auto def = StandardProgramLoader::loadDefinition(config.standard_program());
-                return def->varying().vertex();
-            }
-            else if (config.program_path().empty())
-            {
-                protobuf::Program prog;
-                auto result = protobuf::read(prog, config.program_path());
-                if (result)
-                {
-                    return prog.varying().vertex();
-                }
-            }
-            return std::nullopt;
-        }
-
 		bool match(const std::string& str, const google::protobuf::RepeatedPtrField<std::string>& regexes) noexcept
 		{
 			for (const auto& regex : regexes)
@@ -109,13 +84,14 @@ namespace darmok
     }
 
     AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
-        bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+        bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader, OptionalRef<IProgramDefinitionLoader> progLoader) noexcept
         : _assimpScene{ assimpScene }
 		, _scene{ sceneDef }
         , _basePath{ basePath }
         , _config{ config }
         , _allocator{ alloc }
         , _texLoader{ texLoader }
+		, _progLoader{ progLoader }
     {
     }
 
@@ -547,15 +523,7 @@ namespace darmok
     {
         matDef.set_name(AssimpUtils::getString(assimpMat.GetName()));
 
-        auto& progRef = *matDef.mutable_program();
-        if (_config.has_standard_program())
-        {
-            progRef.set_standard(_config.standard_program());
-        }
-        else
-        {
-            progRef.set_path(_config.program_path());
-        }        
+        *matDef.mutable_program() = _config.program();
         for (auto& define : _config.program_defines())
         {
 			auto itr = std::find(matDef.program_defines().begin(), matDef.program_defines().end(), define);
@@ -702,10 +670,10 @@ namespace darmok
             return {};
         }
 
-        auto layout = AssimpUtils::getVertexLayout(_config);
-        if(!layout)
+        auto progResult = Program::loadRefDefinition(_config.program(), _progLoader);
+        if(!progResult)
         {
-            return unexpected<std::string>{ "no valid vertex layout" };
+            return unexpected<std::string>{ "failed to load program definition: " + progResult.error() };
 		}
 
 		MeshData::Definition meshSrc;
@@ -715,7 +683,8 @@ namespace darmok
         {
             return unexpected{ result.error() };
 		}
-		auto bgfxLayout = ConstVertexLayoutWrapper{ *layout }.getBgfx();
+		auto& layout = progResult.value()->varying().vertex();
+		auto bgfxLayout = ConstVertexLayoutWrapper{ layout }.getBgfx();
 		meshDef = MeshData{ meshSrc }.createDefinition(bgfxLayout);
         return {};
     }
@@ -844,10 +813,11 @@ namespace darmok
     void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
         auto itr = json.find("programPath");
+        auto& progRef = *config.mutable_program();
         if (itr != json.end())
         {
             auto programPath = basePath / *itr;
-            config.set_program_path(programPath.string());
+            progRef.set_path(programPath.string());
             protobuf::ProgramSource src;
 			auto result = protobuf::read(src, programPath);
             if (!result)
@@ -859,14 +829,14 @@ namespace darmok
         if (itr != json.end())
         {
             auto val = itr->get<std::string>();
-            StandardProgramLoader::Type standard;            
+            StandardProgramLoader::Type standard;
             if (Program::Standard::Type_Parse(val, &standard))
             {
-                config.set_standard_program(standard);
+                progRef.set_standard(standard);
             }
             else
             {
-                config.set_program_path(val);
+                progRef.set_path(val);
             }
         }
         itr = json.find("programDefines");

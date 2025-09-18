@@ -3,6 +3,7 @@
 #include <darmok-editor/app.hpp>
 #include <darmok/assimp.hpp>
 #include <darmok/skeleton_assimp.hpp>
+#include <darmok/stream.hpp>
 
 #include <assimp/scene.h>
 #include <assimp/mesh.h>
@@ -48,8 +49,6 @@ namespace darmok::editor
         return convert();
     }
 
-    const std::string ArmatureInspectorEditor::_fileFilter = "*.fbx *.glb";
-
     ArmatureInspectorEditor::RenderResult ArmatureInspectorEditor::renderType(Armature::Definition& armature) noexcept
     {
         auto changed = false;
@@ -60,7 +59,8 @@ namespace darmok::editor
 
         std::filesystem::path path;
         FileDialogOptions dialogOptions;
-        dialogOptions.filters = { _fileFilter };
+        dialogOptions.filters = { "*.fbx", "*.glb" };
+		dialogOptions.filterDesc = "3D Model Files";
         if (getApp().drawFileInput("Load File", path, dialogOptions))
         {
             auto& assets = getApp().getAssets();
@@ -138,17 +138,6 @@ namespace darmok::editor
         return changed;
     }
 
-    std::string SkeletalAnimatorDefinitionInspectorEditor::getTitle() const noexcept
-    {
-        return "Skeletal Animator";
-    }
-
-    SkeletalAnimatorDefinitionInspectorEditor::RenderResult SkeletalAnimatorDefinitionInspectorEditor::renderType(SkeletalAnimator::Definition& animator) noexcept
-    {
-        auto changed = false;
-        return changed;
-    }
-
     std::string SkeletalAnimatorInspectorEditor::getTitle() const noexcept
     {
         return "Skeletal Animator";
@@ -157,6 +146,30 @@ namespace darmok::editor
     SkeletalAnimatorInspectorEditor::RenderResult SkeletalAnimatorInspectorEditor::renderType(SkeletalAnimator::Definition& animator) noexcept
     {
         auto changed = false;
+        std::filesystem::path path;
+        FileDialogOptions dialogOptions;
+        dialogOptions.filters = { "*.json" };
+        if (getApp().drawFileInput("Load File", path, dialogOptions))
+        {
+            auto jsonResult = StreamUtils::parseJson(path);
+            if(!jsonResult)
+            {
+                return unexpected{ "error parsing json: " + jsonResult.error() };
+            }
+
+            SkeletalAnimatorDefinitionWrapper wrapper{ animator };
+            auto result = wrapper.read(*jsonResult);
+            if (!result)
+            {
+                return unexpected{ result.error() };
+            }
+            changed = true;
+        }
+        if(animator.states_size() > 0 || animator.transitions_size() > 0)
+        {
+            auto desc = fmt::format("{} states, {} transitions", animator.states_size(), animator.transitions_size());
+            ImGui::Text(desc.c_str());
+		}
         return changed;
     }
 }

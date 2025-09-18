@@ -24,8 +24,6 @@ namespace darmok::editor
         return "Mesh";
     }
 
-    const std::string MeshSourceInspectorEditor::_externalFilter = "*.fbx *.glb";
-
     MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderType(Mesh::Source& src) noexcept
     {
         auto changed = false;
@@ -135,7 +133,8 @@ namespace darmok::editor
 
 		std::filesystem::path path;
         FileDialogOptions dialogOptions;
-        dialogOptions.filters = { _externalFilter };
+        dialogOptions.filters = { "*.fbx", "*.glb" };
+        dialogOptions.filterDesc = "3D Model Files";
         if (getApp().drawFileInput("Load File", path, dialogOptions))
         {
             auto& assets = getApp().getAssets();

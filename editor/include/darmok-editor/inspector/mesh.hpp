@@ -18,8 +18,6 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Mesh::Source& src) noexcept override;
     private:
-        static const std::string _externalFilter;
-
 		std::shared_ptr<aiScene> _externalScene;
         std::vector<std::string> _externalMeshes;
 		size_t _externalMeshIndex = 0;

@@ -207,4 +207,28 @@ namespace darmok::StringUtils
 		}
 		str = std::move(result);
 	}
+
+	expected<nlohmann::json, std::string> parseJson(std::string_view input) noexcept
+	{
+		try
+		{
+			return nlohmann::json::parse(input);
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected<std::string>{ ex.what() };
+		}
+	}
+
+	expected<nlohmann::ordered_json, std::string> parseOrderedJson(std::string_view input) noexcept
+	{
+		try
+		{
+			return nlohmann::ordered_json::parse(input);
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected<std::string>{ ex.what() };
+		}
+	}
 }

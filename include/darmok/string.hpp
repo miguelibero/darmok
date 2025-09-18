@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/expected.hpp>
 
 #include <string>
 #include <optional>
@@ -9,6 +10,7 @@
 #include <sstream>
 
 #include <magic_enum/magic_enum.hpp>
+#include <nlohmann/json.hpp>
 
 namespace darmok
 {
@@ -121,5 +123,8 @@ namespace darmok
             }
             return values;
         }
+
+        expected<nlohmann::json, std::string> parseJson(std::string_view input) noexcept;
+        expected<nlohmann::ordered_json, std::string> parseOrderedJson(std::string_view input) noexcept;
     };
 }

@@ -673,6 +673,10 @@ target_link_libraries(${CORE_LIB_NAME} PRIVATE CLI11::CLI11)
 find_package(tiny-process-library CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE tiny-process-library::tiny-process-library)
 
+# tinyfiledialogs
+find_package(tinyfiledialogs CONFIG REQUIRED)
+target_link_libraries(${LIB_NAME} PRIVATE tinyfiledialogs::tinyfiledialogs)
+
 # mikktspace
 find_package(mikktspace CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE mikktspace::mikktspace)

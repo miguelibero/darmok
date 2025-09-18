@@ -11,7 +11,7 @@
 
 namespace darmok
 {    
-    ILoader<Program::Definition>::Result Program::loadRef(ILoader<Program::Definition>& loader, const Ref& ref)
+    ILoader<Program::Definition>::Result Program::loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader)
     {
         if (ref.has_standard())
         {
@@ -19,12 +19,16 @@ namespace darmok
         }
         if (ref.has_path())
         {
-            return loader(ref.path());
+            if (!loader)
+            {
+				return unexpected{ "no program definition loader provided" };
+            }
+            return (*loader)(ref.path());
         }
         return nullptr;
     }
 
-    ILoader<Program>::Result Program::loadRef(ILoader<Program>& loader, const Ref& ref)
+    ILoader<Program>::Result Program::loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader)
     {
         if (ref.has_standard())
         {
@@ -32,7 +36,11 @@ namespace darmok
         }
         if (ref.has_path())
         {
-            return loader(ref.path());
+            if (!loader)
+            {
+                return unexpected{ "no program loader provided" };
+            }
+            return (*loader)(ref.path());
         }
         return nullptr;
     }

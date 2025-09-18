@@ -36,6 +36,7 @@ namespace darmok
         glm::vec2 convert(const aiVector2D& vec) noexcept;
         Color convert(const aiColor4D& c) noexcept;
         Color3 convert(aiColor3D c) noexcept;
+        float getIntensity(const aiColor3D& c) noexcept;
     }
 
     class AssimpLoaderImpl;

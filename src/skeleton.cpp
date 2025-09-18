@@ -141,8 +141,12 @@ namespace darmok
 		expected<void, std::string> result;
         if(format == protobuf::Format::Json)
         {
-            auto json = nlohmann::json::parse(dataResult.value().toString());
-            result = SkeletalAnimatorDefinitionWrapper{ *res }.read(json);
+            auto jsonResult = StringUtils::parseJson(dataResult.value().toString());
+            if(!jsonResult)
+            {
+                return unexpected{ jsonResult.error() };
+			}
+            result = SkeletalAnimatorDefinitionWrapper{ *res }.read(*jsonResult);
 		}
         else
         {

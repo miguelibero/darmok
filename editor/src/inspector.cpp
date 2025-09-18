@@ -46,7 +46,6 @@ namespace darmok::editor
         _editors.add<TextureInspectorEditor>();
         _editors.add<ArmatureInspectorEditor>();
         _editors.add<SkinnableInspectorEditor>();
-        _editors.add<SkeletalAnimatorDefinitionInspectorEditor>();
         _editors.add<SkeletalAnimatorInspectorEditor>();
     }
 
@@ -101,6 +100,7 @@ namespace darmok::editor
         }
         bool changed = false;
         int i = 0;
+		std::vector<std::string> errors;
         for (auto& comp : _sceneDef->getComponents(entity))
         {
             ImGui::PushID(i);
@@ -108,13 +108,17 @@ namespace darmok::editor
             ImGui::PopID();
             if (!result)
             {
-                return unexpected{ std::move(result).error() };
+                errors.push_back(std::move(result).error());
             }
-            if (result.value())
+            else if (result.value())
             {
                 changed = true;
             }
             ++i;
+        }
+        if (!errors.empty())
+        {
+			return unexpected{ StringUtils::join("\n", errors) };
         }
         return changed;
     }
@@ -146,7 +150,6 @@ namespace darmok::editor
             if (entity != entt::null)
             {
                 result = renderEntity(entity);
-
             }
             else if (auto selectedPath = getSelectedAssetPath())
             {

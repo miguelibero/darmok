@@ -20,6 +20,7 @@
 namespace darmok
 {
 	class IProgramLoader;
+	class IProgramDefinitionLoader;
 
 	class DARMOK_EXPORT Program final
 	{
@@ -55,9 +56,8 @@ namespace darmok
 		}
 
 		[[nodiscard]] static Source createSource() noexcept;
-		[[nodiscard]] static ILoader<Program::Definition>::Result loadRef(ILoader<Program::Definition>& loader, const Ref& ref);
-		[[nodiscard]] static ILoader<Program>::Result loadRef(ILoader<Program>& loader, const Ref& ref);
-
+		[[nodiscard]] static ILoader<Program::Definition>::Result loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader = nullptr);
+		[[nodiscard]] static ILoader<Program>::Result loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader = nullptr);
 	private:
 
 		expected<ShaderHandles, std::string> createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name);

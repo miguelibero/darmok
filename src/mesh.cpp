@@ -19,7 +19,7 @@ namespace darmok
 			return unexpected<std::string>{ "Mesh source is null" };
 		}
 
-		auto progResult = Program::loadRef(_progDefLoader, src->program());
+		auto progResult = Program::loadRefDefinition(src->program(), _progDefLoader);
 		if (!progResult)
 		{
 			return unexpected{ progResult.error() };

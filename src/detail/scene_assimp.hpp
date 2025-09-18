@@ -72,7 +72,7 @@ namespace darmok
         using Message = google::protobuf::Message;
 
         AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
-            bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
+            bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr, OptionalRef<IProgramDefinitionLoader> progLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
@@ -81,6 +81,7 @@ namespace darmok
     private:
         bx::AllocatorI& _allocator;
         OptionalRef<ITextureDefinitionLoader> _texLoader;
+        OptionalRef<IProgramDefinitionLoader> _progLoader;
         const aiScene& _assimpScene;
 		SceneDefinitionWrapper _scene;
         std::filesystem::path _basePath;

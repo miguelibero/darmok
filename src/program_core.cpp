@@ -60,9 +60,13 @@ namespace darmok
 
     expected<void, std::string> ProgramSourceWrapper::read(const std::filesystem::path& path)
     {
+        auto jsonResult = StreamUtils::parseJson(path);
+        if(!jsonResult)
+        {
+            return unexpected{ jsonResult.error() };
+		}
         auto basePath = path.parent_path();
-        auto json = nlohmann::ordered_json::parse(std::ifstream(path));
-        return read(json, basePath);
+        return read(*jsonResult, basePath);
     }
 
     expected<void, std::string> ProgramSourceWrapper::read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath)
@@ -556,8 +560,12 @@ namespace darmok
         ProgramSourceWrapper srcWrapper{ src };
         if (fs::is_regular_file(path) && path.extension() == ".json")
         {
-            auto pathJson = nlohmann::ordered_json::parse(std::ifstream(path));
-            auto result = srcWrapper.read(pathJson, basePath);
+            auto pathJsonResult = StreamUtils::parseOrderedJson(path);
+            if(!pathJsonResult)
+            {
+                return unexpected{ pathJsonResult.error() };
+			}
+            auto result = srcWrapper.read(*pathJsonResult, basePath);
             if (!result)
             {
                 return result;

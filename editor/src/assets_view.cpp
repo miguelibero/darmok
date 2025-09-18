@@ -178,7 +178,7 @@ namespace darmok::editor
         {
             path = path / *name;
         }
-        return _scene->addAsset(path, msg);
+        return _scene->addAsset(path.lexically_normal(), msg);
 
     }
 

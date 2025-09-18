@@ -111,8 +111,10 @@ namespace darmok
                     continue;
                 }
                 FileConfig config;
-                config.load(dirFileConfig);
-                _files.emplace(path, config);
+                if(config.load(dirFileConfig))
+                {
+                    _files.emplace(path, config);
+                    }
             }
         }
     }
@@ -124,21 +126,24 @@ namespace darmok
     bool FileImporterImpl::HeaderConfig::load(const nlohmann::json& json) noexcept
     {
         bool found = false;
-        if (json.contains(_headerVarPrefixKey))
+		auto itr = json.find(_headerVarPrefixKey);
+        if (itr != json.end())
         {
-            varPrefix = json[_headerVarPrefixKey];
+            varPrefix = *itr;
             produceHeaders = true;
             found = true;
         }
-        if (json.contains(_headerIncludeDirKey))
+        itr = json.find(_headerIncludeDirKey);
+        if (itr != json.end())
         {
-            includeDir = json[_headerIncludeDirKey].get<std::string>();
+            includeDir = itr->get<std::string>();
             produceHeaders = true;
             found = true;
         }
-        if (json.contains(_produceHeadersKey))
+        itr = json.find(_produceHeadersKey);
+        if (itr != json.end())
         {
-            produceHeaders = json[_produceHeadersKey];
+            produceHeaders = *itr;
             found = true;
         }
         return found;
@@ -234,31 +239,34 @@ namespace darmok
     bool FileImporterImpl::DirConfig::load(const fs::path& inputPath, const std::vector<fs::path>& filePaths)
     {
         path = isPath(inputPath) ? inputPath : getPath(inputPath);
-        if (!fs::exists(path))
+        auto jsonResult = StreamUtils::parseJson(path);
+        if(!jsonResult)
         {
             return false;
-        }
-        auto config = nlohmann::json::parse(std::ifstream{ path });
+		}
 
         HeaderConfig headerConfig;
-        if (headerConfig.load(config))
+		auto& json = jsonResult.value();
+        if (headerConfig.load(json))
         {
             header = headerConfig;
         }
-        if (config.contains(_outputPathKey))
+        auto itr = json.find(_outputPathKey);
+        if (itr != json.end())
         {
-            outputPath = config[_outputPathKey].get<std::string>();
+            outputPath = itr->get<std::string>();
         }
 
         nlohmann::json includes;
-        if (config.contains(_includesKey))
+        itr = json.find(_includesKey);
+        if (itr != json.end())
         {
-            includes = config[_includesKey];
+            includes = *itr;
         }
-
-        if (config.contains(_filesKey))
+        itr = json.find(_filesKey);
+        if (itr != json.end())
         {
-            nlohmann::json filesJson = config[_filesKey];
+            nlohmann::json filesJson = *itr;
             if (!includes.empty())
             {
                 FileConfig::replaceIncludes(filesJson, includes);
@@ -269,9 +277,10 @@ namespace darmok
                 loadFile(item.key(), item.value(), basePath, filePaths);
             }
         }
-        if (config.contains(_importersKey))
+        itr = json.find(_importersKey);
+        if (itr != json.end())
         {
-            importers = FileConfig::fix(config[_importersKey]);
+            importers = FileConfig::fix(*itr);
             if (!includes.empty())
             {
                 FileConfig::replaceIncludes(importers, includes);
@@ -296,30 +305,28 @@ namespace darmok
         return path.filename().string().ends_with(_configFileSuffix);
     }
 
-    bool FileImporterImpl::FileConfig::load(const fs::path& inputPath)
+    expected<void, std::string> FileImporterImpl::FileConfig::load(const fs::path& inputPath)
     {
-        if (!fs::exists(inputPath))
-        {
-            return false;
-        }
         path = isPath(inputPath) ? inputPath : getPath(inputPath);
-        if (!fs::exists(path))
+        auto jsonResult = StreamUtils::parseJson(path);
+        if (!jsonResult)
         {
-            return false;
+            return unexpected{ jsonResult.error() };
         }
-        load(nlohmann::json::parse(std::ifstream(path)));
-        return true;
+        return load(*jsonResult);
     }
 
-    void FileImporterImpl::FileConfig::load(const nlohmann::json& json)
+    expected<void, std::string> FileImporterImpl::FileConfig::load(const nlohmann::json& json)
     {
         auto config = fix(json);
-        if (config.contains(_importersKey))
+        auto itr = config.find(_importersKey);
+        if (itr != config.end())
         {
-            importers = fix(config[_importersKey]);
-            if (config.contains(_includesKey))
+            importers = fix(*itr);
+            itr = config.find(_includesKey);
+            if (itr != config.end())
             {
-                auto& includes = config[_includesKey];
+                auto& includes = *itr;
                 replaceIncludes(importers, includes);
             }
         }
@@ -327,6 +334,7 @@ namespace darmok
         {
             importers = config;
         }
+        return {};
     }
 
     nlohmann::json FileImporterImpl::FileConfig::fix(const nlohmann::json& json) noexcept
@@ -514,10 +522,9 @@ namespace darmok
             std::replace(fileName.begin(), fileName.end(), chr, '-');
         }
         _cachePath = cachePath / (fileName + ".json");
-        if (fs::exists(_cachePath))
+        if (auto jsonResult = StreamUtils::parseJson(_cachePath))
         {
-            auto cache = nlohmann::json::parse(std::ifstream(_cachePath));
-            for (auto& [relPath, cacheTime] : cache.items())
+            for (auto& [relPath, cacheTime] : jsonResult->items())
             {
                 addFileCachePath(_inputPath / relPath, cacheTime);
             }
@@ -997,9 +1004,10 @@ namespace darmok
         {
             return outputs;
         }
-        if (input.config.contains("outputPath"))
+        auto itr = input.config.find("outputPath");
+        if (itr != input.config.end())
         {
-            outputs.push_back(input.config["outputPath"]);
+            outputs.push_back(*itr);
         }
         else
         {

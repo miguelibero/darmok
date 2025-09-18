@@ -6,70 +6,107 @@
 
 namespace darmok
 {
-    expected<std::string, std::string> StreamUtils::readString(std::istream& input)
+    namespace StreamUtils
     {
-        if (input.fail())
+        expected<std::string, std::string> readString(std::istream& input) noexcept
         {
-            return unexpected{ "could not open input stream" };
+            if (input.fail())
+            {
+                return unexpected{ "could not open input stream" };
+            }
+
+            if (input.tellg() < 0)
+            {
+                std::ostringstream oss;
+                oss << input.rdbuf();
+                return oss.str();
+            }
+
+            input.seekg(0, std::ios::end);
+            auto size = input.tellg();
+            input.seekg(0, std::ios::beg);
+
+            std::string str(size, '\0');
+            if (!input.read(&str.front(), size))
+            {
+                return unexpected{ "could not read input stream" };
+            }
+
+            return str;
         }
 
-        if (input.tellg() < 0)
+        expected<std::string, std::string> readString(std::filesystem::path& path) noexcept
         {
-            std::ostringstream oss;
-            oss << input.rdbuf();
-            return oss.str();
+            if (!std::filesystem::exists(path))
+            {
+                return unexpected{ "vertex shader not found" };
+            }
+            std::ifstream input{ path, std::ios::binary };
+            return readString(input);
         }
 
-        input.seekg(0, std::ios::end);
-        auto size = input.tellg();
-        input.seekg(0, std::ios::beg);
-
-        std::string str(size, '\0');
-        if (!input.read(&str.front(), size))
+        void copy(std::istream& input, std::ostream& output, size_t bufferSize)
         {
-            return unexpected{ "could not read input stream" };
+            std::vector<char> buffer(bufferSize);
+            while (input.read(&buffer.front(), bufferSize) || input.gcount() > 0)
+            {
+                output.write(&buffer.front(), input.gcount());
+            }
         }
 
-        return str;
-    }
-
-    expected<std::string, std::string> StreamUtils::readString(std::filesystem::path& path)
-    {
-        if (!std::filesystem::exists(path))
+        void logDebug(const std::string& msg, bool error) noexcept
         {
-            return unexpected{ "vertex shader not found" };
+            if (error)
+            {
+                std::cerr << msg << std::endl;
+            }
+            else
+            {
+                std::cout << msg << std::endl;
+            }
+            bx::debugOutput(bx::StringView(msg.data(), msg.size()));
         }
-        std::ifstream input{ path, std::ios::binary };
-        return readString(input);
-    }
 
-    void StreamUtils::copy(std::istream& input, std::ostream& output, size_t bufferSize)
-    {
-        std::vector<char> buffer(bufferSize);
-        while (input.read(&buffer.front(), bufferSize) || input.gcount() > 0)
+        static const unsigned char _utf8Bom[3] = { 0xEF, 0xBB, 0xBF };
+
+        void writeUtf8Bom(std::ostream& out)
         {
-            output.write(&buffer.front(), input.gcount());
+            out << _utf8Bom;
         }
-    }
 
-    void StreamUtils::logDebug(const std::string& msg, bool error) noexcept
-    {
-        if (error)
+        expected<nlohmann::json, std::string> parseJson(std::istream&& input) noexcept
         {
-            std::cerr << msg << std::endl;
+            try
+            {
+                return nlohmann::json::parse(input);
+            }
+            catch (const std::exception& ex)
+            {
+                return unexpected{ ex.what() };
+            }
         }
-        else
+
+        expected<nlohmann::ordered_json, std::string> parseOrderedJson(std::istream&& input) noexcept
         {
-            std::cout << msg << std::endl;
+            try
+            {
+                return nlohmann::ordered_json::parse(input);
+            }
+            catch (const std::exception& ex)
+            {
+                return unexpected{ ex.what() };
+            }
         }
-        bx::debugOutput(bx::StringView(msg.data(), msg.size()));
-    }
 
-    static const unsigned char _utf8Bom[3] = { 0xEF, 0xBB, 0xBF };
+        expected<nlohmann::json, std::string> parseJson(const std::filesystem::path& path) noexcept
+        {
+            return parseJson(std::ifstream{ path });
+        }
 
-    void StreamUtils::writeUtf8Bom(std::ostream& out)
-    {
-        out << _utf8Bom;
+        expected<nlohmann::ordered_json, std::string> parseOrderedJson(const std::filesystem::path& path) noexcept
+        {
+            return parseOrderedJson(std::ifstream{ path });
+        }
     }
 
     PrefixBuffer::PrefixBuffer(OptionalRef<std::streambuf> buffer, const std::string& prefix) noexcept

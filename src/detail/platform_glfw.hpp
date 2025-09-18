@@ -28,12 +28,6 @@
 #	define GLFW_EXPOSE_NATIVE_WGL
 #endif //
 
-namespace pfd
-{
-	class open_file;
-	class save_file;
-}
-
 namespace darmok
 {
 	struct MainThreadEntry
@@ -213,12 +207,10 @@ namespace darmok
 	public:
 		OpenFileDialogCmd(FileDialogOptions options, FileDialogCallback callback) noexcept;
 		~OpenFileDialogCmd();
-		bool process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
+		void process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept;
 	private:
 		FileDialogOptions _options;
 		FileDialogCallback _callback;
-		std::unique_ptr<pfd::open_file> _openDialog;
-		std::unique_ptr<pfd::save_file> _saveDialog;
 	};
 
 #pragma endregion PlatformCmds

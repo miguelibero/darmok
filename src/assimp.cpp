@@ -5,6 +5,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <glm/gtx/component_wise.hpp>
+
 namespace darmok
 {
     namespace AssimpUtils
@@ -64,6 +66,11 @@ namespace darmok
                 convertColorComp(c.g),
                 convertColorComp(c.b)
             };
+        }
+
+        float getIntensity(const aiColor3D& c) noexcept
+        {
+            return glm::compMax(glm::vec3{ c.r, c.g, c.b });
         }
     };
 

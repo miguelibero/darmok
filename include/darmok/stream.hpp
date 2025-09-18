@@ -7,16 +7,22 @@
 #include <filesystem>
 
 #include <bx/readerwriter.h>
+#include <nlohmann/json.hpp>
 
 namespace darmok
 {
     namespace StreamUtils
     {
-        expected<std::string, std::string> readString(std::istream& input);
-        expected<std::string, std::string> readString(std::filesystem::path& path);
+        expected<std::string, std::string> readString(std::istream& input) noexcept;
+        expected<std::string, std::string> readString(std::filesystem::path& path) noexcept;
         void copy(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
         void logDebug(const std::string& msg, bool error = false) noexcept;
         void writeUtf8Bom(std::ostream& out);
+
+        expected<nlohmann::json, std::string> parseJson(std::istream&& input) noexcept;
+        expected<nlohmann::ordered_json, std::string> parseOrderedJson(std::istream&& input) noexcept;
+        expected<nlohmann::json, std::string> parseJson(const std::filesystem::path& path) noexcept;
+        expected<nlohmann::ordered_json, std::string> parseOrderedJson(const std::filesystem::path& path) noexcept;
     };
 
     class PrefixBuffer final : public std::streambuf

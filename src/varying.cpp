@@ -4,6 +4,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/protobuf.hpp>
+#include <darmok/stream.hpp>
 
 #include <sstream>
 #include <fstream>
@@ -780,7 +781,12 @@ namespace darmok
 		auto [input, format] = protobuf::createInputStream(path);
 		if (format == protobuf::Format::Json)
 		{
-			return read(nlohmann::ordered_json::parse(input));
+			auto jsonResult = StreamUtils::parseOrderedJson(std::move(input));
+			if (!jsonResult)
+			{
+				return unexpected<std::string>{ jsonResult.error() };
+			}
+			return read(*jsonResult);
 		}
 		return protobuf::read(_def, input, format);
 	}

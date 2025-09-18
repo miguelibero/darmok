@@ -8,16 +8,13 @@ import "material.proto";
 import "light.proto";
 
 message AssimpSceneImportConfig {
-    oneof program {
-        string program_path = 1;
-        StandardProgram.Type standard_program = 2;
-    }
-    repeated string program_defines = 3;
-    bool embed_textures = 4;
-    string default_texture_path = 5;
-    repeated string skip_meshes_regex = 6;
-    repeated string skip_nodes_regex = 7;
-    string root_mesh_regex = 8;
-    optional Material.OpacityType opacity = 9;
-    optional Light.ShadowType shadow_type = 10;
+    ProgramRef program = 1;
+    repeated string program_defines = 2;
+    bool embed_textures = 3;
+    string default_texture_path = 4;
+    repeated string skip_meshes_regex = 5;
+    repeated string skip_nodes_regex = 6;
+    string root_mesh_regex = 7;
+    optional Material.OpacityType opacity = 8;
+    optional Light.ShadowType shadow_type = 9;
 }

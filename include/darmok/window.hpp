@@ -92,7 +92,9 @@ namespace darmok
 		FileDialogType type = FileDialogType::Open;
 		std::string title;
 		std::vector<std::string> filters;
-		std::string defaultPath;
+		std::filesystem::path defaultPath;
+		std::string filterDesc;
+		bool allowMultiple = false;
 	};
 
 	using FileDialogResult = std::vector<std::filesystem::path>;

@@ -6,6 +6,7 @@
 #include <darmok/material.hpp>
 #include <darmok/scene_serialize.hpp>
 #include <darmok/asset_pack.hpp>
+#include <darmok/window.hpp>
 
 #include <filesystem>
 #include <unordered_map>
@@ -57,7 +58,7 @@ namespace darmok::editor
         std::filesystem::path _path;
         std::filesystem::path _exportPath;
 
-        static const std::vector<std::string> _dialogFilters;
+        static const FileDialogOptions _dialogOptions;
         static const char* _confirmNewPopup;
 
         void configureEditorScene(Scene& scene);

@@ -25,12 +25,10 @@
 
 namespace darmok::editor
 {
-    const std::vector<std::string> EditorProject::_dialogFilters =
+    const FileDialogOptions EditorProject::_dialogOptions =
     {
-        "Darmok Project Files", "*.dpj",
-        "Darmok Project XML Files", "*.dpj.xml",
-        "Darmok Project json Files", "*.dpj.json",
-        "All Files", "*"
+        .filters = { "*.dpj", "*.dpj.xml", "*.dpj.json" },
+		.filterDesc = "Darmok Project Files"
     };
 
     EditorProject::EditorProject(App& app)
@@ -93,10 +91,9 @@ namespace darmok::editor
                 doSaveScene();
             };
 
-            FileDialogOptions options;
+			auto options = _dialogOptions;
 			options.type = FileDialogType::Save;
 			options.title = "Save Project";
-			options.filters = _dialogFilters;
 			options.defaultPath = initialPath;
             _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
             return;
@@ -222,15 +219,13 @@ namespace darmok::editor
                 return;
             }
             _path = path;
-            reloadScene();
+            (void)reloadScene();
 		};
 
-        FileDialogOptions options;
+		auto options = _dialogOptions;
         options.type = FileDialogType::Open;
         options.title = "Open Project";
-        options.defaultPath = ".";
-        options.filters = _dialogFilters;
-
+        options.defaultPath = "./";
         _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
     }
 

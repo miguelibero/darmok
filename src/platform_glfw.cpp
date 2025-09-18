@@ -13,7 +13,7 @@
 
 #include <GLFW/glfw3native.h>
 
-#include <portable-file-dialogs.h>
+#include <tinyfiledialogs.h>
 
 namespace darmok
 {
@@ -215,44 +215,50 @@ namespace darmok
 
 	OpenFileDialogCmd::~OpenFileDialogCmd() = default;
 
-	bool OpenFileDialogCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
+	void OpenFileDialogCmd::process(PlatformEventQueue& events, GLFWwindow* glfw) noexcept
 	{
+		std::vector<const char*> cfilters;
+		cfilters.reserve(_options.filters.size());
+		for (auto& f : _options.filters)
+		{
+			cfilters.push_back(f.c_str());
+		}
+
+		const char* tfdResult = nullptr;
+		auto defaultPath = std::filesystem::absolute(_options.defaultPath).string();
+
 		switch (_options.type)
 		{
 			case FileDialogType::Open:
 			{
-				if (!_openDialog)
-				{
-					_openDialog = std::make_unique<pfd::open_file>(_options.title, _options.defaultPath, _options.filters);
-				}
-				if(!_openDialog->ready(0))
-				{
-					return false;
-				}
-				FileDialogResult result;
-				for (auto& path : _openDialog->result())
-				{
-					result.emplace_back(path);
-				}
-				events.post<FileDialogEvent>(std::move(result), std::move(_callback));
+				tfdResult = tinyfd_openFileDialog(
+					_options.title.c_str(), defaultPath.c_str(),
+					cfilters.size(), cfilters.data(), _options.filterDesc.c_str(),
+					_options.allowMultiple ? 1 : 0
+				);
+
 				break;
 			}
 			case FileDialogType::Save:
 			{
-				if (!_saveDialog)
-				{
-					_saveDialog = std::make_unique<pfd::save_file>(_options.title, _options.defaultPath, _options.filters);
-				}
-				if (!_saveDialog->ready(0))
-				{
-					return false;
-				}
-				FileDialogResult result{ _saveDialog->result() };
-				events.post<FileDialogEvent>(std::move(result), std::move(_callback));
+				tfdResult = tinyfd_saveFileDialog(
+					_options.title.c_str(), defaultPath.c_str(),
+					cfilters.size(), cfilters.data(), _options.filterDesc.c_str()
+				);
 				break;
 			}
 		}
-		return true;
+
+		FileDialogResult result;
+		if (tfdResult)
+		{
+			for (auto& part : StringUtils::split(tfdResult, '|'))
+			{
+				result.push_back(part);
+			}
+		}
+
+		events.post<FileDialogEvent>(std::move(result), std::move(_callback));
 	}
 
 	bool PlatformCmd::process(PlatformCmd& cmd, PlatformImpl& plat) noexcept
@@ -276,7 +282,7 @@ namespace darmok
 			static_cast<ChangeWindowTitleCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 			break;
 		case PlatformCmd::OpenFileDialog:
-			return static_cast<OpenFileDialogCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
+			static_cast<OpenFileDialogCmd&>(cmd).process(plat.getEvents(), plat.getGlfwWindow());
 		}
 
 		return true;

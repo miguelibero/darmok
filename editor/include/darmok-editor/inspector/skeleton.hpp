@@ -13,8 +13,6 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Armature::Definition& armature) noexcept override;
     private:
-        static const std::string _fileFilter;
-
         std::shared_ptr<aiScene> _scene;
         std::vector<std::string> _meshes;
         size_t _meshIndex = 0;
@@ -27,13 +25,6 @@ namespace darmok::editor
     public:
         std::string getTitle() const noexcept override;
         RenderResult renderType(Skinnable::Definition& skinnable) noexcept override;
-    };
-
-    class SkeletalAnimatorDefinitionInspectorEditor final : public AssetObjectEditor<SkeletalAnimator::Definition>
-    {
-    public:
-        std::string getTitle() const noexcept override;
-        RenderResult renderType(SkeletalAnimator::Definition& animator) noexcept override;
     };
 
     class SkeletalAnimatorInspectorEditor final : public ComponentObjectEditor<SkeletalAnimator>

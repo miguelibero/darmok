@@ -2,6 +2,7 @@
 
 #include <darmok/asset_core.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/expected.hpp>
 
 #include <string>
 #include <vector>
@@ -94,8 +95,8 @@ namespace darmok
         {
             std::filesystem::path path;
             nlohmann::json importers;
-            bool load(const std::filesystem::path& inputPath);
-            void load(const nlohmann::json& json);
+            expected<void, std::string> load(const std::filesystem::path& inputPath);
+            expected<void, std::string> load(const nlohmann::json& json);
             static nlohmann::json fix(const nlohmann::json& json) noexcept;
             static bool replaceIncludes(nlohmann::json& json, const nlohmann::json& includes) noexcept;
             static std::filesystem::path getPath(const std::filesystem::path& path) noexcept;

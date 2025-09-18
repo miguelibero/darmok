@@ -129,7 +129,7 @@ namespace darmok
 		return def;
 	}
 
-	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept
+	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
 		: FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>(defLoader)
 		, _progLoader{ progLoader }
 		, _texLoader{ texLoader }
@@ -159,7 +159,7 @@ namespace darmok
 		mat->twoSided = def->twosided();
 		mat->primitiveType = def->primitive_type();
 
-		auto progResult = Program::loadRef(_progLoader, def->program());
+		auto progResult = Program::loadRef(def->program(), _progLoader);
 		if (!progResult)
 		{
 			return unexpected{ "failed to load program: " + progResult.error() };

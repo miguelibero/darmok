@@ -145,9 +145,13 @@ namespace darmok
 		auto configResult = _dataLoader(path.replace_extension(".json"));
 		if (configResult)
 		{
-			DataInputStream in{ configResult.value() };
-			auto config = nlohmann::json::parse(in);
-			FreetypeUtils::updateDefinition(*def, config);
+			DataInputStream input{ configResult.value() };
+			auto jsonResult = StreamUtils::parseJson(std::move(input));
+			if (!jsonResult)
+			{
+				return unexpected{ jsonResult.error() };
+			}
+			FreetypeUtils::updateDefinition(*def, *jsonResult);
 		}
 
 		return def;
