@@ -600,7 +600,7 @@ namespace darmok
 	TextureDefinitionFromSourceLoader::Result TextureDefinitionFromSourceLoader::create(const std::shared_ptr<protobuf::TextureSource>& src)
 	{
 		auto def = std::make_shared<protobuf::Texture>();
-		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, _alloc);
+		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, *_alloc);
 		if(!result)
 		{
 			return unexpected{ result.error() };

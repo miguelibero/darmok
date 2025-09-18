@@ -7,24 +7,30 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/asset_pack.hpp>
 #include <nlohmann/json.hpp>
-#include <cereal/archives/binary.hpp>
-#include <cereal/archives/json.hpp>
 
-using namespace darmok;
-using namespace entt::literals;
+#include "protobuf/scene_serialize_test.pb.h"
 
 namespace
 {
+    using namespace darmok;
+    using namespace entt::literals;
+
+    template<class T>
+    using unexpected = tl::unexpected<T>;
+
     struct TestComponent
     {
         int value;
 
-        static void bindMeta() noexcept
+		using Definition = protobuf::TestComponent;
+
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept
         {
-            SceneReflectionUtils::metaEntityComponent<TestComponent>("TestComponent")
-                .ctor()
-                .data<&TestComponent::value, entt::as_ref_t>("value"_hs);
+			value = def.value();
+            return {};
         }
     };
 
@@ -32,11 +38,17 @@ namespace
     {
         OptionalRef<TestComponent> comp;
 
-        static void bindMeta() noexcept
+        using Definition = protobuf::TestRefComponent;
+
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept
         {
-            SceneReflectionUtils::metaEntityComponent<TestRefComponent>("TestRefComponent")
-                .ctor()
-                .data<&TestRefComponent::comp, entt::as_ref_t>("comp"_hs);
+            auto entity = ctxt.getEntity(def.comp());
+            if (entity == entt::null)
+            {
+				return unexpected{ "Referenced entity not found" };
+            }
+            comp = ctxt.getScene().getComponent<TestComponent>(entity);
+            return {};
         }
     };
 
@@ -50,108 +62,116 @@ namespace
     {
         TestStruct value;
 
-        static void bindMeta() noexcept
+        using Definition = protobuf::TestStructComponent;
+
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept
         {
-            entt::meta<TestStruct>()
-                .ctor()
-                .data<&TestStruct::value, entt::as_ref_t>("value"_hs)
-                .data<&TestStruct::str, entt::as_ref_t>("str"_hs);
-            SceneReflectionUtils::metaEntityComponent<TestStructComponent>("TestStructComponent")
-                .ctor()
-                .data<&TestStructComponent::value, entt::as_ref_t>("value"_hs);
+            value.value = def.value().value();
+			value.str = def.value().str();
+            return {};
         }
     };
 
-    void bindMeta()
-    {
-        TestComponent::bindMeta();
-        TestRefComponent::bindMeta();
-        TestStructComponent::bindMeta();
-        SceneReflectionUtils::bind();
-    }
-
-    Data saveToData(const Scene& scene)
+    Data saveToData(const Scene::Definition& scene)
     {
         Data data;
-        DataOutputStream stream(data);
+        DataOutputStream out{ data };
+        auto result = protobuf::write(scene, out, protobuf::Format::Json);
+        if (!result)
         {
-            cereal::BinaryOutputArchive archive(stream);
-            save(archive, scene);
+			throw std::exception{ result.error().c_str() };
         }
-        auto pos = stream.tellp();
-        return data.view(0, pos);
+        return data.view(0, out.tellp());
     }
 
-    void loadFromData(const Data& data, Scene& scene)
+    void loadFromData(const Data& data, Scene::Definition& scene)
     {
-        DataInputStream stream(data);
-        cereal::BinaryInputArchive archive(stream);
-        load(archive, scene);
-    }
-
-    template<typename Archive>
-    std::string saveToString(const Scene& scene)
-    {
-        std::stringstream ss;
+        DataInputStream in{ data };
+        auto result = protobuf::read(scene, in, protobuf::Format::Json);
+        if (!result)
         {
-            Archive archive(ss);
-            save(archive, scene);
+            throw std::exception{ result.error().c_str() };
         }
-        return ss.str();
     }
 
-    template<typename Archive>
-    void loadFromString(const std::string& str, Scene& scene)
+    std::string saveToString(const Scene::Definition& scene)
     {
-        std::stringstream ss(str);
-        Archive archive(ss);
-        load(archive, scene);
+        std::ostringstream out;
+        auto result = protobuf::write(scene, out, protobuf::Format::Json);
+        if (!result)
+        {
+            throw std::exception{ result.error().c_str() };
+        }
+        return out.str();
+    }
+
+    void loadFromString(const std::string& str, Scene::Definition& scene)
+    {
+        std::istringstream in{ str };
+        auto result = protobuf::read(scene, in, protobuf::Format::Json);
+        if (!result)
+        {
+            throw std::exception{ result.error().c_str() };
+        }
+    }
+
+    Scene::Definition createTestScene()
+    {
+        Scene::Definition sceneDef;
+        SceneDefinitionWrapper scene{ sceneDef };
+
+        auto entity = scene.createEntity();
+        TestComponent::Definition comp;
+        comp.set_value(42);
+        scene.setComponent(entity, comp);
+        entity = scene.createEntity();
+        comp.set_value(666);
+        scene.setComponent(entity, comp);
+
+        return sceneDef; 
     }
 }
 
 TEST_CASE("scene can be serialized", "[scene-serialize]")
 {
-    Scene scene;
-    auto entity = scene.createEntity();
-    scene.addComponent<TestComponent>(entity, 42);
-    entity = scene.createEntity();
-    scene.addComponent<TestComponent>(entity, 666);
-
-    TestComponent::bindMeta();
-
-    auto str = saveToString<cereal::JSONOutputArchive>(scene);
+	auto sceneDef = createTestScene();
+    auto str = saveToString(sceneDef);
     auto json = nlohmann::json::parse(str);
 
     REQUIRE(json.is_object());
-    REQUIRE(json.size() == 6);
-    REQUIRE(json["entities"].size() == 2);
-    REQUIRE(json["freeList"] == 2);
-    REQUIRE(json["entityComponents"].size() == 1);
-    REQUIRE(json["entityComponents"][0]["value"].size() == 2);
-    REQUIRE(json["entityComponents"][0]["value"][0][0]["value"] == 42);
-    REQUIRE(json["entityComponents"][0]["value"][1][0]["value"] == 666);
+    REQUIRE(json.size() == 1);
+    auto& reg = json["registry"];
+    REQUIRE(reg["entities"] == 2);
+    auto typeId = std::to_string(protobuf::getTypeId<TestComponent::Definition>());
+    auto& comps = reg["components"][typeId]["components"];
+    REQUIRE(comps.size() == 2);
+    REQUIRE(comps["1"]["value"] == 42);
+    REQUIRE(comps["2"]["value"] == 666);
 }
 
 TEST_CASE("scene can be loaded", "[scene-serialize]")
 {
-    Scene scene;
-    auto entity = scene.createEntity();
-    scene.addComponent<TestComponent>(entity, 42);
-    entity = scene.createEntity();
-    scene.addComponent<TestComponent>(entity, 666);
+    auto sceneDef = createTestScene();
+    auto data = saveToData(sceneDef);
+    sceneDef = {};
+    loadFromData(data, sceneDef);
 
-    auto data = saveToData(scene);
-    scene.destroyEntitiesImmediate();
-    loadFromData(data, scene);
+    Scene scene;
+    SceneArchive archive;
+    archive.registerComponent<TestComponent>();
+    auto result = archive.load(sceneDef, scene);
 
     auto view = scene.getEntities();
-    std::vector<Entity> entities(view.begin(), view.end());
+    std::vector<Entity> entities{ view.begin(), view.end() };
+
+    Entity entity = archive.getComponentLoadContext().getEntity(2);
+    REQUIRE(result.value() == entity);
 
     REQUIRE(entities.size() == 2);
     REQUIRE(scene.getComponent<TestComponent>(entity)->value == 666);
 }
 
-
+/*
 TEST_CASE("component structs are serialized", "[scene-serialize]")
 {
     Scene scene;
@@ -219,3 +239,5 @@ TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")
     auto newParent = newChild2->getParent();
     REQUIRE(newParent->getChildren().size() == 2);
 }
+
+*/

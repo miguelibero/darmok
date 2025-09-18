@@ -9,6 +9,7 @@
 #include <darmok/light.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/stream.hpp>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -549,25 +550,17 @@ namespace darmok::editor
         renderMainMenu();
         renderDockspace();
         renderMainToolbar();
-        if (renderSceneTree())
+        renderSceneTree();
+        auto inspectorResult = _inspectorView.render();
+        if (!inspectorResult)
         {
-            changed = true;
+			StreamUtils::logDebug("failed to render inspector: " + inspectorResult.error());
         }
-        if (_inspectorView.render())
-        {
-            changed = true;
-        }
-        /*
-        if (changed)
-        {
-            _proj.updateScene();
-        }
-        */
 
         auto projResult = _proj.render();
         if (!projResult)
         {
-            throw std::runtime_error("failed to render project: " + projResult.error());
+            StreamUtils::logDebug("failed to render project: " + projResult.error());
         }
         _sceneView.render();
         _assetsView.render();

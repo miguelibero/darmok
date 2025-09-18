@@ -937,7 +937,7 @@ namespace darmok
             if (op.headerConfig.produceHeaders)
             {
                 Data data;
-                DataOutputStream ds(data);
+                DataOutputStream ds{ data };
                 op.importer.writeOutput(op.input, i, ds);
                 std::streamoff pos = ds.tellp();
                 std::ofstream os(output);

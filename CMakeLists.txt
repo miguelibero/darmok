@@ -591,6 +591,7 @@ if(DARMOK_BUILD_TESTS)
   add_subdirectory(test)
   list(APPEND VCPKG_MANIFEST_FEATURES "tests")
   set_target_properties(darmok-tests PROPERTIES FOLDER ${PROJECT_NAME})
+  set_target_properties(darmok-tests-proto-objects PROPERTIES FOLDER ${PROJECT_NAME})
 endif()
 
 # openGL
@@ -644,7 +645,7 @@ set(PROTO_FILES
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/public/darmok/protobuf")
-set(PROTO_LIB_NAME darmok-proto-objects)
+set(PROTO_LIB_NAME ${LIB_NAME}-proto-objects)
 
 list(TRANSFORM PROTO_FILES PREPEND "${PROTO_DIR}/")
 add_library(${PROTO_LIB_NAME} OBJECT ${PROTO_FILES})

@@ -5,10 +5,9 @@
 
 namespace darmok
 {
-	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader, bx::AllocatorI& allocator) noexcept
+	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader) noexcept
 		: FromDefinitionLoader(srcLoader)
 		, _progDefLoader{ progDefLoader }
-		, _allocator{ allocator }
 	{
 	}
 

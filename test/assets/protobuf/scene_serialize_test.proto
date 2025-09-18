@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+message TestComponent {
+    int32 value = 1; 
+}
+
+message TestRefComponent {
+    uint32 comp = 1;
+}
+
+message TestStructComponent {
+    message TestStruct {
+        int32 value = 1;
+        string str = 2;
+    }
+    TestStruct value = 1;
+}

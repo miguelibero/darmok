@@ -27,6 +27,7 @@ namespace darmok
         const std::string& getName() const noexcept;
 
         std::vector<Entity> getRootEntities() const noexcept;
+        std::vector<Entity> getEntities() const noexcept;
         std::vector<Entity> getChildren(Entity entity) const noexcept;
         OptionalRef<const RegistryComponents> getTypeComponents(IdType typeId) const noexcept;
         std::vector<std::reference_wrapper<const Any>> getComponents(Entity entityId) const noexcept;
@@ -50,7 +51,7 @@ namespace darmok
                     T asset;
                     if (any.UnpackTo(&asset))
                     {
-                        comps[static_cast<Entity>(entityId)] = std::move(asset);
+                        comps[Entity{ entityId }] = std::move(asset);
                     }
 				}
             }
@@ -191,17 +192,15 @@ namespace darmok
     {
     public:
 		virtual ~IComponentLoadContext() = default;
-        virtual IAssetContext& getAssets() = 0;
-        virtual const Scene& getScene() const = 0;
-        virtual Scene& getScene() = 0;
-
-        virtual Entity getEntity(uint32_t id) const = 0;
+        virtual IAssetContext& getAssets() noexcept = 0;
+        virtual const Scene& getScene() const noexcept = 0;
+        virtual Scene& getScene() noexcept = 0;
+        virtual Entity getEntity(uint32_t entityId) const noexcept = 0;
     };
 
 	using DataSceneDefinitionLoader = DataProtobufLoader<ISceneDefinitionLoader>;
 
     class Scene;
-    class SceneImporterImpl;
     class AssetPack;
     class AssetPackConfig;
 
@@ -209,22 +208,6 @@ namespace darmok
     {
         Entity entity;
         uint32_t type;
-    };
-
-    class SceneImporter final
-    {
-    public:
-        using Error = std::string;
-		using Definition = protobuf::Scene;
-        using Result = expected<Entity, Error>;
-        SceneImporter(Scene& scene, const AssetPackConfig& assetConfig);
-		~SceneImporter();
-        Result operator()(const Definition& def);
-
-		IComponentLoadContext& getComponentLoadContext() noexcept;
-		AssetPack& getAssetPack() noexcept;
-    private:
-		std::unique_ptr<SceneImporterImpl> _impl;
     };
 
     template<typename Arg>
@@ -242,17 +225,114 @@ namespace darmok
     {
     };
 
-    class SceneLoaderImpl;
+    class SceneArchiveImpl;
+
+    class SceneArchive final
+    {
+    public:
+        using Result = expected<void, std::string>;
+        using LoadFunction = std::function<Result()>;
+		using SceneDefinition = protobuf::Scene;
+
+        struct ComponentData
+        {
+            uint32_t entityId;
+            OptionalRef<const google::protobuf::Any> any;
+        };
+
+        SceneArchive() noexcept;
+        ~SceneArchive() noexcept;
+
+		SceneArchive(const SceneArchive& other) = delete;
+		SceneArchive& operator=(const SceneArchive& other) = delete;
+
+        template<typename T>
+        void registerComponent()
+        {
+            auto func = [this]() -> expected<void, std::string>
+            {
+                return loadComponent<T>();
+            };
+            addLoad(std::move(func));
+        }
+
+        expected<Entity, std::string> load(const SceneDefinition& sceneDef, Scene& scene);
+
+        void operator()(std::underlying_type_t<Entity>& count) noexcept;
+        void operator()(Entity& entity) noexcept;
+
+        template<typename T>
+        void operator()(T& obj) noexcept
+        {
+            auto data = getComponentData();
+            if (!data.any)
+            {
+                return;
+            }
+            typename T::Definition def;
+            if (!data.any->UnpackTo(&def))
+            {
+                addError("Could not unpack component");
+                return;
+            }
+
+            // we need to delay the load() calls to guarantee that
+            // all the components are present before
+            auto entity = getEntity(data.entityId);
+            auto func = [this, entity, def = std::move(def)]() -> expected<void, std::string>
+            {
+                if (auto comp = getScene().getComponent<T>(entity))
+                {
+                    return comp->load(def, getComponentLoadContext());
+                }
+                return {};
+            };
+			addPostLoad(std::move(func));
+        }
+
+        IComponentLoadContext& getComponentLoadContext() noexcept;
+        AssetPack& getAssetPack() noexcept;
+        const AssetPack& getAssetPack() const noexcept;
+
+        SceneArchive& setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
+
+    private:
+		std::unique_ptr<SceneArchiveImpl> _impl;
+
+        template<typename T>
+        Result loadComponent()
+        {
+            using Def = typename T::Definition;
+            auto typeId = protobuf::getTypeId<Def>();
+            auto result = beforeLoadComponent(typeId);
+            if (!result)
+            {
+                return result;
+            }
+            getLoader().get<T>(*this);
+            return afterLoadComponent(typeId);
+        }
+
+		Scene& getScene() noexcept;
+        Entity getEntity(uint32_t entityId) const noexcept;
+		void addError(std::string_view error) noexcept;
+        ComponentData getComponentData() noexcept;
+        void addLoad(LoadFunction&& func);
+        void addPostLoad(LoadFunction&& func);
+        Result beforeLoadComponent(uint32_t typeId) noexcept;
+        Result afterLoadComponent(uint32_t typeId) noexcept;
+		entt::continuous_loader& getLoader() noexcept;
+    };
 
     class DARMOK_EXPORT SceneLoader final : public ISceneLoader
     {
     public:
         SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig);
-        ~SceneLoader();
         Result operator()(Scene& scene, std::filesystem::path path);
 
     private:
-        std::unique_ptr<SceneLoaderImpl> _impl;
+        OptionalRef<ISceneDefinitionLoader> _defLoader;
+        SceneArchive _archive;
     };
 
 }

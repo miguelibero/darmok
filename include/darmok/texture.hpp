@@ -157,7 +157,7 @@ namespace darmok
 		TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept;
 	private:
 		Result create(const std::shared_ptr<protobuf::TextureSource>& src) override;
-		bx::AllocatorI& _alloc;
+		OptionalRef<bx::AllocatorI> _alloc;
 	};
 
 	class DARMOK_EXPORT TextureFileImporter final : public ProtobufFileImporter<ImageTextureDefinitionLoader>

@@ -7,6 +7,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/skeleton.hpp>
 #include <darmok/light.hpp>
+#include <darmok/string.hpp>
 
 #include <fmt/format.h>
 
@@ -22,6 +23,24 @@ namespace darmok
 		return _def->name();
     }
 
+    std::vector<Entity> ConstSceneDefinitionWrapper::getEntities() const noexcept
+    {
+        std::vector<Entity> entities;
+        for (auto& [type, typeComps] : _def->registry().components())
+        {
+            for (auto& [entityId, comp] : typeComps.components())
+            {
+                Entity entity{ entityId };
+                if (std::find(entities.begin(), entities.end(), entity) == entities.end())
+                {
+                    entities.push_back(entity);
+                }
+            }
+        }
+        std::sort(entities.begin(), entities.end());
+        return entities;
+    }
+
     std::vector<Entity> ConstSceneDefinitionWrapper::getRootEntities() const noexcept
     {
         std::vector<Entity> entities;
@@ -32,6 +51,18 @@ namespace darmok
                 entities.push_back(entity);
             }
         }
+        for (auto& entity : getEntities())
+        {
+            if (std::find(entities.begin(), entities.end(), entity) != entities.end())
+            {
+                continue;
+            }
+            if (!getComponent<Transform::Definition>(entity))
+            {
+                entities.push_back(entity);
+            }
+        }
+        std::sort(entities.begin(), entities.end());
         return entities;
     }
 
@@ -217,7 +248,7 @@ namespace darmok
         auto& reg = *_def->mutable_registry();
         auto v = reg.entities() + 1;
         reg.set_entities(v);
-        return static_cast<Entity>(v);
+        return Entity{ v };
     }
 
     bool SceneDefinitionWrapper::setAsset(const std::filesystem::path& path, const Message& asset) noexcept
@@ -441,35 +472,93 @@ namespace darmok
         return true;
     }
 
-    SceneArchive::SceneArchive(Scene& scene, const AssetPackConfig& assetConfig)
-        : _loader{ scene.getRegistry() }
-        , _scene{ scene }
-        , _assetConfig{ assetConfig }
+	Scene SceneArchiveImpl::_emptyScene{};
+
+    const SceneArchiveImpl::SceneDefinition SceneArchiveImpl::_emptySceneDef;
+
+    SceneArchiveImpl::SceneArchiveImpl()
+        : _scene{ _emptyScene }
+        , _sceneDef{ _emptySceneDef }
+        , _loader{ _scene->getRegistry() }
         , _count{ 0 }
-        , _type{ 0 }
+        , _typeId{ 0 }
     {
     }
 
-    AssetPack& SceneArchive::getAssetPack()
+    void SceneArchiveImpl::createAssetPack() const noexcept
     {
-		return _assetPack.value();
+        _assetPack = std::make_unique<AssetPack>(_sceneDef->assets(), _assetConfig);
     }
 
-    expected<Entity, std::string> SceneArchive::load(const protobuf::Scene& sceneDef)
+    IAssetContext& SceneArchiveImpl::getAssets() noexcept
     {
-		_sceneDef = sceneDef;
-        _assetPack.emplace(sceneDef.assets(), _assetConfig);
-        _type = 0;
-        _count = 0;
-        _loader.get<entt::entity>(*this);
-        auto result = loadComponents();
-        if (!result)
+        return getAssetPack();
+    }
+
+    AssetPack& SceneArchiveImpl::getAssetPack() noexcept
+    {
+        if (!_assetPack)
         {
-            return unexpected{ result.error() };
+            createAssetPack();
         }
+		return *_assetPack;
+    }
+
+    const AssetPack& SceneArchiveImpl::getAssetPack() const noexcept
+    {
+        if (!_assetPack)
+        {
+            createAssetPack();
+        }
+        return *_assetPack;
+    }
+
+    void SceneArchiveImpl::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
+    {
+		_assetConfig = std::move(assetConfig);
+    }
+
+    const Scene& SceneArchiveImpl::getScene() const noexcept
+    {
+        return *_scene;
+    }
+
+    Scene& SceneArchiveImpl::getScene() noexcept
+    {
+        return *_scene;
+    }
+
+    Entity SceneArchiveImpl::getEntity(uint32_t entityId) const noexcept
+    {
+        return _loader.map(Entity{ entityId });
+    }
+
+    expected<Entity, std::string> SceneArchiveImpl::load(const Scene::Definition& sceneDef, Scene& scene) noexcept
+    {
+        if (_scene.ptr() != &scene)
+        {
+			_loader = entt::continuous_loader{ scene.getRegistry() };
+        }
+        _sceneDef = sceneDef;
+		_scene = scene;
+        _typeId = 0;
+        _count = 0;
+        createAssetPack();
+
+        _loader.get<entt::entity>(*this);
+        
+        for (auto& func : _loadFuncs)
+        {
+            auto result = func();
+            if (!result)
+            {
+                return unexpected{ result.error() };
+            }
+        }
+
         _loader.orphans();
 
-        result = {};
+        Result result;
         for (auto& func : _postLoadFuncs)
         {
             auto funcResult = func();
@@ -484,23 +573,67 @@ namespace darmok
             return unexpected{ result.error() };
         }
 
-		ConstSceneDefinitionWrapper def{ sceneDef };
-		auto roots = def.getRootEntities();
-        if(roots.empty())
+        ConstSceneDefinitionWrapper def{ sceneDef };
+        auto roots = def.getRootEntities();
+        if (roots.empty())
         {
             return unexpected{ "No root entities found in the scene definition." };
-		}
-		return getEntity(entt::to_integral(roots.front()));
+        }
+        return getEntity(entt::to_integral(roots.back()));
     }
 
-    std::pair<uint32_t, const google::protobuf::Any*> SceneArchive::getComponentData()
+    void SceneArchiveImpl::operator()(std::underlying_type_t<Entity>& count) noexcept
+    {
+        if (!_sceneDef)
+        {
+            addError("Scene definition is not loaded.");
+            count = 0;
+            return;
+        }
+        auto& reg = _sceneDef->registry();
+        if (_typeId == 0)
+        {
+            count = reg.entities();
+        }
+        else
+        {
+            count = 0;
+            auto& typeComps = reg.components();
+            auto itr = typeComps.find(_typeId);
+            if (itr != typeComps.end())
+            {
+                count = itr->second.components_size();
+            }
+        }
+        _count = 0;
+    }
+
+    void SceneArchiveImpl::operator()(Entity& entity) noexcept
+    {
+        if (_typeId == 0)
+        {
+            entity = static_cast<Entity>(++_count);
+        }
+        else
+        {
+            auto data = getComponentData();
+            entity = Entity{ data.entityId };
+        }
+    }
+
+    void SceneArchiveImpl::addError(std::string_view error) noexcept
+    {
+		_errors.emplace_back(error);
+    }
+
+    SceneArchiveImpl::ComponentData SceneArchiveImpl::getComponentData() noexcept
     {
         auto& typeComps = _sceneDef->registry().components();
-        auto itr = typeComps.find(_type);
+        auto itr = typeComps.find(_typeId);
         if (itr == typeComps.end())
         {
-            _error = "Could not find component type";
-            return { 0, nullptr };
+            addError("Could not find component type");
+            return { entt::null, nullptr };
         }
         auto& comps = itr->second.components();
         auto itr2 = comps.begin();
@@ -508,140 +641,153 @@ namespace darmok
         auto& key = itr2->first;
         if (itr2 == comps.end())
         {
-            _error = "Could not find component";
-            return { 0, nullptr };
+            addError("Could not find component");
+            return { entt::null, nullptr };
         }
         return { itr2->first, &itr2->second };
     }
 
-    void SceneArchive::operator()(std::underlying_type_t<Entity>& count)
+    void SceneArchiveImpl::addLoad(LoadFunction&& func)
     {
-        if(!_sceneDef)
+        _loadFuncs.push_back(std::move(func));
+    }
+
+    void SceneArchiveImpl::addPostLoad(LoadFunction&& func)
+    {
+        _postLoadFuncs.push_back(std::move(func));
+        ++_count;
+    }
+
+    SceneArchiveImpl::Result SceneArchiveImpl::beforeLoadComponent(uint32_t typeId) noexcept
+    {
+        _errors.clear();
+        _typeId = typeId;
+        return {};
+    }
+
+    SceneArchiveImpl::Result SceneArchiveImpl::afterLoadComponent(uint32_t typeId) noexcept
+    {
+        if(!_errors.empty())
         {
-            _error = "Scene definition is not loaded.";
-            count = 0;
-            return;
+            auto msg = StringUtils::join("\n", _errors);
+            _errors.clear();
+            return unexpected{ std::move(msg) };
 		}
-		auto& reg = _sceneDef->registry();
-        if (_type == 0)
-        {
-            count = reg.entities();
-        }
-        else
-        {
-            auto& typeComps = reg.components();
-            auto itr = typeComps.find(_type);
-            if (itr != typeComps.end())
-            {
-				count = itr->second.components_size();
-            }
-        }
-		_error.reset();
-        _count = 0;
+        return {};
     }
 
-    IAssetContext& SceneArchive::getAssets()
+    entt::continuous_loader& SceneArchiveImpl::getLoader() noexcept
     {
-		return _assetPack.value();
+        return _loader;
     }
 
-    Entity SceneArchive::getEntity(uint32_t id) const
+    SceneArchive::SceneArchive() noexcept
+        : _impl{ std::make_unique<SceneArchiveImpl>() }
     {
-		return _loader.map(static_cast<Entity>(id));
-    }
-
-    const Scene& SceneArchive::getScene() const
-    {
-        return _scene;
-    }
-
-    Scene& SceneArchive::getScene()
-    {
-        return _scene;
-    }
-
-    SceneImporterImpl::SceneImporterImpl(Scene& scene, const AssetPackConfig& assetConfig)
-        : _archive{ scene, assetConfig }
-    {
-        _archive.registerComponent<Transform>();
-        _archive.registerComponent<Renderable>();
-        _archive.registerComponent<Camera>();
-        _archive.registerComponent<Skinnable>();
-        _archive.registerComponent<PointLight>();
-        _archive.registerComponent<DirectionalLight>();
-        _archive.registerComponent<SpotLight>();
-        _archive.registerComponent<AmbientLight>();
+        registerComponent<Transform>();
+        registerComponent<Renderable>();
+        registerComponent<Camera>();
+        registerComponent<Skinnable>();
+        registerComponent<PointLight>();
+        registerComponent<DirectionalLight>();
+        registerComponent<SpotLight>();
+        registerComponent<AmbientLight>();
 	}
 
-    SceneImporterImpl::Result SceneImporterImpl::operator()(const Scene::Definition& def)
+    SceneArchive::~SceneArchive() noexcept = default;
+
+    expected<Entity, std::string> SceneArchive::load(const SceneDefinition& sceneDef, Scene& scene)
     {
-        return _archive.load(def);
+		return _impl->load(sceneDef, scene);
     }
 
-    IComponentLoadContext& SceneImporterImpl::getComponentLoadContext() noexcept
+    void SceneArchive::operator()(std::underlying_type_t<Entity>& count) noexcept
     {
-		return _archive;
+        return _impl->operator()(count);
     }
 
-    AssetPack& SceneImporterImpl::getAssetPack() noexcept
+    void SceneArchive::operator()(Entity& entity) noexcept
     {
-		return _archive.getAssetPack();
+        return _impl->operator()(entity);
     }
 
-    SceneImporter::SceneImporter(Scene& scene, const AssetPackConfig& assetConfig)
-        : _impl{ std::make_unique<SceneImporterImpl>(scene, assetConfig) }
+    IComponentLoadContext& SceneArchive::getComponentLoadContext() noexcept
     {
+        return *_impl;
+    }
+    
+    AssetPack& SceneArchive::getAssetPack() noexcept
+    {
+		return _impl->getAssetPack();
     }
 
-    SceneImporter::~SceneImporter()
-    {
-        // empty on purpose
-    }
-
-    SceneImporter::Result SceneImporter::operator()(const Scene::Definition& def)
-    {
-		return (*_impl)(def);
-    }
-
-    IComponentLoadContext& SceneImporter::getComponentLoadContext() noexcept
-    {
-        return _impl->getComponentLoadContext();
-    }
-
-    AssetPack& SceneImporter::getAssetPack() noexcept
+    const AssetPack& SceneArchive::getAssetPack() const noexcept
     {
         return _impl->getAssetPack();
     }
 
-    SceneLoaderImpl::SceneLoaderImpl(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)
-        : _defLoader{ defLoader }
-        , _assetConfig{ assetConfig }
+    SceneArchive& SceneArchive::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
     {
+		_impl->setAssetPackConfig(std::move(assetConfig));
+        return *this;
     }
 
-    expected<Entity, std::string> SceneLoaderImpl::operator()(Scene& scene, std::filesystem::path path)
+    Scene& SceneArchive::getScene() noexcept
     {
-        auto defResult = _defLoader(path);
+		return _impl->getScene();
+    }
+
+    Entity SceneArchive::getEntity(uint32_t entityId) const noexcept
+    {
+		return _impl->getEntity(entityId);
+    }
+    void SceneArchive::addError(std::string_view error) noexcept
+    {
+		_impl->addError(error);
+    }
+
+    SceneArchive::ComponentData SceneArchive::getComponentData() noexcept
+    {
+		return _impl->getComponentData();
+    }
+    void SceneArchive::addLoad(LoadFunction&& func)
+    {
+		return _impl->addLoad(std::move(func));
+    }
+
+    void SceneArchive::addPostLoad(LoadFunction&& func)
+    {
+		return _impl->addPostLoad(std::move(func));
+    }
+
+    SceneArchive::Result SceneArchive::beforeLoadComponent(uint32_t typeId) noexcept
+    {
+		return _impl->beforeLoadComponent(typeId);
+    }
+
+    SceneArchive::Result SceneArchive::afterLoadComponent(uint32_t typeId) noexcept
+    {
+		return _impl->afterLoadComponent(typeId);
+    }
+
+    entt::continuous_loader& SceneArchive::getLoader() noexcept
+    {
+		return _impl->getLoader();
+    }
+
+    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)
+        : _defLoader{ defLoader }
+    {
+		_archive.setAssetPackConfig(assetConfig);
+    }
+
+    expected<Entity, std::string> SceneLoader::operator()(Scene& scene, std::filesystem::path path)
+    {
+        auto defResult = (*_defLoader)(path);
         if (!defResult)
         {
             return unexpected<std::string>{ defResult.error() };
         }
-        SceneImporter importer{ scene, _assetConfig };
-        return importer(*defResult.value());
-    }
-
-    SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)
-		: _impl{ std::make_unique<SceneLoaderImpl>(defLoader, assetConfig) }
-	{
-	}
-
-    SceneLoader::~SceneLoader()
-    {
-        // empty on purpose
-    }
-
-    SceneLoader::Result SceneLoader::operator()(Scene& scene, std::filesystem::path path)
-    {
-        return (*_impl)(scene, path);
+        return _archive.load(*defResult.value(), scene);
     }
 }

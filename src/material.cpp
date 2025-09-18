@@ -168,7 +168,7 @@ namespace darmok
 
 		for (auto& defTex : def->textures())
 		{
-			auto loadResult = _texLoader(defTex.texture_path());
+			auto loadResult = (*_texLoader)(defTex.texture_path());
 			if (!loadResult)
 			{
 				return unexpected{ "failed to load texture: " + loadResult.error() };

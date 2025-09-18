@@ -131,11 +131,11 @@ namespace darmok
     class DARMOK_EXPORT MaterialLoader final : public FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>
     {
     public:
-        MaterialLoader(IMaterialDefinitionLoader& defLoader, ILoader<Program>& progLoader, ILoader<Texture>& texLoader) noexcept;
+        MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
     private:
         Result create(const std::shared_ptr<Definition>& def) override;
-        ILoader<Program>& _progLoader;
-        ILoader<Texture>& _texLoader;
+        OptionalRef<IProgramLoader> _progLoader;
+        OptionalRef<ITextureLoader> _texLoader;
     };
 
     using DataMaterialDefinitionLoader = DataProtobufLoader<IMaterialDefinitionLoader>;

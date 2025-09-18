@@ -21,7 +21,7 @@ namespace darmok
 	class DARMOK_EXPORT AssetPackLoader final : public Interface
 	{
 	private:
-		const protobuf::AssetPack& _assets;
+		OptionalRef<const protobuf::AssetPack> _assets;
 		std::unordered_set<std::filesystem::path> _loadedPaths;
 	public:
 		using Result = Interface::Result;
@@ -34,7 +34,7 @@ namespace darmok
 
 		[[nodiscard]] Result operator()(std::filesystem::path path) override
 		{
-			auto& assets = _assets.assets();
+			auto& assets = _assets->assets();
 			auto itr = assets.find(path.string());
 			if (itr == assets.end())
 			{
@@ -79,9 +79,8 @@ namespace darmok
 		expected<void, std::string> reloadAsset(const std::filesystem::path& path);
 		expected<void, std::string> removeAsset(const std::filesystem::path& path);
 	private:
-
-		const Definition& _def;
-		bx::AllocatorI& _alloc;
+		OptionalRef<const Definition> _def;
+		OptionalRef<bx::AllocatorI> _alloc;
 		bx::DefaultAllocator _defaultAlloc;
 
 		AssetPackLoader<IProgramDefinitionLoader> _progDefLoader;

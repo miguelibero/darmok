@@ -167,7 +167,6 @@ namespace darmok::editor
         _scene = scenes.getScene();
 
         configureDefaultScene(_sceneWrapper);
-		_sceneImporter.emplace(*_scene, _assetPackConfig);
         
         _scene->destroyEntitiesImmediate();
         configureEditorScene(*_scene);
@@ -177,11 +176,8 @@ namespace darmok::editor
     expected<Entity, std::string> EditorProject::doUpdateScene()
     {
         _requestUpdateScene = false;
-        if (!_sceneImporter)
-        {
-            return unexpected<std::string>{"missing importer"};
-        }
-        auto result = (*_sceneImporter)(_sceneDef);
+
+        auto result = _sceneArchive.load(_sceneDef, *_scene);
         if (result)
         {
             _app.getOrAddComponent<SceneAppComponent>().update(0.f);
@@ -261,12 +257,12 @@ namespace darmok::editor
 
     IComponentLoadContext& EditorProject::getComponentLoadContext()
     {
-        return _sceneImporter->getComponentLoadContext();
+        return _sceneArchive.getComponentLoadContext();
     }
 
     AssetPack& EditorProject::getAssets()
     {
-		return _sceneImporter->getAssetPack();
+		return _sceneArchive.getAssetPack();
     }
 
     void EditorProject::configureEditorScene(Scene& scene)

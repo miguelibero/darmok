@@ -14,10 +14,9 @@ namespace darmok
     class DARMOK_EXPORT MeshDefinitionFromSourceLoader final : public FromDefinitionLoader<IMeshDefinitionFromSourceLoader, IMeshSourceLoader>
     {
     public:
-        MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader, bx::AllocatorI& allocator) noexcept;
+        MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader) noexcept;
     private:
-        IProgramDefinitionLoader& _progDefLoader;
-        bx::AllocatorI& _allocator;
+        OptionalRef<IProgramDefinitionLoader> _progDefLoader;
         Result create(const std::shared_ptr<Mesh::Source>& src) override;
     };
 }

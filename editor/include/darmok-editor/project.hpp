@@ -45,13 +45,12 @@ namespace darmok::editor
         App& _app;
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
-		std::optional<SceneImporter> _sceneImporter;
+		SceneArchive _sceneArchive;
         bool _requestUpdateScene;
 
         using SceneDefinition = protobuf::Scene;
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneWrapper;
-		AssetPackConfig _assetPackConfig;
         std::optional<ProgramCompiler> _progCompiler;
         bool _requestReset;
 

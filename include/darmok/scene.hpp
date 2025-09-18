@@ -424,7 +424,7 @@ namespace darmok
     private:
         std::unique_ptr<SceneImpl> _impl;
 
-        friend class SceneArchive;
+        friend class SceneArchiveImpl;
 
         EntityRegistry& getRegistry() noexcept;
         const EntityRegistry& getRegistry() const noexcept;

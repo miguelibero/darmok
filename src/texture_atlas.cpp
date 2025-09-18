@@ -807,7 +807,7 @@ namespace darmok
 			}
 			atlasDef.set_texture_path(std::filesystem::relative(_texturePath, basePath).string());
 			_sheetData.clear();
-			DataOutputStream out(_sheetData);
+			DataOutputStream out{ _sheetData };
 			auto rmluiConfig = readRmluiConfig(input.config);
 			
 			auto rmlResult = TextureAtlasUtils::writeRmlui(atlasDef, out, rmluiConfig);

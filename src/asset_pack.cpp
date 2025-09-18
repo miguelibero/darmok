@@ -5,19 +5,19 @@ namespace darmok
 	AssetPack::AssetPack(const Definition& def, const AssetPackConfig& config)
 		: _def{ def }
 		, _alloc{ config.fallback ? config.fallback->getAllocator() : _defaultAlloc }
-		, _progDefLoader{ _def }
-		, _texDefLoader{ _def }
-		, _meshDefLoader{ _def }
-		, _matDefLoader{ _def }
-		, _armDefLoader{ _def }
-		, _sceneDefLoader{ _def }
+		, _progDefLoader{ def }
+		, _texDefLoader{ def }
+		, _meshDefLoader{ def }
+		, _matDefLoader{ def }
+		, _armDefLoader{ def }
+		, _sceneDefLoader{ def }
 
-		, _progSrcLoader{ _def }
+		, _progSrcLoader{ def }
 		, _progDefFromSrcLoader{ _progSrcLoader, config.programCompilerConfig }
-		, _texSrcLoader{ _def }
-		, _texDefFromSrcLoader{ _texSrcLoader, _alloc }
-		, _meshSrcLoader{ _def }
-		, _meshDefFromSrcLoader{ _meshSrcLoader, _multiProgramDefLoader, _alloc }
+		, _texSrcLoader{ def }
+		, _texDefFromSrcLoader{ _texSrcLoader, *_alloc }
+		, _meshSrcLoader{ def }
+		, _meshDefFromSrcLoader{ _meshSrcLoader, _multiProgramDefLoader }
 
 		, _programLoader{ _multiProgramDefLoader }
 		, _textureLoader{ _multiTextureDefLoader }
@@ -53,7 +53,7 @@ namespace darmok
 
 	bx::AllocatorI& AssetPack::getAllocator() noexcept
 	{
-		return _alloc;
+		return *_alloc;
 	}
 
 	IProgramLoader& AssetPack::getProgramLoader() noexcept
@@ -136,7 +136,7 @@ namespace darmok
 
 	expected<void, std::string> AssetPack::removeAsset(const std::filesystem::path& path)
 	{
-		auto& assets = _def.assets();
+		auto& assets = _def->assets();
 		auto itr = assets.find(path.string());
 		if (itr == assets.end())
 		{
@@ -165,7 +165,7 @@ namespace darmok
 
 	expected<void, std::string> AssetPack::reloadAsset(const std::filesystem::path& path)
 	{
-		auto& assets = _def.assets();
+		auto& assets = _def->assets();
 		auto itr = assets.find(path.string());
 		if (itr == assets.end())
 		{

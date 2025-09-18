@@ -264,9 +264,6 @@ namespace darmok
         {
         }
 
-        FromDefinitionLoader(const FromDefinitionLoader& other) = delete;
-        FromDefinitionLoader(FromDefinitionLoader&& other) = delete;
-
         Result operator()(Argument arg) override
         {
             auto defResult = loadDefinition(arg);
@@ -319,7 +316,7 @@ namespace darmok
                     return itr->second;
                 }
             }
-            auto defResult = _defLoader(arg);
+            auto defResult = (*_defLoader)(arg);
             if (defResult)
             {
                 _defCache[arg] = defResult.value();
@@ -393,7 +390,7 @@ namespace darmok
                 return unexpected<Error>{ "definition not found in cache" };
             }
             auto arg = itrDef->first;
-            auto defResult = _defLoader(arg);
+            auto defResult = (*_defLoader)(arg);
             if (!defResult)
             {
                 return unexpected<Error>{ defResult.error() };
@@ -542,7 +539,7 @@ namespace darmok
         }
 
     private:
-        DefinitionLoader& _defLoader;
+        OptionalRef<DefinitionLoader> _defLoader;
         std::unordered_map<Argument, std::shared_ptr<Definition>> _defCache;
         std::unordered_map<std::shared_ptr<Definition>, std::weak_ptr<Resource>> _resCache;
     };
