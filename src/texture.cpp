@@ -11,16 +11,29 @@ namespace darmok
 	{
 	}
 
-	expected<Image, std::string> ConstTextureSourceWrapper::createImage(bx::AllocatorI& alloc) noexcept
+	expected<Image, std::string> ConstTextureSourceWrapper::createImage(bx::AllocatorI& alloc, bimg::TextureFormat::Enum format) noexcept
 	{
 		try
 		{
-			return Image{ DataView{ _src.image_data() }, alloc, static_cast<bimg::TextureFormat::Enum>(_src.format()) };
+			return Image{ DataView{ _src.data() }, alloc, format };
 		}
 		catch (const std::exception& ex)
 		{
 			return unexpected<std::string>{ ex.what() };
 		}
+	}
+
+	TextureSourceWrapper::TextureSourceWrapper(Source& src) noexcept
+		: ConstTextureSourceWrapper( src )
+		, _src{ src }
+	{
+	}
+
+	expected<void, std::string> TextureSourceWrapper::loadData(DataView data, ImageEncoding encoding) noexcept
+	{
+		_src.set_data(data.toString());
+		_src.set_encoding(static_cast<Source::Encoding>(encoding));
+		return {};
 	}
 
 	ConstTextureDefinitionWrapper::ConstTextureDefinitionWrapper(const Definition& def) noexcept
@@ -80,6 +93,46 @@ namespace darmok
 		*_def.mutable_config() = img.getTextureConfig();
 		return {};
 	}	
+
+	ImageTextureSourceLoader::ImageTextureSourceLoader(IDataLoader& dataLoader) noexcept
+		: _dataLoader{ dataLoader }
+		, _loadFlags{ defaultTextureLoadFlags }
+	{
+	}
+
+	bool ImageTextureSourceLoader::supports(const std::filesystem::path& path) const noexcept
+	{
+		return Image::getEncodingForPath(path) != ImageEncoding::Count;
+	}
+
+	ImageTextureSourceLoader& ImageTextureSourceLoader::setLoadFlags(uint64_t flags) noexcept
+	{
+		_loadFlags = flags;
+		return *this;
+	}
+
+	ImageTextureSourceLoader::Result ImageTextureSourceLoader::operator()(std::filesystem::path path)
+	{
+		auto encoding = Image::getEncodingForPath(path);
+		if (encoding == ImageEncoding::Count)
+		{
+			return unexpected{ "format not supported" };
+		}
+		auto dataResult = _dataLoader(path);
+		if (!dataResult)
+		{
+			return unexpected{ dataResult.error() };
+		}
+
+		auto src = std::make_shared<Texture::Source>();
+		src->set_flags(_loadFlags);
+		auto loadResult = TextureSourceWrapper{ *src }.loadData(dataResult.value(), encoding);
+		if (!loadResult)
+		{
+			return unexpected{ loadResult.error() };
+		}
+		return src;
+	}
 
 	ImageTextureDefinitionLoader::ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept
 		: _imgLoader{ imgLoader }
@@ -278,7 +331,7 @@ namespace darmok
 	Texture::Source Texture::createSource() noexcept
 	{
 		Source src;
-		src.set_format(Texture::Definition::RGB8);
+		src.set_encoding(Texture::Source::Tga);
 		return src;
 	}
 

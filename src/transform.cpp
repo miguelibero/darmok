@@ -48,9 +48,9 @@ namespace darmok
         return *this;
     }
 
-    TransformDefinitionWrapper& TransformDefinitionWrapper::setParent(Entity parentEntity) noexcept
+    TransformDefinitionWrapper& TransformDefinitionWrapper::setParent(EntityId parentEntity) noexcept
     {
-        _def.set_parent(entt::to_integral(parentEntity));
+        _def.set_parent(parentEntity);
         return *this;
     }
 

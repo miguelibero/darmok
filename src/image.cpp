@@ -261,38 +261,48 @@ namespace darmok
 		return *result;
 	}
 
-	ImageEncoding Image::getEncodingForPath(const std::filesystem::path& path) noexcept
+	ImageEncoding Image::readEncoding(std::string_view name) noexcept
 	{
-		auto ext = StringUtils::toLower(path.extension().string());
-		if (ext == ".png")
+		auto lname = StringUtils::toLower(name);
+		if (lname == "png")
 		{
 			return ImageEncoding::Png;
 		}
-		if (ext == ".jpg" || ext == ".jpeg")
+		if (lname == "jpg" || lname == "jpeg")
 		{
 			return ImageEncoding::Jpg;
 		}
-		if (ext == ".exr")
+		if (lname == "exr")
 		{
 			return ImageEncoding::Exr;
 		}
-		if (ext == ".hdr")
+		if (lname == "hdr")
 		{
 			return ImageEncoding::Hdr;
 		}
-		if (ext == ".dds")
+		if (lname == "dds")
 		{
 			return ImageEncoding::Dds;
 		}
-		if (ext == ".ktx")
+		if (lname == "ktx")
 		{
 			return ImageEncoding::Ktx;
 		}
-		if (ext == ".tga")
+		if (lname == "tga")
 		{
 			return ImageEncoding::Tga;
 		}
 		return ImageEncoding::Count;
+	}
+
+	ImageEncoding Image::getEncodingForPath(const std::filesystem::path& path) noexcept
+	{
+		auto ext = path.extension().string();
+		if (ext[0] == '.')
+		{
+			ext = ext.substr(1);
+		}
+		return readEncoding(ext);
 	}
 
 	expected<void, std::string> Image::write(ImageEncoding encoding, std::ostream& stream) const noexcept

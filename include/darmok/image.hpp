@@ -65,6 +65,7 @@ namespace darmok
 		[[nodiscard]] expected<void, std::string> update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1);
 
 		static bimg::TextureFormat::Enum readFormat(std::string_view name) noexcept;
+		static ImageEncoding readEncoding(std::string_view name) noexcept;
 		static ImageEncoding getEncodingForPath(const std::filesystem::path& path) noexcept;
 		
 	private:

@@ -5,6 +5,8 @@
 namespace darmok
 {
     using Entity = entt::entity;
+    using EntityId = std::underlying_type_t<Entity>;
+    using IdType = entt::id_type;
     using EntityRegistry = entt::registry;
     using EntitySparseSet = entt::sparse_set;
     using EntityStorage = entt::storage<Entity>;

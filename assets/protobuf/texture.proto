@@ -14,9 +14,20 @@ message TextureConfig {
 }
 
 message TextureSource {
+
+	enum Encoding {
+		Tga = 0;
+		Png = 1;
+		Jpg = 2;
+		Exr = 3;
+		Hdr = 4;
+		Dds = 5;
+		Ktx = 6;
+	}
+
 	string name = 1;
-    bytes image_data = 2;
-    Texture.Format format = 3;
+    bytes data = 2;
+    Encoding encoding = 3;
     uint64 flags = 4;
 	bool mips = 5;
 }

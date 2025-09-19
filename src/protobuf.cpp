@@ -443,12 +443,12 @@ namespace darmok
 
         static constexpr std::string_view typeUrlPrefix = "type.googleapis.com/";
 
-        uint32_t getTypeId(const Message& msg)
+        IdType getTypeId(const Message& msg)
         {
             return std::hash<std::string>{}(getFullName(msg));
         }
 
-        uint32_t getTypeId(const Descriptor& desc)
+        IdType getTypeId(const Descriptor& desc)
         {
             return std::hash<std::string>{}(desc.full_name());
         }

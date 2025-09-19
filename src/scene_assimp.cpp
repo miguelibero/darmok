@@ -40,7 +40,7 @@ namespace darmok
 		}
     };
     
-    AssimpSceneDefinitionLoaderImpl::AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+    AssimpSceneDefinitionLoaderImpl::AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureSourceLoader> texLoader) noexcept
         : _dataLoader{ dataLoader }
         , _allocator{ allocator }
         , _texLoader{ texLoader }
@@ -84,7 +84,7 @@ namespace darmok
     }
 
     AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
-        bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader, OptionalRef<IProgramDefinitionLoader> progLoader) noexcept
+        bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader, OptionalRef<IProgramSourceLoader> progLoader) noexcept
         : _assimpScene{ assimpScene }
 		, _scene{ sceneDef }
         , _basePath{ basePath }
@@ -154,7 +154,7 @@ namespace darmok
         return *this;
     }
 
-    expected<bool, std::string> AssimpSceneDefinitionConverter::updateMeshes(Entity entity, const std::regex& regex) noexcept
+    expected<bool, std::string> AssimpSceneDefinitionConverter::updateMeshes(EntityId entity, const std::regex& regex) noexcept
     {
         auto found = false;
         auto addChild = _assimpScene.mNumMeshes > 1;
@@ -175,7 +175,7 @@ namespace darmok
         }
         return found;
     }
-    expected<void, std::string> AssimpSceneDefinitionConverter::addMeshComponents(Entity entity, int index, bool addChild) noexcept
+    expected<void, std::string> AssimpSceneDefinitionConverter::addMeshComponents(EntityId entity, int index, bool addChild) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
@@ -237,12 +237,12 @@ namespace darmok
         return {};
     }
 
-    expected<Entity, std::string> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, Entity parentEntity) noexcept
+    expected<EntityId, std::string> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, EntityId parentEntity) noexcept
     {
         auto name = AssimpUtils::getString(assimpNode.mName);
         if(AssimpUtils::match(name, _config.skip_nodes_regex()))
         {
-            return Entity{};
+            return 0;
         }
         auto entity = _scene.createEntity();
         TransformDefinition trans;
@@ -294,7 +294,7 @@ namespace darmok
         return entity;
     }
 
-    void AssimpSceneDefinitionConverter::updateCamera(Entity entity, const aiCamera& assimpCam) noexcept
+    void AssimpSceneDefinitionConverter::updateCamera(EntityId entity, const aiCamera& assimpCam) noexcept
     {
         aiMatrix4x4 mat;
         assimpCam.GetCameraMatrix(mat);
@@ -375,7 +375,7 @@ namespace darmok
         return glm::max(d1, d2);
     }
 
-    void AssimpSceneDefinitionConverter::updateLight(Entity entity, const aiLight& assimpLight) noexcept
+    void AssimpSceneDefinitionConverter::updateLight(EntityId entity, const aiLight& assimpLight) noexcept
     {
         auto pos = AssimpUtils::convert(assimpLight.mPosition);
         auto mat = glm::translate(glm::mat4{ 1.f }, pos);
@@ -458,12 +458,11 @@ namespace darmok
             return true;
         }
 
-        TextureDefinition texDef;
+        TextureSource texSrc;
         auto assimpTex = _assimpScene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
             size_t size = 0;
-            auto format = bimg::TextureFormat::Count;
             if (assimpTex->mHeight == 0)
             {
                 // compressed;
@@ -472,13 +471,21 @@ namespace darmok
             else
             {
                 size = static_cast<size_t>(assimpTex->mWidth * assimpTex->mHeight * 4);
-                format = bimg::TextureFormat::RGBA8;
+            }
+            auto encoding = Image::readEncoding(assimpTex->achFormatHint);
+            if (encoding == ImageEncoding::Count)
+            {
+                encoding = Image::getEncodingForPath(path);
             }
             DataView data{ assimpTex->pcData, size };
-            texDef.set_name(path);
-            // TODO: can we read the texture config?
-            auto imgResult = TextureDefinitionWrapper{ texDef }.loadImage(Image{ data, _allocator, format });
-            if (!imgResult)
+            auto name = AssimpUtils::getString(assimpTex->mFilename);
+            if (name.empty())
+            {
+                name = path;
+            }
+            texSrc.set_name(name);
+            auto loadResult = TextureSourceWrapper{ texSrc }.loadData(data, encoding);
+            if (!loadResult)
             {
                 return false;
             }
@@ -495,14 +502,14 @@ namespace darmok
             {
                 return false;
             }
-            texDef = *result.value();
+            texSrc = *result.value();
         }
         else
         {
             return false;
         }
         _texturePaths.insert(path);
-		_scene.addAsset(path, texDef);
+		_scene.addAsset(path, texSrc);
         return true;
     }
 
@@ -652,8 +659,36 @@ namespace darmok
             }
         }
     }
+
+    expected<bgfx::VertexLayout, std::string> AssimpSceneDefinitionConverter::loadVertexLayout(const protobuf::ProgramRef& progRef) noexcept
+    {
+        protobuf::VertexLayout layout;
+        if (progRef.has_standard())
+        {
+            auto progDef = StandardProgramLoader::loadDefinition(progRef.standard());
+            if (!progDef)
+            {
+                return unexpected{ "failed to load standard program definition" };
+            }
+            layout = progDef->varying().vertex();
+        }
+        if (progRef.has_path())
+        {
+            if (!_progLoader)
+            {
+                return unexpected{ "no program loader provided" };
+            }
+            auto result = (*_progLoader)(progRef.path());
+            if (!result)
+            {
+                return unexpected{ result.error() };
+            }
+            layout = result.value()->varying().vertex();
+        }
+        return ConstVertexLayoutWrapper{ layout }.getBgfx();
+    }
     
-    expected<void, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept
+    expected<void, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
     {
         const std::string name = AssimpUtils::getString(assimpMesh.mName);
         auto skip = false;
@@ -670,22 +705,19 @@ namespace darmok
             return {};
         }
 
-        auto progResult = Program::loadRefDefinition(_config.program(), _progLoader);
-        if(!progResult)
+        auto layoutResult = loadVertexLayout(_config.program());
+        if (!layoutResult)
         {
-            return unexpected<std::string>{ "failed to load program definition: " + progResult.error() };
-		}
+            return unexpected{ "could not load vertex layout: " + layoutResult.error()};
+        }
 
-		MeshData::Definition meshSrc;
-        AssimpMeshSourceConverter converter{ assimpMesh, meshSrc };
-        auto result = converter();
-        if(!result)
+        AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
+        auto convertResult = converter();
+        if(!convertResult)
         {
-            return unexpected{ result.error() };
+            return unexpected{ convertResult.error() };
 		}
-		auto& layout = progResult.value()->varying().vertex();
-		auto bgfxLayout = ConstVertexLayoutWrapper{ layout }.getBgfx();
-		meshDef = MeshData{ meshSrc }.createDefinition(bgfxLayout);
+		
         return {};
     }
 
@@ -707,19 +739,19 @@ namespace darmok
         {
             return itr->second;
         }
-        MeshDefinition meshDef;
-        auto result = updateMesh(meshDef, *assimpMesh);
+        MeshSource meshSrc;
+        auto result = updateMesh(meshSrc, *assimpMesh);
         if(!result)
         {
             return unexpected{ result.error() };
 		}
         auto path = "mesh_" + std::to_string(index);
-        if (meshDef.name().empty())
+        if (meshSrc.name().empty())
         {
-            meshDef.set_name(path);
+            meshSrc.set_name(path);
         }
         _meshPaths.emplace(assimpMesh, path);
-		_scene.addAsset(path, meshDef);
+		_scene.addAsset(path, meshSrc);
         return path;
     }
 
@@ -775,15 +807,12 @@ namespace darmok
         return path;
     }
 
-    AssimpSceneDefinitionLoader::AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader) noexcept
+    AssimpSceneDefinitionLoader::AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureSourceLoader> texLoader) noexcept
         : _impl{ std::make_unique<AssimpSceneDefinitionLoaderImpl>(dataLoader, allocator, texLoader) }
     {
     }
 
-    AssimpSceneDefinitionLoader::~AssimpSceneDefinitionLoader() noexcept
-    {
-        // empty to forward declare the impl pointer
-    }
+    AssimpSceneDefinitionLoader::~AssimpSceneDefinitionLoader() noexcept = default;
 
     AssimpSceneDefinitionLoader& AssimpSceneDefinitionLoader::setConfig(const Config& config) noexcept
     {
@@ -803,8 +832,7 @@ namespace darmok
 
     AssimpSceneFileImporterImpl::AssimpSceneFileImporterImpl(bx::AllocatorI& alloc)
         : _dataLoader{ alloc }
-        , _imgLoader{ _dataLoader, alloc }
-        , _texLoader{ _imgLoader }
+        , _texLoader{ _dataLoader }
         , _alloc{ alloc }
         , _progLoader{ _dataLoader }
     {
@@ -1037,7 +1065,7 @@ namespace darmok
         }
         Definition def;
         auto basePath = input.getRelativePath().parent_path();
-        OptionalRef<ITextureDefinitionLoader> texLoader = _texLoader;
+        OptionalRef<ITextureSourceLoader> texLoader = _texLoader;
         if (!_currentConfig->embed_textures())
         {
             texLoader = nullptr;
@@ -1069,10 +1097,7 @@ namespace darmok
     {
     }
 
-    AssimpSceneFileImporter::~AssimpSceneFileImporter()
-    {
-        // empty on purpose
-    }
+    AssimpSceneFileImporter::~AssimpSceneFileImporter() = default;
 
     bool AssimpSceneFileImporter::startImport(const Input& input, bool dry)
     {

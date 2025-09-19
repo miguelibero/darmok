@@ -813,6 +813,34 @@ namespace darmok
         return name;
     }
 
+    ProgramSourceLoader::ProgramSourceLoader(IDataLoader& dataLoader) noexcept
+        : _dataLoader{ dataLoader }
+    {
+    }
+
+    ProgramSourceLoader::Result ProgramSourceLoader::operator()(std::filesystem::path path) noexcept
+    {
+        auto result = (*_dataLoader)(path);
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
+        auto jsonResult = StringUtils::parseOrderedJson(result.value().toString());
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
+
+        auto src = std::make_shared<protobuf::ProgramSource>();
+        auto readResult = ProgramSourceWrapper{ *src }.read(jsonResult.value(), path.parent_path());
+        if (!readResult)
+        {
+            return unexpected{ readResult.error() };
+        }
+
+        return src;
+    }
+
     ProgramDefinitionFromSourceLoader::ProgramDefinitionFromSourceLoader(IProgramSourceLoader& srcLoader, const ProgramCompilerConfig& compilerConfig) noexcept
         : FromDefinitionLoader{ srcLoader }
         , _compiler{ compilerConfig }

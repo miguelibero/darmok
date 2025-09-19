@@ -60,19 +60,19 @@ namespace darmok
     public:
         using ImportConfig = protobuf::AssimpSceneImportConfig;
         using Definition = protobuf::Scene;
-        using MeshDefinition = protobuf::Mesh;
+        using MeshSource = protobuf::MeshSource;
         using ArmatureDefinition = protobuf::Armature;
         using TransformDefinition = protobuf::Transform;
         using CameraDefinition = protobuf::Camera;
         using RenderableDefinition = protobuf::Renderable;
         using SkinnableDefinition = protobuf::Skinnable;
         using MaterialDefinition = protobuf::Material;
-        using TextureDefinition = protobuf::Texture;
+        using TextureSource = protobuf::TextureSource;
         using TextureType = protobuf::MaterialTexture::Type;
         using Message = google::protobuf::Message;
 
         AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
-            bx::AllocatorI& alloc, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr, OptionalRef<IProgramDefinitionLoader> progLoader = nullptr) noexcept;
+            bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader = nullptr, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
         static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
@@ -80,8 +80,8 @@ namespace darmok
         expected<void, std::string> operator()() noexcept;
     private:
         bx::AllocatorI& _allocator;
-        OptionalRef<ITextureDefinitionLoader> _texLoader;
-        OptionalRef<IProgramDefinitionLoader> _progLoader;
+        OptionalRef<ITextureSourceLoader> _texLoader;
+        OptionalRef<IProgramSourceLoader> _progLoader;
         const aiScene& _assimpScene;
 		SceneDefinitionWrapper _scene;
         std::filesystem::path _basePath;
@@ -111,16 +111,17 @@ namespace darmok
         std::string getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept;
         bool loadTexture(const std::string& path) noexcept;
 
-        expected<Entity, std::string> updateNode(const aiNode& assimpNode, Entity parentEntity = entt::null) noexcept;
+        expected<EntityId, std::string> updateNode(const aiNode& assimpNode, EntityId parentEntity = 0) noexcept;
         void updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
-        expected<void, std::string> updateMesh(MeshDefinition& meshDef, const aiMesh& assimpMesh) noexcept;
+        expected<void, std::string> updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept;
         void updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
-        void updateCamera(Entity entity, const aiCamera& assimpCam) noexcept;
-        void updateLight(Entity entity, const aiLight& assimpLight) noexcept;
-        expected<bool, std::string> updateMeshes(Entity entity, const std::regex& regex) noexcept;
+        void updateCamera(EntityId entity, const aiCamera& assimpCam) noexcept;
+        void updateLight(EntityId entity, const aiLight& assimpLight) noexcept;
+        expected<bool, std::string> updateMeshes(EntityId entity, const std::regex& regex) noexcept;
 
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
-        expected<void, std::string> addMeshComponents(Entity entity, int index, bool addChild) noexcept;
+        expected<void, std::string> addMeshComponents(EntityId entity, int index, bool addChild) noexcept;
+        expected<bgfx::VertexLayout, std::string> loadVertexLayout(const protobuf::ProgramRef& progRef) noexcept;
     };
 
     class AssimpSceneDefinitionLoaderImpl final
@@ -129,7 +130,7 @@ namespace darmok
         using Config = protobuf::AssimpSceneImportConfig;
         using Model = protobuf::Scene;
         using Result = expected<std::shared_ptr<Model>, std::string>;
-        AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
+        AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureSourceLoader> texLoader = nullptr) noexcept;
         void setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
         Result operator()(const std::filesystem::path& path);
@@ -138,7 +139,7 @@ namespace darmok
         Config _config;
         IDataLoader& _dataLoader;
         bx::AllocatorI& _allocator;
-        OptionalRef<ITextureDefinitionLoader> _texLoader;
+        OptionalRef<ITextureSourceLoader> _texLoader;
         AssimpLoader _assimpLoader;
     };
 
@@ -164,9 +165,8 @@ namespace darmok
         bx::AllocatorI& _alloc;
         bx::FileReader _fileReader;
         FileDataLoader _dataLoader;
-        ImageLoader _imgLoader;
-        ImageTextureDefinitionLoader _texLoader;
-        DataProgramDefinitionLoader _progLoader;
+        ImageTextureSourceLoader _texLoader;
+        ProgramSourceLoader _progLoader;
         AssimpLoader _assimpLoader;
         std::optional<Config> _currentConfig;
         OutputFormat _outputFormat = OutputFormat::Binary;

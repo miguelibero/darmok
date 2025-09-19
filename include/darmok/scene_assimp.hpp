@@ -23,7 +23,7 @@ namespace darmok
 {
     class IDataLoader;
     class AssimpSceneDefinitionLoaderImpl;
-    class ITextureDefinitionLoader;
+    class ITextureSourceLoader;
 
     namespace protobuf
     {
@@ -37,7 +37,7 @@ namespace darmok
         using Config = protobuf::AssimpSceneImportConfig;
         using Model = protobuf::Scene;
 
-        AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureDefinitionLoader> texLoader = nullptr) noexcept;
+        AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureSourceLoader> texLoader = nullptr) noexcept;
         ~AssimpSceneDefinitionLoader() noexcept;
         AssimpSceneDefinitionLoader& setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;

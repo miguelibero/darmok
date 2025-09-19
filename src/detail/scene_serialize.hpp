@@ -15,23 +15,23 @@
 
 namespace darmok
 {
-    class SceneArchiveImpl final : public IComponentLoadContext
+    class SceneConverterImpl final : public IComponentLoadContext
     {
     public:
-        using Result = SceneArchive::Result;
-        using LoadFunction = SceneArchive::LoadFunction;
-        using ComponentData = SceneArchive::ComponentData;
+        using Result = SceneConverter::Result;
+        using LoadFunction = SceneConverter::LoadFunction;
+        using ComponentData = SceneConverter::ComponentData;
         using SceneDefinition = protobuf::Scene;
 
-        SceneArchiveImpl();
+        SceneConverterImpl() noexcept;
 
         // IComponentLoadContext
         IAssetContext& getAssets() noexcept override;
         const Scene& getScene() const noexcept override;
         Scene& getScene() noexcept override;
-        Entity getEntity(uint32_t entityId) const noexcept override;
+        Entity getEntity(EntityId entityId) const noexcept override;
 
-        // SceneArchive
+        // SceneConverter
         expected<Entity, std::string> load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
@@ -40,8 +40,8 @@ namespace darmok
         ComponentData getComponentData() noexcept;
         void addLoad(LoadFunction&& func);
         void addPostLoad(LoadFunction&& func);
-        Result beforeLoadComponent(uint32_t typeId) noexcept;
-        Result afterLoadComponent(uint32_t typeId) noexcept;
+        Result beforeLoadComponent(IdType typeId) noexcept;
+        Result afterLoadComponent(IdType typeId) noexcept;
         entt::continuous_loader& getLoader() noexcept;
 
 		AssetPack& getAssetPack() noexcept;

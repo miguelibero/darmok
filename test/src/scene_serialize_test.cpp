@@ -157,37 +157,45 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     loadFromData(data, sceneDef);
 
     Scene scene;
-    SceneArchive archive;
-    archive.registerComponent<TestComponent>();
-    auto result = archive.load(sceneDef, scene);
+    SceneConverter convert;
+    convert.registerComponent<TestComponent>();
+    auto result = convert(sceneDef, scene);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities{ view.begin(), view.end() };
 
-    Entity entity = archive.getComponentLoadContext().getEntity(2);
+    Entity entity = convert.getComponentLoadContext().getEntity(2);
     REQUIRE(result.value() == entity);
 
     REQUIRE(entities.size() == 2);
     REQUIRE(scene.getComponent<TestComponent>(entity)->value == 666);
 }
 
-/*
 TEST_CASE("component structs are serialized", "[scene-serialize]")
 {
+    Scene::Definition sceneDef;
+
+    {
+        SceneDefinitionWrapper sceneWrap{ sceneDef };
+        auto entity = sceneWrap.createEntity();
+        TestStructComponent::Definition comp;
+        comp.mutable_value()->set_value(42);
+        comp.mutable_value()->set_str("lala");
+        sceneWrap.setComponent(entity, comp);
+        entity = sceneWrap.createEntity();
+        comp.mutable_value()->set_value(666);
+        comp.mutable_value()->set_str("lolo");
+        sceneWrap.setComponent(entity, comp);
+    }
+
     Scene scene;
-    auto entity = scene.createEntity();
-    scene.addComponent<TestStructComponent>(entity, 42, "lala");
-    entity = scene.createEntity();
-    scene.addComponent<TestStructComponent>(entity, 666, "lolo");
-
-    TestStructComponent::bindMeta();
-
-    auto data = saveToData(scene);
-    scene.destroyEntitiesImmediate();
-    loadFromData(data, scene);
+    SceneConverter convert;
+    convert.registerComponent<TestStructComponent>();
+    auto result = convert(sceneDef, scene);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities(view.begin(), view.end());
+    Entity entity = result.value();
 
     REQUIRE(entities.size() == 2);
     auto comp = scene.getComponent<TestStructComponent>(entity);
@@ -197,47 +205,64 @@ TEST_CASE("component structs are serialized", "[scene-serialize]")
 
 TEST_CASE("component references are serialized", "[scene-serialize]")
 {
+    Scene::Definition sceneDef;
+    EntityId entityId;
+    {
+        SceneDefinitionWrapper sceneWrap{ sceneDef };
+        entityId = sceneWrap.createEntity();
+        TestComponent::Definition comp1;
+        comp1.set_value(42);
+        sceneWrap.setComponent(entityId, comp1);
+        TestRefComponent::Definition comp2;
+        comp2.set_comp(entityId);
+        sceneWrap.setComponent(entityId, comp2);
+    }
+
     Scene scene;
-    auto entity = scene.createEntity();
-    auto& comp = scene.addComponent<TestComponent>(entity, 42);
-    auto& refComp1 = scene.addComponent<TestRefComponent>(entity, comp);
+    SceneConverter convert;
+    convert.registerComponent<TestComponent>();
+    convert.registerComponent<TestRefComponent>();
+    auto result = convert(sceneDef, scene);
+    REQUIRE(result);
 
-    TestComponent::bindMeta();
-    TestRefComponent::bindMeta();
-
-    auto data = saveToData(scene);
-    scene.destroyEntitiesImmediate();
-    loadFromData(data, scene);
-
+    auto entity = convert.getComponentLoadContext().getEntity(entityId);
     auto refComp = scene.getComponent<TestRefComponent>(entity);
     REQUIRE(refComp->comp->value == 42);
 }
 
 TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")
 {
+    Scene::Definition sceneDef;
+    EntityId parentEntityId;
+    EntityId child2EntityId;
+    uint32_t entityId;
+    {
+        SceneDefinitionWrapper sceneWrap{ sceneDef };
+        parentEntityId = sceneWrap.createEntity();
+        auto parent = Transform::createDefinition();
+        sceneWrap.setComponent(parentEntityId, parent);
+        auto child1EntityId = sceneWrap.createEntity();
+        auto child1 = Transform::createDefinition();
+        child1.set_parent(parentEntityId);
+        sceneWrap.setComponent(child1EntityId, child1);
+        child2EntityId = sceneWrap.createEntity();
+        auto child2 = Transform::createDefinition();
+        child2.set_parent(parentEntityId);
+        *child2.mutable_position() = protobuf::convert(glm::vec3(42, 0, 666));
+        sceneWrap.setComponent(child2EntityId, child2);
+    }
+
     Scene scene;
+    SceneConverter convert;
+    auto result = convert(sceneDef, scene);
+    REQUIRE(result);
 
-    auto entity = scene.createEntity();
-    auto& parent = scene.addComponent<Transform>(entity);
-    entity = scene.createEntity();
-    auto& child1 = scene.addComponent<Transform>(entity);
-    child1.setParent(parent);
-    entity = scene.createEntity();
-    auto& child2 = scene.addComponent<Transform>(entity);
-    child2.setParent(parent);
-    child2.setPosition(glm::vec3(42, 0, 666));
+    auto child2Entity = convert.getComponentLoadContext().getEntity(child2EntityId);
+    auto parentEntity = convert.getComponentLoadContext().getEntity(parentEntityId);
+    auto child2 = scene.getComponent<Transform>(child2Entity);
+    REQUIRE(child2->getPosition() == glm::vec3(42, 0, 666));
 
-    Transform::bindMeta();
-
-    auto data = saveToData(scene);
-    scene.destroyEntitiesImmediate();
-    loadFromData(data, scene);
-
-    auto newChild2 = scene.getComponent<Transform>(entity);
-    REQUIRE(newChild2->getPosition() == glm::vec3(42, 0, 666));
-
-    auto newParent = newChild2->getParent();
-    REQUIRE(newParent->getChildren().size() == 2);
+    auto parent = child2->getParent();
+    REQUIRE(scene.getEntity(*parent) == parentEntity);
+    REQUIRE(parent->getChildren().size() == 2);
 }
-
-*/

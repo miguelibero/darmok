@@ -177,7 +177,7 @@ namespace darmok::editor
     {
         _requestUpdateScene = false;
 
-        auto result = _sceneArchive.load(_sceneDef, *_scene);
+        auto result = _sceneConverter(_sceneDef, *_scene);
         if (result)
         {
             _app.getOrAddComponent<SceneAppComponent>().update(0.f);
@@ -257,12 +257,12 @@ namespace darmok::editor
 
     IComponentLoadContext& EditorProject::getComponentLoadContext()
     {
-        return _sceneArchive.getComponentLoadContext();
+        return _sceneConverter.getComponentLoadContext();
     }
 
     AssetPack& EditorProject::getAssets()
     {
-		return _sceneArchive.getAssetPack();
+		return _sceneConverter.getAssetPack();
     }
 
     void EditorProject::configureEditorScene(Scene& scene)

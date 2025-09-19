@@ -23,17 +23,16 @@ namespace darmok
 		return _def->name();
     }
 
-    std::vector<Entity> ConstSceneDefinitionWrapper::getEntities() const noexcept
+    std::vector<EntityId> ConstSceneDefinitionWrapper::getEntities() const noexcept
     {
-        std::vector<Entity> entities;
+        std::vector<EntityId> entities;
         for (auto& [type, typeComps] : _def->registry().components())
         {
             for (auto& [entityId, comp] : typeComps.components())
             {
-                Entity entity{ entityId };
-                if (std::find(entities.begin(), entities.end(), entity) == entities.end())
+                if (std::find(entities.begin(), entities.end(), entityId) == entities.end())
                 {
-                    entities.push_back(entity);
+                    entities.push_back(entityId);
                 }
             }
         }
@@ -41,9 +40,9 @@ namespace darmok
         return entities;
     }
 
-    std::vector<Entity> ConstSceneDefinitionWrapper::getRootEntities() const noexcept
+    std::vector<EntityId> ConstSceneDefinitionWrapper::getRootEntities() const noexcept
     {
-        std::vector<Entity> entities;
+        std::vector<EntityId> entities;
         for (auto& [entity, trans] : getTypeComponents<Transform::Definition>())
         {
             if (!trans.has_parent() || trans.parent() == 0)
@@ -66,12 +65,12 @@ namespace darmok
         return entities;
     }
 
-    std::vector<Entity> ConstSceneDefinitionWrapper::getChildren(Entity entity) const noexcept
+    std::vector<EntityId> ConstSceneDefinitionWrapper::getChildren(EntityId entity) const noexcept
     {
-        std::vector<Entity> entities;
+        std::vector<EntityId> entities;
         for (auto& [childEntity, trans] : getTypeComponents<Transform::Definition>())
         {
-            if (trans.parent() == entt::to_integral(entity))
+            if (trans.parent() == entity)
             {
                 entities.push_back(childEntity);
             }
@@ -90,7 +89,7 @@ namespace darmok
         return itr->second;
     }
 
-    OptionalRef<const ConstSceneDefinitionWrapper::Any> ConstSceneDefinitionWrapper::getComponent(Entity entity, IdType typeId) const noexcept
+    OptionalRef<const ConstSceneDefinitionWrapper::Any> ConstSceneDefinitionWrapper::getComponent(EntityId entity, IdType typeId) const noexcept
     {
         auto typeComps = getTypeComponents(typeId);
         if (!typeComps)
@@ -98,7 +97,7 @@ namespace darmok
             return std::nullopt;
         }
         auto& components = typeComps->components();
-        auto itr = components.find(entt::to_integral(entity));
+        auto itr = components.find(entity);
         if (itr == components.end())
         {
             return std::nullopt;
@@ -106,7 +105,7 @@ namespace darmok
         return itr->second;
     }
 
-    std::optional<Entity> ConstSceneDefinitionWrapper::getEntity(const Any& anyComp) const noexcept
+    std::optional<EntityId> ConstSceneDefinitionWrapper::getEntity(const Any& anyComp) const noexcept
     {
         auto typeId = protobuf::getTypeId(anyComp);
         auto typeComps = getTypeComponents(typeId);
@@ -121,7 +120,7 @@ namespace darmok
             });
         if (itr != comps.end())
         {
-            return Entity{ itr->first };
+            return itr->first;
         }
 		return std::nullopt;
     }
@@ -243,12 +242,12 @@ namespace darmok
         _def->set_name(std::string{ name });
     }
 
-    Entity SceneDefinitionWrapper::createEntity() noexcept
+    EntityId SceneDefinitionWrapper::createEntity() noexcept
     {
         auto& reg = *_def->mutable_registry();
         auto v = reg.entities() + 1;
         reg.set_entities(v);
-        return Entity{ v };
+        return v;
     }
 
     bool SceneDefinitionWrapper::setAsset(const std::filesystem::path& path, const Message& asset) noexcept
@@ -266,7 +265,6 @@ namespace darmok
         }
         return result.second;
     }
-
 
     std::filesystem::path SceneDefinitionWrapper::addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept
     {
@@ -293,11 +291,11 @@ namespace darmok
         return path;
     }
 
-    bool SceneDefinitionWrapper::setComponent(Entity entity, const Message& comp) noexcept
+    bool SceneDefinitionWrapper::setComponent(EntityId entity, const Message& comp) noexcept
     {
         auto typeId = protobuf::getTypeId(comp);
         auto& components = _def->mutable_registry()->mutable_components()->try_emplace(typeId).first->second;
-        auto result = components.mutable_components()->try_emplace(entt::to_integral(entity));
+        auto result = components.mutable_components()->try_emplace(entity);
         if (protobuf::isAny(comp))
         {
             result.first->second = static_cast<const Any&>(comp);
@@ -309,13 +307,13 @@ namespace darmok
         return result.second;
     }
 
-    std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getComponents(Entity entity) noexcept
+    std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getComponents(EntityId entity) noexcept
     {
         std::vector<std::reference_wrapper<Any>> comps;
         for(auto& [typeId, typeComps] : *_def->mutable_registry()->mutable_components())
         {
             auto& components = *typeComps.mutable_components();
-            auto itr = components.find(entt::to_integral(entity));
+            auto itr = components.find(entity);
             if (itr != components.end())
             {
                 comps.push_back(std::ref(itr->second));
@@ -335,7 +333,7 @@ namespace darmok
         return itr->second;
     }
 
-    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getComponent(Entity entity, IdType typeId) noexcept
+    OptionalRef<SceneDefinitionWrapper::Any> SceneDefinitionWrapper::getComponent(EntityId entity, IdType typeId) noexcept
     {
 		auto typeComps = getTypeComponents(typeId);
         if(!typeComps)
@@ -343,7 +341,7 @@ namespace darmok
             return std::nullopt;
         }
         auto& components = *typeComps->mutable_components();
-        auto itr = components.find(entt::to_integral(entity));
+        auto itr = components.find(entity);
         if (itr == components.end())
         {
             return std::nullopt;
@@ -351,13 +349,13 @@ namespace darmok
 		return itr->second;
     }
 
-    bool SceneDefinitionWrapper::destroyEntity(Entity entity) noexcept
+    bool SceneDefinitionWrapper::destroyEntity(EntityId entity) noexcept
     {
         bool found = false;
         for (auto& [typeId, typeComps] : *_def->mutable_registry()->mutable_components())
         {
             auto& components = *typeComps.mutable_components();
-            auto itr = components.find(entt::to_integral(entity));
+            auto itr = components.find(entity);
             if (itr != components.end())
             {
                 components.erase(itr);
@@ -367,14 +365,14 @@ namespace darmok
         return found;
     }
 
-    bool SceneDefinitionWrapper::removeComponent(Entity entity, IdType typeId) noexcept
+    bool SceneDefinitionWrapper::removeComponent(EntityId entity, IdType typeId) noexcept
     {
         auto typeComps = getTypeComponents(typeId);
         if (!typeComps)
         {
             return false;
         }
-        return typeComps->mutable_components()->erase(entt::to_integral(entity)) > 0;
+        return typeComps->mutable_components()->erase(entity) > 0;
     }
 
     bool SceneDefinitionWrapper::removeComponent(const Any& anyComp) noexcept
@@ -472,11 +470,10 @@ namespace darmok
         return true;
     }
 
-	Scene SceneArchiveImpl::_emptyScene{};
+	Scene SceneConverterImpl::_emptyScene{};
+    const SceneConverterImpl::SceneDefinition SceneConverterImpl::_emptySceneDef;
 
-    const SceneArchiveImpl::SceneDefinition SceneArchiveImpl::_emptySceneDef;
-
-    SceneArchiveImpl::SceneArchiveImpl()
+    SceneConverterImpl::SceneConverterImpl() noexcept
         : _scene{ _emptyScene }
         , _sceneDef{ _emptySceneDef }
         , _loader{ _scene->getRegistry() }
@@ -485,17 +482,17 @@ namespace darmok
     {
     }
 
-    void SceneArchiveImpl::createAssetPack() const noexcept
+    void SceneConverterImpl::createAssetPack() const noexcept
     {
         _assetPack = std::make_unique<AssetPack>(_sceneDef->assets(), _assetConfig);
     }
 
-    IAssetContext& SceneArchiveImpl::getAssets() noexcept
+    IAssetContext& SceneConverterImpl::getAssets() noexcept
     {
         return getAssetPack();
     }
 
-    AssetPack& SceneArchiveImpl::getAssetPack() noexcept
+    AssetPack& SceneConverterImpl::getAssetPack() noexcept
     {
         if (!_assetPack)
         {
@@ -504,7 +501,7 @@ namespace darmok
 		return *_assetPack;
     }
 
-    const AssetPack& SceneArchiveImpl::getAssetPack() const noexcept
+    const AssetPack& SceneConverterImpl::getAssetPack() const noexcept
     {
         if (!_assetPack)
         {
@@ -513,27 +510,27 @@ namespace darmok
         return *_assetPack;
     }
 
-    void SceneArchiveImpl::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
+    void SceneConverterImpl::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
     {
 		_assetConfig = std::move(assetConfig);
     }
 
-    const Scene& SceneArchiveImpl::getScene() const noexcept
+    const Scene& SceneConverterImpl::getScene() const noexcept
     {
         return *_scene;
     }
 
-    Scene& SceneArchiveImpl::getScene() noexcept
+    Scene& SceneConverterImpl::getScene() noexcept
     {
         return *_scene;
     }
 
-    Entity SceneArchiveImpl::getEntity(uint32_t entityId) const noexcept
+    Entity SceneConverterImpl::getEntity(EntityId entityId) const noexcept
     {
         return _loader.map(Entity{ entityId });
     }
 
-    expected<Entity, std::string> SceneArchiveImpl::load(const Scene::Definition& sceneDef, Scene& scene) noexcept
+    expected<Entity, std::string> SceneConverterImpl::load(const Scene::Definition& sceneDef, Scene& scene) noexcept
     {
         if (_scene.ptr() != &scene)
         {
@@ -579,10 +576,10 @@ namespace darmok
         {
             return unexpected{ "No root entities found in the scene definition." };
         }
-        return getEntity(entt::to_integral(roots.back()));
+        return getEntity(roots.back());
     }
 
-    void SceneArchiveImpl::operator()(std::underlying_type_t<Entity>& count) noexcept
+    void SceneConverterImpl::operator()(std::underlying_type_t<Entity>& count) noexcept
     {
         if (!_sceneDef)
         {
@@ -608,7 +605,7 @@ namespace darmok
         _count = 0;
     }
 
-    void SceneArchiveImpl::operator()(Entity& entity) noexcept
+    void SceneConverterImpl::operator()(Entity& entity) noexcept
     {
         if (_typeId == 0)
         {
@@ -621,12 +618,12 @@ namespace darmok
         }
     }
 
-    void SceneArchiveImpl::addError(std::string_view error) noexcept
+    void SceneConverterImpl::addError(std::string_view error) noexcept
     {
 		_errors.emplace_back(error);
     }
 
-    SceneArchiveImpl::ComponentData SceneArchiveImpl::getComponentData() noexcept
+    SceneConverterImpl::ComponentData SceneConverterImpl::getComponentData() noexcept
     {
         auto& typeComps = _sceneDef->registry().components();
         auto itr = typeComps.find(_typeId);
@@ -647,25 +644,25 @@ namespace darmok
         return { itr2->first, &itr2->second };
     }
 
-    void SceneArchiveImpl::addLoad(LoadFunction&& func)
+    void SceneConverterImpl::addLoad(LoadFunction&& func)
     {
         _loadFuncs.push_back(std::move(func));
     }
 
-    void SceneArchiveImpl::addPostLoad(LoadFunction&& func)
+    void SceneConverterImpl::addPostLoad(LoadFunction&& func)
     {
         _postLoadFuncs.push_back(std::move(func));
         ++_count;
     }
 
-    SceneArchiveImpl::Result SceneArchiveImpl::beforeLoadComponent(uint32_t typeId) noexcept
+    SceneConverterImpl::Result SceneConverterImpl::beforeLoadComponent(IdType typeId) noexcept
     {
         _errors.clear();
         _typeId = typeId;
         return {};
     }
 
-    SceneArchiveImpl::Result SceneArchiveImpl::afterLoadComponent(uint32_t typeId) noexcept
+    SceneConverterImpl::Result SceneConverterImpl::afterLoadComponent(IdType typeId) noexcept
     {
         if(!_errors.empty())
         {
@@ -676,13 +673,59 @@ namespace darmok
         return {};
     }
 
-    entt::continuous_loader& SceneArchiveImpl::getLoader() noexcept
+    entt::continuous_loader& SceneConverterImpl::getLoader() noexcept
     {
         return _loader;
     }
 
-    SceneArchive::SceneArchive() noexcept
-        : _impl{ std::make_unique<SceneArchiveImpl>() }
+    SceneArchive::SceneArchive(SceneConverterImpl& impl) noexcept
+        : _impl{ impl }
+    {
+    }
+
+    void SceneArchive::operator()(std::underlying_type_t<Entity>& count) noexcept
+    {
+        _impl(count);
+    }
+
+    void SceneArchive::operator()(Entity& entity) noexcept
+    {
+        _impl(entity);
+    }
+
+    Entity SceneArchive::getEntity(EntityId entityId) const noexcept
+    {
+        return _impl.getEntity(entityId);
+    }
+
+    Scene& SceneArchive::getScene() noexcept
+    {
+        return _impl.getScene();
+    }
+
+    void SceneArchive::addError(std::string_view error) noexcept
+    {
+        _impl.addError(error);
+    }
+
+    SceneArchive::ComponentData SceneArchive::getComponentData() noexcept
+    {
+        return _impl.getComponentData();
+    }
+
+    IComponentLoadContext& SceneArchive::getComponentLoadContext() noexcept
+    {
+        return _impl;
+    }
+
+    void SceneArchive::addPostLoad(LoadFunction&& func)
+    {
+        _impl.addPostLoad(std::move(func));
+    }
+
+    SceneConverter::SceneConverter() noexcept
+        : _impl{ std::make_unique<SceneConverterImpl>() }
+        , _archive{ *_impl }
     {
         registerComponent<Transform>();
         registerComponent<Renderable>();
@@ -694,83 +737,55 @@ namespace darmok
         registerComponent<AmbientLight>();
 	}
 
-    SceneArchive::~SceneArchive() noexcept = default;
+    SceneConverter::~SceneConverter() noexcept = default;
 
-    expected<Entity, std::string> SceneArchive::load(const SceneDefinition& sceneDef, Scene& scene)
+    expected<Entity, std::string> SceneConverter::operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept
     {
 		return _impl->load(sceneDef, scene);
     }
 
-    void SceneArchive::operator()(std::underlying_type_t<Entity>& count) noexcept
+    SceneArchive& SceneConverter::getArchive() noexcept
     {
-        return _impl->operator()(count);
+        return _archive;
     }
 
-    void SceneArchive::operator()(Entity& entity) noexcept
-    {
-        return _impl->operator()(entity);
-    }
-
-    IComponentLoadContext& SceneArchive::getComponentLoadContext() noexcept
+    IComponentLoadContext& SceneConverter::getComponentLoadContext() noexcept
     {
         return *_impl;
     }
     
-    AssetPack& SceneArchive::getAssetPack() noexcept
+    AssetPack& SceneConverter::getAssetPack() noexcept
     {
 		return _impl->getAssetPack();
     }
 
-    const AssetPack& SceneArchive::getAssetPack() const noexcept
+    const AssetPack& SceneConverter::getAssetPack() const noexcept
     {
         return _impl->getAssetPack();
     }
 
-    SceneArchive& SceneArchive::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
+    SceneConverter& SceneConverter::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
     {
 		_impl->setAssetPackConfig(std::move(assetConfig));
         return *this;
     }
 
-    Scene& SceneArchive::getScene() noexcept
-    {
-		return _impl->getScene();
-    }
-
-    Entity SceneArchive::getEntity(uint32_t entityId) const noexcept
-    {
-		return _impl->getEntity(entityId);
-    }
-    void SceneArchive::addError(std::string_view error) noexcept
-    {
-		_impl->addError(error);
-    }
-
-    SceneArchive::ComponentData SceneArchive::getComponentData() noexcept
-    {
-		return _impl->getComponentData();
-    }
-    void SceneArchive::addLoad(LoadFunction&& func)
+    void SceneConverter::addLoad(LoadFunction&& func)
     {
 		return _impl->addLoad(std::move(func));
     }
 
-    void SceneArchive::addPostLoad(LoadFunction&& func)
-    {
-		return _impl->addPostLoad(std::move(func));
-    }
-
-    SceneArchive::Result SceneArchive::beforeLoadComponent(uint32_t typeId) noexcept
+    SceneConverter::Result SceneConverter::beforeLoadComponent(IdType typeId) noexcept
     {
 		return _impl->beforeLoadComponent(typeId);
     }
 
-    SceneArchive::Result SceneArchive::afterLoadComponent(uint32_t typeId) noexcept
+    SceneConverter::Result SceneConverter::afterLoadComponent(IdType typeId) noexcept
     {
 		return _impl->afterLoadComponent(typeId);
     }
 
-    entt::continuous_loader& SceneArchive::getLoader() noexcept
+    entt::continuous_loader& SceneConverter::getLoader() noexcept
     {
 		return _impl->getLoader();
     }
@@ -778,7 +793,7 @@ namespace darmok
     SceneLoader::SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig)
         : _defLoader{ defLoader }
     {
-		_archive.setAssetPackConfig(assetConfig);
+        _converter.setAssetPackConfig(assetConfig);
     }
 
     expected<Entity, std::string> SceneLoader::operator()(Scene& scene, std::filesystem::path path)
@@ -788,6 +803,6 @@ namespace darmok
         {
             return unexpected<std::string>{ defResult.error() };
         }
-        return _archive.load(*defResult.value(), scene);
+        return _converter(*defResult.value(), scene);
     }
 }

@@ -31,7 +31,7 @@ namespace darmok
     public:
         TransformDefinitionWrapper(Definition& def) noexcept;
         TransformDefinitionWrapper& setLocalMatrix(const glm::mat4& mat) noexcept;
-        TransformDefinitionWrapper& setParent(Entity parentEntity) noexcept;
+        TransformDefinitionWrapper& setParent(EntityId parentEntity) noexcept;
         TransformDefinitionWrapper& setName(const std::string& name) noexcept;
     private:
         Definition& _def;

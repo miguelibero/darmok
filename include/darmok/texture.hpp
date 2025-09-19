@@ -26,11 +26,22 @@ namespace darmok
 	{
 	public:
 		using Source = protobuf::TextureSource;
+		using Definition = protobuf::Texture;
 		ConstTextureSourceWrapper(const Source& src) noexcept;
 
-		expected<Image, std::string> createImage(bx::AllocatorI& alloc) noexcept;
+		expected<Image, std::string> createImage(bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) noexcept;
 	private:
 		const Source& _src;
+	};
+
+	class TextureSourceWrapper final : public ConstTextureSourceWrapper
+	{
+	public:
+
+		TextureSourceWrapper(Source& src) noexcept;
+		expected<void, std::string> loadData(DataView data, ImageEncoding encoding = ImageEncoding::Count) noexcept;
+	private:
+		Source& _src;
 	};
 
 	class ConstTextureDefinitionWrapper
@@ -57,11 +68,23 @@ namespace darmok
 		Definition& _def;
 	};
 
-	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<protobuf::Texture>{};
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureSourceLoader : public ILoader<protobuf::TextureSource>{};
-
-	using DataTextureDefinitionLoader = DataProtobufLoader<ITextureDefinitionLoader>;
 	using DataTextureSourceLoader = DataProtobufLoader<ITextureSourceLoader>;
+
+	class DARMOK_EXPORT ImageTextureSourceLoader final : public ITextureSourceLoader
+	{
+	public:
+		ImageTextureSourceLoader(IDataLoader& dataLoader) noexcept;
+		bool supports(const std::filesystem::path& path) const noexcept;
+		ImageTextureSourceLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
+		[[nodiscard]] Result operator()(std::filesystem::path path) override;
+	private:
+		IDataLoader& _dataLoader;
+		uint64_t _loadFlags;
+	};
+
+	class DARMOK_EXPORT BX_NO_VTABLE ITextureDefinitionLoader : public ILoader<protobuf::Texture>{};
+	using DataTextureDefinitionLoader = DataProtobufLoader<ITextureDefinitionLoader>;
 
 	class DARMOK_EXPORT ImageTextureDefinitionLoader final : public ITextureDefinitionLoader
 	{

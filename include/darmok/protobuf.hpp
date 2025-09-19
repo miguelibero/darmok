@@ -5,6 +5,7 @@
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/asset_core.hpp>
+#include <darmok/scene_fwd.hpp>
 #include <filesystem>
 #include <string>
 #include <fstream>
@@ -62,8 +63,8 @@ namespace darmok
         [[nodiscard]] expected<void, std::string> writeJson(const Message& msg, nlohmann::json& json);
         [[nodiscard]] expected<void, std::string> writeJson(const Message& msg, const FieldDescriptor& field, nlohmann::json& json);
 
-        [[nodiscard]] uint32_t getTypeId(const Message& msg);
-        [[nodiscard]] uint32_t getTypeId(const Descriptor& desc);
+        [[nodiscard]] IdType getTypeId(const Message& msg);
+        [[nodiscard]] IdType getTypeId(const Descriptor& desc);
         [[nodiscard]] std::string getFullName(const Message& msg);
         [[nodiscard]] std::string getTypeUrl(const Message& msg);
         [[nodiscard]] std::string getTypeUrl(const Descriptor& desc);
@@ -71,7 +72,7 @@ namespace darmok
         [[nodiscard]] std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc);
 
         template<class T>
-        [[nodiscard]] uint32_t getTypeId()
+        [[nodiscard]] IdType getTypeId()
         {
             return getTypeId(*T::descriptor());
         }
@@ -91,16 +92,13 @@ namespace darmok
         using Result = Interface::Result;
 
         DataProtobufLoader(IDataLoader& dataLoader) noexcept
-            : _dataLoader(dataLoader)
+            : _dataLoader{ dataLoader }
         {
         }
 
-        DataProtobufLoader(const DataProtobufLoader& other) = delete;
-        DataProtobufLoader(DataProtobufLoader&& other) = delete;
-
-        Result operator()(std::filesystem::path path) override
+        Result operator()(std::filesystem::path path) noexcept override
         {
-            auto dataResult = _dataLoader(path);
+            auto dataResult = (*_dataLoader)(path);
 			if (!dataResult)
 			{
 				return unexpected<std::string>{ dataResult.error() };
@@ -116,7 +114,7 @@ namespace darmok
             return res;
         }
     private:
-        IDataLoader& _dataLoader;
+        OptionalRef<IDataLoader> _dataLoader;
     };
 
     template<typename Loader>
@@ -124,8 +122,8 @@ namespace darmok
     {
     public:
         ProtobufFileImporter(Loader& loader, const std::string& name) noexcept
-            : _loader(loader)
-            , _outputFormat(protobuf::Format::Binary)
+            : _loader{ loader }
+            , _outputFormat{ protobuf::Format::Binary }
         {
         }
 
