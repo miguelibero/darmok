@@ -60,7 +60,7 @@ namespace darmok
                 layout = MeshData::getDefaultVertexLayout();
             }
             const Line line{ glm::vec3{0}, glm::vec3{1, 0, 0} };
-            _boneMesh = MeshData{ line, Mesh::Definition::Arrow }.createMesh(layout);
+            _boneMesh = std::make_shared<Mesh>(MeshData{ line, Mesh::Definition::Arrow }.createMesh(layout));
         }
     }
 
@@ -179,7 +179,7 @@ namespace darmok
             auto& anim = _scene->getComponent<SkeletalAnimator>(entity).value();
             anim.update(deltaTime);
             skeletons.clear();
-            auto matrixes = anim.getBoneModelMatrixes();
+            auto matrixes = anim.getJointModelMatrixes();
             _scene->getComponentsInChildren<RenderableSkeleton>(entity, skeletons);
             for (auto& skel : skeletons)
             {

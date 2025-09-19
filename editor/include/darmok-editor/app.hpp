@@ -99,9 +99,9 @@ namespace darmok::editor
 
         using TransformDefinition = protobuf::Transform;
 
-        bool renderEntityDragDropTarget(Entity entity);
-        bool renderSceneTreeBranch(Entity entity);
-        void onSceneTreeTransformClicked(Entity entity);
+        bool renderEntityDragDropTarget(EntityId entity);
+        bool renderSceneTreeBranch(EntityId entity);
+        void onSceneTreeTransformClicked(EntityId entity);
         void onSceneTreeSceneClicked();
 
         void onObjectSelected(const SelectableObject& obj) noexcept;
@@ -110,7 +110,7 @@ namespace darmok::editor
         void stopScene();
         void pauseScene();
 
-        Entity getSelectedEntity() noexcept;
+        EntityId getSelectedEntity() const noexcept;
 
         void drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
         void drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept;

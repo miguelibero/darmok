@@ -13,6 +13,8 @@ namespace darmok
     using SceneSnapshot = entt::snapshot;
     using SceneSnapshotLoader = entt::snapshot_loader;
     using SceneContinuousLoader = entt::continuous_loader;
+
+    constexpr EntityId nullEntityId = 0;
 }
 
 namespace std

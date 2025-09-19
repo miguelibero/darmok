@@ -181,10 +181,10 @@ namespace darmok::editor
 
         if (dataSrc.vertices_size() > 0)
         {
-            auto desc = fmt::format("{} vertices, {} indices, {} weights",
+            auto desc = fmt::format("{} vertices, {} indices, {} bones",
                 dataSrc.vertices_size(),
                 dataSrc.indices_size(),
-                dataSrc.weights_size());
+                dataSrc.bones_size());
             ImGui::Text(desc.c_str());
         }
 

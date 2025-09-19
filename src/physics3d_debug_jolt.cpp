@@ -268,12 +268,12 @@ namespace darmok::physics3d
         {
             data.indices.emplace_back(indices[i]);
         }
-        return new JoltMeshBatch(createMesh(data));
+        return new JoltMeshBatch{ createMesh(data) };
     }
 
     std::unique_ptr<Mesh> JoltPhysicsDebugRenderer::createMesh(const MeshData& meshData)
     {
-        return meshData.createMesh(_program->getVertexLayout());
+        return std::make_unique<Mesh>(meshData.createMesh(_program->getVertexLayout()));
     }
 
     void JoltPhysicsDebugRenderer::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float inLODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode)

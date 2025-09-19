@@ -933,9 +933,9 @@ namespace darmok
         return _impl->getJointModelMatrix(name);
     }
 
-    std::unordered_map<std::string, glm::mat4> SkeletalAnimator::getBoneModelMatrixes(const glm::vec3& dir) const noexcept
+    std::unordered_map<std::string, glm::mat4> SkeletalAnimator::getJointModelMatrixes(const glm::vec3& dir) const noexcept
     {
-        return _impl->getBoneModelMatrixes(dir);
+        return _impl->getJointModelMatrixes(dir);
     }
 
     void SkeletalAnimator::update(float deltaTime)
@@ -970,13 +970,13 @@ namespace darmok
         return glm::mat4(1);
     }
 
-    std::unordered_map<std::string, glm::mat4> SkeletalAnimatorImpl::getBoneModelMatrixes(const glm::vec3& dir) const noexcept
+    std::unordered_map<std::string, glm::mat4> SkeletalAnimatorImpl::getJointModelMatrixes(const glm::vec3& dir) const noexcept
     {
         auto& skel = _skeleton->getImpl().getOzz();
         auto numJoints = skel.num_joints();
         auto parents = skel.joint_parents();
-        std::unordered_map<std::string, glm::mat4> bones;
-        bones.reserve(numJoints);
+        std::unordered_map<std::string, glm::mat4> matrixes;
+        matrixes.reserve(numJoints);
         auto jointNames = skel.joint_names();
         for (int i = 0; i < numJoints; ++i)
         {
@@ -991,10 +991,10 @@ namespace darmok
             auto diff = childPos - parentPos;
             const auto rot = glm::rotation(dir, glm::normalize(diff));
             const auto scale = glm::vec3(glm::length(diff));
-            auto bone = Math::transform(parentPos, rot, scale);
-            bones.emplace(name, bone);
+            auto mat = Math::transform(parentPos, rot, scale);
+            matrixes.emplace(name, mat);
         }
-        return bones;
+        return matrixes;
     }
 
     void SkeletalAnimatorImpl::update(float deltaTime)

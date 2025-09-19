@@ -214,6 +214,7 @@ namespace darmok
     {
     public:
         using Error = std::string;
+        using Definition = protobuf::Scene;
         using Result = expected<Entity, Error>;
         using Argument = Arg;
         virtual ~IBasicSceneLoader() = default;
@@ -306,9 +307,10 @@ namespace darmok
             addLoad(std::move(func));
         }
 
-        expected<Entity, std::string> operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
+        Result operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
 
         IComponentLoadContext& getComponentLoadContext() noexcept;
+        const IComponentLoadContext& getComponentLoadContext() const noexcept;
         AssetPack& getAssetPack() noexcept;
         const AssetPack& getAssetPack() const noexcept;
 
@@ -346,7 +348,7 @@ namespace darmok
         Result operator()(Scene& scene, std::filesystem::path path);
 
     private:
-        OptionalRef<ISceneDefinitionLoader> _defLoader;
+        ISceneDefinitionLoader& _defLoader;
         SceneConverter _converter;
     };
 

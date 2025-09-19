@@ -46,7 +46,11 @@ namespace darmok::editor
         {
 			return unexpected{ result.error() };
         }
-        _progCompiler.emplace(progCompilerConfig);
+        _sceneConverter.setAssetPackConfig({
+            .programCompilerConfig = progCompilerConfig,
+            .fallback = _app.getAssets(),
+        });
+
         _requestReset = false;
         _requestUpdateScene = false;
         return {};
@@ -54,7 +58,7 @@ namespace darmok::editor
 
     void EditorProject::shutdown()
     {
-        _path.clear();
+        clearPath();
         _requestReset = false;
         _requestUpdateScene = false;
     }
@@ -86,6 +90,7 @@ namespace darmok::editor
             {
                 if (!result.empty())
                 {
+                    clearPath();
                     _path = result[0];
                 }
                 doSaveScene();
@@ -137,7 +142,7 @@ namespace darmok::editor
         _requestUpdateScene = true;
     }
 
-    Entity EditorProject::addEntity(Entity parentEntity)
+    EntityId EditorProject::addEntity(EntityId parentEntity)
     {
         auto entity = _sceneWrapper.createEntity();
         auto trans = Transform::createDefinition();
@@ -158,10 +163,19 @@ namespace darmok::editor
         _requestReset = true;
     }
 
-    expected<Entity, std::string> EditorProject::doResetScene()
+    void EditorProject::clearPath()
+    {
+        if (_path.has_parent_path())
+        {
+            _app.removeAssetsBasePath(_path.parent_path());
+        }
+        _path.clear();
+    }
+
+    expected<void, std::string> EditorProject::doResetScene()
     {
         _requestReset = false;
-        _path.clear();
+        clearPath();
 
         auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
         _scene = scenes.getScene();
@@ -173,9 +187,14 @@ namespace darmok::editor
         return doUpdateScene();
     }
 
-    expected<Entity, std::string> EditorProject::doUpdateScene()
+    expected<void, std::string> EditorProject::doUpdateScene()
     {
         _requestUpdateScene = false;
+
+        if (_path.has_parent_path())
+        {
+            _app.addAssetsBasePath(_path.parent_path());
+        }
 
         auto result = _sceneConverter(_sceneDef, *_scene);
         if (result)
@@ -214,6 +233,7 @@ namespace darmok::editor
             {
                 return;
             }
+            clearPath();
             _path = path;
             (void)reloadScene();
 		};
@@ -256,6 +276,11 @@ namespace darmok::editor
     }
 
     IComponentLoadContext& EditorProject::getComponentLoadContext()
+    {
+        return _sceneConverter.getComponentLoadContext();
+    }
+
+    const IComponentLoadContext& EditorProject::getComponentLoadContext() const
     {
         return _sceneConverter.getComponentLoadContext();
     }

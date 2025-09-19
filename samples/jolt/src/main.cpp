@@ -300,7 +300,7 @@ namespace
 		bool _imguiMouse = false;
 		bool _inDoor = false;
 
-		std::shared_ptr<IMesh> _cubeMesh;
+		std::shared_ptr<Mesh> _cubeMesh;
 		std::shared_ptr<Material> _cubeMat;
 		std::shared_ptr<Material> _touchedCubeMat;
 		std::shared_ptr<Material> _doorMat;

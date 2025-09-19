@@ -70,7 +70,6 @@ namespace darmok
 		AssetContext& operator=(const AssetContext&) = delete;
 		AssetContext& operator=(AssetContext&&) = delete;
 
-
 		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept override;

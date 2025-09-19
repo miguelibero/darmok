@@ -140,6 +140,12 @@ namespace darmok
         size_t _idxNum;
     };
 
+    struct DARMOK_EXPORT MeshDataWeight final
+    {
+        size_t boneIndex = 0;
+        float value = 0.F;
+    };
+
     struct DARMOK_EXPORT MeshDataVertex final
     {
         glm::vec3 position{};
@@ -147,12 +153,7 @@ namespace darmok
         glm::vec3 normal = glm::vec3(0, 1, 0);
         glm::vec3 tangent = glm::vec3(0, 0, 0);
         Color color = Colors::white();
-    };
-
-    struct DARMOK_EXPORT MeshDataWeight final
-    {
-		size_t vertexIndex = 0;
-		float value = 0.F;
+        std::vector<MeshDataWeight> weights;
     };
 
     class Texture;
@@ -183,7 +184,6 @@ namespace darmok
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
-		std::vector<Weight> weights;
         MeshType type = protobuf::Mesh::Static;
 
         MeshData(MeshType type = protobuf::Mesh::Static) noexcept;
@@ -227,7 +227,7 @@ namespace darmok
 
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
-        [[nodiscard]] std::unique_ptr<Mesh> createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
+        [[nodiscard]] Mesh createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
         MeshData& convertQuadIndicesToLine() noexcept;

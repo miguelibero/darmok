@@ -147,7 +147,7 @@ namespace darmok
                 MeshData meshData(Cube{ *bounds });
                 meshData.type = Mesh::Definition::Transient;
                 auto mesh = meshData.createMesh(layout);
-                mesh->render(encoder);
+                mesh.render(encoder);
                 auto occlusion = getQuery(entity);
                 bgfx::setCondition(occlusion, true);
                 encoder.submit(viewId, prog, occlusion);

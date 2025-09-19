@@ -530,7 +530,7 @@ namespace darmok
         return _loader.map(Entity{ entityId });
     }
 
-    expected<Entity, std::string> SceneConverterImpl::load(const Scene::Definition& sceneDef, Scene& scene) noexcept
+    SceneConverterImpl::Result SceneConverterImpl::load(const Scene::Definition& sceneDef, Scene& scene) noexcept
     {
         if (_scene.ptr() != &scene)
         {
@@ -555,28 +555,22 @@ namespace darmok
 
         _loader.orphans();
 
-        Result result;
+        std::vector<std::string> errors;
         for (auto& func : _postLoadFuncs)
         {
-            auto funcResult = func();
-            if (!funcResult)
+            auto result = func();
+            if (!result)
             {
-                result = std::move(funcResult);
+                errors.push_back(std::move(result).error());
             }
         }
         _postLoadFuncs.clear();
-        if (!result)
+        if (!errors.empty())
         {
-            return unexpected{ result.error() };
+            return unexpected{ StringUtils::join("\n", errors) };
         }
 
-        ConstSceneDefinitionWrapper def{ sceneDef };
-        auto roots = def.getRootEntities();
-        if (roots.empty())
-        {
-            return unexpected{ "No root entities found in the scene definition." };
-        }
-        return getEntity(roots.back());
+        return {};
     }
 
     void SceneConverterImpl::operator()(std::underlying_type_t<Entity>& count) noexcept
@@ -739,7 +733,7 @@ namespace darmok
 
     SceneConverter::~SceneConverter() noexcept = default;
 
-    expected<Entity, std::string> SceneConverter::operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept
+    SceneConverter::Result SceneConverter::operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept
     {
 		return _impl->load(sceneDef, scene);
     }
@@ -750,6 +744,11 @@ namespace darmok
     }
 
     IComponentLoadContext& SceneConverter::getComponentLoadContext() noexcept
+    {
+        return *_impl;
+    }
+
+    const IComponentLoadContext& SceneConverter::getComponentLoadContext() const noexcept
     {
         return *_impl;
     }
@@ -796,13 +795,28 @@ namespace darmok
         _converter.setAssetPackConfig(assetConfig);
     }
 
-    expected<Entity, std::string> SceneLoader::operator()(Scene& scene, std::filesystem::path path)
+    SceneLoader::Result SceneLoader::operator()(Scene& scene, std::filesystem::path path)
     {
-        auto defResult = (*_defLoader)(path);
+        auto defResult = _defLoader(path);
         if (!defResult)
         {
-            return unexpected<std::string>{ defResult.error() };
+            return unexpected{ defResult.error() };
         }
-        return _converter(*defResult.value(), scene);
+        auto def = defResult.value();
+        if (!def)
+        {
+            return unexpected{ "empty scene definition" };
+        }
+        auto convertResult = _converter(*def, scene);
+        if (!convertResult)
+        {
+            return unexpected{ convertResult.error() };
+        }
+        auto roots = ConstSceneDefinitionWrapper{ *def }.getRootEntities();
+        if (roots.empty())
+        {
+            return Entity{ entt::null };
+        }
+        return _converter.getComponentLoadContext().getEntity(roots.back());
     }
 }

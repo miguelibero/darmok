@@ -84,23 +84,31 @@ namespace darmok
             addLoaders(rest...);
         }
 
-        OptionalRef<Interface> getLoader(std::filesystem::path path) noexcept
+        std::vector<std::reference_wrapper<Interface>> getLoaders(std::filesystem::path path) noexcept
         {
+            std::vector<std::reference_wrapper<Interface>> loaders;
             auto ext = path.extension();
-            std::optional<std::string> error;
             for (auto& [loader, exts] : _loaders)
             {
-                if (!exts.empty())
+                if (exts.empty())
                 {
-                    auto itr = std::find(exts.begin(), exts.end(), ext);
-                    if (itr == exts.end())
-                    {
-                        continue;
-                    }
+                    continue;
                 }
-                return loader.get();
+                auto itr = std::find(exts.begin(), exts.end(), ext);
+                if (itr == exts.end())
+                {
+                    continue;
+                }
+                loaders.push_back(loader);
             }
-            return nullptr;
+            for (auto& [loader, exts] : _loaders)
+            {
+                if (exts.empty())
+                {
+                    loaders.push_back(loader);
+                }
+            }
+            return loaders;
         }
 
     public:
@@ -124,11 +132,18 @@ namespace darmok
 
         Result operator()(std::filesystem::path path) noexcept override
         {
-            if (auto loader = getLoader(path))
+            std::vector<std::string> errors;
+            for (auto loader : getLoaders(path))
             {
-                return (*loader)(path);
+                auto result = loader.get()(path);
+                if (result)
+                {
+                    return result;
+                }
+                errors.push_back(result.error());
             }
-            return unexpected<Error>{ "no loaders found" };
+
+            return unexpected<Error>{ StringUtils::join("\n", errors) };
         }
     };
 
@@ -264,11 +279,17 @@ namespace darmok
 
         Result forceLoad(std::filesystem::path path) noexcept override
         {
-            if (auto loader = Base::getLoader(path))
+            std::vector<std::string> errors;
+            for (auto loader : Base::getLoaders(path))
             {
-                return loader->forceLoad(path);
+                auto result = loader.get().forceLoad(path);
+                if (result)
+                {
+                    return result;
+                }
+                errors.push_back(result.error());
             }
-            return unexpected<Error>{ "no loaders found" };
+            return unexpected<Error>{ StringUtils::join("\n", errors) };
         }
 
         bool releaseCache(std::filesystem::path path) noexcept override
@@ -438,7 +459,7 @@ namespace darmok
                     return itr->second;
                 }
             }
-            auto defResult = (*_defLoader)(arg);
+            auto defResult = _defLoader(arg);
             if (defResult)
             {
                 _defCache[arg] = defResult.value();
@@ -511,7 +532,7 @@ namespace darmok
                 return unexpected<Error>{ "definition not found in cache" };
             }
             auto arg = itrDef->first;
-            auto defResult = (*_defLoader)(arg);
+            auto defResult = _defLoader(arg);
             if (!defResult)
             {
                 return unexpected<Error>{ defResult.error() };
@@ -672,7 +693,7 @@ namespace darmok
         }
 
     private:
-        OptionalRef<DefinitionLoader> _defLoader;
+        DefinitionLoader& _defLoader;
         std::unordered_map<Argument, std::shared_ptr<Definition>> _defCache;
         std::unordered_map<std::shared_ptr<Definition>, std::weak_ptr<Resource>> _resCache;
     };
@@ -770,11 +791,17 @@ namespace darmok
 
         DefinitionResult loadDefinition(std::filesystem::path path, bool force = false) noexcept override
         {
-            if (auto loader = Base::getLoader(path))
+            std::vector<std::string> errors;
+            for (auto loader : Base::getLoaders(path))
             {
-                return loader->loadDefinition(path);
+                auto result = loader.get().loadDefinition(path);
+                if (result)
+                {
+                    return result;
+                }
+                errors.push_back(result.error());
             }
-            return unexpected<Error>{ "no loaders found" };
+            return unexpected<Error>{ StringUtils::join("\n", errors) };
         }
 
         bool releaseDefinitionCache(const Definition& def) noexcept override

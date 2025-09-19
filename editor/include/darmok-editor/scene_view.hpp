@@ -64,7 +64,5 @@ namespace darmok::editor
         void updateInputEvents(float deltaTime);
         void updateCamera(float deltaTime);
         void renderGizmos();
-        bool isEditorEntity(Entity entity) const noexcept;
-
     };
 }

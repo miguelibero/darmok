@@ -165,7 +165,7 @@ namespace darmok::editor
     {
     }
 
-    Entity EditorApp::getSelectedEntity() noexcept
+    EntityId EditorApp::getSelectedEntity() const noexcept
     {
         return _inspectorView.getSelectedEntity();
     }
@@ -387,17 +387,18 @@ namespace darmok::editor
 
     void EditorApp::onSceneTreeSceneClicked()
     {
-        onObjectSelected(Entity{});
+        onObjectSelected(nullEntityId);
     }
 
     void EditorApp::onObjectSelected(const SelectableObject& obj) noexcept
     {
         _inspectorView.selectObject(obj);
-        auto entity = _inspectorView.getSelectedEntity();
+        auto entityId = _inspectorView.getSelectedEntity();
+        auto entity = _proj.getComponentLoadContext().getEntity(entityId);
         _sceneView.selectEntity(entity);
     }
 
-    void EditorApp::onSceneTreeTransformClicked(Entity entity)
+    void EditorApp::onSceneTreeTransformClicked(EntityId entity)
     {
         onObjectSelected(entity);
     }
@@ -422,7 +423,7 @@ namespace darmok::editor
             }
             if (ImGui::TreeNodeEx(sceneName.c_str(), flags))
             {
-                if (renderEntityDragDropTarget(Entity{ 0 }))
+                if (renderEntityDragDropTarget(nullEntityId))
                 {
                     changed = true;
                 }
@@ -430,9 +431,9 @@ namespace darmok::editor
                 {
                     onSceneTreeSceneClicked();
                 }
-                for (auto& entity : scene.getRootEntities())
+                for (auto entityId : scene.getRootEntities())
                 {
-                    if (renderSceneTreeBranch(entity))
+                    if (renderSceneTreeBranch(entityId))
                     {
                         changed = true;
                     }
@@ -444,7 +445,7 @@ namespace darmok::editor
                 auto entity = _inspectorView.getSelectedEntity();
                 if (scene.destroyEntity(entity))
                 {
-                    onObjectSelected(Entity{});
+                    onObjectSelected(nullEntityId);
                     changed = true;
                 }
             }
@@ -453,7 +454,7 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorApp::renderSceneTreeBranch(Entity entity)
+    bool EditorApp::renderSceneTreeBranch(EntityId entity)
     {
         auto& scene = _proj.getSceneDefinition();
         std::string name;
@@ -512,7 +513,7 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorApp::renderEntityDragDropTarget(Entity entity)
+    bool EditorApp::renderEntityDragDropTarget(EntityId entity)
     {
         if (!ImGui::BeginDragDropTarget())
         {
@@ -522,8 +523,8 @@ namespace darmok::editor
         bool changed = false;
         if (payload)
         {
-            IM_ASSERT(payload->DataSize == sizeof(Entity));
-            auto droppedEntity = *static_cast<Entity*>(payload->Data);
+            IM_ASSERT(payload->DataSize == sizeof(EntityId));
+            auto droppedEntity = *static_cast<EntityId*>(payload->Data);
             if (droppedEntity != entity)
             {
                 auto& scene = _proj.getSceneDefinition();

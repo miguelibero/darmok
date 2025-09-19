@@ -55,7 +55,8 @@ namespace darmok::editor
         expected<void, std::string> reloadAsset(const std::filesystem::path& path) noexcept;
         expected<void, std::string> removeAsset(const std::filesystem::path& path) noexcept;
         RenderResult renderChild(google::protobuf::Message& msg) noexcept;
-        std::optional<Entity> getEntity(const Any& anyComp) const noexcept;
+        std::optional<EntityId> getEntityId(const Any& anyComp) const noexcept;
+        Entity getEntity(EntityId entityId) const noexcept;
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
     };
 
@@ -140,7 +141,7 @@ namespace darmok::editor
     class BX_NO_VTABLE ComponentObjectEditor : public ObjectEditor<typename T::Definition>
     {
     protected:
-        std::optional<Entity> _entity;
+        std::optional<EntityId> _entityId;
 		using Definition = typename T::Definition;
 		using RenderResult = ObjectEditor<Definition>::RenderResult;
         using Message = ObjectEditor<Definition>::Message;
@@ -148,20 +149,22 @@ namespace darmok::editor
 
         RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
         {
-            _entity = BaseObjectEditor::getEntity(any);
+            _entityId = BaseObjectEditor::getEntityId(any);
             return ObjectEditor<Definition>::beforeRenderAny(any, def);
         }
 
         RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
         {
-            if (_entity)
+            if (_entityId)
             {
                 auto& scene = BaseObjectEditor::getScene();
                 auto& sceneDef = BaseObjectEditor::getSceneDefinition();
-                auto entity = *_entity;
+                auto entityId = *_entityId;
+                auto entity = BaseObjectEditor::getEntity(entityId);
+
                 if (ImGui::Button("Remove Component"))
                 {
-                    if (!sceneDef.removeComponent<Definition>(entity))
+                    if (!sceneDef.removeComponent<Definition>(entityId))
                     {
                         return unexpected{ "failed to remove scene definition component" };
                     }

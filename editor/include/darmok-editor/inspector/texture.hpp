@@ -14,7 +14,6 @@ namespace darmok::editor
         RenderResult renderType(Texture::Source& def) noexcept override;
     private:
         std::shared_ptr<Texture> _tex;
-        static const std::string _imageFilter;
         static const glm::vec2 _maxPreviewSize;
     };
 }

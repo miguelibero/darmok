@@ -106,10 +106,10 @@ namespace
 				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
 
 			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
-			std::shared_ptr<IMesh> debugArrowMesh = debugArrowMeshData.createMesh(unlitProg->getVertexLayout());
+			std::shared_ptr<Mesh> debugArrowMesh = debugArrowMeshData.createMesh(unlitProg->getVertexLayout());
 
 			MeshData debugSphereMeshData{ Sphere{0.02f} };
-			std::shared_ptr<IMesh> debugSphereMesh = debugSphereMeshData.createMesh(unlitProg->getVertexLayout());
+			std::shared_ptr<Mesh> debugSphereMesh = debugSphereMeshData.createMesh(unlitProg->getVertexLayout());
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity);

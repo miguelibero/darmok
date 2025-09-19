@@ -362,35 +362,30 @@ namespace darmok
 			writer.write(bgfx::Attrib::Normal, i, vertex.normal);
 			writer.write(bgfx::Attrib::Tangent, i, vertex.tangent);
 			writer.write(bgfx::Attrib::Color0, i, vertex.color);
-			++i;
-		}
 
-		std::map<size_t, std::vector<std::pair<size_t, float>>> indexedWeights;
-
-		for (auto& w : weights)
-		{
-			if (w.value > 0.F)
-			{
-				indexedWeights[w.vertexIndex].emplace_back(i, w.value);
-			}
-		}
-		for (auto& [i, vert] : indexedWeights)
-		{
 			glm::vec4 weights{ 1, 0, 0, 0 };
 			glm::vec4 indices{ -1 };
 			size_t j = 0;
-			std::sort(vert.begin(), vert.end(), [](auto& a, auto& b) { return a.second > b.second; });
-			for (auto& [index, weight] : vert)
+			auto weightVector = vertex.weights;
+			std::sort(weightVector.begin(), weightVector.end(), [](auto& a, auto& b) { return a.value > b.value; });
+			for (auto& weight : weightVector)
 			{
-				indices[j] = index;
-				weights[j] = weight;
+				if (weight.value <= 0.f)
+				{
+					continue;
+				}
+				indices[j] = weight.boneIndex;
+				weights[j] = weight.value;
 				if (++j > 3)
 				{
+					// TODO: maybe return error?
 					break;
 				}
 			}
 			writer.write(bgfx::Attrib::Indices, i, indices);
 			writer.write(bgfx::Attrib::Weight, i, weights);
+
+			++i;
 		}
 
 		vertexData = writer.finish();
@@ -416,10 +411,9 @@ namespace darmok
 		return def;
 	}
 
-	std::unique_ptr<Mesh> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& meshConfig) const
+	Mesh MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& meshConfig) const
 	{
-		auto def = createDefinition(vertexLayout, meshConfig);
-		return std::make_unique<Mesh>(def);	
+		return createDefinition(vertexLayout, meshConfig);
 	}
 
 	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices
@@ -908,24 +902,50 @@ namespace darmok
 	MeshData::MeshData(const Definition& def) noexcept
 		: indices{ def.indices().begin(), def.indices().end() }	
 	{
+		std::unordered_map<size_t, std::vector<MeshDataWeight>> weightsByVertex;
+
+		size_t boneIndex = 0;
+		for (auto& bone : def.bones())
+		{
+			for (auto& weight : bone.weights())
+			{
+				auto v = weight.value();
+				if (v <= 0.f)
+				{
+					continue;
+				}
+
+				auto i = weight.vertex_id();
+				weightsByVertex[i].push_back(MeshDataWeight
+				{
+					.boneIndex = boneIndex,
+					.value = v
+				});
+			}
+			++boneIndex;
+		}
+
 		vertices.reserve(def.vertices_size());
+		size_t vertexIndex = 0;
 		for(auto& v : def.vertices())
 		{
+			auto itr = weightsByVertex.find(vertexIndex);
+			std::vector<MeshDataWeight> weights;
+			if (itr != weightsByVertex.end())
+			{
+				weights = std::move(itr->second);
+			}
+
 			vertices.push_back({
 				.position = protobuf::convert(v.position()),
 				.texCoord = protobuf::convert(v.tex_coord()),
 				.normal = protobuf::convert(v.normal()),
 				.tangent = protobuf::convert(v.tangent()),
 				.color = protobuf::convert(v.color()),
+				.weights = std::move(weights)
 			});
-		}
-		weights.reserve(def.weights_size());
-		for (auto& w : def.weights())
-		{
-			weights.push_back({
-				.vertexIndex = w.vertex_id(),
-				.value = w.value()
-			});
+
+			++vertexIndex;
 		}
 	}
 
@@ -970,12 +990,6 @@ namespace darmok
 		}
 		vertices.reserve(vertices.size() + other.vertices.size());
 		vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
-
-		weights.reserve(weights.size() + other.weights.size());
-		for (auto& w : other.weights)
-		{
-			weights.push_back({ w.vertexIndex + offset, w.value });
-		}
 
 		return *this;
 	}
@@ -1058,6 +1072,7 @@ namespace darmok
 
 
 	MeshDataCalcTangentsOperation::MeshDataCalcTangentsOperation() noexcept
+		: _iface{}
 	{
 		_iface.m_getNumFaces = getNumFaces;
 		_iface.m_getNumVerticesOfFace = getNumFaceVertices;
@@ -1065,7 +1080,7 @@ namespace darmok
 		_iface.m_getPosition = getPosition;
 		_iface.m_getTexCoord = getTexCoords;
 		_iface.m_setTSpaceBasic = setTangent;
-
+		_iface.m_setTSpace = nullptr;
 		_context.m_pInterface = &_iface;
 	}
 

@@ -40,22 +40,28 @@ namespace darmok
 			"new_sphere", []() { return MeshData(Sphere()); },
 			"new_capsule", []() { return MeshData(Capsule()); },
 			"new_rectangle", sol::overload(
-				[]() {
+				[]()
+				{
 					return MeshData{ Rectangle{} };
 				},
-				[](const glm::uvec2& size) {
+				[](const glm::uvec2& size)
+				{
 					return MeshData{ Rectangle{size} };
 				},
-				[](const glm::uvec2& size, MeshData::RectangleType type) {
+				[](const glm::uvec2& size, MeshData::RectangleType type)
+				{
 					return MeshData{ Rectangle{size}, type };
 				},
-				[](const VarLuaTable<glm::vec2>& size) {
-						return MeshData{ Rectangle{LuaGlm::tableGet(size)} };
+				[](const VarLuaTable<glm::vec2>& size)
+				{
+					return MeshData{ Rectangle{LuaGlm::tableGet(size)} };
 				},
-				[](const VarLuaTable<glm::vec2>& size, MeshData::RectangleType type) {
-						return MeshData{ Rectangle{LuaGlm::tableGet(size)}, type };
+				[](const VarLuaTable<glm::vec2>& size, MeshData::RectangleType type)
+				{
+					return MeshData{ Rectangle{LuaGlm::tableGet(size)}, type };
 				},
-				[](MeshData::RectangleType type) {
+				[](MeshData::RectangleType type)
+				{
 					return MeshData{ Rectangle{}, type };
 				}
 			),
@@ -64,11 +70,11 @@ namespace darmok
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)
 				{ 
-					return std::shared_ptr<Mesh>(data.createMesh(vertexLayout));
+					return std::make_shared<Mesh>(data.createMesh(vertexLayout));
 				},
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout, const MeshConfig& config)
 				{
-					return std::shared_ptr<Mesh>(data.createMesh(vertexLayout, config));
+					return std::make_shared<Mesh>(data.createMesh(vertexLayout, config));
 				}
 			),
 			"subdivide_density", &MeshData::subdivideDensity,

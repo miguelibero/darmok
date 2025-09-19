@@ -394,7 +394,7 @@ namespace darmok
 		_basicUniforms.init();
 
 		const Rectangle screen{ glm::uvec2{2} };
-		_mesh = MeshData{ screen }.createMesh(_program->getVertexLayout());
+		_mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
 	}
 
 	void ScreenSpaceRenderPass::shutdown() noexcept

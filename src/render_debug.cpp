@@ -70,6 +70,6 @@ namespace darmok
         auto color = Colors::debug(debugColor);
         auto mesh = meshData.createMesh(_prog->getVertexLayout());
         meshData.clear();
-        renderMesh(*mesh, viewId, encoder, color, lines);
+        renderMesh(mesh, viewId, encoder, color, lines);
     }
 }

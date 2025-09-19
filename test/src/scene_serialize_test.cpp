@@ -165,7 +165,7 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     std::vector<Entity> entities{ view.begin(), view.end() };
 
     Entity entity = convert.getComponentLoadContext().getEntity(2);
-    REQUIRE(result.value() == entity);
+    REQUIRE(result);
 
     REQUIRE(entities.size() == 2);
     REQUIRE(scene.getComponent<TestComponent>(entity)->value == 666);
@@ -175,29 +175,31 @@ TEST_CASE("component structs are serialized", "[scene-serialize]")
 {
     Scene::Definition sceneDef;
 
+    EntityId entityId;
     {
         SceneDefinitionWrapper sceneWrap{ sceneDef };
-        auto entity = sceneWrap.createEntity();
+        entityId = sceneWrap.createEntity();
         TestStructComponent::Definition comp;
         comp.mutable_value()->set_value(42);
         comp.mutable_value()->set_str("lala");
-        sceneWrap.setComponent(entity, comp);
-        entity = sceneWrap.createEntity();
+        sceneWrap.setComponent(entityId, comp);
+        entityId = sceneWrap.createEntity();
         comp.mutable_value()->set_value(666);
         comp.mutable_value()->set_str("lolo");
-        sceneWrap.setComponent(entity, comp);
+        sceneWrap.setComponent(entityId, comp);
     }
 
     Scene scene;
     SceneConverter convert;
     convert.registerComponent<TestStructComponent>();
     auto result = convert(sceneDef, scene);
+    REQUIRE(result);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities(view.begin(), view.end());
-    Entity entity = result.value();
 
     REQUIRE(entities.size() == 2);
+    auto entity = convert.getComponentLoadContext().getEntity(entityId);
     auto comp = scene.getComponent<TestStructComponent>(entity);
     REQUIRE(comp->value.value == 666);
     REQUIRE(comp->value.str == "lolo");

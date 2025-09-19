@@ -660,34 +660,6 @@ namespace darmok
         }
     }
 
-    expected<bgfx::VertexLayout, std::string> AssimpSceneDefinitionConverter::loadVertexLayout(const protobuf::ProgramRef& progRef) noexcept
-    {
-        protobuf::VertexLayout layout;
-        if (progRef.has_standard())
-        {
-            auto progDef = StandardProgramLoader::loadDefinition(progRef.standard());
-            if (!progDef)
-            {
-                return unexpected{ "failed to load standard program definition" };
-            }
-            layout = progDef->varying().vertex();
-        }
-        if (progRef.has_path())
-        {
-            if (!_progLoader)
-            {
-                return unexpected{ "no program loader provided" };
-            }
-            auto result = (*_progLoader)(progRef.path());
-            if (!result)
-            {
-                return unexpected{ result.error() };
-            }
-            layout = result.value()->varying().vertex();
-        }
-        return ConstVertexLayoutWrapper{ layout }.getBgfx();
-    }
-    
     expected<void, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
     {
         const std::string name = AssimpUtils::getString(assimpMesh.mName);
@@ -705,11 +677,7 @@ namespace darmok
             return {};
         }
 
-        auto layoutResult = loadVertexLayout(_config.program());
-        if (!layoutResult)
-        {
-            return unexpected{ "could not load vertex layout: " + layoutResult.error()};
-        }
+        *meshSrc.mutable_program() = _config.program();
 
         AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
         auto convertResult = converter();

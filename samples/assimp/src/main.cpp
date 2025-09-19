@@ -45,7 +45,8 @@ namespace
 		void init() override
 		{
 			auto scene = _app.addComponent<SceneAppComponent>().getScene();
-			_app.getAssets().getSceneLoader()(*scene, "human.pb");
+			auto result = _app.getAssets().getSceneLoader()(*scene, "human.dpj");
+			assert(result);
 
 			auto ambientLightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(ambientLightEntity, 0.5);

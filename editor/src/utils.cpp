@@ -148,7 +148,7 @@ namespace darmok::editor
     }
 
 
-    ReferenceInputAction ImguiUtils::drawEntityReferenceInput(const char* label, Entity& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef) noexcept
+    ReferenceInputAction ImguiUtils::drawEntityReferenceInput(const char* label, EntityId& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef) noexcept
     {
         std::string name;
         if (entity != entt::null)
@@ -183,7 +183,7 @@ namespace darmok::editor
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(EditorApp::entityDragType))
             {
                 IM_ASSERT(payload->DataSize == sizeof(Entity));
-                entity = *static_cast<Entity*>(payload->Data);
+                entity = *static_cast<EntityId*>(payload->Data);
                 action = ReferenceInputAction::Changed;
             }
             ImGui::EndDragDropTarget();
@@ -200,7 +200,7 @@ namespace darmok::editor
             return ReferenceInputAction::None;
         }
 
-        auto entity = Entity{ refl->GetUInt32(msg, &field) };
+        EntityId entity = refl->GetUInt32(msg, &field);
         auto result = drawEntityReferenceInput(label, entity, sceneDef);
         if (result == ReferenceInputAction::Changed)
         {

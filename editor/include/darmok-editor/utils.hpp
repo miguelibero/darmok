@@ -96,7 +96,7 @@ namespace darmok::editor
 
         ReferenceInputAction drawTextureReferenceInput(const char* label, std::string& assetPath, std::shared_ptr<Texture>& tex, ITextureLoader& loader, const glm::vec2& maxSize = {});
 
-        ReferenceInputAction drawEntityReferenceInput(const char* label, Entity& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
+        ReferenceInputAction drawEntityReferenceInput(const char* label, EntityId& entity, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
         ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const FieldDescriptor& field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
         ReferenceInputAction drawProtobufEntityReferenceInput(const char* label, const char* field, Message& msg, OptionalRef<ConstSceneDefinitionWrapper> sceneDef = std::nullopt) noexcept;
 

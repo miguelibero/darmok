@@ -21,7 +21,7 @@ namespace darmok::editor
     const std::string EditorInspectorView::_windowName = "Inspector";
 
     EditorInspectorView::EditorInspectorView()
-        : _selected{ Entity{entt::null} }
+        : _selected{ nullEntityId }
     {
     }
 
@@ -66,16 +66,16 @@ namespace darmok::editor
         _selected = obj;
     }
 
-    Entity EditorInspectorView::getSelectedEntity() const noexcept
+    EntityId EditorInspectorView::getSelectedEntity() const noexcept
     {
-        auto ptr = std::get_if<Entity>(&_selected);
+        auto ptr = std::get_if<EntityId>(&_selected);
         return ptr == nullptr ? entt::null : *ptr;
     }
 
     bool EditorInspectorView::isSceneSelected() const noexcept
     {
-        auto ptr = std::get_if<Entity>(&_selected);
-		return ptr != nullptr && *ptr == entt::null;
+        auto ptr = std::get_if<EntityId>(&_selected);
+		return ptr != nullptr && *ptr == 0;
     }
 
     std::optional<std::filesystem::path> EditorInspectorView::getSelectedAssetPath() const noexcept
@@ -92,7 +92,7 @@ namespace darmok::editor
         return _windowName;
     }
 
-    EditorInspectorView::RenderResult EditorInspectorView::renderEntity(Entity entity)
+    EditorInspectorView::RenderResult EditorInspectorView::renderEntity(EntityId entity)
     {
         if (!_sceneDef)
         {

@@ -8,7 +8,7 @@
 namespace darmok::editor
 {
     using SelectableObject = std::variant<
-        Entity,
+        EntityId,
         std::filesystem::path // asset path
     >;
 }

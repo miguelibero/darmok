@@ -83,7 +83,7 @@ namespace
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, glm::vec3{ 0, 1, 0 });
 			lightTrans.setParent(lightRootTrans);
-			std::shared_ptr<IMesh> lightMesh = MeshData{ Sphere{0.1} }.createMesh(unlitProg->getVertexLayout());
+			auto lightMesh = std::make_shared<Mesh>(MeshData{ Sphere{0.01} }.createMesh(unlitProg->getVertexLayout()));
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.addSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
@@ -95,7 +95,7 @@ namespace
 			auto& animTrans = scene.addComponent<Transform>(animEntity);
 
 			auto animDef = _app.getAssets().getSkeletalAnimatorDefinitionLoader()("animator.json").value();
-			auto anims = SkeletalAnimatorUtils::loadAnimations(*animDef, _app.getAssets().getSkeletalAnimationLoader());
+			auto anims = ConstSkeletalAnimatorDefinitionWrapper{ *animDef }.loadAnimations(_app.getAssets().getSkeletalAnimationLoader());
 			_animator = scene.addComponent<SkeletalAnimator>(animEntity, skel, anims, *animDef);
 
 			_animator->play("run");
@@ -106,11 +106,13 @@ namespace
 			skelTrans.setParent(animTrans);
 			
 			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
+
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
 			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf").value());
 			cam.addComponent<TextRenderer>();
 #endif
+
 			auto& texLoader = _app.getAssets().getTextureLoader();
 			auto baseTex = texLoader("BasicMotions_DummyType01-BaseColor.png").value();
 			auto metalTex = texLoader("BasicMotions_DummyType01-Metallic.png").value();
@@ -126,7 +128,7 @@ namespace
 			mat->occlusionStrength = 0.75f;
 			mat->metallicFactor = 1.f;
 
-			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.pb").value();
+			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.dpj").value();
 			
 			auto skinEntity = scene.createEntity();
 			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3{ 1, 0, 0 });

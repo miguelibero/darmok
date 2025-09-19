@@ -32,7 +32,7 @@ namespace darmok
         Entity getEntity(EntityId entityId) const noexcept override;
 
         // SceneConverter
-        expected<Entity, std::string> load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
+        Result load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
         

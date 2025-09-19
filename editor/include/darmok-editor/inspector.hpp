@@ -30,7 +30,7 @@ namespace darmok::editor
         void selectObject(const SelectableObject& obj);
 
 		bool isSceneSelected() const noexcept;
-        Entity getSelectedEntity() const noexcept;
+        EntityId getSelectedEntity() const noexcept;
 		std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept;
 
         static const std::string& getWindowName();
@@ -40,7 +40,7 @@ namespace darmok::editor
         SelectableObject _selected;
         OptionalRef<SceneDefinitionWrapper> _sceneDef;
 
-        RenderResult renderEntity(Entity entity);
+        RenderResult renderEntity(EntityId entity);
         RenderResult renderAsset(std::filesystem::path path);
     };
 }

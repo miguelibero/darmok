@@ -76,9 +76,15 @@ namespace darmok::editor
 		return _container->render(msg, false);
     }
 
-    std::optional<Entity> BaseObjectEditor::getEntity(const Any& anyComp) const noexcept
+    std::optional<EntityId> BaseObjectEditor::getEntityId(const Any& anyComp) const noexcept
     {
 		return getProject().getSceneDefinition().getEntity(anyComp);
+    }
+
+    Entity BaseObjectEditor::getEntity(EntityId entityId) const noexcept
+    {
+        return getProject().getComponentLoadContext().getEntity(entityId);
+
     }
 
     std::optional<std::filesystem::path> BaseObjectEditor::getAssetPath(const Any& anyAsset) const noexcept

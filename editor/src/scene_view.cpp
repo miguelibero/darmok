@@ -1,4 +1,5 @@
 #include <darmok-editor/scene_view.hpp>
+#include <darmok-editor/app.hpp>
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/scene.hpp>

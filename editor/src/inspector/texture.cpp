@@ -12,7 +12,6 @@ namespace darmok::editor
         return "Texture";
     }
 
-    const std::string TextureInspectorEditor::_imageFilter = "*.png *.jpg *.jpeg *.bmp";
     const glm::vec2 TextureInspectorEditor::_maxPreviewSize{ 200.F };
 
     TextureInspectorEditor::RenderResult TextureInspectorEditor::renderType(Texture::Source& src) noexcept
@@ -34,12 +33,17 @@ namespace darmok::editor
 
         std::filesystem::path imgPath;
         FileDialogOptions dialogOptions;
-        dialogOptions.filters = { _imageFilter };
+        dialogOptions.filters = { "*.png", "*.jpg", "*.jpeg", "*.bmp" };
         if (getApp().drawFileInput("Load Image", imgPath, dialogOptions))
         {
             if (auto dataResult = assets.getDataLoader()(imgPath))
             {
-                src.set_image_data(dataResult.value().toString());
+                auto encoding = Image::getEncodingForPath(imgPath);
+                auto result = TextureSourceWrapper{ src }.loadData(dataResult.value(), encoding);
+                if (!result)
+                {
+                    return unexpected<std::string>{ result.error() };
+                }
                 _tex.reset();
                 changed = true;
             }

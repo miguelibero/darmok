@@ -31,7 +31,7 @@ namespace darmok
 		, _dataSceneDefLoader{ getDataLoader() }
 		, _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
 		, _sceneLoader{ _sceneDefLoader, {
-			
+			.fallback = assets
 		} }
 #ifdef DARMOK_OZZ
 		, _ozzSkeletonLoader{ getDataLoader() }

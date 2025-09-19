@@ -1,6 +1,6 @@
 {
     "scene": {
-        "outputPath": "human.pb",
+        "outputPath": "human.dpj",
         "program": "ForwardBasic",
         "shadowType": "Soft"
     },

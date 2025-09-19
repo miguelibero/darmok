@@ -30,7 +30,7 @@ namespace darmok::editor
         void updateScene();
 
         expected<void, std::string> render();
-        Entity addEntity(Entity parentEntity = entt::null);
+        EntityId addEntity(EntityId parentEntity = 0);
 
         std::shared_ptr<Scene> getScene();
         std::shared_ptr<const Scene> getScene() const;
@@ -39,6 +39,7 @@ namespace darmok::editor
         OptionalRef<Camera> getCamera();
         OptionalRef<const Camera> getCamera() const;
         IComponentLoadContext& getComponentLoadContext();
+        const IComponentLoadContext& getComponentLoadContext() const;
         AssetPack& getAssets();
 
     private:
@@ -51,7 +52,6 @@ namespace darmok::editor
         using SceneDefinition = protobuf::Scene;
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneWrapper;
-        std::optional<ProgramCompiler> _progCompiler;
         bool _requestReset;
 
         std::filesystem::path _path;
@@ -63,9 +63,10 @@ namespace darmok::editor
         void configureEditorScene(Scene& scene);
         void configureDefaultScene(SceneDefinitionWrapper& scene);
 
-        expected<Entity, std::string> doResetScene();
-        expected<Entity, std::string> doUpdateScene();
+        expected<void, std::string> doResetScene();
+        expected<void, std::string> doUpdateScene();
         void doSaveScene();
+        void clearPath();
     };
 
 

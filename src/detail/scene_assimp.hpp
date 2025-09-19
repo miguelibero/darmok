@@ -121,7 +121,6 @@ namespace darmok
 
         bool updateBoneData(const std::vector<aiBone*>& bones, VertexDataWriter& writer) const noexcept;
         expected<void, std::string> addMeshComponents(EntityId entity, int index, bool addChild) noexcept;
-        expected<bgfx::VertexLayout, std::string> loadVertexLayout(const protobuf::ProgramRef& progRef) noexcept;
     };
 
     class AssimpSceneDefinitionLoaderImpl final

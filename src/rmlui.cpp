@@ -475,7 +475,7 @@ namespace darmok
             | BGFX_STATE_BLEND_ALPHA
             ;
 
-        mesh->render(encoder);
+        mesh.render(encoder);
         encoder.setState(state);
         encoder.submit(viewId, _program->getHandle());
     }

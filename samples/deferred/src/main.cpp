@@ -81,7 +81,7 @@ namespace
 			scene->addSceneComponent<RotateUpdater>(dirLightTrans);
 
 			auto prog = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-			std::shared_ptr<IMesh> arrowMesh = MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout());
+			auto arrowMesh = std::make_shared<Mesh>(MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout()));
 			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)
@@ -92,7 +92,8 @@ namespace
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
-			_app.getAssets().getSceneLoader()(*scene, "Sponza.pb");
+			auto result = _app.getAssets().getSceneLoader()(*scene, "Sponza.dpj");
+			assert(result);
 
 			_mouseVel = glm::vec2{ 0 };
 		}

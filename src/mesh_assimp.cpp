@@ -70,17 +70,15 @@ namespace darmok
             }
         }
 
-		auto& weights = *_def.mutable_weights();
-        size = 0;
-        for (size_t i = 0; i < _assimpMesh.mNumBones; ++i)
-        {
-            size += _assimpMesh.mBones[i]->mNumWeights;
-        }
-        weights.Clear();
-        weights.Reserve(size);
+		auto& bones = *_def.mutable_bones();
+        bones.Clear();
+        bones.Reserve(_assimpMesh.mNumBones);
         for (size_t i = 0; i < _assimpMesh.mNumBones; ++i)
         {
             auto& assimpBone = _assimpMesh.mBones[i];
+            auto& bone = *bones.Add();
+            bone.set_name(AssimpUtils::getString(assimpBone->mName));
+            auto& weights = *bone.mutable_weights();
             for (size_t j = 0; j < assimpBone->mNumWeights; ++j)
             {
                 auto& assimpWeight = assimpBone->mWeights[j];
