@@ -56,32 +56,32 @@ namespace darmok
 		return *_alloc;
 	}
 
-	IProgramLoader& AssetPack::getProgramLoader() noexcept
+	IProgramFromDefinitionLoader& AssetPack::getProgramLoader() noexcept
 	{
 		return _programLoader;
 	}
 
-	ITextureLoader& AssetPack::getTextureLoader() noexcept
+	ITextureFromDefinitionLoader& AssetPack::getTextureLoader() noexcept
 	{
 		return _textureLoader;
 	}
 
-	IMeshLoader& AssetPack::getMeshLoader() noexcept
+	IMeshFromDefinitionLoader& AssetPack::getMeshLoader() noexcept
 	{
 		return _meshLoader;
 	}
 
-	IMaterialLoader& AssetPack::getMaterialLoader() noexcept
+	IMaterialFromDefinitionLoader& AssetPack::getMaterialLoader() noexcept
 	{
 		return _materialLoader;
 	}
 
-	IArmatureLoader& AssetPack::getArmatureLoader() noexcept
+	IArmatureFromDefinitionLoader& AssetPack::getArmatureLoader() noexcept
 	{
 		return _armatureLoader;
 	}
 
-	ITextureAtlasLoader& AssetPack::getTextureAtlasLoader() noexcept
+	ITextureAtlasFromDefinitionLoader& AssetPack::getTextureAtlasLoader() noexcept
 	{
 		return _multiTexAtlasLoader;
 	}
@@ -146,18 +146,18 @@ namespace darmok
 		auto typeId = protobuf::getTypeId(asset);
 		if (typeId == protobuf::getTypeId<Mesh::Source>())
 		{
-			_meshDefFromSrcLoader.clearCache(path);
-			_meshLoader.clearCache(path);
+			_meshDefFromSrcLoader.releaseCache(path);
+			_meshLoader.releaseCache(path);
 			return {};
 		}
 		if (typeId == protobuf::getTypeId<Material::Definition>())
 		{
-			_materialLoader.clearCache(path);
+			_materialLoader.releaseCache(path);
 			return {};
 		}
 		if (typeId == protobuf::getTypeId<Armature::Definition>())
 		{
-			_armatureLoader.clearCache(path);
+			_armatureLoader.releaseCache(path);
 			return {};
 		}
 		return unexpected{ "type loader not found" };

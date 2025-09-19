@@ -82,7 +82,7 @@ namespace darmok
 	{
 	public:
 		ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept;
-		[[nodiscard]] Result operator()(std::filesystem::path path) override;
+		[[nodiscard]] Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IDataLoader& _dataLoader;
 		bx::AllocatorI& _alloc;

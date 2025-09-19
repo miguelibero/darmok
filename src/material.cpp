@@ -136,7 +136,7 @@ namespace darmok
 	{
 	}
 
-	MaterialLoader::Result MaterialLoader::create(const std::shared_ptr<Definition>& def)
+	MaterialLoader::Result MaterialLoader::create(std::shared_ptr<Definition> def) noexcept
 	{
 		if (!def)
 		{
@@ -168,7 +168,7 @@ namespace darmok
 
 		for (auto& defTex : def->textures())
 		{
-			auto loadResult = (*_texLoader)(defTex.texture_path());
+			auto loadResult = _texLoader(defTex.texture_path());
 			if (!loadResult)
 			{
 				return unexpected{ "failed to load texture: " + loadResult.error() };

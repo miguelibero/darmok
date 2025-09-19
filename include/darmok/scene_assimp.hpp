@@ -41,7 +41,7 @@ namespace darmok
         ~AssimpSceneDefinitionLoader() noexcept;
         AssimpSceneDefinitionLoader& setConfig(const Config& config) noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
-		Result operator()(std::filesystem::path path) override;
+		Result operator()(std::filesystem::path path) noexcept override;
     private:
         std::unique_ptr<AssimpSceneDefinitionLoaderImpl> _impl;
     };

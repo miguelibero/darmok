@@ -19,7 +19,7 @@ namespace darmok
 	{
 	public:
 		OzzSkeletonLoader(IDataLoader& dataLoader) noexcept;
-		Result operator()(std::filesystem::path path) override;
+		Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IDataLoader& _dataLoader;
 	};
@@ -28,7 +28,7 @@ namespace darmok
 	{
 	public:
 		OzzSkeletalAnimationLoader(IDataLoader& dataLoader) noexcept;
-		Result operator()(std::filesystem::path path) override;
+		Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IDataLoader& _dataLoader;
 	};

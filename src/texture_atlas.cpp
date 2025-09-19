@@ -562,7 +562,7 @@ namespace darmok
 	{
 	}
 
-	TexturePackerDefinitionLoader::Result TexturePackerDefinitionLoader::operator()(std::filesystem::path path)
+	TexturePackerDefinitionLoader::Result TexturePackerDefinitionLoader::operator()(std::filesystem::path path) noexcept
 	{
 		auto dataResult = _dataLoader(path);
 		if (!dataResult)
@@ -594,7 +594,7 @@ namespace darmok
 	{
 	}
 
-	TextureAtlasLoader::Result TextureAtlasLoader::create(const std::shared_ptr<TextureAtlas::Definition>& def)
+	TextureAtlasLoader::Result TextureAtlasLoader::create(std::shared_ptr<TextureAtlas::Definition> def) noexcept
 	{
 		auto texResult = _texLoader(def->texture_path());
 		if (!texResult)

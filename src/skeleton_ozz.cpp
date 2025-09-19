@@ -197,7 +197,7 @@ namespace darmok
     {
     }
 
-    OzzSkeletonLoader::Result OzzSkeletonLoader::operator()(std::filesystem::path path)
+    OzzSkeletonLoader::Result OzzSkeletonLoader::operator()(std::filesystem::path path) noexcept
     {
         auto skelResult = OzzUtils::loadFromData<ozz::animation::Skeleton>(_dataLoader, path);
         if (!skelResult)
@@ -213,7 +213,7 @@ namespace darmok
     {
     }
 
-    OzzSkeletalAnimationLoader::Result OzzSkeletalAnimationLoader::operator()(std::filesystem::path path)
+    OzzSkeletalAnimationLoader::Result OzzSkeletalAnimationLoader::operator()(std::filesystem::path path) noexcept
     {
         auto anim = OzzUtils::loadFromData<ozz::animation::Animation>(_dataLoader, path);
         if (!anim)

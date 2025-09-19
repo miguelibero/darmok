@@ -11,7 +11,7 @@ namespace darmok
 	{
 	}
 
-	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(const std::shared_ptr<Mesh::Source>& src)
+	MeshDefinitionFromSourceLoader::Result MeshDefinitionFromSourceLoader::create(std::shared_ptr<Mesh::Source> src) noexcept
 	{
 		if (!src)
 		{

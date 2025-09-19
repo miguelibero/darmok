@@ -125,7 +125,7 @@ namespace darmok
 		return {};
 	}
 
-	FreetypeFontDefinitionLoader::Result FreetypeFontDefinitionLoader::operator()(std::filesystem::path path)
+	FreetypeFontDefinitionLoader::Result FreetypeFontDefinitionLoader::operator()(std::filesystem::path path) noexcept
 	{
 		auto dataResult = _dataLoader(path);
 		if (!dataResult)
@@ -185,7 +185,7 @@ namespace darmok
 		}
 	}
 
-	FreetypeFontLoaderImpl::Result FreetypeFontLoaderImpl::create(const std::shared_ptr<Definition>& def)
+	FreetypeFontLoaderImpl::Result FreetypeFontLoaderImpl::create(std::shared_ptr<Definition> def)
 	{
 		if (!def)
 		{
@@ -200,28 +200,25 @@ namespace darmok
 		return std::make_shared<FreetypeFont>(def, faceResult.value(), _library, _alloc);
 	}
 
-	FreetypeFontLoader::FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc)
+	FreetypeFontLoader::FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc) noexcept
 		: FromDefinitionLoader(defLoader)
 		, _impl{ std::make_unique<FreetypeFontLoaderImpl>(alloc) }
 	{
 	}
 
-	FreetypeFontLoader::~FreetypeFontLoader() noexcept
-	{
-		// intentionally left blank
-	}
+	FreetypeFontLoader::~FreetypeFontLoader() noexcept = default;
 
-	void FreetypeFontLoader::init(App& app)
+	void FreetypeFontLoader::init(App& app) noexcept
 	{
 		_impl->init(app);
 	}
 
-	void FreetypeFontLoader::shutdown()
+	void FreetypeFontLoader::shutdown() noexcept
 	{
 		_impl->shutdown();
 	}
 
-	FreetypeFontLoader::Result FreetypeFontLoader::create(const std::shared_ptr<Definition>& def)
+	FreetypeFontLoader::Result FreetypeFontLoader::create(std::shared_ptr<Definition> def) noexcept
 	{
 		return _impl->create(def);
 	}
@@ -614,10 +611,7 @@ namespace darmok
 	{
 	}
 
-	FreetypeFontFileImporter::~FreetypeFontFileImporter() noexcept
-	{
-		// intentionally left blank
-	}
+	FreetypeFontFileImporter::~FreetypeFontFileImporter() = default;
 
 	std::vector<std::filesystem::path> FreetypeFontFileImporter::getOutputs(const Input& input)
 	{

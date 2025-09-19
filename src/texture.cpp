@@ -111,7 +111,7 @@ namespace darmok
 		return *this;
 	}
 
-	ImageTextureSourceLoader::Result ImageTextureSourceLoader::operator()(std::filesystem::path path)
+	ImageTextureSourceLoader::Result ImageTextureSourceLoader::operator()(std::filesystem::path path) noexcept
 	{
 		auto encoding = Image::getEncodingForPath(path);
 		if (encoding == ImageEncoding::Count)
@@ -151,7 +151,7 @@ namespace darmok
 		return *this;
 	}
 
-	ImageTextureDefinitionLoader::Result ImageTextureDefinitionLoader::operator()(std::filesystem::path path)
+	ImageTextureDefinitionLoader::Result ImageTextureDefinitionLoader::operator()(std::filesystem::path path) noexcept
 	{
 		if (!supports(path))
 		{
@@ -650,10 +650,10 @@ namespace darmok
 	{
 	}
 
-	TextureDefinitionFromSourceLoader::Result TextureDefinitionFromSourceLoader::create(const std::shared_ptr<protobuf::TextureSource>& src)
+	TextureDefinitionFromSourceLoader::Result TextureDefinitionFromSourceLoader::create(std::shared_ptr<protobuf::TextureSource> src) noexcept
 	{
 		auto def = std::make_shared<protobuf::Texture>();
-		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, *_alloc);
+		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, _alloc);
 		if(!result)
 		{
 			return unexpected{ result.error() };

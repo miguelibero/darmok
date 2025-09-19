@@ -32,7 +32,7 @@ namespace darmok
 		{
 		}
 
-		[[nodiscard]] Result operator()(std::filesystem::path path) override
+		[[nodiscard]] Result operator()(std::filesystem::path path) noexcept override
 		{
 			auto& assets = _assets->assets();
 			auto itr = assets.find(path.string());
@@ -62,12 +62,12 @@ namespace darmok
 		AssetPack(const Definition& def, const AssetPackConfig& config);
 
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept override;
-		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept override;
-		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept override;
-		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept override;
-		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept override;
-		[[nodiscard]] IArmatureLoader& getArmatureLoader() noexcept override;
-		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept override;
+		[[nodiscard]] IProgramFromDefinitionLoader& getProgramLoader() noexcept override;
+		[[nodiscard]] ITextureFromDefinitionLoader& getTextureLoader() noexcept override;
+		[[nodiscard]] IMeshFromDefinitionLoader& getMeshLoader() noexcept override;
+		[[nodiscard]] IMaterialFromDefinitionLoader& getMaterialLoader() noexcept override;
+		[[nodiscard]] IArmatureFromDefinitionLoader& getArmatureLoader() noexcept override;
+		[[nodiscard]] ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept override;
 		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;
@@ -101,12 +101,12 @@ namespace darmok
 		MultiLoader<ITextureDefinitionLoader> _multiTextureDefLoader;
 		MultiLoader<IMeshDefinitionLoader> _multiMeshDefLoader;
 
-		MultiLoader<IProgramLoader> _multiProgramLoader;
-		MultiLoader<ITextureLoader> _multiTextureLoader;
-		MultiLoader<IMeshLoader> _multiMeshLoader;
-		MultiLoader<IMaterialLoader> _multiMaterialLoader;
-		MultiLoader<IArmatureLoader> _multiArmatureLoader;
-		MultiLoader<ITextureAtlasLoader> _multiTexAtlasLoader;
+		MultiFromDefinitionLoader<IProgramFromDefinitionLoader> _multiProgramLoader;
+		MultiFromDefinitionLoader<ITextureFromDefinitionLoader> _multiTextureLoader;
+		MultiFromDefinitionLoader<IMeshFromDefinitionLoader> _multiMeshLoader;
+		MultiFromDefinitionLoader<IMaterialFromDefinitionLoader> _multiMaterialLoader;
+		MultiFromDefinitionLoader<IArmatureFromDefinitionLoader> _multiArmatureLoader;
+		MultiFromDefinitionLoader<ITextureAtlasFromDefinitionLoader> _multiTexAtlasLoader;
 		MultiLoader<IFontLoader> _multiFontLoader;
 		MultiLoader<ISkeletonLoader> _multiSkelLoader;
 		MultiLoader<ISkeletalAnimationLoader> _multiSkelAnimLoader;

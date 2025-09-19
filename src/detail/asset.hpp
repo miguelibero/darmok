@@ -44,12 +44,12 @@ namespace darmok
 		AssetContextImpl(IAssetContext& assets, Config&& config);
 		IDataLoader& getDataLoader() noexcept;
 		IImageLoader& getImageLoader() noexcept;
-		IProgramLoader& getProgramLoader() noexcept;
-		ITextureLoader& getTextureLoader() noexcept;
-		ITextureAtlasLoader& getTextureAtlasLoader() noexcept;
-		IMaterialLoader& getMaterialLoader() noexcept;
-		IMeshLoader& getMeshLoader() noexcept;
-		IArmatureLoader& getArmatureLoader() noexcept;
+		IProgramFromDefinitionLoader& getProgramLoader() noexcept;
+		ITextureFromDefinitionLoader& getTextureLoader() noexcept;
+		ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept;
+		IMaterialFromDefinitionLoader& getMaterialLoader() noexcept;
+		IMeshFromDefinitionLoader& getMeshLoader() noexcept;
+		IArmatureFromDefinitionLoader& getArmatureLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
 		ISceneLoader& getSceneLoader() noexcept;
 		bx::AllocatorI& getAllocator() noexcept;

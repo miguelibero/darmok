@@ -445,7 +445,7 @@ namespace darmok
 	{
 	}
 
-	ImageLoader::Result ImageLoader::operator()(std::filesystem::path path)
+	ImageLoader::Result ImageLoader::operator()(std::filesystem::path path) noexcept
 	{
 		auto dataResult = _dataLoader(path);
 		if (!dataResult)

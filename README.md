@@ -112,8 +112,11 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming
 * finish editor
-    * export asset pack files
-    * scene view gizmos
+    * export scene
+    * skeletal animator support
+    * camera components support
+    * create lua script component
+    * fix scene view gizmos
 * slang support
 * move from exceptions to expected when possible
 * fix joltphysics in apple when [rtti](https://github.com/microsoft/vcpkg/pull/43190) feature is added

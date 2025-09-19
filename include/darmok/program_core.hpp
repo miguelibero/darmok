@@ -101,7 +101,7 @@ namespace darmok
 	public:
 		ProgramDefinitionFromSourceLoader(IProgramSourceLoader& srcLoader, const ProgramCompilerConfig& compilerConfig) noexcept;
 	private:
-		Result create(const std::shared_ptr<protobuf::ProgramSource>& src) override;
+		Result create(std::shared_ptr<protobuf::ProgramSource> src) noexcept override;
 		ProgramCompiler _compiler;
 	};
 

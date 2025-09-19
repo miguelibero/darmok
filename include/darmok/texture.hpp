@@ -77,7 +77,7 @@ namespace darmok
 		ImageTextureSourceLoader(IDataLoader& dataLoader) noexcept;
 		bool supports(const std::filesystem::path& path) const noexcept;
 		ImageTextureSourceLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
-		[[nodiscard]] Result operator()(std::filesystem::path path) override;
+		[[nodiscard]] Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IDataLoader& _dataLoader;
 		uint64_t _loadFlags;
@@ -92,7 +92,7 @@ namespace darmok
 		ImageTextureDefinitionLoader(IImageLoader& imgLoader) noexcept;
 		bool supports(const std::filesystem::path& path) const noexcept;
 		ImageTextureDefinitionLoader& setLoadFlags(uint64_t flags = defaultTextureLoadFlags) noexcept;
-		[[nodiscard]] Result operator()(std::filesystem::path path) override;
+		[[nodiscard]] Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IImageLoader& _imgLoader;
 		uint64_t _loadFlags;
@@ -179,8 +179,8 @@ namespace darmok
 	public:
 		TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept;
 	private:
-		Result create(const std::shared_ptr<protobuf::TextureSource>& src) override;
-		OptionalRef<bx::AllocatorI> _alloc;
+		Result create(std::shared_ptr<protobuf::TextureSource> src) noexcept override;
+		bx::AllocatorI& _alloc;
 	};
 
 	class DARMOK_EXPORT TextureFileImporter final : public ProtobufFileImporter<ImageTextureDefinitionLoader>

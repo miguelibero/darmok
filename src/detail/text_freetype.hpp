@@ -33,7 +33,7 @@ namespace darmok
         ~FreetypeFontLoaderImpl();
         void init(App& app);
         void shutdown();
-        Result create(const std::shared_ptr<Definition>& def);
+        Result create(std::shared_ptr<Definition> def);
     private:
         FT_Library _library;
         bx::AllocatorI& _alloc;

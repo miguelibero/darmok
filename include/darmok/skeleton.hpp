@@ -88,12 +88,9 @@ namespace darmok
     class DataSkeletalAnimatorDefinitionLoader final : public ISkeletalAnimatorDefinitionLoader
     {
     public:
-        DataSkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader);
+        DataSkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept;
 
-        DataSkeletalAnimatorDefinitionLoader(const DataSkeletalAnimatorDefinitionLoader& other) = delete;
-        DataSkeletalAnimatorDefinitionLoader(DataSkeletalAnimatorDefinitionLoader&& other) = delete;
-
-        Result operator()(std::filesystem::path path) override;
+        Result operator()(std::filesystem::path path) noexcept override;
     private:
 		IDataLoader& _dataLoader;
     };

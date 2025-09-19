@@ -105,12 +105,12 @@ namespace darmok
         return *_impl;
     }
 
-    MiniaudioSoundLoader::MiniaudioSoundLoader(IDataLoader& dataLoader)
+    MiniaudioSoundLoader::MiniaudioSoundLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
     }
 
-    MiniaudioSoundLoader::Result MiniaudioSoundLoader::operator()(std::filesystem::path path)
+    MiniaudioSoundLoader::Result MiniaudioSoundLoader::operator()(std::filesystem::path path) noexcept
     {
         auto dataResult = _dataLoader(path);
         if (!dataResult)
@@ -121,12 +121,12 @@ namespace darmok
         return std::make_shared<Sound>(std::make_unique<SoundImpl>(std::move(data)));
     }
 
-    MiniaudioMusicLoader::MiniaudioMusicLoader(IDataLoader& dataLoader)
+    MiniaudioMusicLoader::MiniaudioMusicLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
     }
 
-    MiniaudioMusicLoader::Result MiniaudioMusicLoader::operator()(std::filesystem::path path)
+    MiniaudioMusicLoader::Result MiniaudioMusicLoader::operator()(std::filesystem::path path) noexcept
     {
         auto dataResult = _dataLoader(path);
         if (!dataResult)

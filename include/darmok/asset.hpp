@@ -16,12 +16,12 @@ namespace darmok
 {
 	class IDataLoader;
 	class ISceneLoader;
-	class IProgramLoader;
-	class IMeshLoader;
-	class ITextureLoader;
-	class ITextureAtlasLoader;
-	class IMaterialLoader;
-	class IArmatureLoader;
+	class IProgramFromDefinitionLoader;
+	class IMeshFromDefinitionLoader;
+	class ITextureFromDefinitionLoader;
+	class ITextureAtlasFromDefinitionLoader;
+	class IMaterialFromDefinitionLoader;
+	class IArmatureFromDefinitionLoader;
 	class IFontLoader;
 	class ISkeletonLoader;
 	class ISkeletalAnimationLoader;
@@ -36,12 +36,12 @@ namespace darmok
 		virtual ~IAssetContext() = default;
 
 		[[nodiscard]] virtual bx::AllocatorI& getAllocator() noexcept = 0;
-		[[nodiscard]] virtual IProgramLoader& getProgramLoader() noexcept = 0;
-		[[nodiscard]] virtual ITextureLoader& getTextureLoader() noexcept = 0;
-		[[nodiscard]] virtual IMeshLoader& getMeshLoader() noexcept = 0;
-		[[nodiscard]] virtual IMaterialLoader& getMaterialLoader() noexcept = 0;
-		[[nodiscard]] virtual IArmatureLoader& getArmatureLoader() noexcept = 0;
-		[[nodiscard]] virtual ITextureAtlasLoader& getTextureAtlasLoader() noexcept = 0;
+		[[nodiscard]] virtual IProgramFromDefinitionLoader& getProgramLoader() noexcept = 0;
+		[[nodiscard]] virtual ITextureFromDefinitionLoader& getTextureLoader() noexcept = 0;
+		[[nodiscard]] virtual IMeshFromDefinitionLoader& getMeshLoader() noexcept = 0;
+		[[nodiscard]] virtual IMaterialFromDefinitionLoader& getMaterialLoader() noexcept = 0;
+		[[nodiscard]] virtual IArmatureFromDefinitionLoader& getArmatureLoader() noexcept = 0;
+		[[nodiscard]] virtual ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept = 0;
 		[[nodiscard]] virtual ISceneLoader& getSceneLoader() noexcept = 0;
 		[[nodiscard]] virtual IFontLoader& getFontLoader() noexcept = 0;
 		[[nodiscard]] virtual ISkeletonLoader& getSkeletonLoader() noexcept = 0;
@@ -74,12 +74,12 @@ namespace darmok
 		[[nodiscard]] IDataLoader& getDataLoader() noexcept;
 		[[nodiscard]] IImageLoader& getImageLoader() noexcept;
 		[[nodiscard]] bx::AllocatorI& getAllocator() noexcept override;
-		[[nodiscard]] IProgramLoader& getProgramLoader() noexcept override;
-		[[nodiscard]] ITextureLoader& getTextureLoader() noexcept override;
-		[[nodiscard]] IMeshLoader& getMeshLoader() noexcept override;
-		[[nodiscard]] IMaterialLoader& getMaterialLoader() noexcept override;
-		[[nodiscard]] IArmatureLoader& getArmatureLoader() noexcept override;
-		[[nodiscard]] ITextureAtlasLoader& getTextureAtlasLoader() noexcept override;
+		[[nodiscard]] IProgramFromDefinitionLoader& getProgramLoader() noexcept override;
+		[[nodiscard]] ITextureFromDefinitionLoader& getTextureLoader() noexcept override;
+		[[nodiscard]] IMeshFromDefinitionLoader& getMeshLoader() noexcept override;
+		[[nodiscard]] IMaterialFromDefinitionLoader& getMaterialLoader() noexcept override;
+		[[nodiscard]] IArmatureFromDefinitionLoader& getArmatureLoader() noexcept override;
+		[[nodiscard]] ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept override;
 		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;

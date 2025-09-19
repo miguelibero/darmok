@@ -416,7 +416,7 @@ namespace darmok
 	{
 	}
 
-	TextureAtlasFontLoader::Result TextureAtlasFontLoader::operator()(std::filesystem::path path)
+	TextureAtlasFontLoader::Result TextureAtlasFontLoader::operator()(std::filesystem::path path) noexcept
 	{
 		auto atlasResult = _atlasLoader(path);
 		if (!atlasResult)

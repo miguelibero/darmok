@@ -26,7 +26,7 @@ namespace darmok
     {
     public:
         FreetypeFontDefinitionLoader(IDataLoader& dataLoader) noexcept;
-        [[nodiscard]] Result operator()(std::filesystem::path path) override;
+        [[nodiscard]] Result operator()(std::filesystem::path path) noexcept override;
         static expected<void, std::string> checkFontData(const DataView& data) noexcept;
     private:
         IDataLoader& _dataLoader;
@@ -39,12 +39,12 @@ namespace darmok
     class DARMOK_EXPORT FreetypeFontLoader final : public FromDefinitionLoader<IFreetypeFontLoader, IFreetypeFontDefinitionLoader>
     {
     public:
-        FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc);
+        FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFontLoader() noexcept;
-        void init(App& app);
-        void shutdown();
+        void init(App& app) noexcept;
+        void shutdown() noexcept;
     protected:
-        Result create(const std::shared_ptr<Definition>& def) override;
+        Result create(std::shared_ptr<Definition> def) noexcept override;
     private:
         std::unique_ptr<FreetypeFontLoaderImpl> _impl;
     };

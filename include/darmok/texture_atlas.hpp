@@ -114,7 +114,7 @@ namespace darmok
 	public:
 		using Definition = protobuf::TextureAtlas;
 		TexturePackerDefinitionLoader(IDataLoader& dataLoader, ITextureDefinitionLoader& texLoader) noexcept;
-		Result operator()(std::filesystem::path path) override;
+		Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IDataLoader& _dataLoader;
 		ITextureDefinitionLoader& _texLoader;
@@ -128,7 +128,7 @@ namespace darmok
 	public:
 		TextureAtlasLoader(ITextureAtlasDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept;
 	protected:
-		Result create(const std::shared_ptr<TextureAtlas::Definition>& def) override;
+		Result create(std::shared_ptr<TextureAtlas::Definition> def) noexcept override;
 	private:
 		ITextureLoader& _texLoader;
 	};

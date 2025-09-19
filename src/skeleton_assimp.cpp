@@ -620,12 +620,9 @@ namespace darmok
     {
     }
 
-    AssimpSkeletonLoader::~AssimpSkeletonLoader() noexcept
-    {
-        // empty on purpose
-    }
+    AssimpSkeletonLoader::~AssimpSkeletonLoader() noexcept = default;
 
-    AssimpSkeletonLoader::Result AssimpSkeletonLoader::operator()(std::filesystem::path path)
+    AssimpSkeletonLoader::Result AssimpSkeletonLoader::operator()(std::filesystem::path path) noexcept
     {
         return (*_impl)(path);
     }
@@ -692,10 +689,7 @@ namespace darmok
     {
     }
 
-    AssimpSkeletonFileImporter::~AssimpSkeletonFileImporter() noexcept
-    {
-        // empty on purpose
-    }
+    AssimpSkeletonFileImporter::~AssimpSkeletonFileImporter() noexcept = default;
 
     std::vector<std::filesystem::path> AssimpSkeletonFileImporter::getOutputs(const Input& input)
     {
@@ -987,10 +981,7 @@ namespace darmok
     {
     }
 
-    AssimpSkeletalAnimationFileImporter::~AssimpSkeletalAnimationFileImporter() noexcept
-    {
-        // empty on purpose
-    }
+    AssimpSkeletalAnimationFileImporter::~AssimpSkeletalAnimationFileImporter() noexcept = default;
 
     void AssimpSkeletalAnimationFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
     {

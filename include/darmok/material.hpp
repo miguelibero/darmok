@@ -133,9 +133,9 @@ namespace darmok
     public:
         MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
     private:
-        Result create(const std::shared_ptr<Definition>& def) override;
-        OptionalRef<IProgramLoader> _progLoader;
-        OptionalRef<ITextureLoader> _texLoader;
+        Result create(std::shared_ptr<Definition> def) noexcept override;
+        IProgramLoader& _progLoader;
+        ITextureLoader& _texLoader;
     };
 
     using DataMaterialDefinitionLoader = DataProtobufLoader<IMaterialDefinitionLoader>;

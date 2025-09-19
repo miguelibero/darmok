@@ -123,12 +123,12 @@ namespace darmok
         }
     }
 
-    DataSkeletalAnimatorDefinitionLoader::DataSkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader)
+    DataSkeletalAnimatorDefinitionLoader::DataSkeletalAnimatorDefinitionLoader(IDataLoader& dataLoader) noexcept
         : _dataLoader(dataLoader)
     {
     }
 
-    DataSkeletalAnimatorDefinitionLoader::Result DataSkeletalAnimatorDefinitionLoader::operator()(std::filesystem::path path)
+    DataSkeletalAnimatorDefinitionLoader::Result DataSkeletalAnimatorDefinitionLoader::operator()(std::filesystem::path path) noexcept
     {
         auto dataResult = _dataLoader(path);
         if (!dataResult)

@@ -124,13 +124,13 @@ namespace darmok
         std::shared_ptr<TextureAtlas> _atlas;
     };
 
-    class App;
+    class ITextureAtlasLoader;
 
     class DARMOK_EXPORT TextureAtlasFontLoader final : public IFontLoader
     {
     public:
         TextureAtlasFontLoader(ITextureAtlasLoader& atlasLoader) noexcept;
-        Result operator()(std::filesystem::path path) override;
+        Result operator()(std::filesystem::path path) noexcept override;
     private:
         ITextureAtlasLoader& _atlasLoader;
     };

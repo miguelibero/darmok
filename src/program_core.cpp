@@ -847,7 +847,7 @@ namespace darmok
     {
     }
 
-    ProgramDefinitionFromSourceLoader::Result ProgramDefinitionFromSourceLoader::create(const std::shared_ptr<protobuf::ProgramSource>& src)
+    ProgramDefinitionFromSourceLoader::Result ProgramDefinitionFromSourceLoader::create(std::shared_ptr<protobuf::ProgramSource> src) noexcept
     {
         auto result = _compiler(*src);
         if(!result)

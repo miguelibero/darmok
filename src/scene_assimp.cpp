@@ -59,13 +59,13 @@ namespace darmok
 
     AssimpSceneDefinitionLoaderImpl::Result AssimpSceneDefinitionLoaderImpl::operator()(const std::filesystem::path& path)
     {
-        AssimpLoader::Config config;
-        config.setPath(path);
         auto dataResult = _dataLoader(path);
         if (!dataResult)
         {
             return unexpected{ dataResult.error() };
         }
+        AssimpLoader::Config config;
+        config.setPath(path);
         auto sceneResult = _assimpLoader.loadFromMemory(dataResult.value(), config);
 		if (!sceneResult)
 		{
@@ -825,7 +825,7 @@ namespace darmok
         return _impl->supports(path);
     }
 
-    AssimpSceneDefinitionLoader::Result AssimpSceneDefinitionLoader::operator()(std::filesystem::path path)
+    AssimpSceneDefinitionLoader::Result AssimpSceneDefinitionLoader::operator()(std::filesystem::path path)noexcept
     {
         return (*_impl)(path);
     }

@@ -69,32 +69,32 @@ namespace darmok
 		return _imageLoader;
 	}
 
-	IProgramLoader& AssetContextImpl::getProgramLoader() noexcept
+	IProgramFromDefinitionLoader& AssetContextImpl::getProgramLoader() noexcept
 	{
 		return _progLoader;
 	}
 
-	ITextureLoader& AssetContextImpl::getTextureLoader() noexcept
+	ITextureFromDefinitionLoader& AssetContextImpl::getTextureLoader() noexcept
 	{
 		return _texLoader;
 	}
 
-	ITextureAtlasLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
+	ITextureAtlasFromDefinitionLoader& AssetContextImpl::getTextureAtlasLoader() noexcept
 	{
 		return _texAtlasLoader;
 	}
 
-	IMaterialLoader& AssetContextImpl::getMaterialLoader() noexcept
+	IMaterialFromDefinitionLoader& AssetContextImpl::getMaterialLoader() noexcept
 	{
 		return _materialLoader;
 	}
 
-	IMeshLoader& AssetContextImpl::getMeshLoader() noexcept
+	IMeshFromDefinitionLoader& AssetContextImpl::getMeshLoader() noexcept
 	{
 		return _meshLoader;
 	}
 
-	IArmatureLoader& AssetContextImpl::getArmatureLoader() noexcept
+	IArmatureFromDefinitionLoader& AssetContextImpl::getArmatureLoader() noexcept
 	{
 		return _armatureLoader;
 	}
@@ -178,32 +178,32 @@ namespace darmok
 		return _impl->getImageLoader();
 	}
 
-	IProgramLoader& AssetContext::getProgramLoader() noexcept
+	IProgramFromDefinitionLoader& AssetContext::getProgramLoader() noexcept
 	{
 		return _impl->getProgramLoader();
 	}
 
-	ITextureLoader& AssetContext::getTextureLoader() noexcept
+	ITextureFromDefinitionLoader& AssetContext::getTextureLoader() noexcept
 	{
 		return _impl->getTextureLoader();
 	}
 
-	IMeshLoader& AssetContext::getMeshLoader() noexcept
+	IMeshFromDefinitionLoader& AssetContext::getMeshLoader() noexcept
 	{
 		return _impl->getMeshLoader();
 	}
 
-	ITextureAtlasLoader& AssetContext::getTextureAtlasLoader() noexcept
+	ITextureAtlasFromDefinitionLoader& AssetContext::getTextureAtlasLoader() noexcept
 	{
 		return _impl->getTextureAtlasLoader();
 	}
 
-	IMaterialLoader& AssetContext::getMaterialLoader() noexcept
+	IMaterialFromDefinitionLoader& AssetContext::getMaterialLoader() noexcept
 	{
 		return _impl->getMaterialLoader();
 	}
 
-	IArmatureLoader& AssetContext::getArmatureLoader() noexcept
+	IArmatureFromDefinitionLoader& AssetContext::getArmatureLoader() noexcept
 	{
 		return _impl->getArmatureLoader();
 	}
