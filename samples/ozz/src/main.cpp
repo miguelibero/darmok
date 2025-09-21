@@ -128,7 +128,7 @@ namespace
 			mat->occlusionStrength = 0.75f;
 			mat->metallicFactor = 1.f;
 
-			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.dpj").value();
+			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.dsc").value();
 			
 			auto skinEntity = scene.createEntity();
 			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3{ 1, 0, 0 });

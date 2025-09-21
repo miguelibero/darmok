@@ -17,4 +17,5 @@ message AssimpSceneImportConfig {
     string root_mesh_regex = 7;
     optional Material.OpacityType opacity = 8;
     optional Light.ShadowType shadow_type = 9;
+    bool compile = 10;
 }

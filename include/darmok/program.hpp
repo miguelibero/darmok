@@ -56,6 +56,7 @@ namespace darmok
 		}
 
 		[[nodiscard]] static Source createSource() noexcept;
+		[[nodiscard]] static expected<protobuf::Varying, std::string> loadRefVarying(const Ref& ref, OptionalRef<IProgramSourceLoader> loader = nullptr);
 		[[nodiscard]] static ILoader<Program::Definition>::Result loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader = nullptr);
 		[[nodiscard]] static ILoader<Program>::Result loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader = nullptr);
 	private:

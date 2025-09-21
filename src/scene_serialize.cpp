@@ -8,6 +8,8 @@
 #include <darmok/skeleton.hpp>
 #include <darmok/light.hpp>
 #include <darmok/string.hpp>
+#include <darmok/program_core.hpp>
+#include <darmok/mesh_core.hpp>
 
 #include <fmt/format.h>
 
@@ -176,7 +178,7 @@ namespace darmok
         assets.reserve(assetPack.assets_size());
         for (auto& [path, any] : assetPack.assets())
         {
-            if (typeId != 0 || protobuf::getTypeId(any) != typeId)
+            if (typeId != 0 && protobuf::getTypeId(any) != typeId)
             {
                 continue;
             }
@@ -818,5 +820,43 @@ namespace darmok
             return Entity{ entt::null };
         }
         return _converter.getComponentLoadContext().getEntity(roots.back());
+    }
+
+    SceneDefinitionCompiler::SceneDefinitionCompiler(const Config& config, OptionalRef<IProgramSourceLoader> progLoader) noexcept
+        : _config{ config }
+        , _progLoader{ progLoader }
+    {
+    }
+
+    expected<void, std::string> SceneDefinitionCompiler::operator()(Definition& def)
+    {
+        SceneDefinitionWrapper wrap{ def };
+        for (auto& [path, progSrc] : wrap.getAssets<Program::Source>())
+        {
+            ProgramCompiler progCompiler{ _config.progCompiler };
+            auto result = progCompiler(progSrc);
+            if (!result)
+            {
+                return unexpected{ fmt::format("failed to compile program {}: {}", path.string(), result.error())};
+            }
+            wrap.addAsset(path, result.value());
+        }
+        for (auto& [path, meshSrc] : wrap.getAssets<Mesh::Source>())
+        {
+            auto& progRef = meshSrc.program();
+
+            auto progResult = Program::loadRefVarying(progRef, _progLoader);
+            if (!progResult)
+            {
+                return unexpected{ fmt::format("failed to load varying for mesh {}: {}", path.string(), progResult.error()) };
+            }
+            auto varying = progResult.value();
+            auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
+            MeshConfig config{ .index32 = meshSrc.index32() };
+            auto def = MeshData{ meshSrc }.createDefinition(layout, config);
+            wrap.addAsset(path, def);
+        }
+
+        return {};
     }
 }

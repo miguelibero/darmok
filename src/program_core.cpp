@@ -790,14 +790,14 @@ namespace darmok
         auto compileResult = compiler(_src.value());
         if (!compileResult)
         {
-			throw std::runtime_error(fmt::format("failed to compile program: {}", compileResult.error()));
+            throw std::runtime_error{ fmt::format("failed to compile program: {}", compileResult.error()) };
         }
 		auto& def = compileResult.value();
         auto format = protobuf::getFormat(input.getOutputPath());
         auto writeResult = protobuf::write(def, out, format);
         if (!writeResult)
         {
-			throw std::runtime_error("failed to write program file");
+            throw std::runtime_error{ "failed to write program file" };
         }
     }
 

@@ -900,7 +900,31 @@ namespace darmok
 	}
 
 	MeshData::MeshData(const Definition& def) noexcept
-		: indices{ def.indices().begin(), def.indices().end() }	
+	{
+		if (def.has_sphere())
+		{
+			*this = { def.sphere() };
+		}
+		else if (def.has_cube())
+		{
+			*this = { def.cube() };
+		}
+		else if (def.has_capsule())
+		{
+			*this = { def.capsule() };
+		}
+		else if (def.has_rectangle())
+		{
+			*this = { def.rectangle() };
+		}
+		else if (def.has_data())
+		{
+			*this = { def.data() };
+		}
+	}
+
+	MeshData::MeshData(const DataDefinition& def) noexcept
+	: indices{ def.indices().begin(), def.indices().end() }
 	{
 		std::unordered_map<size_t, std::vector<MeshDataWeight>> weightsByVertex;
 
@@ -917,17 +941,17 @@ namespace darmok
 
 				auto i = weight.vertex_id();
 				weightsByVertex[i].push_back(MeshDataWeight
-				{
-					.boneIndex = boneIndex,
-					.value = v
-				});
+					{
+						.boneIndex = boneIndex,
+						.value = v
+					});
 			}
 			++boneIndex;
 		}
 
 		vertices.reserve(def.vertices_size());
 		size_t vertexIndex = 0;
-		for(auto& v : def.vertices())
+		for (auto& v : def.vertices())
 		{
 			auto itr = weightsByVertex.find(vertexIndex);
 			std::vector<MeshDataWeight> weights;
@@ -943,10 +967,30 @@ namespace darmok
 				.tangent = protobuf::convert(v.tangent()),
 				.color = protobuf::convert(v.color()),
 				.weights = std::move(weights)
-			});
+				});
 
 			++vertexIndex;
 		}
+	}
+
+	MeshData::MeshData(const CubeDefinition& def) noexcept
+		: MeshData(protobuf::convert(def.shape()), def.type())
+	{
+	}
+
+	MeshData::MeshData(const SphereDefinition& def) noexcept
+		: MeshData(protobuf::convert(def.shape()), def.lod())
+	{
+	}
+
+	MeshData::MeshData(const CapsuleDefinition& def) noexcept
+		: MeshData(protobuf::convert(def.shape()), def.lod())
+	{
+	}
+
+	MeshData::MeshData(const RectangleDefinition& def) noexcept
+		: MeshData(protobuf::convert(def.shape()), def.type())
+	{
 	}
 
 	MeshData MeshData::operator+(const MeshData& other) const noexcept

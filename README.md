@@ -112,7 +112,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 
 #### Upcoming
 * finish editor
-    * export scene
     * skeletal animator support
     * camera components support
     * create lua script component

@@ -501,7 +501,7 @@ namespace darmok
 			return false;
 		}
 
-		DarmokAssetFileImporter importer(cfg);
+		DarmokAssetFileImporter importer{ cfg };
 		importer(std::cout);
 
 		if (std::filesystem::is_directory(cfg.outputPath))

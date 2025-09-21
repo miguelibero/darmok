@@ -92,7 +92,7 @@ namespace
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
-			auto result = _app.getAssets().getSceneLoader()(*scene, "Sponza.dpj");
+			auto result = _app.getAssets().getSceneLoader()(*scene, "Sponza.dsc");
 			assert(result);
 
 			_mouseVel = glm::vec2{ 0 };

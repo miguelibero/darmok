@@ -23,7 +23,7 @@ namespace darmok
 
 	using ProgramDefines = std::unordered_set<std::string>;
 
-	class ConstProgramDefinitionWrapper
+	class DARMOK_EXPORT ConstProgramDefinitionWrapper
 	{
 	public:
 		using Definition = protobuf::Program;
@@ -38,7 +38,7 @@ namespace darmok
 		const Definition& _def;
 	};
 
-	class ProgramDefinitionWrapper final : public ConstProgramDefinitionWrapper
+	class DARMOK_EXPORT ProgramDefinitionWrapper final : public ConstProgramDefinitionWrapper
 	{
 	public:
 		ProgramDefinitionWrapper(Definition& def);
@@ -46,7 +46,7 @@ namespace darmok
 		const Definition& _def;
 	};
 
-	class ProgramSourceWrapper final
+	class DARMOK_EXPORT ProgramSourceWrapper final
 	{
 	public:
 		using Source = protobuf::ProgramSource;
@@ -58,7 +58,7 @@ namespace darmok
 		Source& _src;
 	};
 
-	struct ProgramCompilerConfig final
+	struct DARMOK_EXPORT ProgramCompilerConfig final
 	{
 		size_t bufferSize = 4096;
 		std::filesystem::path shadercPath;
@@ -87,7 +87,7 @@ namespace darmok
 	using DataProgramSourceLoader = DataProtobufLoader<IProgramSourceLoader>;
 	using DataProgramDefinitionLoader = DataProtobufLoader<IProgramDefinitionLoader>;
 
-	class ProgramSourceLoader final : IProgramSourceLoader
+	class DARMOK_EXPORT ProgramSourceLoader final : public IProgramSourceLoader
 	{
 	public:
 		ProgramSourceLoader(IDataLoader& dataLoader) noexcept;
@@ -96,7 +96,7 @@ namespace darmok
 		OptionalRef<IDataLoader> _dataLoader;
 	};
 
-	class ProgramDefinitionFromSourceLoader final : public FromDefinitionLoader<IProgramDefinitionFromSourceLoader, IProgramSourceLoader>
+	class DARMOK_EXPORT ProgramDefinitionFromSourceLoader final : public FromDefinitionLoader<IProgramDefinitionFromSourceLoader, IProgramSourceLoader>
 	{
 	public:
 		ProgramDefinitionFromSourceLoader(IProgramSourceLoader& srcLoader, const ProgramCompilerConfig& compilerConfig) noexcept;

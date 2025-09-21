@@ -894,6 +894,15 @@ namespace darmok
         {
             config.set_embed_textures(*itr);
         }
+        itr = json.find("compile");
+        if (itr != json.end())
+        {
+            config.set_compile(*itr);
+        }
+        else
+        {
+            config.set_compile(true);
+        }
         itr = json.find("shadowType");
         if (itr != json.end())
         {
@@ -1045,6 +1054,16 @@ namespace darmok
         if (!convertResult)
         {
             throw std::runtime_error{ "failed to convert scene: " + convertResult.error() };
+        }
+        if (_currentConfig->compile())
+        {
+            SceneDefinitionCompiler::Config config;
+            SceneDefinitionCompiler compiler{ config, _progLoader };
+            auto compileResult = compiler(def);
+            if (!compileResult)
+            {
+                throw std::runtime_error{ "failed to compile scene: " + compileResult.error() };
+            }
         }
         _dataLoader.removeBasePath(input.basePath);
 		auto writeResult = protobuf::write(def, out, _outputFormat);

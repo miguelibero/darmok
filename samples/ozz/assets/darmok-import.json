@@ -12,7 +12,7 @@
         },
         "BasicMotions_DummyModel.fbx": {
             "scene": {
-                "outputPath": "scene.dpj",
+                "outputPath": "scene.dsc",
                 "program": "Forward",
                 "skipNodes": [
                     "Rig",

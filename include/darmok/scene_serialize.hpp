@@ -5,6 +5,7 @@
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/scene_fwd.hpp>
+#include <darmok/program_core.hpp>
 #include <darmok/protobuf/scene.pb.h>
 
 #include <filesystem>
@@ -156,15 +157,13 @@ namespace darmok
         template<typename T>
         std::optional<T> getAsset(const std::filesystem::path& path) const noexcept
         {
-            if (auto any = getAsset(path))
-            {
-                T asset;
-                if (any->UnpackTo(&asset))
-                {
-                    return asset;
-                }
-            }
-            return std::nullopt;
+            return ConstSceneDefinitionWrapper::getAsset<T>();
+        }
+
+        template<typename T>
+        std::unordered_map<std::filesystem::path, T> getAssets() const noexcept
+        {
+            return ConstSceneDefinitionWrapper::getAssets<T>();
         }
 
         template<typename T>
@@ -350,6 +349,24 @@ namespace darmok
     private:
         ISceneDefinitionLoader& _defLoader;
         SceneConverter _converter;
+    };
+
+    struct DARMOK_EXPORT SceneDefinitionCompilerConfig final
+    {
+        ProgramCompilerConfig progCompiler;
+    };
+
+    class DARMOK_EXPORT SceneDefinitionCompiler final
+    {
+    public:
+        using Config = SceneDefinitionCompilerConfig;
+        using Definition = protobuf::Scene;
+
+        SceneDefinitionCompiler(const Config& config = {}, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
+        expected<void, std::string> operator()(Definition& def);
+    private:
+        Config _config;
+        OptionalRef<IProgramSourceLoader> _progLoader;
     };
 
 }

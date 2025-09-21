@@ -180,7 +180,12 @@ namespace darmok
         using MeshType = protobuf::Mesh::Type;
         using RectangleType = protobuf::Mesh::RectangleType;
         using LineType = protobuf::Mesh::LineType;
-		using Definition = protobuf::DataMeshSource;
+        using Definition = protobuf::MeshSource;
+		using DataDefinition = protobuf::DataMeshSource;
+        using CubeDefinition = protobuf::CubeMeshSource;
+        using SphereDefinition = protobuf::SphereMeshSource;
+        using CapsuleDefinition = protobuf::CapsuleMeshSource;
+        using RectangleDefinition = protobuf::RectangleMeshSource;
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
@@ -198,7 +203,13 @@ namespace darmok
         MeshData(const Polygon& poly) noexcept;
         MeshData(const Frustum& frust, RectangleType type = Mesh::Definition::OutlineRectangle) noexcept;
         MeshData(const Grid& grid) noexcept;
+
         MeshData(const Definition& def) noexcept;
+        MeshData(const DataDefinition& def) noexcept;
+        MeshData(const CubeDefinition& def) noexcept;
+        MeshData(const SphereDefinition& def) noexcept;
+        MeshData(const CapsuleDefinition& def) noexcept;
+        MeshData(const RectangleDefinition& def) noexcept;
 
         MeshData& operator+=(const MeshData& other) noexcept;
         MeshData operator+(const MeshData& other) const noexcept;

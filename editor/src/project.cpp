@@ -80,18 +80,12 @@ namespace darmok::editor
     {
         if (_path.empty() || forceNewPath)
         {
-            std::string initialPath{ "." };
-            if (!_path.empty() && std::filesystem::exists(_path))
-            {
-                initialPath = _path.string();
-            }
-
             auto dialogCallback = [this](auto& result)
             {
                 if (!result.empty())
                 {
                     clearPath();
-                    _path = result[0];
+                    _path = result.front();
                 }
                 doSaveScene();
             };
@@ -99,15 +93,52 @@ namespace darmok::editor
 			auto options = _dialogOptions;
 			options.type = FileDialogType::Save;
 			options.title = "Save Project";
-			options.defaultPath = initialPath;
+			options.defaultPath = _path;
             _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
             return;
         }
         doSaveScene();
     }
 
+    expected<void, std::string> EditorProject::doExportScene(std::filesystem::path path)
+    {
+        SceneDefinitionCompiler compiler{};
+        auto sceneDef = _sceneDef;
+        auto compileResult = compiler(sceneDef);
+        if (!compileResult)
+        {
+            return unexpected{ "failed to compile scene: " + compileResult.error() };
+        }
+        auto writeResult = protobuf::write(sceneDef, path);
+        if (!writeResult)
+        {
+            return unexpected{ "failed to write scene: " + writeResult.error() };
+        }
+        return {};
+    }
+
     void EditorProject::exportScene()
     {
+        auto dialogCallback = [this](auto& result)
+        {
+            if (result.empty())
+            {
+                return;
+            }
+            auto result = doExportScene(result.front());
+            if (!result)
+            {
+                StreamUtils::logDebug(result.error());
+            }
+        };
+
+        FileDialogOptions options;
+        options.filters = { "*.dsc", "*.dsc.xml", "*.dsc.json" };
+        options.filterDesc = "Darmok Scene Files";
+        options.type = FileDialogType::Save;
+        options.title = "Export Scene";
+        options.defaultPath = _path;
+        _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
     }
 
     expected<void, std::string> EditorProject::render()

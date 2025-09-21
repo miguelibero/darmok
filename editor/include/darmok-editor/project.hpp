@@ -65,6 +65,7 @@ namespace darmok::editor
 
         expected<void, std::string> doResetScene();
         expected<void, std::string> doUpdateScene();
+        expected<void, std::string> doExportScene(std::filesystem::path path);
         void doSaveScene();
         void clearPath();
     };

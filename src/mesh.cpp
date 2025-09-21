@@ -5,9 +5,9 @@
 
 namespace darmok
 {
-	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progDefLoader) noexcept
+	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramSourceLoader& progLoader) noexcept
 		: FromDefinitionLoader(srcLoader)
-		, _progDefLoader{ progDefLoader }
+		, _progLoader{ progLoader }
 	{
 	}
 
@@ -18,55 +18,16 @@ namespace darmok
 			return unexpected<std::string>{ "Mesh source is null" };
 		}
 
-		auto progResult = Program::loadRefDefinition(src->program(), _progDefLoader);
+		auto progResult = Program::loadRefVarying(src->program(), _progLoader);
 		if (!progResult)
 		{
 			return unexpected{ progResult.error() };
 		}
-		auto progDef = progResult.value();
-		if (!progDef)
-		{
-			return nullptr;
-		}
-
-		auto layout = ConstVertexLayoutWrapper{ progDef->varying().vertex() }.getBgfx();
-
-		std::shared_ptr<Mesh::Definition> defPtr;
+		auto varying = progResult.value();
+		auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
 		MeshConfig config{ .index32 = src->index32() };
-		if (src->has_sphere())
-		{
-			auto shape = protobuf::convert(src->sphere().shape());
-			auto def = MeshData{ shape, src->sphere().lod() }.createDefinition(layout, config);
-			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
-		}
-		else if (src->has_cube())
-		{
-			auto shape = protobuf::convert(src->cube().shape());
-			auto def = MeshData{ shape, src->cube().type() }.createDefinition(layout, config);
-			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
-		}
-		else if (src->has_capsule())
-		{
-			auto shape = protobuf::convert(src->capsule().shape());
-			auto def = MeshData{ shape, src->capsule().lod() }.createDefinition(layout, config);
-			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
-		}
-		else if (src->has_rectangle())
-		{
-			auto shape = protobuf::convert(src->rectangle().shape());
-			auto def = MeshData{ shape, src->rectangle().type() }.createDefinition(layout, config);
-			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
-		}
-		else if (src->has_data())
-		{
-			auto def = MeshData{ src->data() }.createDefinition(layout, config);
-			defPtr = std::make_shared<Mesh::Definition>(std::move(def));
-		}
-		else
-		{
-			return unexpected<std::string>{ "Unsupported mesh type" };
-		}
 
-		return defPtr;
+		auto def = MeshData{ *src }.createDefinition(layout, config);
+		return std::make_shared<Mesh::Definition>(std::move(def));
 	}
 }
