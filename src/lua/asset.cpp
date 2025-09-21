@@ -42,6 +42,11 @@ namespace darmok
 		return assets.getMusicLoader()(path).value();
 	}
 
+	std::shared_ptr<protobuf::Scene> LuaAssets::loadSceneDefinition(AssetContext& assets, const std::string& path)
+	{
+		return assets.getSceneDefinitionLoader()(path).value();
+	}
+
 	void LuaAssets::loadScene(AssetContext& assets, Scene& scene, const std::string& path)
 	{
 		auto result = assets.getSceneLoader()(scene, path);
@@ -66,9 +71,15 @@ namespace darmok
 		return assets.getSkeletalAnimatorDefinitionLoader()(path).value();
 	}
 
-	SkeletalAnimationMap LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def)
+	sol::table LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::state_view lua)
 	{
-		return ConstSkeletalAnimatorDefinitionWrapper{ def }.loadAnimations(assets.getSkeletalAnimationLoader());
+		auto map = ConstSkeletalAnimatorDefinitionWrapper{ def }.loadAnimations(assets.getSkeletalAnimationLoader());
+		sol::table t = lua.create_table();
+		for (auto& [name, anim] : map)
+		{
+			t[name] = anim;
+		}
+		return t;
 	}
 
 	void LuaAssets::bind(sol::state_view& lua) noexcept
@@ -81,6 +92,8 @@ namespace darmok
 		LuaSkeleton::bind(lua);
 
 		lua.new_usertype<AssetContext>("Assets", sol::no_constructor,
+			"load_model", &LuaAssets::loadSceneDefinition,
+			"load_scene_definition", &LuaAssets::loadSceneDefinition,
 			"load_scene", &LuaAssets::loadScene,
 			"load_program", &LuaAssets::loadProgram,
 			"load_texture", &LuaAssets::loadTexture,
@@ -89,8 +102,8 @@ namespace darmok
 			"load_music", &LuaAssets::loadMusic,
 			"load_skeleton", &LuaAssets::loadSkeleton,
 			"load_skeletal_animation", &LuaAssets::loadSkeletalAnimation,
-			"load_skeletal_animator_definition", &LuaAssets::loadSkeletalAnimatorDefinition
-			//"load_skeletal_animations", &LuaAssets::loadSkeletalAnimations
+			"load_skeletal_animator_definition", &LuaAssets::loadSkeletalAnimatorDefinition,
+			"load_skeletal_animations", &LuaAssets::loadSkeletalAnimations
 		);
 	}
 }

@@ -81,7 +81,6 @@ namespace darmok
         static const std::regex _ifdefRegex;
         static const std::string _definePrefix;
         static const std::unordered_map<bgfx::RendererType::Enum, std::string> _rendererExtensions;
-        static const std::string _binExt;
         static const std::string _enableDefineSuffix;
 
         size_t getDefines(std::istream& in, Defines& defines, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
@@ -128,7 +127,6 @@ namespace darmok
         const std::string& getName() const noexcept;
     private:
         Config _defaultConfig;
-        OptionalRef<std::ostream> _log;
 
         std::optional<Config> _config;
         std::optional<protobuf::ProgramSource> _src;

@@ -108,6 +108,11 @@ namespace darmok
 	{
 		return _sceneLoader;
 	}
+
+	ISceneDefinitionLoader& AssetContextImpl::getSceneDefinitionLoader() noexcept
+	{
+		return _sceneDefLoader;
+	}
 	
 #ifdef DARMOK_OZZ
 	ISkeletonLoader& AssetContextImpl::getSkeletonLoader() noexcept
@@ -213,6 +218,11 @@ namespace darmok
 		return _impl->getSceneLoader();
 	}
 
+	ISceneDefinitionLoader& AssetContext::getSceneDefinitionLoader() noexcept
+	{
+		return _impl->getSceneDefinitionLoader();
+	}
+
 	IFontLoader& AssetContext::getFontLoader() noexcept
 	{
 		return _impl->getFontLoader();
@@ -280,16 +290,16 @@ namespace darmok
 	}
 
 	DarmokAssetFileImporter::DarmokAssetFileImporter(const std::filesystem::path& inputPath)
-		: _importer(inputPath)
-		, _progImporter(_importer.addTypeImporter<ProgramFileImporter>())
+		: _importer{ inputPath }
+		, _progImporter{ _importer.addTypeImporter<ProgramFileImporter>() }
+#ifdef DARMOK_ASSIMP
+		, _sceneImporter{ _importer.addTypeImporter<AssimpSceneFileImporter>(_alloc) }
+#endif
 	{
 #ifdef DARMOK_ASSIMP
-		_importer.addTypeImporter<AssimpSceneFileImporter>(_alloc);
-#ifdef DARMOK_OZZ
 		_importer.addTypeImporter<SkeletalAnimatorDefinitionFileImporter>();
 		_importer.addTypeImporter<AssimpSkeletonFileImporter>();
 		_importer.addTypeImporter<AssimpSkeletalAnimationFileImporter>();
-#endif
 #endif
 #ifdef DARMOK_FREETYPE
 		_importer.addTypeImporter<FreetypeFontFileImporter>();
@@ -314,12 +324,14 @@ namespace darmok
 	DarmokAssetFileImporter& DarmokAssetFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.setShadercPath(path);
+		_sceneImporter.setShadercPath(path);
 		return *this;
 	}
 
 	DarmokAssetFileImporter& DarmokAssetFileImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.addIncludePath(path);
+		_sceneImporter.addIncludePath(path);
 		return *this;
 	}
 

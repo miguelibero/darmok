@@ -481,6 +481,7 @@ namespace darmok
         , _loader{ _scene->getRegistry() }
         , _count{ 0 }
         , _typeId{ 0 }
+        , _parentEntity{ entt::null }
     {
     }
 
@@ -510,6 +511,11 @@ namespace darmok
             createAssetPack();
         }
         return *_assetPack;
+    }
+
+    void SceneConverterImpl::setParent(Entity entity) noexcept
+    {
+        _parentEntity = entity;
     }
 
     void SceneConverterImpl::setAssetPackConfig(AssetPackConfig assetConfig) noexcept
@@ -763,6 +769,12 @@ namespace darmok
     const AssetPack& SceneConverter::getAssetPack() const noexcept
     {
         return _impl->getAssetPack();
+    }
+
+    SceneConverter& SceneConverter::setParent(Entity entity) noexcept
+    {
+        _impl->setParent(entity);
+        return *this;
     }
 
     SceneConverter& SceneConverter::setAssetPackConfig(AssetPackConfig assetConfig) noexcept

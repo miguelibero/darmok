@@ -69,6 +69,7 @@ namespace darmok
 		[[nodiscard]] IArmatureFromDefinitionLoader& getArmatureLoader() noexcept override;
 		[[nodiscard]] ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept override;
 		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
+		[[nodiscard]] ISceneDefinitionLoader& getSceneDefinitionLoader() noexcept override;
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept override;

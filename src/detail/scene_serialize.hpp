@@ -46,6 +46,7 @@ namespace darmok
 
 		AssetPack& getAssetPack() noexcept;
         const AssetPack& getAssetPack() const noexcept;
+        void setParent(Entity entity) noexcept;
         void setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
 
     private:
@@ -53,6 +54,7 @@ namespace darmok
         static const SceneDefinition _emptySceneDef;
         OptionalRef<Scene> _scene;        
         OptionalRef<const SceneDefinition> _sceneDef;
+        Entity _parentEntity;
         AssetPackConfig _assetConfig;
         mutable std::unique_ptr<AssetPack> _assetPack;
         entt::continuous_loader _loader;

@@ -806,20 +806,28 @@ namespace darmok
     {
     }
 
+    void AssimpSceneFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    {
+        _defaultCompilerConfig.progCompiler.log = log;
+    }
+
+    void AssimpSceneFileImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _defaultCompilerConfig.progCompiler.shadercPath = path;
+    }
+
+    void AssimpSceneFileImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _defaultCompilerConfig.progCompiler.includePaths.insert(path);
+    }
+
     void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
     {
         auto itr = json.find("programPath");
         auto& progRef = *config.mutable_program();
         if (itr != json.end())
         {
-            auto programPath = basePath / *itr;
-            progRef.set_path(programPath.string());
-            protobuf::ProgramSource src;
-			auto result = protobuf::read(src, programPath);
-            if (!result)
-            {
-                throw std::runtime_error("failed to load vertex layout from program path");
-            }
+            progRef.set_path(itr->get<std::string>());
         }
         itr = json.find("program");
         if (itr != json.end())
@@ -894,14 +902,17 @@ namespace darmok
         {
             config.set_embed_textures(*itr);
         }
+
+        config.set_compile(true);
+        itr = json.find("programCompilerConfig");
+        if (itr != json.end())
+        {
+            _compilerConfig->progCompiler.read(*itr, basePath);
+        }
         itr = json.find("compile");
         if (itr != json.end())
         {
             config.set_compile(*itr);
-        }
-        else
-        {
-            config.set_compile(true);
         }
         itr = json.find("shadowType");
         if (itr != json.end())
@@ -949,6 +960,8 @@ namespace darmok
         {
             return false;
         }
+        _compilerConfig = _defaultCompilerConfig;
+
         auto& config = _currentConfig.emplace();
         nlohmann::json configJson = input.config;
         if (!input.dirConfig.empty())
@@ -957,6 +970,7 @@ namespace darmok
         }
         loadConfig(configJson, input.basePath, config);
 
+        _outputPath.clear();
         auto itr = configJson.find("outputPath");
         if (itr != configJson.end())
         {
@@ -1048,23 +1062,35 @@ namespace darmok
             texLoader = nullptr;
         }
         _dataLoader.addBasePath(input.basePath);
-        AssimpSceneDefinitionConverter converter{ *_currentScene, def, basePath, *_currentConfig, _alloc, texLoader };
-        converter.setConfig(input.config);
-        auto convertResult = converter();
-        if (!convertResult)
+        try
         {
-            throw std::runtime_error{ "failed to convert scene: " + convertResult.error() };
-        }
-        if (_currentConfig->compile())
-        {
-            SceneDefinitionCompiler::Config config;
-            SceneDefinitionCompiler compiler{ config, _progLoader };
-            auto compileResult = compiler(def);
-            if (!compileResult)
+            AssimpSceneDefinitionConverter converter{ *_currentScene, def, basePath, *_currentConfig, _alloc, texLoader };
+            converter.setConfig(input.config);
+            auto convertResult = converter();
+            if (!convertResult)
             {
-                throw std::runtime_error{ "failed to compile scene: " + compileResult.error() };
+                throw std::runtime_error{ "failed to convert scene: " + convertResult.error() };
+            }
+            if (_currentConfig->compile())
+            {
+                if (!_compilerConfig)
+                {
+                    throw std::runtime_error{ "compiler config missing" };
+                }
+                SceneDefinitionCompiler compiler{ *_compilerConfig, _progLoader };
+                auto compileResult = compiler(def);
+                if (!compileResult)
+                {
+                    throw std::runtime_error{ "failed to compile scene: " + compileResult.error() };
+                }
             }
         }
+        catch (...)
+        {
+            _dataLoader.removeBasePath(input.basePath);
+            throw;
+        }
+        
         _dataLoader.removeBasePath(input.basePath);
 		auto writeResult = protobuf::write(def, out, _outputFormat);
         if(!writeResult)
@@ -1120,4 +1146,17 @@ namespace darmok
     {
         return _impl->getName();
     }
+
+    AssimpSceneFileImporter& AssimpSceneFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _impl->setShadercPath(path);
+        return *this;
+    }
+
+    AssimpSceneFileImporter& AssimpSceneFileImporter::addIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _impl->addIncludePath(path);
+        return *this;
+    }
+
 }

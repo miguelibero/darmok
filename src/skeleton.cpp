@@ -511,7 +511,7 @@ namespace darmok
     ConstSkeletalAnimatorDefinitionWrapper::AnimationMap ConstSkeletalAnimatorDefinitionWrapper::loadAnimations(ISkeletalAnimationLoader& loader) const noexcept
     {
         AnimationMap anims;
-        auto getAnimationName = [this](const auto& key)
+        auto getAnimationPath = [this](const auto& key) -> std::filesystem::path
         {
             auto& pattern = _def->animation_pattern();
             if (pattern.empty())
@@ -527,7 +527,7 @@ namespace darmok
             for (auto& anim : state.animations())
             {
                 auto& name = anim.name();
-                auto result = loader(getAnimationName(name));
+                auto result = loader(getAnimationPath(name));
                 if (result)
                 {
                     anims.emplace(name, result.value());

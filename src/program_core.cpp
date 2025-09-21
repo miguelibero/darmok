@@ -291,7 +291,6 @@ namespace darmok
         return StringUtils::join(",", realDefines);
     }
 
-    const std::string ShaderParser::_binExt = ".bin";
     const std::string ShaderParser::_enableDefineSuffix = "_enabled";
 
     ShaderType ShaderParser::getType(const fs::path& path) noexcept
@@ -430,7 +429,7 @@ namespace darmok
         {
             suffix = "-" + suffix;
         }
-        return suffix + op.profile + _binExt;
+        return suffix + op.profile + std::string{ protobuf::getExtension() };
     }
 
     ShaderCompiler::ShaderCompiler(const Config& config) noexcept
@@ -724,7 +723,7 @@ namespace darmok
 
     void ProgramFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
     {
-        _log = log;
+        _defaultConfig.log = log;
     }
 
     bool ProgramFileImporterImpl::startImport(const Input& input, bool dry)
@@ -748,7 +747,7 @@ namespace darmok
             return false;
         }
 
-        _outputPath = input.getOutputPath(".bin");
+        _outputPath = input.getOutputPath(protobuf::getExtension());
         return true;
     }
 
@@ -784,9 +783,7 @@ namespace darmok
             return;
         }
 
-        auto& config = _config.value();
-        config.log = _log;
-        ProgramCompiler compiler{ config };
+        ProgramCompiler compiler{ _config.value() };
         auto compileResult = compiler(_src.value());
         if (!compileResult)
         {

@@ -34,7 +34,7 @@ namespace darmok
         std::vector<std::string> pathMatches;
 
         std::filesystem::path getRelativePath() const noexcept;
-        std::filesystem::path getOutputPath(const std::string& defaultExt = "") const noexcept;
+        std::filesystem::path getOutputPath(std::string_view defaultExt = "") const noexcept;
         std::optional<const nlohmann::json> getConfigField(std::string_view key) const noexcept;
     };
 

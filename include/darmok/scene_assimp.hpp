@@ -61,6 +61,8 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         void endImport(const Input& input) override;
         const std::string& getName() const noexcept override;
+        AssimpSceneFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
+        AssimpSceneFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
     private:
         std::unique_ptr<AssimpSceneFileImporterImpl> _impl;
     };

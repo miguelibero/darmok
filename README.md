@@ -113,6 +113,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 #### Upcoming
 * finish editor
     * skeletal animator support
+    * physics support
     * camera components support
     * create lua script component
     * fix scene view gizmos

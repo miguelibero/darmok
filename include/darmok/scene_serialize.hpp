@@ -182,7 +182,8 @@ namespace darmok
 		OptionalRef<Definition> _def;
     };
 
-    using ISceneDefinitionLoader = ILoader<protobuf::Scene>;
+    class DARMOK_EXPORT BX_NO_VTABLE ISceneDefinitionLoader : public ILoader<protobuf::Scene>{};
+
     class Scene;
     class IAssetContext;
 
@@ -220,9 +221,7 @@ namespace darmok
         virtual Result operator()(Scene& scene, Argument arg) = 0;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISceneLoader : public IBasicSceneLoader<std::filesystem::path>
-    {
-    };
+    class DARMOK_EXPORT BX_NO_VTABLE ISceneLoader : public IBasicSceneLoader<std::filesystem::path>{};
 
     class SceneConverterImpl;
 
@@ -313,6 +312,7 @@ namespace darmok
         AssetPack& getAssetPack() noexcept;
         const AssetPack& getAssetPack() const noexcept;
 
+        SceneConverter& setParent(Entity entity) noexcept;
         SceneConverter& setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
 
     private:

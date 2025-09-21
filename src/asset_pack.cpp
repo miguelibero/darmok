@@ -91,6 +91,11 @@ namespace darmok
 		return _sceneLoader;
 	}
 
+	ISceneDefinitionLoader& AssetPack::getSceneDefinitionLoader() noexcept
+	{
+		return _sceneDefLoader;
+	}
+
 	IFontLoader& AssetPack::getFontLoader() noexcept
 	{
 		return _multiFontLoader;

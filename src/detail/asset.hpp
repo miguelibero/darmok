@@ -52,6 +52,7 @@ namespace darmok
 		IArmatureFromDefinitionLoader& getArmatureLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
 		ISceneLoader& getSceneLoader() noexcept;
+		ISceneDefinitionLoader& getSceneDefinitionLoader() noexcept;
 		bx::AllocatorI& getAllocator() noexcept;
 		ISkeletonLoader& getSkeletonLoader() noexcept;
 		ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept;

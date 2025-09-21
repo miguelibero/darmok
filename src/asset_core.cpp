@@ -42,7 +42,7 @@ namespace darmok
         return std::nullopt;
     }
 
-    std::filesystem::path FileTypeImporterInput::getOutputPath(const std::string& defaultExt) const noexcept
+    std::filesystem::path FileTypeImporterInput::getOutputPath(std::string_view defaultExt) const noexcept
     {
         constexpr std::string_view configKey = "outputPath";
         auto relPath = getRelativePath();
@@ -75,7 +75,7 @@ namespace darmok
             // defaultExt == "" means we dont want a default output path
             return {};
         }
-        return outputPath / (name + defaultExt);
+        return outputPath / (name + std::string{ defaultExt });
     }
 
     FileImporterImpl::FileImporterImpl(const fs::path& inputPath)

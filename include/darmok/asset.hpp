@@ -16,6 +16,7 @@ namespace darmok
 {
 	class IDataLoader;
 	class ISceneLoader;
+	class ISceneDefinitionLoader;
 	class IProgramFromDefinitionLoader;
 	class IMeshFromDefinitionLoader;
 	class ITextureFromDefinitionLoader;
@@ -43,6 +44,7 @@ namespace darmok
 		[[nodiscard]] virtual IArmatureFromDefinitionLoader& getArmatureLoader() noexcept = 0;
 		[[nodiscard]] virtual ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept = 0;
 		[[nodiscard]] virtual ISceneLoader& getSceneLoader() noexcept = 0;
+		[[nodiscard]] virtual ISceneDefinitionLoader& getSceneDefinitionLoader() noexcept = 0;
 		[[nodiscard]] virtual IFontLoader& getFontLoader() noexcept = 0;
 		[[nodiscard]] virtual ISkeletonLoader& getSkeletonLoader() noexcept = 0;
 		[[nodiscard]] virtual ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept = 0;
@@ -80,6 +82,7 @@ namespace darmok
 		[[nodiscard]] IArmatureFromDefinitionLoader& getArmatureLoader() noexcept override;
 		[[nodiscard]] ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept override;
 		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
+		[[nodiscard]] ISceneDefinitionLoader& getSceneDefinitionLoader() noexcept override;
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;
 		[[nodiscard]] ISkeletalAnimationLoader& getSkeletalAnimationLoader() noexcept override;
@@ -95,6 +98,7 @@ namespace darmok
 	};
 
 	class ProgramFileImporter;
+	class AssimpSceneFileImporter;
 
 	class DARMOK_EXPORT DarmokAssetFileImporter final
 	{
@@ -111,5 +115,8 @@ namespace darmok
 		bx::DefaultAllocator _alloc;
 		FileImporter _importer;
 		ProgramFileImporter& _progImporter;
+#ifdef DARMOK_ASSIMP
+		AssimpSceneFileImporter& _sceneImporter;
+#endif
 	};
 }

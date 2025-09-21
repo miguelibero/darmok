@@ -147,6 +147,7 @@ namespace darmok
     public:
         using Input = FileTypeImporterInput;
         using Config = protobuf::AssimpSceneImportConfig;
+        using CompilerConfig = SceneDefinitionCompilerConfig;
         using OutputFormat = protobuf::Format;
         using Dependencies = FileTypeImportDependencies;
         using Definition = protobuf::Scene;
@@ -160,6 +161,9 @@ namespace darmok
         void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         void endImport(const Input& input);
         const std::string& getName() const noexcept;
+        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
+        void setShadercPath(const std::filesystem::path& path) noexcept;
+        void addIncludePath(const std::filesystem::path& path) noexcept;
     private:
         bx::AllocatorI& _alloc;
         bx::FileReader _fileReader;
@@ -171,6 +175,8 @@ namespace darmok
         OutputFormat _outputFormat = OutputFormat::Binary;
         std::filesystem::path _outputPath;
         std::shared_ptr<aiScene> _currentScene;
+        CompilerConfig _defaultCompilerConfig;
+        std::optional<CompilerConfig> _compilerConfig;
 
         void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
         static expected<protobuf::VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);

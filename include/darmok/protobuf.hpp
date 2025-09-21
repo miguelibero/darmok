@@ -30,7 +30,7 @@ namespace darmok
         using FieldDescriptor = google::protobuf::FieldDescriptor;
 
         [[nodiscard]] Format getFormat(const std::filesystem::path& path);
-        [[nodiscard]] std::string_view getExtension(Format format);
+        [[nodiscard]] std::string_view getExtension(Format format = Format::Binary);
         [[nodiscard]] std::optional<Format> getFormat(std::string_view name);
         [[nodiscard]] std::size_t getHash(const Message& msg);
 
