@@ -143,7 +143,7 @@ namespace darmok
                 errors.push_back(result.error());
             }
 
-            return unexpected<Error>{ StringUtils::join("\n", errors) };
+            return unexpected<Error>{ StringUtils::joinErrors(errors) };
         }
     };
 
@@ -289,7 +289,7 @@ namespace darmok
                 }
                 errors.push_back(result.error());
             }
-            return unexpected<Error>{ StringUtils::join("\n", errors) };
+            return unexpected<Error>{ StringUtils::joinErrors(errors) };
         }
 
         bool releaseCache(std::filesystem::path path) noexcept override
@@ -801,7 +801,7 @@ namespace darmok
                 }
                 errors.push_back(result.error());
             }
-            return unexpected<Error>{ StringUtils::join("\n", errors) };
+            return unexpected<Error>{ StringUtils::joinErrors(errors) };
         }
 
         bool releaseDefinitionCache(const Definition& def) noexcept override

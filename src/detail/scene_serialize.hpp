@@ -21,6 +21,7 @@ namespace darmok
         using Result = SceneConverter::Result;
         using LoadFunction = SceneConverter::LoadFunction;
         using ComponentData = SceneConverter::ComponentData;
+        using Message = SceneConverter::Message;
         using SceneDefinition = protobuf::Scene;
 
         SceneConverterImpl() noexcept;
@@ -48,6 +49,8 @@ namespace darmok
         const AssetPack& getAssetPack() const noexcept;
         void setParent(Entity entity) noexcept;
         void setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
+        void addComponentListener(std::function<void(const Message& compDef, Entity entity)>&& func);
+        void callComponentListeners(const Message& compDef, Entity entity) noexcept;
 
     private:
         static Scene _emptyScene;
@@ -55,6 +58,7 @@ namespace darmok
         OptionalRef<Scene> _scene;        
         OptionalRef<const SceneDefinition> _sceneDef;
         Entity _parentEntity;
+        std::vector<std::function<void(const Message& def, Entity entity)>> _compListeners;
         AssetPackConfig _assetConfig;
         mutable std::unique_ptr<AssetPack> _assetPack;
         entt::continuous_loader _loader;

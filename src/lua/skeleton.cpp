@@ -74,6 +74,8 @@ namespace darmok
 
     void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
     {
+        LuaUtils::newProtobuf<SkeletalAnimator::Definition>(lua, "SkeletalAnimationDefinition");
+
         lua.new_usertype<SkeletalAnimator>("SkeletalAnimator", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<SkeletalAnimator>::value),
             "add_entity_component", sol::overload(

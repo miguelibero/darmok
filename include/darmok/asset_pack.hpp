@@ -38,12 +38,12 @@ namespace darmok
 			auto itr = assets.find(path.string());
 			if (itr == assets.end())
 			{
-				return unexpected{ "path not found" };
+				return unexpected{ "asset pack path not found" };
 			}
 			auto def = std::make_shared<Resource>();
 			if (!itr->second.UnpackTo(def.get()))
 			{
-				return unexpected{ "failed to unpack" };
+				return unexpected{ "failed to unpack asset protobuf" };
 			}
 			return def;
 		}

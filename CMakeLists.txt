@@ -281,6 +281,7 @@ set(LUA_SOURCES
   shape1.cpp
   shape2.cpp
   scene.cpp
+  scene_serialize.cpp
   scene_filter.cpp
   transform.cpp
   light.cpp

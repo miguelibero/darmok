@@ -11,12 +11,23 @@ namespace darmok
 {
 	void LuaMesh::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<Mesh>("Mesh", sol::no_constructor
+		lua.new_usertype<Mesh>("Mesh", sol::factories(
+				[](const Mesh::Definition& def) { return std::make_shared<Mesh>(def); }
+			),
+			sol::meta_function::to_string, &Mesh::toString,
+			"vertex_layout", sol::property(&Mesh::getVertexLayout),
+			"vertex_handle_index", sol::property(&Mesh::getVertexHandleIndex),
+			"empty", &Mesh::empty,
+			"update_vertices", &Mesh::updateVertices,
+			"updateIndices", &Mesh::updateIndices
 		);
 
 		LuaUtils::newEnum<Mesh::Type>(lua, "MeshType");
 		LuaUtils::newEnum<MeshData::RectangleType>(lua, "RectangleMeshType");
 		LuaUtils::newEnum<MeshData::LineType>(lua, "LineMeshType");
+
+		LuaUtils::newProtobuf<Mesh::Source>(lua, "MeshSource");
+		LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition");
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<

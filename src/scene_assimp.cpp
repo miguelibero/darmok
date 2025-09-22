@@ -95,6 +95,12 @@ namespace darmok
     {
     }
 
+    std::vector<std::string> AssimpSceneDefinitionConverter::getDependencies(const aiScene& scene) noexcept
+    {
+        std::vector<std::string> deps = getTexturePaths(scene);
+        return deps;
+    }
+
     std::vector<std::string> AssimpSceneDefinitionConverter::getTexturePaths(const aiScene& scene) noexcept
     {
         std::vector<std::string> paths;
@@ -508,6 +514,7 @@ namespace darmok
         {
             return false;
         }
+        texSrc.set_flags(_config.texture_flags());
         _texturePaths.insert(path);
 		_scene.addAsset(path, texSrc);
         return true;
@@ -914,6 +921,11 @@ namespace darmok
         {
             config.set_compile(*itr);
         }
+        itr = json.find("textureFlags");
+        if (itr != json.end())
+        {
+            config.set_texture_flags(Texture::readFlags(*itr));
+        }
         itr = json.find("shadowType");
         if (itr != json.end())
         {
@@ -1031,14 +1043,21 @@ namespace darmok
     AssimpSceneFileImporterImpl::Dependencies AssimpSceneFileImporterImpl::getDependencies(const Input& input)
     {
         Dependencies deps;
-        if (!_currentConfig || !_currentConfig->embed_textures())
+        if (!_currentConfig)
         {
             return deps;
         }
         auto basePath = input.getRelativePath().parent_path();
-        for (auto& texPath : AssimpSceneDefinitionConverter::getTexturePaths(*_currentScene))
+        if (_currentConfig->embed_textures())
         {
-            deps.insert(basePath / texPath);
+            for (auto& depPath : AssimpSceneDefinitionConverter::getDependencies(*_currentScene))
+            {
+                deps.insert(basePath / depPath);
+            }
+        }
+        if (_currentConfig->program().has_path())
+        {
+            deps.insert(basePath / _currentConfig->program().path());
         }
         return deps;
     }

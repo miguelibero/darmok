@@ -27,6 +27,8 @@ namespace darmok
 		LuaUtils::newEnum<Texture::Type>(lua, "TextureType");
 		LuaUtils::newEnum<Texture::Format>(lua, "TextureFormat");
 		LuaUtils::newProtobuf<Texture::Config>(lua, "TextureConfig");
+		LuaUtils::newProtobuf<Texture::Source>(lua, "TextureSource");
+		LuaUtils::newProtobuf<Texture::Definition>(lua, "TextureDefinition");
 
 		lua.new_usertype<Texture>("Texture",
 			sol::factories(

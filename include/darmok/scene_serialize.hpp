@@ -237,8 +237,10 @@ namespace darmok
         using Result = expected<void, std::string>;
         using LoadFunction = std::function<Result()>;
         using ComponentData = SceneConverterComponentData;
+        using Message = protobuf::Message;
 
         SceneArchive(SceneConverterImpl& impl) noexcept;
+
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
 
@@ -264,8 +266,13 @@ namespace darmok
             {
                 if (auto comp = getScene().getComponent<T>(entity))
                 {
-                    return comp->load(def, getComponentLoadContext());
+                    auto result = comp->load(def, getComponentLoadContext());
+                    if (!result)
+                    {
+                        return result;
+                    }
                 }
+                callComponentListeners(def, entity);
                 return {};
             };
             addPostLoad(std::move(func));
@@ -279,6 +286,7 @@ namespace darmok
         ComponentData getComponentData() noexcept;
         IComponentLoadContext& getComponentLoadContext() noexcept;
         void addPostLoad(LoadFunction&& func);
+        void callComponentListeners(const Message& def, Entity entity) noexcept;
     };
 
     class SceneConverter final
@@ -288,10 +296,10 @@ namespace darmok
         using LoadFunction = std::function<Result()>;
 		using SceneDefinition = protobuf::Scene;
         using ComponentData = SceneConverterComponentData;
+        using Message = protobuf::Message;
 
         SceneConverter() noexcept;
         ~SceneConverter() noexcept;
-
 		SceneConverter(const SceneConverter& other) = delete;
 		SceneConverter& operator=(const SceneConverter& other) = delete;
 
@@ -314,6 +322,21 @@ namespace darmok
 
         SceneConverter& setParent(Entity entity) noexcept;
         SceneConverter& setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
+
+        template<typename T>
+        SceneConverter& addComponentListener(std::function<void(const typename T::Definition&, Entity)>&& func) noexcept
+        {
+            auto typeId = protobuf::getTypeId<typename T::Definition>();
+            return addComponentListener([typeId, func = std::move(func)](const Message& def, Entity entity)
+            {
+                if (typeId == protobuf::getTypeId(def))
+                {
+                    func(static_cast<const T::Definition&>(def), entity);
+                }
+            });
+        }
+
+        SceneConverter& addComponentListener(std::function<void(const Message& def, Entity entity)>&& func);
 
     private:
 		std::unique_ptr<SceneConverterImpl> _impl;

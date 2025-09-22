@@ -96,9 +96,9 @@ namespace darmok
 			using namespace google::protobuf;
 			auto fieldName = field.name();
 			auto getField = [fieldName](const Message& msg)
-				{
-					return msg.GetDescriptor()->FindFieldByName(fieldName);
-				};
+			{
+				return msg.GetDescriptor()->FindFieldByName(fieldName);
+			};
 
 			if (field.is_repeated())
 			{

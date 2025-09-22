@@ -101,7 +101,7 @@ namespace darmok
 			auto meshResult = ctxt.getAssets().getMeshLoader()(def.mesh_path());
 			if (!meshResult)
 			{
-				return unexpected{ meshResult.error() };
+				return unexpected{ "mesh " + def.mesh_path() + ": " + meshResult.error()};
 			}
 			_mesh = meshResult.value();
 		}
@@ -110,7 +110,7 @@ namespace darmok
 			auto matResult = ctxt.getAssets().getMaterialLoader()(def.material_path());
 			if (!matResult)
 			{
-				return unexpected{ matResult.error() };
+				return unexpected{ "material " + def.material_path() + ": " + matResult.error() };
 			}
 			_material = matResult.value();
 		}

@@ -51,6 +51,6 @@ namespace darmok
 		static std::shared_ptr<Skeleton> loadSkeleton(AssetContext& assets, const std::string& pathe);
 		static std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(AssetContext& assets, const std::string& path);
 		static std::shared_ptr<SkeletalAnimatorDefinition> loadSkeletalAnimatorDefinition(AssetContext& assets, const std::string& path);
-		static sol::table loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::state_view lua);
+		static sol::table loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts);
 	};
 }

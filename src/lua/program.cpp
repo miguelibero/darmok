@@ -16,6 +16,9 @@ namespace darmok
 		lua.new_usertype<StandardProgramLoader>("StandardProgramLoader", sol::no_constructor,
 			"load", &StandardProgramLoader::load
 		);
+
+		LuaUtils::newProtobuf<Program::Source>(lua, "ProgramSource");
+		LuaUtils::newProtobuf<Program::Definition>(lua, "ProgramDefinition");
 	}
 
 }

@@ -73,7 +73,7 @@ namespace darmok
 
         AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader = nullptr, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
-        static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
+        static std::vector<std::string> getDependencies(const aiScene& scene) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
         AssimpSceneDefinitionConverter& setConfig(const nlohmann::json& config) noexcept;
@@ -104,6 +104,7 @@ namespace darmok
         std::unordered_set<std::string> _texturePaths;
 
         static float getLightRange(const glm::vec3& attenuation) noexcept;
+        static std::vector<std::string> getTexturePaths(const aiScene& scene) noexcept;
 
         expected<std::string, std::string> getMesh(int index) noexcept;
         std::string getArmature(int index) noexcept;

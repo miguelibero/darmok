@@ -103,6 +103,7 @@ namespace darmok
 		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
 		LuaUtils::newEnum<MaterialTextureType>(lua, "MaterialTextureType");
 		LuaUtils::newEnum<MaterialOpacityType>(lua, "MaterialOpacityType");
+		LuaUtils::newProtobuf<Material::Definition>(lua, "MaterialDefinition");
 
 		lua.new_usertype<Material>("Material",
 			sol::factories(

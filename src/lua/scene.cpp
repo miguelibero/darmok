@@ -4,6 +4,7 @@
 #include "lua/light.hpp"
 #include "lua/render_scene.hpp"
 #include "lua/scene_filter.hpp"
+#include "lua/scene_serialize.hpp"
 #include "lua/freelook.hpp"
 #include <darmok/scene.hpp>
 #include <darmok/app.hpp>
@@ -336,6 +337,7 @@ namespace darmok
 	{
 		LuaEntityFilter::bind(lua);
 		LuaSceneAppComponent::bind(lua);
+		LuaSceneConverter::bind(lua);
 		LuaTransform::bind(lua);
 		LuaCamera::bind(lua);
 		LuaEntity::bind(lua);

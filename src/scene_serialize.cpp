@@ -523,6 +523,19 @@ namespace darmok
 		_assetConfig = std::move(assetConfig);
     }
 
+    void SceneConverterImpl::addComponentListener(std::function<void(const Message& def, Entity entity)>&& func)
+    {
+        _compListeners.push_back(std::move(func));
+    }
+
+    void SceneConverterImpl::callComponentListeners(const Message& def, Entity entity) noexcept
+    {
+        for (auto& listener : _compListeners)
+        {
+            listener(def, entity);
+        }
+    }
+
     const Scene& SceneConverterImpl::getScene() const noexcept
     {
         return *_scene;
@@ -575,7 +588,7 @@ namespace darmok
         _postLoadFuncs.clear();
         if (!errors.empty())
         {
-            return unexpected{ StringUtils::join("\n", errors) };
+            return unexpected{ StringUtils::joinErrors(errors) };
         }
 
         return {};
@@ -668,7 +681,7 @@ namespace darmok
     {
         if(!_errors.empty())
         {
-            auto msg = StringUtils::join("\n", _errors);
+            auto msg = StringUtils::joinErrors(_errors);
             _errors.clear();
             return unexpected{ std::move(msg) };
 		}
@@ -725,6 +738,11 @@ namespace darmok
         _impl.addPostLoad(std::move(func));
     }
 
+    void SceneArchive::callComponentListeners(const Message& def, Entity entity) noexcept
+    {
+        _impl.callComponentListeners(def, entity);
+    }
+
     SceneConverter::SceneConverter() noexcept
         : _impl{ std::make_unique<SceneConverterImpl>() }
         , _archive{ *_impl }
@@ -739,7 +757,7 @@ namespace darmok
         registerComponent<AmbientLight>();
 	}
 
-    SceneConverter::~SceneConverter() noexcept = default;
+    SceneConverter::~SceneConverter() = default;
 
     SceneConverter::Result SceneConverter::operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept
     {
@@ -774,6 +792,12 @@ namespace darmok
     SceneConverter& SceneConverter::setParent(Entity entity) noexcept
     {
         _impl->setParent(entity);
+        return *this;
+    }
+
+    SceneConverter& SceneConverter::addComponentListener(std::function<void(const Message& def, Entity entity)>&& func)
+    {
+        _impl->addComponentListener(std::move(func));
         return *this;
     }
 
@@ -851,7 +875,7 @@ namespace darmok
             {
                 return unexpected{ fmt::format("failed to compile program {}: {}", path.string(), result.error())};
             }
-            wrap.addAsset(path, result.value());
+            wrap.setAsset(path, result.value());
         }
         for (auto& [path, meshSrc] : wrap.getAssets<Mesh::Source>())
         {
@@ -866,7 +890,7 @@ namespace darmok
             auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
             MeshConfig config{ .index32 = meshSrc.index32() };
             auto def = MeshData{ meshSrc }.createDefinition(layout, config);
-            wrap.addAsset(path, def);
+            wrap.setAsset(path, def);
         }
 
         return {};

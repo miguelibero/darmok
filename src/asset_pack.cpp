@@ -145,7 +145,7 @@ namespace darmok
 		auto itr = assets.find(path.string());
 		if (itr == assets.end())
 		{
-			return unexpected{ "path not found" };
+			return unexpected{ "asset pack path not found" };
 		}
 		auto& asset = itr->second;
 		auto typeId = protobuf::getTypeId(asset);
@@ -174,7 +174,7 @@ namespace darmok
 		auto itr = assets.find(path.string());
 		if (itr == assets.end())
 		{
-			return unexpected{ "path not found" };
+			return unexpected{ "asset pack path not found" };
 		}
 		auto& asset = itr->second;
 		auto typeId = protobuf::getTypeId(asset);

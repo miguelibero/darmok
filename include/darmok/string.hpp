@@ -59,6 +59,13 @@ namespace darmok
             return join(sep, elements.begin(), elements.end());
         }
 
+        template<typename Container>
+        [[nodiscard]] std::string joinErrors(const Container& errors) noexcept
+        {
+            return "{" + join(", ", errors) + "}";
+        }
+
+
         [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
         [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;
         

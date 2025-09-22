@@ -71,10 +71,10 @@ namespace darmok
 		return assets.getSkeletalAnimatorDefinitionLoader()(path).value();
 	}
 
-	sol::table LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::state_view lua)
+	sol::table LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts)
 	{
+		sol::table t = sol::state_view{ ts }.create_table();
 		auto map = ConstSkeletalAnimatorDefinitionWrapper{ def }.loadAnimations(assets.getSkeletalAnimationLoader());
-		sol::table t = lua.create_table();
 		for (auto& [name, anim] : map)
 		{
 			t[name] = anim;

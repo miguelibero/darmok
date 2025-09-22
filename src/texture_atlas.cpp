@@ -797,7 +797,7 @@ namespace darmok
 			auto xmlResult = doc.load_buffer_inplace(_sheetData.ptr(), _sheetData.size());
 			if (xmlResult.status != pugi::status_ok)
 			{
-				throw std::runtime_error(xmlResult.description());
+				throw std::runtime_error{ xmlResult.description() };
 			}
 			TextureAtlas::Definition atlasDef;
 			auto texPackResult = TextureAtlasUtils::readTexturePacker(atlasDef, doc, basePath);
