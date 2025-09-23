@@ -43,7 +43,7 @@ namespace
 			_music.reset();
 		}
 
-		void imguiRender()
+		void imguiRender() override
 		{
 			auto& audio = _app.getAudio();
 			if (ImGui::Button("Play Sound"))

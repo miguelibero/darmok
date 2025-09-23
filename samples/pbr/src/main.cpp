@@ -106,10 +106,10 @@ namespace
 				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
 
 			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
-			std::shared_ptr<Mesh> debugArrowMesh = debugArrowMeshData.createMesh(unlitProg->getVertexLayout());
+			auto debugArrowMesh = debugArrowMeshData.createSharedMesh(unlitProg->getVertexLayout());
 
 			MeshData debugSphereMeshData{ Sphere{0.02f} };
-			std::shared_ptr<Mesh> debugSphereMesh = debugSphereMeshData.createMesh(unlitProg->getVertexLayout());
+			auto debugSphereMesh = debugSphereMeshData.createSharedMesh(unlitProg->getVertexLayout());
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity);
@@ -150,7 +150,7 @@ namespace
 			goldMat->metallicFactor = 0.5f;
 
 			Cube cubeShape;
-			auto cubeMesh = MeshData{ cubeShape }.createMesh(layout);
+			auto cubeMesh = MeshData{ cubeShape }.createSharedMesh(layout);
 			auto cube = scene.createEntity();
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), greenMat);
 			scene.addComponent<BoundingBox>(cube, cubeShape);
@@ -158,7 +158,7 @@ namespace
 
 			Sphere shereShape;
 			MeshData shereMeshData{ shereShape };
-			auto sphereMesh = shereMeshData.createMesh(layout);
+			auto sphereMesh = shereMeshData.createSharedMesh(layout);
 			auto sphere = scene.createEntity();
 			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), goldMat);
 			scene.addComponent<BoundingBox>(sphere, shereShape);
@@ -166,7 +166,7 @@ namespace
 
 			auto floorEntity = scene.createEntity();
 			Cube floorShape(glm::vec3{ 10.f, .5f, 10.f }, glm::vec3{ 0, -0.25, 2 });
-			auto floorMesh = MeshData{ floorShape }.createMesh(prog->getVertexLayout());
+			auto floorMesh = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
 			floorMat->programDefines.insert("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);

@@ -148,7 +148,7 @@ namespace
 			MeshData meshData{ Rectangle{tex->getSize()}};
 			meshData.scalePositions(glm::vec3{ 0.5f } * glm::vec3{ fbScale, 1.f });
 
-			auto mesh = meshData.createMesh(_prog->getVertexLayout());
+			auto mesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()));
 			auto mat = std::make_shared<Material>(_prog, tex);
 			mat->opacityType = Material::Definition::Transparent;
 			scene.addComponent<Renderable>(sprite, std::move(mesh), mat);
@@ -157,7 +157,7 @@ namespace
 			auto size = scale * glm::vec2{ tex->getSize() } *fbScale;
 			meshData = MeshData{ Rectangle::standard(), Mesh::Definition::OutlineRectangle };
 			meshData.scalePositions(glm::vec3{ size, 0.f });
-			auto debugMesh = meshData.createMesh(_prog->getVertexLayout());
+			auto debugMesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()));
 
 			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
 			scene.addComponent<Transform>(spriteBorder).setParent(trans);
@@ -201,7 +201,7 @@ namespace
 
 			auto meshData = MeshData{ Cube{} };
 			meshData.subdivideDensity(0.25F);
-			auto cubeMesh = meshData.createMesh(_prog->getVertexLayout());
+			auto cubeMesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()));
 
 			auto cube = scene.createEntity();
 			scene.addComponent<Culling3D>(cube);

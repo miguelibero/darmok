@@ -392,11 +392,11 @@ namespace darmok
 		indexData = DataView{ indices };
 	}
 
-	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& meshConfig) const
+	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
 	{
 		Mesh::Definition def;
 		def.set_type(type);
-		def.set_index32(meshConfig.index32);
+		def.set_index32(config.index32);
 
 		VertexLayoutWrapper{ *def.mutable_layout() }.read(vertexLayout);
 
@@ -409,9 +409,14 @@ namespace darmok
 		return def;
 	}
 
-	Mesh MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& meshConfig) const
+	Mesh MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
 	{
-		return createDefinition(vertexLayout, meshConfig);
+		return createDefinition(vertexLayout, config);
+	}
+
+	[[nodiscard]] std::shared_ptr<Mesh> MeshData::createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	{
+		return std::make_shared<Mesh>(createDefinition(vertexLayout, config));
 	}
 
 	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices

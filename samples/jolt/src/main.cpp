@@ -89,7 +89,7 @@ namespace
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape{ {10.f, .5f, 10.f}, {0.f, -0.25f, 0.f} };
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
-				auto floorMesh = MeshData{ floorShape }.createMesh(prog->getVertexLayout());
+				auto floorMesh = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
 			}
 
@@ -107,14 +107,14 @@ namespace
 
 				_doorMat = std::make_shared<Material>(prog, Color{ 255, 100, 100, 255 });
 				_triggerDoorMat = std::make_shared<Material>(prog, Colors::red());
-				auto doorMesh = MeshData{ doorShape }.createMesh(prog->getVertexLayout());
+				auto doorMesh = MeshData{ doorShape }.createSharedMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(doorEntity, std::move(doorMesh), _doorMat);
 			}
 
 			{ // cubes
 				_cubeMat = std::make_shared<Material>(prog, Color{ 100, 255, 100, 255 });
 				_touchedCubeMat = std::make_shared<Material>(prog, Colors::green());
-				_cubeMesh = MeshData{ _cubeShape }.createMesh(prog->getVertexLayout());
+				_cubeMesh = MeshData{ _cubeShape }.createSharedMesh(prog->getVertexLayout());
 
 				for (auto x = -5.f; x < 5.f; x += 1.1f)
 				{
@@ -136,7 +136,7 @@ namespace
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
 				_characterBody->addListener(*this);
 
-				auto playerMesh = MeshData{ playerShape }.createMesh(prog->getVertexLayout());
+				auto playerMesh = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, Colors::red());
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
@@ -183,14 +183,14 @@ namespace
 				ImGui::TableSetColumnIndex(0);
 				ImGui::TextWrapped("position");
 				ImGui::TableSetColumnIndex(1);
-				ImGui::TextWrapped(glm::to_string(_characterCtrl->getPosition()).c_str());
+				ImGui::TextWrapped("%s", glm::to_string(_characterCtrl->getPosition()).c_str());
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 				ImGui::TextWrapped("ground state");
 				ImGui::TableSetColumnIndex(1);
 				auto groundStateName = CharacterController::getGroundStateName(_characterCtrl->getGroundState());
-				ImGui::TextWrapped(groundStateName.c_str());
+				ImGui::TextWrapped("%s", groundStateName.c_str());
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
@@ -204,7 +204,7 @@ namespace
 				ImGui::TextWrapped("render mode");
 				ImGui::TableSetColumnIndex(1);
 				auto debugEnabled = _physicsDebugRender->isEnabled();
-				ImGui::TextWrapped(debugEnabled ? "debug renderer" : "meshes");
+				ImGui::TextWrapped("%s", debugEnabled ? "debug renderer" : "meshes");
 #endif
 				ImGui::EndTable();
 			}

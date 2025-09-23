@@ -185,7 +185,7 @@ namespace darmok::editor
                 dataSrc.vertices_size(),
                 dataSrc.indices_size(),
                 dataSrc.bones_size());
-            ImGui::Text(desc.c_str());
+            ImGui::Text("%s", desc.c_str());
         }
 
 		return changed;
