@@ -9,7 +9,7 @@ namespace darmok
 {
     namespace protobuf
     {
-        Format getFormat(const std::filesystem::path& path)
+        Format getPathFormat(const std::filesystem::path& path)
         {
             if (path.extension() == ".json")
             {
@@ -54,7 +54,7 @@ namespace darmok
 
         std::pair<std::ifstream, Format> createInputStream(const std::filesystem::path& path)
         {
-            auto format = getFormat(path);
+            auto format = getPathFormat(path);
             return { createInputStream(path, format), format };
         }
 
@@ -70,7 +70,7 @@ namespace darmok
 
         std::pair<std::ofstream, Format> createOutputStream(const std::filesystem::path& path)
         {
-            auto format = getFormat(path);
+            auto format = getPathFormat(path);
             return { createOutputStream(path, format), format };
         }
 

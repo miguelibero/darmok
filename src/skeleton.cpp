@@ -135,7 +135,7 @@ namespace darmok
         {
             return unexpected{ dataResult.error() };
         }
-        auto format = protobuf::getFormat(path);
+        auto format = protobuf::getPathFormat(path);
         auto res = std::make_shared<Resource>(SkeletalAnimator::createDefinition());
 
 		expected<void, std::string> result;
