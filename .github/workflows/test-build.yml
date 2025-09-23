@@ -37,7 +37,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: lukka/get-cmake@v4.02
+    - uses: lukka/get-cmake@v4.1.1
     - uses: lukka/run-vcpkg@v11
     - uses: lukka/run-cmake@v10
       with:
