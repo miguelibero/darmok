@@ -27,9 +27,14 @@ namespace darmok
 		, _texAtlasLoader{ { _texPackerDefLoader }, _texLoader }
 		, _texAtlasFontLoader{ _texAtlasLoader }
 		, _dataSkelAnimDefLoader{ getDataLoader() }
+
+#ifdef DARMOK_ASSIMP
 		, _assimpSceneDefLoader{ getDataLoader(), getAllocator() }
+        , _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
+#else
+        , _sceneDefLoader{ _dataSceneDefLoader }
+#endif
 		, _dataSceneDefLoader{ getDataLoader() }
-		, _sceneDefLoader{ _assimpSceneDefLoader, _dataSceneDefLoader }
 		, _sceneLoader{ _sceneDefLoader, {
 			.fallback = assets
 		} }
@@ -140,7 +145,9 @@ namespace darmok
 
 	void AssetContextImpl::init(App& app)
 	{
-		_freetypeFontLoader.init(app);
+#ifdef DARMOK_FREETYPE
+        _freetypeFontLoader.init(app);
+#endif
 	}
 
 	void AssetContextImpl::update()
@@ -156,7 +163,9 @@ namespace darmok
 
 	void AssetContextImpl::shutdown()
 	{
+#ifdef DARMOK_FREETYPE
 		_freetypeFontLoader.shutdown();
+#endif
 	}
 
 	AssetContext::AssetContext(Config&& config) noexcept

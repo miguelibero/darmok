@@ -425,8 +425,9 @@ namespace darmok
 
     void ShadowRenderer::updateBuffers() noexcept
     {
-        VertexDataWriter transWriter(_shadowTransLayout, getShadowMapAmount());
-        VertexDataWriter lightDataWriter(_shadowLightDataLayout, getShadowMapAmount());
+        auto amount = static_cast<uint32_t>(getShadowMapAmount());
+        VertexDataWriter transWriter{_shadowTransLayout, amount };
+        VertexDataWriter lightDataWriter{_shadowLightDataLayout, amount};
 
         uint32_t index = 0;
 

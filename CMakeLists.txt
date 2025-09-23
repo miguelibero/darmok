@@ -452,7 +452,7 @@ if(DARMOK_BUILD_LUA)
       base.lua
   )
   list(APPEND ASSET_TARGETS ${LUA_ASSETS_TARGET})
-
+  list(APPEND SOURCES ${LUA_SOURCES})
 endif()
 
 list(TRANSFORM CORE_HEADERS PREPEND "${INCLUDE_DIR}/")
@@ -476,7 +476,6 @@ set(LIB_NAME "darmok")
 add_library(
   ${LIB_NAME}
   ${SOURCES}
-  ${LUA_SOURCES}
 )
 target_sources(${LIB_NAME} PUBLIC FILE_SET HEADERS BASE_DIRS ${INCLUDE_BASE_DIR} FILES ${HEADERS})
 source_group(TREE ${SRC_DIR} PREFIX "Source Files" FILES ${SOURCES})

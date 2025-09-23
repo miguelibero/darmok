@@ -44,12 +44,12 @@ namespace darmok
 
         const bgfx::Memory* copyMem(const std::string& data)
         {
-            return bgfx::copy(data.data(), data.size());
+            return bgfx::copy(data.data(), static_cast<uint32_t>(data.size()));
         }
 
         const bgfx::Memory* refMem(const std::string& data)
         {
-            return bgfx::makeRef(data.data(), data.size());
+            return bgfx::makeRef(data.data(), static_cast<uint32_t>(data.size()));
         }
 
         std::pair<std::ifstream, Format> createInputStream(const std::filesystem::path& path)
@@ -445,12 +445,12 @@ namespace darmok
 
         IdType getTypeId(const Message& msg)
         {
-            return std::hash<std::string>{}(getFullName(msg));
+            return static_cast<IdType>(std::hash<std::string>{}(getFullName(msg)));
         }
 
         IdType getTypeId(const Descriptor& desc)
         {
-            return std::hash<std::string>{}(desc.full_name());
+            return static_cast<IdType>(std::hash<std::string>{}(desc.full_name()));
         }
 
         std::string getFullName(const Message& msg)

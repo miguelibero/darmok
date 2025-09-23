@@ -355,7 +355,9 @@ namespace darmok
 
 		_input.getKeyboard().addListener(*this);
 		_assets.getImpl().init(_app);
+#ifdef DARMOK_MINIAUDIO
 		_audio.getImpl().init();
+#endif
 
 		_running = true;
 		_renderReset = true;
@@ -397,9 +399,11 @@ namespace darmok
 		_updaters.clear();
 
 		_input.getImpl().shutdown();
-		_audio.getImpl().shutdown();
 		_assets.getImpl().shutdown();
 		_window.getImpl().shutdown();
+#ifdef DARMOK_MINIAUDIO
+        _audio.getImpl().shutdown();
+#endif
 
 		if (_delegate)
 		{
@@ -459,7 +463,10 @@ namespace darmok
 		}
 
 		_assets.getImpl().update();
+
+#ifdef DARMOK_MINIAUDIO
 		_audio.getImpl().update();
+#endif
 		_input.getImpl().afterUpdate(deltaTime);
 
 		const auto& renderSize = _app.getWindow().getSize();
@@ -1135,7 +1142,7 @@ namespace darmok
 	{
 		std::string str;
 		bx::stringPrintfVargs(str, format, argList);
-		bx::debugOutput(bx::StringView(str.data(), str.size()));
+        bx::debugOutput(bx::StringView{str.data(), static_cast<int32_t>(str.size())});
 	}
 
 	// bgfx tracy integration problems
@@ -1174,7 +1181,7 @@ namespace darmok
 		{
 			return 0;
 		}
-		return itr->second.size();
+		return static_cast<uint32_t>(itr->second.size());
 	}
 
 	bool BgfxCallbacks::cacheRead(uint64_t resId, void* dataPtr, uint32_t size)
@@ -1188,7 +1195,7 @@ namespace darmok
 		auto& data = itr->second;
 		if (data.size() < size)
 		{
-			size = data.size();
+			size = static_cast<uint32_t>(data.size());
 		}
 		std::memcpy(dataPtr, data.ptr(), size);
 		return true;

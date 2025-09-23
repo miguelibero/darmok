@@ -175,7 +175,7 @@ namespace darmok
             _outputPath.clear();
         }
 
-        const std::string& getName() const noexcept
+        const std::string& getName() const noexcept override
         {
             return _name;
         }

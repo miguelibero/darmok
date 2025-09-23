@@ -4,7 +4,7 @@
 #include <darmok/expected.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
-#include <darmok/scene_fwd.hpp>
+#include <darmok/scene.hpp>
 #include <darmok/protobuf/scene.pb.h>
 
 #include <filesystem>
@@ -156,7 +156,7 @@ namespace darmok
         template<typename T>
         std::optional<T> getAsset(const std::filesystem::path& path) const noexcept
         {
-            if (auto any = getAsset(path))
+            if (auto any = ConstSceneDefinitionWrapper::getAsset(path))
             {
                 T asset;
                 if (any->UnpackTo(&asset))
