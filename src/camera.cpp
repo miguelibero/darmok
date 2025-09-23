@@ -53,7 +53,7 @@ namespace darmok
 
     entt::id_type Camera::getId() const noexcept
     {
-        return reinterpret_cast<uintptr_t>(static_cast<const void*>(this));
+        return getPtrId(this);
     }
 
     std::string Camera::getName() const noexcept

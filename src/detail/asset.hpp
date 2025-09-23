@@ -9,9 +9,11 @@
 #include <darmok/data.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/text.hpp>
+#include <darmok/skeleton.hpp>
+#include <darmok/scene_serialize.hpp>
+#include <darmok/audio.hpp>
 
 #ifdef DARMOK_OZZ
-#include <darmok/skeleton.hpp>
 #include <darmok/skeleton_ozz.hpp>
 #endif
 
@@ -84,9 +86,12 @@ namespace darmok
 		TextureAtlasFontLoader _texAtlasFontLoader;
 		MultiLoader<IFontLoader> _fontLoader;
 		MultiLoader<ISceneDefinitionLoader> _sceneDefLoader;
-		AssimpSceneDefinitionLoader _assimpSceneDefLoader;
 		DataSceneDefinitionLoader _dataSceneDefLoader;
 		SceneLoader _sceneLoader;
+
+#ifdef DARMOK_ASSIMP
+        AssimpSceneDefinitionLoader _assimpSceneDefLoader;
+#endif
 
 		MultiLoader<ISkeletonLoader> _skelLoader;
 		MultiLoader<ISkeletalAnimationLoader> _skelAnimLoader;

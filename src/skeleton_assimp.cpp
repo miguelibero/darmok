@@ -566,9 +566,7 @@ namespace darmok
 
     static AssimpLoader::Config createAssimpSkeletonLoadConfig() noexcept
     {
-        return {
-            .leftHanded = false
-        };
+        return {};
     }
 
     AssimpSkeletonLoaderImpl::Result AssimpSkeletonLoaderImpl::operator()(const std::filesystem::path& path)

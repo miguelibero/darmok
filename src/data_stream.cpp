@@ -58,7 +58,7 @@ namespace darmok
                 return -1;
             }
             setp(pbase(), epptr());
-            pbump(newpos);
+            pbump(static_cast<int>(newpos));
             return newpos;
         }
         return -1;
@@ -73,7 +73,7 @@ namespace darmok
                 return -1;
             }
             setp(pbase(), epptr());
-            pbump(pos);
+            pbump(static_cast<int>(pos));
             return pos;
         }
         return -1;
@@ -115,6 +115,6 @@ namespace darmok
 
     uint32_t DataMemoryBlock::getSize()
     {
-        return _data.size();
+        return static_cast<uint32_t>(_data.size());
     }
 }

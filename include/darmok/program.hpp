@@ -44,7 +44,7 @@ namespace darmok
 		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
 		template<class T>
-		static [[nodiscard]] Program fromStaticMem(const T& mem)
+        [[nodiscard]] static Program fromStaticMem(const T& mem)
 		{
 			Definition def;
 			auto result = protobuf::readStaticMem(def, mem);

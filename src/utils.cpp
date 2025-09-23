@@ -146,4 +146,9 @@ namespace darmok
 #endif
         return &data.front();
     }
+
+    entt::id_type getPtrId(const void* ptr) noexcept
+    {
+        return (entt::id_type)(uintptr_t)ptr;
+    }
 }

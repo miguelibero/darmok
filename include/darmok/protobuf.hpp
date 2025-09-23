@@ -29,7 +29,7 @@ namespace darmok
 		using Descriptor = google::protobuf::Descriptor;
         using FieldDescriptor = google::protobuf::FieldDescriptor;
 
-        [[nodiscard]] Format getFormat(const std::filesystem::path& path);
+        [[nodiscard]] Format getPathFormat(const std::filesystem::path& path);
         [[nodiscard]] std::string_view getExtension(Format format);
         [[nodiscard]] std::optional<Format> getFormat(std::string_view name);
         [[nodiscard]] std::size_t getHash(const Message& msg);
@@ -103,7 +103,7 @@ namespace darmok
 			{
 				return unexpected<std::string>{ dataResult.error() };
 			}
-            auto format = protobuf::getFormat(path);
+            auto format = protobuf::getPathFormat(path);
             auto res = std::make_shared<Resource>();
             DataInputStream input{dataResult.value()};
             auto readResult = protobuf::read(*res, input, format);
@@ -145,7 +145,7 @@ namespace darmok
             }
             else
             {
-                _outputFormat = protobuf::getFormat(_outputPath);
+                _outputFormat = protobuf::getPathFormat(_outputPath);
             }
             return !_outputPath.empty();
         }
@@ -175,7 +175,7 @@ namespace darmok
             _outputPath.clear();
         }
 
-        const std::string& getName() const noexcept
+        const std::string& getName() const noexcept override
         {
             return _name;
         }

@@ -154,8 +154,7 @@ namespace darmok
 	{
 		if (!vertices.empty())
 		{
-			auto vertNum = vertices.size() / layout.getStride();
-
+			auto vertNum = static_cast<uint32_t>(vertices.size()) / layout.getStride();
 			if (vertNum > 0 && !bgfx::getAvailTransientVertexBuffer(vertNum, layout))
 			{
 				throw std::runtime_error("not enought transient vertex buffer space");
@@ -171,8 +170,7 @@ namespace darmok
 		}
 		if (!indices.empty())
 		{
-			auto idxNum = indices.size() / config.getIndexSize();
-
+			auto idxNum = static_cast<uint32_t>(indices.size() / config.getIndexSize());
 			auto index32 = config.index32;
 			if (!bgfx::getAvailTransientIndexBuffer(idxNum, index32))
 			{
@@ -274,7 +272,7 @@ namespace darmok
 
 	bool Mesh::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
-		config.fix(_vertNum, _idxNum);
+		config.fix(static_cast<uint32_t>(_vertNum), static_cast<uint32_t>(_idxNum));
 		if (config.numVertices == 0)
 		{
 			return false;
@@ -365,7 +363,7 @@ namespace darmok
 
 			glm::vec4 weights{ 1, 0, 0, 0 };
 			glm::vec4 indices{ -1 };
-			size_t j = 0;
+			int j = 0;
 			auto weightVector = vertex.weights;
 			std::sort(weightVector.begin(), weightVector.end(), [](auto& a, auto& b) { return a.value > b.value; });
 			for (auto& weight : weightVector)
@@ -394,11 +392,11 @@ namespace darmok
 		indexData = DataView{ indices };
 	}
 
-	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& meshConfig) const
+	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
 	{
 		Mesh::Definition def;
 		def.set_type(type);
-		def.set_index32(meshConfig.index32);
+		def.set_index32(config.index32);
 
 		VertexLayoutWrapper{ *def.mutable_layout() }.read(vertexLayout);
 
@@ -411,9 +409,14 @@ namespace darmok
 		return def;
 	}
 
-	Mesh MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& meshConfig) const
+	Mesh MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
 	{
-		return createDefinition(vertexLayout, meshConfig);
+		return createDefinition(vertexLayout, config);
+	}
+
+	[[nodiscard]] std::shared_ptr<Mesh> MeshData::createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	{
+		return std::make_shared<Mesh>(createDefinition(vertexLayout, config));
 	}
 
 	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices
@@ -1112,9 +1115,9 @@ namespace darmok
 		MeshData& mesh = getMeshDataFromContext(context);
 		if (mesh.indices.empty())
 		{
-			return mesh.vertices.size() / 3;
+			return static_cast<int>(mesh.vertices.size()) / 3;
 		}
-		return mesh.indices.size() / 3;
+		return static_cast<int>(mesh.indices.size()) / 3;
 	}
 
 	int MeshDataCalcTangentsOperation::getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
