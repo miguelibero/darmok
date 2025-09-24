@@ -41,8 +41,8 @@ jobs:
     - name: Install ubuntu dependencies
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y \
-          x11proto-dev libx11-6 libx11-xcb-dev libxext-dev \
-          libxrandr-dev ibxinerama-dev libxcursor-dev libxi-dev
+          libx11-dev libxext-dev libx11-xcb-dev libxcursor-dev libxi-dev \
+          libxrandr-dev libxinerama-dev libwayland-dev wayland-protocols
       
     - uses: lukka/get-cmake@v4.1.1
     - uses: lukka/run-vcpkg@v11
