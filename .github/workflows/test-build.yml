@@ -14,17 +14,17 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-22.04, windows-latest]
         build_type: [Release]
         c_compiler: [gcc, clang, cl]
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             c_compiler: clang
             cpp_compiler: clang++
         exclude:
@@ -32,7 +32,7 @@ jobs:
             c_compiler: gcc
           - os: windows-latest
             c_compiler: clang
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             c_compiler: cl
 
     steps:
@@ -41,8 +41,7 @@ jobs:
     - name: Install ubuntu dependencies
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y \
-          libxext-dev libx11-xcb-dev libxcursor-dev libxi-dev \
-          libxinerama-dev libwayland-dev wayland-protocols
+          libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
       
     - uses: lukka/get-cmake@v4.1.1
     - uses: lukka/run-vcpkg@v11
