@@ -37,6 +37,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install ubuntu dependencies
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y \
+          libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+    
     - uses: lukka/get-cmake@v4.1.1
     - uses: lukka/run-vcpkg@v11
     - uses: lukka/run-cmake@v10
