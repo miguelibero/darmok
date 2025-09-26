@@ -40,8 +40,7 @@ jobs:
 
     - name: Install ubuntu dependencies
       if: runner.os == 'Linux'
-      run: sudo add-apt-repository universe && sudo apt-get update && sudo apt-get install -y \
-          libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+      run: sudo add-apt-repository universe && sudo apt-get update && sudo apt-get install -y libx11-dev
       
     - uses: lukka/get-cmake@v4.1.1
     - uses: lukka/run-vcpkg@v11
@@ -49,7 +48,7 @@ jobs:
       with:
         configurePreset: 'release'
         # configurePresetAdditionalArgs: "['-DENABLE_YOUR_FEATURE=1']"
-        buildPreset: 'release'
+        # buildPreset: 'release'
         buildPresetAdditionalArgs: "['--config Release']"
-        testPreset: 'release'
+        # testPreset: 'release'
         testPresetAdditionalArgs: "['--config Release']"
