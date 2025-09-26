@@ -40,7 +40,7 @@ jobs:
 
     - name: Install ubuntu dependencies
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libxkbcommon-dev libxinerama-dev libxcursor-dev libgl1-mesa-dev libglu1-mesa-dev libwayland-dev wayland-protocols
+      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libxkbcommon-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libwayland-dev wayland-protocols
       
     - uses: lukka/get-cmake@v4.1.1
     - uses: lukka/run-vcpkg@v11
