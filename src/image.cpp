@@ -479,11 +479,12 @@ namespace darmok
 
 		_cubemapFaces.reset();
 
-		if (input.config.contains("cubemap"))
+		auto itr = input.config.find("cubemap");
+		if (itr != input.config.end())
 		{
 			auto& faces = _cubemapFaces.emplace();
 			size_t i = 0;
-			for (auto& elm : input.config["cubemap"])
+			for (auto& elm : *itr)
 			{
 				auto path = input.basePath / elm.get<std::filesystem::path>();
 				effect.dependencies.insert(path);
@@ -497,14 +498,20 @@ namespace darmok
 
 	expected<void, std::string> ImageFileImporter::operator()(const Input& input, Config& config) noexcept
 	{
+		static constexpr std::string_view formatKey = "outputFormat";
 		std::string formatStr;
-		if (input.config.contains("outputFormat"))
+		auto itr = input.config.find(formatKey);
+		if (itr != input.config.end())
 		{
-			formatStr = input.config["outputFormat"];
+			formatStr = *itr;
 		}
-		else if (input.dirConfig.contains("outputFormat"))
+		else
 		{
-			formatStr = input.config["outputFormat"];
+			itr = input.dirConfig.find(formatKey);
+			if (itr != input.dirConfig.end())
+			{
+				formatStr = *itr;
+			}
 		}
 		auto format = Image::readFormat(formatStr);
 		for (auto& optOut : config.outputStreams)

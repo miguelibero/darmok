@@ -990,6 +990,8 @@ namespace darmok
             outputPath = itr->get<std::filesystem::path>();
         }
         itr = configJson.find("outputFormat");
+
+        _outputFormat = OutputFormat::Binary;
         if (itr != configJson.end())
         {
             std::string val{ *itr };

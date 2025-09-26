@@ -170,6 +170,7 @@ namespace darmok
         ImageTextureSourceLoader _texLoader;
         ProgramSourceLoader _progLoader;
         AssimpLoader _assimpLoader;
+
         std::optional<AssimpConfig> _currentConfig;
         OutputFormat _outputFormat = OutputFormat::Binary;
         std::shared_ptr<aiScene> _currentScene;

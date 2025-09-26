@@ -147,7 +147,7 @@ namespace darmok
             }
             else
             {
-                _outputFormat = protobuf::getPathFormat(_outputPath);
+                _outputFormat = protobuf::getPathFormat(outputPath);
             }
             auto binary = _outputFormat == protobuf::Format::Binary;
             effect.outputs.emplace_back(outputPath, binary);

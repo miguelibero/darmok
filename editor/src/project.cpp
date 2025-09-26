@@ -125,10 +125,10 @@ namespace darmok::editor
             {
                 return;
             }
-            auto result = doExportScene(result.front());
-            if (!result)
+            auto exportResult = doExportScene(result.front());
+            if (!exportResult)
             {
-                StreamUtils::logDebug(result.error());
+                StreamUtils::logDebug(exportResult.error());
             }
         };
 
