@@ -74,9 +74,6 @@ namespace darmok
         AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader = nullptr, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
         static std::vector<std::string> getDependencies(const aiScene& scene) noexcept;
-        AssimpSceneDefinitionConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
-        AssimpSceneDefinitionConverter& setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept;
-        AssimpSceneDefinitionConverter& setConfig(const nlohmann::json& config) noexcept;
         expected<void, std::string> operator()() noexcept;
     private:
         bx::AllocatorI& _allocator;
@@ -86,7 +83,6 @@ namespace darmok
 		SceneDefinitionWrapper _scene;
         std::filesystem::path _basePath;
         ImportConfig _config;
-        std::unordered_map<std::string, std::string> _boneNames;
         std::vector<std::regex> _skipMeshes;
 
         struct AssimpMaterialTexture final

@@ -124,42 +124,6 @@ namespace darmok
         return paths;
     }
 
-    AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setBoneNames(const std::vector<std::string>& names) noexcept
-    {
-        _boneNames.clear();
-        for (auto& name : names)
-        {
-            _boneNames.emplace(name, name);
-        }
-        return *this;
-    }
-
-    AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setBoneNames(const std::unordered_map<std::string, std::string>& names) noexcept
-    {
-        _boneNames = names;
-        return *this;
-    }
-
-    AssimpSceneDefinitionConverter& AssimpSceneDefinitionConverter::setConfig(const nlohmann::json& config) noexcept
-    {
-        auto itr = config.find("bones");
-        if (itr != config.end())
-        {
-            auto& bonesConfig = *itr;
-            if (bonesConfig.is_array())
-            {
-                std::vector<std::string> boneNames = bonesConfig;
-                setBoneNames(boneNames);
-            }
-            else
-            {
-                std::unordered_map<std::string, std::string> boneNames = bonesConfig;
-                setBoneNames(boneNames);
-            }
-        }
-        return *this;
-    }
-
     expected<bool, std::string> AssimpSceneDefinitionConverter::updateMeshes(EntityId entity, const std::regex& regex) noexcept
     {
         auto found = false;
@@ -684,7 +648,7 @@ namespace darmok
             return {};
         }
 
-        *meshSrc.mutable_program() = _config.program();
+        *meshSrc.mutable_program() = _config.program_source();
 
         AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
         auto convertResult = converter();
@@ -836,6 +800,12 @@ namespace darmok
         {
             progRef.set_path(itr->get<std::string>());
         }
+        itr = json.find("programSourcePath");
+        auto& progSrcRef = *config.mutable_program_source();
+        if (itr != json.end())
+        {
+            progSrcRef.set_path(itr->get<std::string>());
+        }
         itr = json.find("program");
         if (itr != json.end())
         {
@@ -844,6 +814,7 @@ namespace darmok
             if (Program::Standard::Type_Parse(val, &standard))
             {
                 progRef.set_standard(standard);
+                progSrcRef.set_standard(standard);
             }
             else
             {
@@ -1066,7 +1037,6 @@ namespace darmok
         try
         {
             AssimpSceneDefinitionConverter converter{ *_currentScene, def, basePath, *_currentConfig, _alloc, texLoader };
-            converter.setConfig(input.config);
             auto convertResult = converter();
             if (!convertResult)
             {
