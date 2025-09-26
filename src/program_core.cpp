@@ -790,7 +790,7 @@ namespace darmok
             throw std::runtime_error{ fmt::format("failed to compile program: {}", compileResult.error()) };
         }
 		auto& def = compileResult.value();
-        auto format = protobuf::getFormat(input.getOutputPath());
+        auto format = protobuf::getPathFormat(input.getOutputPath());
         auto writeResult = protobuf::write(def, out, format);
         if (!writeResult)
         {

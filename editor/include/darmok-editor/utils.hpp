@@ -57,13 +57,19 @@ namespace darmok::editor
         template<typename T>
         bool drawEnumCombo(const char* label, T& value)
         {
-            auto current = static_cast<size_t>(value);
+            size_t current = -1;
             auto enumValues = StringUtils::getEnumValues<T>();
             std::vector<std::string> options;
 			options.reserve(enumValues.size());
+            size_t i = 0;
             for (auto& [val, name] : enumValues)
             {
                 options.push_back(name);
+                if(val == value)
+                {
+                    current = i;
+                }
+                ++i;
             }
             if (drawListCombo(label, current, options))
             {

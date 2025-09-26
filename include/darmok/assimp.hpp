@@ -48,8 +48,8 @@ namespace darmok
         {
             bool leftHanded = true;
             bool populateArmature = false;
-            std::string basePath;
-            std::string format;
+            std::string basePath = {};
+            std::string format = {};
 
             void setPath(const std::filesystem::path& path) noexcept;
         };
@@ -59,8 +59,8 @@ namespace darmok
 		AssimpLoader();
 		~AssimpLoader();
         bool supports(const std::filesystem::path& path) const noexcept;
-        Result loadFromFile(const std::filesystem::path& path, const Config& config = {}) const;
-        Result loadFromMemory(DataView data, const Config& config = {}) const;
+        Result loadFromFile(const std::filesystem::path& path, const Config& config) const;
+        Result loadFromMemory(DataView data, const Config& config) const;
     private:
 		std::unique_ptr<AssimpLoaderImpl> _impl;
     };

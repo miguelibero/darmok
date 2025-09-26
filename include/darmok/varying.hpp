@@ -126,8 +126,8 @@ namespace darmok
     private:
         const Definition& _def;
 
-        static [[nodiscard]] std::string getBgfxVarTypeName(uint8_t num) noexcept;
-        static [[nodiscard]] std::string getBgfxTypeName(bgfx::Attrib::Enum val) noexcept;
+        [[nodiscard]] static std::string getBgfxVarTypeName(uint8_t num) noexcept;
+        [[nodiscard]] static std::string getBgfxTypeName(bgfx::Attrib::Enum val) noexcept;
     };
 
     class VaryingDefinitionWrapper final : public ConstVaryingDefinitionWrapper

@@ -164,11 +164,11 @@ namespace darmok::editor
 
                 if (ImGui::Button("Remove Component"))
                 {
-                    if (!sceneDef.removeComponent<Definition>(entityId))
+                    if (!sceneDef.template removeComponent<Definition>(entityId))
                     {
                         return unexpected{ "failed to remove scene definition component" };
                     }
-                    if (!scene.removeComponent<T>(entity))
+                    if (!scene.template removeComponent<T>(entity))
                     {
                         return unexpected{ "failed to remove scene component" };
                     }
@@ -176,7 +176,7 @@ namespace darmok::editor
                 }
                 else if (changed)
                 {
-                    auto& comp = scene.getOrAddComponent<T>(entity);
+                    auto& comp = scene.template getOrAddComponent<T>(entity);
                     auto result = comp.load(def, BaseObjectEditor::getComponentLoadContext());
                     if (!result)
                     {

@@ -86,7 +86,7 @@ namespace darmok
 			return std::nullopt;
 		}
 
-		int LuaUtils::deny(lua_State* L)
+		int deny(lua_State* L)
 		{
 			return luaL_error(L, "operation not allowed");
 		}

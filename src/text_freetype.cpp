@@ -611,7 +611,7 @@ namespace darmok
 	{
 	}
 
-	FreetypeFontFileImporter::~FreetypeFontFileImporter() = default;
+	FreetypeFontFileImporter::~FreetypeFontFileImporter() noexcept = default;
 
 	std::vector<std::filesystem::path> FreetypeFontFileImporter::getOutputs(const Input& input)
 	{

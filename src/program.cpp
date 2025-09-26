@@ -250,6 +250,8 @@ namespace darmok
             return protobuf::readStaticMem(def, forward_basic_program);
         case protobuf::StandardProgram::Tonemap:
             return protobuf::readStaticMem(def, tonemap_program);
+        default:
+            break;
         }
         return unexpected{"undefined standar program type"};
     }

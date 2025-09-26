@@ -161,8 +161,8 @@ namespace darmok
 			_mesh->updateVertices(vertexData);
 			_mesh->updateIndices(indexData);
 		}
-		_vertexNum = data.vertices.size();
-		_indexNum = data.indices.size();
+		_vertexNum = static_cast<uint32_t>(data.vertices.size());
+		_indexNum = static_cast<uint32_t>(data.indices.size());
 		_changed = false;
 		return true;
 	}
