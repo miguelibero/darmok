@@ -339,7 +339,7 @@ namespace darmok
 	{
 		uint64_t flags = 0;
 
-		auto readFlag = [](auto& elm) -> std::optional<uint64_t>
+		auto readFlag = [](std::string_view elm) -> std::optional<uint64_t>
 			{
 				if (auto textureFlag = readTextureFlag(elm))
 				{
@@ -356,7 +356,7 @@ namespace darmok
 		{
 			for (auto& elm : json)
 			{
-				if (auto flag = readFlag(elm))
+                if (auto flag = readFlag(std::string{elm}))
 				{
 					flags |= *flag;
 				}
@@ -381,7 +381,7 @@ namespace darmok
 		}
 		else if (json.is_string())
 		{
-			for (auto& word : StringUtils::splitWords(json))
+            for (auto& word : StringUtils::splitWords(std::string{json}))
 			{
 				if (auto flag = readFlag(word))
 				{
@@ -429,6 +429,8 @@ namespace darmok
 		case Definition::Texture2D:
 			_handle = bgfx::createTexture2D(w, h, _config.mips(), _config.layers(), format, flags, mem);
 			break;
+        default:
+            break;
 		}
 	}
 
@@ -449,6 +451,8 @@ namespace darmok
 		case Definition::Texture3D:
 			_handle = bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags);
 			break;
+        default:
+            break;
 		}
 	}
 

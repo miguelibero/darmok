@@ -1246,7 +1246,7 @@ namespace darmok
 
         try
         {
-            cli.parse(args.size(), args.data());
+            cli.parse(static_cast<int>(args.size()), args.data());
             cfg.fix(cli);
 
             if (cfg.dry)

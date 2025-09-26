@@ -70,5 +70,9 @@ namespace darmok
     {
         seed ^= other + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
-    }   
+    }
+
+    entt::id_type getPtrId(const void* ptr) noexcept;
+
+
 }

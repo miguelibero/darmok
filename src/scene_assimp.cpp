@@ -885,12 +885,12 @@ namespace darmok
             {
                 for (auto& elm : json)
                 {
-                    repeated.Add(StringUtils::globToRegex(elm));
+                    repeated.Add(StringUtils::globToRegex(std::string{elm}));
                 }
             }
             else
             {
-                repeated.Add(StringUtils::globToRegex(json));
+                repeated.Add(StringUtils::globToRegex(std::string{json}));
             }
         };
         itr = json.find("skipMeshes");
@@ -992,12 +992,12 @@ namespace darmok
         itr = configJson.find("outputFormat");
         if (itr != configJson.end())
         {
-            std::string_view val{ *itr };
+            std::string val{ *itr };
             _outputFormat = protobuf::getFormat(val).value();
         }
         else if (!outputPath.empty())
         {
-            _outputFormat = protobuf::getFormat(outputPath);
+            _outputFormat = protobuf::getPathFormat(outputPath);
         }
 
         AssimpLoader::Config sceneConfig;

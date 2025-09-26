@@ -590,7 +590,7 @@ namespace darmok
 	{
 	}
 
-	FreetypeFontFileImporter::~FreetypeFontFileImporter() = default;
+	FreetypeFontFileImporter::~FreetypeFontFileImporter() noexcept = default;
 
 	expected<FreetypeFontFileImporter::Effect, std::string> FreetypeFontFileImporter::prepare(const Input& input) noexcept
 	{

@@ -1,0 +1,54 @@
+name: Darmok test build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Release]
+        c_compiler: [gcc, clang, cl]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          - os: windows-latest
+            c_compiler: gcc
+          - os: windows-latest
+            c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: cl
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install ubuntu dependencies
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libxkbcommon-dev libxinerama-dev libgl1-mesa-dev libglu1-mesa-dev libwayland-dev wayland-protocols
+      
+    - uses: lukka/get-cmake@v4.1.1
+    - uses: lukka/run-vcpkg@v11
+    - uses: lukka/run-cmake@v10
+      with:
+        configurePreset: 'release'
+        # configurePresetAdditionalArgs: "['-DENABLE_YOUR_FEATURE=1']"
+        # buildPreset: 'release'
+        buildPresetAdditionalArgs: "['--config Release']"
+        # testPreset: 'release'
+        testPresetAdditionalArgs: "['--config Release']"

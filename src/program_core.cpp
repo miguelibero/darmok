@@ -777,7 +777,7 @@ namespace darmok
             return unexpected{ "failed to compile program: " + compileResult.error() };
         }
 		auto& def = compileResult.value();
-        auto format = protobuf::getFormat(input.getOutputPath());
+        auto format = protobuf::getPathFormat(input.getOutputPath());
 
         for (auto& optOut : config.outputStreams)
         {

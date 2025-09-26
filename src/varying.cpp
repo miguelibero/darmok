@@ -397,7 +397,7 @@ namespace darmok
 		auto setDefaultArray = [this](const nlohmann::json& json)
 			{
 				auto def = _def.mutable_default_value();
-				auto size = json.size();
+                auto size = static_cast<uint32_t>(json.size());
 				if (0 < size)
 				{
 					def->set_x(json[0]);
@@ -564,7 +564,7 @@ namespace darmok
 				continue;
 			}
 			auto& attributes = _def.attributes();
-			auto itr2 = std::find_if(attributes.begin(), attributes.end(), [i](auto& elm) { return elm.bgfx() == i; });
+            auto itr2 = std::find_if(attributes.begin(), attributes.end(), [i](auto& elm) { return elm.bgfx() == static_cast<uint32_t>(i); });
 			if (itr2 == attributes.end())
 			{
 				return i;

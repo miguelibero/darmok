@@ -3,6 +3,7 @@
 #include <bx/string.h>
 #include <bx/platform.h>
 #include <fstream>
+#include <sstream>
 
 namespace darmok
 {
@@ -64,7 +65,7 @@ namespace darmok
             {
                 std::cout << msg << std::endl;
             }
-            bx::debugOutput(bx::StringView(msg.data(), msg.size()));
+            bx::debugOutput(bx::StringView{ msg.data(), static_cast<int32_t>(msg.size()) });
         }
 
         static const unsigned char _utf8Bom[3] = { 0xEF, 0xBB, 0xBF };

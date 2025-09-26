@@ -239,6 +239,7 @@ namespace darmok
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] Mesh createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
+        [[nodiscard]] std::shared_ptr<Mesh> createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
         MeshData& convertQuadIndicesToLine() noexcept;

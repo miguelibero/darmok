@@ -233,7 +233,8 @@ namespace darmok
 			{
 				tfdResult = tinyfd_openFileDialog(
 					_options.title.c_str(), defaultPath.c_str(),
-					cfilters.size(), cfilters.data(), _options.filterDesc.c_str(),
+					static_cast<int>(cfilters.size()),
+                    cfilters.data(), _options.filterDesc.c_str(),
 					_options.allowMultiple ? 1 : 0
 				);
 
@@ -243,7 +244,8 @@ namespace darmok
 			{
 				tfdResult = tinyfd_saveFileDialog(
 					_options.title.c_str(), defaultPath.c_str(),
-					cfilters.size(), cfilters.data(), _options.filterDesc.c_str()
+                    static_cast<int>(cfilters.size()),
+                    cfilters.data(), _options.filterDesc.c_str()
 				);
 				break;
 			}
