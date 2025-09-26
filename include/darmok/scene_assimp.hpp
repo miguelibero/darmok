@@ -51,16 +51,14 @@ namespace darmok
     class DARMOK_EXPORT AssimpSceneFileImporter final : public IFileTypeImporter
     {
     public:
-        using Config = protobuf::AssimpSceneImportConfig;
+        using Config = FileImportConfig;
         AssimpSceneFileImporter(bx::AllocatorI& alloc);
         ~AssimpSceneFileImporter();
-        bool startImport(const Input& input, bool dry = false) override;
-        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-        Dependencies getDependencies(const Input& input) override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-        void endImport(const Input& input) override;
+        
         const std::string& getName() const noexcept override;
+        expected<Effect, std::string> prepare(const Input& input) noexcept override;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
+
         AssimpSceneFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         AssimpSceneFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
     private:

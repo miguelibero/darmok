@@ -181,15 +181,18 @@ namespace darmok
     class AssimpSkeletonFileImporterImpl final
     {
     public:
-        using Input = FileTypeImporterInput;
+        using Input = FileImportInput;
         using OzzSkeleton = ozz::animation::Skeleton;
+        using Effect = FileImportEffect;
+        using Config = FileImportConfig;
 
-        AssimpSkeletonFileImporterImpl(size_t bufferSize = 4096) noexcept;
-        expected<OzzSkeleton, std::string> read(const std::filesystem::path& path, const nlohmann::json& config);
-        std::vector<std::filesystem::path> getOutputs(const Input& input) noexcept;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
+        AssimpSkeletonFileImporterImpl(size_t bufferSize = 4096) noexcept;        
         const std::string& getName() const noexcept;
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
+
+        expected<OzzSkeleton, std::string> read(const std::filesystem::path& path, const nlohmann::json& config) const noexcept;
     private:
         size_t _bufferSize;
         AssimpLoader _assimpLoader;
@@ -198,26 +201,26 @@ namespace darmok
     class AssimpSkeletalAnimationFileImporterImpl final
     {
     public:
-        using Input = FileTypeImporterInput;
+        using Input = FileImportInput;
+        using Effect = FileImportEffect;
+        using Config = FileImportConfig;
         using OzzAnimation = ozz::animation::Animation;
         using OzzSkeleton = ozz::animation::Skeleton;
         using OptimizationSettings = AssimpOzzAnimationConverter::OptimizationSettings;
 
         AssimpSkeletalAnimationFileImporterImpl(size_t bufferSize = 4096) noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
-        bool startImport(const Input& input, bool dry);
-        std::vector<std::filesystem::path> getOutputs(const Input& input);
-        void endImport(const Input& input) noexcept;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
         const std::string& getName() const noexcept;
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
     private:
         expected<OzzSkeleton, std::string> loadSkeleton(const std::filesystem::path& path, const nlohmann::json& config);
         OptimizationSettings loadOptimizationSettings(const nlohmann::json& config) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept;
-        
+        OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
+
         Input _currentInput;
         std::optional<OptimizationSettings> _currentOptimization;
         std::optional<OzzSkeleton> _currentSkeleton;

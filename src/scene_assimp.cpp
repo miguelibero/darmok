@@ -828,7 +828,7 @@ namespace darmok
         _defaultCompilerConfig.progCompiler.includePaths.insert(path);
     }
 
-    void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config)
+    void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, AssimpConfig& config)
     {
         auto itr = json.find("programPath");
         auto& progRef = *config.mutable_program();
@@ -962,15 +962,16 @@ namespace darmok
         return layout;
     }
 
-    bool AssimpSceneFileImporterImpl::startImport(const Input& input, bool dry)
+    expected<AssimpSceneFileImporterImpl::Effect, std::string> AssimpSceneFileImporterImpl::prepare(const Input& input) noexcept
     {
+        Effect effect;
         if (input.config.is_null())
         {
-            return false;
+            return effect;
         }
         if (!_assimpLoader.supports(input.path))
         {
-            return false;
+            return effect;
         }
         _compilerConfig = _defaultCompilerConfig;
 
@@ -982,11 +983,11 @@ namespace darmok
         }
         loadConfig(configJson, input.basePath, config);
 
-        _outputPath.clear();
+        std::filesystem::path outputPath;
         auto itr = configJson.find("outputPath");
         if (itr != configJson.end())
         {
-            _outputPath = itr->get<std::filesystem::path>();
+            outputPath = itr->get<std::filesystem::path>();
         }
         itr = configJson.find("outputFormat");
         if (itr != configJson.end())
@@ -994,9 +995,9 @@ namespace darmok
             std::string_view val{ *itr };
             _outputFormat = protobuf::getFormat(val).value();
         }
-        else if (!_outputPath.empty())
+        else if (!outputPath.empty())
         {
-            _outputFormat = protobuf::getFormat(_outputPath);
+            _outputFormat = protobuf::getFormat(outputPath);
         }
 
         AssimpLoader::Config sceneConfig;
@@ -1013,65 +1014,44 @@ namespace darmok
             }
         }
         auto result = _assimpLoader.loadFromFile(input.path, sceneConfig);
-		if (!result)
-		{
-			return false;
-		}
+        if (!result)
+        {
+            return unexpected{ result.error() };
+        }
         _currentScene = *result;
-        return _currentScene != nullptr;
-    }
+        if (_currentScene == nullptr)
+        {
+            return unexpected{ "empty scene" };
+        }
 
-    void AssimpSceneFileImporterImpl::endImport(const Input& input)
-    {
-        _currentConfig.reset();
-        _currentScene.reset();
-    }
-
-    std::vector<std::filesystem::path> AssimpSceneFileImporterImpl::getOutputs(const Input& input)
-    {
-        std::vector<std::filesystem::path> outputs;
-        if (_outputPath.empty())
+        if (outputPath.empty())
         {
             const std::string stem = input.path.stem().string();
-            _outputPath = stem + std::string{ protobuf::getExtension(_outputFormat) };
+            outputPath = stem + std::string{ protobuf::getExtension(_outputFormat) };
         }
         auto basePath = input.getRelativePath().parent_path();
-        outputs.push_back(basePath / _outputPath);
-        return outputs;
-    }
+        auto binary = _outputFormat == protobuf::Format::Binary;
+        effect.outputs.emplace_back(basePath / outputPath, binary);
 
-    AssimpSceneFileImporterImpl::Dependencies AssimpSceneFileImporterImpl::getDependencies(const Input& input)
-    {
-        Dependencies deps;
-        if (!_currentConfig)
-        {
-            return deps;
-        }
-        auto basePath = input.getRelativePath().parent_path();
         if (_currentConfig->embed_textures())
         {
             for (auto& depPath : AssimpSceneDefinitionConverter::getDependencies(*_currentScene))
             {
-                deps.insert(basePath / depPath);
+                effect.dependencies.insert(basePath / depPath);
             }
         }
         if (_currentConfig->program().has_path())
         {
-            deps.insert(basePath / _currentConfig->program().path());
+            effect.dependencies.insert(basePath / _currentConfig->program().path());
         }
-        return deps;
+        return effect;
     }
 
-    std::ofstream AssimpSceneFileImporterImpl::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const
-    {
-        return protobuf::createOutputStream(path, _outputFormat);
-    }
-
-    void AssimpSceneFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    expected<void, std::string> AssimpSceneFileImporterImpl::operator()(const Input& input, ImportConfig& config) noexcept
     {
         if (!_currentConfig)
         {
-            return;
+            return unexpected{ "missing config" };
         }
         Definition def;
         auto basePath = input.getRelativePath().parent_path();
@@ -1088,34 +1068,43 @@ namespace darmok
             auto convertResult = converter();
             if (!convertResult)
             {
-                throw std::runtime_error{ "failed to convert scene: " + convertResult.error() };
+                return unexpected{ "failed to convert scene: " + convertResult.error() };
             }
             if (_currentConfig->compile())
             {
                 if (!_compilerConfig)
                 {
-                    throw std::runtime_error{ "compiler config missing" };
+                    return unexpected{ "compiler config missing" };
                 }
                 SceneDefinitionCompiler compiler{ *_compilerConfig, _progLoader };
                 auto compileResult = compiler(def);
                 if (!compileResult)
                 {
-                    throw std::runtime_error{ "failed to compile scene: " + compileResult.error() };
+                    return unexpected{ "failed to compile scene: " + compileResult.error() };
                 }
             }
         }
-        catch (...)
+        catch (const std::exception& ex)
         {
             _dataLoader.removeBasePath(input.basePath);
-            throw;
+            return unexpected{ ex.what() };
         }
-        
         _dataLoader.removeBasePath(input.basePath);
-		auto writeResult = protobuf::write(def, out, _outputFormat);
-        if(!writeResult)
-		{
-            throw std::runtime_error{ "failed to write output: " + writeResult.error() };
-		}
+
+        for (auto& out : config.outputStreams)
+        {
+            if (!out)
+            {
+                continue;
+            }
+            auto writeResult = protobuf::write(def, *out, _outputFormat);
+            if (!writeResult)
+            {
+                return unexpected{ "failed to write output: " + writeResult.error() };
+            }
+        }
+
+        return {};
     }
 
     const std::string& AssimpSceneFileImporterImpl::getName() const noexcept
@@ -1131,39 +1120,19 @@ namespace darmok
 
     AssimpSceneFileImporter::~AssimpSceneFileImporter() = default;
 
-    bool AssimpSceneFileImporter::startImport(const Input& input, bool dry)
-    {
-        return _impl->startImport(input, dry);
-    }
-
-    std::vector<std::filesystem::path> AssimpSceneFileImporter::getOutputs(const Input& input)
-    {
-        return _impl->getOutputs(input);
-    }
-
-    AssimpSceneFileImporter::Dependencies AssimpSceneFileImporter::getDependencies(const Input& input)
-    {
-        return _impl->getDependencies(input);
-    }
-
-    std::ofstream AssimpSceneFileImporter::createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path)
-    {
-        return _impl->createOutputStream(input, outputIndex, path);
-    }
-
-    void AssimpSceneFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
-    {
-        return _impl->writeOutput(input, outputIndex, out);
-    }
-
-    void AssimpSceneFileImporter::endImport(const Input& input)
-    {
-        return _impl->endImport(input);
-    }
-
     const std::string& AssimpSceneFileImporter::getName() const noexcept
     {
         return _impl->getName();
+    }
+
+    expected<AssimpSceneFileImporter::Effect, std::string> AssimpSceneFileImporter::prepare(const Input& input) noexcept
+    {
+        return _impl->prepare(input);
+    }
+
+    expected<void, std::string> AssimpSceneFileImporter::operator()(const Input& input, Config& config) noexcept
+    {
+        return (*_impl)(input, config);
     }
 
     AssimpSceneFileImporter& AssimpSceneFileImporter::setShadercPath(const std::filesystem::path& path) noexcept

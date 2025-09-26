@@ -92,14 +92,12 @@ namespace darmok
 	{
 	public:
 		ImageFileImporter() noexcept;
-		bool startImport(const Input& input, bool dry = false) override;
-		Outputs getOutputs(const Input& input) noexcept override;
-		Dependencies getDependencies(const Input& input) noexcept override;
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-		void endImport(const Input& input) noexcept override;
 		const std::string& getName() const noexcept override;
+
+		expected<Effect, std::string> prepare(const Input& input) noexcept override;
+		expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
+
 	private:
-		std::filesystem::path _outputPath;
 		std::optional<std::array<std::filesystem::path, 6>> _cubemapFaces;
 		ImageEncoding _outputEncoding;
 		bx::DefaultAllocator _alloc;

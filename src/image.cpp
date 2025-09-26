@@ -460,18 +460,22 @@ namespace darmok
 	{
 	}
 
-	bool ImageFileImporter::startImport(const Input& input, bool dry)
+	expected<ImageFileImporter::Effect, std::string> ImageFileImporter::prepare(const Input& input) noexcept
 	{
+		Effect effect;
 		if (input.config.is_null())
 		{
-			return false;
+			return effect;
 		}
-		_outputPath = input.getOutputPath(".ktx");
-		_outputEncoding = Image::getEncodingForPath(_outputPath);
+
+		auto outputPath = input.getOutputPath(".ktx");
+		_outputEncoding = Image::getEncodingForPath(outputPath);
 		if (_outputEncoding == ImageEncoding::Count)
 		{
-			throw std::runtime_error("unknown output encoding");
+			return unexpected{ "unknown output encoding" };
 		}
+
+		effect.outputs.emplace_back(outputPath, true);
 
 		_cubemapFaces.reset();
 
@@ -481,29 +485,17 @@ namespace darmok
 			size_t i = 0;
 			for (auto& elm : input.config["cubemap"])
 			{
-				faces[i] = input.basePath / elm.get<std::filesystem::path>();
+				auto path = input.basePath / elm.get<std::filesystem::path>();
+				effect.dependencies.insert(path);
+				faces[i] = path;
 				++i;
 			}
 		}
 
-		return true;
+		return effect;
 	}
 
-	ImageFileImporter::Outputs ImageFileImporter::getOutputs(const Input& input) noexcept
-	{
-		return { _outputPath };
-	}
-
-	ImageFileImporter::Dependencies ImageFileImporter::getDependencies(const Input& input) noexcept
-	{
-		if (_cubemapFaces)
-		{
-			return { _cubemapFaces->begin(), _cubemapFaces->end() };
-		}
-		return {};
-	}
-
-	void ImageFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+	expected<void, std::string> ImageFileImporter::operator()(const Input& input, Config& config) noexcept
 	{
 		std::string formatStr;
 		if (input.config.contains("outputFormat"))
@@ -515,46 +507,52 @@ namespace darmok
 			formatStr = input.config["outputFormat"];
 		}
 		auto format = Image::readFormat(formatStr);
-		expected<void, std::string> writeResult;
-		if (_cubemapFaces)
+		for (auto& optOut : config.outputStreams)
 		{
-			std::array<Data, 6> faceData;
-			std::array<DataView, 6> faceDataView;
-			size_t i = 0;
-			for (auto& facePath : _cubemapFaces.value())
+			if (!optOut)
 			{
-				if (auto result = Data::fromFile(facePath))
+				continue;
+			}
+			auto& out = *optOut;
+			expected<void, std::string> writeResult;
+			if (_cubemapFaces)
+			{
+				std::array<Data, 6> faceData;
+				std::array<DataView, 6> faceDataView;
+				size_t i = 0;
+				for (auto& facePath : _cubemapFaces.value())
 				{
-					faceData[i] = result.value();
+					auto readResult = Data::fromFile(facePath);
+					if (!readResult)
+					{
+						return unexpected{ "failed to read face data: " + readResult.error() };
+					}
+					faceData[i] = readResult.value();
 					faceDataView[i] = faceData[i];
+					++i;
 				}
-				++i;
+				Image img{ faceDataView, _alloc, format };
+				writeResult = img.write(_outputEncoding, out);
 			}
-			Image img{ faceDataView, _alloc, format };
-			writeResult = img.write(_outputEncoding, out);
-		}
-		else
-		{
-			auto readResult = Data::fromFile(input.path);
-			if (readResult)
+			else
 			{
-				throw std::runtime_error{ fmt::format("failed to read data: {}", readResult.error()) };
+				auto readResult = Data::fromFile(input.path);
+				if (readResult)
+				{
+					return unexpected{ "failed to read data: " + readResult.error() };
+				}
+
+				Image img{ readResult.value(), _alloc, format };
+				writeResult = img.write(_outputEncoding, out);
 			}
 
-			Image img{ readResult.value(), _alloc, format };
-			writeResult = img.write(_outputEncoding, out);
+			if (!writeResult)
+			{
+				return unexpected{ "failed to write image: " + writeResult.error() };
+			}
 		}
 
-		if (!writeResult)
-		{
-			throw std::runtime_error{ fmt::format("failed to write image: {}", writeResult.error()) };
-		}
-	}
-
-	void ImageFileImporter::endImport(const Input& input) noexcept
-	{
-		_outputPath.clear();
-		_cubemapFaces.reset();
+		return {};
 	}
 
 	const std::string& ImageFileImporter::getName() const noexcept

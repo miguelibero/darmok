@@ -6,12 +6,12 @@ using namespace darmok;
 class CommandLineFileImporter final : public BaseCommandLineFileImporter
 {
 protected:
-	std::vector<std::filesystem::path> getOutputs(const Config& config) const override
+	expected<Paths, std::string> getOutputPaths(const Config& config) const noexcept override
 	{
-		return DarmokAssetFileImporter(config).getOutputs();
+		return DarmokAssetFileImporter(config).getOutputPaths();
 	}
 
-	void import(const Config & config, std::ostream& log) const override
+	void import(const Config& config, std::ostream& log) const noexcept override
 	{
 		return DarmokAssetFileImporter(config)(log);
 	}

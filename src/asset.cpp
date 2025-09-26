@@ -268,7 +268,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	DarmokAssetFileImporter::DarmokAssetFileImporter(const CommandLineFileImporterConfig& config)
+	DarmokAssetFileImporter::DarmokAssetFileImporter(const CommandLineFileImporterConfig& config) noexcept
 		: DarmokAssetFileImporter(config.inputPath)
 	{
 		if (!config.cachePath.empty())
@@ -289,7 +289,7 @@ namespace darmok
 		}
 	}
 
-	DarmokAssetFileImporter::DarmokAssetFileImporter(const std::filesystem::path& inputPath)
+	DarmokAssetFileImporter::DarmokAssetFileImporter(const std::filesystem::path& inputPath) noexcept
 		: _importer{ inputPath }
 		, _progImporter{ _importer.addTypeImporter<ProgramFileImporter>() }
 #ifdef DARMOK_ASSIMP
@@ -335,12 +335,12 @@ namespace darmok
 		return *this;
 	}
 
-	std::vector<std::filesystem::path> DarmokAssetFileImporter::getOutputs() const
+	expected<DarmokAssetFileImporter::Paths, std::string> DarmokAssetFileImporter::getOutputPaths() const noexcept
 	{
-		return _importer.getOutputs();
+		return _importer.getOutputPaths();
 	}
 
-	void DarmokAssetFileImporter::operator()(std::ostream& log) const
+	void DarmokAssetFileImporter::operator()(std::ostream& log) const noexcept
 	{
 		_importer(log);
 	}

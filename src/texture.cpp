@@ -668,26 +668,4 @@ namespace darmok
 		, ProtobufFileImporter<ImageTextureDefinitionLoader>(_defLoader, "texture")
 	{
 	}
-
-	void TextureFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
-	{
-		auto defResult = _defLoader(input.path);
-		if (!defResult)
-		{
-			throw std::runtime_error(defResult.error());
-		}
-		auto& def = **defResult;
-		auto& config = *def.mutable_config();
-		auto result = protobuf::read(config, input.dirConfig);
-		if (!result)
-		{
-			throw std::runtime_error(result.error());
-		}
-		result = protobuf::read(config, input.config);
-		if (!result)
-		{
-			throw std::runtime_error(result.error());
-		}
-		ProtobufFileImporter::writeOutput(def, out);
-	}
 }

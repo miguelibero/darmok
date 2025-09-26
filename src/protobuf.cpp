@@ -74,14 +74,18 @@ namespace darmok
             return { createOutputStream(path, format), format };
         }
 
-        std::ofstream createOutputStream(const std::filesystem::path& path, Format format)
+        std::ios_base::openmode getOutputStreamMode(Format format)
         {
-            int streamFlags = 0;
             if (format == Format::Binary)
             {
-                streamFlags = std::ios::binary;
+                return std::ios::binary;
             }
-            return std::ofstream(path, streamFlags);
+            return std::ios::out;
+        }
+
+        std::ofstream createOutputStream(const std::filesystem::path& path, Format format)
+        {
+            return std::ofstream{ path, getOutputStreamMode(format) };
         }
 
         expected<void, std::string> read(Message& msg, const std::filesystem::path& path)

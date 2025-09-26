@@ -726,13 +726,14 @@ namespace darmok
         _defaultConfig.log = log;
     }
 
-    bool ProgramFileImporterImpl::startImport(const Input& input, bool dry)
+    expected<ProgramFileImporterImpl::Effect, std::string> ProgramFileImporterImpl::prepare(const Input& input) noexcept
     {
+        Effect effect;
         if (input.config.is_null())
         {
             if (!input.path.string().ends_with(".program.json"))
             {
-                return false;
+                return effect;
             }
         }
 
@@ -744,64 +745,53 @@ namespace darmok
         auto result = readSource(*_src, input.config, input.path);
         if (!result)
         {
-            return false;
+            return effect;
         }
 
-        _outputPath = input.getOutputPath(protobuf::getExtension());
-        return true;
-    }
+        effect.outputs.emplace_back(input.getOutputPath(protobuf::getExtension()), true);
 
-    std::vector<fs::path> ProgramFileImporterImpl::getOutputs(const Input& input)
-    {
-        return { _outputPath };
-    }
-
-    ProgramFileImporterImpl::Dependencies ProgramFileImporterImpl::getDependencies(const Input& input)
-    {
-        Dependencies deps;
-        if (!_src)
-        {
-            return deps;
-        }
         ShaderParser parser{ _config ? _config->includePaths : ShaderParser::IncludePaths{} };
         {
             std::istringstream in{ _src->vertex_shader() };
-            parser.getDependencies(in, deps);
+            parser.getDependencies(in, effect.dependencies);
         }
         {
             std::istringstream in{ _src->fragment_shader() };
-            parser.getDependencies(in, deps);
+            parser.getDependencies(in, effect.dependencies);
         }
 
-        return deps;
+        return effect;
     }
 
-    void ProgramFileImporterImpl::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
+    expected<void, std::string> ProgramFileImporterImpl::operator()(const Input& input, ImportConfig& config) noexcept
     {
         if (!_src || !_config)
         {
-            return;
+            return {};
         }
 
         ProgramCompiler compiler{ _config.value() };
         auto compileResult = compiler(_src.value());
         if (!compileResult)
         {
-            throw std::runtime_error{ fmt::format("failed to compile program: {}", compileResult.error()) };
+            return unexpected{ "failed to compile program: " + compileResult.error() };
         }
 		auto& def = compileResult.value();
         auto format = protobuf::getFormat(input.getOutputPath());
-        auto writeResult = protobuf::write(def, out, format);
-        if (!writeResult)
-        {
-            throw std::runtime_error{ "failed to write program file" };
-        }
-    }
 
-    void ProgramFileImporterImpl::endImport(const Input& input)
-    {
-        _config.reset();
-        _outputPath.clear();
+        for (auto& optOut : config.outputStreams)
+        {
+            if (!optOut)
+            {
+                continue;
+            }
+            auto writeResult = protobuf::write(def, *optOut, format);
+            if (!writeResult)
+            {
+                return unexpected{ "failed to write program file" };
+            }
+        }
+        return {};
     }
 
     const std::string& ProgramFileImporterImpl::getName() const noexcept
@@ -881,33 +871,18 @@ namespace darmok
         _impl->setLogOutput(log);
     }
 
-    bool ProgramFileImporter::startImport(const Input& input, bool dry)
+    expected<ProgramFileImporter::Effect, std::string> ProgramFileImporter::prepare(const Input& input) noexcept
     {
-        return _impl->startImport(input, dry);
+        return _impl->prepare(input);
     }
 
-    ProgramFileImporter::Outputs ProgramFileImporter::getOutputs(const Input& input)
+    expected<void, std::string> ProgramFileImporter::operator()(const Input& input, Config& config) noexcept
     {
-        return _impl->getOutputs(input);
-    }
-
-    ProgramFileImporter::Dependencies ProgramFileImporter::getDependencies(const Input& input)
-    {
-        return _impl->getDependencies(input);
-    }
-
-    void ProgramFileImporter::writeOutput(const Input& input, size_t outputIndex, std::ostream& out)
-    {
-        _impl->writeOutput(input, outputIndex, out);
+        return (*_impl)(input, config);
     }
 
     const std::string& ProgramFileImporter::getName() const noexcept
     {
         return _impl->getName();
-    }
-
-    void ProgramFileImporter::endImport(const Input& input)
-    {
-        return _impl->endImport(input);
     }
 }

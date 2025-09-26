@@ -27,10 +27,10 @@ namespace darmok
     public:
         AssimpSkeletonFileImporter() noexcept;
         ~AssimpSkeletonFileImporter() noexcept;
-        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept override;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
     private:
         std::unique_ptr<AssimpSkeletonFileImporterImpl> _impl;
     };
@@ -43,12 +43,10 @@ namespace darmok
         AssimpSkeletalAnimationFileImporter() noexcept;
         ~AssimpSkeletalAnimationFileImporter() noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-        bool startImport(const Input& input, bool dry) override;
-        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-        void endImport(const Input& input) override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept override;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
     private:
         std::unique_ptr<AssimpSkeletalAnimationFileImporterImpl> _impl;
     };

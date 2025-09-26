@@ -278,12 +278,12 @@ namespace darmok
 
     std::string_view Data::stringView(size_t offset, size_t size) const noexcept
     {
-        return DataView(_ptr, _size).stringView(offset, size);
+        return DataView{ _ptr, _size }.stringView(offset, size);
     }
 
     DataView Data::view(size_t offset, size_t size) const noexcept
     {
-        return DataView(_ptr, _size).view(offset, size);
+        return DataView{ _ptr, _size }.view(offset, size);
     }
 
     const bgfx::Memory* Data::makeRef(size_t offset, size_t size) const noexcept

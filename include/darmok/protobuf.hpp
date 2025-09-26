@@ -127,13 +127,15 @@ namespace darmok
         {
         }
 
-        bool startImport(const Input& input, bool dry = false) override
+        expected<Effect, std::string> prepare(const Input& input) noexcept override
         {
+            Effect effect;
             if (input.config.is_null())
             {
-                return false;
+                return effect;
             }
-            _outputPath = input.getOutputPath(".pb");
+
+            auto outputPath = input.getOutputPath(".pb");
             std::optional<protobuf::Format> outputFormat;
             if (auto jsonOutputFormat = input.getConfigField("outputFormat"))
             {
@@ -145,34 +147,38 @@ namespace darmok
             }
             else
             {
-                _outputFormat = protobuf::getFormat(_outputPath);
+                _outputFormat = protobuf::getFormat(outputPath);
             }
-            return !_outputPath.empty();
+            auto binary = _outputFormat == protobuf::Format::Binary;
+            effect.outputs.emplace_back(outputPath, binary);
+            return effect;
         }
 
-        virtual Outputs getOutputs(const Input& input) override
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override
         {
-            return { _outputPath };
-        }
-
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath) override
-        {
-            return protobuf::createOutputStream(outputPath, _outputFormat);
-        }
-
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override
-        {
-            auto objResult = _loader(input.path);
-            if (!objResult)
+            auto loadResult = _loader(input.path);
+            if (!loadResult)
             {
-                throw std::runtime_error(objResult.error());
+                return unexpected{ loadResult.error() };
             }
-            writeOutput(**objResult, out);
-        }
-
-        void endImport(const Input& input) override
-        {
-            _outputPath.clear();
+            auto& msg = loadResult.value();
+            if (!msg)
+            {
+                return unexpected{ "empty protobuf message" };
+            }
+            for (auto& out : config.outputStreams)
+            {
+                if (!out)
+                {
+                    continue;
+                }
+                auto result = protobuf::write(*msg, *out, _outputFormat);
+                if (!result)
+                {
+                    return unexpected{ result.error() };
+                }
+            }
+            return {};
         }
 
         const std::string& getName() const noexcept
@@ -180,21 +186,9 @@ namespace darmok
             return _name;
         }
 
-    protected:
-
-        void writeOutput(const google::protobuf::Message& msg, std::ostream& out)
-        {
-            auto result = protobuf::write(msg, out, _outputFormat);
-			if (!result)
-			{
-				throw std::runtime_error(result.error());
-			}
-        }
-
     private:
         Loader& _loader;
         std::string _name;
-        std::filesystem::path _outputPath;
         protobuf::Format _outputFormat;
     };
 }

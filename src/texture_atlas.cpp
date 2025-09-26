@@ -670,23 +670,24 @@ namespace darmok
 	const std::string TexturePackerAtlasFileImporter::_rmluiSpriteNameFormatOption = "rmluiSpriteNameFormat";
 	const std::string TexturePackerAtlasFileImporter::_rmluiBoxNameFormatOption = "rmluiBoxNameFormat";
 
-	bool TexturePackerAtlasFileImporter::startImport(const Input& input, bool /* dry */)
+	expected<TexturePackerAtlasFileImporter::Effect, std::string> TexturePackerAtlasFileImporter::prepare(const Input& input) noexcept
 	{
+		Effect effect;
 		if (input.config.is_null())
 		{
-			return false;
+			return effect;
 		}
 		_xmlDoc.load_file(input.path.c_str());
 
-		std::string sheetFormat;
+		_sheetFormat = {};
 		if (input.config.contains(_outputFormatOption))
 		{
-			sheetFormat = input.config[_outputFormatOption].get<std::string>();
+			_sheetFormat = input.config[_outputFormatOption].get<std::string>();
 		}
 		auto basePath = input.getRelativePath().parent_path();
 
-		_sheetPath = input.getOutputPath();
-		if(_sheetPath.empty())
+		auto sheetPath = input.getOutputPath();
+		if (sheetPath.empty())
 		{
 			auto sheetNode = _xmlDoc.select_node(
 				"//map[@type='GFileNameMap']/struct[@type='DataFile']"
@@ -696,38 +697,39 @@ namespace darmok
 				const std::string val = sheetNode.node().text().as_string();
 				if (!val.empty())
 				{
-					_sheetPath = basePath / val;
+					sheetPath = basePath / val;
 				}
 			}
 		}
-		if (_sheetPath.empty())
+		if (sheetPath.empty())
 		{
-			if (sheetFormat.empty())
+			if (_sheetFormat.empty())
 			{
 				auto sheetFormatNode = _xmlDoc.select_node(
 					"//key[text()='dataFormat']/following::string");
 				if (sheetFormatNode)
 				{
-					sheetFormat = sheetFormatNode.node().text().as_string();
+					_sheetFormat = sheetFormatNode.node().text().as_string();
 				}
 			}
-			auto ext = getSheetFormatExt(sheetFormat);
-			_sheetPath = basePath / (input.path.stem().string() + ext);
+			auto ext = getSheetFormatExt(_sheetFormat);
+			sheetPath = basePath / (input.path.stem().string() + ext);
 		}
 
-		basePath = _sheetPath.parent_path();
+		basePath = sheetPath.parent_path();
 
 		auto textureNode = _xmlDoc.select_node(
 			"//key[text()='textureSubPath']/following::string");
+		std::filesystem::path texturePath;
 		if (textureNode)
 		{
 			const std::string val = textureNode.node().text().as_string();
 			if (!val.empty())
 			{
-				_texturePath = basePath / val;
+				texturePath = basePath / val;
 			}
 		}
-		if(_texturePath.empty())
+		if (texturePath.empty())
 		{
 			auto textureFormatNode = _xmlDoc.select_node(
 				"//key[text()='textureFormat']/following::enum[@type='SettingsBase::TextureFormat']");
@@ -738,29 +740,47 @@ namespace darmok
 				ext = getTextureFormatExt(textureFormatNode.node().text().as_string());
 			}
 
-			_texturePath = basePath / (_sheetPath.stem().string() + ext);
+			texturePath = basePath / (texturePath.stem().string() + ext);
 		}
 
-		auto tempSpritesheetPath = getTempPath();
+		effect.outputs.emplace_back(sheetPath, false);
+		effect.outputs.emplace_back(texturePath, true);
+		_texturePath = texturePath;
+
+		auto nodes = _xmlDoc.select_nodes(
+			"//struct[@type='SpriteSheet']/key[text()='files']"
+			"/following::array/filename");
+		for (const auto& node : nodes)
+		{
+			const auto* path = node.node().text().as_string();
+			effect.dependencies.insert(basePath / path);
+		}
+
+		return effect;
+	}
+
+	expected<void, std::string> TexturePackerAtlasFileImporter::operator()(const Input& input, Config& config) noexcept
+	{
+		auto tempSheetPath = getTempPath();
 		auto tempTexturePath = getTempPath();
 
 		std::vector<Exec::Arg> args{
 			_exePath, input.path,
 			"--sheet", tempTexturePath,
-			"--data", tempSpritesheetPath,
+			"--data", tempSheetPath,
 			"--verbose"
 		};
 
-		auto convertRmlui = sheetFormat == "rmlui";
+		auto convertRmlui = _sheetFormat == "rmlui";
 		if (convertRmlui)
 		{
-			sheetFormat = "xml";
+			_sheetFormat = "xml";
 		}
-		
-		if (!sheetFormat.empty())
+
+		if (!_sheetFormat.empty())
 		{
 			args.emplace_back("--format");
-			args.emplace_back(sheetFormat);
+			args.emplace_back(_sheetFormat);
 		}
 
 		if (input.config.contains(_textureFormatOption))
@@ -780,45 +800,58 @@ namespace darmok
 				*_log << "TexturePacker error output:\n";
 				*_log << result.err;
 			}
-			throw std::runtime_error("failed to run texture packer");
+			return unexpected{ "failed to run texture packer" };
 		}
-		if (auto result = Data::fromFile(tempSpritesheetPath))
+		auto dataResult = Data::fromFile(tempSheetPath);
+		if (!dataResult)
 		{
-			_sheetData = result.value();
+			return unexpected{ dataResult.error() };
 		}
-		if (auto result = Data::fromFile(tempTexturePath))
+		auto sheetData = std::move(dataResult).value();
+		dataResult = Data::fromFile(tempTexturePath);
+		if (!dataResult)
 		{
-			_textureData = result.value();
+			return unexpected{ dataResult.error() };
 		}
+		auto textureData = std::move(dataResult).value();
 
 		if (convertRmlui)
 		{
 			pugi::xml_document doc;
-			auto xmlResult = doc.load_buffer_inplace(_sheetData.ptr(), _sheetData.size());
+			auto xmlResult = doc.load_buffer_inplace(sheetData.ptr(), sheetData.size());
 			if (xmlResult.status != pugi::status_ok)
 			{
-				throw std::runtime_error{ xmlResult.description() };
+				return unexpected{ xmlResult.description() };
 			}
 			TextureAtlas::Definition atlasDef;
+			auto basePath = input.path.parent_path();
 			auto texPackResult = TextureAtlasUtils::readTexturePacker(atlasDef, doc, basePath);
 			if (!texPackResult)
 			{
-				throw std::runtime_error{ "failed to read texture packer xml: " + texPackResult.error() };
+				return unexpected{ "failed to read texture packer xml: " + texPackResult.error() };
 			}
 			atlasDef.set_texture_path(std::filesystem::relative(_texturePath, basePath).string());
-			_sheetData.clear();
-			DataOutputStream out{ _sheetData };
+			sheetData.clear();
+			DataOutputStream out{ sheetData };
 			auto rmluiConfig = readRmluiConfig(input.config);
-			
+
 			auto rmlResult = TextureAtlasUtils::writeRmlui(atlasDef, out, rmluiConfig);
 			if (!rmlResult)
 			{
-				throw std::runtime_error{ "failed to write rmlui: " + rmlResult.error() };
+				return unexpected{ "failed to write rmlui: " + rmlResult.error() };
 			}
-			_sheetData.resize(out.tellp());
+			sheetData.resize(out.tellp());
 		}
 
-		return true;
+		if(auto& out = config.outputStreams[0])
+		{
+			*out << sheetData;
+		}
+		if (auto& out = config.outputStreams[1])
+		{
+			*out << textureData;
+		}
+		return {};
 	}
 
 	TextureAtlasRmluiConfig TexturePackerAtlasFileImporter::readRmluiConfig(const nlohmann::json& json) noexcept
@@ -843,48 +876,4 @@ namespace darmok
 		return config;
 	}
 
-	void TexturePackerAtlasFileImporter::endImport(const Input& /* input */)
-	{
-		_xmlDoc.reset();
-		_sheetPath.clear();
-		_texturePath.clear();
-		_sheetData.clear();
-		_textureData.clear();
-	}
-
-	TexturePackerAtlasFileImporter::Outputs TexturePackerAtlasFileImporter::getOutputs(const Input& /* input */)
-	{
-		return { _sheetPath, _texturePath };
-	}
-
-	TexturePackerAtlasFileImporter::Dependencies TexturePackerAtlasFileImporter::getDependencies(const Input& input)
-	{
-		Dependencies deps;
-
-		auto basePath = input.path.parent_path();
-
-		auto nodes = _xmlDoc.select_nodes(
-			"//struct[@type='SpriteSheet']/key[text()='files']"
-			"/following::array/filename");
-		for (const auto& node : nodes)
-		{
-			const auto* path = node.node().text().as_string();
-			deps.insert(basePath / path);
-		}
-
-		return deps;
-	}
-
-	void TexturePackerAtlasFileImporter::writeOutput(const Input& /* input */, size_t outputIndex, std::ostream& out)
-	{
-		if (outputIndex == 0)
-		{
-			out << _sheetData;
-		}
-		else
-		{
-			out << _textureData;
-		}
-		
-	}
 }

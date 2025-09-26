@@ -146,23 +146,21 @@ namespace darmok
     class AssimpSceneFileImporterImpl final
     {
     public:
-        using Input = FileTypeImporterInput;
-        using Config = protobuf::AssimpSceneImportConfig;
+        using Input = FileImportInput;
+        using ImportConfig = FileImportConfig;
+        using Effect = FileImportEffect;
+        using AssimpConfig = protobuf::AssimpSceneImportConfig;
         using CompilerConfig = SceneDefinitionCompilerConfig;
         using OutputFormat = protobuf::Format;
-        using Dependencies = FileTypeImportDependencies;
         using Definition = protobuf::Scene;
 
         AssimpSceneFileImporterImpl(bx::AllocatorI& alloc);
-        
-        bool startImport(const Input& input, bool dry = false);
-        std::vector<std::filesystem::path> getOutputs(const Input& input);
-        Dependencies getDependencies(const Input& input);
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) const;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
-        void endImport(const Input& input);
+
         const std::string& getName() const noexcept;
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
+        expected<Effect, std::string> prepare(const Input& input) noexcept;
+        expected<void, std::string> operator()(const Input& input, ImportConfig& config) noexcept;
+
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
     private:
@@ -172,14 +170,13 @@ namespace darmok
         ImageTextureSourceLoader _texLoader;
         ProgramSourceLoader _progLoader;
         AssimpLoader _assimpLoader;
-        std::optional<Config> _currentConfig;
+        std::optional<AssimpConfig> _currentConfig;
         OutputFormat _outputFormat = OutputFormat::Binary;
-        std::filesystem::path _outputPath;
         std::shared_ptr<aiScene> _currentScene;
         CompilerConfig _defaultCompilerConfig;
         std::optional<CompilerConfig> _compilerConfig;
 
-        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, Config& config);
+        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, AssimpConfig& config);
         static expected<protobuf::VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

@@ -56,12 +56,10 @@ namespace darmok
     public:
         FreetypeFontFileImporter() noexcept;
         ~FreetypeFontFileImporter() noexcept;
-        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path) override;
-        bool startImport(const Input& input, bool dry = false) override;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
-        void endImport(const Input& input) override;
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept override;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
     private:
         std::unique_ptr<FreetypeFontFileImporterImpl> _impl;
     };

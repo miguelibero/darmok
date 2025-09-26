@@ -187,7 +187,6 @@ namespace darmok
 	{
 	public:
 		TextureFileImporter();
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 	private:
 		bx::DefaultAllocator _alloc;
 		FileDataLoader _dataLoader;

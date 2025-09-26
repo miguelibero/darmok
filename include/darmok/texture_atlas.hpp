@@ -139,13 +139,10 @@ namespace darmok
 	{
 	public:
 		TexturePackerAtlasFileImporter(std::filesystem::path exePath = "") noexcept;
-		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-		bool startImport(const Input& input, bool dry) override;
-		Outputs getOutputs(const Input& input) override;
-		Dependencies getDependencies(const Input& input) override;
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
 		const std::string& getName() const noexcept override;
-		void endImport(const Input& input) override;
+		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
+		expected<Effect, std::string> prepare(const Input& input) noexcept override;
+		expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
 	private:
 		static const std::unordered_map<std::string, std::string> _textureFormatExts;
 		static const std::unordered_map<std::string, std::string> _sheetFormatExts;
@@ -157,10 +154,8 @@ namespace darmok
 		static const std::string _rmluiBoxNameFormatOption;
 		std::filesystem::path _exePath;
 		pugi::xml_document _xmlDoc;
+		std::string _sheetFormat;
 		std::filesystem::path _texturePath;
-		std::filesystem::path _sheetPath;
-		Data _textureData;
-		Data _sheetData;
 		OptionalRef<std::ostream> _log;
 		bx::DefaultAllocator _alloc;
 

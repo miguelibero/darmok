@@ -103,14 +103,15 @@ namespace darmok
 	class DARMOK_EXPORT DarmokAssetFileImporter final
 	{
 	public:
-		DarmokAssetFileImporter(const CommandLineFileImporterConfig& config);
-		DarmokAssetFileImporter(const std::filesystem::path& inputPath);
+		using Paths = std::vector<std::filesystem::path>;
+		DarmokAssetFileImporter(const CommandLineFileImporterConfig& config) noexcept;
+		DarmokAssetFileImporter(const std::filesystem::path& inputPath) noexcept;
 		DarmokAssetFileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
 		DarmokAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
 		DarmokAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		DarmokAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
-		std::vector<std::filesystem::path> getOutputs() const;
-		void operator()(std::ostream& log) const;
+		expected<Paths, std::string> getOutputPaths() const noexcept;
+		void operator()(std::ostream& log) const noexcept;
 	private:
 		bx::DefaultAllocator _alloc;
 		FileImporter _importer;

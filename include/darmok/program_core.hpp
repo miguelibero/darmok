@@ -116,11 +116,8 @@ namespace darmok
 		ProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
 
 		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
-		bool startImport(const Input& input, bool dry = false) override;
-		Outputs getOutputs(const Input& input) override;
-		Dependencies getDependencies(const Input& input) override;
-		void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
-		void endImport(const Input& input) override;
+		expected<Effect, std::string> prepare(const Input& input) noexcept override;
+		expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
 
 		const std::string& getName() const noexcept override;
 	private:

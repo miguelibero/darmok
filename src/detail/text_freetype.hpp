@@ -99,28 +99,25 @@ namespace darmok
     class FreetypeFontFileImporterImpl final
     {
     public:
-        using Input = FileTypeImporterInput;
+        using Input = FileImportInput;
+        using Effect = FileImportEffect;
+        using Config = FileImportConfig;
         FreetypeFontFileImporterImpl();
         ~FreetypeFontFileImporterImpl();
-        bool startImport(const Input& input, bool dry = false);
-        std::vector<std::filesystem::path> getOutputs(const Input& input);
-        std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& path);
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
+       
         const std::string& getName() const noexcept;
-        void endImport(const Input& input);
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
     private:
         using Atlas = protobuf::TextureAtlas;
         FT_Face _face;
         FT_Library _library;
         bx::DefaultAllocator _alloc;
-        FileDataLoader _dataLoader;
-        ImageLoader _imgLoader;
-        ImageTextureDefinitionLoader _texDefLoader;
         std::optional<Atlas> _atlas;
         std::optional<Image> _image;
         std::filesystem::path _imagePath;
         std::filesystem::path _atlasPath;
-        std::filesystem::path _baseOutputPath;
     };
 
 }

@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
+#include <darmok/expected.hpp>
 
 #include <memory>
 #include <string>
@@ -23,7 +24,7 @@ namespace darmok
 {
     using CmdArgs = std::span<const char*>;
 
-    struct DARMOK_EXPORT FileTypeImporterInput final
+    struct DARMOK_EXPORT FileImportInput final
     {
         std::filesystem::path path;
         std::filesystem::path basePath;
@@ -38,32 +39,44 @@ namespace darmok
         std::optional<const nlohmann::json> getConfigField(std::string_view key) const noexcept;
     };
 
-    using FileTypeImportDependencies = std::unordered_set<std::filesystem::path>;
+    struct DARMOK_EXPORT FileImportOutput final
+    {
+        std::filesystem::path path;
+        bool binary = true;
+    };
+
+    using FileImportDependencies = std::unordered_set<std::filesystem::path>;
+
+    struct DARMOK_EXPORT FileImportEffect final
+    {
+        std::vector<FileImportOutput> outputs;
+        FileImportDependencies dependencies;
+    };
+
+    class DARMOK_EXPORT BX_NO_VTABLE IFileImportContext
+    {
+    };
+
+    struct DARMOK_EXPORT FileImportConfig final
+    {
+        // empty element if output should be skipped
+        std::vector<std::unique_ptr<std::ostream>> outputStreams;
+        const IFileImportContext& context;
+    };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFileTypeImporter
     {
     public:
-        using Input = FileTypeImporterInput;
-        using Dependencies = FileTypeImportDependencies;
-        using Outputs = std::vector<std::filesystem::path>;
+        using Input = FileImportInput;
+        using Effect = FileImportEffect;
+        using Config = FileImportConfig;
 
         virtual ~IFileTypeImporter() = default;
-        virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept {};
-
-        virtual bool startImport(const Input& input, bool dry = false) { return true; };
-
-        virtual Outputs getOutputs(const Input& input) = 0;
-        virtual Dependencies getDependencies(const Input& input) { return {}; };
-
-        // outputIndex is the index of the element in the vector returned by getOutputs
-        virtual std::ofstream createOutputStream(const Input& input, size_t outputIndex, const std::filesystem::path& outputPath)
-        {
-            return std::ofstream(outputPath, std::ios::binary);
-        }
-
-        virtual void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) = 0;
-        virtual void endImport(const Input& input) { };
         virtual const std::string& getName() const noexcept = 0;
+        virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept;
+
+        virtual expected<Effect, std::string> prepare(const Input& input) noexcept;
+        virtual expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
     };
 
     class CommandLineFileImporterImpl;
@@ -88,6 +101,7 @@ namespace darmok
     {
     public:
         using Config = CommandLineFileImporterConfig;
+        using Paths = std::vector<std::filesystem::path>;
         BaseCommandLineFileImporter() noexcept;
         virtual ~BaseCommandLineFileImporter() noexcept;
         int operator()(const CmdArgs& args) noexcept;
@@ -95,8 +109,8 @@ namespace darmok
 
 
     protected:
-        virtual std::vector<std::filesystem::path> getOutputs(const Config& config) const = 0;
-        virtual void import(const Config& config, std::ostream& log) const = 0;
+        virtual expected<Paths, std::string> getOutputPaths(const Config& config) const noexcept = 0;
+        virtual void import(const Config& config, std::ostream& log) const noexcept = 0;
     private:
         friend class CommandLineFileImporterImpl;
         std::unique_ptr<CommandLineFileImporterImpl> _impl;
@@ -107,7 +121,9 @@ namespace darmok
     class DARMOK_EXPORT FileImporter final
     {
     public:
-        FileImporter(const std::filesystem::path& inputPath);
+        using Paths = std::vector<std::filesystem::path>;
+
+        FileImporter(const std::filesystem::path& inputPath) noexcept;
 		~FileImporter() noexcept;
         FileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
         FileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
@@ -121,8 +137,8 @@ namespace darmok
             return *ptr;
         }
 
-        std::vector<std::filesystem::path> getOutputs() const noexcept;
-		void operator()(std::ostream& log) const;
+        expected<Paths, std::string> getOutputPaths() const noexcept;
+		void operator()(std::ostream& log) const noexcept;
 	private:
 		std::unique_ptr<FileImporterImpl> _impl;
     };
@@ -132,14 +148,15 @@ namespace darmok
     class DARMOK_EXPORT DarmokCoreAssetFileImporter final
     {
     public:
+        using Paths = std::vector<std::filesystem::path>;
         DarmokCoreAssetFileImporter(const CommandLineFileImporterConfig& config);
         DarmokCoreAssetFileImporter(const std::filesystem::path& inputPath);
         DarmokCoreAssetFileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
         DarmokCoreAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
         DarmokCoreAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         DarmokCoreAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
-        std::vector<std::filesystem::path> getOutputs() const;
-        void operator()(std::ostream& log) const;
+        expected<Paths, std::string> getOutputPaths() const noexcept;
+        void operator()(std::ostream& log) const noexcept;
     private:
         FileImporter _importer;
         ProgramFileImporter& _progImporter;
@@ -150,9 +167,10 @@ namespace darmok
     public:
         CopyFileImporter(size_t bufferSize = 4096) noexcept;
 
-        std::vector<std::filesystem::path> getOutputs(const Input& input) override;
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out) override;
         const std::string& getName() const noexcept override;
+
+        expected<Effect, std::string> prepare(const Input& input) noexcept override;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
     private:
         size_t _bufferSize;
     };

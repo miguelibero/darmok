@@ -53,7 +53,7 @@ namespace darmok
     {
     public:
         using IncludePaths = std::unordered_set<std::filesystem::path>;
-        using Dependencies = FileTypeImportDependencies;
+        using Dependencies = std::unordered_set<std::filesystem::path>;
         using Defines = ShaderDefines;
         using CompilerConfig = ShaderCompilerConfig;
         using CompilerOperation = ShaderCompilerOperation;
@@ -109,28 +109,25 @@ namespace darmok
     class ProgramFileImporterImpl final
     {
     public:
-        using Input = FileTypeImporterInput;
-        using Dependencies = FileTypeImportDependencies;
-        using Config = ProgramCompilerConfig;
+        using Effect = FileImportEffect;
+        using Input = FileImportInput;
+        using CompileConfig = ProgramCompilerConfig;
+        using ImportConfig = FileImportConfig;
         ProgramFileImporterImpl(size_t defaultBufferSize = 4096) noexcept;
 
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
 
         void setLogOutput(OptionalRef<std::ostream> log) noexcept;
-        bool startImport(const Input& input, bool dry = false);
-        std::vector<std::filesystem::path> getOutputs(const Input& input);
-        Dependencies getDependencies(const Input& input);
-        void writeOutput(const Input& input, size_t outputIndex, std::ostream& out);
-        void endImport(const Input& input);
+        expected<Effect, std::string> prepare(const Input& input) noexcept;
+        expected<void, std::string> operator()(const Input& input, ImportConfig& config) noexcept;
 
         const std::string& getName() const noexcept;
     private:
-        Config _defaultConfig;
+        CompileConfig _defaultConfig;
 
-        std::optional<Config> _config;
+        std::optional<CompileConfig> _config;
         std::optional<protobuf::ProgramSource> _src;
-        std::filesystem::path _outputPath;
 
         expected<void, std::string> readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path);
     };
