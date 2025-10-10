@@ -1,6 +1,7 @@
 #include "lua/material.hpp"
 #include "lua/glm.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
@@ -103,7 +104,13 @@ namespace darmok
 		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
 		LuaUtils::newEnum<MaterialTextureType>(lua, "MaterialTextureType");
 		LuaUtils::newEnum<MaterialOpacityType>(lua, "MaterialOpacityType");
-		LuaUtils::newProtobuf<Material::Definition>(lua, "MaterialDefinition");
+		LuaUtils::newProtobuf<Material::Definition>(lua, "MaterialDefinition")
+			.protobufProperty<protobuf::ProgramRef>("program")
+			.protobufProperty<protobuf::MaterialTexture>("textures")
+			.protobufProperty<protobuf::UniformValue>("uniform_values")
+			.protobufProperty<protobuf::Color>("base_color")
+			.protobufProperty<protobuf::Color3>("emissive_color")
+			.protobufProperty<protobuf::Color3>("specular_color");
 
 		lua.new_usertype<Material>("Material",
 			sol::factories(

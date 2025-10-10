@@ -1,5 +1,6 @@
 #include "lua/render_scene.hpp"
 #include "lua/scene.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/render_scene.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
@@ -45,6 +46,10 @@ namespace darmok
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
+		LuaUtils::newProtobuf<Renderable::Definition>(lua, "Renderable")
+			.protobufProperty<Mesh::Definition>("mesh")
+			.protobufProperty<Material::Definition>("material");
+
 		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Renderable>::value),
 			"add_entity_component", sol::overload(

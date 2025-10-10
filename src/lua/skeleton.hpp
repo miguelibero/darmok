@@ -37,11 +37,10 @@ namespace darmok
     private:
 
         using Definition = protobuf::SkeletalAnimator;
-        using AnimationMap = std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>>;
 
         static void setBlendPosition(SkeletalAnimator& animator, const VarLuaVecTable<glm::vec2>& pos) noexcept;
 
-        static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept;
+        static SkeletalAnimator& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const sol::table& anims, const Definition& def) noexcept;
         static OptionalRef<SkeletalAnimator>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         static std::optional<LuaEntity> getEntity(const SkeletalAnimator& animator, std::shared_ptr<Scene>& scene) noexcept;
         static bool play1(SkeletalAnimator& animator, const std::string& name) noexcept;

@@ -6,40 +6,48 @@
 
 namespace darmok
 {
+	LuaSceneConverter::LuaSceneConverter()
+		: _converter{ std::make_unique<SceneConverter>() }
+	{
+	}
+
+	LuaSceneConverter::LuaSceneConverter(AssetContext& assets)
+		: LuaSceneConverter()
+	{
+		_converter->setAssetPackConfig({
+			.fallback = assets
+		});
+	}
+
+	LuaSceneConverter::~LuaSceneConverter() = default;
+
 	void LuaSceneConverter::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<SceneConverter>("SceneConverter", sol::factories(
-				[]() { return std::make_shared<SceneConverter>(); },
-				[](AssetContext& assets) { 
-					auto converter = std::make_shared<SceneConverter>();
-					converter->setAssetPackConfig({
-						.fallback = assets
-					});
-					return converter;
-				}
-			),
+		lua.new_usertype<LuaSceneConverter>("SceneConverter", sol::constructors<
+			LuaSceneConverter(), LuaSceneConverter(AssetContext&)>(),
 			"parent", sol::property(&LuaSceneConverter::setParent),
-			"mesh_setup", sol::property(&LuaSceneConverter::setMeshSetup),
+			"renderable_setup", sol::property(&LuaSceneConverter::setRenderableSetup),
 			sol::meta_function::call, &LuaSceneConverter::run
 		);
 	}
 
-	void LuaSceneConverter::setParent(SceneConverter& converter, const LuaEntity& entity)
+	void LuaSceneConverter::setParent(const LuaEntity& entity)
 	{
-		converter.setParent(entity.getReal());
+		_converter->setParent(entity.getReal());
 	}
 
-	void LuaSceneConverter::setMeshSetup(SceneConverter& converter, const sol::function& func)
+	void LuaSceneConverter::setRenderableSetup(const sol::function& func)
 	{
-		converter.addComponentListener<Mesh>([func](const Mesh::Definition& def, Entity entity)
+		_converter->addComponentListener<Renderable>([this, func](const Renderable::Definition& def, Entity entity)
 		{
-			func(def, entity);
+			func(def, LuaEntity{ entity, _scene });
 		});
 	}
 
-	void LuaSceneConverter::run(SceneConverter& converter, const protobuf::Scene& sceneDef, Scene& scene)
+	void LuaSceneConverter::run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene)
 	{
-		auto result = converter(sceneDef, scene);
+		_scene = scene;
+		auto result = (*_converter)(sceneDef, *scene);
 		if (!result)
 		{
 			throw std::runtime_error{ result.error() };

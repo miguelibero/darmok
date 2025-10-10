@@ -1,5 +1,6 @@
 #include "lua/program.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/program.hpp>
 
 namespace darmok
@@ -17,8 +18,12 @@ namespace darmok
 			"load", &StandardProgramLoader::load
 		);
 
-		LuaUtils::newProtobuf<Program::Source>(lua, "ProgramSource");
-		LuaUtils::newProtobuf<Program::Definition>(lua, "ProgramDefinition");
+		LuaUtils::newProtobuf<Program::Source>(lua, "ProgramSource")
+			.protobufProperty<protobuf::Varying>("varying");
+		LuaUtils::newProtobuf<Program::Definition>(lua, "ProgramDefinition")
+			.protobufProperty<protobuf::ProgramProfile>("profiles")
+			.protobufProperty<protobuf::Varying>("varying");
+		;
 	}
 
 }

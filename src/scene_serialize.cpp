@@ -548,6 +548,10 @@ namespace darmok
 
     Entity SceneConverterImpl::getEntity(EntityId entityId) const noexcept
     {
+        if (entityId == nullEntityId)
+        {
+            return _parentEntity;
+        }
         return _loader.map(Entity{ entityId });
     }
 

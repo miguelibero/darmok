@@ -1,6 +1,7 @@
 #include "lua/mesh.hpp"
 #include "lua/glm.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
@@ -26,8 +27,17 @@ namespace darmok
 		LuaUtils::newEnum<MeshData::RectangleType>(lua, "RectangleMeshType");
 		LuaUtils::newEnum<MeshData::LineType>(lua, "LineMeshType");
 
-		LuaUtils::newProtobuf<Mesh::Source>(lua, "MeshSource");
-		LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition");
+		LuaUtils::newProtobuf<Mesh::Source>(lua, "MeshSource")
+			.protobufProperty<protobuf::ProgramRef>("program")
+			.protobufProperty<protobuf::DataMeshSource>("data")
+			.protobufProperty<protobuf::CubeMeshSource>("cube")
+			.protobufProperty<protobuf::SphereMeshSource>("sphere")
+			.protobufProperty<protobuf::CapsuleMeshSource>("capsule")
+			.protobufProperty<protobuf::RectangleMeshSource>("rectangle");
+
+		LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition")
+			.protobufProperty<protobuf::VertexLayout>("layout")
+			.protobufProperty<protobuf::BoundingBox>("bounds");
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<

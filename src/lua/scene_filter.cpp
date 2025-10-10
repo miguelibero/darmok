@@ -75,6 +75,9 @@ namespace darmok
 			sol::meta_function::bitwise_and, &LuaEntityFilter::operatorAnd,
 			sol::meta_function::bitwise_or, &LuaEntityFilter::operatorOr,
 			sol::meta_function::bitwise_not, &LuaEntityFilter::operatorNot,
+			"filterAnd", &LuaEntityFilter::operatorAnd,
+			"filterOr", &LuaEntityFilter::operatorOr,
+			"filterNot", &LuaEntityFilter::operatorNot,
 			sol::meta_function::to_string, &EntityFilter::toString
 		);
 	}

@@ -3,7 +3,6 @@
 #include "lua/lua.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
-#include <darmok/protobuf.hpp>
 
 #include <vector>
 #include <string>
@@ -50,18 +49,7 @@ namespace darmok
             metatable[sol::meta_function::new_index] = deny;
             metatable[sol::meta_function::index] = metatable;
             table[sol::metatable_key] = metatable;
-        }
-
-        void configProtobuf(sol::metatable& table, const google::protobuf::Descriptor& desc);
-
-        template<typename T>
-        void newProtobuf(sol::state_view& lua, std::string_view name)
-        {
-            auto usertype = lua.new_usertype<T>(name);
-			auto desc = T::descriptor();
-			sol::metatable table = usertype[sol::metatable_key];
-            configProtobuf(table, *desc);
-        }
+        }        
     };
 
     class LuaTableDelegateDefinition final

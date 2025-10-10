@@ -329,6 +329,11 @@ namespace darmok
 			sol::lib::table, sol::lib::string, sol::lib::coroutine,
 			sol::lib::math, sol::lib::os
 		);
+#ifdef DARMOK_LUAJIT
+		lua.open_libraries(
+			sol::lib::ffi, sol::lib::jit
+		);
+#endif
 #ifndef _NDEBUG
 		lua.open_libraries(sol::lib::debug);
 #endif
@@ -481,7 +486,7 @@ namespace darmok
 			auto r = loadLua(_mainLuaPath);
 		}
 		auto& lua = *_lua;
-		sol::safe_function init = lua["init"];
+		sol::protected_function init = lua["init"];
 		if (init)
 		{
 			auto result = init();
@@ -526,7 +531,7 @@ namespace darmok
 		{
 			return;
 		}
-		sol::safe_function shutdown = (*_lua)["shutdown"];
+		sol::protected_function shutdown = (*_lua)["shutdown"];
 		if (shutdown)
 		{
 			auto result = shutdown();

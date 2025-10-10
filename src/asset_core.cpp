@@ -978,6 +978,11 @@ namespace darmok
                 config.outputStreams[i] = std::make_unique<std::ofstream>(outputPath, mode);
             }
         }
+        if (result.updatedOutputPaths.empty())
+        {
+            return result;
+        }
+
         auto importResult = op.importer(op.input, config);
         if (!importResult)
         {

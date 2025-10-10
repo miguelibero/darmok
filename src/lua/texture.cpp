@@ -1,5 +1,6 @@
 #include "lua/texture.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/texture.hpp>
 #include <darmok/image.hpp>
 #include <darmok/mesh.hpp>
@@ -28,7 +29,8 @@ namespace darmok
 		LuaUtils::newEnum<Texture::Format>(lua, "TextureFormat");
 		LuaUtils::newProtobuf<Texture::Config>(lua, "TextureConfig");
 		LuaUtils::newProtobuf<Texture::Source>(lua, "TextureSource");
-		LuaUtils::newProtobuf<Texture::Definition>(lua, "TextureDefinition");
+		LuaUtils::newProtobuf<Texture::Definition>(lua, "TextureDefinition")
+			.protobufProperty<Texture::Config>("config");
 
 		lua.new_usertype<Texture>("Texture",
 			sol::factories(

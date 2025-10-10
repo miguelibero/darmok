@@ -5,6 +5,7 @@
 #include "lua/asset.hpp"
 #include "lua/render_scene.hpp"
 #include "lua/camera.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/skeleton.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/camera.hpp>
@@ -23,9 +24,16 @@ namespace darmok
         );
     }
 
-    SkeletalAnimator& LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const AnimationMap& anims, const Definition& def) noexcept
+    SkeletalAnimator& LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const sol::table& anims, const Definition& def) noexcept
     {
-        return entity.addComponent<SkeletalAnimator>(skel, anims, def);
+        SkeletalAnimator::AnimationMap animsMap;
+        for (auto& [key, val] : anims)
+        {
+            auto name = key.as<std::string>();
+            auto anim = val.as<std::shared_ptr<SkeletalAnimation>>();
+            animsMap[name] = anim;
+        }
+        return entity.addComponent<SkeletalAnimator>(skel, animsMap, def);
     }
 
     OptionalRef<SkeletalAnimator>::std_t LuaSkeletalAnimator::getEntityComponent(LuaEntity& entity) noexcept
@@ -74,7 +82,27 @@ namespace darmok
 
     void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
     {
-        LuaUtils::newProtobuf<SkeletalAnimator::Definition>(lua, "SkeletalAnimationDefinition");
+        LuaUtils::newProtobuf<protobuf::ArmatureJoint>(lua, "ArmatureJointDefinition")
+            .protobufProperty<protobuf::Mat4>("inverse_bind_pose");
+
+        LuaUtils::newProtobuf<Armature::Definition>(lua, "ArmatureDefinition")
+            .protobufProperty<protobuf::ArmatureJoint>("joints");
+
+        LuaUtils::newProtobuf<SkeletalAnimator::Definition>(lua, "SkeletalAnimatorDefinition")
+            .protobufProperty<protobuf::SkeletalAnimatorState>("states")
+            .protobufProperty<protobuf::SkeletalAnimatorTransition>("transitions");
+
+        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorTween>(lua, "SkeletalAnimatorTweenDefinition");
+
+        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorAnimation>(lua, "SkeletalAnimatorAnimation")
+            .protobufProperty<protobuf::Vec2>("blend_position");
+
+        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorState>(lua, "SkeletalAnimatorStateDefinition")
+            .protobufProperty<protobuf::SkeletalAnimatorAnimation>("animations")
+            .protobufProperty<protobuf::SkeletalAnimatorTween>("tween");
+
+        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorTransition>(lua, "SkeletalAnimatorTransitionDefinition")
+            .protobufProperty<protobuf::SkeletalAnimatorTween>("tween");
 
         lua.new_usertype<SkeletalAnimator>("SkeletalAnimator", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<SkeletalAnimator>::value),

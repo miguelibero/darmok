@@ -76,6 +76,7 @@ endif()
 option(DARMOK_BUILD_SAMPLES "build darmok samples" OFF)
 option(DARMOK_BUILD_TESTS "build darmok unit tests" OFF)
 option(DARMOK_BUILD_LUA "build darmok with lua support" OFF)
+option(DARMOK_BUILD_LUAJIT "build darmok with luajit support" OFF)
 option(DARMOK_BUILD_LUA_EXE "build the darmok lua executable" OFF)
 option(DARMOK_BUILD_FREETYPE "build darmok with freetype support" OFF)
 option(DARMOK_BUILD_IMGUI "build darmok with imGUI support" OFF)
@@ -289,6 +290,7 @@ set(LUA_SOURCES
   camera.cpp
   window.cpp
   utils.cpp
+  protobuf.cpp
   skeleton.cpp
   freelook.cpp
   coroutine.cpp 
@@ -750,9 +752,22 @@ endif()
 
 # lua sol2
 if(DARMOK_BUILD_LUA)
-  find_package(Lua REQUIRED)
-  target_include_directories(${LIB_NAME} PRIVATE ${LUA_INCLUDE_DIR})
-  target_link_libraries(${LIB_NAME} PRIVATE ${LUA_LIBRARIES})
+
+  find_path(LUAJIT_INCLUDE_DIR luajit/lua.hpp)
+  
+  if(DARMOK_BUILD_LUAJIT AND LUAJIT_INCLUDE_DIR)
+    set(LUAJIT_INCLUDE_DIR "${LUAJIT_INCLUDE_DIR}/luajit")
+    find_library(LUAJIT_LIBRARY NAMES lua51 lua)
+    target_include_directories(${LIB_NAME} PRIVATE ${LUAJIT_INCLUDE_DIR})
+    target_link_libraries(${LIB_NAME} PRIVATE ${LUAJIT_LIBRARY})
+    set(SOL2_LUA_VERSION "LuaJIT")
+    target_compile_definitions(${LIB_NAME} PUBLIC DARMOK_LUAJIT)
+  else()
+    # normal lua
+    find_package(Lua REQUIRED)
+    target_include_directories(${LIB_NAME} PRIVATE ${LUA_INCLUDE_DIR})
+    target_link_libraries(${LIB_NAME} PRIVATE ${LUA_LIBRARIES})
+  endif()
 
   # luasocket
   if(UNIX)
@@ -760,9 +775,7 @@ if(DARMOK_BUILD_LUA)
     find_library(LUASOCKET_SOCKET_LIB socket.core.a)  
     find_library(LUASOCKET_SOCKET_UNIX_LIB socket.unix.a)  
     target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB} ${LUASOCKET_SOCKET_UNIX_LIB})
-  endif()
-
-  if(WIN32)
+  elseif(WIN32)
     find_library(LUASOCKET_MIME_LIB mime.core)
     find_library(LUASOCKET_SOCKET_LIB socket.core)  
     target_link_libraries(${LIB_NAME} PRIVATE ${LUASOCKET_MIME_LIB} ${LUASOCKET_SOCKET_LIB})
@@ -782,22 +795,19 @@ if(DARMOK_BUILD_LUA)
 
   string(REPLACE ";" "," LUA_PATH_DEFINE "${VCPKG_LUA_PATH}")
   string(REPLACE ";" "," LUA_CPATH_DEFINE "${VCPKG_LUA_CPATH}")
+
   target_compile_definitions(${LIB_NAME} PRIVATE
     $<$<CONFIG:Debug>:LUA_PATH=${LUA_PATH_DEFINE}>
     $<$<CONFIG:Debug>:LUA_CPATH=${LUA_CPATH_DEFINE}>
-  )
-
-  # TODO: check how to use luajit
-  #find_package(LuaJit REQUIRED)
-  #target_include_directories(main PRIVATE ${LUAJIT_INCLUDE_DIR})
-  #target_link_libraries(main PRIVATE ${LUAJIT_LIBRARIES})
+  )  
 
   find_package(sol2 CONFIG REQUIRED)
-  set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
+  # set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
   find_path(SOL2_INCLUDE_DIRS "sol/abort.hpp")
   target_include_directories(${LIB_NAME} PRIVATE ${SOL2_INCLUDE_DIRS})
   target_compile_definitions(${LIB_NAME} PRIVATE ${SOL_DEFINES})
   list(APPEND VCPKG_MANIFEST_FEATURES "lua")
+
 endif()
 
 if(DARMOK_BUILD_LUA_EXE)
