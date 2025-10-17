@@ -6,6 +6,7 @@
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/shape_serialize.hpp>
 #include <entt/entt.hpp>
 
 namespace darmok
@@ -37,7 +38,9 @@ namespace darmok
 
 		LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition")
 			.protobufProperty<protobuf::VertexLayout>("layout")
-			.protobufProperty<protobuf::BoundingBox>("bounds");
+			.convertProtobufProperty<BoundingBox, protobuf::BoundingBox>("bounds",
+				[](const protobuf::BoundingBox& proto) { return protobuf::convert(proto); },
+				[](const BoundingBox& bounds) { return protobuf::convert(bounds); });
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<

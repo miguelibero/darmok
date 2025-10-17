@@ -16,5 +16,6 @@ namespace darmok
 		static void bindGlmIvec(sol::state_view& lua) noexcept;
 		static void bindGlmQuat(sol::state_view& lua) noexcept;
 		static void bindColor(sol::state_view& lua) noexcept;
+		static void bindProtobuf(sol::state_view& lua) noexcept;
 	};
 }

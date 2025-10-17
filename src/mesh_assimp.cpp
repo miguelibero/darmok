@@ -88,10 +88,6 @@ namespace darmok
             }
         }
 
-        auto& bounds = *_def.mutable_bounds();
-        *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mAABB.mMin));
-        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mAABB.mMax));
-
         return {};
     }
 

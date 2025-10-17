@@ -58,8 +58,7 @@ namespace darmok::physics3d
 
     void LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime)
     {
-        static const std::string desc = "running fixed updater";
-        LuaUtils::checkResult(desc, _delegate(fixedDeltaTime));
+        LuaUtils::throwResult(_delegate(fixedDeltaTime), "running fixed updater");
     }
 
     LuaPhysicsUpdaterFilter::LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept

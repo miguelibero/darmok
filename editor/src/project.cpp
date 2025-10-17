@@ -46,7 +46,7 @@ namespace darmok::editor
         {
 			return unexpected{ result.error() };
         }
-        _sceneConverter.setAssetPackConfig({
+        _sceneLoader.setAssetPackConfig({
             .programCompilerConfig = progCompilerConfig,
             .fallback = _app.getAssets(),
         });
@@ -72,7 +72,7 @@ namespace darmok::editor
         auto result = protobuf::write(_sceneDef, _path);
         if (!result)
         {
-            StreamUtils::logDebug("error writing scene: " + result.error());
+            StreamUtils::log("error writing scene: " + result.error());
         }
     }
 
@@ -128,7 +128,7 @@ namespace darmok::editor
             auto exportResult = doExportScene(result.front());
             if (!exportResult)
             {
-                StreamUtils::logDebug(exportResult.error());
+                StreamUtils::log(exportResult.error());
             }
         };
 
@@ -227,7 +227,7 @@ namespace darmok::editor
             _app.addAssetsBasePath(_path.parent_path());
         }
 
-        auto result = _sceneConverter(_sceneDef, *_scene);
+        auto result = _sceneLoader(_sceneDef, *_scene);
         if (result)
         {
             _app.getOrAddComponent<SceneAppComponent>().update(0.f);
@@ -244,7 +244,7 @@ namespace darmok::editor
         auto result = protobuf::read(_sceneDef, _path);
         if (!result)
         {
-            StreamUtils::logDebug("error reading scene: " + result.error());
+            StreamUtils::log("error reading scene: " + result.error());
             return result;
         }
         updateScene();
@@ -308,17 +308,17 @@ namespace darmok::editor
 
     IComponentLoadContext& EditorProject::getComponentLoadContext()
     {
-        return _sceneConverter.getComponentLoadContext();
+        return _sceneLoader.getComponentLoadContext();
     }
 
     const IComponentLoadContext& EditorProject::getComponentLoadContext() const
     {
-        return _sceneConverter.getComponentLoadContext();
+        return _sceneLoader.getComponentLoadContext();
     }
 
     AssetPack& EditorProject::getAssets()
     {
-		return _sceneConverter.getAssetPack();
+		return _sceneLoader.getAssetPack();
     }
 
     void EditorProject::configureEditorScene(Scene& scene)

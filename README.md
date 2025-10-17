@@ -125,7 +125,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * bloom
     * deferred, clustered
     * SSAO
-* luajit support (maybe compile using importer)
 * text improvements
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support

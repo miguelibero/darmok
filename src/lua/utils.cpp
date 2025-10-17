@@ -31,14 +31,19 @@ namespace darmok
 			ss << "recovered lua error " << desc << ":" << std::endl;
 			ss << err.what() << std::endl;
 
-			StreamUtils::logDebug(ss.str(), true);
+			StreamUtils::log(ss.str(), true);
+		}
+
+		void setupErrorHandler(sol::state_view lua, sol::function& func) noexcept
+		{
+			func.set_error_handler(lua.safe_script("return function(err) return debug.traceback(err, 2) end"));
 		}
 
 		bool checkResult(std::string_view desc, const sol::protected_function_result& result) noexcept
 		{
 			if (!result.valid())
 			{
-				logError(desc, result);
+				throwResult(result, desc);
 				return false;
 			}
 			sol::object obj = result;
@@ -47,6 +52,19 @@ namespace darmok
 				return obj.as<bool>();
 			}
 			return obj != sol::nil;
+		}
+
+		void throwResult(const sol::protected_function_result& result, std::string_view prefix)
+		{
+			if (!result.valid())
+			{
+				sol::error err = result;
+				if(!prefix.empty())
+				{
+					err = sol::error{ std::string{prefix} + err.what() };
+				}
+				throw err;
+			}
 		}
 
 		entt::id_type ptrTypeId(const void* ptr) noexcept

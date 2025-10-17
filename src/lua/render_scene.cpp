@@ -46,9 +46,7 @@ namespace darmok
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Renderable::Definition>(lua, "Renderable")
-			.protobufProperty<Mesh::Definition>("mesh")
-			.protobufProperty<Material::Definition>("material");
+		LuaUtils::newProtobuf<Renderable::Definition>(lua, "RenderableDefinition");
 
 		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Renderable>::value),

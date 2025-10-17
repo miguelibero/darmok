@@ -440,7 +440,7 @@ namespace darmok
 			break;
 		}
 		out << ": " << ex.what();
-		StreamUtils::logDebug(out.str());
+		StreamUtils::log(out.str());
 	}
 
 	void AppImpl::update(float deltaTime)

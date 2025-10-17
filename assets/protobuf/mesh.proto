@@ -48,7 +48,6 @@ message DataMeshSource {
     repeated Vertex vertices = 1;
     repeated uint32 indices = 2;
     repeated Bone bones = 3;
-    BoundingBox bounds = 4;
     bool has_tangents = 5;
 }
 

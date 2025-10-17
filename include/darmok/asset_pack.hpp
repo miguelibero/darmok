@@ -68,7 +68,6 @@ namespace darmok
 		[[nodiscard]] IMaterialFromDefinitionLoader& getMaterialLoader() noexcept override;
 		[[nodiscard]] IArmatureFromDefinitionLoader& getArmatureLoader() noexcept override;
 		[[nodiscard]] ITextureAtlasFromDefinitionLoader& getTextureAtlasLoader() noexcept override;
-		[[nodiscard]] ISceneLoader& getSceneLoader() noexcept override;
 		[[nodiscard]] ISceneDefinitionLoader& getSceneDefinitionLoader() noexcept override;
 		[[nodiscard]] IFontLoader& getFontLoader() noexcept override;
 		[[nodiscard]] ISkeletonLoader& getSkeletonLoader() noexcept override;
@@ -120,6 +119,5 @@ namespace darmok
 		MeshLoader _meshLoader;
 		MaterialLoader _materialLoader;
 		ArmatureLoader _armatureLoader;
-		SceneLoader _sceneLoader;
 	};
 }

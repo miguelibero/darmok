@@ -15,16 +15,17 @@
 
 namespace darmok
 {
-    class SceneConverterImpl final : public IComponentLoadContext
+    class SceneLoaderImpl final : public IComponentLoadContext
     {
     public:
-        using Result = SceneConverter::Result;
-        using LoadFunction = SceneConverter::LoadFunction;
-        using ComponentData = SceneConverter::ComponentData;
-        using Message = SceneConverter::Message;
+        using Result = SceneLoader::Result;
+        using EntityResult = SceneLoader::EntityResult;
+        using LoadFunction = SceneLoader::LoadFunction;
+        using ComponentData = SceneLoader::ComponentData;
+        using Message = SceneLoader::Message;
         using SceneDefinition = protobuf::Scene;
 
-        SceneConverterImpl() noexcept;
+        SceneLoaderImpl() noexcept;
 
         // IComponentLoadContext
         IAssetContext& getAssets() noexcept override;
@@ -32,8 +33,8 @@ namespace darmok
         Scene& getScene() noexcept override;
         Entity getEntity(EntityId entityId) const noexcept override;
 
-        // SceneConverter
-        Result load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
+        // SceneLoader
+        EntityResult load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
         

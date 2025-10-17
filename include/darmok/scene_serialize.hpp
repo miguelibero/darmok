@@ -221,15 +221,13 @@ namespace darmok
         virtual Result operator()(Scene& scene, Argument arg) = 0;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE ISceneLoader : public IBasicSceneLoader<std::filesystem::path>{};
-
-    class SceneConverterImpl;
-
     struct SceneConverterComponentData
     {
         EntityId entityId;
         OptionalRef<const google::protobuf::Any> any;
     };
+
+    class SceneLoaderImpl;
 
     class SceneArchive final
     {
@@ -239,7 +237,7 @@ namespace darmok
         using ComponentData = SceneConverterComponentData;
         using Message = protobuf::Message;
 
-        SceneArchive(SceneConverterImpl& impl) noexcept;
+        SceneArchive(SceneLoaderImpl& impl) noexcept;
 
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
@@ -278,7 +276,7 @@ namespace darmok
             addPostLoad(std::move(func));
         }
     private:
-        SceneConverterImpl& _impl;
+        SceneLoaderImpl& _impl;
 
         Entity getEntity(EntityId entityId) const noexcept;
         Scene& getScene() noexcept;
@@ -289,19 +287,20 @@ namespace darmok
         void callComponentListeners(const Message& def, Entity entity) noexcept;
     };
 
-    class SceneConverter final
+    class SceneLoader final
     {
     public:
+        using EntityResult = expected<Entity, std::string>;
         using Result = expected<void, std::string>;
         using LoadFunction = std::function<Result()>;
 		using SceneDefinition = protobuf::Scene;
         using ComponentData = SceneConverterComponentData;
         using Message = protobuf::Message;
 
-        SceneConverter() noexcept;
-        ~SceneConverter() noexcept;
-		SceneConverter(const SceneConverter& other) = delete;
-		SceneConverter& operator=(const SceneConverter& other) = delete;
+        SceneLoader() noexcept;
+        ~SceneLoader() noexcept;
+        SceneLoader(const SceneLoader& other) = delete;
+        SceneLoader& operator=(const SceneLoader& other) = delete;
 
         template<typename T>
         void registerComponent()
@@ -313,18 +312,18 @@ namespace darmok
             addLoad(std::move(func));
         }
 
-        Result operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
+        EntityResult operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
 
         IComponentLoadContext& getComponentLoadContext() noexcept;
         const IComponentLoadContext& getComponentLoadContext() const noexcept;
         AssetPack& getAssetPack() noexcept;
         const AssetPack& getAssetPack() const noexcept;
 
-        SceneConverter& setParent(Entity entity) noexcept;
-        SceneConverter& setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
+        SceneLoader& setParent(Entity entity) noexcept;
+        SceneLoader& setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
 
         template<typename T>
-        SceneConverter& addComponentListener(std::function<void(const typename T::Definition&, Entity)>&& func) noexcept
+        SceneLoader& addComponentListener(std::function<void(const typename T::Definition&, Entity)>&& func) noexcept
         {
             auto typeId = protobuf::getTypeId<typename T::Definition>();
             return addComponentListener([typeId, func = std::move(func)](const Message& def, Entity entity)
@@ -336,10 +335,10 @@ namespace darmok
             });
         }
 
-        SceneConverter& addComponentListener(std::function<void(const Message& def, Entity entity)>&& func);
+        SceneLoader& addComponentListener(std::function<void(const Message& def, Entity entity)>&& func);
 
     private:
-		std::unique_ptr<SceneConverterImpl> _impl;
+		std::unique_ptr<SceneLoaderImpl> _impl;
         SceneArchive _archive;
 
         template<typename T>
@@ -361,17 +360,6 @@ namespace darmok
         Result afterLoadComponent(IdType typeId) noexcept;
 		entt::continuous_loader& getLoader() noexcept;
         SceneArchive& getArchive() noexcept;
-    };
-
-    class DARMOK_EXPORT SceneLoader final : public ISceneLoader
-    {
-    public:
-        SceneLoader(ISceneDefinitionLoader& defLoader, const AssetPackConfig& assetConfig);
-        Result operator()(Scene& scene, std::filesystem::path path);
-
-    private:
-        ISceneDefinitionLoader& _defLoader;
-        SceneConverter _converter;
     };
 
     struct DARMOK_EXPORT SceneDefinitionCompilerConfig final

@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cstdio>
 #include <array>
+#include <fstream>
 
 #ifdef _MSC_VER
 #include <io.h>
@@ -144,7 +145,12 @@ namespace darmok
 #else
         mkstemp(&data.front());
 #endif
-        return &data.front();
+        path = &data.front();
+        if (!std::filesystem::exists(path))
+        {
+            std::ofstream{ path }.close();
+        }
+        return path;
     }
 
     entt::id_type getPtrId(const void* ptr) noexcept

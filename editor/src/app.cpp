@@ -555,13 +555,13 @@ namespace darmok::editor
         auto inspectorResult = _inspectorView.render();
         if (!inspectorResult)
         {
-			StreamUtils::logDebug("failed to render inspector: " + inspectorResult.error());
+			StreamUtils::log("failed to render inspector: " + inspectorResult.error());
         }
 
         auto projResult = _proj.render();
         if (!projResult)
         {
-            StreamUtils::logDebug("failed to render project: " + projResult.error());
+            StreamUtils::log("failed to render project: " + projResult.error());
         }
         _sceneView.render();
         _assetsView.render();

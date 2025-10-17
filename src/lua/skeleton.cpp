@@ -24,6 +24,32 @@ namespace darmok
         );
     }
 
+    void LuaSkinnable::bind(sol::state_view& lua) noexcept
+    {
+        lua.new_usertype<Skinnable>("Skinnable", sol::no_constructor,
+            "type_id", sol::property(&entt::type_hash<Skinnable>::value),
+            "add_entity_component", &LuaSkinnable::addEntityComponent,
+            "get_entity_component", &LuaSkinnable::getEntityComponent,
+            "get_entity", &LuaSkinnable::getEntity,
+            "armature", sol::property(&Skinnable::getArmature, &Skinnable::setArmature)
+        );
+    }
+
+    Skinnable& LuaSkinnable::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Armature>& armature) noexcept
+    {
+        return entity.addComponent<Skinnable>(armature);
+    }
+
+    OptionalRef<Skinnable>::std_t LuaSkinnable::getEntityComponent(LuaEntity& entity) noexcept
+    {
+        return entity.getComponent<Skinnable>();
+    }
+
+    std::optional<LuaEntity> LuaSkinnable::getEntity(const Skinnable& skinnable, const std::shared_ptr<Scene>& scene) noexcept
+    {
+        return LuaScene::getEntity(scene, skinnable);
+    }
+
     SkeletalAnimator& LuaSkeletalAnimator::addEntityComponent(LuaEntity& entity, const std::shared_ptr<Skeleton>& skel, const sol::table& anims, const Definition& def) noexcept
     {
         SkeletalAnimator::AnimationMap animsMap;

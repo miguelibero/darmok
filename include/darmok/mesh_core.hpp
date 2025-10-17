@@ -236,9 +236,13 @@ namespace darmok
         bool empty() const noexcept;
         void clear() noexcept;
 
+        MeshData& setName(std::string_view name) noexcept;
+		[[nodiscard]] const std::string& getName() const noexcept;
+
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
         [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] Mesh createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
+        [[nodiscard]] std::shared_ptr<Mesh::Definition> createSharedDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] std::shared_ptr<Mesh> createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
@@ -250,6 +254,7 @@ namespace darmok
 
     private:
         static const std::vector<Index> _cuboidTriangleIndices;
+        std::string _name;
 
         bool doSubdivide(size_t i, float maxDistance = std::numeric_limits<float>::infinity()) noexcept;
         static void doCreateIndices(std::vector<Index>& indices, size_t size) noexcept;

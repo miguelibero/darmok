@@ -24,7 +24,6 @@ namespace darmok
 		, _meshLoader{ _multiMeshDefLoader }
 		, _materialLoader{ _matDefLoader, _multiProgramLoader, _multiTextureLoader }
 		, _armatureLoader{ _armDefLoader }
-		, _sceneLoader{ _sceneDefLoader, config }
 		, _multiProgramDefLoader{ _progDefLoader, _progDefFromSrcLoader }
 		, _multiTextureDefLoader{ _texDefLoader, _texDefFromSrcLoader }
 		, _multiMeshDefLoader{ _meshDefLoader, _meshDefFromSrcLoader }
@@ -84,11 +83,6 @@ namespace darmok
 	ITextureAtlasFromDefinitionLoader& AssetPack::getTextureAtlasLoader() noexcept
 	{
 		return _multiTexAtlasLoader;
-	}
-
-	ISceneLoader& AssetPack::getSceneLoader() noexcept
-	{
-		return _sceneLoader;
 	}
 
 	ISceneDefinitionLoader& AssetPack::getSceneDefinitionLoader() noexcept

@@ -3,54 +3,63 @@
 #include <darmok/scene_serialize.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/asset_pack.hpp>
+#include <darmok/stream.hpp>
 
 namespace darmok
 {
-	LuaSceneConverter::LuaSceneConverter()
-		: _converter{ std::make_unique<SceneConverter>() }
+	LuaSceneLoader::LuaSceneLoader()
+		: _loader{ std::make_unique<SceneLoader>() }
 	{
 	}
 
-	LuaSceneConverter::LuaSceneConverter(AssetContext& assets)
-		: LuaSceneConverter()
+	LuaSceneLoader::LuaSceneLoader(AssetContext& assets)
+		: LuaSceneLoader()
 	{
-		_converter->setAssetPackConfig({
+		_loader->setAssetPackConfig({
 			.fallback = assets
 		});
 	}
 
-	LuaSceneConverter::~LuaSceneConverter() = default;
+	LuaSceneLoader::~LuaSceneLoader() = default;
 
-	void LuaSceneConverter::bind(sol::state_view& lua) noexcept
+	void LuaSceneLoader::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<LuaSceneConverter>("SceneConverter", sol::constructors<
-			LuaSceneConverter(), LuaSceneConverter(AssetContext&)>(),
-			"parent", sol::property(&LuaSceneConverter::setParent),
-			"renderable_setup", sol::property(&LuaSceneConverter::setRenderableSetup),
-			sol::meta_function::call, &LuaSceneConverter::run
+		lua.new_usertype<LuaSceneLoader>("SceneLoader", sol::constructors<
+			LuaSceneLoader(), LuaSceneLoader(AssetContext&)>(),
+			"parent", sol::property(&LuaSceneLoader::setParent),
+			"renderable_setup", sol::property(&LuaSceneLoader::setRenderableSetup),
+			"asset_pack", sol::property(&LuaSceneLoader::getAssetPack),
+			sol::meta_function::call, &LuaSceneLoader::run
 		);
 	}
 
-	void LuaSceneConverter::setParent(const LuaEntity& entity)
+	AssetPack& LuaSceneLoader::getAssetPack()
 	{
-		_converter->setParent(entity.getReal());
+		return _loader->getAssetPack();
 	}
 
-	void LuaSceneConverter::setRenderableSetup(const sol::function& func)
+	void LuaSceneLoader::setParent(const LuaEntity& entity)
 	{
-		_converter->addComponentListener<Renderable>([this, func](const Renderable::Definition& def, Entity entity)
+		_loader->setParent(entity.getReal());
+	}
+
+	void LuaSceneLoader::setRenderableSetup(const sol::function& func)
+	{
+		_loader->addComponentListener<Renderable>([this, func](const Renderable::Definition& def, Entity entity)
 		{
-			func(def, LuaEntity{ entity, _scene });
+			auto result = func(def, LuaEntity{ entity, _scene });
+			LuaUtils::throwResult(result, "renderable setup callback");
 		});
 	}
 
-	void LuaSceneConverter::run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene)
+	LuaEntity LuaSceneLoader::run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene)
 	{
 		_scene = scene;
-		auto result = (*_converter)(sceneDef, *scene);
+		auto result = (*_loader)(sceneDef, *scene);
 		if (!result)
 		{
-			throw std::runtime_error{ result.error() };
+			throw sol::error{ result.error() };
 		}
+		return { result.value(), scene };
 	}
 }

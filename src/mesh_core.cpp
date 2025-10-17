@@ -348,6 +348,17 @@ namespace darmok
 		indices.clear();
 	}
 
+	MeshData& MeshData::setName(std::string_view name) noexcept
+	{
+		_name = name;
+		return *this;
+	}
+
+	const std::string& MeshData::getName() const noexcept
+	{
+		return _name;
+	}
+
 	void MeshData::exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept
 	{
 		VertexDataWriter writer{ vertexLayout, static_cast<uint32_t>(vertices.size()) };
@@ -395,6 +406,7 @@ namespace darmok
 	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
 	{
 		Mesh::Definition def;
+		def.set_name(_name);
 		def.set_type(type);
 		def.set_index32(config.index32);
 
@@ -414,7 +426,12 @@ namespace darmok
 		return createDefinition(vertexLayout, config);
 	}
 
-	[[nodiscard]] std::shared_ptr<Mesh> MeshData::createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	std::shared_ptr<Mesh::Definition> MeshData::createSharedDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	{
+		return std::make_shared<Mesh::Definition>(createDefinition(vertexLayout, config));
+	}
+
+	std::shared_ptr<Mesh> MeshData::createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
 	{
 		return std::make_shared<Mesh>(createDefinition(vertexLayout, config));
 	}
@@ -903,6 +920,7 @@ namespace darmok
 	}
 
 	MeshData::MeshData(const Definition& def) noexcept
+		: _name{ def.name() }
 	{
 		if (def.has_sphere())
 		{

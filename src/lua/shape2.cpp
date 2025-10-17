@@ -1,5 +1,6 @@
 #include "lua/shape.hpp"
 #include "lua/glm.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/shape.hpp>
 
 namespace darmok
@@ -56,6 +57,10 @@ namespace darmok
 
 	void LuaShape::bindBoundingBox(sol::state_view& lua) noexcept
 	{
+		LuaUtils::newProtobuf<BoundingBox::Definition>(lua, "BoundingBoxDefinition")
+			.protobufProperty<protobuf::Vec2>("min")
+			.protobufProperty<protobuf::Vec2>("max");
+
 		lua.new_usertype<BoundingBox>("BoundingBox",
 			sol::factories(
 				[]() { return BoundingBox(); },

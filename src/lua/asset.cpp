@@ -5,6 +5,7 @@
 #include "lua/texture.hpp"
 #include "lua/material.hpp"
 #include "lua/skeleton.hpp"
+#include "lua/asset_pack.hpp"
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
@@ -17,61 +18,57 @@
 
 namespace darmok
 {	
-	std::shared_ptr<Program> LuaAssets::loadProgram(AssetContext& assets, const std::string& path)
+	std::shared_ptr<Program> LuaAssetContext::loadProgram(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getProgramLoader()(path).value();
 	}
 
-	std::shared_ptr<Texture> LuaAssets::loadTexture(AssetContext& assets, const std::string& path)
+	std::shared_ptr<Texture> LuaAssetContext::loadTexture(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getTextureLoader()(path).value();
 	}
 
-	std::shared_ptr<TextureAtlas> LuaAssets::loadTextureAtlas(AssetContext& assets, const std::string& path)
+	std::shared_ptr<TextureAtlas> LuaAssetContext::loadTextureAtlas(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getTextureAtlasLoader()(path).value();
 	}
 
-	std::shared_ptr<Sound> LuaAssets::loadSound(AssetContext& assets, const std::string& path)
+	std::shared_ptr<MeshDefinition> LuaAssetContext::loadMeshDefinition(IAssetContext& assets, const std::string& path)
+	{
+		return assets.getMeshLoader().loadDefinition(path).value();
+	}
+
+	std::shared_ptr<Sound> LuaAssetContext::loadSound(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getSoundLoader()(path).value();
 	}
 
-	std::shared_ptr<Music> LuaAssets::loadMusic(AssetContext& assets, const std::string& path)
+	std::shared_ptr<Music> LuaAssetContext::loadMusic(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getMusicLoader()(path).value();
 	}
 
-	std::shared_ptr<protobuf::Scene> LuaAssets::loadSceneDefinition(AssetContext& assets, const std::string& path)
+	std::shared_ptr<protobuf::Scene> LuaAssetContext::loadSceneDefinition(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getSceneDefinitionLoader()(path).value();
 	}
 
-	void LuaAssets::loadScene(AssetContext& assets, Scene& scene, const std::string& path)
-	{
-		auto result = assets.getSceneLoader()(scene, path);
-		if (!result)
-		{
-			throw std::runtime_error{ "Failed to load scene: " + result.error() };
-		}
-	}
-
-	std::shared_ptr<Skeleton> LuaAssets::loadSkeleton(AssetContext& assets, const std::string& path)
+	std::shared_ptr<Skeleton> LuaAssetContext::loadSkeleton(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getSkeletonLoader()(path).value();
 	}
 
-	std::shared_ptr<SkeletalAnimation> LuaAssets::loadSkeletalAnimation(AssetContext& assets, const std::string& path)
+	std::shared_ptr<SkeletalAnimation> LuaAssetContext::loadSkeletalAnimation(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getSkeletalAnimationLoader()(path).value();
 	}
 
-	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssets::loadSkeletalAnimatorDefinition(AssetContext& assets, const std::string& path)
+	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssetContext::loadSkeletalAnimatorDefinition(IAssetContext& assets, const std::string& path)
 	{
 		return assets.getSkeletalAnimatorDefinitionLoader()(path).value();
 	}
 
-	sol::table LuaAssets::loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts)
+	sol::table LuaAssetContext::loadSkeletalAnimations(IAssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts)
 	{
 		sol::table t = sol::state_view{ ts }.create_table();
 		auto map = ConstSkeletalAnimatorDefinitionWrapper{ def }.loadAnimations(assets.getSkeletalAnimationLoader());
@@ -82,7 +79,7 @@ namespace darmok
 		return t;
 	}
 
-	void LuaAssets::bind(sol::state_view& lua) noexcept
+	void LuaAssetContext::bind(sol::state_view& lua) noexcept
 	{
 		LuaProgram::bind(lua);
 		LuaTexture::bind(lua);
@@ -91,19 +88,26 @@ namespace darmok
 		LuaMesh::bind(lua);
 		LuaSkeleton::bind(lua);
 
-		lua.new_usertype<AssetContext>("Assets", sol::no_constructor,
-			"load_model", &LuaAssets::loadSceneDefinition,
-			"load_scene_definition", &LuaAssets::loadSceneDefinition,
-			"load_scene", &LuaAssets::loadScene,
-			"load_program", &LuaAssets::loadProgram,
-			"load_texture", &LuaAssets::loadTexture,
-			"load_texture_atlas", &LuaAssets::loadTextureAtlas,
-			"load_sound", &LuaAssets::loadSound,
-			"load_music", &LuaAssets::loadMusic,
-			"load_skeleton", &LuaAssets::loadSkeleton,
-			"load_skeletal_animation", &LuaAssets::loadSkeletalAnimation,
-			"load_skeletal_animator_definition", &LuaAssets::loadSkeletalAnimatorDefinition,
-			"load_skeletal_animations", &LuaAssets::loadSkeletalAnimations
+		lua.new_usertype<IAssetContext>("IAssetContext", sol::no_constructor,
+			"load_program", &LuaAssetContext::loadProgram,
+			"load_texture", &LuaAssetContext::loadTexture,
+			"load_texture_atlas", &LuaAssetContext::loadTextureAtlas,
+			"load_mesh_definition", &LuaAssetContext::loadMeshDefinition,
+			"load_sound", &LuaAssetContext::loadSound,
+			"load_music", &LuaAssetContext::loadMusic,
+			"load_model", &LuaAssetContext::loadSceneDefinition,
+			"load_scene_definition", &LuaAssetContext::loadSceneDefinition,
+			"load_skeleton", &LuaAssetContext::loadSkeleton,
+			"load_skeletal_animation", &LuaAssetContext::loadSkeletalAnimation,
+			"load_skeletal_animator_definition", &LuaAssetContext::loadSkeletalAnimatorDefinition,
+			"load_skeletal_animations", &LuaAssetContext::loadSkeletalAnimations
+		);
+
+		LuaAssetPack::bind(lua);
+
+		lua.new_usertype<AssetContext>(
+			"AssetContext", sol::no_constructor,
+			sol::base_classes, sol::bases<IAssetContext>()
 		);
 	}
 }

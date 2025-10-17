@@ -46,7 +46,7 @@ namespace darmok::editor
         App& _app;
         OptionalRef<Camera> _cam;
         std::shared_ptr<Scene> _scene;
-		SceneConverter _sceneConverter;
+		SceneLoader _sceneLoader;
         bool _requestUpdateScene;
 
         using SceneDefinition = protobuf::Scene;

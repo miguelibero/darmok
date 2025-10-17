@@ -154,7 +154,7 @@ namespace darmok
 
 	void LuaApp::bind(sol::state_view& lua) noexcept
 	{
-		LuaAssets::bind(lua);
+		LuaAssetContext::bind(lua);
 		LuaWindow::bind(lua);
 		LuaInput::bind(lua);
 		LuaAudioSystem::bind(lua);
@@ -267,12 +267,11 @@ namespace darmok
 
 	static void luaPrint(sol::variadic_args args) noexcept
 	{
-		std::ostringstream oss;
-		for (auto arg : args)
-		{
-			oss << arg.as<std::string>() << " ";
-		}
-		StreamUtils::logDebug(oss.str());
+		std::vector<std::string> strArgs;
+		strArgs.reserve(args.size());
+		std::transform(args.begin(), args.end(), std::back_inserter(strArgs),
+			[](const auto& arg) { return arg.as<std::string>(); });
+		StreamUtils::log(StringUtils::join(", ", strArgs) + "\n");
 	}
 
 	void LuaAppDelegateImpl::luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept
@@ -328,15 +327,14 @@ namespace darmok
 			sol::lib::base, sol::lib::package, sol::lib::io,
 			sol::lib::table, sol::lib::string, sol::lib::coroutine,
 			sol::lib::math, sol::lib::os
-		);
+
 #ifdef DARMOK_LUAJIT
-		lua.open_libraries(
-			sol::lib::ffi, sol::lib::jit
-		);
+			, sol::lib::ffi, sol::lib::jit, sol::lib::bit32
 #endif
 #ifndef _NDEBUG
-		lua.open_libraries(sol::lib::debug);
+			, sol::lib::debug
 #endif
+			);
 
 		auto addStaticLib = [&lua](auto& lib, const std::string& name, bool require = false)
 		{
@@ -390,11 +388,10 @@ namespace darmok
 		addPackagePath(STR(LUA_CPATH), true);
 #endif
 
-		auto result = lua.script_file(mainPath.string());
+		auto result = lua.safe_script_file(mainPath.string());
 		if (!result.valid())
 		{
-			LuaUtils::logError("running main", result);
-			throw LuaError("running lua main", result);
+			throw LuaError("running main", result);
 		}
 		auto relm = result[0];
 		if (relm.is<int>())
@@ -489,10 +486,10 @@ namespace darmok
 		sol::protected_function init = lua["init"];
 		if (init)
 		{
+			LuaUtils::setupErrorHandler(lua, init);
 			auto result = init();
 			if (!result.valid())
 			{
-				LuaUtils::logError("running init", result);
 				throw LuaError{ "running init", result };
 			}
 		}
@@ -537,7 +534,6 @@ namespace darmok
 			auto result = shutdown();
 			if (!result.valid())
 			{
-				LuaUtils::logError("running shutown", result);
 				throw LuaError("running shutown", result);
 			}
 		}

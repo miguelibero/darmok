@@ -740,7 +740,7 @@ namespace darmok
 				ext = getTextureFormatExt(textureFormatNode.node().text().as_string());
 			}
 
-			texturePath = basePath / (texturePath.stem().string() + ext);
+			texturePath = basePath / (sheetPath.stem().string() + ext);
 		}
 
 		effect.outputs.emplace_back(sheetPath, false);
@@ -824,7 +824,7 @@ namespace darmok
 				return unexpected{ xmlResult.description() };
 			}
 			TextureAtlas::Definition atlasDef;
-			auto basePath = input.path.parent_path();
+			auto basePath = input.getRelativePath().parent_path();
 			auto texPackResult = TextureAtlasUtils::readTexturePacker(atlasDef, doc, basePath);
 			if (!texPackResult)
 			{

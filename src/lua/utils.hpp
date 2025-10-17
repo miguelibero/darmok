@@ -16,17 +16,15 @@ namespace darmok
     namespace LuaUtils
     {
         bool isArray(const sol::table& table)  noexcept;
-
         void logError(std::string_view desc, const sol::error& err) noexcept;
-
+        void setupErrorHandler(sol::state_view lua, sol::function& func) noexcept;
         bool checkResult(std::string_view desc, const sol::protected_function_result& result) noexcept;
-
+        void throwResult(const sol::protected_function_result& result, std::string_view prefix = "");
         std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
-
         int deny(lua_State* L);
 
         template<typename T>
-        void newEnum(sol::state_view& lua, std::string_view name = {}, bool stringValues = false)
+        void newEnum(sol::state_view lua, std::string_view name = {}, bool stringValues = false)
         {
             if (name.empty())
             {
@@ -66,9 +64,7 @@ namespace darmok
                 return sol::object{ table.lua_state(), true };
             }
             sol::protected_function func = elm;
-            auto result = func(table, std::forward<Args>(args)...);
-            LuaUtils::checkResult(_desc, result);
-            return result;
+            return func(table, std::forward<Args>(args)...);
         }
 
         template<typename T, typename... Args>

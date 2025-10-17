@@ -2,26 +2,18 @@
 
 #include "lua/lua.hpp"
 
-#include <darmok/color.hpp>
-#include <darmok/optional_ref.hpp>
-
 #include <string>
 #include <memory>
-#include <unordered_map>
 #include <filesystem>
 
 namespace darmok
 {
-	class AssetContext;
-	struct Model;
-	struct AssimpModelImportConfig;
+	class IAssetContext;
 	class Program;
 	class Texture;
 	class TextureAtlas;
 	class Skeleton;
 	class SkeletalAnimation;
-	class Scene;
-	
 	class Sound;
 	class Music;
 
@@ -29,28 +21,29 @@ namespace darmok
 	{
 		class Scene;
 		class SkeletalAnimator;
+		class Mesh;
 	}
 	using SkeletalAnimatorDefinition = protobuf::SkeletalAnimator;
+	using MeshDefinition = protobuf::Mesh;
 
-	class LuaAssets final
+	class LuaAssetContext final
 	{
 	public:
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		static std::shared_ptr<Program> loadProgram(AssetContext& assets, const std::string& path);
+		static std::shared_ptr<Program> loadProgram(IAssetContext& assets, const std::string& path);
+		static std::shared_ptr<Texture> loadTexture(IAssetContext& assets, const std::string& path);
+		static std::shared_ptr<TextureAtlas> loadTextureAtlas(IAssetContext& assets, const std::string& path);
+		static std::shared_ptr<MeshDefinition> loadMeshDefinition(IAssetContext& assets, const std::string& path);
 
-		static std::shared_ptr<Texture> loadTexture(AssetContext& assets, const std::string& path);
-		static std::shared_ptr<TextureAtlas> loadTextureAtlas(AssetContext& assets, const std::string& path);
+		static std::shared_ptr<Sound> loadSound(IAssetContext& assets, const std::string& path);
+		static std::shared_ptr<Music> loadMusic(IAssetContext& assets, const std::string& path);
 
-		static std::shared_ptr<Sound> loadSound(AssetContext& assets, const std::string& path);
-		static std::shared_ptr<Music> loadMusic(AssetContext& assets, const std::string& path);
+		static std::shared_ptr<protobuf::Scene> loadSceneDefinition(IAssetContext& assets, const std::string& path);
 
-		static std::shared_ptr<protobuf::Scene> loadSceneDefinition(AssetContext& assets, const std::string& path);
-		static void loadScene(AssetContext& assets, Scene& scene, const std::string& path);
-
-		static std::shared_ptr<Skeleton> loadSkeleton(AssetContext& assets, const std::string& pathe);
-		static std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(AssetContext& assets, const std::string& path);
-		static std::shared_ptr<SkeletalAnimatorDefinition> loadSkeletalAnimatorDefinition(AssetContext& assets, const std::string& path);
-		static sol::table loadSkeletalAnimations(AssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts);
+		static std::shared_ptr<Skeleton> loadSkeleton(IAssetContext& assets, const std::string& pathe);
+		static std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(IAssetContext& assets, const std::string& path);
+		static std::shared_ptr<SkeletalAnimatorDefinition> loadSkeletalAnimatorDefinition(IAssetContext& assets, const std::string& path);
+		static sol::table loadSkeletalAnimations(IAssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts);
 	};
 }

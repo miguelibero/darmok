@@ -35,9 +35,6 @@ namespace darmok
         , _sceneDefLoader{ _dataSceneDefLoader }
 #endif
 		, _dataSceneDefLoader{ getDataLoader() }
-		, _sceneLoader{ _sceneDefLoader, {
-			.fallback = assets
-		} }
 #ifdef DARMOK_OZZ
 		, _ozzSkeletonLoader{ getDataLoader() }
 		, _ozzSkeletalAnimationLoader{ getDataLoader() }
@@ -107,11 +104,6 @@ namespace darmok
 	IFontLoader& AssetContextImpl::getFontLoader() noexcept
 	{
 		return _fontLoader;
-	}
-
-	ISceneLoader& AssetContextImpl::getSceneLoader() noexcept
-	{
-		return _sceneLoader;
 	}
 
 	ISceneDefinitionLoader& AssetContextImpl::getSceneDefinitionLoader() noexcept
@@ -220,11 +212,6 @@ namespace darmok
 	IArmatureFromDefinitionLoader& AssetContext::getArmatureLoader() noexcept
 	{
 		return _impl->getArmatureLoader();
-	}
-
-	ISceneLoader& AssetContext::getSceneLoader() noexcept
-	{
-		return _impl->getSceneLoader();
 	}
 
 	ISceneDefinitionLoader& AssetContext::getSceneDefinitionLoader() noexcept

@@ -53,7 +53,6 @@ namespace darmok
 		IMeshFromDefinitionLoader& getMeshLoader() noexcept;
 		IArmatureFromDefinitionLoader& getArmatureLoader() noexcept;
 		IFontLoader& getFontLoader() noexcept;
-		ISceneLoader& getSceneLoader() noexcept;
 		ISceneDefinitionLoader& getSceneDefinitionLoader() noexcept;
 		bx::AllocatorI& getAllocator() noexcept;
 		ISkeletonLoader& getSkeletonLoader() noexcept;
@@ -88,7 +87,6 @@ namespace darmok
 		MultiLoader<IFontLoader> _fontLoader;
 		MultiLoader<ISceneDefinitionLoader> _sceneDefLoader;
 		DataSceneDefinitionLoader _dataSceneDefLoader;
-		SceneLoader _sceneLoader;
 
 #ifdef DARMOK_ASSIMP
         AssimpSceneDefinitionLoader _assimpSceneDefLoader;

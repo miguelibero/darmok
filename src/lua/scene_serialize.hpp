@@ -5,29 +5,31 @@
 namespace darmok
 {
 	class Scene;
-	class SceneConverter;
+	class SceneLoader;
 	class LuaEntity;
 	class AssetContext;
+	class AssetPack;
 
 	namespace protobuf
 	{
 		class Scene;
 	};
 
-	class LuaSceneConverter final
+	class LuaSceneLoader final
 	{
 	public:
-		LuaSceneConverter();
-		LuaSceneConverter(AssetContext& assets);
-		~LuaSceneConverter();
+		LuaSceneLoader();
+		LuaSceneLoader(AssetContext& assets);
+		~LuaSceneLoader();
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		void run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene);
+		LuaEntity run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene);
 		void setParent(const LuaEntity& entity);
 		void setRenderableSetup(const sol::function& func);
+		AssetPack& getAssetPack();
 
-		std::unique_ptr<SceneConverter> _converter;
+		std::unique_ptr<SceneLoader> _loader;
 		std::weak_ptr<Scene> _scene;
 	};
 }

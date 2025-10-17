@@ -12,6 +12,8 @@
 namespace darmok
 {
     class Skeleton;
+    class Skinnable;
+    class Armature;
     class SkeletalAnimation;
     class SkeletalAnimator;
     class ISkeletalAnimatorState;
@@ -28,6 +30,15 @@ namespace darmok
     struct LuaSkeleton final
     {
         static void bind(sol::state_view& lua) noexcept;
+    };
+
+    struct LuaSkinnable final
+    {
+        static void bind(sol::state_view& lua) noexcept;
+    private:
+        static Skinnable& addEntityComponent(LuaEntity& entity, const std::shared_ptr<Armature>& armature) noexcept;
+        static OptionalRef<Skinnable>::std_t getEntityComponent(LuaEntity& entity) noexcept;
+        static std::optional<LuaEntity> getEntity(const Skinnable& skinnable, const std::shared_ptr<Scene>& scene) noexcept;
     };
 
     class LuaSkeletalAnimator final

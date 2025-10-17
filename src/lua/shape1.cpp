@@ -1,5 +1,6 @@
 #include "lua/shape.hpp"
 #include "lua/glm.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/shape.hpp>
 
 namespace darmok
@@ -22,6 +23,10 @@ namespace darmok
 
 	void LuaShape::bindRectangle(sol::state_view& lua) noexcept
 	{
+		LuaUtils::newProtobuf<Rectangle::Definition>(lua, "RectangleDefinition")
+			.protobufProperty<protobuf::Vec2>("size")
+			.protobufProperty<protobuf::Vec2>("origin");
+
 		lua.new_usertype<Rectangle>("Rectangle",
 			sol::factories(
 				[]() { return Rectangle(); },
@@ -39,6 +44,10 @@ namespace darmok
 
 	void LuaShape::bindCube(sol::state_view& lua) noexcept
 	{
+		LuaUtils::newProtobuf<Cube::Definition>(lua, "CubeDefinition")
+			.protobufProperty<protobuf::Vec3>("size")
+			.protobufProperty<protobuf::Vec3>("origin");
+
 		lua.new_usertype<Cube>("Cube",
 			sol::factories(
 				[]() { return Cube(); },
@@ -56,6 +65,9 @@ namespace darmok
 
 	void LuaShape::bindSphere(sol::state_view& lua) noexcept
 	{
+		LuaUtils::newProtobuf<Sphere::Definition>(lua, "SphereDefinition")
+			.protobufProperty<protobuf::Vec3>("origin");
+
 		lua.new_usertype<Sphere>("Sphere",
 			sol::factories(
 				[]() { return Sphere(); },
@@ -140,6 +152,9 @@ namespace darmok
 
 	void LuaShape::bindCapsule(sol::state_view& lua) noexcept
 	{
+		LuaUtils::newProtobuf<Capsule::Definition>(lua, "CapsuleDefinition")
+			.protobufProperty<protobuf::Vec3>("origin");
+
 		lua.new_usertype<Capsule>("Capsule",
 			sol::factories(
 				[]() { return Capsule(); },

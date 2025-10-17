@@ -16,6 +16,7 @@
 #include <darmok/mesh_core.hpp>
 #include <darmok/mesh_assimp.hpp>
 #include <darmok/skeleton_assimp.hpp>
+#include <darmok/shape.hpp>
 
 #include <assimp/vector3.h>
 #include <assimp/scene.h>
@@ -169,6 +170,12 @@ namespace darmok
             _scene.setComponent(childEntity, trans);
             entity = childEntity;
         }
+
+        BoundingBox::Definition bounds;
+        auto& assimpAabb = assimpMesh->mAABB;
+        *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpAabb.mMin));
+        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpAabb.mMax));
+        _scene.setComponent(entity, bounds);
 
         RenderableDefinition renderable;
         renderable.set_mesh_path(meshResult.value());
@@ -687,7 +694,7 @@ namespace darmok
         auto path = "mesh_" + std::to_string(index);
         if (meshSrc.name().empty())
         {
-            meshSrc.set_name(path);
+            meshSrc.set_name(AssimpUtils::getString(assimpMesh->mName));
         }
         _meshPaths.emplace(assimpMesh, path);
 		_scene.addAsset(path, meshSrc);

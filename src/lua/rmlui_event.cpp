@@ -151,7 +151,7 @@ namespace darmok
 
     sol::object LuaRmluiVariableDefinition::getTableValue(const AbsTableKey& key) const noexcept
     {
-        sol::table tab(_table);
+        sol::table tab{ _table };
         for(size_t i = 0; i < key.size(); ++i)
         {
             auto elm = tab[key[i]];

@@ -27,7 +27,7 @@ namespace darmok
 		auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
 		MeshConfig config{ .index32 = src->index32() };
 
-		auto def = MeshData{ *src }.createDefinition(layout, config);
-		return std::make_shared<Mesh::Definition>(std::move(def));
+		auto def = MeshData{ *src }.createSharedDefinition(layout, config);
+		return def;
 	}
 }

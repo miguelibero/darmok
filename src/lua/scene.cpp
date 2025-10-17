@@ -337,7 +337,7 @@ namespace darmok
 	{
 		LuaEntityFilter::bind(lua);
 		LuaSceneAppComponent::bind(lua);
-		LuaSceneConverter::bind(lua);
+		LuaSceneLoader::bind(lua);
 		LuaTransform::bind(lua);
 		LuaCamera::bind(lua);
 		LuaEntity::bind(lua);
@@ -347,6 +347,7 @@ namespace darmok
 #ifdef DARMOK_OZZ
 		LuaSkeletalAnimator::bind(lua);
 		LuaRenderableSkeleton::bind(lua);
+		LuaSkinnable::bind(lua);
 		LuaSkeletalAnimationSceneComponent::bind(lua);
 #endif
 

@@ -262,6 +262,7 @@ set(HEADERS
 set(LUA_SOURCES
   app.cpp
   asset.cpp
+  asset_pack.cpp
   image.cpp
   material.cpp
   render_scene.cpp
@@ -279,6 +280,7 @@ set(LUA_SOURCES
   math_quat.cpp
   math_uvec.cpp
   math_vec.cpp
+  math_protobuf.cpp
   shape1.cpp
   shape2.cpp
   scene.cpp
@@ -802,7 +804,7 @@ if(DARMOK_BUILD_LUA)
   )  
 
   find_package(sol2 CONFIG REQUIRED)
-  # set(SOL_DEFINES SOL_ALL_SAFETIES_ON SOL_EXCEPTIONS_SAFE_PROPAGATION)
+  set(SOL_DEFINES LUA_USE_APICHECK SOL_ALL_SAFETIES_ON=1)
   find_path(SOL2_INCLUDE_DIRS "sol/abort.hpp")
   target_include_directories(${LIB_NAME} PRIVATE ${SOL2_INCLUDE_DIRS})
   target_compile_definitions(${LIB_NAME} PRIVATE ${SOL_DEFINES})
