@@ -139,7 +139,7 @@ namespace darmok
 
     public:
         LuaProtobufBinding(sol::state_view& lua, std::string_view name = {}, bool autoRegister = true) noexcept
-            : userType{ lua.new_usertype<T>(getProtobufName(name)) }
+            : userType{ lua.new_usertype<T>(getProtobufName(name), sol::default_constructor) }
         {
 			if(autoRegister)
 			{

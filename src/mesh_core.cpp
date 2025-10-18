@@ -920,7 +920,6 @@ namespace darmok
 	}
 
 	MeshData::MeshData(const Definition& def) noexcept
-		: _name{ def.name() }
 	{
 		if (def.has_sphere())
 		{
@@ -942,6 +941,7 @@ namespace darmok
 		{
 			*this = { def.data() };
 		}
+		_name = def.name();
 	}
 
 	MeshData::MeshData(const DataDefinition& def) noexcept

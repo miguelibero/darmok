@@ -338,6 +338,7 @@ namespace darmok
 		LuaEntityFilter::bind(lua);
 		LuaSceneAppComponent::bind(lua);
 		LuaSceneLoader::bind(lua);
+		LuaSceneDefinition::bind(lua);
 		LuaTransform::bind(lua);
 		LuaCamera::bind(lua);
 		LuaEntity::bind(lua);

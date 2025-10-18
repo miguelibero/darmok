@@ -106,13 +106,18 @@ namespace darmok
             return _value;
         }
 
-        operator std_t() const noexcept
-        { 
+        std_t toStd() const noexcept
+        {
             if (_value == nullptr)
             {
                 return std::nullopt;
             }
             return *_value;
+        }
+
+        operator std_t() const noexcept
+        { 
+			return toStd();
         }
 
         operator OptionalRef<const T>() const noexcept

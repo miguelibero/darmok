@@ -15,6 +15,12 @@ namespace darmok
 		class Scene;
 	};
 
+	class LuaSceneDefinition final
+	{
+	public:
+		static void bind(sol::state_view& lua) noexcept;
+	};
+
 	class LuaSceneLoader final
 	{
 	public:
