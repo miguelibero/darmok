@@ -1,6 +1,7 @@
 #include "lua/render_scene.hpp"
 #include "lua/scene.hpp"
 #include "lua/protobuf.hpp"
+#include "lua/scene_serialize.hpp"
 #include <darmok/render_scene.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
@@ -46,7 +47,11 @@ namespace darmok
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Renderable::Definition>(lua, "RenderableDefinition");
+		auto def = LuaUtils::newProtobuf<Renderable::Definition>(lua, "RenderableDefinition");
+		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
+		{
+			return entity.getComponent<Renderable::Definition>();
+		};
 
 		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Renderable>::value),

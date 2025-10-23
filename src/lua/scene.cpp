@@ -145,18 +145,6 @@ namespace darmok
 		return sol::nil;
 	}
 
-	bool LuaEntity::checkForEachResult(const std::string& desc, const sol::protected_function_result& result)
-	{
-		LuaUtils::checkResult(desc, result);
-		sol::object obj = result;
-		auto type = obj.get_type();
-		if (type == sol::type::boolean)
-		{
-			return obj.as<bool>();
-		}
-		return type != sol::type::nil;
-	}
-
 	bool LuaEntity::forEachChild(const sol::protected_function& callback)
 	{
 		auto scene = _scene.lock();
@@ -166,7 +154,7 @@ namespace darmok
 		}
 		return scene->forEachChild(_entity, [callback, scene](auto entity, auto& trans) -> bool {
 			auto result = callback(LuaEntity(entity, scene), trans);
-			return checkForEachResult("for each entity child", result);
+			return LuaUtils::checkResult("for each entity child", result);
 		});
 	}
 
@@ -179,7 +167,7 @@ namespace darmok
 		}
 		return scene->forEachParent(_entity, [callback, scene](auto entity, auto& trans) -> bool {
 			auto result = callback(LuaEntity(entity, scene), trans);
-			return checkForEachResult("for each entity parent", result);
+			return LuaUtils::checkResult("for each entity parent", result);
 		});
 	}
 
@@ -329,7 +317,7 @@ namespace darmok
 	{
 		return scene->forEachEntity([callback, scene](auto entity) -> bool {
 			auto result = callback(LuaEntity(entity, scene));
-			return LuaEntity::checkForEachResult("for each entity", result);
+			return LuaUtils::checkResult("for each entity", result);
 		});
 	}
 

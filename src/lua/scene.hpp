@@ -58,7 +58,6 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 
-		static bool checkForEachResult(const std::string& desc, const sol::protected_function_result& result);
 	private:
 		Entity _entity;
 		std::weak_ptr<Scene> _scene;

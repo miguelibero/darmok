@@ -22,10 +22,13 @@ namespace darmok
         using Message = google::protobuf::Message;
         using Any = google::protobuf::Any;
         using RegistryComponents = protobuf::RegistryComponents;
+        using Transform = protobuf::Transform;
 
         ConstSceneDefinitionWrapper(const Definition& def) noexcept;
         const std::string& getName() const noexcept;
+		const Definition& getDefinition() const noexcept;
 
+		EntityId getRootEntity() const noexcept;
         std::vector<EntityId> getRootEntities() const noexcept;
         std::vector<EntityId> getEntities() const noexcept;
         std::vector<EntityId> getChildren(EntityId entity) const noexcept;
@@ -96,7 +99,7 @@ namespace darmok
         template<typename T>
         std::optional<T> getAsset(const std::filesystem::path& path) const noexcept
         {
-            if (auto any = getAsset(protobuf::getTypeId<T>(), path))
+            if (auto any = getAsset(path))
             {
                 T asset;
                 if (any->UnpackTo(&asset))
@@ -106,6 +109,85 @@ namespace darmok
             }
             return std::nullopt;
         }
+
+        template<typename C>
+        bool forEachEntity(const C& callback)
+        {
+            for (auto& entity : getEntities())
+            {
+                if (callback(entity))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        template<typename C>
+        bool forEachParent(EntityId entity, const C& callback)
+        {
+            if (entity == entt::null)
+            {
+                return false;
+            }
+            auto optTrans = getComponent<Transform>(entity);
+            if (!optTrans)
+            {
+                return false;
+            }
+            auto& trans = optTrans.value();
+            if (callback(entity, trans))
+            {
+                return true;
+            }
+            auto parent = trans.parent();
+            if (parent == nullEntityId)
+            {
+                return false;
+            }
+            return forEachParent(parent, callback);
+        }
+
+        template<typename C>
+        bool forEachChild(const C& callback)
+        {
+            for (auto root : getRootEntities())
+            {
+                if (forEachChild(root, callback))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        template<typename C>
+        bool forEachChild(EntityId entity, const C& callback)
+        {
+            if (entity == entt::null)
+            {
+                return false;
+            }
+            auto optTrans = getComponent<Transform>(entity);
+            if (!optTrans)
+            {
+                return false;
+            }
+            auto& trans = optTrans.value();
+            if (callback(entity, trans))
+            {
+                return true;
+            }
+            for (auto& entity : getChildren(entity))
+            {
+                if (forEachChild(entity, callback))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
     protected:
         static std::optional<std::filesystem::path> getChildPath(const std::filesystem::path& path, const std::filesystem::path& parentPath) noexcept;
     private:
@@ -122,6 +204,7 @@ namespace darmok
 
         SceneDefinitionWrapper(Definition& def) noexcept;
         void setName(std::string_view name) noexcept;
+        Definition& getDefinition() noexcept;
 
         EntityId createEntity() noexcept;
         bool setAsset(const std::filesystem::path& path, const Message& asset) noexcept;
@@ -157,7 +240,7 @@ namespace darmok
         template<typename T>
         std::optional<T> getAsset(const std::filesystem::path& path) const noexcept
         {
-            return ConstSceneDefinitionWrapper::getAsset<T>();
+            return ConstSceneDefinitionWrapper::getAsset<T>(path);
         }
 
         template<typename T>

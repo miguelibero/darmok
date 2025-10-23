@@ -10,11 +10,17 @@ namespace darmok
 {
     class Renderable;
 	class LuaEntity;
+	class LuaEntityDefinition;
 	class Scene;
     class Mesh;
     class Texture;
     struct Material;
 	class Program;
+
+	namespace protobuf
+	{
+		class Renderable;
+	};
 
 	class LuaRenderable final
 	{

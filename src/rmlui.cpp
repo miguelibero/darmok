@@ -664,6 +664,8 @@ namespace darmok
         }
 
         _comp = comp;
+        updateDefaultCamera();
+
         auto size = getCurrentSize();
         _render = std::make_unique<RmluiRenderInterface>(app, *this);
         std::string name = _name;
@@ -695,19 +697,8 @@ namespace darmok
             Rml::ReleaseTextures(_render ? _render.get() : nullptr);
         }
 
-        // the render interface should be destroyed here
-        // but with Rmlui 6.0 that throws an assert
-        // the fix is added here https://github.com/mikke89/RmlUi/issues/703
-        
-        // TODO: remove recycleRender once 6.1 is out on vcpkg
-        // do this:
-        // _render.reset();
-        // Rml::ReleaseRenderManagers();
-        // instead of this:
-        if (_render)
-        {
-            _comp->recycleRender(std::move(_render));
-        }
+       _render.reset();
+        Rml::ReleaseRenderManagers();
 
         _comp.reset();
         _cam.reset();

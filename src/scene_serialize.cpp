@@ -25,6 +25,11 @@ namespace darmok
 		return _def->name();
     }
 
+    const ConstSceneDefinitionWrapper::Definition& ConstSceneDefinitionWrapper::getDefinition() const noexcept
+    {
+        return _def.value();
+    }
+
     std::vector<EntityId> ConstSceneDefinitionWrapper::getEntities() const noexcept
     {
         std::vector<EntityId> entities;
@@ -42,10 +47,20 @@ namespace darmok
         return entities;
     }
 
+    EntityId ConstSceneDefinitionWrapper::getRootEntity() const noexcept
+    {
+		auto entities = getRootEntities();
+        if (entities.empty())
+        {
+            return nullEntityId;
+        }
+        return entities.back();
+    }
+
     std::vector<EntityId> ConstSceneDefinitionWrapper::getRootEntities() const noexcept
     {
         std::vector<EntityId> entities;
-        for (auto& [entity, trans] : getTypeComponents<Transform::Definition>())
+        for (auto& [entity, trans] : getTypeComponents<Transform>())
         {
             if (!trans.has_parent() || trans.parent() == 0)
             {
@@ -58,7 +73,7 @@ namespace darmok
             {
                 continue;
             }
-            if (!getComponent<Transform::Definition>(entity))
+            if (!getComponent<Transform>(entity))
             {
                 entities.push_back(entity);
             }
@@ -70,7 +85,7 @@ namespace darmok
     std::vector<EntityId> ConstSceneDefinitionWrapper::getChildren(EntityId entity) const noexcept
     {
         std::vector<EntityId> entities;
-        for (auto& [childEntity, trans] : getTypeComponents<Transform::Definition>())
+        for (auto& [childEntity, trans] : getTypeComponents<Transform>())
         {
             if (trans.parent() == entity)
             {
@@ -242,6 +257,11 @@ namespace darmok
     void SceneDefinitionWrapper::setName(std::string_view name) noexcept
     {
         _def->set_name(std::string{ name });
+    }
+
+    SceneDefinitionWrapper::Definition& SceneDefinitionWrapper::getDefinition() noexcept
+    {
+        return _def.value();
     }
 
     EntityId SceneDefinitionWrapper::createEntity() noexcept

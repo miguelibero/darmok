@@ -2,6 +2,7 @@
 #include "lua/glm.hpp"
 #include "lua/utils.hpp"
 #include "lua/protobuf.hpp"
+#include "lua/scene_serialize.hpp"
 #include <darmok/mesh.hpp>
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
@@ -36,11 +37,16 @@ namespace darmok
 			.protobufProperty<protobuf::CapsuleMeshSource>("capsule")
 			.protobufProperty<protobuf::RectangleMeshSource>("rectangle");
 
-		LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition")
+		auto meshDef = LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition")
 			.protobufProperty<protobuf::VertexLayout>("layout")
 			.convertProtobufProperty<BoundingBox, protobuf::BoundingBox>("bounds",
 				[](const protobuf::BoundingBox& proto) { return protobuf::convert(proto); },
 				[](const BoundingBox& bounds) { return protobuf::convert(bounds); });
+		
+		meshDef.userType["get_scene_asset"] = [](protobuf::Scene& scene, std::string_view path)
+		{
+			return SceneDefinitionWrapper{ scene }.getAsset<Mesh::Definition>(path);
+		};
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<

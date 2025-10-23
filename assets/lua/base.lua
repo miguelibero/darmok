@@ -120,8 +120,8 @@ function EntityComponent.static:_class_get_entity_component(entity)
     return entity:get_lua_component(self)
 end
 
-
 -- Entity
+
 function Entity:add_component(cls, ...)
 	return cls.add_entity_component(self, ...)
 end
@@ -192,6 +192,101 @@ end
 
 
 function Entity:is_parent_or_self(entity)
+	if not entity then
+		return false
+	end
+	return entity:is_child_or_self(self)
+end
+
+-- SceneDefinition
+
+function SceneDefinition:get_component(cls)
+	return cls.get_scene_component(self)
+end
+
+function SceneDefinition:find_entity_component(cls)
+	local comp = nil
+	self:for_each_entity(function(entity)
+		comp = entity:get_component(cls)
+		return comp
+	end)
+	return comp
+end
+
+function SceneDefinition:find_entity_components(cls)
+	local comps = {}
+	self:for_each_entity(function(entity)
+		local comp = entity:get_component(cls)
+		if comp then
+			table.insert(comps, comp)
+		end
+	end)
+	return comps
+end
+
+function SceneDefinition:get_asset(cls, path)
+	return cls.get_scene_asset(self, path)
+end
+
+-- EntityDefinition
+
+function EntityDefinition:get_component(cls)
+	return cls.get_entity_component(self)
+end
+
+function EntityDefinition:get_component_in_children(cls)
+	local comp = nil
+	self:for_each_child(function(entity)
+		comp = entity:get_component(cls)
+		return comp
+	end)
+	return comp
+end
+
+function EntityDefinition:get_components_in_children(cls)
+	local comps = {}
+	self:for_each_child(function(entity)
+		local comp = entity:get_component(cls)
+		if comp then
+			table.insert(comps, comp)
+		end
+	end)
+	return comps
+end
+
+function EntityDefinition:get_component_in_parent(cls)
+	local comp = nil
+	self:for_each_parent(function(entity)
+		comp = entity:get_component(cls)
+		return comp
+	end)
+	return comp
+end
+
+function EntityDefinition:is_child(entity)
+	if not entity then
+		return false
+	end
+	return self:for_each_parent(function(parent)
+		return parent == entity
+	end)
+end
+
+function EntityDefinition:is_parent(entity)
+	if not entity then
+		return false
+	end
+	return entity:is_child(self)
+end
+
+function EntityDefinition:is_child_or_self(entity)
+	if self == entity then
+		return true
+	end
+	return self:is_child(entity)
+end
+
+function EntityDefinition:is_parent_or_self(entity)
 	if not entity then
 		return false
 	end
