@@ -69,7 +69,7 @@ namespace darmok
 	class LuaError final : std::exception
 	{
 	public:
-		LuaError(const std::string& msg, const sol::error& error);
+		LuaError(std::string_view msg, const sol::error& error);
 		const char* what() const noexcept override;
 	private:
 		sol::error error;

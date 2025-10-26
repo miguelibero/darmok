@@ -807,7 +807,7 @@ if(DARMOK_BUILD_LUA)
   set(SOL_DEFINES LUA_USE_APICHECK SOL_ALL_SAFETIES_ON=1)
   find_path(SOL2_INCLUDE_DIRS "sol/abort.hpp")
   target_include_directories(${LIB_NAME} PRIVATE ${SOL2_INCLUDE_DIRS})
-  target_compile_definitions(${LIB_NAME} PRIVATE ${SOL_DEFINES})
+  target_compile_definitions(${LIB_NAME} PUBLIC ${SOL_DEFINES})
   list(APPEND VCPKG_MANIFEST_FEATURES "lua")
 
 endif()

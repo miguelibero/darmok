@@ -1473,12 +1473,20 @@ namespace darmok::physics3d
     BoundingBox PhysicsBodyImpl::getLocalBounds() const
     {
         auto shape = getBodyInterface()->GetShape(_bodyId);
+        if (!shape)
+        {
+            return {};
+        }
         return JoltUtils::convert(shape->GetLocalBounds());
     }
 
     BoundingBox PhysicsBodyImpl::getWorldBounds() const
     {
         auto shape = getBodyInterface()->GetShape(_bodyId);
+        if (!shape)
+        {
+            return {};
+        }
         auto trans = getBodyInterface()->GetCenterOfMassTransform(_bodyId);
         static const JPH::Vec3 scale(1.F, 1.F, 1.F);
         return JoltUtils::convert(shape->GetWorldSpaceBounds(trans, scale));

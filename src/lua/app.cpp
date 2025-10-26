@@ -25,6 +25,7 @@
 #include "generated/lua/middleclass.h"
 #include "generated/lua/class.h"
 #include "generated/lua/base.h"
+#include "generated/lua/bit.h"
 
 #ifdef DARMOK_RMLUI
 #include <darmok/rmlui.hpp>
@@ -214,10 +215,11 @@ namespace darmok
 		);
 	}
 
-	LuaError::LuaError(const std::string& msg, const sol::error& error)
+	LuaError::LuaError(std::string_view msg, const sol::error& error)
 		: _msg{ msg }
 		, error{ error }
 	{
+		LuaUtils::logError(msg, error);
 	}
 
 	const char* LuaError::what() const noexcept
@@ -336,17 +338,10 @@ namespace darmok
 #endif
 			);
 
-		auto addStaticLib = [&lua](auto& lib, const std::string& name, bool require = false)
+		auto addStaticLib = [&lua](auto& lib, const std::string& name, bool create_global = false)
 		{
 			auto content = DataView::fromStatic(lib).stringView();
-			if (require)
-			{
-				lua.require_script(name, content, true, name);
-			}
-			else
-			{
-				lua.script(content, name);
-			}
+			lua.require_script(name, content, create_global);
 		};
 
 		LuaMath::bind(lua);
@@ -366,6 +361,7 @@ namespace darmok
 		addStaticLib(lua_darmok_lib_middleclass, "darmok/middleclass", true);
 		addStaticLib(lua_darmok_lib_class, "darmok/class");
 		addStaticLib(lua_darmok_lib_base, "darmok/base");
+		addStaticLib(lua_darmok_lib_bit, "darmok/bit", true);
 
 		lua["app"] = std::ref(_app);
 		lua.set_function("print", luaPrint);
@@ -388,7 +384,7 @@ namespace darmok
 		addPackagePath(STR(LUA_CPATH), true);
 #endif
 
-		auto result = lua.safe_script_file(mainPath.string());
+		auto result = lua.safe_script_file(mainPath.string(), sol::script_pass_on_error);
 		if (!result.valid())
 		{
 			throw LuaError("running main", result);
@@ -486,7 +482,7 @@ namespace darmok
 		sol::protected_function init = lua["init"];
 		if (init)
 		{
-			LuaUtils::setupErrorHandler(lua, init);
+			// LuaUtils::setupErrorHandler(lua, init);
 			auto result = init();
 			if (!result.valid())
 			{

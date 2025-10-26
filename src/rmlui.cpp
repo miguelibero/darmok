@@ -668,19 +668,22 @@ namespace darmok
 
         auto size = getCurrentSize();
         _render = std::make_unique<RmluiRenderInterface>(app, *this);
-        std::string name = _name;
-        if (auto scene = comp.getScene())
+        std::string baseName = _name;
+        std::string name = baseName;
+        int i = 0;
+        while (Rml::GetContext(name))
         {
-            name += " - scene " + std::to_string(scene->getId());
+            name = baseName + " " + std::to_string(++i);
         }
+
         _context = Rml::CreateContext(name, RmluiUtils::convert<int>(size), _render.get());
-        if (size.x > 0 && size.y > 0)
-        {
-            _frameBuffer.emplace(size, false);
-        }
         if (!_context)
         {
             throw std::runtime_error("Failed to create rmlui context");
+        }
+        if (size.x > 0 && size.y > 0)
+        {
+            _frameBuffer.emplace(size, false);
         }
         _context->EnableMouseCursor(true);
     }
@@ -697,8 +700,20 @@ namespace darmok
             Rml::ReleaseTextures(_render ? _render.get() : nullptr);
         }
 
-       _render.reset();
-        Rml::ReleaseRenderManagers();
+
+        // the render interface should be destroyed here
+        // but with Rmlui 6.0 that throws an assert
+        // the fix is added here https://github.com/mikke89/RmlUi/issues/703
+
+        // TODO: remove recycleRender once 6.1 is out on vcpkg
+        // do this:
+        // _render.reset();
+        // Rml::ReleaseRenderManagers();
+        // instead of this:
+        if (_render)
+        {
+            _comp->recycleRender(std::move(_render));
+        }
 
         _comp.reset();
         _cam.reset();

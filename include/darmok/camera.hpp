@@ -35,7 +35,7 @@ namespace darmok
 
     struct DARMOK_EXPORT CameraPerspectiveData final
     {
-        float fovy = 60.F;
+        float fovy = glm::radians(60.F);
         float near = Math::defaultPerspNear;
         float far = Math::defaultPerspFar;
     };
