@@ -143,8 +143,9 @@ namespace darmok
 		void setPaused(bool paused) noexcept;
 		[[nodiscard]] bool isPaused() const noexcept;
 
-		void addAssetsBasePath(const std::filesystem::path& path) noexcept;
-		void removeAssetsBasePath(const std::filesystem::path& path) noexcept;
+		bool setAssetsBasePath(const std::filesystem::path& path) noexcept;
+		bool addAssetsRootPath(const std::filesystem::path& path) noexcept;
+		bool removeAssetsRootPath(const std::filesystem::path& path) noexcept;
 
 		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;

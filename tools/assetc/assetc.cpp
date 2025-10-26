@@ -13,7 +13,7 @@ protected:
 
 	void import(const Config& config, std::ostream& log) const noexcept override
 	{
-		return DarmokAssetFileImporter(config)(log);
+		DarmokAssetFileImporter{ config }(log);
 	}
 };
 

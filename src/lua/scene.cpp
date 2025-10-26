@@ -39,10 +39,14 @@ namespace darmok
 		return _table;
 	}
 
-	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept
+	LuaEntity::LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene)
 		: _entity{ entity }
 		, _scene{ scene }
 	{
+		if (_entity == entt::null)
+		{
+			throw sol::error("cannot create null entity");
+		}
 	}
 
 	std::string LuaEntity::toString() const noexcept
@@ -57,6 +61,10 @@ namespace darmok
 
 	bool LuaEntity::isValid() const noexcept
 	{
+		if(_entity == entt::null)
+		{
+			return false;
+		}
 		if (auto scene = _scene.lock())
 		{
 			return scene->isValidEntity(_entity);

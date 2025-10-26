@@ -2,7 +2,7 @@
     "files": {
         "sponza/Sponza.gltf": {
             "scene": {
-                "outputPath": "../Sponza.dsc",
+                "outputPath": "Sponza.dsc",
                 "program": "Forward",
                 "embedTextures": true,
                 "shadowType": "Soft"

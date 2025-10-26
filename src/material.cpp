@@ -126,6 +126,7 @@ namespace darmok
 		def.mutable_program()->set_standard(Program::Standard::Forward);
 		*def.mutable_base_color() = protobuf::convert(Colors::white());
 		def.set_opacity_type(Material::Definition::Opaque);
+		def.set_shininess(32.0f);
 		return def;
 	}
 

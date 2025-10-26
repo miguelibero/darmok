@@ -69,9 +69,10 @@ vec3 phongDiffuse(vec3 lightDir, vec3 normal, vec3 radianceIn)
 
 vec3 phongSpecular(vec3 viewDir, vec3 lightDir, vec3 normal, vec3 radianceIn, float shininess)
 {
-    vec3 reflectDir = reflect(-lightDir, normal);  
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-	return spec * radianceIn;
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float NdotR = max(dot(viewDir, reflectDir), 0.0);
+    float spec = pow(max(NdotR, 1e-8), max(shininess, 0.0));
+    return spec * radianceIn;
 }
 
 #endif // DARMOK_MATERIAL_BASIC_HEADER

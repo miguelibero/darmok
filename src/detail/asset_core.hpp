@@ -28,7 +28,7 @@ namespace darmok
         void setOutputPath(const std::filesystem::path& outputPath) noexcept;
         void addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept;
         expected<Paths, std::string> getOutputPaths() const noexcept;
-        void operator()(std::ostream& log) const noexcept;
+        bool operator()(std::ostream& log) const noexcept;
 	private:
         std::filesystem::path _inputPath;
         std::filesystem::path _outputPath;
@@ -124,6 +124,7 @@ namespace darmok
             Paths outputPaths;
             bool inputCached = false;
             Paths updatedOutputPaths;
+            bool error = false;
         };
 
         using DirConfigs = std::vector<OptionalRef<const DirConfig>>;

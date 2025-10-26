@@ -247,7 +247,7 @@ namespace darmok
 		});
 	}
 
-	LuaEntity LuaSceneLoader::run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene)
+	std::optional<LuaEntity> LuaSceneLoader::run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene)
 	{
 		_scene = scene;
 		auto result = (*_loader)(sceneDef, *scene);
@@ -255,7 +255,12 @@ namespace darmok
 		{
 			throw sol::error{ result.error() };
 		}
-		return { result.value(), scene };
+		auto entity = result.value();
+		if (entity == entt::null)
+		{
+			return std::nullopt;
+		}
+		return LuaEntity{ entity, scene };
 	}
 
 	IComponentLoadContext& LuaSceneLoader::getComponentLoadContext(const protobuf::Scene& sceneDef)

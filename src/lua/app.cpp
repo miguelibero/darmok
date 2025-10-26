@@ -482,7 +482,6 @@ namespace darmok
 		sol::protected_function init = lua["init"];
 		if (init)
 		{
-			// LuaUtils::setupErrorHandler(lua, init);
 			auto result = init();
 			if (!result.valid())
 			{
@@ -500,11 +499,14 @@ namespace darmok
 		}
 
 		DarmokAssetFileImporter importer{ cfg };
-		importer(std::cout);
+		if (!importer(std::cout))
+		{
+			return false;
+		}
 
 		if (std::filesystem::is_directory(cfg.outputPath))
 		{
-			_app.addAssetsBasePath(cfg.outputPath);
+			_app.addAssetsRootPath(cfg.outputPath);
 		}
 		return true;
 	}

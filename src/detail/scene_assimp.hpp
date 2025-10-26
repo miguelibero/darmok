@@ -71,7 +71,7 @@ namespace darmok
         using TextureType = protobuf::MaterialTexture::Type;
         using Message = google::protobuf::Message;
 
-        AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
+        AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader = nullptr, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
         static std::vector<std::string> getDependencies(const aiScene& scene) noexcept;
         expected<void, std::string> operator()() noexcept;
@@ -81,7 +81,6 @@ namespace darmok
         OptionalRef<IProgramSourceLoader> _progLoader;
         const aiScene& _assimpScene;
 		SceneDefinitionWrapper _scene;
-        std::filesystem::path _basePath;
         ImportConfig _config;
         std::vector<std::regex> _skipMeshes;
 
@@ -173,7 +172,9 @@ namespace darmok
         CompilerConfig _defaultCompilerConfig;
         std::optional<CompilerConfig> _compilerConfig;
 
-        void loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, AssimpConfig& config);
+		using ReadProgramCompilerConfig = ProgramCompilerConfig::ReadConfig;
+
+        void loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config);
         static expected<protobuf::VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);
     };
 }

@@ -90,12 +90,12 @@ namespace darmok
 		return trans.rotateAround(LuaGlm::tableGet(point), LuaGlm::tableGet(axis), angle);
 	}
 
-	Transform& LuaTransform::addEntityComponent1(LuaEntity& entity) noexcept
+	Transform& LuaTransform::addEntityComponent1(LuaEntity& entity)
 	{
 		return entity.addComponent<Transform>();
 	}
 
-	Transform& LuaTransform::addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept
+	Transform& LuaTransform::addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos)
 	{
 		return entity.addComponent<Transform>(LuaGlm::tableGet(pos));
 	}

@@ -20,8 +20,8 @@ namespace darmok
 		static void bind(sol::state_view& lua) noexcept;
 
 	private:
-		static Transform& addEntityComponent1(LuaEntity& entity) noexcept;
-		static Transform& addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos) noexcept;
+		static Transform& addEntityComponent1(LuaEntity& entity);
+		static Transform& addEntityComponent2(LuaEntity& entity, const VarLuaTable<glm::vec3>& pos);
 		static OptionalRef<Transform>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const Transform& trans, std::shared_ptr<Scene>& scene) noexcept;
 

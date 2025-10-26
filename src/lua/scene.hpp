@@ -32,7 +32,7 @@ namespace darmok
 	class LuaEntity final
 	{
 	public:
-		LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene) noexcept;
+		LuaEntity(Entity entity, const std::weak_ptr<Scene>& scene);
 		
 		const Entity& getReal() const noexcept;
 		std::shared_ptr<Scene> getScene() const;
@@ -49,11 +49,15 @@ namespace darmok
 		template<typename T>
 		OptionalRef<T> getComponent() noexcept
 		{
+			if(_entity == entt::null)
+			{
+				return std::nullopt;
+			}
 			if (auto scene = _scene.lock())
 			{
 				return scene->getComponent<T>(_entity);
 			}
-			return nullptr;
+			return std::nullopt;
 		}
 
 		static void bind(sol::state_view& lua) noexcept;

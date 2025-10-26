@@ -66,7 +66,13 @@ namespace darmok
 		IncludePaths includePaths;
 		OptionalRef<std::ostream> log;
 
-		void read(const nlohmann::json& json, std::filesystem::path basePath);
+		struct ReadConfig final
+		{
+			std::filesystem::path rootPath;
+			std::filesystem::path basePath;
+		};
+
+		void read(const nlohmann::json& json, const ReadConfig& config);
 	};
 
 	class DARMOK_EXPORT ProgramCompiler final

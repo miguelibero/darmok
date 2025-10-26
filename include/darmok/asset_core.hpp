@@ -110,7 +110,7 @@ namespace darmok
 
     protected:
         virtual expected<Paths, std::string> getOutputPaths(const Config& config) const noexcept = 0;
-        virtual void import(const Config& config, std::ostream& log) const noexcept = 0;
+        virtual bool import(const Config& config, std::ostream& log) const noexcept = 0;
     private:
         friend class CommandLineFileImporterImpl;
         std::unique_ptr<CommandLineFileImporterImpl> _impl;
@@ -138,7 +138,7 @@ namespace darmok
         }
 
         expected<Paths, std::string> getOutputPaths() const noexcept;
-		void operator()(std::ostream& log) const noexcept;
+		bool operator()(std::ostream& log) const noexcept;
 	private:
 		std::unique_ptr<FileImporterImpl> _impl;
     };
@@ -156,7 +156,7 @@ namespace darmok
         DarmokCoreAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
         DarmokCoreAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
         expected<Paths, std::string> getOutputPaths() const noexcept;
-        void operator()(std::ostream& log) const noexcept;
+        bool operator()(std::ostream& log) const noexcept;
     private:
         FileImporter _importer;
         ProgramFileImporter& _progImporter;

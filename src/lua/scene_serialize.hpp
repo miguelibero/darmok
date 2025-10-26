@@ -86,7 +86,7 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		LuaEntity run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene);
+		std::optional<LuaEntity> run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene);
 		IComponentLoadContext& getComponentLoadContext(const protobuf::Scene& sceneDef);
 		void setParent(const LuaEntity& entity);
 		void setRenderableSetup(const sol::function& func);

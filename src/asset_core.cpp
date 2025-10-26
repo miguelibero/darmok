@@ -765,6 +765,10 @@ namespace darmok
         PathGroups groups;
         for (auto& path : paths)
         {
+            if (!fs::exists(path))
+            {
+                continue;
+            }
             // filename.lala.h -> filename.h
             auto groupPath = getHeaderPath(path.parent_path() / path.stem());
             groups[groupPath].push_back(path);
@@ -860,18 +864,20 @@ namespace darmok
         }
     }
 
-    void FileImporterImpl::operator()(std::ostream& log) const noexcept
+    bool FileImporterImpl::operator()(std::ostream& log) const noexcept
     {
         log << "importing " << _inputPath << " -> " << _outputPath << "..." << std::endl;
         auto opsResult = getOperations();
         if (!opsResult)
         {
             log << "error loading operations: " << opsResult.error();
-            return;
+            return false;
         }
+        auto hasError = false;
         for (auto& op : opsResult.value())
         {
             auto result = importFile(op, log);
+            hasError = hasError || result.error;
             if (op.headerConfig.produceHeaders && !result.updatedOutputPaths.empty())
             {
                 auto groups = getPathGroups(result.outputPaths);
@@ -889,8 +895,11 @@ namespace darmok
             if (!result)
             {
                 log << "error writing cache: " << result.error();
+                hasError = true;
             }
         }
+
+        return !hasError;
     }
 
     fs::path FileImporterImpl::getHeaderPath(const fs::path& path, const std::string& baseName) const noexcept
@@ -936,6 +945,7 @@ namespace darmok
         if (!prepareResult)
         {
             log << name << " error in prepare: " << prepareResult.error();
+            result.error = true;
             return result;
         }
         auto& effect = prepareResult.value();
@@ -987,8 +997,17 @@ namespace darmok
         if (!importResult)
         {
             log << name << " error in import: " << importResult.error();
+            config.outputStreams.clear();
+            for (auto& path : result.outputPaths)
+            {
+                if (fs::exists(path))
+                {
+                    fs::remove(path);
+                }
+            }
+            result.error = true;
         }
-        if (op.headerConfig.produceHeaders)
+        else if (op.headerConfig.produceHeaders)
         {
             for (size_t i = 0; i < outputNum; ++i)
             {
@@ -1042,9 +1061,9 @@ namespace darmok
         return _impl->getOutputPaths();
     }
 
-    void FileImporter::operator()(std::ostream& out) const noexcept
+    bool FileImporter::operator()(std::ostream& out) const noexcept
     {
-        (*_impl)(out);
+        return (*_impl)(out);
     }
 
     CopyFileImporter::CopyFileImporter(size_t bufferSize) noexcept
@@ -1157,9 +1176,9 @@ namespace darmok
         return _importer.getOutputPaths();
     }
 
-    void DarmokCoreAssetFileImporter::operator()(std::ostream& out) const noexcept
+    bool DarmokCoreAssetFileImporter::operator()(std::ostream& out) const noexcept
     {
-        _importer(out);
+        return _importer(out);
     }
 
     BaseCommandLineFileImporter::BaseCommandLineFileImporter() noexcept
@@ -1270,7 +1289,10 @@ namespace darmok
             }
             
             PrefixStream log(std::cout, cli.get_name() + ": ");
-            _importer.import(cfg, log);
+            if (!_importer.import(cfg, log))
+            {
+                return -1;
+            }
             return 0;
         }
         catch (const CLI::ParseError& ex)
@@ -1280,7 +1302,7 @@ namespace darmok
         catch(const std::exception& ex)
         {
             std::cerr << "error: " << ex.what() << std::endl;
-            return 1;
+            return -1;
         }
     }
 }

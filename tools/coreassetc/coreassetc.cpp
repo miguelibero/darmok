@@ -10,9 +10,9 @@ protected:
 		return DarmokCoreAssetFileImporter(config).getOutputPaths();
 	}
 
-	void import(const Config& config, std::ostream& log) const noexcept override
+	bool import(const Config& config, std::ostream& log) const noexcept override
 	{
-		return DarmokCoreAssetFileImporter(config)(log);
+		return DarmokCoreAssetFileImporter{ config }(log);
 	}
 };
 

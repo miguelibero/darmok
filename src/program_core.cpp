@@ -619,22 +619,37 @@ namespace darmok
         return {};
     }
 
-    void ProgramCompilerConfig::read(const nlohmann::json& json, std::filesystem::path basePath)
+    void ProgramCompilerConfig::read(const nlohmann::json& json, const ReadConfig& config)
     {
+        auto fixPath = [&config](std::filesystem::path path)
+        {
+            if (path.string().starts_with("/"))
+            {
+                return config.rootPath / path.relative_path();
+            }
+            return config.basePath / path;
+        };
         auto itr = json.find("includeDirs");
         if (itr != json.end())
         {
             for (fs::path path : *itr)
             {
-                includePaths.insert(basePath / path);
+                includePaths.insert(fixPath(path));
             }
         }
-        includePaths.insert(basePath);
+        if (!config.rootPath.empty())
+        {
+            includePaths.insert(config.rootPath);
+        }
+        if (!config.basePath.empty())
+        {
+            includePaths.insert(config.basePath);
+        }
 
         itr = json.find("shadercPath");
         if (itr != json.end())
         {
-            shadercPath = basePath / *itr;
+            shadercPath = fixPath(*itr);
         }
     }
     
@@ -738,8 +753,14 @@ namespace darmok
         }
 
         _config = _defaultConfig;
-        _config->read(input.dirConfig, input.basePath);
-        _config->read(input.config, input.basePath);
+        ProgramCompilerConfig::ReadConfig readConfig
+        {
+            .rootPath = input.basePath,
+            .basePath = input.basePath / input.getRelativePath().parent_path()
+        };
+
+        _config->read(input.dirConfig, readConfig);
+        _config->read(input.config, readConfig);
 
         _src.emplace();
         auto result = readSource(*_src, input.config, input.path);

@@ -336,8 +336,8 @@ namespace darmok
 		return _importer.getOutputPaths();
 	}
 
-	void DarmokAssetFileImporter::operator()(std::ostream& log) const noexcept
+	bool DarmokAssetFileImporter::operator()(std::ostream& log) const noexcept
 	{
-		_importer(log);
+		return _importer(log);
 	}
 }

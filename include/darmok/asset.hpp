@@ -108,7 +108,7 @@ namespace darmok
 		DarmokAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		DarmokAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
 		expected<Paths, std::string> getOutputPaths() const noexcept;
-		void operator()(std::ostream& log) const noexcept;
+		bool operator()(std::ostream& log) const noexcept;
 	private:
 		bx::DefaultAllocator _alloc;
 		FileImporter _importer;

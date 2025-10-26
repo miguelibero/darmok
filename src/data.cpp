@@ -502,38 +502,37 @@ namespace darmok
     {
     }
 
-    FileDataLoader& FileDataLoader::setBasePath(const std::filesystem::path& basePath) noexcept
+    bool FileDataLoader::setBasePath(const std::filesystem::path& path) noexcept
     {
-		_basePaths = { basePath };
-        return *this;
-    }
-
-    FileDataLoader& FileDataLoader::addBasePath(const std::filesystem::path& basePath) noexcept
-    {
-        auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);
-        if (itr == _basePaths.end())
+        if(_basePath == path)
         {
-            _basePaths.push_back(basePath);
-        }
-        return *this;
+            return false;
+		}
+		_basePath = path;
+        return true;
     }
 
-    bool FileDataLoader::removeBasePath(const std::filesystem::path& basePath) noexcept
+    bool FileDataLoader::addRootPath(const std::filesystem::path& path) noexcept
     {
-        auto itr = std::find(_basePaths.begin(), _basePaths.end(), basePath);
-        if (itr == _basePaths.end())
+        if (_rootPaths.contains(path))
         {
             return false;
         }
-        _basePaths.erase(itr);
+        _rootPaths.insert(path);
         return true;
+    }
+    bool FileDataLoader::removeRootPath(const std::filesystem::path& path) noexcept
+    {
+        return _rootPaths.erase(path);
     }
 
     expected<Data, std::string> FileDataLoader::operator()(const std::filesystem::path& path) noexcept
     {
-        for (auto& basePath : _basePaths)
+        auto fpath = (_basePath / path).relative_path();
+
+        for (auto& basePath : _rootPaths)
         {
-            auto combPath = basePath / path;
+            auto combPath = basePath / fpath;
             if (std::filesystem::exists(combPath))
             {
                 return Data::fromFile(combPath, _alloc);

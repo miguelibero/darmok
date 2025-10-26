@@ -176,7 +176,8 @@ namespace darmok
 		, _renderSize{ 0 }
 		, _rendererType{ bgfx::RendererType::Count }
 	{
-		addAssetsBasePath("assets");
+		constexpr auto defaultAssetsPath = "assets";
+		addAssetsRootPath(defaultAssetsPath);
 	}
 
 	Input& AppImpl::getInput() noexcept
@@ -274,14 +275,19 @@ namespace darmok
 		return _paused;
 	}
 
-	void AppImpl::addAssetsBasePath(const std::filesystem::path& path) noexcept
+	bool AppImpl::setAssetsBasePath(const std::filesystem::path& path) noexcept
 	{
-		_dataLoader.addBasePath(path);
+		return _dataLoader.setBasePath(path);
 	}
 
-	void AppImpl::removeAssetsBasePath(const std::filesystem::path& path) noexcept
+	bool AppImpl::addAssetsRootPath(const std::filesystem::path& path) noexcept
 	{
-		_dataLoader.removeBasePath(path);
+		return _dataLoader.addRootPath(path);
+	}
+
+	bool AppImpl::removeAssetsRootPath(const std::filesystem::path& path) noexcept
+	{
+		return _dataLoader.removeRootPath(path);
 	}
 
 	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept
@@ -985,14 +991,19 @@ namespace darmok
 		return _impl->isPaused();
 	}
 
-	void App::addAssetsBasePath(const std::filesystem::path& path) noexcept
+	bool App::setAssetsBasePath(const std::filesystem::path& path) noexcept
 	{
-		_impl->addAssetsBasePath(path);
+		return _impl->setAssetsBasePath(path);
 	}
 
-	void App::removeAssetsBasePath(const std::filesystem::path& path) noexcept
+	bool App::addAssetsRootPath(const std::filesystem::path& path) noexcept
 	{
-		_impl->addAssetsBasePath(path);
+		return _impl->addAssetsRootPath(path);
+	}
+
+	bool App::removeAssetsRootPath(const std::filesystem::path& path) noexcept
+	{
+		return _impl->removeAssetsRootPath(path);
 	}
 
 	void App::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept

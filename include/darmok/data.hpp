@@ -10,6 +10,7 @@
 #include <string>
 #include <iostream>
 #include <filesystem>
+#include <unordered_set>
 
 #include <bgfx/bgfx.h>
 #include <bx/bx.h>
@@ -160,13 +161,14 @@ namespace darmok
         using Resource = Data;
         FileDataLoader(const OptionalRef<bx::AllocatorI>& alloc = nullptr);
 
-        FileDataLoader& setBasePath(const std::filesystem::path& basePath) noexcept;
-        FileDataLoader& addBasePath(const std::filesystem::path& basePath) noexcept;
-        bool removeBasePath(const std::filesystem::path& basePath) noexcept;
+        bool setBasePath(const std::filesystem::path& path) noexcept;
+        bool addRootPath(const std::filesystem::path& path) noexcept;
+        bool removeRootPath(const std::filesystem::path& path) noexcept;
 
         [[nodiscard]] expected<Data, std::string> operator()(const std::filesystem::path& path) noexcept override;
 	private:
-        std::vector<std::filesystem::path> _basePaths;
+        std::filesystem::path _basePath;
+        std::unordered_set<std::filesystem::path> _rootPaths;
 		OptionalRef<bx::AllocatorI> _alloc;
 	};
 }

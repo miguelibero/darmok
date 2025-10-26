@@ -73,9 +73,8 @@ namespace darmok
 			return unexpected{ sceneResult.error() };
 		}
         auto model = std::make_shared<Model>();
-        auto basePath = path.parent_path().string();
 
-        AssimpSceneDefinitionConverter converter{ **sceneResult, *model, basePath, _config, _allocator, _texLoader };
+        AssimpSceneDefinitionConverter converter{ **sceneResult, *model, _config, _allocator, _texLoader };
         auto result = converter();
         if(!result )
         {
@@ -84,11 +83,10 @@ namespace darmok
         return model;
     }
 
-    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const std::filesystem::path& basePath, const ImportConfig& config,
+    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
         bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader, OptionalRef<IProgramSourceLoader> progLoader) noexcept
         : _assimpScene{ assimpScene }
 		, _scene{ sceneDef }
-        , _basePath{ basePath }
         , _config{ config }
         , _allocator{ alloc }
         , _texLoader{ texLoader }
@@ -435,7 +433,7 @@ namespace darmok
             return true;
         }
 
-        TextureSource texSrc;
+        auto texSrc = Texture::createSource();
         auto assimpTex = _assimpScene.GetEmbeddedTexture(path.c_str());
         if (assimpTex)
         {
@@ -469,12 +467,7 @@ namespace darmok
         }
         else if (_texLoader)
         {
-            std::filesystem::path fsPath{ path };
-            if (fsPath.is_relative())
-            {
-                fsPath = _basePath / fsPath;
-            }
-            auto result = (*_texLoader)(fsPath.string());
+            auto result = (*_texLoader)(path);
             if (!result)
             {
                 return false;
@@ -685,7 +678,7 @@ namespace darmok
         {
             return itr->second;
         }
-        MeshSource meshSrc;
+        auto meshSrc = Mesh::createSource();
         auto result = updateMesh(meshSrc, *assimpMesh);
         if(!result)
         {
@@ -713,7 +706,7 @@ namespace darmok
         {
             return itr->second;
         }
-        ArmatureDefinition armDef;
+        auto armDef = Armature::createDefinition();
         updateArmature(armDef, *assimpMesh);
         if (armDef.joints_size() == 0)
         {
@@ -741,7 +734,7 @@ namespace darmok
         {
             return itr->second;
         }
-        MaterialDefinition matDef;
+        auto matDef = Material::createDefinition();
         updateMaterial(matDef, *assimpMat);
         auto path = "material_" + std::to_string(index);
         if(matDef.name().empty())
@@ -799,7 +792,7 @@ namespace darmok
         _defaultCompilerConfig.progCompiler.includePaths.insert(path);
     }
 
-    void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const std::filesystem::path& basePath, AssimpConfig& config)
+    void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config)
     {
         auto itr = json.find("programPath");
         auto& progRef = *config.mutable_program();
@@ -892,7 +885,7 @@ namespace darmok
         itr = json.find("programCompilerConfig");
         if (itr != json.end())
         {
-            _compilerConfig->progCompiler.read(*itr, basePath);
+            _compilerConfig->progCompiler.read(*itr, progReadConfig);
         }
         itr = json.find("compile");
         if (itr != json.end())
@@ -959,7 +952,12 @@ namespace darmok
         {
             configJson.update(input.dirConfig);
         }
-        loadConfig(configJson, input.basePath, config);
+        ReadProgramCompilerConfig readProgConfig
+        {
+			.rootPath = input.basePath,
+            .basePath = input.path.parent_path(),
+        };
+        loadConfig(configJson, readProgConfig, config);
 
         std::filesystem::path outputPath;
         auto itr = configJson.find("outputPath");
@@ -1040,10 +1038,21 @@ namespace darmok
         {
             texLoader = nullptr;
         }
-        _dataLoader.addBasePath(input.basePath);
+        auto addedRootPath = _dataLoader.addRootPath(input.basePath);
+        _dataLoader.setBasePath(basePath);
+
+        auto fixDataLoaderPaths = [&]()
+        {
+            if (addedRootPath)
+            {
+                _dataLoader.removeRootPath(input.basePath);
+            }
+            _dataLoader.setBasePath({});
+        };
+
         try
         {
-            AssimpSceneDefinitionConverter converter{ *_currentScene, def, basePath, *_currentConfig, _alloc, texLoader };
+            AssimpSceneDefinitionConverter converter{ *_currentScene, def, *_currentConfig, _alloc, texLoader };
             auto convertResult = converter();
             if (!convertResult)
             {
@@ -1065,10 +1074,10 @@ namespace darmok
         }
         catch (const std::exception& ex)
         {
-            _dataLoader.removeBasePath(input.basePath);
+            fixDataLoaderPaths();
             return unexpected{ ex.what() };
         }
-        _dataLoader.removeBasePath(input.basePath);
+        fixDataLoaderPaths();
 
         for (auto& out : config.outputStreams)
         {
