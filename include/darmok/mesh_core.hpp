@@ -135,7 +135,6 @@ namespace darmok
         Type _type;
         Variant _variant;
         bgfx::VertexLayout _layout;
-        size_t _idxSize;
         size_t _vertNum;
         size_t _idxNum;
     };

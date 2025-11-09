@@ -156,6 +156,7 @@ namespace darmok
         {
             return unexpected{ meshResult.error() };
 		}
+        auto& meshPath = meshResult.value();
         auto matPath = getMaterial(assimpMesh->mMaterialIndex);
         
         if (addChild)
@@ -175,10 +176,13 @@ namespace darmok
         *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpAabb.mMax));
         _scene.setComponent(entity, bounds);
 
-        RenderableDefinition renderable;
-        renderable.set_mesh_path(meshResult.value());
-        renderable.set_material_path(matPath);
-        _scene.setComponent(entity, renderable);
+        if (!meshPath.empty())
+        {
+            RenderableDefinition renderable;
+            renderable.set_mesh_path(meshPath);
+            renderable.set_material_path(matPath);
+            _scene.setComponent(entity, renderable);
+        }
 
         auto armPath = getArmature(index);
         if (!armPath.empty())
@@ -631,23 +635,14 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
+    expected<bool, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
     {
         const std::string name = AssimpUtils::getString(assimpMesh.mName);
-        auto skip = false;
-        for (auto& regex : _skipMeshes)
+        if (AssimpUtils::match(name, _config.skip_meshes_regex()))
         {
-            if (std::regex_match(name, regex))
-            {
-                skip = true;
-                break;
-            }
+            return false;
         }
-        if (skip)
-        {
-            return {};
-        }
-
+        
         *meshSrc.mutable_program() = _config.program_source();
 
         AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
@@ -657,7 +652,7 @@ namespace darmok
             return unexpected{ convertResult.error() };
 		}
 		
-        return {};
+        return true;
     }
 
     void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
@@ -678,12 +673,16 @@ namespace darmok
         {
             return itr->second;
         }
-        auto meshSrc = Mesh::createSource();
+        Mesh::Source meshSrc;
         auto result = updateMesh(meshSrc, *assimpMesh);
         if(!result)
         {
             return unexpected{ result.error() };
 		}
+        if (!result.value())
+        {
+            return std::string{};
+        }
         auto path = "mesh_" + std::to_string(index);
         if (meshSrc.name().empty())
         {
@@ -868,13 +867,14 @@ namespace darmok
 		if (itr != json.end())
 		{
 			addRegexes(*config.mutable_skip_meshes_regex(), *itr);
-
 		}
         itr = json.find("skipNodes");
         if (itr != json.end())
         {
             addRegexes(*config.mutable_skip_nodes_regex(), *itr);
         }
+
+        config.set_embed_textures(true);
         itr = json.find("embedTextures");
         if (itr != json.end())
         {

@@ -198,7 +198,7 @@ namespace darmok::editor
     {
         if (_path.has_parent_path())
         {
-            _app.removeAssetsBasePath(_path.parent_path());
+            _app.removeAssetsRootPath(_path.parent_path());
         }
         _path.clear();
     }
@@ -224,15 +224,16 @@ namespace darmok::editor
 
         if (_path.has_parent_path())
         {
-            _app.addAssetsBasePath(_path.parent_path());
+            _app.addAssetsRootPath(_path.parent_path());
         }
 
         auto result = _sceneLoader(_sceneDef, *_scene);
         if (result)
         {
             _app.getOrAddComponent<SceneAppComponent>().update(0.f);
+            return {};
         }
-        return result;
+        return unexpected{ result.error() };
     }
 
     expected<void, std::string> EditorProject::reloadScene()

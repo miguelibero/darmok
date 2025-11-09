@@ -90,6 +90,7 @@ namespace darmok
 		IComponentLoadContext& getComponentLoadContext(const protobuf::Scene& sceneDef);
 		void setParent(const LuaEntity& entity);
 		void setRenderableSetup(const sol::function& func);
+		void setTransformSetup(const sol::function& func);
 		AssetPack& getAssetPack();
 
 		std::unique_ptr<SceneLoader> _loader;

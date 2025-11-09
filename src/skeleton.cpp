@@ -383,7 +383,15 @@ namespace darmok
         if (itr != json.end())
         {
             auto& anim = *_def->add_animations();
-            auto result = SkeletalAnimatorAnimationDefinitionWrapper{ anim }.read(*itr);
+            expected<void, std::string> result;
+            if(itr->is_string())
+            {
+                result = SkeletalAnimatorAnimationDefinitionWrapper{ anim }.read(json);
+            }
+            else
+            {
+                result = SkeletalAnimatorAnimationDefinitionWrapper{ anim }.read(*itr);
+            }
             if (!result)
             {
                 return result;

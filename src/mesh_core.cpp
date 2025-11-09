@@ -197,12 +197,6 @@ namespace darmok
 		return true;
 	}
 
-	Mesh::Mesh(const Definition& def)
-		: Mesh(ConstVertexLayoutWrapper{ def.layout() }.getBgfx(),
-			DataView{ def.vertices() }, DataView{ def.indices() }, Config::fromDefinition(def))
-	{
-	}
-
 	Mesh::Variant Mesh::createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
 	{
 				auto flags = config.getFlags();
@@ -228,6 +222,12 @@ namespace darmok
 
 	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
 		: Mesh(layout, vertices, DataView{}, config)
+	{
+	}
+
+	Mesh::Mesh(const Definition& def)
+		: Mesh(ConstVertexLayoutWrapper{ def.layout() }.getBgfx(),
+			DataView{ def.vertices() }, DataView{ def.indices() }, Config::fromDefinition(def))
 	{
 	}
 

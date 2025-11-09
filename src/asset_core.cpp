@@ -960,8 +960,8 @@ namespace darmok
         auto relInput = fs::relative(op.input.path, _inputPath);
         FileImportConfig config{ .context = *this };
         auto outputNum = effect.outputs.size();
-        std::vector<Data> headerDatas;
-        headerDatas.resize(outputNum);
+        std::vector<Data> datas;
+        datas.resize(outputNum);
         config.outputStreams.resize(outputNum);
         for (size_t i = 0; i < outputNum; ++i)
         {
@@ -977,16 +977,7 @@ namespace darmok
             log << op.importer.getName() << ": " << relInput << " -> " << relOutput << "..." << std::endl;
             result.updatedOutputPaths.push_back(outputPath);
             fs::create_directories(outputPath.parent_path());
-
-            if (op.headerConfig.produceHeaders)
-            {
-                config.outputStreams[i] = std::make_unique<DataOutputStream>(headerDatas[i]);
-            }
-            else
-            {
-                std::ios_base::openmode mode = output.binary ? std::ios_base::binary : std::ios_base::out;
-                config.outputStreams[i] = std::make_unique<std::ofstream>(outputPath, mode);
-            }
+            config.outputStreams[i] = std::make_unique<DataOutputStream>(datas[i]);
         }
         if (result.updatedOutputPaths.empty())
         {
@@ -998,16 +989,9 @@ namespace darmok
         {
             log << name << " error in import: " << importResult.error();
             config.outputStreams.clear();
-            for (auto& path : result.outputPaths)
-            {
-                if (fs::exists(path))
-                {
-                    fs::remove(path);
-                }
-            }
             result.error = true;
         }
-        else if (op.headerConfig.produceHeaders)
+        else 
         {
             for (size_t i = 0; i < outputNum; ++i)
             {
@@ -1016,13 +1000,23 @@ namespace darmok
                 {
                     continue;
                 }
-                auto& data = headerDatas[i];
+                auto& data = datas[i];
                 auto& outputPath = result.outputPaths[i];
+                auto& output = effect.outputs[i];
+                std::ios_base::openmode mode = output.binary ? std::ios_base::binary : std::ios_base::out;
+                std::ofstream os{ outputPath, mode };
+                auto dataView = data.view(0, stream->tellp());
 
-                auto stem = outputPath.stem().string();
-                auto headerVarName = op.headerConfig.varPrefix + stem;
-                std::ofstream os{ outputPath };
-                os << data.view(0, stream->tellp()).toHeader(headerVarName);
+                if (op.headerConfig.produceHeaders)
+                {
+                    auto stem = outputPath.stem().string();
+                    auto headerVarName = op.headerConfig.varPrefix + stem;
+                    os << dataView.toHeader(headerVarName);
+                }
+                else
+                {
+                    os << dataView;
+                }
             }
         }
         return result;

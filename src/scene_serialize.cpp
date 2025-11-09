@@ -577,7 +577,7 @@ namespace darmok
 
     SceneLoaderImpl::EntityResult SceneLoaderImpl::load(const Scene::Definition& sceneDef, Scene& scene) noexcept
     {
-        if (_scene.ptr() != &scene)
+        if (_scene.ptr() != &scene || _sceneDef.ptr() != &sceneDef)
         {
 			_loader = entt::continuous_loader{ scene.getRegistry() };
         }
@@ -866,8 +866,8 @@ namespace darmok
 
     expected<void, std::string> SceneDefinitionCompiler::operator()(Definition& def)
     {
-        SceneDefinitionWrapper wrap{ def };
-        for (auto& [path, progSrc] : wrap.getAssets<Program::Source>())
+        SceneDefinitionWrapper scene{ def };
+        for (auto& [path, progSrc] : scene.getAssets<Program::Source>())
         {
             ProgramCompiler progCompiler{ _config.progCompiler };
             auto result = progCompiler(progSrc);
@@ -875,9 +875,9 @@ namespace darmok
             {
                 return unexpected{ fmt::format("failed to compile program {}: {}", path.string(), result.error())};
             }
-            wrap.setAsset(path, result.value());
+            scene.setAsset(path, result.value());
         }
-        for (auto& [path, meshSrc] : wrap.getAssets<Mesh::Source>())
+        for (auto& [path, meshSrc] : scene.getAssets<Mesh::Source>())
         {
             auto& progRef = meshSrc.program();
 
@@ -890,7 +890,7 @@ namespace darmok
             auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
             MeshConfig config{ .index32 = meshSrc.index32() };
             auto def = MeshData{ meshSrc }.createDefinition(layout, config);
-            wrap.setAsset(path, def);
+            scene.setAsset(path, def);
         }
 
         return {};

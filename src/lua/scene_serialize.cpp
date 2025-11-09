@@ -3,6 +3,7 @@
 #include "lua/protobuf.hpp"
 
 #include <darmok/scene_serialize.hpp>
+#include <darmok/transform.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/asset_pack.hpp>
 #include <darmok/stream.hpp>
@@ -222,6 +223,7 @@ namespace darmok
 			LuaSceneLoader(), LuaSceneLoader(AssetContext&)>(),
 			"parent", sol::property(&LuaSceneLoader::setParent),
 			"renderable_setup", sol::property(&LuaSceneLoader::setRenderableSetup),
+			"transform_setup", sol::property(&LuaSceneLoader::setTransformSetup),
 			"asset_pack", sol::property(&LuaSceneLoader::getAssetPack),
 			"component_load_context", sol::property(&LuaSceneLoader::getComponentLoadContext),
 			sol::meta_function::call, &LuaSceneLoader::run
@@ -244,6 +246,15 @@ namespace darmok
 		{
 			auto result = func(def, LuaEntity{ entity, _scene });
 			LuaUtils::throwResult(result, "renderable setup callback");
+		});
+	}
+
+	void LuaSceneLoader::setTransformSetup(const sol::function& func)
+	{
+		_loader->addComponentListener<Transform>([this, func](const Transform::Definition& def, Entity entity)
+			{
+				auto result = func(def, LuaEntity{ entity, _scene });
+				LuaUtils::throwResult(result, "transform setup callback");
 		});
 	}
 

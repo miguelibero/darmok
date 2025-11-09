@@ -82,7 +82,6 @@ namespace darmok
         const aiScene& _assimpScene;
 		SceneDefinitionWrapper _scene;
         ImportConfig _config;
-        std::vector<std::regex> _skipMeshes;
 
         struct AssimpMaterialTexture final
         {
@@ -109,7 +108,7 @@ namespace darmok
 
         expected<EntityId, std::string> updateNode(const aiNode& assimpNode, EntityId parentEntity = 0) noexcept;
         void updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept;
-        expected<void, std::string> updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept;
+        expected<bool, std::string> updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept;
         void updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept;
         void updateCamera(EntityId entity, const aiCamera& assimpCam) noexcept;
         void updateLight(EntityId entity, const aiLight& assimpLight) noexcept;
