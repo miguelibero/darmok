@@ -7,10 +7,11 @@
 #include <darmok/mesh.hpp>
 #include <darmok/asset_pack.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/camera.hpp>
 
 namespace darmok
 {
-	LuaEntityDefinition::LuaEntityDefinition(EntityId entity, Scene& scene)
+	LuaEntityDefinition::LuaEntityDefinition(EntityId entity, const std::weak_ptr<Scene>& scene)
 		: _entity{ entity }
 		, _scene{ scene }
 	{
@@ -32,15 +33,20 @@ namespace darmok
 		return _entity;
 	}
 
-	LuaEntityDefinition::Scene& LuaEntityDefinition::getScene() noexcept
+	std::shared_ptr<LuaEntityDefinition::Scene> LuaEntityDefinition::getScene()
 	{
-		return _scene.getDefinition();
+		if (auto scene = _scene.lock())
+		{
+			return scene;
+		}
+		throw sol::error{ "scene expired" };
 	}
 
 	bool LuaEntityDefinition::forEachChild(const sol::protected_function& callback)
 	{
-		auto& scene = _scene.getDefinition();
-		return _scene.forEachChild(_entity, [&callback, &scene](auto entity, auto& trans) -> bool {
+		auto scene = getScene();
+		SceneDefinitionWrapper sceneWrapper{ *scene };
+		return sceneWrapper.forEachChild(_entity, [&callback, &scene](auto entity, auto& trans) -> bool {
 			auto result = callback(LuaEntityDefinition{ entity, scene }, trans);
 			return LuaUtils::checkResult("for each entity child", result);
 		});
@@ -48,8 +54,9 @@ namespace darmok
 
 	bool LuaEntityDefinition::forEachParent(const sol::protected_function& callback)
 	{
-		auto& scene = _scene.getDefinition();
-		return _scene.forEachParent(_entity, [&callback, &scene](auto entity, auto& trans) -> bool {
+		auto scene = getScene();
+		SceneDefinitionWrapper sceneWrapper{ *scene };
+		return sceneWrapper.forEachParent(_entity, [&callback, &scene](auto entity, auto& trans) -> bool {
 			auto result = callback(LuaEntityDefinition{ entity, scene }, trans);
 			return LuaUtils::checkResult("for each entity parent", result);
 		});
@@ -57,17 +64,21 @@ namespace darmok
 
 	std::vector<LuaEntityDefinition> LuaEntityDefinition::getChildren()
 	{
-		auto result = _scene.getChildren(_entity);
+		auto scene = getScene();
+		SceneDefinitionWrapper sceneWrapper{ *scene };
+		auto result = sceneWrapper.getChildren(_entity);
 		std::vector<LuaEntityDefinition> entities;
 		entities.reserve(result.size());
 		std::transform(result.begin(), result.end(), std::back_inserter(entities),
-			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene.getDefinition() }; });
+			[scene](const auto& entityId) { return LuaEntityDefinition{ entityId, scene }; });
 		return entities;
 	}
 
 	std::vector<google::protobuf::Any*> LuaEntityDefinition::getComponents()
 	{
-		auto result = _scene.getComponents(_entity);
+		auto scene = getScene();
+		SceneDefinitionWrapper sceneWrapper{ *scene };
+		auto result = sceneWrapper.getComponents(_entity);
 		std::vector<google::protobuf::Any*> comps;
 		comps.reserve(result.size());
 		std::transform(result.begin(), result.end(), std::back_inserter(comps),
@@ -77,14 +88,26 @@ namespace darmok
 
 	google::protobuf::Any* LuaEntityDefinition::getAnyComponent(const sol::object& type)
 	{
+		auto scene = getScene();
+		SceneDefinitionWrapper sceneWrapper{ *scene };
 		auto typeId = LuaUtils::getTypeId(type).value();
-		return _scene.getComponent(_entity, typeId).ptr();
+		return sceneWrapper.getComponent(_entity, typeId).ptr();
+	}
+
+	LuaSceneDefinition::LuaSceneDefinition(const std::shared_ptr<Scene>& scene)
+		: _scene{ scene }
+	{
+	}
+
+	const std::shared_ptr<LuaSceneDefinition::Scene>& LuaSceneDefinition::getReal() const noexcept
+	{
+		return _scene;
 	}
 
 	void LuaSceneDefinition::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<Scene::Definition>("SceneDefinition",
-			sol::constructors<Scene::Definition()>(),
+		lua.new_usertype<LuaSceneDefinition>("SceneDefinition",
+			sol::no_constructor,
 			"root_entity", sol::property(&LuaSceneDefinition::getRootEntity),
 			"root_entities", sol::property(&LuaSceneDefinition::getRootEntities),
 			"entities", sol::property(&LuaSceneDefinition::getEntities),
@@ -98,37 +121,37 @@ namespace darmok
 		);
 	}
 
-	LuaEntityDefinition LuaSceneDefinition::getRootEntity(protobuf::Scene& scene)
+	LuaEntityDefinition LuaSceneDefinition::getRootEntity()
 	{
-		auto entity = SceneDefinitionWrapper{ scene }.getRootEntity();
-		return LuaEntityDefinition{ entity, scene };
+		auto entity = SceneDefinitionWrapper{ *_scene }.getRootEntity();
+		return LuaEntityDefinition{ entity, _scene };
 	}
 
-	std::vector<LuaEntityDefinition> LuaSceneDefinition::getRootEntities(protobuf::Scene& scene)
+	std::vector<LuaEntityDefinition> LuaSceneDefinition::getRootEntities()
 	{
-		auto result = SceneDefinitionWrapper{ scene }.getRootEntities();
+		auto result = SceneDefinitionWrapper{ *_scene }.getRootEntities();
 		std::vector<LuaEntityDefinition> entities;
 		entities.reserve(result.size());
 		std::transform(result.begin(), result.end(), std::back_inserter(entities),
-			[&scene](const auto& entityId) { return LuaEntityDefinition{ entityId, scene }; });
+			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; });
 		return entities;
 	}
 
-	std::vector<LuaEntityDefinition> LuaSceneDefinition::getEntities(protobuf::Scene& scene)
+	std::vector<LuaEntityDefinition> LuaSceneDefinition::getEntities()
 	{
-		auto result = SceneDefinitionWrapper{ scene }.getEntities();
+		auto result = SceneDefinitionWrapper{ *_scene }.getEntities();
 		std::vector<LuaEntityDefinition> entities;
 		entities.reserve(result.size());
 		std::transform(result.begin(), result.end(), std::back_inserter(entities),
-			[&scene](const auto& entityId) { return LuaEntityDefinition{ entityId, scene }; });
+			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; });
 		return entities;
 	}
 
-	std::unordered_map<EntityId, google::protobuf::Any*> LuaSceneDefinition::getAnyTypeComponents(protobuf::Scene& scene, const sol::object& type)
+	std::unordered_map<EntityId, google::protobuf::Any*> LuaSceneDefinition::getAnyTypeComponents(const sol::object& type)
 	{
 		auto typeId = LuaUtils::getTypeId(type).value();
 		std::unordered_map<EntityId, google::protobuf::Any*> comps;
-		if (auto result = SceneDefinitionWrapper{ scene }.getTypeComponents(typeId))
+		if (auto result = SceneDefinitionWrapper{ *_scene }.getTypeComponents(typeId))
 		{
 			auto& rcomps = *result->mutable_components();
 			comps.reserve(result->components_size());
@@ -140,19 +163,19 @@ namespace darmok
 		return comps;
 	}
 
-	std::optional<LuaEntityDefinition> LuaSceneDefinition::getAnyEntity(protobuf::Scene& scene, const google::protobuf::Any& anyComp)
+	std::optional<LuaEntityDefinition> LuaSceneDefinition::getAnyEntity(const google::protobuf::Any& anyComp)
 	{
-		auto result = SceneDefinitionWrapper{ scene }.getEntity(anyComp);
+		auto result = SceneDefinitionWrapper{ *_scene }.getEntity(anyComp);
 		if(result)
 		{
-			return LuaEntityDefinition{ *result, scene };
+			return LuaEntityDefinition{ *result, _scene };
 		}
 		return std::nullopt;
 	}
 
-	std::optional<std::string> LuaSceneDefinition::getAnyAssetPath(protobuf::Scene& scene, const google::protobuf::Any& anyAsset)
+	std::optional<std::string> LuaSceneDefinition::getAnyAssetPath(const google::protobuf::Any& anyAsset)
 	{
-		auto path = SceneDefinitionWrapper{ scene }.getAssetPath(anyAsset);
+		auto path = SceneDefinitionWrapper{ *_scene }.getAssetPath(anyAsset);
 		if (path)
 		{
 			return path->string();
@@ -160,21 +183,21 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	std::vector<std::string> LuaSceneDefinition::getAssetPaths(protobuf::Scene& scene, const sol::object& type)
+	std::vector<std::string> LuaSceneDefinition::getAssetPaths(const sol::object& type)
 	{
 		auto typeId = LuaUtils::getTypeId(type).value();
-		auto result = SceneDefinitionWrapper{ scene }.getAssetPaths(typeId);
+		auto result = SceneDefinitionWrapper{ *_scene }.getAssetPaths(typeId);
 		std::vector<std::string> paths;
 		paths.reserve(result.size());
 		std::transform(result.begin(), result.end(), std::back_inserter(paths),
-			[&scene](const auto& elm) { return elm.string(); });
+			[](const auto& elm) { return elm.string(); });
 		return paths;
 	}
 
-	LuaSceneDefinition::AssetMap LuaSceneDefinition::getAnyTypeAssets(protobuf::Scene& scene, const sol::object& type)
+	LuaSceneDefinition::AssetMap LuaSceneDefinition::getAnyTypeAssets(const sol::object& type)
 	{
 		auto typeId = LuaUtils::getTypeId(type).value();
-		auto result = SceneDefinitionWrapper{ scene }.getAssets(typeId);
+		auto result = SceneDefinitionWrapper{ *_scene }.getAssets(typeId);
 		AssetMap assets;
 		assets.reserve(result.size());
 		for(auto& [key, value] : result)
@@ -184,9 +207,9 @@ namespace darmok
 		return assets;
 	}
 
-	LuaSceneDefinition::AssetMap LuaSceneDefinition::getAnyChildAssets(protobuf::Scene& scene, const std::filesystem::path& parentPath)
+	LuaSceneDefinition::AssetMap LuaSceneDefinition::getAnyChildAssets(const std::filesystem::path& parentPath)
 	{
-		auto result = SceneDefinitionWrapper{ scene }.getAssets(parentPath);
+		auto result = SceneDefinitionWrapper{ *_scene }.getAssets(parentPath);
 		AssetMap assets;
 		assets.reserve(result.size());
 		for (auto& [key, value] : result)
@@ -196,9 +219,9 @@ namespace darmok
 		return assets;
 	}
 
-	google::protobuf::Any* LuaSceneDefinition::getAnyAsset(protobuf::Scene& scene, const std::filesystem::path& path)
+	google::protobuf::Any* LuaSceneDefinition::getAnyAsset(const std::filesystem::path& path)
 	{
-		return SceneDefinitionWrapper{ scene }.getAsset(path).ptr();
+		return SceneDefinitionWrapper{ *_scene }.getAsset(path).ptr();
 	}
 
 	LuaSceneLoader::LuaSceneLoader()
@@ -222,8 +245,8 @@ namespace darmok
 		lua.new_usertype<LuaSceneLoader>("SceneLoader", sol::constructors<
 			LuaSceneLoader(), LuaSceneLoader(AssetContext&)>(),
 			"parent", sol::property(&LuaSceneLoader::setParent),
-			"renderable_setup", sol::property(&LuaSceneLoader::setRenderableSetup),
-			"transform_setup", sol::property(&LuaSceneLoader::setTransformSetup),
+			"add_component_listener", &LuaSceneLoader::addComponentListener,
+			"clear_component_listeners", &LuaSceneLoader::clearComponentListeners,
 			"asset_pack", sol::property(&LuaSceneLoader::getAssetPack),
 			"component_load_context", sol::property(&LuaSceneLoader::getComponentLoadContext),
 			sol::meta_function::call, &LuaSceneLoader::run
@@ -240,28 +263,57 @@ namespace darmok
 		_loader->setParent(entity.getReal());
 	}
 
-	void LuaSceneLoader::setRenderableSetup(const sol::function& func)
+	namespace LuaSceneLoaderDetail
 	{
-		_loader->addComponentListener<Renderable>([this, func](const Renderable::Definition& def, Entity entity)
+
+		template <typename T>
+		bool tryAddComponentListener(entt::id_type typeId, SceneLoader& loader, const std::weak_ptr<Scene>& scene, const sol::function& func)
 		{
-			auto result = func(def, LuaEntity{ entity, _scene });
-			LuaUtils::throwResult(result, "renderable setup callback");
-		});
-	}
-
-	void LuaSceneLoader::setTransformSetup(const sol::function& func)
-	{
-		_loader->addComponentListener<Transform>([this, func](const Transform::Definition& def, Entity entity)
+			if (typeId != entt::type_hash<T>().value())
 			{
-				auto result = func(def, LuaEntity{ entity, _scene });
-				LuaUtils::throwResult(result, "transform setup callback");
-		});
+				return false;
+			}
+			loader.addComponentListener<T>([scene, func](const auto& def, Entity entity)
+			{
+				auto result = func(def, LuaEntity{ entity, scene });
+				LuaUtils::throwResult(result, "scene loader component listener callback");
+			});
+			return true;
+		}
+
+		template <typename T, typename T2, typename... Types>
+		bool tryAddComponentListener(entt::id_type typeId, SceneLoader& loader, const std::weak_ptr<Scene>& scene, const sol::function& func)
+		{
+			bool handled = tryAddComponentListener<T>(typeId, loader, scene, func);
+			if (handled)
+			{
+				return true;
+			}
+			return tryAddComponentListener<T2, Types...>(typeId, loader, scene, func);
+		}
 	}
 
-	std::optional<LuaEntity> LuaSceneLoader::run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene)
+	void LuaSceneLoader::addComponentListener(const sol::object& type, const sol::function& func)
+	{
+		auto typeId = LuaUtils::getTypeId(type).value();
+		auto handled = LuaSceneLoaderDetail::tryAddComponentListener<
+			Transform, Renderable, Camera, Skinnable>(
+				typeId, *_loader, _scene, func);
+		if (!handled)
+		{
+			throw sol::error{ "unsupported component type" };
+		}
+	}
+
+	void LuaSceneLoader::clearComponentListeners()
+	{
+		_loader->clearComponentListeners();
+	}
+
+	std::optional<LuaEntity> LuaSceneLoader::run(const LuaSceneDefinition& sceneDef, std::shared_ptr<Scene> scene)
 	{
 		_scene = scene;
-		auto result = (*_loader)(sceneDef, *scene);
+		auto result = (*_loader)(*sceneDef.getReal(), *scene);
 		if (!result)
 		{
 			throw sol::error{ result.error() };

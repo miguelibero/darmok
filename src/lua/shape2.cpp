@@ -1,6 +1,7 @@
 #include "lua/shape.hpp"
 #include "lua/glm.hpp"
 #include "lua/protobuf.hpp"
+#include "lua/scene_serialize.hpp"
 #include <darmok/shape.hpp>
 
 namespace darmok
@@ -57,9 +58,17 @@ namespace darmok
 
 	void LuaShape::bindBoundingBox(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<BoundingBox::Definition>(lua, "BoundingBoxDefinition")
+		auto def = LuaUtils::newProtobuf<BoundingBox::Definition>(lua, "BoundingBoxDefinition")
 			.protobufProperty<protobuf::Vec2>("min")
 			.protobufProperty<protobuf::Vec2>("max");
+		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
+		{
+			return entity.getComponent<BoundingBox::Definition>();
+		};
+		def.userType["get_entity"] = [](const BoundingBox::Definition& bbox, const LuaSceneDefinition& scene)
+		{
+			return scene.getEntity(bbox);
+		};
 
 		lua.new_usertype<BoundingBox>("BoundingBox",
 			sol::factories(

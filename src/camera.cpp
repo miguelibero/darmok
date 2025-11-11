@@ -617,7 +617,7 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> Camera::load(const Definition& def, IComponentLoadContext& ctxt)
+    expected<void, std::string> Camera::load(const Definition& def) noexcept
     {
         if (def.has_perspective_fovy())
         {

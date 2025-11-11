@@ -1,5 +1,9 @@
 #include "lua/transform.hpp"
 #include "lua/scene.hpp"
+#include "lua/protobuf.hpp"
+#include "lua/scene_serialize.hpp"
+
+#include <darmok/protobuf/scene.pb.h>
 #include <darmok/transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -112,6 +116,19 @@ namespace darmok
 
 	void LuaTransform::bind(sol::state_view& lua) noexcept
 	{
+		auto def = LuaUtils::newProtobuf<Transform::Definition>(lua, "TransformDefinition")
+			.protobufProperty<protobuf::Vec3>("position")
+			.protobufProperty<protobuf::Quat>("rotation")
+			.protobufProperty<protobuf::Vec3>("scale");
+		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
+		{
+			return entity.getComponent<Transform::Definition>();
+		};
+		def.userType["get_entity"] = [](const Transform::Definition& transform, const LuaSceneDefinition& scene)
+		{
+			return scene.getEntity(transform);
+		};
+
 		lua.new_usertype<Transform>("Transform", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Transform>::value),
 			"add_entity_component", sol::overload(

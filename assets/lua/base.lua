@@ -1,5 +1,6 @@
 
 -- App
+
 function App:add_component(cls, ...)
 	return cls.add_app_component(self, ...)
 end
@@ -18,6 +19,7 @@ end
 
 
 -- AppComponent
+
 AppComponent = class("AppComponent"):include(ClassStatic)
 
 function AppComponent.static:_class_add_app_component(app, ...)
@@ -35,6 +37,7 @@ end
 
 
 -- Scene
+
 function Scene:get_entity(comp)
 	return comp:get_entity(self)
 end
@@ -86,6 +89,7 @@ end
 
 
 -- SceneComponent
+
 SceneComponent = class("SceneComponent"):include(ClassStatic)
 
 function SceneComponent.static:_class_add_scene_component(scene, ...)
@@ -104,6 +108,7 @@ end
 
 
 -- EntityComponent
+
 EntityComponent = class("EntityComponent"):include(ClassStatic)
 
 function EntityComponent.static:_class_add_entity_component(entity, ...)
@@ -119,6 +124,7 @@ end
 function EntityComponent.static:_class_get_entity_component(entity)
     return entity:get_lua_component(self)
 end
+
 
 -- Entity
 
@@ -198,7 +204,12 @@ function Entity:is_parent_or_self(entity)
 	return entity:is_child_or_self(self)
 end
 
+
 -- SceneDefinition
+
+function SceneDefinition:get_entity(comp)
+	return comp:get_entity(self)
+end
 
 function SceneDefinition:get_component(cls)
 	return cls.get_scene_component(self)
@@ -227,6 +238,7 @@ end
 function SceneDefinition:get_asset(cls, path)
 	return cls.get_scene_asset(self, path)
 end
+
 
 -- EntityDefinition
 
@@ -293,7 +305,9 @@ function EntityDefinition:is_parent_or_self(entity)
 	return entity:is_child_or_self(self)
 end
 
+
 -- Camera
+
 function Camera:add_component(cls, ...)
 	return cls.add_camera_component(self, ...)
 end
@@ -310,7 +324,9 @@ function Camera:get_or_add_component(cls, ...)
 	return self:add_component(cls, ...)
 end
 
+
 -- RenderChain
+
 function RenderChain:add_step(cls, ...)
 	return cls.add_chain_step(self, ...)
 end

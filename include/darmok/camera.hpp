@@ -184,7 +184,7 @@ namespace darmok
 
         // serialization
         using Definition = protobuf::Camera;
-        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+        expected<void, std::string> load(const Definition& def) noexcept;
 
 		static Definition createDefinition();
 

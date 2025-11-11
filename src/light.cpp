@@ -66,7 +66,7 @@ namespace darmok
         return _shadow;
     }
 
-    expected<void, std::string> PointLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    expected<void, std::string> PointLight::load(const Definition& def)
     {
 		setIntensity(def.intensity());
 		setColor(protobuf::convert(def.color()));
@@ -123,7 +123,7 @@ namespace darmok
         return _shadow;
     }
 
-    expected<void, std::string> DirectionalLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    expected<void, std::string> DirectionalLight::load(const Definition& def)
     {
         setIntensity(def.intensity());
         setColor(protobuf::convert(def.color()));
@@ -167,7 +167,7 @@ namespace darmok
         return _intensity;
     }
 
-    expected<void, std::string> AmbientLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    expected<void, std::string> AmbientLight::load(const Definition& def)
     {
         setIntensity(def.intensity());
         setColor(protobuf::convert(def.color()));
@@ -258,7 +258,7 @@ namespace darmok
         return _shadow;
     }
 
-    expected<void, std::string> SpotLight::load(const Definition& def, IComponentLoadContext& ctxt)
+    expected<void, std::string> SpotLight::load(const Definition& def)
     {
         setIntensity(def.intensity());
         setColor(protobuf::convert(def.color()));

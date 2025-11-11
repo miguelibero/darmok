@@ -44,6 +44,17 @@ namespace darmok
         OptionalRef<const Any> getAsset(const std::filesystem::path& path) const noexcept;
 
         template<typename T>
+        std::optional<EntityId> getEntity(const T& comp) const noexcept
+        {
+			google::protobuf::Any any;
+            if(!any.PackFrom(comp))
+            {
+                return std::nullopt;
+			}
+			return getEntity(any);
+        }
+
+        template<typename T>
         std::unordered_map<EntityId, T> getTypeComponents() const noexcept
         {
             std::unordered_map<EntityId, T> comps;
@@ -312,6 +323,16 @@ namespace darmok
 
     class SceneLoaderImpl;
 
+    template <typename T, typename Def = T::Definition>
+    concept HasBasicSceneComponentLoad = requires(T& c, const Def& def) {
+        { c.load(def) } -> std::same_as<expected<void, std::string>>;
+    };
+
+    template <typename T, typename Def = T::Definition>
+    concept HasContextSceneComponentLoad = requires(T & c, const Def& def, IComponentLoadContext& ctx) {
+        { c.load(def, ctx) } -> std::same_as<expected<void, std::string>>;
+    };
+
     class SceneArchive final
     {
     public:
@@ -343,23 +364,36 @@ namespace darmok
             // we need to delay the load() calls to guarantee that
             // all the components are present before
             auto entity = getEntity(data.entityId);
-            auto func = [this, entity, def = std::move(def)]() -> expected<void, std::string>
+            addPostLoad([this, entity, def = std::move(def)]()
             {
-                if (auto comp = getScene().getComponent<T>(entity))
-                {
-                    auto result = comp->load(def, getComponentLoadContext());
-                    if (!result)
-                    {
-                        return result;
-                    }
-                }
-                callComponentListeners(def, entity);
-                return {};
-            };
-            addPostLoad(std::move(func));
+                return doLoad<T>(entity, std::move(def));
+            });
         }
     private:
         SceneLoaderImpl& _impl;
+
+		template<typename T>
+        expected<void, std::string> doLoad(Entity entity, typename T::Definition def) noexcept
+        {
+            if (auto comp = getScene().getComponent<T>(entity))
+            {
+                expected<void, std::string> result;
+                if constexpr (HasContextSceneComponentLoad<T>)
+                {
+                    result = comp->load(def, getComponentLoadContext());
+                }
+                else if constexpr (HasBasicSceneComponentLoad<T>)
+                {
+                    result = comp->load(def);
+                }
+                if (!result)
+                {
+                    return result;
+                }
+            }
+            callComponentListeners(def, entity);
+            return {};
+        }
 
         Entity getEntity(EntityId entityId) const noexcept;
         Scene& getScene() noexcept;
@@ -418,7 +452,8 @@ namespace darmok
             });
         }
 
-        SceneLoader& addComponentListener(std::function<void(const Message& def, Entity entity)>&& func);
+        SceneLoader& addComponentListener(std::function<void(const Message& def, Entity entity)>&& func) noexcept;
+		SceneLoader& clearComponentListeners() noexcept;
 
     private:
 		std::unique_ptr<SceneLoaderImpl> _impl;

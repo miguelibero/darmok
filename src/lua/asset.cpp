@@ -6,6 +6,7 @@
 #include "lua/material.hpp"
 #include "lua/skeleton.hpp"
 #include "lua/asset_pack.hpp"
+#include "lua/scene_serialize.hpp"
 #include <darmok/shape.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/program.hpp>
@@ -48,9 +49,9 @@ namespace darmok
 		return assets.getMusicLoader()(path).value();
 	}
 
-	std::shared_ptr<protobuf::Scene> LuaAssetContext::loadSceneDefinition(IAssetContext& assets, const std::string& path)
+	LuaSceneDefinition LuaAssetContext::loadSceneDefinition(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getSceneDefinitionLoader()(path).value();
+		return { assets.getSceneDefinitionLoader()(path).value() };
 	}
 
 	std::shared_ptr<Skeleton> LuaAssetContext::loadSkeleton(IAssetContext& assets, const std::string& path)

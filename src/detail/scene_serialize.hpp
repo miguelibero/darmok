@@ -50,7 +50,8 @@ namespace darmok
         const AssetPack& getAssetPack() const noexcept;
         void setParent(Entity entity) noexcept;
         void setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
-        void addComponentListener(std::function<void(const Message& compDef, Entity entity)>&& func);
+        void addComponentListener(std::function<void(const Message& compDef, Entity entity)>&& func) noexcept;
+        void clearComponentListeners() noexcept;
         void callComponentListeners(const Message& compDef, Entity entity) noexcept;
 
     private:

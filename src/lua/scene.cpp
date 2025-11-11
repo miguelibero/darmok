@@ -78,7 +78,7 @@ namespace darmok
 		{
 			return scene;
 		}
-		throw std::runtime_error{ "scene expired" };
+		throw sol::error{ "scene expired" };
 	}
 
 	bool LuaEntity::operator==(const LuaEntity& other) const noexcept

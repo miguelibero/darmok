@@ -34,7 +34,7 @@ namespace darmok
 
         // serialization
         using Definition = protobuf::PointLight;
-        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+        expected<void, std::string> load(const Definition& def);
 
         static Definition createDefinition() noexcept;
 
@@ -60,7 +60,7 @@ namespace darmok
 
         // serialization
         using Definition = protobuf::DirectionalLight;
-        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+        expected<void, std::string> load(const Definition& def);
 
         static Definition createDefinition() noexcept;
 
@@ -91,7 +91,7 @@ namespace darmok
 
         // serialization
         using Definition = protobuf::SpotLight;
-        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+        expected<void, std::string> load(const Definition& def);
 
         static Definition createDefinition() noexcept;
 
@@ -117,7 +117,7 @@ namespace darmok
 
         // serialization
         using Definition = protobuf::AmbientLight;
-        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+        expected<void, std::string> load(const Definition& def);
 
         static Definition createDefinition() noexcept;
 

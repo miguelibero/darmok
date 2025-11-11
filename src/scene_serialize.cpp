@@ -10,6 +10,7 @@
 #include <darmok/string.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/mesh_core.hpp>
+#include <darmok/shape.hpp>
 
 #include <fmt/format.h>
 
@@ -543,9 +544,14 @@ namespace darmok
 		_assetConfig = std::move(assetConfig);
     }
 
-    void SceneLoaderImpl::addComponentListener(std::function<void(const Message& def, Entity entity)>&& func)
+    void SceneLoaderImpl::addComponentListener(std::function<void(const Message& def, Entity entity)>&& func) noexcept
     {
         _compListeners.push_back(std::move(func));
+    }
+
+    void SceneLoaderImpl::clearComponentListeners() noexcept
+    {
+		_compListeners.clear();
     }
 
     void SceneLoaderImpl::callComponentListeners(const Message& def, Entity entity) noexcept
@@ -778,6 +784,7 @@ namespace darmok
         , _archive{ *_impl }
     {
         registerComponent<Transform>();
+        registerComponent<BoundingBox>();
         registerComponent<Renderable>();
         registerComponent<Camera>();
         registerComponent<Skinnable>();
@@ -825,9 +832,15 @@ namespace darmok
         return *this;
     }
 
-    SceneLoader& SceneLoader::addComponentListener(std::function<void(const Message& def, Entity entity)>&& func)
+    SceneLoader& SceneLoader::addComponentListener(std::function<void(const Message& def, Entity entity)>&& func) noexcept
     {
         _impl->addComponentListener(std::move(func));
+        return *this;
+    }
+
+    SceneLoader& SceneLoader::clearComponentListeners() noexcept
+    {
+        _impl->clearComponentListeners();
         return *this;
     }
 

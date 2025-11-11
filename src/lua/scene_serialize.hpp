@@ -27,23 +27,27 @@ namespace darmok
 	{
 	public:
 		using Scene = protobuf::Scene;
-
-		LuaEntityDefinition(EntityId entity, Scene& scene);
+		
+		LuaEntityDefinition(EntityId entity, const std::weak_ptr<Scene>& scene);
 		static void bind(sol::state_view& lua) noexcept;
 
 		const EntityId& getReal() const noexcept;
-		Scene& getScene() noexcept;
+		std::shared_ptr<Scene> getScene();
 
 		template<typename T>
 		std::shared_ptr<T> getComponent() noexcept
 		{
-			auto result = _scene.getComponent<T>(_entity);
-			return result ? std::make_shared<T>(std::move(*result)) : nullptr;
+			if (auto scene = _scene.lock())
+			{
+				auto result = ConstSceneDefinitionWrapper{ *scene }.getComponent<T>(_entity);
+				return result ? std::make_shared<T>(std::move(*result)) : nullptr;
+			}
+			return nullptr;
 		}
 
 	private:
 		EntityId _entity;
-		SceneDefinitionWrapper _scene;
+		std::weak_ptr<Scene> _scene;
 		std::vector<LuaEntityDefinition> getChildren();
 		std::vector<google::protobuf::Any*> getComponents();
 		google::protobuf::Any* getAnyComponent(const sol::object& type);
@@ -55,24 +59,44 @@ namespace darmok
 	class LuaSceneDefinition final
 	{
 	public:
+		using Scene = protobuf::Scene;
+
+		LuaSceneDefinition(const std::shared_ptr<Scene>& scene);
+
 		static void bind(sol::state_view& lua) noexcept;
-	private:
-		using AssetMap = std::unordered_map<std::string, google::protobuf::Any*>;
-		static LuaEntityDefinition getRootEntity(protobuf::Scene& scene);
-		static std::vector<LuaEntityDefinition> getRootEntities(protobuf::Scene& scene);
-		static std::vector<LuaEntityDefinition> getEntities(protobuf::Scene& scene);
-		static std::unordered_map<EntityId, google::protobuf::Any*> getAnyTypeComponents(protobuf::Scene& scene, const sol::object& type);
-		static std::optional<LuaEntityDefinition> getAnyEntity(protobuf::Scene& scene, const google::protobuf::Any& anyComp);
-		static std::optional<std::string> getAnyAssetPath(protobuf::Scene& scene, const google::protobuf::Any& anyAsset);
-		static std::vector<std::string> getAssetPaths(protobuf::Scene& scene, const sol::object& type);
-		static AssetMap getAnyTypeAssets(protobuf::Scene& scene, const sol::object& type);
-		static AssetMap getAnyChildAssets(protobuf::Scene& scene, const std::filesystem::path& parentPath);
-		static google::protobuf::Any* getAnyAsset(protobuf::Scene& scene, const std::filesystem::path& path);
 
 		template<typename T>
-		std::shared_ptr<T> getAsset(protobuf::Scene& scene, std::string_view path) noexcept
+		std::optional<LuaEntityDefinition> getEntity(const T& component) const noexcept
 		{
-			auto result = SceneDefinitionWrapper{ scene }.getAsset<T>(path);
+			auto entityId = ConstSceneDefinitionWrapper{ *_scene }.getEntity(component);
+			if (!entityId)
+			{
+				return std::nullopt;
+			}
+			return LuaEntityDefinition{ *entityId, _scene };
+		}
+
+		const std::shared_ptr<Scene>& getReal() const noexcept;
+
+	private:
+		std::shared_ptr<Scene> _scene;
+
+		using AssetMap = std::unordered_map<std::string, google::protobuf::Any*>;
+		LuaEntityDefinition getRootEntity();
+		std::vector<LuaEntityDefinition> getRootEntities();
+		std::vector<LuaEntityDefinition> getEntities();
+		std::unordered_map<EntityId, google::protobuf::Any*> getAnyTypeComponents(const sol::object& type);
+		std::optional<LuaEntityDefinition> getAnyEntity(const google::protobuf::Any& anyComp);
+		std::optional<std::string> getAnyAssetPath(const google::protobuf::Any& anyAsset);
+		std::vector<std::string> getAssetPaths(const sol::object& type);
+		AssetMap getAnyTypeAssets(const sol::object& type);
+		AssetMap getAnyChildAssets(const std::filesystem::path& parentPath);
+		google::protobuf::Any* getAnyAsset(const std::filesystem::path& path);
+
+		template<typename T>
+		std::shared_ptr<T> getAsset(std::string_view path) noexcept
+		{
+			auto result = SceneDefinitionWrapper{ *_scene }.getAsset<T>(path);
 			return result ? std::make_shared<T>(std::move(*result)) : nullptr;
 		}
 	};
@@ -86,12 +110,13 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 	private:
-		std::optional<LuaEntity> run(const protobuf::Scene& sceneDef, std::shared_ptr<Scene> scene);
+		std::optional<LuaEntity> run(const LuaSceneDefinition& sceneDef, std::shared_ptr<Scene> scene);
 		IComponentLoadContext& getComponentLoadContext(const protobuf::Scene& sceneDef);
 		void setParent(const LuaEntity& entity);
-		void setRenderableSetup(const sol::function& func);
-		void setTransformSetup(const sol::function& func);
+		void addComponentListener(const sol::object& type, const sol::function& func);
+		void clearComponentListeners();
 		AssetPack& getAssetPack();
+		LuaEntityDefinition getEntityDefinition(const LuaEntity& entity);
 
 		std::unique_ptr<SceneLoader> _loader;
 		std::weak_ptr<Scene> _scene;

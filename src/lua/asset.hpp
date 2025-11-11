@@ -16,6 +16,7 @@ namespace darmok
 	class SkeletalAnimation;
 	class Sound;
 	class Music;
+	class LuaSceneDefinition;
 
 	namespace protobuf
 	{
@@ -39,7 +40,7 @@ namespace darmok
 		static std::shared_ptr<Sound> loadSound(IAssetContext& assets, const std::string& path);
 		static std::shared_ptr<Music> loadMusic(IAssetContext& assets, const std::string& path);
 
-		static std::shared_ptr<protobuf::Scene> loadSceneDefinition(IAssetContext& assets, const std::string& path);
+		static LuaSceneDefinition loadSceneDefinition(IAssetContext& assets, const std::string& path);
 
 		static std::shared_ptr<Skeleton> loadSkeleton(IAssetContext& assets, const std::string& pathe);
 		static std::shared_ptr<SkeletalAnimation> loadSkeletalAnimation(IAssetContext& assets, const std::string& path);
