@@ -65,18 +65,14 @@ namespace darmok
 
 		static void bind(sol::state_view& lua) noexcept;
 
-		template<typename T>
-		std::optional<LuaEntityDefinition> getEntity(const T& component) const noexcept
-		{
-			auto entityId = ConstSceneDefinitionWrapper{ *_scene }.getEntity(component);
-			if (!entityId)
-			{
-				return std::nullopt;
-			}
-			return LuaEntityDefinition{ *entityId, _scene };
-		}
-
 		const std::shared_ptr<Scene>& getReal() const noexcept;
+
+		template<typename T>
+		std::shared_ptr<T> getAsset(std::string_view path) noexcept
+		{
+			auto result = SceneDefinitionWrapper{ *_scene }.getAsset<T>(path);
+			return result ? std::make_shared<T>(std::move(*result)) : nullptr;
+		}
 
 	private:
 		std::shared_ptr<Scene> _scene;
@@ -92,13 +88,6 @@ namespace darmok
 		AssetMap getAnyTypeAssets(const sol::object& type);
 		AssetMap getAnyChildAssets(const std::filesystem::path& parentPath);
 		google::protobuf::Any* getAnyAsset(const std::filesystem::path& path);
-
-		template<typename T>
-		std::shared_ptr<T> getAsset(std::string_view path) noexcept
-		{
-			auto result = SceneDefinitionWrapper{ *_scene }.getAsset<T>(path);
-			return result ? std::make_shared<T>(std::move(*result)) : nullptr;
-		}
 	};
 
 	class LuaSceneLoader final
@@ -120,5 +109,6 @@ namespace darmok
 
 		std::unique_ptr<SceneLoader> _loader;
 		std::weak_ptr<Scene> _scene;
+		std::weak_ptr<protobuf::Scene> _sceneDef;
 	};
 }

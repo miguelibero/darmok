@@ -42,8 +42,8 @@ namespace darmok::physics3d
 	class LuaCharacterController final
 	{
 	public:
-		using Shape = PhysicsShape;
-		using Config = CharacterControllerConfig;
+		using Shape = CharacterController::Shape;
+		using Definition = CharacterController::Definition;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
 		static void setLinearVelocity(CharacterController& ctrl, const VarLuaTable<glm::vec3>& velocity);
@@ -52,7 +52,7 @@ namespace darmok::physics3d
 
 		static void setDelegate(CharacterController& ctrl, const sol::table& table) noexcept;
 
-		static CharacterController& addEntityComponent1(LuaEntity& entity, const Config& config) noexcept;
+		static CharacterController& addEntityComponent1(LuaEntity& entity, const Definition& def) noexcept;
 		static CharacterController& addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept;
 		static OptionalRef<CharacterController>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept;

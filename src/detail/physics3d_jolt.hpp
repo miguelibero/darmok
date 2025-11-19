@@ -69,7 +69,8 @@ namespace darmok::physics3d
 
     struct JoltUtils final
     {
-        using Shape = PhysicsShape;
+        using ShapeDefinition = protobuf::PhysicsShape;
+		using Shape = PhysicsBody::Shape;
         static JPH::Vec3 convert(const glm::vec3& v) noexcept;
         static glm::vec3 convert(const JPH::Vec3& v) noexcept;
         static JPH::Vec3 convertSize(const glm::vec3& v) noexcept;
@@ -91,8 +92,7 @@ namespace darmok::physics3d
         static JPH::RRayCast convert(const Ray& v) noexcept;
         static RaycastHit convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept;
         static expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
-        static JPH::ShapeRefC convert(const Shape& shape, float scale = 1.F);
-        static glm::vec3 getOrigin(const Shape& shape) noexcept;
+        static JPH::ShapeRefC convert(const ShapeDefinition& shapeDef, float scale = 1.F);
         static float getConvexRadius(const glm::vec3& size) noexcept;
 
         template<typename T>
@@ -135,8 +135,8 @@ namespace darmok::physics3d
     class JoltBroadPhaseLayerInterface final : public JPH::BroadPhaseLayerInterface
     {
     public:
-        using Config = PhysicsLayerConfig;
-        JoltBroadPhaseLayerInterface(const Config& config) noexcept;
+        using Definition = protobuf::PhysicsSystem;
+        JoltBroadPhaseLayerInterface(const Definition& def) noexcept;
         JPH::uint GetNumBroadPhaseLayers() const noexcept override;
         JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const noexcept override;
         virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const
@@ -145,27 +145,27 @@ namespace darmok::physics3d
 #endif
         ;
     private:
-        Config _config;
+        ConstPhysicsSystemDefinitionWrapper _def;
     };
 
     class JoltObjectVsBroadPhaseLayerFilter final : public JPH::ObjectVsBroadPhaseLayerFilter
     {
     public:
-        using Config = PhysicsLayerConfig;
-        JoltObjectVsBroadPhaseLayerFilter(const Config& config);
+        using Definition = protobuf::PhysicsSystem;
+        JoltObjectVsBroadPhaseLayerFilter(const Definition& def);
         bool ShouldCollide(JPH::ObjectLayer layer1, JPH::BroadPhaseLayer layer2) const noexcept override;
     private:
-        Config _config;
+        ConstPhysicsSystemDefinitionWrapper _def;
     };
 
     class JoltObjectLayerPairFilter final : public JPH::ObjectLayerPairFilter
     {
     public:
-        using Config = PhysicsLayerConfig;
-        JoltObjectLayerPairFilter(const Config& config);
+        using Definition = protobuf::PhysicsSystem;
+        JoltObjectLayerPairFilter(const Definition& def);
         bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
     private:
-        Config _config;
+        ConstPhysicsSystemDefinitionWrapper _def;
     };
 
     class JoltBroadPhaseLayerMaskFilter final : public JPH::BroadPhaseLayerFilter
@@ -218,10 +218,10 @@ namespace darmok::physics3d
     class PhysicsSystemImpl final : public JPH::ContactListener
     {
     public:
-        using Config = PhysicsSystemConfig;
-        using Shape = PhysicsShape;
+        using Definition = protobuf::PhysicsSystem;
+        using Shape = protobuf::PhysicsShape;
 
-        PhysicsSystemImpl(PhysicsSystem& system, const Config& config, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
+        PhysicsSystemImpl(PhysicsSystem& system, const Definition& def, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
         void init(Scene& scene, App& app) noexcept;
         void shutdown() noexcept;
         void update(float deltaTime);
@@ -241,8 +241,9 @@ namespace darmok::physics3d
         bool removeListener(const ICollisionListener& listener) noexcept;
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
+        float getFixedDeltaTime() const noexcept;
         const tf::Taskflow& getTaskflow() const;
-        const Config& getConfig() const noexcept;
+        const Definition& getDefinition() const noexcept;
         OptionalRef<Scene> getScene() const noexcept;
         OptionalRef<JPH::PhysicsSystem> getJolt() noexcept;
         OptionalRef<const JPH::PhysicsSystem> getJolt() const noexcept;
@@ -271,7 +272,7 @@ namespace darmok::physics3d
         PhysicsSystem& _system;
         OptionalRef<Scene> _scene;
         float _deltaTimeRest;
-        Config _config;
+        Definition _def;
         OptionalRef<Transform> _root;
         JoltBroadPhaseLayerInterface _broadPhaseLayer;
         JoltObjectVsBroadPhaseLayerFilter _objVsBroadPhaseLayerFilter;
@@ -314,22 +315,26 @@ namespace darmok::physics3d
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
         void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2);
+
+        JoltBroadPhaseLayerMaskFilter createBroadPhaseLayerFilter(LayerMask layer) const noexcept;
     };
 
     class PhysicsBodyImpl final
     {
     public:
-        using Config = PhysicsBodyConfig;
-        using Shape = PhysicsShape;
-        using MotionType = PhysicsBodyMotionType;
+        using Definition = protobuf::PhysicsBody;
+		using CharacterDefinition = protobuf::Character;
+        using ShapeDefinition = PhysicsBody::ShapeDefinition;
+		using Shape = PhysicsBody::Shape;
+        using MotionType = Definition::MotionType;
 
-        PhysicsBodyImpl(const Config& config) noexcept;
-        PhysicsBodyImpl(const CharacterConfig& config) noexcept;
+        PhysicsBodyImpl(const Definition& def) noexcept;
+        PhysicsBodyImpl(const CharacterDefinition& def) noexcept;
         ~PhysicsBodyImpl();
         void init(PhysicsBody& body, PhysicsSystem& system) noexcept;
         void shutdown(bool systemShutdown = false);
         void update(Entity entity, float deltaTime);
-        std::string toString() const noexcept;
+        std::string toString() const noexcept;		
 
         OptionalRef<PhysicsSystem> getSystem() const noexcept;
 
@@ -376,14 +381,13 @@ namespace darmok::physics3d
         void onCollisionStay(PhysicsBody& other, const Collision& collision);
         void onCollisionExit(PhysicsBody& other);
 
-        static const std::string& getMotionTypeName(MotionType motion) noexcept;
+        static std::string_view getMotionTypeName(MotionType motion) noexcept;
 
     private:
-        static const std::unordered_map<MotionType, std::string> _motionTypeNames;
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
         OptionalRef<const JPH::BodyLockInterface> getBodyLockInterface() const noexcept;
-        JPH::BodyID createBody(const Config& config, const JoltTransform& trans);
-        JPH::BodyID createCharacter(const CharacterConfig& config, const JoltTransform& trans);
+        JPH::BodyID createBody(const Definition& def, const JoltTransform& trans);
+        JPH::BodyID createCharacter(const CharacterDefinition& def, const JoltTransform& trans);
         bool tryCreateBody(OptionalRef<Transform> transform);
         PhysicsSystemImpl& getSystemImpl();
         void updateJolt(const glm::mat4& worldMatrix);
@@ -392,9 +396,9 @@ namespace darmok::physics3d
         OptionalRef<PhysicsSystem> _system;
         JPH::BodyID _bodyId;        
         OwnRefCollection<ICollisionListener> _listeners;
-        std::optional<std::variant<Config, CharacterConfig>> _initConfig;
+        std::optional<std::variant<Definition, CharacterDefinition>> _initDef;
         JPH::Ref<JPH::Character> _character;
         float _maxSepDistance;
-        std::optional<PhysicsShape> _shape;
+        std::optional<Shape> _shape;
     };
 }

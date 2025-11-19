@@ -2,6 +2,7 @@
 #include "lua/scene.hpp"
 #include "lua/utils.hpp"
 #include "lua/physics3d.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/character.hpp>
 
 namespace darmok::physics3d
@@ -51,9 +52,9 @@ namespace darmok::physics3d
 		ctrl.setRotation(LuaGlm::tableGet(rot));
 	}
 
-	CharacterController& LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Config& config) noexcept
+	CharacterController& LuaCharacterController::addEntityComponent1(LuaEntity& entity, const Definition& def) noexcept
 	{
-		return entity.addComponent<CharacterController>(config);
+		return entity.addComponent<CharacterController>(def);
 	}
 
 	CharacterController& LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
@@ -78,18 +79,8 @@ namespace darmok::physics3d
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
 	{
-		lua.new_usertype<Config>("CharacterControllerConfig", sol::default_constructor,
-			"shape", &CharacterControllerConfig::shape,
-			"up", &CharacterControllerConfig::up,
-			"supportingPlane", &CharacterControllerConfig::supportingPlane,
-			"maxSlopeAngle", &CharacterControllerConfig::maxSlopeAngle,
-			"layer", &CharacterControllerConfig::layer,
-			"maxStrength", &CharacterControllerConfig::maxStrength,
-			"backFaceMode", &CharacterControllerConfig::backFaceMode,
-			"padding", &CharacterControllerConfig::padding,
-			"penetrationRecoverySpeed", &CharacterControllerConfig::penetrationRecoverySpeed,
-			"predictiveContactDistance", &CharacterControllerConfig::predictiveContactDistance
-		);
+		LuaUtils::newProtobuf<Definition>(lua, "CharacterControllerDefinition")
+			.protobufProperty<protobuf::BaseCharacter>("base");
 		lua.new_usertype<CharacterController>("CharacterController", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<CharacterController>::value),
 			"add_entity_component", sol::overload(

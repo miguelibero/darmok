@@ -2,6 +2,7 @@
 #include "lua/glm.hpp"
 #include "lua/utils.hpp"
 #include "lua/protobuf.hpp"
+#include "lua/scene_serialize.hpp"
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
@@ -104,13 +105,17 @@ namespace darmok
 		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
 		LuaUtils::newEnum<MaterialTextureType>(lua, "MaterialTextureType");
 		LuaUtils::newEnum<MaterialOpacityType>(lua, "MaterialOpacityType");
-		LuaUtils::newProtobuf<Material::Definition>(lua, "MaterialDefinition")
+		auto matDef = LuaUtils::newProtobuf<Material::Definition>(lua, "MaterialDefinition")
 			.protobufProperty<protobuf::ProgramRef>("program")
 			.protobufProperty<protobuf::MaterialTexture>("textures")
 			.protobufProperty<protobuf::UniformValue>("uniform_values")
 			.protobufProperty<protobuf::Color>("base_color")
 			.protobufProperty<protobuf::Color3>("emissive_color")
 			.protobufProperty<protobuf::Color3>("specular_color");
+		matDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
+			{
+				return scene.getAsset<Material::Definition>(path);
+			};
 
 		lua.new_usertype<Material>("Material",
 			sol::factories(

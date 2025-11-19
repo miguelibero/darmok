@@ -59,15 +59,11 @@ namespace darmok
 	void LuaShape::bindBoundingBox(sol::state_view& lua) noexcept
 	{
 		auto def = LuaUtils::newProtobuf<BoundingBox::Definition>(lua, "BoundingBoxDefinition")
-			.protobufProperty<protobuf::Vec2>("min")
-			.protobufProperty<protobuf::Vec2>("max");
+			.protobufProperty<protobuf::Vec3>("min")
+			.protobufProperty<protobuf::Vec3>("max");
 		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
 		{
 			return entity.getComponent<BoundingBox::Definition>();
-		};
-		def.userType["get_entity"] = [](const BoundingBox::Definition& bbox, const LuaSceneDefinition& scene)
-		{
-			return scene.getEntity(bbox);
 		};
 
 		lua.new_usertype<BoundingBox>("BoundingBox",

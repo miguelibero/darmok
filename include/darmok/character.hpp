@@ -3,43 +3,14 @@
 #include <memory>
 #include <darmok/glm.hpp>
 #include <darmok/physics3d.hpp>
+#include <darmok/protobuf/physics3d.pb.h>
 #include <darmok/shape.hpp>
-#include <darmok/character_fwd.hpp>
 #include <darmok/export.h>
 #include <bx/bx.h>
 
 namespace darmok::physics3d
 {
     // https://github.com/jrouwe/JoltPhysics/discussions/239
-
-    struct DARMOK_EXPORT BaseCharacterConfig
-    {
-        using Shape = PhysicsShape;
-        Shape shape = Capsule(1.F, 0.25F, glm::vec3(0, 0.75F, 0));
-        glm::vec3 up = glm::vec3(0, 1, 0);
-        Plane supportingPlane = Plane(glm::vec3(0, 1, 0), -1.0e10f);
-        float maxSlopeAngle = glm::radians(50.F);
-        uint16_t layer = 0;
-    };
-
-    struct DARMOK_EXPORT CharacterConfig final : public BaseCharacterConfig
-    {
-        float mass = 80.F;
-        float friction = 1.F;
-        float gravityFactor = 1.F;
-        float maxSeparationDistance = 0.1F;
-
-        void load(const PhysicsBodyConfig& bodyConfig) noexcept;
-    };
-
-    struct DARMOK_EXPORT CharacterControllerConfig final : public BaseCharacterConfig
-    {
-        float maxStrength = 100.F;
-        BackFaceMode backFaceMode = BackFaceMode::CollideWithBackFaces;
-        float padding = 0.02f;
-        float penetrationRecoverySpeed = 1.0f;
-        float predictiveContactDistance = 0.1f;
-    };
 
     class CharacterController;
 
@@ -84,12 +55,14 @@ namespace darmok::physics3d
     class DARMOK_EXPORT CharacterController final
     {
     public:
-        using Shape = PhysicsShape;
-        using Config = CharacterControllerConfig;
+        using ShapeDefinition = protobuf::PhysicsShape;
+		using Shape = PhysicsShapeDefinitionWrapper::Shape;
+        using Definition = protobuf::CharacterController;
         using Delegate = ICharacterDelegate;
-        CharacterController(const Config& config = {});
-        CharacterController(const Shape& shape);
-        ~CharacterController();
+
+        CharacterController(const Definition& def = createDefinition()) noexcept;
+        CharacterController(const Shape& shape) noexcept;
+        ~CharacterController() noexcept;
 
         CharacterControllerImpl& getImpl() noexcept;
         const CharacterControllerImpl& getImpl() const noexcept;
@@ -97,7 +70,7 @@ namespace darmok::physics3d
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
-        CharacterController& setLinearVelocity(const glm::vec3& velocity);
+        CharacterController& setLinearVelocity(const glm::vec3& velocity) noexcept;
         glm::vec3 getLinearVelocity() const noexcept;
 
         CharacterController& setPosition(const glm::vec3& pos) noexcept;
@@ -115,6 +88,7 @@ namespace darmok::physics3d
         OptionalRef<Delegate> getDelegate() const noexcept;
 
         static std::string getGroundStateName(GroundState state) noexcept;
+		static Definition createDefinition() noexcept;
 
     private:
         std::unique_ptr<CharacterControllerImpl> _impl;

@@ -52,10 +52,6 @@ namespace darmok
 		{
 			return entity.getComponent<Renderable::Definition>();
 		};
-		def.userType["get_entity"] = [](const Renderable::Definition& renderable, const LuaSceneDefinition& scene)
-		{
-			return scene.getEntity(renderable);
-		};
 
 		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Renderable>::value),

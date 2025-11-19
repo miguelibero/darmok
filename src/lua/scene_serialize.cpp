@@ -166,9 +166,9 @@ namespace darmok
 	std::optional<LuaEntityDefinition> LuaSceneDefinition::getAnyEntity(const google::protobuf::Any& anyComp)
 	{
 		auto result = SceneDefinitionWrapper{ *_scene }.getEntity(anyComp);
-		if(result)
+		if(result != nullEntityId)
 		{
-			return LuaEntityDefinition{ *result, _scene };
+			return LuaEntityDefinition{ result, _scene };
 		}
 		return std::nullopt;
 	}
@@ -263,46 +263,24 @@ namespace darmok
 		_loader->setParent(entity.getReal());
 	}
 
-	namespace LuaSceneLoaderDetail
-	{
-
-		template <typename T>
-		bool tryAddComponentListener(entt::id_type typeId, SceneLoader& loader, const std::weak_ptr<Scene>& scene, const sol::function& func)
-		{
-			if (typeId != entt::type_hash<T>().value())
-			{
-				return false;
-			}
-			loader.addComponentListener<T>([scene, func](const auto& def, Entity entity)
-			{
-				auto result = func(def, LuaEntity{ entity, scene });
-				LuaUtils::throwResult(result, "scene loader component listener callback");
-			});
-			return true;
-		}
-
-		template <typename T, typename T2, typename... Types>
-		bool tryAddComponentListener(entt::id_type typeId, SceneLoader& loader, const std::weak_ptr<Scene>& scene, const sol::function& func)
-		{
-			bool handled = tryAddComponentListener<T>(typeId, loader, scene, func);
-			if (handled)
-			{
-				return true;
-			}
-			return tryAddComponentListener<T2, Types...>(typeId, loader, scene, func);
-		}
-	}
-
 	void LuaSceneLoader::addComponentListener(const sol::object& type, const sol::function& func)
 	{
 		auto typeId = LuaUtils::getTypeId(type).value();
-		auto handled = LuaSceneLoaderDetail::tryAddComponentListener<
-			Transform, Renderable, Camera, Skinnable>(
-				typeId, *_loader, _scene, func);
-		if (!handled)
+
+		_loader->addComponentListener([this, typeId, func](const SceneLoader::Any& compAny, Entity entity)
 		{
-			throw sol::error{ "unsupported component type" };
-		}
+			if (typeId != protobuf::getTypeId(compAny))
+			{
+				return;
+			}
+			auto entityDef = nullEntityId;
+			if (auto sceneDef = _sceneDef.lock())
+			{
+				entityDef = ConstSceneDefinitionWrapper{ *sceneDef }.getEntity(compAny);
+			}
+			auto result = func(LuaEntityDefinition{ entityDef, _sceneDef }, LuaEntity{ entity, _scene });
+			LuaUtils::throwResult(result, "scene loader component listener callback");
+		});
 	}
 
 	void LuaSceneLoader::clearComponentListeners()
@@ -313,6 +291,7 @@ namespace darmok
 	std::optional<LuaEntity> LuaSceneLoader::run(const LuaSceneDefinition& sceneDef, std::shared_ptr<Scene> scene)
 	{
 		_scene = scene;
+		_sceneDef = sceneDef.getReal();
 		auto result = (*_loader)(*sceneDef.getReal(), *scene);
 		if (!result)
 		{

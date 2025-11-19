@@ -4,7 +4,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/shape.hpp>
-#include <darmok/physics3d_fwd.hpp>
+#include <darmok/protobuf/physics3d.pb.h>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 #include <memory>
@@ -25,6 +25,14 @@ namespace darmok
 
 namespace darmok::physics3d
 {
+    enum class GroundState
+    {
+        Grounded,
+        GroundedSteep,
+        NotSupported,
+        Air,
+    };
+
 	class DARMOK_EXPORT BX_NO_VTABLE IPhysicsUpdater
 	{
 	public:
@@ -91,29 +99,45 @@ namespace darmok::physics3d
     using LayerMask = uint16_t;
     static const LayerMask kAllLayers = 65535;
 
-    struct PhysicsLayerConfig final
+    struct ConstPhysicsShapeDefinitionWrapper
     {
-        // map of broad layer to object layer mask
-        // 0 object layer mask means default broad layer
-        std::map<std::string, LayerMask> broad;
-
-        BroadLayer getBroad(LayerMask layer) const noexcept;
-        const std::string& getBroadName(BroadLayer layer) const;
+        using Shape = std::variant<Cube,Sphere,Capsule,Polygon,BoundingBox>;
+        using Definition = protobuf::PhysicsShape;
+		using CharacterDefinition = protobuf::Character;
+        ConstPhysicsShapeDefinitionWrapper(const Definition& def) noexcept;
+        glm::vec3 getOrigin() const noexcept;
+        Shape getShape() const noexcept;
+    private:
+        const Definition& _def;
     };
 
-    struct PhysicsSystemConfig final
+	struct PhysicsShapeDefinitionWrapper : public ConstPhysicsShapeDefinitionWrapper
     {
-        uint16_t maxBodies = 1024;
-        uint16_t numBodyMutexes = 0;
-        uint16_t maxBodyPairs = 1024;
-        uint16_t maxContactConstraints = 1024;
-        float fixedDeltaTime = 1.F / 60.F;
-        uint16_t collisionSteps = 1;
-        glm::vec3 gravity = { 0, -9.81F, 0 };
+        PhysicsShapeDefinitionWrapper(Definition& def) noexcept;
+        void setShape(const Shape& shape) noexcept;
+    private:
+        Definition& _def;
+    };
 
-        PhysicsLayerConfig layers = {
-            { { "default", kAllLayers } }
-        };
+    struct ConstPhysicsBodyDefinitionWrapper
+    {
+        using Definition = protobuf::PhysicsBody;
+        using CharacterDefinition = protobuf::Character;
+        ConstPhysicsBodyDefinitionWrapper(const Definition& def) noexcept;
+        CharacterDefinition toCharacter() noexcept;
+    private:
+        const Definition& _def;
+    };
+
+    struct ConstPhysicsSystemDefinitionWrapper
+    {
+		using Definition = protobuf::PhysicsSystem;
+        ConstPhysicsSystemDefinitionWrapper(const Definition& def) noexcept;
+		std::size_t getBroadLayerNum() const noexcept;
+        BroadLayer getBroadLayer(LayerMask layer) const noexcept;
+        const std::string& getBroadLayerName(BroadLayer layer) const;
+    private:
+		const Definition& _def;
     };
 
     struct RaycastHit final
@@ -131,10 +155,12 @@ namespace darmok::physics3d
     class DARMOK_EXPORT PhysicsSystem final : public ITypeSceneComponent<PhysicsSystem>
     {
     public:
-        using Config = PhysicsSystemConfig;
-        using Shape = PhysicsShape;
-        PhysicsSystem(const Config& config = {}) noexcept;
-        PhysicsSystem(const Config& config, bx::AllocatorI& alloc) noexcept;
+        using Definition = protobuf::PhysicsSystem;
+
+        static Definition createDefinition() noexcept;
+
+        PhysicsSystem(const Definition& def = createDefinition()) noexcept;
+        PhysicsSystem(const Definition& def, bx::AllocatorI& alloc) noexcept;
         PhysicsSystem(bx::AllocatorI& alloc) noexcept;
         ~PhysicsSystem() noexcept;
 
@@ -176,34 +202,27 @@ namespace darmok::physics3d
         std::unique_ptr<PhysicsSystemImpl> _impl;
     };
 
-    struct PhysicsBodyConfig final
-    {
-        using Shape = PhysicsShape;
-        using MotionType = PhysicsBodyMotionType;
-        Shape shape;
-        MotionType motion = MotionType::Dynamic;
-        std::optional<float> mass = std::nullopt;
-        float inertiaFactor = 1.0F;
-        float friction = 0.2;
-        float gravityFactor = 1.0F;
-        LayerMask layer = 0;
-        bool trigger = false;
-    };
 
     class PhysicsBodyImpl;
-    struct CharacterConfig;
 
     class PhysicsBody final
     {
     public:
-        using MotionType = PhysicsBodyMotionType;
-        using Shape = PhysicsShape;
-        using Config = PhysicsBodyConfig;
+		using Definition = protobuf::PhysicsBody;
+        using CharacterDefinition = protobuf::Character;
+        using BaseCharacterDefinition = protobuf::BaseCharacter;
+        using MotionType = Definition::MotionType;
+        using ShapeDefinition = protobuf::PhysicsShape;
+		using Shape = ConstPhysicsShapeDefinitionWrapper::Shape;
 
-        PhysicsBody(const Shape& shape, MotionType motion = MotionType::Dynamic) noexcept;
-        PhysicsBody(const Config& config) noexcept;
-        PhysicsBody(const CharacterConfig& config) noexcept;
+        PhysicsBody(const Shape& shape, MotionType motion = Definition::Dynamic) noexcept;
+        PhysicsBody(const Definition& def = createDefinition()) noexcept;
+        PhysicsBody(const CharacterDefinition& def) noexcept;
         ~PhysicsBody() noexcept;
+
+        static Definition createDefinition() noexcept;
+        static BaseCharacterDefinition createBaseCharacterDefinition() noexcept;
+        static CharacterDefinition createCharacterDefinition() noexcept;
 
         PhysicsBodyImpl& getImpl() noexcept;
         const PhysicsBodyImpl& getImpl() const noexcept;

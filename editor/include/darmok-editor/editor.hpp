@@ -55,7 +55,7 @@ namespace darmok::editor
         expected<void, std::string> reloadAsset(const std::filesystem::path& path) noexcept;
         expected<void, std::string> removeAsset(const std::filesystem::path& path) noexcept;
         RenderResult renderChild(google::protobuf::Message& msg) noexcept;
-        std::optional<EntityId> getEntityId(const Any& anyComp) const noexcept;
+        EntityId getEntityId(const Any& anyComp) const noexcept;
         Entity getEntity(EntityId entityId) const noexcept;
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
     };

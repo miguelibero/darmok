@@ -2,25 +2,15 @@
 #include "detail/physics3d_jolt.hpp"
 #include <darmok/character.hpp>
 #include <darmok/transform.hpp>
+#include <darmok/protobuf.hpp>
+#include <darmok/shape_serialize.hpp>
 #include <Jolt/Physics/PhysicsSystem.h>
 
 namespace darmok::physics3d
 {
-    void CharacterConfig::load(const PhysicsBodyConfig& bodyConfig) noexcept
-    {
-        shape = bodyConfig.shape;
-        if (bodyConfig.mass)
-        {
-            mass = bodyConfig.mass.value();
-        }
-        friction = bodyConfig.friction;
-        gravityFactor = bodyConfig.gravityFactor;
-        layer = bodyConfig.layer;
-    }
-
-    CharacterControllerImpl::CharacterControllerImpl(const Config& config) noexcept
-        : _config(config)
-        , _jolt(nullptr)
+    CharacterControllerImpl::CharacterControllerImpl(const Definition& def) noexcept
+        : _def{ def }
+        , _jolt{ nullptr }
     {
     }
 
@@ -29,12 +19,12 @@ namespace darmok::physics3d
         shutdown();
     }
 
-    PhysicsSystemImpl& CharacterControllerImpl::getSystemImpl()
+    PhysicsSystemImpl& CharacterControllerImpl::getSystemImpl() noexcept
     {
         return _system->getImpl();
     }
 
-    void CharacterControllerImpl::init(CharacterController& ctrl, PhysicsSystem& system)
+    void CharacterControllerImpl::init(CharacterController& ctrl, PhysicsSystem& system) noexcept
     {
         if (_system)
         {
@@ -44,7 +34,7 @@ namespace darmok::physics3d
         _ctrl = ctrl;
     }
 
-    void CharacterControllerImpl::shutdown()
+    void CharacterControllerImpl::shutdown() noexcept
     {
         _jolt = nullptr;
         _system.reset();
@@ -88,7 +78,7 @@ namespace darmok::physics3d
         }
     }
 
-    void CharacterControllerImpl::setLinearVelocity(const glm::vec3& velocity)
+    void CharacterControllerImpl::setLinearVelocity(const glm::vec3& velocity) noexcept
     {
         auto rb = getPhysicsBody();
         if (rb && rb->isEnabled())
@@ -191,7 +181,7 @@ namespace darmok::physics3d
         return scene->getComponent<PhysicsBody>(entity);
     }
 
-    void CharacterControllerImpl::OnAdjustBodyVelocity(const JPH::CharacterVirtual* character, const JPH::Body& body2, JPH::Vec3& linearVelocity, JPH::Vec3& angularVelocity)
+    void CharacterControllerImpl::OnAdjustBodyVelocity(const JPH::CharacterVirtual* character, const JPH::Body& body2, JPH::Vec3& linearVelocity, JPH::Vec3& angularVelocity) noexcept
     {
         if (!_delegate || !_ctrl || !_system)
         {
@@ -210,7 +200,7 @@ namespace darmok::physics3d
         angularVelocity = JoltUtils::convert(angv);
     }
 
-    bool CharacterControllerImpl::OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
+    bool CharacterControllerImpl::OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2) noexcept
     {
         if (!_delegate || !_ctrl || !_system)
         {
@@ -224,7 +214,7 @@ namespace darmok::physics3d
         return _delegate->onContactValidate(_ctrl.value(), body.value());
     }
 
-    void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings)
+    void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings) noexcept
     {
         if (!_delegate || !_ctrl || !_system)
         {
@@ -245,7 +235,7 @@ namespace darmok::physics3d
         settings.mCanReceiveImpulses = darmokSettings.canReceiveImpulses;
     }
 
-    void CharacterControllerImpl::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::Vec3Arg contactVelocity, const JPH::PhysicsMaterial* contactMaterial, JPH::Vec3Arg characterVelocity, JPH::Vec3& newCharacterVelocity)
+    void CharacterControllerImpl::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::Vec3Arg contactVelocity, const JPH::PhysicsMaterial* contactMaterial, JPH::Vec3Arg characterVelocity, JPH::Vec3& newCharacterVelocity) noexcept
     {
         if (!_delegate || !_ctrl || !_system)
         {
@@ -262,7 +252,7 @@ namespace darmok::physics3d
         newCharacterVelocity = JoltUtils::convert(charVel);
     }
 
-    bool CharacterControllerImpl::tryCreateCharacter(Transform& trans)
+    bool CharacterControllerImpl::tryCreateCharacter(Transform& trans) noexcept
     {
         if (_jolt || !_system)
         {
@@ -276,14 +266,14 @@ namespace darmok::physics3d
         auto joltTrans = getSystemImpl().loadTransform(trans);
 
         const JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
-        settings->mMaxSlopeAngle = _config.maxSlopeAngle;
-        settings->mMaxStrength = _config.maxStrength;
-        settings->mShape = JoltUtils::convert(_config.shape, joltTrans.scale);
-        settings->mBackFaceMode = (JPH::EBackFaceMode)_config.backFaceMode;
-        settings->mCharacterPadding = _config.padding;
-        settings->mPenetrationRecoverySpeed = _config.penetrationRecoverySpeed;
-        settings->mPredictiveContactDistance = _config.predictiveContactDistance;
-        settings->mSupportingVolume = JoltUtils::convert(_config.supportingPlane);
+        settings->mMaxSlopeAngle = _def.base().max_slope_angle();
+		settings->mMaxStrength = _def.max_strength();
+        settings->mShape = JoltUtils::convert(_def.base().shape(), joltTrans.scale);
+        settings->mBackFaceMode = (JPH::EBackFaceMode)_def.back_face_mode();
+        settings->mCharacterPadding = _def.padding();
+        settings->mPenetrationRecoverySpeed = _def.penetration_recovery_speed();
+        settings->mPredictiveContactDistance = _def.predictive_contact_distance();
+        settings->mSupportingVolume = JoltUtils::convert(darmok::protobuf::convert(_def.base().supporting_plane()));
 
         auto userData = (uint64_t)_ctrl.ptr();
         _jolt = new JPH::CharacterVirtual(settings, joltTrans.position, joltTrans.rotation, userData, joltSystem.ptr());
@@ -291,7 +281,7 @@ namespace darmok::physics3d
         return true;
     }
 
-    void CharacterControllerImpl::update(Entity entity, float deltaTime)
+    void CharacterControllerImpl::update(Entity entity, float deltaTime) noexcept
     {
         if (!_system)
         {
@@ -330,10 +320,12 @@ namespace darmok::physics3d
 
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
 
+        auto layer = _def.base().layer();
+
         auto gravity = -_jolt->GetUp() * joltSystem->GetGravity().Length();
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,
-            joltSystem->GetDefaultBroadPhaseLayerFilter(_config.layer),
-            joltSystem->GetDefaultLayerFilter(_config.layer),
+            joltSystem->GetDefaultBroadPhaseLayerFilter(layer),
+            joltSystem->GetDefaultLayerFilter(layer),
             bodyFilter, {}, getSystemImpl().getTempAllocator()
         );
 
@@ -344,20 +336,19 @@ namespace darmok::physics3d
         }
     }
 
-    CharacterController::CharacterController(const Config& config)
-        : _impl(std::make_unique<CharacterControllerImpl>(config))
+    CharacterController::CharacterController(const Definition& def) noexcept
+        : _impl{ std::make_unique<CharacterControllerImpl>(def) }
     {        
     }
 
-    CharacterController::CharacterController(const Shape& shape)
-        : _impl(std::make_unique<CharacterControllerImpl>(Config{ shape }))
+    CharacterController::CharacterController(const Shape& shape) noexcept
     {
+        auto def = createDefinition();
+        PhysicsShapeDefinitionWrapper{ *def.mutable_base()->mutable_shape() }.setShape(shape);
+        _impl = std::make_unique<CharacterControllerImpl>(def);
     }
 
-    CharacterController::~CharacterController()
-    {
-        // empty on purpose for the forward declaration of the impl
-    }
+    CharacterController::~CharacterController() = default;
 
     CharacterControllerImpl& CharacterController::getImpl() noexcept
     {
@@ -384,7 +375,19 @@ namespace darmok::physics3d
         return JPH::CharacterBase::sToString((JPH::CharacterBase::EGroundState)state);
     }
 
-    CharacterController& CharacterController::setLinearVelocity(const glm::vec3& velocity)
+    CharacterController::Definition CharacterController::createDefinition() noexcept
+    {
+        Definition def;
+		*def.mutable_base() = PhysicsBody::createBaseCharacterDefinition();
+        def.set_max_strength(100.0f);
+        def.set_back_face_mode(Definition::CollideWithBackFaces);
+        def.set_padding(0.02f);
+        def.set_penetration_recovery_speed(1.0f);
+        def.set_predictive_contact_distance(0.1f);
+		return def;
+    }
+
+    CharacterController& CharacterController::setLinearVelocity(const glm::vec3& velocity) noexcept
     {
         _impl->setLinearVelocity(velocity);
         return *this;

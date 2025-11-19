@@ -1,6 +1,7 @@
 #include "lua/physics3d.hpp"
 #include "lua/scene.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>
 
@@ -147,14 +148,14 @@ namespace darmok::physics3d
         return scene.addSceneComponent<PhysicsSystem>();
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent2(Scene& scene, const Config& config) noexcept
+    PhysicsSystem& LuaPhysicsSystem::addSceneComponent2(Scene& scene, const Definition& def) noexcept
     {
-        return scene.addSceneComponent<PhysicsSystem>(config);
+        return scene.addSceneComponent<PhysicsSystem>(def);
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent3(Scene& scene, const Config& config, bx::AllocatorI& alloc) noexcept
+    PhysicsSystem& LuaPhysicsSystem::addSceneComponent3(Scene& scene, const Definition& def, bx::AllocatorI& alloc) noexcept
     {
-        return scene.addSceneComponent<PhysicsSystem>(config, alloc);
+        return scene.addSceneComponent<PhysicsSystem>(def, alloc);
     }
 
     OptionalRef<PhysicsSystem>::std_t LuaPhysicsSystem::getSceneComponent(Scene& scene) noexcept
@@ -164,16 +165,8 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::bind(sol::state_view& lua) noexcept
     {
-        lua.new_usertype<Config>("Physics3dSystemConfig",
-            sol::constructors<Config()>(),
-            "max_bodies", &Config::maxBodies,
-            "num_body_mutexes", &Config::numBodyMutexes,
-            "max_body_pairs", &Config::maxBodyPairs,
-            "max_contact_constraints", &Config::maxContactConstraints,
-            "fixed_delta_time", &Config::fixedDeltaTime,
-            "collision_steps", &Config::collisionSteps,
-            "gravity", &Config::gravity
-        );
+		LuaUtils::newProtobuf<Definition>(lua, "Physics3dSystemDefinition")
+            .protobufProperty<darmok::protobuf::Vec3>("gravity");
 
         lua.new_usertype<Collision>("Physics3DCollision", sol::no_constructor,
             "normal", &Collision::normal,

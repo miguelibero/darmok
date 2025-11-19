@@ -405,9 +405,7 @@ endif()
 
 if(DARMOK_BUILD_JOLT)
   list(APPEND HEADERS
-    physics3d_fwd.hpp
     physics3d.hpp
-    character_fwd.hpp
     character.hpp
     physics3d_debug.hpp
   )
@@ -647,6 +645,7 @@ set(PROTO_FILES
   skeleton.proto
   assimp.proto
   text.proto
+  physics3d.proto
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/public/darmok/protobuf")

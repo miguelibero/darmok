@@ -14,12 +14,16 @@ namespace darmok
         darmok::Capsule convert(const protobuf::Capsule& v);
         darmok::Rectangle convert(const protobuf::Rectangle& v);
         darmok::Plane convert(const protobuf::Plane& v);
+        darmok::Triangle convert(const protobuf::Triangle& v);
+        darmok::Polygon convert(const protobuf::Polygon& v);
 
         protobuf::BoundingBox convert(const darmok::BoundingBox& v);
         protobuf::Cube convert(const darmok::Cube& v);
         protobuf::Sphere convert(const darmok::Sphere& v);
         protobuf::Capsule convert(const darmok::Capsule& v);
         protobuf::Rectangle convert(const darmok::Rectangle& v);
-        protobuf::Plane  convert(const darmok::Plane& v);
+        protobuf::Plane convert(const darmok::Plane& v);
+        protobuf::Triangle convert(const darmok::Triangle& v);
+        protobuf::Polygon convert(const darmok::Polygon& v);
     }
 }

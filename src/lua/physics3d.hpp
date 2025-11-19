@@ -75,7 +75,7 @@ namespace darmok::physics3d
     class LuaPhysicsSystem final
     {
     public:
-        using Config = PhysicsSystemConfig;
+        using Definition = PhysicsSystem::Definition;
 
         static void bind(sol::state_view& lua) noexcept;
     private:
@@ -100,21 +100,20 @@ namespace darmok::physics3d
         static void activateBodies2(PhysicsSystem& system, const BoundingBox& bbox, LayerMask layers) noexcept;
 
         static PhysicsSystem& addSceneComponent1(Scene& scene) noexcept;
-        static PhysicsSystem& addSceneComponent2(Scene& scene, const Config& config) noexcept;
-        static PhysicsSystem& addSceneComponent3(Scene& scene, const Config& config, bx::AllocatorI& alloc) noexcept;
+        static PhysicsSystem& addSceneComponent2(Scene& scene, const Definition& def) noexcept;
+        static PhysicsSystem& addSceneComponent3(Scene& scene, const Definition& def, bx::AllocatorI& alloc) noexcept;
         static OptionalRef<PhysicsSystem>::std_t getSceneComponent(Scene& scene) noexcept;
     };
-
-    class PhysicsBody;
-    struct PhysicsBodyConfig;
-    struct CharacterConfig;
 
     class LuaPhysicsBody final
     {
     public:
-        using MotionType = PhysicsBodyMotionType;
-        using Shape = PhysicsShape;
-        using Config = PhysicsBodyConfig;
+        using MotionType = PhysicsBody::MotionType;
+        using Shape = PhysicsBody::Shape;
+        using ShapeDefinition = PhysicsBody::ShapeDefinition;
+        using Definition = PhysicsBody::Definition;
+        using BaseCharacterDefinition = protobuf::BaseCharacter;
+        using CharacterDefinition = PhysicsBody::CharacterDefinition;
         
         static void bind(sol::state_view& lua) noexcept;
     private:
@@ -138,8 +137,8 @@ namespace darmok::physics3d
         static PhysicsBody& addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept;
         static PhysicsBody& addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept;
         static PhysicsBody& addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept;
-        static PhysicsBody& addEntityComponent4(LuaEntity& entity, const Config& config) noexcept;
-        static PhysicsBody& addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept;
+        static PhysicsBody& addEntityComponent4(LuaEntity& entity, const Definition& def) noexcept;
+        static PhysicsBody& addEntityComponent5(LuaEntity& entity, const CharacterDefinition& def) noexcept;
         static OptionalRef<PhysicsBody>::std_t getEntityComponent(LuaEntity& entity) noexcept;
         static std::optional<LuaEntity> getEntity(const PhysicsBody& body, const std::shared_ptr<Scene>& scene) noexcept;
     };

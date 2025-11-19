@@ -35,6 +35,7 @@ currently using:
 * [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
 
 planned to use:
+* [slang](https://github.com/shader-slang/slang) unified shader language that compiles to  the different render
 * [tracy](https://github.com/wolfpld/tracy) for frame profiling
     (blocked because of [bgfx#3308](https://github.com/bkaradzic/bgfx/pull/3308)
     and the vcpkg bgfx build not having a profiler feature)
@@ -43,7 +44,7 @@ planned to use:
 * [Box2D](https://box2d.org/) 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
-* [slang](https://github.com/shader-slang/slang) unified shader language that compiles to  the different render backends
+ backends
 
 Trying to target the following platforms:
 * desktop (windows, macos, linux)
@@ -80,7 +81,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * basic phong
         * PBR metallic-roughness
     * cascaded shadow mapping
-    * ambient, directional, spot & point light shadows
+        * ambient, directional, spot & point light shadows
     * camera culling (frustum, occlusion seems to be broken)
 * asset system
     * sprites and spritesheets
@@ -101,10 +102,10 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * 3d physics using jolt
     * rigidbodies
     * character controller
-* tool to export asset folders 
+* command-line tools to export assets
     * shaders & vertex layouts
     * copy files
-    * assimp to custom protoc model format
+    * assimp scenes
     * ozz skeleton & animations
 * dynamic font texture generation
 * play sounds and music (wav & mp3)
@@ -128,7 +129,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * text improvements
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support
-* clipboard text support (UTF8)
 * asset loading progress (maybe implement progressive loading)
 * possible refactors
     * maybe replace Data for std::vector<uint8_t> and DataView for std::span<uint8_t>
@@ -149,15 +149,12 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * spine animations
 * unify use of allocators everywhere
 * progressive asset loaders
-* lua debugging would be nice
+* lua debugging
 * particle systems (maybe effekseer)
 * more sound options (spatialization, effects)
 * animation root motion 
 * [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
-* [slang](https://github.com/shader-slang/slang) shading language support
-* [microsoft cpp-async](https://github.com/microsoft/cpp-async) coroutines
-    * async asset loading
-    * editor actions
+* async/await style wrapper for taskflow
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced

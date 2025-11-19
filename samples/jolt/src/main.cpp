@@ -19,6 +19,7 @@
 #include <darmok/imgui.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
+#include <darmok/shape_serialize.hpp>
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 
@@ -88,7 +89,7 @@ namespace
 			{ // floor
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape{ {10.f, .5f, 10.f}, {0.f, -0.25f, 0.f} };
-				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::MotionType::Static);
+				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::Definition::Static);
 				auto floorMesh = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
 				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
 			}
@@ -96,11 +97,11 @@ namespace
 			{ // door
 				auto doorEntity = _scene->createEntity();
 				Cube doorShape{ {1.5f, 2.f, 0.2f}, {0, 1.f, 0} };
-				PhysicsBodyConfig config;
-				config.trigger = true;
-				config.shape = doorShape;
-				config.motion = PhysicsBodyMotionType::Kinematic;
-				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, config);
+				auto def = PhysicsBody::createDefinition();
+				def.set_trigger(true);
+				*def.mutable_shape()->mutable_cube() = darmok::protobuf::convert(doorShape);
+				def.set_motion(PhysicsBody::Definition::Kinematic);
+				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, def);
 				_scene->addComponent<Transform>(doorEntity)
 					.setPosition({ 2.f, 0.f, 2.f })
 					.setEulerAngles(glm::radians(glm::vec3{ 0, 90, 0 }));
@@ -132,8 +133,10 @@ namespace
 				_characterCtrl = _scene->addComponent<CharacterController>(playerEntity, playerShape);
 				_characterCtrl->setDelegate(*this);
 
-				CharacterConfig characterConfig{ playerShape };
-				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, characterConfig);
+				auto charDef = PhysicsBody::createCharacterDefinition();
+				*charDef.mutable_base()->mutable_shape()->mutable_capsule() = darmok::protobuf::convert(playerShape);
+				
+				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, charDef);
 				_characterBody->addListener(*this);
 
 				auto playerMesh = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout());

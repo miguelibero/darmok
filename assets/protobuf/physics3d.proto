@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package darmok.physics3d.protobuf;
+
+import "math.proto";
+import "shape.proto";
+
+message PhysicsShape {
+    oneof shape {
+        darmok.protobuf.Cube cube = 1;
+        darmok.protobuf.Sphere sphere = 2;
+        darmok.protobuf.Capsule capsule = 3;
+        darmok.protobuf.Polygon polygon = 4;
+        darmok.protobuf.BoundingBox bounding_box = 5;
+    }
+}
+
+message PhysicsBody {
+    enum MotionType {
+        Static = 0;
+        Dynamic = 1;
+        Kinematic = 2;
+    }
+    PhysicsShape shape = 1;
+    MotionType motion = 2;
+    float mass = 3;
+    float inertia_factor = 4;
+    float friction = 5;
+    float gravity_factor = 6;
+    uint32 layer_mask = 7;
+    bool trigger = 8;
+}
+
+message PhysicsSystem {
+    uint32 max_bodies = 1;
+    uint32 num_body_mutexes = 2;
+    uint32 max_body_pairs = 3;
+    uint32 max_contact_constraints = 4;
+    float fixed_delta_time = 5;
+    uint32 collision_steps = 6;
+    darmok.protobuf.Vec3 gravity = 7;
+    map<string,uint32> layers = 8;
+};
+
+message BaseCharacter {
+    PhysicsShape shape = 1;
+    darmok.protobuf.Vec3 up = 2;
+    darmok.protobuf.Plane supporting_plane = 3;
+    float max_slope_angle = 4;
+    uint32 layer = 5;
+}
+
+message Character {
+    BaseCharacter base = 1;
+    float mass = 2;
+    float friction = 3;
+    float gravity_factor = 4;
+    float max_separation_distance = 5;
+}
+
+message CharacterController {
+    enum BackFaceMode {
+        IgnoreBackFaces = 0;
+        CollideWithBackFaces = 1;
+    }
+
+    BaseCharacter base = 1;
+    float max_strength = 2;
+    BackFaceMode back_face_mode = 3;
+    float padding = 4;
+    float penetration_recovery_speed = 5;
+    float predictive_contact_distance = 6;
+}

@@ -1,6 +1,7 @@
 #include "lua/program.hpp"
 #include "lua/utils.hpp"
 #include "lua/protobuf.hpp"
+#include "lua/scene_serialize.hpp"
 #include <darmok/program.hpp>
 
 namespace darmok
@@ -18,12 +19,20 @@ namespace darmok
 			"load", &StandardProgramLoader::load
 		);
 
-		LuaUtils::newProtobuf<Program::Source>(lua, "ProgramSource")
+		auto progSrc = LuaUtils::newProtobuf<Program::Source>(lua, "ProgramSource")
 			.protobufProperty<protobuf::Varying>("varying");
-		LuaUtils::newProtobuf<Program::Definition>(lua, "ProgramDefinition")
+		progSrc.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
+			{
+				return scene.getAsset<Program::Source>(path);
+			};
+
+		auto progDef = LuaUtils::newProtobuf<Program::Definition>(lua, "ProgramDefinition")
 			.protobufProperty<protobuf::ProgramProfile>("profiles")
 			.protobufProperty<protobuf::Varying>("varying");
-		;
+		progDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
+			{
+				return scene.getAsset<Program::Definition>(path);
+			};
 	}
 
 }

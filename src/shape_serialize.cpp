@@ -35,6 +35,22 @@ namespace darmok
 			return { convert(v.normal()), v.distance() };
         }
 
+        darmok::Triangle convert(const protobuf::Triangle& v)
+        {
+			return { convert(v.vertex1()), convert(v.vertex2()), convert(v.vertex3()) };
+        }
+
+        darmok::Polygon convert(const protobuf::Polygon& v)
+        {
+            std::vector<darmok::Triangle> tris;
+            tris.reserve(v.triangles_size());
+            for (const auto& tri : v.triangles())
+            {
+                tris.push_back(convert(tri));
+            }
+            return { std::move(tris), convert(v.origin()) };
+        }
+
         protobuf::BoundingBox convert(const darmok::BoundingBox& v)
         {
             protobuf::BoundingBox msg;
@@ -83,5 +99,24 @@ namespace darmok
 			msg.set_distance(v.distance);
             return msg;
         }
+        protobuf::Triangle convert(const darmok::Triangle& v)
+        {
+			protobuf::Triangle msg;
+			*msg.mutable_vertex1() = convert(v.vertices[0]);
+            *msg.mutable_vertex2() = convert(v.vertices[1]);
+            *msg.mutable_vertex3() = convert(v.vertices[2]);
+            return msg;
+        }
+
+        protobuf::Polygon convert(const darmok::Polygon& v)
+        {
+            protobuf::Polygon msg;
+            for (const auto& tri : v.triangles)
+            {
+                *msg.add_triangles() = convert(tri);
+            }
+            *msg.mutable_origin() = convert(v.origin);
+            return msg;
+		}
     }
 }

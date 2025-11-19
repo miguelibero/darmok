@@ -3,7 +3,6 @@
 #include "lua/lua.hpp"
 #include <darmok/protobuf.hpp>
 
-
 namespace darmok
 {
     template<typename T>
@@ -143,6 +142,7 @@ namespace darmok
         {
 			if(autoRegister)
 			{
+				userType["type_id"] = sol::property(&protobuf::getTypeId<T>);
 				auto desc = T::descriptor();
 				for (int i = 0; i < desc->field_count(); ++i)
 				{

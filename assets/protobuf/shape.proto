@@ -34,3 +34,14 @@ message Plane {
     Vec3 normal = 1;
     float distance = 2;
 }
+
+message Triangle {
+    Vec3 vertex1 = 1;
+    Vec3 vertex2 = 2;
+    Vec3 vertex3 = 3;
+}
+
+message Polygon {
+    repeated Triangle triangles = 1;
+    Vec3 origin = 2;
+}

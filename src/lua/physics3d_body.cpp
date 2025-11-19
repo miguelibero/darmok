@@ -1,6 +1,7 @@
 #include "lua/physics3d.hpp"
 #include "lua/scene.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/physics3d.hpp>
 #include <darmok/character.hpp>
 
@@ -83,21 +84,21 @@ namespace darmok::physics3d
 
     PhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept
     {
-        Config config;
-        config.shape = shape;
-        config.motion = motion;
-        config.trigger = trigger;
-        return entity.addComponent<PhysicsBody>(config);
+        auto def = PhysicsBody::createDefinition();
+        PhysicsShapeDefinitionWrapper{ *def.mutable_shape() }.setShape(shape);
+        def.set_motion(motion);
+        def.set_trigger(trigger);
+        return entity.addComponent<PhysicsBody>(def);
     }
 
-    PhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const Config& config) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent4(LuaEntity& entity, const Definition& def) noexcept
     {
-        return entity.addComponent<PhysicsBody>(config);
+        return entity.addComponent<PhysicsBody>(def);
     }
 
-    PhysicsBody& LuaPhysicsBody::addEntityComponent5(LuaEntity& entity, const CharacterConfig& config) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent5(LuaEntity& entity, const CharacterDefinition& def) noexcept
     {
-        return entity.addComponent<PhysicsBody>(config);
+        return entity.addComponent<PhysicsBody>(def);
     }
 
     OptionalRef<PhysicsBody>::std_t LuaPhysicsBody::getEntityComponent(LuaEntity& entity) noexcept
@@ -113,9 +114,9 @@ namespace darmok::physics3d
     void LuaPhysicsBody::bind(sol::state_view& lua) noexcept
     {
         lua.new_enum<MotionType>("Physics3dMotionType", {
-            { "Static", MotionType::Static },
-            { "Dynamic", MotionType::Dynamic },
-            { "Kinematic", MotionType::Kinematic },
+            { "Static", Definition::Static },
+            { "Dynamic", Definition::Dynamic },
+            { "Kinematic", Definition::Kinematic },
         });
         lua.new_enum<GroundState>("Physics3dGroundState", {
             { "Grounded", GroundState::Grounded },
@@ -123,26 +124,26 @@ namespace darmok::physics3d
             { "NotSupported", GroundState::NotSupported },
             { "Air", GroundState::Air },
         });
-        lua.new_usertype<PhysicsBodyConfig>("Physics3dBodyConfig", sol::default_constructor,
-            "shape", &PhysicsBodyConfig::shape,
-            "motion", &PhysicsBodyConfig::motion,
-            "mass", &PhysicsBodyConfig::mass,
-            "inertia_factor", &PhysicsBodyConfig::inertiaFactor,
-            "friction", &PhysicsBodyConfig::friction,
-            "gravity_factor", &PhysicsBodyConfig::gravityFactor,
-            "layer", &PhysicsBodyConfig::layer,
-            "trigger", &PhysicsBodyConfig::trigger
-        );
-        lua.new_usertype<CharacterConfig>("Physics3dCharacterConfig", sol::default_constructor,
-            "shape", &CharacterConfig::shape,
-            "up", &CharacterConfig::up,
-            "supporting_plane", &CharacterConfig::supportingPlane,
-            "max_slope_angle", &CharacterConfig::maxSlopeAngle,
-            "layer", &CharacterConfig::layer,
-            "mass", &CharacterConfig::mass,
-            "friction", &CharacterConfig::friction,
-            "gravity_factor", &CharacterConfig::gravityFactor
-        );
+
+        LuaUtils::newProtobuf<ShapeDefinition>(lua, "Physics3dShape")
+            .protobufProperty<darmok::protobuf::Cube>("cube")
+            .protobufProperty<darmok::protobuf::Sphere>("sphere")
+            .protobufProperty<darmok::protobuf::Capsule>("capsule")
+            .protobufProperty<darmok::protobuf::Polygon>("polygon")
+            .protobufProperty<darmok::protobuf::BoundingBox>("bounding_box")
+            ;
+		LuaUtils::newProtobuf<Definition>(lua, "Physics3dBodyDefinition")
+            .protobufProperty<ShapeDefinition>("shape")
+            ;
+        LuaUtils::newProtobuf<BaseCharacterDefinition>(lua, "Physics3dBaseCharacterDefinition")
+            .protobufProperty<ShapeDefinition>("shape")
+            .protobufProperty<darmok::protobuf::Vec3>("up")
+            .protobufProperty<darmok::protobuf::Plane>("supporting_plane")
+            ;
+        LuaUtils::newProtobuf<CharacterDefinition>(lua, "Physics3dCharacterDefinition")
+            .protobufProperty<BaseCharacterDefinition>("base")
+            ;
+
         lua.new_usertype<PhysicsBody>("Physics3dBody", sol::no_constructor,
             "type_id", sol::property(&entt::type_hash<PhysicsBody>::value),
             sol::meta_function::to_string, &PhysicsBody::toString,

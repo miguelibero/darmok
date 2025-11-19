@@ -124,10 +124,6 @@ namespace darmok
 		{
 			return entity.getComponent<Transform::Definition>();
 		};
-		def.userType["get_entity"] = [](const Transform::Definition& transform, const LuaSceneDefinition& scene)
-		{
-			return scene.getEntity(transform);
-		};
 
 		lua.new_usertype<Transform>("Transform", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Transform>::value),
