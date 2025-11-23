@@ -42,9 +42,9 @@ namespace darmok::physics3d
         using Config = PhysicsDebugConfig;
         PhysicsDebugRenderer(const Config& = {}) noexcept;
         ~PhysicsDebugRenderer() noexcept;
-        void init(Camera& cam, Scene& scene, App& app) override;
-        void shutdown() override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;

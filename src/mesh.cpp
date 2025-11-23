@@ -1,6 +1,5 @@
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <darmok/optional_ref.hpp>
 
 namespace darmok

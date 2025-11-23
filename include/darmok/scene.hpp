@@ -8,6 +8,7 @@
 #include <darmok/scene_fwd.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/transform_fwd.hpp>
+#include <darmok/expected.hpp>
 
 #include <memory>
 #include <cstdint>
@@ -26,12 +27,12 @@ namespace darmok
     {
     public:
         virtual ~ISceneComponent() = default;
-        virtual std::optional<entt::type_info> getSceneComponentType() const { return std::nullopt; }
-        virtual void init(Scene& scene, App& app) {}
-        virtual void shutdown() {}
-        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
-        virtual void update(float deltaTime) {}
-        virtual void afterLoad() {}
+        virtual std::optional<entt::type_info> getSceneComponentType() const noexcept { return std::nullopt; }
+        virtual expected<void, std::string> init(Scene& scene, App& app) noexcept { return {}; }
+        virtual expected<void, std::string> shutdown() noexcept { return {}; }
+        virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; }
+        virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
+        virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };
 
     template<typename T>
@@ -65,7 +66,6 @@ namespace darmok
         using Definition = protobuf::Scene;
 
         Scene() noexcept;
-        Scene(App& app) noexcept;
         ~Scene() noexcept;
 
         SceneImpl& getImpl() noexcept;
@@ -86,7 +86,7 @@ namespace darmok
         Scene& setViewport(const std::optional<Viewport>& vp) noexcept;
         Viewport getCurrentViewport() const noexcept;
 
-        void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
+        expected<void, std::string> addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
@@ -445,11 +445,11 @@ namespace darmok
         SceneAppComponent& addScene(const std::shared_ptr<Scene>& scene) noexcept;
         const Scenes& getScenes() const noexcept;
 
-        void init(App& app) override;
-        void shutdown() override;
-        bgfx::ViewId renderReset(bgfx::ViewId viewId) override;
-        void render() override;
-        void update(float dt) override;
+        expected<void, std::string> init(App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+        expected<void, std::string> render() noexcept override;
+        expected<void, std::string> update(float dt) noexcept override;
 
     private:
         Scenes _scenes;

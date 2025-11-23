@@ -82,30 +82,27 @@ namespace darmok
 		{
 			return std::nullopt;
 		}
-		try
+
+		_setupDone = true;
+		auto result = _app->setup(_args);
+		if(!result)
 		{
-			_setupDone = true;
-			return _app->setup(_args);
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(AppPhase::Setup, ex);
+			_app->onUnexpected(AppPhase::Setup, result.error());
 			return -1;
+
 		}
+		return result.value();
 	}
 
 	bool AppRunner::init() noexcept
 	{
-		try
+		auto result = _app->init();
+		if (!result)
 		{
-			_app->init();
-			return true;
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(AppPhase::Init, ex);
+			_app->onUnexpected(AppPhase::Init, result.error());
 			return false;
 		}
+		return true;
 	}
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -119,42 +116,37 @@ namespace darmok
 
 	AppRunResult AppRunner::run() noexcept
 	{
-		try
-		{
-			auto result = AppRunResult::Continue;
+		auto result = AppRunResult::Continue;
 
 #if BX_PLATFORM_EMSCRIPTEN
-			s_app = app.get();
-			emscripten_set_main_loop(&emscriptenRunApp, -1, 1);
-			result = s_appRunResult;
+		s_app = app.get();
+		emscripten_set_main_loop(&emscriptenRunApp, -1, 1);
+		result = s_appRunResult;
 #else
-			while (result == AppRunResult::Continue)
-			{
-				result = _app->run();
-			}
-#endif // BX_PLATFORM_EMSCRIPTEN
-			return result;
-		}
-		catch (const std::exception& ex)
+		while (result == AppRunResult::Continue)
 		{
-			_app->onException(AppPhase::Update, ex);
-			return AppRunResult::Exit;
+			auto runResult = _app->run();
+			if (!runResult)
+			{
+				_app->onUnexpected(AppPhase::Update, runResult.error());
+				return AppRunResult::Exit;
+			}
+			result = runResult.value();
 		}
+#endif // BX_PLATFORM_EMSCRIPTEN
+		return result;
 	}
 
 	bool AppRunner::shutdown() noexcept
 	{
-		try
+		auto result = _app->shutdown();
+		if (!result)
 		{
-			_app->shutdown();
-			_setupDone = false;
-			return true;
-		}
-		catch (const std::exception& ex)
-		{
-			_app->onException(AppPhase::Shutdown, ex);
+			_app->onUnexpected(AppPhase::Shutdown, result.error());
 			return false;
 		}
+		_setupDone = false;
+		return true;
 	}
 
 	AppImpl::AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
@@ -310,7 +302,7 @@ namespace darmok
 		return _updaters.eraseIf(filter);
 	}
 
-	std::optional<int32_t> AppImpl::setup(const CmdArgs& args)
+	expected<int32_t, std::string> AppImpl::setup(const CmdArgs& args) noexcept
 	{
 		if (_delegateFactory)
 		{
@@ -320,7 +312,7 @@ namespace darmok
 		{
 			return _delegate->setup(args);
 		}
-		return std::nullopt;
+		return 0;
 	}
 
 	void AppImpl::bgfxInit()
@@ -349,7 +341,7 @@ namespace darmok
 		bgfx::setPaletteColor(2, UINT32_C(0xFFFFFFFF));
 	}
 
-	void AppImpl::init()
+	expected<void, std::string> AppImpl::init() noexcept
 	{
 		_lastUpdate = bx::getHPCounter();
 		_runResult = AppRunResult::Continue;
@@ -368,22 +360,39 @@ namespace darmok
 		_running = true;
 		_renderReset = true;
 
+		std::vector<std::string> errors;
 		for (const auto& comp : Components(_components))
 		{
-			comp->init(_app);
+			auto result = comp->init(_app);
+			if(!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
 
 		if (_delegate)
 		{
-			_delegate->init();
+			auto result = _delegate->init();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void AppImpl::shutdown()
+	expected<void, std::string> AppImpl::shutdown() noexcept
 	{
+		std::vector<std::string> errors;
+
 		if (_delegate)
 		{
-			_delegate->earlyShutdown();
+			auto result = _delegate->earlyShutdown();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
 
 		if (_taskExecutor)
@@ -398,7 +407,11 @@ namespace darmok
 			auto components = Components(_components);
 			for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
 			{
-				(*itr)->shutdown();
+				auto result = (*itr)->shutdown();
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
 		_components.clear();
@@ -413,13 +426,18 @@ namespace darmok
 
 		if (_delegate)
 		{
-			_delegate->shutdown();
+			auto result = _delegate->shutdown();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 			// delete delegate before bgfx shutdown to ensure no dangling resources
 			_delegate.reset();
 		}
 
 		// Shutdown bgfx.
 		bgfx::shutdown();
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	void AppImpl::quit() noexcept
@@ -427,7 +445,7 @@ namespace darmok
 		_runResult = AppRunResult::Exit;
 	}
 
-	void AppImpl::onException(AppPhase phase, const std::exception& ex) noexcept
+	void AppImpl::onUnexpected(AppPhase phase, const std::string& error) noexcept
 	{
 		std::ostringstream out("[DARMOK] exception running app ");
 		switch (phase)
@@ -445,26 +463,39 @@ namespace darmok
 			out << "shutdown";
 			break;
 		}
-		out << ": " << ex.what();
+		out << ": " << error;
 		StreamUtils::log(out.str());
 	}
 
-	void AppImpl::update(float deltaTime)
+	expected<void, std::string> AppImpl::update(float deltaTime) noexcept
 	{
+		std::vector<std::string> errors;
 		if (!_paused)
 		{
 			if (_delegate)
 			{
-				_delegate->update(deltaTime);
+				auto result = _delegate->update(deltaTime);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 
 			for (const auto& comp : Components(_components))
 			{
-				comp->update(deltaTime);
+				auto result = comp->update(deltaTime);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 			for (auto& updater : _updaters.copy())
 			{
-				updater.update(deltaTime);
+				auto result = updater.update(deltaTime);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
 
@@ -487,16 +518,21 @@ namespace darmok
 		if (_renderReset)
 		{
 			_renderReset = false;
-			renderReset();
+			auto result = renderReset();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void AppImpl::requestRenderReset()
+	void AppImpl::requestRenderReset() noexcept
 	{
 		_renderReset = true;
 	}
 
-	void AppImpl::renderReset()
+	expected<bgfx::ViewId, std::string> AppImpl::renderReset() noexcept
 	{
 		bgfx::reset(_renderSize.x, _renderSize.y, _activeResetFlags);
 
@@ -521,27 +557,48 @@ namespace darmok
 
 		if (_delegate)
 		{
-			viewId = _delegate->renderReset(viewId);
+			auto result = _delegate->renderReset(viewId);
+			if (!result)
+			{
+				return result;
+			}
+			viewId = result.value();
 		}
 
 		for (const auto& comp : Components(_components))
 		{
-			viewId = comp->renderReset(viewId);
+			auto result = comp->renderReset(viewId);
+			if (!result)
+			{
+				return result;
+			}
+			viewId = result.value();
 		}
+		return viewId;
 	}
 
-	void AppImpl::render() const
+	expected<void, std::string> AppImpl::render() const noexcept
 	{
 		bgfx::touch(0);
 		bgfx::dbgTextClear();
+		std::vector<std::string> errors;
 		if (_delegate)
 		{
-			_delegate->render();
+			auto result = _delegate->render();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
 		for (const auto& comp : Components(_components))
 		{
-			comp->render();
+			auto result = comp->render();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	static uint32_t setFlag(uint32_t flags, uint32_t flag, bool enabled) noexcept
@@ -782,7 +839,7 @@ namespace darmok
 		}
 	}
 
-	AppRunResult AppImpl::processEvents()
+	AppRunResult AppImpl::processEvents() noexcept
 	{
 		while (_runResult == AppRunResult::Continue)
 		{
@@ -872,25 +929,25 @@ namespace darmok
 		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
 	}
 
-	std::optional<int32_t> App::setup(const CmdArgs& args)
+	expected<int32_t, std::string> App::setup(const CmdArgs& args) noexcept
 	{
 		return _impl->setup(args);
 	}
 
-	void App::init()
+	expected<void, std::string> App::init() noexcept
 	{
 		_impl->processEvents();
-		_impl->init();
+		return _impl->init();
 	}
 
-	void App::onException(AppPhase phase, const std::exception& ex) noexcept
+	void App::onUnexpected(AppPhase phase, const std::string& error) noexcept
 	{
-		_impl->onException(phase, ex);
+		_impl->onUnexpected(phase, error);
 	}
 
-	void App::shutdown()
+	expected<void, std::string> App::shutdown() noexcept
 	{
-		_impl->shutdown();
+		return _impl->shutdown();
 	}
 
 	Input& App::getInput() noexcept
@@ -947,21 +1004,35 @@ namespace darmok
 
 #endif
 
-	AppRunResult App::run()
+	expected<AppRunResult, std::string> App::run() noexcept
 	{
-		auto result = _impl->processEvents();
-		if (result != AppRunResult::Continue)
+		auto processResult = _impl->processEvents();
+		if (processResult != AppRunResult::Continue)
 		{
-			return result;
+			return processResult;
 		}
 
-		_impl->deltaTimeCall([this](float deltaTime) {
-			_impl->update(deltaTime);
+		std::vector<std::string> errors;
+		_impl->deltaTimeCall([this, &errors](float deltaTime) {
+			auto result = _impl->update(deltaTime);
+			if(!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		});
 
-		render();
+		auto result = render();
+		if(!result)
+		{
+			errors.push_back(std::move(result).error());
+		}
 
 		bgfx::frame();
+
+		if(!errors.empty())
+		{
+			return unexpected{ StringUtils::joinErrors(errors) };
+		}
 
 		return AppRunResult::Continue;
 	}
@@ -971,7 +1042,7 @@ namespace darmok
 		_impl->quit();
 	}
 
-	void App::requestRenderReset()
+	void App::requestRenderReset() noexcept
 	{
 		_impl->requestRenderReset();
 	}
@@ -1026,9 +1097,9 @@ namespace darmok
 		return _impl->removeUpdaters(filter);
 	}
 
-	void App::render() const
+	expected<void, std::string> App::render() const noexcept
 	{
-		_impl->render();
+		return _impl->render();
 	}
 
 	bool App::toggleDebugFlag(uint32_t flag) noexcept

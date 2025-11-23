@@ -62,9 +62,18 @@ namespace darmok
         template<typename Container>
         [[nodiscard]] std::string joinErrors(const Container& errors) noexcept
         {
-            return "{" + join(", ", errors) + "}";
+            return join("\n", errors);
         }
 
+        template<typename Container>
+        [[nodiscard]] expected<void, std::string> joinExpectedErrors(const Container& errors) noexcept
+        {
+            if (!errors.empty())
+            {
+                return unexpected{joinErrors(errors)};
+            }
+            return {};
+        }
 
         [[nodiscard]] bool containsGlobPattern(std::string_view glob) noexcept;
         [[nodiscard]] std::string globToRegex(std::string_view glob) noexcept;

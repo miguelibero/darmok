@@ -15,11 +15,10 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/physics3d.hpp>
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <imgui.h>
 #include <glm/gtx/string_cast.hpp>
 

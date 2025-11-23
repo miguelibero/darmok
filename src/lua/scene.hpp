@@ -123,10 +123,10 @@ namespace darmok
 		LuaSceneComponent(const sol::table& table, const std::weak_ptr<Scene>& scene) noexcept;
 		sol::object getReal() const noexcept;
 
-		void init(Scene& scene, App& app) override;
-		void shutdown() override;
-		bgfx::ViewId renderReset(bgfx::ViewId viewId) override;
-		void update(float deltaTime) override;
+		expected<void, std::string> init(Scene& scene, App& app) noexcept override;
+		expected<void, std::string> shutdown() noexcept override;
+		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+		expected<void, std::string> update(float deltaTime) noexcept override;
 
 	private:
 		sol::main_table _table;
@@ -136,6 +136,8 @@ namespace darmok
 		static const LuaTableDelegateDefinition _shutdownDef;
 		static const LuaTableDelegateDefinition _renderResetDef;
 		static const LuaTableDelegateDefinition _updateDef;
+
+		static expected<void, std::string> expectedResult(const sol::protected_function_result& result) noexcept;
 	};
 
 	class SceneAppComponent;

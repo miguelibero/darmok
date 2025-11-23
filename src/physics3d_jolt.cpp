@@ -8,7 +8,6 @@
 #include <darmok/collection.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/glm_serialize.hpp>
-#include <darmok/shape_serialize.hpp>
 
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
@@ -208,7 +207,7 @@ namespace darmok::physics3d
         {
             return shape;
         }
-        JPH::RotatedTranslatedShapeSettings offsetSettings(JoltUtils::convert(offset), JPH::Quat::sIdentity(), shape);
+        JPH::RotatedTranslatedShapeSettings offsetSettings{ JoltUtils::convert(offset), JPH::Quat::sIdentity(), shape };
         return getShape(offsetSettings);
     }
 
@@ -227,27 +226,27 @@ namespace darmok::physics3d
         {
             auto cube = optCube.value() * scale;
             auto radius = JoltUtils::getConvexRadius(cube.size);
-            JPH::BoxShapeSettings settings(JoltUtils::convertSize(cube.size * 0.5F), radius);
+            JPH::BoxShapeSettings settings{ JoltUtils::convertSize(cube.size * 0.5F), radius };
             return joltGetOffsetShape(settings, cube.origin);
         }
 
         if (auto spherePtr = std::get_if<Sphere>(&shape))
         {
             auto sphere = *spherePtr * scale;
-            JPH::SphereShapeSettings settings(sphere.radius);
+            JPH::SphereShapeSettings settings{ sphere.radius };
             return joltGetOffsetShape(settings, sphere.origin);
         }
         if (auto capsPtr = std::get_if<Capsule>(&shape))
         {
             auto caps = *capsPtr * scale;
-            JPH::CapsuleShapeSettings settings(caps.cylinderHeight * 0.5, caps.radius);
+            JPH::CapsuleShapeSettings settings{ caps.cylinderHeight * 0.5f, caps.radius };
             return joltGetOffsetShape(settings, caps.origin);
         }
         if (auto polyPtr = std::get_if<Polygon>(&shape))
         {
             auto poly = *polyPtr * scale;
             auto tris = JoltUtils::convert(poly);
-            JPH::MeshShapeSettings settings(tris);
+            JPH::MeshShapeSettings settings{ tris };
             return joltGetOffsetShape(settings, poly.origin);
         }
         return nullptr;
@@ -287,7 +286,7 @@ namespace darmok::physics3d
 		charDef.set_mass(_def.mass());
 		charDef.set_friction(_def.friction());
 		charDef.set_gravity_factor(_def.gravity_factor());
-		charDef.set_layer(_def.layer_mask());
+		charDef.set_layer(_def.layer());
 
         return charDef;
     }
@@ -329,9 +328,8 @@ namespace darmok::physics3d
 
     JoltJobSystemTaskflow::JobHandle JoltJobSystemTaskflow::CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies)
     {
-        return JobHandle(new Job(name, color, this, jobFunction, numDependencies));
+        return JobHandle{ new Job{name, color, this, jobFunction, numDependencies} };
     }
-
 
     void JoltJobSystemTaskflow::QueueJob(Job* job)
     {
@@ -408,11 +406,11 @@ namespace darmok::physics3d
         return defi;
     }
 
-    const std::string& ConstPhysicsSystemDefinitionWrapper::getBroadLayerName(BroadLayer layer) const
+    std::optional<std::string> ConstPhysicsSystemDefinitionWrapper::getBroadLayerName(BroadLayer layer) const noexcept
     {
         if (layer < 0 || layer >= _def.layers_size())
         {
-            throw std::invalid_argument("broad layer not defined");
+            return std::nullopt;
         }
         auto itr = _def.layers().begin();
         std::advance(itr, layer);
@@ -427,7 +425,8 @@ namespace darmok::physics3d
 
     const char* JoltBroadPhaseLayerInterface::GetBroadPhaseLayerName(JPH::BroadPhaseLayer bpLayer) const
     {
-        return _def.getBroadLayerName(bpLayer.GetValue()).c_str();
+        auto name = _def.getBroadLayerName(bpLayer.GetValue());
+        return name ? name->c_str() : "";
     }
 
     JoltObjectVsBroadPhaseLayerFilter::JoltObjectVsBroadPhaseLayerFilter(const Definition& def)
@@ -461,7 +460,7 @@ namespace darmok::physics3d
     }
 
     JoltObjectLayerMaskFilter::JoltObjectLayerMaskFilter(LayerMask layers) noexcept
-        : _layers(layers)
+        : _layers{ layers }
     {
     }
 
@@ -536,7 +535,7 @@ namespace darmok::physics3d
         JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = joltAssertFailed;)
     }
 
-    void PhysicsSystemImpl::init(Scene& scene, App& app) noexcept
+    expected<void, std::string> PhysicsSystemImpl::init(Scene& scene, App& app) noexcept
     {
         if (_scene)
         {
@@ -571,7 +570,7 @@ namespace darmok::physics3d
         }
     }
 
-    void PhysicsSystemImpl::shutdown() noexcept
+    expected<void, std::string> PhysicsSystemImpl::shutdown() noexcept
     {
         if (_scene)
         {
@@ -619,33 +618,20 @@ namespace darmok::physics3d
         character.shutdown();
     }
 
-    std::string PhysicsSystemImpl::getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept
+    std::string_view PhysicsSystemImpl::getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept
     {
-        switch (err)
-        {
-        case JPH::EPhysicsUpdateError::None:
-            return "None";
-        case JPH::EPhysicsUpdateError::ManifoldCacheFull:
-            return "ManifoldCacheFull";
-        case JPH::EPhysicsUpdateError::BodyPairCacheFull:
-            return "BodyPairCacheFull";
-        case JPH::EPhysicsUpdateError::ContactConstraintsFull:
-            return "ContactConstraintsFull";
-        default:
-            JPH_ASSERT(false);
-            return "";
-        }
+        return StringUtils::getEnumName(err);
     }
     
-    void PhysicsSystemImpl::update(float deltaTime)
+    expected<void, std::string> PhysicsSystemImpl::update(float deltaTime) noexcept
     {
         if (_paused)
         {
-            return;
+            return {};
         }
         if (!_joltSystem)
         {
-            return;
+            return {};
         }
         _deltaTimeRest += deltaTime;
         auto fdt = _def.fixed_delta_time();
@@ -665,7 +651,9 @@ namespace darmok::physics3d
             _deltaTimeRest -= fdt;
             if (err != JPH::EPhysicsUpdateError::None)
             {
-                throw std::runtime_error(std::string("physics update error ") + getUpdateErrorString(err));
+                std::string errStr{ "physics update error " };
+				errStr += getUpdateErrorString(err);
+                return unexpected{ errStr };
             }
 
             processPendingCollisionEvents();
@@ -686,6 +674,8 @@ namespace darmok::physics3d
                 charCtrl.getImpl().update(entity, deltaTime);
             }
         }
+
+		return {};
     }
 
     void PhysicsSystemImpl::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept
@@ -1042,7 +1032,7 @@ namespace darmok::physics3d
     }
 
     PhysicsSystem::PhysicsSystem(bx::AllocatorI& alloc) noexcept
-        : _impl(std::make_unique<PhysicsSystemImpl>(*this, createDefinition(), alloc))
+        : _impl{ std::make_unique<PhysicsSystemImpl>(*this, createDefinition(), alloc) }
     {
     }
 
@@ -1119,19 +1109,19 @@ namespace darmok::physics3d
         return *this;
     }
     
-    void PhysicsSystem::init(Scene& scene, App& app) noexcept
+    expected<void, std::string> PhysicsSystem::init(Scene& scene, App& app) noexcept
     {
         _impl->init(scene, app);
     }
     
-    void PhysicsSystem::shutdown() noexcept
+    expected<void, std::string> PhysicsSystem::shutdown() noexcept
     {
         _impl->shutdown();
     }
     
-    void PhysicsSystem::update(float deltaTime) noexcept
+    expected<void, std::string> PhysicsSystem::update(float deltaTime) noexcept
     {
-        _impl->update(deltaTime);
+        return _impl->update(deltaTime);
     }
 
     PhysicsSystem& PhysicsSystem::addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept
@@ -1269,7 +1259,7 @@ namespace darmok::physics3d
         {
             return {};
         }
-        const JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
+        const JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings{};
         settings->mMaxSlopeAngle = def.max_slope_angle();
         settings->mShape = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
         settings->mFriction = def.friction();
@@ -1309,8 +1299,8 @@ namespace darmok::physics3d
         }
 
         auto shape = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
-        JPH::BodyCreationSettings settings(shape, trans.position, trans.rotation,
-            joltMotion, def.layer_mask());
+        JPH::BodyCreationSettings settings{ shape, trans.position, trans.rotation,
+            joltMotion, static_cast<JPH::ObjectLayer>(def.layer()) };
         settings.mGravityFactor = def.gravity_factor();
         settings.mFriction = def.friction();
         settings.mUserData = (uint64_t)_body.ptr();

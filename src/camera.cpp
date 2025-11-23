@@ -207,65 +207,105 @@ namespace darmok
         return _cullingFilter;
     }
 
-    void Camera::init(Scene& scene, App& app)
+    expected<void, std::string> Camera::init(Scene& scene, App& app)
     {
         _scene = scene;
         _app = app;
 
+        std::vector<std::string> errors;
+
         for(auto comp : Components{_components})
         {
-            comp->init(*this, scene, app);
+            auto result = comp->init(*this, scene, app);
+            if(!result)
+            {
+                errors.emplace_back(std::move(result).error());
+			}
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    bgfx::ViewId Camera::renderReset(bgfx::ViewId viewId)
+    expected<bgfx::ViewId, std::string> Camera::renderReset(bgfx::ViewId viewId)
     {
         updateProjection();
         _renderChain.beforeRenderReset();
         for (auto comp : Components{_components})
         {
-            viewId = comp->renderReset(viewId);
+            auto result = comp->renderReset(viewId);
+            if (!result)
+            {
+                return result;
+            }
+            viewId = result.value();
         }
-        viewId = _renderChain.renderReset(viewId);
+        auto result = _renderChain.renderReset(viewId);
+        if (!result)
+        {
+            return result;
+        }
+		viewId = result.value();
         return viewId;
     }
 
-    void Camera::render()
+    expected<void, std::string> Camera::render()
     {
         if (!_enabled)
         {
-            return;
+            return {};
         }
+        std::vector<std::string> errors;
         for (auto comp : Components{_components})
         {
-            comp->render();
-        }
-    }
-
-    void Camera::shutdown()
-    {
-        {
-            auto components = Components{_components};
-            for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+            auto result = comp->render();
+            if (!result)
             {
-                (*itr)->shutdown();
+				errors.push_back(std::move(result).error());
             }
         }
-        _renderChain.shutdown();
+		return StringUtils::joinExpectedErrors(errors);
     }
 
-    void Camera::update(float deltaTime)
+    expected<void, std::string> Camera::shutdown()
+    {
+        std::vector<std::string> errors;
+        auto components = Components{_components};
+        for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+        {
+            auto result = (*itr)->shutdown();
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        auto result = _renderChain.shutdown();
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> Camera::update(float deltaTime)
     {
         if (_updateEnabled)
         {
             _enabled = _updateEnabled.value();
             _updateEnabled.reset();
         }
+        std::vector<std::string> errors;
         for (auto comp : Components{ _components })
         {
-            comp->update(deltaTime);
+            auto result = comp->update(deltaTime);
+            if (!result)
+            {
+				errors.push_back(std::move(result).error());
+            }
         }
-        _renderChain.update(deltaTime);
+        auto result = _renderChain.update(deltaTime);
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
         updateProjection();
 
         auto view = getViewMatrix();
@@ -280,6 +320,7 @@ namespace darmok
             _transformChanged = false;
             onTransformChanged();
         }
+		return StringUtils::joinExpectedErrors(errors);
     }
 
     std::string Camera::getViewName(const std::string& baseName) const noexcept
@@ -328,13 +369,19 @@ namespace darmok
         }
     }
 
-    void Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    expected<void, std::string> Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setViewTransform(viewId);
+		std::vector<std::string> errors;
         for (auto comp : Components{_components})
         {
-            comp->beforeRenderView(viewId, encoder);
+            auto result = comp->beforeRenderView(viewId, encoder);
+            if (!result)
+            {
+				errors.push_back(std::move(result).error());
+            }
         }
+		return StringUtils::joinExpectedErrors(errors);
     }
 
     bool Camera::shouldEntityBeCulled(Entity entity) const noexcept
@@ -349,13 +396,19 @@ namespace darmok
         return false;
     }
 
-    void Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    expected<void, std::string> Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
         setEntityTransform(entity, encoder);
+		std::vector<std::string> errors;
         for (auto comp : Components{_components})
         {
-            comp->beforeRenderEntity(entity, viewId, encoder);
+            auto result = comp->beforeRenderEntity(entity, viewId, encoder);
+            if (!result)
+            {
+				errors.push_back(std::move(result).error());    
+            }
         }
+		return StringUtils::joinExpectedErrors(errors);
     }
 
     Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept

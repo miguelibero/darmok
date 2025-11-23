@@ -46,12 +46,12 @@ namespace darmok
     {
     public:
         virtual ~IRenderChainStep() = default;
-        virtual void init(RenderChain& chain) = 0;
-        virtual void update(float deltaTime) {};
-        virtual void updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) = 0;
-        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; };
-        virtual void render(bgfx::Encoder& encoder) noexcept = 0;
-        virtual void shutdown() = 0;
+        virtual expected<void, std::string> init(RenderChain& chain) noexcept = 0;
+        virtual expected<void, std::string> update(float deltaTime) noexcept {};
+        virtual expected<void, std::string> updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) noexcept = 0;
+        virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; };
+        virtual expected<void, std::string> render(bgfx::Encoder& encoder) noexcept = 0;
+        virtual expected<void, std::string> shutdown() noexcept = 0;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IRenderChainDelegate
@@ -75,12 +75,12 @@ namespace darmok
         RenderChain(RenderChain&& other) = delete;
 		RenderChain& operator=(RenderChain&& other) = delete;
 
-        void init();
+        expected<void, std::string> init() noexcept;
         void beforeRenderReset() noexcept;
-        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-        void update(float deltaTime);
-        void render() noexcept;
-        void shutdown();
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
+        expected<void, std::string> update(float deltaTime);
+        expected<void, std::string> render() noexcept;
+        expected<void, std::string> shutdown();
 
         std::string getViewName(const std::string& baseName) const noexcept;
         OptionalRef<FrameBuffer> getInput() noexcept;
@@ -88,10 +88,10 @@ namespace darmok
 
         void configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer = nullptr) const;
 
-        RenderChain& setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
+        expected<void, std::string> setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
         std::shared_ptr<FrameBuffer> getOutput() const noexcept;
 
-        RenderChain& addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept;
+        expected<void, std::string> addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept;
 
         template<typename T, typename... A>
         T& addStep(A&&... args)
@@ -102,7 +102,7 @@ namespace darmok
             return ref;
         }
 
-        bool removeStep(const IRenderChainStep& step) noexcept;
+        expected<bool, std::string> removeStep(const IRenderChainStep& step) noexcept;
         bool empty() const noexcept;
 
     private:
@@ -117,7 +117,7 @@ namespace darmok
         OptionalRef<FrameBuffer> getReadBuffer(size_t i) const noexcept;
         OptionalRef<FrameBuffer> getWriteBuffer(size_t i) const noexcept;
         FrameBuffer& addBuffer() noexcept;
-        void updateStep(size_t i);
+        expected<void, std::string> updateStep(size_t i) noexcept;
     };
 
     class Program;
@@ -126,15 +126,15 @@ namespace darmok
     class DARMOK_EXPORT ScreenSpaceRenderPass final : public IRenderChainStep
     {
     public:
-        ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name = "", int priority = 0);
+        ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name = "", int priority = 0) noexcept;
         ~ScreenSpaceRenderPass() noexcept;
 
-        void init(RenderChain& chain) noexcept override;
-        void updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept override;
-        void update(float deltaTime) noexcept override;
-        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
-        void render(bgfx::Encoder& encoder) noexcept override;
-        void shutdown() noexcept override;
+        expected<void, std::string> init(RenderChain& chain) noexcept override;
+        expected<void, std::string> updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+        expected<void, std::string> render(bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
 
         ScreenSpaceRenderPass& setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept;
         ScreenSpaceRenderPass& setUniform(const std::string& name, std::optional<UniformValue> value) noexcept;

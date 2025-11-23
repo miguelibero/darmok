@@ -651,16 +651,17 @@ namespace darmok
     {
     }
 
-    RmluiCanvasImpl::~RmluiCanvasImpl() noexcept
-    {
-        shutdown();
-    }
+    RmluiCanvasImpl::~RmluiCanvasImpl() noexcept = default;
 
-    void RmluiCanvasImpl::init(App& app, RmluiSceneComponentImpl& comp)
+    expected<void, std::string> RmluiCanvasImpl::init(App& app, RmluiSceneComponentImpl& comp) noexcept
     {
         if (_context)
         {
-            shutdown();
+            auto result = shutdown();
+            if(!result)
+            {
+                return unexpected(result.error());
+			}
         }
 
         _comp = comp;
@@ -679,16 +680,17 @@ namespace darmok
         _context = Rml::CreateContext(name, RmluiUtils::convert<int>(size), _render.get());
         if (!_context)
         {
-            throw std::runtime_error("Failed to create rmlui context");
+            return unexpected<std::string>{"Failed to create rmlui context"};
         }
         if (size.x > 0 && size.y > 0)
         {
             _frameBuffer.emplace(size, false);
         }
         _context->EnableMouseCursor(true);
+        return {}
     }
 
-    void RmluiCanvasImpl::shutdown() noexcept
+    expected<void, std::string> RmluiCanvasImpl::shutdown() noexcept
     {
         _dataTypeRegisters.clear();
         _defaultDataTypeRegister.reset();
@@ -699,7 +701,6 @@ namespace darmok
             _context.reset();
             Rml::ReleaseTextures(_render ? _render.get() : nullptr);
         }
-
 
         // the render interface should be destroyed here
         // but with Rmlui 6.0 that throws an assert
@@ -718,6 +719,8 @@ namespace darmok
         _comp.reset();
         _cam.reset();
         _defaultCam.reset();
+
+        return {};
     }
 
     OptionalRef<Texture> RmluiCanvasImpl::getFrameTexture() const noexcept
@@ -1737,15 +1740,9 @@ namespace darmok
         }
     }
 
-    RmluiSceneComponentImpl::~RmluiSceneComponentImpl()
-    {
-        if (_app)
-        {
-            shutdown();
-        }
-    }
+    RmluiSceneComponentImpl::~RmluiSceneComponentImpl() = default;
 
-    void RmluiSceneComponentImpl::init(Scene& scene, App& app) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::init(Scene& scene, App& app) noexcept
     {
         _plugin = RmluiPlugin::getInstance(app);
         _plugin->addComponent(*this);
@@ -1765,7 +1762,7 @@ namespace darmok
         scene.onDestroyComponent<RmluiCanvas>().connect<&RmluiSceneComponentImpl::onCanvasDestroyed>(*this);
     }
 
-    void RmluiSceneComponentImpl::update(float deltaTime) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::update(float deltaTime) noexcept
     {
         getRmluiSystem().update(deltaTime);
         if (!_scene)
@@ -1780,7 +1777,7 @@ namespace darmok
         }
     }
 
-    bgfx::ViewId RmluiSceneComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string> RmluiSceneComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         if (_scene)
         {
@@ -1793,7 +1790,7 @@ namespace darmok
         return viewId;
     }
 
-    void RmluiSceneComponentImpl::shutdown() noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::shutdown() noexcept
     {
         if (_app)
         {
@@ -2115,31 +2112,28 @@ namespace darmok
     }
 
     RmluiSceneComponent::RmluiSceneComponent() noexcept
-        : _impl(std::make_unique<RmluiSceneComponentImpl>())
+        : _impl{ std::make_unique<RmluiSceneComponentImpl>() }
     {
     }
 
-    RmluiSceneComponent::~RmluiSceneComponent() noexcept
+    RmluiSceneComponent::~RmluiSceneComponent() noexcept = default;
+
+    expected<void, std::string> RmluiSceneComponent::init(Scene& scene, App& app) noexcept
     {
-        // left empty to get the forward declaration of the impl working
+        return _impl->init(scene, app);
     }
 
-    void RmluiSceneComponent::init(Scene& scene, App& app) noexcept
+    expected<void, std::string> RmluiSceneComponent::shutdown() noexcept
     {
-        _impl->init(scene, app);
+        return _impl->shutdown();
     }
 
-    void RmluiSceneComponent::shutdown() noexcept
-    {
-        _impl->shutdown();
-    }
-
-    bgfx::ViewId RmluiSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string> RmluiSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
     {
         return _impl->renderReset(viewId);
     }
 
-    void RmluiSceneComponent::update(float deltaTime) noexcept
+    expected<void, std::string> RmluiSceneComponent::update(float deltaTime) noexcept
     {
         _impl->update(deltaTime);
     }

@@ -90,9 +90,9 @@ namespace darmok
     public:
         using Config = FreelookConfig;
         FreelookController(Camera& cam, const Config& config = {}) noexcept;
-        void init(Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void update(float deltaTime) noexcept override;
+        expected<void, std::string> init(Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
         void onInputEvent(const std::string& tag) noexcept override;
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;

@@ -29,10 +29,7 @@ namespace darmok
         return getPtrId(this);
     }
 
-    SceneImpl::~SceneImpl() noexcept
-    {
-        // empty on purpose
-    }
+    SceneImpl::~SceneImpl() noexcept = default;
 
     std::string SceneImpl::toString() const noexcept
     {
@@ -48,7 +45,7 @@ namespace darmok
         return fmt::format("{:X}", getId());
     }
 
-    void SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
+    expected<void, std::string> SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
         if (auto type = component->getSceneComponentType())
         {
@@ -56,9 +53,14 @@ namespace darmok
         }
         if (_app)
         {
-            component->init(_scene, _app.value());
+            auto result = component->init(_scene, _app.value());
+            if (!result)
+            {
+                return result;
+            }
         }
         _components.emplace_back(std::move(component));
+        return {};
     }
 
     bool SceneImpl::removeSceneComponent(entt::id_type type) noexcept
@@ -230,34 +232,52 @@ namespace darmok
         return roots;
     }
 
-    void SceneImpl::init(App& app)
+    expected<void, std::string> SceneImpl::init(App& app)
     {
         if (_app == app)
         {
-            return;
+            return {};
         }
 
         if (_app)
         {
-            shutdown();
+            auto result = shutdown();
+            if (!result)
+            {
+                return result;
+            }
         }
 
         _app = app;
-        _renderChain.init();
-
+        auto result = _renderChain.init();
+        if (!result)
+        {
+            return result;
+        }
+		std::vector<std::string> errors;
         for (auto& comp : Components(_components))
         {
-            comp->init(_scene, app);
+            auto result = comp->init(_scene, app);
+            if (!result)
+            {
+				errors.push_back(std::move(result).error());
+            }
         }
 
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->init(_scene, app);
+            auto result = itr->init(_scene, app);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
 
         _registry.on_construct<Camera>().connect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().connect<&SceneImpl::onCameraDestroyed>(*this);
+
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     Viewport SceneImpl::getRenderChainViewport() const noexcept
@@ -273,54 +293,73 @@ namespace darmok
         }
     }
 
-    void SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity)
+    expected<void, std::string>  SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.init(_scene, _app.value());
+            return cam.init(_scene, _app.value());
         }
+        return {};
     }
 
-    void SceneImpl::onCameraDestroyed(EntityRegistry& registry, Entity entity)
+    expected<void, std::string>  SceneImpl::onCameraDestroyed(EntityRegistry& registry, Entity entity) noexcept
     {
         if (_app)
         {
             auto& cam = registry.get<Camera>(entity);
-            cam.shutdown();
+            return cam.shutdown();
         }
+        return {};
     }
 
-    void SceneImpl::render()
+    expected<void, std::string> SceneImpl::render()
     {
         auto& cams = _registry.storage<Camera>();
+		std::vector<std::string> errors;
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            itr->render();
-        }
-        _renderChain.render();
-    }
-
-    void SceneImpl::shutdown()
-    {
-        _registry.clear();
-
-        {
-            auto components = Components(_components);
-            for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+            auto result = itr->render();
+            if (!result)
             {
-                (*itr)->shutdown();
+				errors.push_back(std::move(result).error());
             }
         }
-        _renderChain.shutdown();
+        auto result = _renderChain.render();
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> SceneImpl::shutdown()
+    {
+        _registry.clear();
+        std::vector<std::string> errors;
+        auto components = Components(_components);
+        for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+        {
+            auto result = (*itr)->shutdown();
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        auto result = _renderChain.shutdown();
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
 
         _registry.on_construct<Camera>().disconnect<&SceneImpl::onCameraConstructed>(*this);
         _registry.on_destroy<Camera>().disconnect<&SceneImpl::onCameraDestroyed>(*this);
 
         _app.reset();
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    bgfx::ViewId SceneImpl::renderReset(bgfx::ViewId viewId)
+    expected<bgfx::ViewId, std::string> SceneImpl::renderReset(bgfx::ViewId viewId)
     {
         _renderChain.beforeRenderReset();
 
@@ -328,7 +367,12 @@ namespace darmok
             auto components = Components(_components);
             for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
             {
-                viewId = (*itr)->renderReset(viewId);
+                auto result = (*itr)->renderReset(viewId);
+                if (!result)
+                {
+                    return result;
+				}
+				viewId = result.value();
             }
         }
 
@@ -336,10 +380,19 @@ namespace darmok
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
-            viewId = itr->renderReset(viewId);
+            auto result = itr->renderReset(viewId);
+            if (!result)
+            {
+                return result;
+            }
         }
 
-        viewId = _renderChain.renderReset(viewId);
+        auto result = _renderChain.renderReset(viewId);
+        if (!result)
+        {
+            return result;
+        }
+		viewId = result.value();
         return viewId;
     }
 
@@ -403,29 +456,45 @@ namespace darmok
         }
     }
 
-    void SceneImpl::update(float deltaTime)
+    expected<void, std::string> SceneImpl::update(float deltaTime)
     {
         destroyPendingEntities();
-
-        if (!_paused)
+        if (_paused)
         {
-            for (auto entity : _scene.getUpdateEntities<Transform>())
-            {
-                _scene.getComponent<Transform>(entity)->update();
-            }
-
-            for (auto entity : _scene.getUpdateEntities<Camera>())
-            {
-                _scene.getComponent<Camera>(entity)->update(deltaTime);
-            }
-
-            for (auto& comp : Components(_components))
-            {
-                comp->update(deltaTime);
-            }
-
-            _renderChain.update(deltaTime);
+			return {};
         }
+
+        std::vector<std::string> errors;
+
+        for (auto entity : _scene.getUpdateEntities<Transform>())
+        {
+            _scene.getComponent<Transform>(entity)->update();
+        }
+
+        for (auto entity : _scene.getUpdateEntities<Camera>())
+        {
+            auto result = _scene.getComponent<Camera>(entity)->update(deltaTime);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+
+        for (auto& comp : Components(_components))
+        {
+            auto result = comp->update(deltaTime);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+
+        auto result = _renderChain.update(deltaTime);
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     void SceneImpl::destroyEntities() noexcept
@@ -472,15 +541,7 @@ namespace darmok
     {
     }
 
-    Scene::Scene(App& app) noexcept
-        : Scene()
-    {
-        _impl->init(app);
-    }
-
-    Scene::~Scene() noexcept
-    {
-    }
+    Scene::~Scene() noexcept = default;
 
     SceneImpl& Scene::getImpl() noexcept
     {
@@ -713,9 +774,9 @@ namespace darmok
         return _impl->getCurrentViewport();
     }
 
-    void Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
+    expected<void, std::string> Scene::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept
     {
-        _impl->addSceneComponent(std::move(component));
+        return _impl->addSceneComponent(std::move(component));
     }
 
     bool Scene::removeSceneComponent(entt::id_type type) noexcept
@@ -823,50 +884,83 @@ namespace darmok
         return _scenes;
     }
 
-    void SceneAppComponent::init(App& app)
+    expected<void, std::string> SceneAppComponent::init(App& app) noexcept
     {
         if (_app)
         {
-            shutdown();
+            auto result = shutdown();
+            if (!result)
+            {
+                return result;
+            }
         }
         _app = app;
+		std::vector<std::string> errors;
         for(auto& scene : _scenes)
         {
-            scene->getImpl().init(app);
+            auto result = scene->getImpl().init(app);
+            if(!result)
+            {
+                errors.push_back(std::move(result).error());
+			}
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    bgfx::ViewId SceneAppComponent::renderReset(bgfx::ViewId viewId)
+    expected<bgfx::ViewId, std::string> SceneAppComponent::renderReset(bgfx::ViewId viewId) noexcept
     {
         for (auto& scene : _scenes)
         {
-            viewId = scene->getImpl().renderReset(viewId);
+            auto result = scene->getImpl().renderReset(viewId);
+            if(!result)
+            {
+                return result;
+			}
+			viewId = result.value();
         }
         return viewId;
     }
 
-    void SceneAppComponent::render()
+    expected<void, std::string> SceneAppComponent::render() noexcept
     {
+        std::vector<std::string> errors;
         for (auto& scene : _scenes)
         {
-            scene->getImpl().render();
+            auto result = scene->getImpl().render();
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    void SceneAppComponent::shutdown()
+    expected<void, std::string> SceneAppComponent::shutdown() noexcept
     {
         _app = nullptr;
+        std::vector<std::string> errors;
         for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
         {
-            (*itr)->getImpl().shutdown();
+            auto result = (*itr)->getImpl().shutdown();
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    void SceneAppComponent::update(float deltaTime)
+    expected<void, std::string> SceneAppComponent::update(float deltaTime) noexcept
     {
+        std::vector<std::string> errors;
         for (auto& scene : _scenes)
         {
-            scene->getImpl().update(deltaTime);
+            auto result = scene->getImpl().update(deltaTime);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 }

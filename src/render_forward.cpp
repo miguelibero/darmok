@@ -17,47 +17,55 @@ namespace darmok
 	{
 	}
 
-	ForwardRenderer::~ForwardRenderer() noexcept
-	{
-		// empty on purpose
-	}
+	ForwardRenderer::~ForwardRenderer() noexcept = default;
 
-	void ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+	expected<void, std::string> ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_cam = cam;
 		_scene = scene;
 		_app = app;
 		_materials = app.getOrAddComponent<MaterialAppComponent>();
+		return {};
 	}
 
-	bgfx::ViewId ForwardRenderer::renderReset(bgfx::ViewId viewId) noexcept
+	expected<bgfx::ViewId, std::string> ForwardRenderer::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		_viewId.reset();
 		if (!_cam)
 		{
-			return viewId;
+			return unexpected<std::string>{"camera not loaded"};
 		}
 		_cam->configureView(viewId, "Forward");
 		_viewId = viewId;
 		return ++viewId;
 	}
 
-	void ForwardRenderer::shutdown() noexcept
+	expected<void, std::string> ForwardRenderer::shutdown() noexcept
 	{
 		_cam.reset();
 		_scene.reset();
 		_app.reset();
+		return {};
 	}
 
-	void ForwardRenderer::render() noexcept
+	expected<void, std::string> ForwardRenderer::render() noexcept
 	{
-		if (!_scene || !_viewId || !_cam || !_cam->isEnabled())
+		if (!_scene || !_viewId || !_cam)
 		{
-			return;
+			return unexpected<std::string>{"camera not loaded"};
+		}
+		if (!_cam->isEnabled())
+		{
+			return unexpected<std::string>{"camera disabled"};
 		}
 		auto viewId = _viewId.value();
 		auto& encoder = *bgfx::begin();
-		_cam->beforeRenderView(viewId, encoder);
+		auto result = _cam->beforeRenderView(viewId, encoder);
+		if (!result)
+		{
+			return result;
+		}
+		std::vector<std::string> errors;
 		auto entities = _cam->getEntities<Renderable>();
 		for (auto entity : entities)
 		{
@@ -70,7 +78,12 @@ namespace darmok
 			{
 				continue;
 			}
-			_cam->beforeRenderEntity(entity, viewId, encoder);
+			auto result = _cam->beforeRenderEntity(entity, viewId, encoder);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+				continue;
+			}
 			if (!renderable->render(encoder))
 			{
 				continue;
@@ -78,5 +91,6 @@ namespace darmok
 			_materials->renderSubmit(viewId, encoder, *renderable->getMaterial());
 		}
 		bgfx::end(&encoder);
+		return StringUtils::joinExpectedErrors(errors);
 	}
 }

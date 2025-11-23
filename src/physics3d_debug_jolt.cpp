@@ -299,15 +299,16 @@ namespace darmok::physics3d
     {
     }
 
-    void PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app)
+    expected<void, std::string> PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         _input = app.getInput();
         _input->addListener("enable", _config.enableEvents, *this);
+        return {};
     }
 
-    void PhysicsDebugRendererImpl::shutdown()
+    expected<void, std::string> PhysicsDebugRendererImpl::shutdown() noexcept
     {
         if (_input)
         {
@@ -317,26 +318,28 @@ namespace darmok::physics3d
         _scene.reset();
         _input.reset();
         JoltPhysicsDebugRenderer::shutdown();
+        return {};
     }
 
-    void PhysicsDebugRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> PhysicsDebugRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         if (!_enabled)
         {
-            return;
+            return {};
         }
         auto system = _scene->getSceneComponent<PhysicsSystem>();
         if (!system)
         {
-            return;
+            return unexpected<std::string>{"missing physics system scene component"};
         }
         auto joltSystem = system->getImpl().getJolt();
         if (!joltSystem)
         {
-            return;
+            return unexpected<std::string>{"uninitialized jolt system"};
         }
 
         JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, viewId, encoder);
+        return {};
     }
 
     void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
@@ -349,19 +352,16 @@ namespace darmok::physics3d
     {
     }
 
-    PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept
+    PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept = default;
+
+    expected<void, std::string> PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
     {
-        // empty on purpose
+        return _impl->init(cam, scene, app);
     }
 
-    void PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
+    expected<void, std::string> PhysicsDebugRenderer::shutdown()
     {
-        _impl->init(cam, scene, app);
-    }
-
-    void PhysicsDebugRenderer::shutdown()
-    {
-        _impl->shutdown();
+        return _impl->shutdown();
     }
 
     bool PhysicsDebugRenderer::isEnabled() const noexcept
@@ -375,9 +375,9 @@ namespace darmok::physics3d
         return *this;
     }
 
-    void PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
     {
-        _impl->beforeRenderView(viewId, encoder);
+        return _impl->beforeRenderView(viewId, encoder);
     }
 }
 

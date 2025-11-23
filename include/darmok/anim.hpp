@@ -41,8 +41,8 @@ namespace darmok
     {
     public:
         FrameAnimationUpdater() = default;
-        void init(Scene& scene, App& app) override;
-        void update(float deltaTime) override;
+        expected<void, std::string> init(Scene& scene, App& app) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
     private:
         OptionalRef<Scene> _scene;
     };

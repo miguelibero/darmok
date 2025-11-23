@@ -103,9 +103,9 @@ namespace darmok
     public:
         MaterialAppComponent() noexcept;
         ~MaterialAppComponent() noexcept;
-        void init(App& app) override;
-        void update(float deltaTime) override;
-        void shutdown() override;
+        expected<void, std::string> init(App& app) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
     private:
         using TextureType = Material::TextureType;

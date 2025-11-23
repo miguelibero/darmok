@@ -49,17 +49,15 @@ namespace darmok
     {
     }
 
-    OcclusionCuller::~OcclusionCuller() noexcept
-    {
-        shutdown();
-    }
+    OcclusionCuller::~OcclusionCuller() noexcept = default;
 
-    void OcclusionCuller::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> OcclusionCuller::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         _prog = StandardProgramLoader::load(Program::Standard::Unlit);
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
+        return {};
     }
 
     void OcclusionCuller::onRenderableDestroyed(EntityRegistry& registry, Entity entity) noexcept
@@ -72,7 +70,7 @@ namespace darmok
         }
     }
 
-    bgfx::ViewId OcclusionCuller::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string> OcclusionCuller::renderReset(bgfx::ViewId viewId) noexcept
     {
         _viewId.reset();
         if (!_cam)
@@ -94,7 +92,7 @@ namespace darmok
         return ++viewId;
     }
 
-    void OcclusionCuller::shutdown() noexcept
+    expected<void, std::string> OcclusionCuller::shutdown() noexcept
     {
         if (_scene)
         {
@@ -116,11 +114,13 @@ namespace darmok
 
         }
         _freeQueries.clear();
+        return {};
     }
 
-    void OcclusionCuller::render() noexcept
+    expected<void, std::string> OcclusionCuller::render() noexcept
     {
         updateQueries();
+        return {};
     }
 
     void OcclusionCuller::updateQueries() noexcept
@@ -187,30 +187,34 @@ namespace darmok
         return std::nullopt;
     }
 
-    void OcclusionCuller::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> OcclusionCuller::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         auto itr = _queries.find(entity);
         if (itr != _queries.end())
         {
             encoder.setCondition(itr->second, true);
         }
+        return {};
     }
 
-    void FrustumCuller::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> FrustumCuller::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
+        return {};
     }
 
-    void FrustumCuller::shutdown() noexcept
+    expected<void, std::string> FrustumCuller::shutdown() noexcept
     {
         _cam.reset();
         _scene.reset();
+        return {};
     }
 
-    void FrustumCuller::update(float deltaTime) noexcept
+    expected<void, std::string> FrustumCuller::update(float deltaTime) noexcept
     {
         updateCulled();
+        return {};
     }
 
     void FrustumCuller::updateCulled() noexcept
@@ -246,21 +250,23 @@ namespace darmok
     {
     }
 
-    void CullingDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> CullingDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         _debugRender.init(app);
+        return {};
     }
 
-    void CullingDebugRenderer::shutdown() noexcept
+    expected<void, std::string> CullingDebugRenderer::shutdown() noexcept
     {
         _cam.reset();
         _scene.reset();
         _debugRender.shutdown();
+        return {};
     }
 
-    void CullingDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> CullingDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         uint8_t debugColor = 0;
         MeshData meshData;
@@ -277,7 +283,6 @@ namespace darmok
             }
         }
 
-
         if (_cam && _scene)
         {
             auto& scene = _scene.value();
@@ -293,5 +298,6 @@ namespace darmok
                 }
             }
         }
+        return {};
     }
 }

@@ -24,11 +24,11 @@ namespace darmok
     public:
         OcclusionCuller() noexcept;
         ~OcclusionCuller() noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
-        void render() noexcept override;
-        void shutdown() noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+        expected<void, std::string> render() noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
@@ -47,9 +47,9 @@ namespace darmok
     class DARMOK_EXPORT FrustumCuller final : public ITypeCameraComponent<FrustumCuller>
     {
     public:
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void update(float deltaTime) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
         bool shouldEntityBeCulled(Entity entity) noexcept override;
     private:
         OptionalRef<Camera> _cam;
@@ -63,9 +63,9 @@ namespace darmok
     {
     public:
         CullingDebugRenderer(const OptionalRef<const Camera>& mainCam = nullptr) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<const Camera> _mainCam;
         OptionalRef<Camera> _cam;

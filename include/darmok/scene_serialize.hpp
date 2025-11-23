@@ -4,6 +4,7 @@
 #include <darmok/expected.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
+#include <darmok/convert.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/protobuf/scene.pb.h>
@@ -368,7 +369,8 @@ namespace darmok
                 return unexpected<std::string>{"Missing scene component"};
 			}
 
-            typename T::Definition def;
+			using Def = T::Definition;
+            Def def;
             if (!data.any->UnpackTo(&def))
             {
                 return unexpected<std::string>{"Could not unpack component"};
@@ -382,6 +384,14 @@ namespace darmok
             else if constexpr (HasBasicSceneComponentLoad<T>)
             {
                 result = comp->load(def);
+            }
+            else if constexpr (std::is_assignable_v<T&, Def>)
+            {
+                *comp = def;
+            }
+            else if constexpr (IsConvertible<T, Def> && std::is_assignable_v<T&, T>)
+            {
+                *comp = convert<T>(def);
             }
             if (!result)
             {

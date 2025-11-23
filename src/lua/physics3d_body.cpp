@@ -3,7 +3,6 @@
 #include "lua/utils.hpp"
 #include "lua/protobuf.hpp"
 #include <darmok/glm_serialize.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/physics3d_character.hpp>
 

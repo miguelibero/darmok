@@ -320,8 +320,8 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimationSceneComponent final : public ITypeSceneComponent<SkeletalAnimationSceneComponent>
     {
     public:
-        void init(Scene& scene, App& app) noexcept override;
-        void update(float deltaTime) noexcept override;
+        expected<void, std::string> init(Scene& scene, App& app) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
     private:
         OptionalRef<Scene> _scene;
     };
@@ -329,9 +329,9 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimationRenderComponent final : public ITypeCameraComponent<SkeletalAnimationRenderComponent>
     {
     public:
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
-        void shutdown() noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
     private:
         bgfx::UniformHandle _skinningUniform;
         std::vector<glm::mat4> _skinning;

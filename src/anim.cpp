@@ -63,21 +63,23 @@ namespace darmok
         }
     }
 
-    void FrameAnimationUpdater::init(Scene& scene, App& /* app */)
+    expected<void, std::string> FrameAnimationUpdater::init(Scene& scene, App& /* app */) noexcept
     {
         _scene = scene;
+        return {};
     }
 
-    void FrameAnimationUpdater::update(float deltaTime)
+    expected<void, std::string> FrameAnimationUpdater::update(float deltaTime) noexcept
     {
         if (!_scene)
         {
-            return;
+            return unexpected<std::string>{"scene not loaded"};
         }
         auto entities = _scene->getUpdateEntities<FrameAnimation>();
         for (auto entity : entities)
         {
             _scene->getComponent<FrameAnimation>(entity)->update(deltaTime);
         }
+        return {};
     }
 }

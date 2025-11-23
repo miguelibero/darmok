@@ -18,7 +18,7 @@ namespace darmok
     {
     }
 
-    void SkyboxRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> SkyboxRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
 
@@ -34,9 +34,11 @@ namespace darmok
 
         Cube screen(glm::uvec3{ 2 });
         _mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
+
+        return {};
     }
 
-    void SkyboxRenderer::shutdown() noexcept
+    expected<void, std::string> SkyboxRenderer::shutdown() noexcept
     {
         if (isValid(_texUniform))
         {
@@ -46,13 +48,15 @@ namespace darmok
         _mesh.reset();
         _program.reset();
         _cam.reset();
+
+        return {};
     }
 
-    void SkyboxRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> SkyboxRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         if (!_mesh || !_program || !_texture)
         {
-            return;
+            return unexpected<std::string>{"not initialized"};
         }
 
         _mesh->render(encoder);
@@ -66,6 +70,8 @@ namespace darmok
             ;
         encoder.setState(state);
         encoder.submit(viewId, _program->getHandle());
+
+        return {};
     }
 
     GridRenderer::GridRenderer(const Config& config) noexcept
@@ -76,7 +82,7 @@ namespace darmok
     {
     }
 
-    void GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         Program::Definition progDef;
         auto result = protobuf::readStaticMem(progDef, grid_program);
@@ -94,9 +100,10 @@ namespace darmok
         MeshData meshData{ rect, Mesh::Definition::FullRectangle };
         _mesh = std::make_unique<Mesh>(meshData.createMesh(_program->getVertexLayout()));
         _cam = cam;
+        return {};
     }
 
-    void GridRenderer::shutdown() noexcept
+    expected<void, std::string> GridRenderer::shutdown() noexcept
     {
         _program.reset();
         _mesh.reset();
@@ -114,13 +121,14 @@ namespace darmok
                 uniform.get().idx = bgfx::kInvalidHandle;
             }
         }
+        return {};
     }
 
-    void GridRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> GridRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         if (!_mesh || !_program)
         {
-            return;
+            return unexpected<std::string>{"uninitialized"};
         }
 
         _mesh->render(encoder);
@@ -141,5 +149,6 @@ namespace darmok
             ;
         encoder.setState(state);
         encoder.submit(viewId, _program->getHandle());
+        return {};
     }
 }

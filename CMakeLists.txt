@@ -144,7 +144,6 @@ set(CORE_SOURCES
   color.cpp
   image.cpp
   shape.cpp
-  shape_serialize.cpp
   texture.cpp
   mesh_core.cpp
   vertex.cpp
@@ -171,7 +170,6 @@ set(CORE_HEADERS
   uniform.hpp
   math.hpp
   shape.hpp
-  shape_serialize.hpp
   mesh_core.hpp
   color_fwd.hpp
   color.hpp

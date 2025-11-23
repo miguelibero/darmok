@@ -11,9 +11,9 @@ namespace darmok
     class DARMOK_EXPORT DeferredRenderer final : public ITypeCameraComponent<DeferredRenderer>
     {
     public:
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
-        void shutdown() noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
     private:
         OptionalRef<Camera> _cam;
     };

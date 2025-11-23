@@ -55,12 +55,12 @@ namespace darmok
     public:
         using Config = ShadowRendererConfig;
         ShadowRenderer(const Config& config = {}) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void update(float deltaTime) override;
-        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept override;
-        void render() noexcept override;
-        void shutdown() noexcept override;
-        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+        expected<void, std::string> render() noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
         bool isEnabled() const noexcept;
 
@@ -125,9 +125,9 @@ namespace darmok
     {
     public:
         ShadowDebugRenderer(ShadowRenderer& renderer) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         ShadowRenderer& _renderer;
         OptionalRef<Scene> _scene;

@@ -272,15 +272,16 @@ namespace darmok
 		}
 	}
 
-	void TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+	expected<void, std::string> TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
 		_scene = scene;
 		_cam = cam;
 		_colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);
 		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+		return {};
 	}
 
-	void TextRenderer::shutdown() noexcept
+	expected<void, std::string> TextRenderer::shutdown() noexcept
 	{
 		_scene.reset();
 		_cam.reset();
@@ -294,13 +295,14 @@ namespace darmok
 				uniform.idx = bgfx::kInvalidHandle;
 			}
 		}
+		return {};
 	}
 
-	void TextRenderer::update(float deltaTime)
+	expected<void, std::string> TextRenderer::update(float deltaTime) noexcept
 	{
 		if (!_scene || !_cam)
 		{
-			return;
+			return unexpected<std::string>{"camera not loaded"};
 		}
 		auto entities = _cam->getEntities<Text>();
 		std::unordered_map<std::shared_ptr<IFont>, std::unordered_set<char32_t>> fontChars;
@@ -322,13 +324,14 @@ namespace darmok
 			auto& text = _scene->getComponent<Text>(entity).value();
 			text.update(_prog->getVertexLayout());
 		}
+		return {};
 	}
 
-	void TextRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+	expected<void, std::string> TextRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
 	{
 		if (!_scene || !_cam)
 		{
-			return;
+			return unexpected<std::string>{"camera not loaded"};
 		}
 		auto entities = _cam->getEntities<Text>();
 
@@ -359,6 +362,8 @@ namespace darmok
 			encoder.setState(state);
 			encoder.submit(viewId, _prog->getHandle());
 		}
+
+		return {};
 	}
 
 	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept

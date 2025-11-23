@@ -312,10 +312,11 @@ namespace darmok
         destroyHandles();
     }
 
-    void LightingRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> LightingRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
+        return {};
     }
 
     void LightingRenderComponent::createHandles() noexcept
@@ -355,9 +356,10 @@ namespace darmok
         }
     }
 
-    void LightingRenderComponent::shutdown() noexcept
+    expected<void, std::string> LightingRenderComponent::shutdown() noexcept
     {
         destroyHandles();
+        return {};
     }
 
     struct DirectionalLightBufferElement final
@@ -523,20 +525,21 @@ namespace darmok
         }
     }
 
-    void LightingRenderComponent::update(float deltaTime) noexcept
+    expected<void, std::string> LightingRenderComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
         {
-            return;
+            return unexpected<std::string>{ "scene not loaded" };
         }
         _lightCount.x = static_cast<float>(updatePointLights());
         _lightCount.y = static_cast<float>(updateDirLights());
         _lightCount.z = static_cast<float>(updateSpotLights());
         updateAmbientLights();
         updateCamera();
+        return {};
     }
 
-    void LightingRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> LightingRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
         encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
@@ -551,5 +554,7 @@ namespace darmok
             normalMatrix = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));
         }
         encoder.setUniform(_normalMatrixUniform, glm::value_ptr(normalMatrix));
+
+        return {};
     }
 }

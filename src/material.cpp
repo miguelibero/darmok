@@ -206,15 +206,9 @@ namespace darmok
 	{
 	}
 
-	MaterialAppComponent::~MaterialAppComponent() noexcept
-	{
-		if (_defaultTexture)
-		{
-			shutdown();
-		}
-	}
+	MaterialAppComponent::~MaterialAppComponent() noexcept = default;
 
-	void MaterialAppComponent::init(App& app)
+	expected<void, std::string> MaterialAppComponent::init(App& app) noexcept
 	{
 		_textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
 			{ Material::TextureDefinition::BaseColor, Texture::createUniformKey("s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO)},
@@ -235,18 +229,20 @@ namespace darmok
 
 		const Image img(Colors::white(), app.getAssets().getAllocator());
 		_defaultTexture = std::make_shared<Texture>(img);
+		return {};
 	}
 
-	void MaterialAppComponent::update(float deltaTime)
+	expected<void, std::string> MaterialAppComponent::update(float deltaTime) noexcept
 	{
 		if (!_defaultTexture)
 		{
-			return;
+			return unexpected<std::string>{"not loaded"};
 		}
 		_basicUniforms.update(deltaTime);
+		return {};
 	}
 
-	void MaterialAppComponent::shutdown()
+	expected<void, std::string> MaterialAppComponent::shutdown() noexcept
 	{
 		const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
 			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
@@ -264,6 +260,7 @@ namespace darmok
 		_basicUniforms.shutdown();
 		_defaultTexture.reset();
 		_uniformHandles.shutdown();
+		return {};
 	}
 
 	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept

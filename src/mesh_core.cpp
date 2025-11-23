@@ -1,7 +1,6 @@
 #include <darmok/mesh_core.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <darmok/data.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/protobuf/program.pb.h>

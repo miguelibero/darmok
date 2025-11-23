@@ -116,16 +116,16 @@ namespace darmok
 		AppImpl& operator=(const AppImpl&) = delete;
 		AppImpl& operator=(AppImpl&&) = delete;
 
-		std::optional<int32_t> setup(const CmdArgs& args);
-		void init();
-		void update(float deltaTime);
-		void render() const;
-		void requestRenderReset();
-		AppRunResult processEvents();
-		void shutdown();
+		expected<int32_t, std::string> setup(const CmdArgs& args) noexcept;
+		expected<void, std::string> init() noexcept;
+		expected<void, std::string> update(float deltaTime) noexcept;
+		expected<void, std::string> render() const noexcept;
+		void requestRenderReset() noexcept;
+		AppRunResult processEvents() noexcept;
+		expected<void, std::string> shutdown() noexcept;
 		void quit() noexcept;
 
-		void onException(AppPhase phase, const std::exception& exc) noexcept;
+		void onUnexpected(AppPhase phase, const std::string& error) noexcept;
 
 		bool toggleDebugFlag(uint32_t flag) noexcept;
 		void setDebugFlag(uint32_t flag, bool enabled = true) noexcept;
@@ -208,7 +208,7 @@ namespace darmok
 		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
 		void setNextRenderer();
 		void requestNextVideoMode();
-		void renderReset();
+		expected<bgfx::ViewId, std::string> renderReset() noexcept;
 		std::string getTimeSuffix() noexcept;
 
 		static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;

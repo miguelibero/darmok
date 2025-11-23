@@ -3,7 +3,6 @@
 #include <darmok/physics3d_character.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/protobuf.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <Jolt/Physics/PhysicsSystem.h>
 
 namespace darmok::physics3d

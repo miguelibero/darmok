@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <darmok/optional_ref.hpp>
+#include <darmok/expected.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/viewport.hpp>
@@ -28,16 +29,16 @@ namespace darmok
     public:
         virtual ~ICameraComponent() = default;
         virtual std::optional<entt::type_info> getCameraComponentType() const noexcept { return std::nullopt; }
-        virtual void init(Camera& cam, Scene& scene, App& app) {}
-        virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
-        virtual void render() {}
-        virtual void update(float deltaTime) {}
-        virtual void shutdown() {}
+        virtual expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept { return {}; }
+        virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; }
+        virtual expected<void, std::string> render() noexcept { return {}; }
+        virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
+        virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual bool shouldEntityBeCulled(Entity entity) { return false; }
-        virtual void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) {}
-        virtual void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) {}
-        virtual void onCameraTransformChanged() {}
-        virtual void afterLoad() {}
+        virtual expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
+        virtual expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
+        virtual void onCameraTransformChanged() noexcept {}
+        virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };
 
     template<typename T>

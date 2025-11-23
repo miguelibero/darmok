@@ -143,7 +143,7 @@ namespace darmok
                 errors.push_back(result.error());
             }
 
-            return unexpected<Error>{ StringUtils::joinErrors(errors) };
+            return unexpected{ StringUtils::joinErrors(errors) };
         }
     };
 
@@ -801,7 +801,7 @@ namespace darmok
                 }
                 errors.push_back(result.error());
             }
-            return unexpected<Error>{ StringUtils::joinErrors(errors) };
+            return unexpected{ StringUtils::joinErrors(errors) };
         }
 
         bool releaseDefinitionCache(const Definition& def) noexcept override

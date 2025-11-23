@@ -188,8 +188,8 @@ namespace darmok
 		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt);
 		~RmluiCanvasImpl() noexcept;
 
-		void init(App& app, RmluiSceneComponentImpl& comp);
-		void shutdown() noexcept;
+		expected<void, std::string> init(App& app, RmluiSceneComponentImpl& comp) noexcept;
+		expected<void, std::string> shutdown() noexcept;
 		bool update(float deltaTime) noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		void render(bgfx::Encoder& encoder) noexcept;
@@ -361,10 +361,10 @@ namespace darmok
 	public:
 		~RmluiSceneComponentImpl();
 
-		void init(Scene& scene, App& app) noexcept;
-		void shutdown() noexcept;
-		void update(float deltaTime) noexcept;
-		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
+		expected<void, std::string> init(Scene& scene, App& app) noexcept;
+		expected<void, std::string> shutdown() noexcept;
+		expected<void, std::string> update(float deltaTime) noexcept;
+		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
 
 		RmluiSystemInterface& getRmluiSystem() noexcept;
 		const OptionalRef<Scene>& getScene() const noexcept;

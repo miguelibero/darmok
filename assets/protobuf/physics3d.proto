@@ -27,7 +27,7 @@ message PhysicsBody {
     float inertia_factor = 4;
     float friction = 5;
     float gravity_factor = 6;
-    uint32 layer_mask = 7;
+    uint32 layer = 7;
     bool trigger = 8;
 }
 

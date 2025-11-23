@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/expected.hpp>
 #include <darmok/app_fwd.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/optional_ref.hpp>
@@ -79,13 +80,13 @@ namespace darmok
 		virtual ~IAppDelegate() = default;
 
 		// return unix exit code for early exit
-		virtual std::optional<int32_t> setup(const CmdArgs& args) { return std::nullopt; }
-		virtual void init() {}
-		virtual void earlyShutdown() {}
-		virtual void shutdown() {}
-		virtual void render() const {}
-		virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
-		virtual void update(float deltaTime) {}
+		virtual expected<int32_t, std::string> setup(const CmdArgs& args) noexcept { return 0; }
+		virtual expected<void, std::string> init() noexcept { return {}; }
+		virtual expected<void, std::string> earlyShutdown() noexcept { return {}; }
+		virtual expected<void, std::string> shutdown() noexcept { return {}; }
+		virtual expected<void, std::string> render() const noexcept { return {}; }
+		virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; }
+		virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IAppDelegateFactory
@@ -100,7 +101,7 @@ namespace darmok
 	public:
 		virtual ~IAppUpdater() = default;
 		virtual entt::id_type getAppUpdaterType() const noexcept { return 0; };
-		virtual void update(float deltaTime) = 0;
+		virtual expected<void, std::string> update(float deltaTime) noexcept = 0;
 	};
 
 	template<typename T>
@@ -125,11 +126,11 @@ namespace darmok
 	public:
 		virtual ~IAppComponent() = default;
 		virtual entt::id_type getAppComponentType() const noexcept { return 0; };
-		virtual void init(App& app) {}
-		virtual void shutdown() {}
-		virtual void render() {}
-		virtual bgfx::ViewId renderReset(bgfx::ViewId viewId) { return viewId; }
-		virtual void update(float deltaTime) {}
+		virtual expected<void, std::string> init(App& app) noexcept { return {}; }
+		virtual expected<void, std::string> shutdown() noexcept { return {}; }
+		virtual expected<void, std::string> render() noexcept { return {}; }
+		virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; }
+		virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
 	};
 
 	template<typename T>
@@ -152,13 +153,13 @@ namespace darmok
 		App& operator=(const App&) = delete;
 		App& operator=(App&&) = delete;
 
-		std::optional<int32_t> setup(const CmdArgs& args);
-		void init();
-		void requestRenderReset();
-		void shutdown();
-		AppRunResult run();
+		expected<int32_t, std::string> setup(const CmdArgs& args) noexcept;
+		expected<void, std::string> init() noexcept;
+		void requestRenderReset() noexcept;
+		expected<void, std::string> shutdown() noexcept;
+		expected<AppRunResult, std::string> run() noexcept;
 
-		void onException(AppPhase phase, const std::exception& ex) noexcept;
+		void onUnexpected(AppPhase phase, const std::string& error) noexcept;
 		void quit() noexcept;
 
 		[[nodiscard]] Input& getInput() noexcept;
@@ -266,7 +267,7 @@ namespace darmok
 		}
 
 	protected:
-		void render() const;
+		expected<void, std::string> render() const noexcept;
 
 	private:
 		std::unique_ptr<AppImpl> _impl;

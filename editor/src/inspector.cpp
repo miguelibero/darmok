@@ -118,7 +118,7 @@ namespace darmok::editor
         }
         if (!errors.empty())
         {
-			return unexpected{ StringUtils::joinErrors(errors) };
+			return unexpected{ StringUtils::joinExpectedErrors(errors) };
         }
         return changed;
     }

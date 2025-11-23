@@ -392,27 +392,47 @@ namespace darmok
 	const LuaTableDelegateDefinition LuaSceneComponent::_renderResetDef("render_reset", "scene component render reset");
 	const LuaTableDelegateDefinition LuaSceneComponent::_updateDef("update", "scene component update");
 
-	void LuaSceneComponent::init(Scene& scene, App& app)
+	expected<void, std::string> LuaSceneComponent::expectedResult(const sol::protected_function_result& result) noexcept
+	{
+		if (!result.valid())
+		{
+			sol::error err = result;
+			return unexpected{ err.what() };
+		}
+		return {};
+	}
+
+	expected<void, std::string> LuaSceneComponent::init(Scene& scene, App& app) noexcept
 	{
 		if (auto scene = _scene.lock())
 		{
-			_initDef(_table, scene);
+			return expectedResult(_initDef(_table, scene));
+		}
+		else
+		{
+			return unexpected<std::string>{ "scene expired in lua scene component init" };
 		}
 	}
 
-	void LuaSceneComponent::shutdown()
+	expected<void, std::string> LuaSceneComponent::shutdown() noexcept
 	{
-		_shutdownDef(_table);
+		return expectedResult(_shutdownDef(_table));
 	}
 
-	bgfx::ViewId LuaSceneComponent::renderReset(bgfx::ViewId viewId)
+	expected<bgfx::ViewId, std::string> LuaSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		return _renderResetDef(_table).as<bgfx::ViewId>();
+		auto result = _renderResetDef(_table, viewId);
+		if(!result.valid())
+		{
+			sol::error err = result;
+			return unexpected{ err.what() };
+		}
+		return result.get().as<bgfx::ViewId>();
 	}
 
-	void LuaSceneComponent::update(float deltaTime)
+	expected<void, std::string> LuaSceneComponent::update(float deltaTime) noexcept
 	{
-		_updateDef(_table, deltaTime);
+		return expectedResult(_updateDef(_table, deltaTime));
 	}
 
 	SceneAppComponent& LuaSceneAppComponent::addAppComponent1(App& app) noexcept

@@ -7,7 +7,6 @@
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/shape.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <entt/entt.hpp>
 
 namespace darmok

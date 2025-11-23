@@ -10,15 +10,15 @@ namespace darmok
 	{
 		lua.new_usertype<Ray>("Ray",
 			sol::factories(
-				[]() { return Ray(); },
+				[]() { return Ray{}; },
 				[](const VarLuaTable<glm::vec3>& origin, const VarLuaTable<glm::vec3>& dir) {
-					return Ray(LuaGlm::tableGet(origin), LuaGlm::tableGet(dir));
+					return Ray{ LuaGlm::tableGet(origin), LuaGlm::tableGet(dir) };
 				}
 			),
 			"from_positions", [](const VarLuaTable<glm::vec3>& vsrc, const VarLuaTable<glm::vec3>& vdst) {
 				auto src = LuaGlm::tableGet(vsrc);
 				auto dst = LuaGlm::tableGet(vdst);
-				return Ray(src, dst - src);
+				return Ray{ src, dst - src };
 			},
 			"direction", &Ray::direction,
 			"origin", &Ray::origin,
@@ -42,11 +42,11 @@ namespace darmok
 	{
 		lua.new_usertype<Line>("Line",
 			sol::factories(
-				[]() { return Line(); },
+				[]() { return Line{}; },
 				[](const Line::Points& points) {
-					return Line(points); },
+					return Line{ points }; },
 					[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2) {
-					return Line(LuaGlm::tableGet(p1), LuaGlm::tableGet(p2));
+					return Line{ LuaGlm::tableGet(p1), LuaGlm::tableGet(p2) };
 				}
 			),
 			"points", &Line::points,
@@ -69,14 +69,15 @@ namespace darmok
 		lua.new_usertype<BoundingBox>("BoundingBox",
 			sol::factories(
 				[]() { return BoundingBox(); },
-				[](const Cube& cube) { return BoundingBox(cube); },
-				[](const Sphere& sphere) { return BoundingBox(sphere); },
-				[](const Capsule& capsule) { return BoundingBox(capsule); },
-				[](const Polygon& poly) { return BoundingBox(poly); },
-				[](const Triangle& tri) { return BoundingBox(tri); },
-				[](const Frustum& frust) { return BoundingBox(frust); },
+				[](const Cube& cube) { return BoundingBox{ cube }; },
+				[](const Sphere& sphere) { return BoundingBox{ sphere }; },
+				[](const Capsule& capsule) { return BoundingBox{ capsule }; },
+				[](const Polygon& poly) { return BoundingBox{ poly }; },
+				[](const Triangle& tri) { return BoundingBox{ tri }; },
+				[](const Frustum& frust) { return BoundingBox{ frust }; },
+				[](const BoundingBox::Definition& def) { return BoundingBox{ def }; },
 				[](const VarLuaTable<glm::vec3>& min, const VarLuaTable<glm::vec3>& max) {
-					return BoundingBox(LuaGlm::tableGet(min), LuaGlm::tableGet(max));
+					return BoundingBox{ LuaGlm::tableGet(min), LuaGlm::tableGet(max) };
 				}
 			),
 			"expand", sol::overload(

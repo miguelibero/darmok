@@ -29,11 +29,12 @@ namespace darmok
 
 		lua.new_usertype<Rectangle>("Rectangle",
 			sol::factories(
-				[]() { return Rectangle(); },
+				[]() { return Rectangle{}; },
+				[](const Rectangle::Definition& def) { return Rectangle{ def }; },
 				[](const VarLuaVecTable<glm::vec2>& size) {
-					return Rectangle(LuaGlm::tableGet(size)); },
-					[](const VarLuaVecTable<glm::vec2>& size, const VarLuaTable<glm::vec2>& origin) {
-					return Rectangle(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
+					return Rectangle{ LuaGlm::tableGet(size) }; },
+				[](const VarLuaVecTable<glm::vec2>& size, const VarLuaTable<glm::vec2>& origin) {
+					return Rectangle{ LuaGlm::tableGet(size), LuaGlm::tableGet(origin) }; }
 			),
 			"size", &Rectangle::size,
 			"origin", &Rectangle::origin,
@@ -50,12 +51,13 @@ namespace darmok
 
 		lua.new_usertype<Cube>("Cube",
 			sol::factories(
-				[]() { return Cube(); },
-				[](const BoundingBox& bbox) { return Cube(bbox); },
+				[]() { return Cube{}; },
+				[](const BoundingBox& bbox) { return Cube{ bbox }; },
+				[](const Cube::Definition& def) { return Cube{ def }; },
 				[](const VarLuaVecTable<glm::vec3>& size) {
-					return Cube(LuaGlm::tableGet(size)); },
+					return Cube{ LuaGlm::tableGet(size) }; },
 				[](const VarLuaVecTable<glm::vec3>& size, const VarLuaTable<glm::vec3>& origin) {
-					return Cube(LuaGlm::tableGet(size), LuaGlm::tableGet(origin)); }
+					return Cube{ LuaGlm::tableGet(size), LuaGlm::tableGet(origin) }; }
 			),
 			"size", &Cube::size,
 			"origin", &Cube::origin,
@@ -72,13 +74,15 @@ namespace darmok
 			sol::factories(
 				[]() { return Sphere(); },
 				[](const VarLuaTable<glm::vec3>& origin) {
-					return Sphere(LuaGlm::tableGet(origin)); },
+					return Sphere{ LuaGlm::tableGet(origin) }; },
+				[](const Sphere::Definition& def) {
+					return Sphere{ def }; },
 				[](float radius) {
-					return Sphere(radius); },
+					return Sphere{ radius }; },
 				[](float radius, const VarLuaTable<glm::vec3>& origin) {
-					return Sphere(radius, LuaGlm::tableGet(origin)); },
+					return Sphere{ radius, LuaGlm::tableGet(origin) }; },
 				[](const VarLuaTable<glm::vec3>& origin, float radius) {
-					return Sphere(LuaGlm::tableGet(origin), radius); }
+					return Sphere{ LuaGlm::tableGet(origin), radius }; }
 			),
 			"radius", &Sphere::radius,
 			"origin", &Sphere::origin,
@@ -91,9 +95,11 @@ namespace darmok
 		lua.new_usertype<Triangle>("Triangle",
 			sol::factories(
 				[](const Triangle::Vertices& vertices) {
-					return Triangle(vertices); },
+					return Triangle{ vertices }; },
+				[](const Triangle::Definition& def) {
+					return Triangle{ def }; },
 				[](const VarLuaTable<glm::vec3>& p1, const VarLuaTable<glm::vec3>& p2, const VarLuaTable<glm::vec3>& p3) {
-					return Triangle(LuaGlm::tableGet(p1), LuaGlm::tableGet(p2), LuaGlm::tableGet(p3));
+					return Triangle{ LuaGlm::tableGet(p1), LuaGlm::tableGet(p2), LuaGlm::tableGet(p3) };
 				}
 			),
 			"vertices", &Triangle::vertices,
@@ -106,9 +112,11 @@ namespace darmok
 		lua.new_usertype<Polygon>("Polygon",
 			sol::factories(
 				[]() {
-					return Polygon(); },
+					return Polygon{}; },
 				[](const Polygon::Triangles& triangles) {
-					return Polygon(triangles); },
+					return Polygon{ triangles }; },
+				[](const Polygon::Definition& def) {
+					return Polygon{ def }; },
 				[](const sol::table& table) {
 					Polygon poly;
 					size_t count = table.size();
@@ -134,11 +142,12 @@ namespace darmok
 	{
 		lua.new_usertype<Plane>("Plane",
 			sol::factories(
-				[]() { return Plane(); },
+				[]() { return Plane{}; },
+				[](const Plane::Definition& def) { return Plane{def}; },
 				[](const VarLuaTable<glm::vec3>& normal) {
-					return Plane(LuaGlm::tableGet(normal)); },
+					return Plane{ LuaGlm::tableGet(normal) }; },
 				[](const VarLuaTable<glm::vec3>& normal, float distance) {
-					return Plane(LuaGlm::tableGet(normal), distance); }
+					return Plane{ LuaGlm::tableGet(normal), distance }; }
 			),
 			"normal", &Plane::normal,
 			"distance", &Plane::distance,
@@ -157,11 +166,12 @@ namespace darmok
 
 		lua.new_usertype<Capsule>("Capsule",
 			sol::factories(
-				[]() { return Capsule(); },
+				[]() { return Capsule{}; },
+				[](const Capsule::Definition& def) { return Capsule{def}; },
 				[](float cylinderHeight) {
-					return Capsule(cylinderHeight); },
+					return Capsule{ cylinderHeight }; },
 				[](float cylinderHeight, float radius) {
-					return Capsule(cylinderHeight, radius); }
+					return Capsule{ cylinderHeight, radius }; }
 			),
 			"cylinder_height", &Capsule::cylinderHeight,
 			"radius", &Capsule::radius,

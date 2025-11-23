@@ -3,18 +3,20 @@
 
 namespace darmok
 {
-    void DeferredRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> DeferredRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
+        return {};
     }
 
-    bgfx::ViewId DeferredRenderer::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string> DeferredRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
         return viewId;
     }
 
-    void DeferredRenderer::shutdown() noexcept
+    expected<void, std::string> DeferredRenderer::shutdown() noexcept
     {
         _cam.reset();
+        return {};
     }
 }

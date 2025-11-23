@@ -2,7 +2,9 @@
 #include <darmok/shape.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/program.hpp>
+#include <darmok/string.hpp>
 #include <darmok/glm_serialize.hpp>
+
 
 namespace darmok
 {
@@ -100,43 +102,68 @@ namespace darmok
 	{
 	}
 
-	void RenderChain::init()
+	expected<void, std::string> RenderChain::init() noexcept
 	{
 		_running = true;
+		std::vector<std::string> errors;
 		for (size_t i = 0; i < _steps.size(); ++i)
 		{
 			auto& step = _steps[i];
-			step->init(*this);
-			step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+			auto result = step->init(*this);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
+			else
+			{
+				result = step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void RenderChain::shutdown()
+	expected<void, std::string> RenderChain::shutdown()
 	{
+		std::vector<std::string> errors;
 		for (auto itr = _steps.rbegin(); itr != _steps.rend(); ++itr)
 		{
-			(*itr)->shutdown();
+			auto result = (*itr)->shutdown();
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
 		_running = false;
 		_viewId.reset();
 		_steps.clear();
 		_buffers.clear();
 		_output.reset();
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void RenderChain::update(float deltaTime)
+	expected<void, std::string> RenderChain::update(float deltaTime)
 	{
+		std::vector<std::string> errors;
 		for (auto& step : _steps)
 		{
-			step->update(deltaTime);
+			auto result = step->update(deltaTime);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	RenderChain& RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
+	expected<void, std::string> RenderChain::setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept
 	{
 		if (_output == fb)
 		{
-			return *this;
+			return {};
 		}
 		_output = fb;
 		if (_running)
@@ -144,10 +171,14 @@ namespace darmok
 			auto size = _steps.size();
 			if (size > 0)
 			{
-				updateStep(size - 1);
+				auto result = updateStep(size - 1);
+				if (!result)
+				{
+					return result;
+				}
 			}
 		}
-		return *this;
+		return {};
 	}
 
 	std::shared_ptr<FrameBuffer> RenderChain::getOutput() const noexcept
@@ -170,15 +201,24 @@ namespace darmok
 		return _delegate.getRenderChainViewName("Render Chain: " + baseName);
 	}
 
-	bgfx::ViewId RenderChain::renderReset(bgfx::ViewId viewId) noexcept
+	expected<bgfx::ViewId, std::string> RenderChain::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		if (_running)
 		{
 			for (size_t i = 0; i < _steps.size(); ++i)
 			{
 				auto& step = _steps[i];
-				step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
-				viewId = step->renderReset(viewId);
+				auto updateResult = step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+				if(!updateResult)
+				{
+					return unexpected{ std::move(updateResult).error() };
+				}
+				auto result = step->renderReset(viewId);
+				if (!result)
+				{
+					return result;
+				}
+				viewId = result.value();
 			}
 		}
 		bgfx::setViewName(viewId, getViewName("clear").c_str());
@@ -272,7 +312,7 @@ namespace darmok
 		return *_buffers.emplace_back(std::make_unique<FrameBuffer>(size));
 	}
 
-	RenderChain& RenderChain::addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept
+	expected<void, std::string> RenderChain::addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept
 	{
 		auto& readBuffer = addBuffer();
 		auto& ref = *step;
@@ -280,31 +320,43 @@ namespace darmok
 		_steps.push_back(std::move(step));
 		if (!_running)
 		{
-			return *this;
+			return {};
 		}
 
-		ref.init(*this);
-		ref.updateRenderChain(readBuffer, getWriteBuffer(i));
+		auto result = ref.init(*this);
+		if(!result)
+		{
+			return result;
+		}
+		result = ref.updateRenderChain(readBuffer, getWriteBuffer(i));
+		if(!result)
+		{
+			return result;
+		}
 
 		if (i > 0)
 		{
-			updateStep(i - 1);
+			result = updateStep(i - 1);
+			if (!result)
+			{
+				return result;
+			}
 		}
 		_delegate.onRenderChainChanged();
-		return *this;
+		return {};
 	}
 
-	void RenderChain::updateStep(size_t i)
+	expected<void, std::string> RenderChain::updateStep(size_t i) noexcept
 	{
 		if (i < 0 || i >= _steps.size())
 		{
-			return;
+			return {};
 		}
 		auto& step = _steps[i];
-		step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
+		return step->updateRenderChain(getReadBuffer(i).value(), getWriteBuffer(i));
 	}
 
-	bool RenderChain::removeStep(const IRenderChainStep& step) noexcept
+	expected<bool, std::string> RenderChain::removeStep(const IRenderChainStep& step) noexcept
 	{
 		auto ptr = &step;
 		auto itr = std::find_if(_steps.begin(), _steps.end(),
@@ -316,7 +368,11 @@ namespace darmok
 
 		if(_running)
 		{
-			(*itr)->shutdown();
+			auto result = (*itr)->shutdown();
+			if(!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
 		}
 
 		auto i = std::distance(_steps.begin(), itr);
@@ -330,11 +386,19 @@ namespace darmok
 
 		for (auto j = i; j < _steps.size(); ++j)
 		{
-			updateStep(j);
+			auto result = updateStep(j);
+			if (!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
 		}
 		if (i > 0)
 		{
-			updateStep(i - 1);
+			auto result = updateStep(i - 1);
+			if (!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
 		}
 		_delegate.onRenderChainChanged();
 		return true;
@@ -345,45 +409,43 @@ namespace darmok
 		return _buffers.empty() && !_output;
 	}
 
-	void RenderChain::render() noexcept
+	expected<void, std::string> RenderChain::render() noexcept
 	{
 		if (empty() || !_viewId)
 		{
-			return;
+			return unexpected<std::string>{"empty viewId"};
 		}
 
+		std::vector<std::string> errors;
 		auto encoder = bgfx::begin();
 		for (auto& step : _steps)
 		{
-			step->render(*encoder);
+			auto result = step->render(*encoder);
+			if(!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
 		encoder->touch(_viewId.value());
 		bgfx::end(encoder);
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority)
+	ScreenSpaceRenderPass::ScreenSpaceRenderPass(const std::shared_ptr<Program>& prog, const std::string& name, int priority) noexcept
 		: _program{ prog }
 		, _name{ name }
 		, _priority{ priority }
 		, _texUniform{ bgfx::kInvalidHandle }
 	{
-		if (!prog)
-		{
-			throw std::runtime_error("empty program");
-		}
 		if (_name.empty())
 		{
 			_name = "ScreenSpaceRenderPass";
 		}
 	}
 
-	ScreenSpaceRenderPass::~ScreenSpaceRenderPass() noexcept
-	{
-		// empty on purpose
-		shutdown();
-	}
+	ScreenSpaceRenderPass::~ScreenSpaceRenderPass() noexcept = default;
 
-	void ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
+	expected<void, std::string> ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
 	{
 		_chain = chain;
 		if (isValid(_texUniform))
@@ -397,7 +459,7 @@ namespace darmok
 		_mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
 	}
 
-	void ScreenSpaceRenderPass::shutdown() noexcept
+	expected<void, std::string> ScreenSpaceRenderPass::shutdown() noexcept
 	{
 		if (isValid(_texUniform))
 		{
@@ -410,7 +472,7 @@ namespace darmok
 		_chain.reset();
 	}
 
-	void ScreenSpaceRenderPass::updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept
+	expected<void, std::string> ScreenSpaceRenderPass::updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept
 	{
 		_readTex = read;
 		_writeTex = write;
@@ -420,7 +482,7 @@ namespace darmok
 		}
 	}
 
-	bgfx::ViewId ScreenSpaceRenderPass::renderReset(bgfx::ViewId viewId) noexcept
+	expected<bgfx::ViewId, std::string> ScreenSpaceRenderPass::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		if (_chain)
 		{
@@ -430,7 +492,7 @@ namespace darmok
 		return ++viewId;
 	}
 
-	void ScreenSpaceRenderPass::update(float deltaTime) noexcept
+	expected<void, std::string> ScreenSpaceRenderPass::update(float deltaTime) noexcept
 	{
 		_basicUniforms.update(deltaTime);
 	}
@@ -454,17 +516,17 @@ namespace darmok
 		return *this;
 	}
 
-	void ScreenSpaceRenderPass::render(bgfx::Encoder& encoder) noexcept
+	expected<void, std::string> ScreenSpaceRenderPass::render(bgfx::Encoder& encoder) noexcept
 	{
 		if (!_viewId)
 		{
-			return;
+			return unexpected<std::string>{"empty viewId"};
 		}
 		auto viewId = _viewId.value();
 		if (!_mesh || !_program || !_readTex)
 		{
 			encoder.touch(viewId);
-			return;
+			return {};
 		}
 
 		_mesh->render(encoder);
@@ -481,5 +543,7 @@ namespace darmok
 			;
 		encoder.setState(state);
 		encoder.submit(viewId, _program->getHandle());
+
+		return {};
 	}
 }

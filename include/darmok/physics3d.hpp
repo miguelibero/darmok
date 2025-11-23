@@ -128,7 +128,7 @@ namespace darmok::physics3d
         ConstPhysicsSystemDefinitionWrapper(const Definition& def) noexcept;
 		std::size_t getBroadLayerNum() const noexcept;
         BroadLayer getBroadLayer(LayerMask layer) const noexcept;
-        const std::string& getBroadLayerName(BroadLayer layer) const;
+        std::optional<std::string> getBroadLayerName(BroadLayer layer) const noexcept;
     private:
 		const Definition& _def;
     };
@@ -173,9 +173,9 @@ namespace darmok::physics3d
         bool isPaused() const noexcept;
         PhysicsSystem& setPaused(bool paused) noexcept;
 
-        void init(Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void update(float deltaTime) noexcept override;
+        expected<void, std::string> init(Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
 
         PhysicsSystem& addUpdater(std::unique_ptr<IPhysicsUpdater>&& updater) noexcept;
         PhysicsSystem& addUpdater(IPhysicsUpdater& updater) noexcept;

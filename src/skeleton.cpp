@@ -161,16 +161,17 @@ namespace darmok
     }
 
 
-    void SkeletalAnimationSceneComponent::init(Scene& scene, App& app) noexcept
+    expected<void, std::string> SkeletalAnimationSceneComponent::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
+		return {};
     }
 
-    void SkeletalAnimationSceneComponent::update(float deltaTime) noexcept
+    expected<void, std::string> SkeletalAnimationSceneComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
         {
-            return;
+            return unexpected<std::string>{"scene not loaded"};
         }
         auto entities = _scene->getUpdateEntities<SkeletalAnimator>();
         std::vector<OptionalRef<RenderableSkeleton>> skeletons;
@@ -186,17 +187,19 @@ namespace darmok
                 skel->update(_scene.value(), matrixes);
             }
         }
+        return {};
     }
 
-    void SkeletalAnimationRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> SkeletalAnimationRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _cam = cam;
         // TODO: maybe we should use u_model[X] but the bgfx API setTransform forces you to pass all at the same time
         _skinningUniform = bgfx::createUniform("u_skinning", bgfx::UniformType::Mat4, DARMOK_SKELETON_MAX_BONES);
+        return {};
     }
 
-    void SkeletalAnimationRenderComponent::shutdown() noexcept
+    expected<void, std::string> SkeletalAnimationRenderComponent::shutdown() noexcept
     {
         _scene.reset();
         _cam.reset();
@@ -205,6 +208,7 @@ namespace darmok
             bgfx::destroy(_skinningUniform);
             _skinningUniform.idx = bgfx::kInvalidHandle;
         }
+        return {};
     }
 
     OptionalRef<SkeletalAnimator> SkeletalAnimationRenderComponent::getAnimator(Entity entity) const noexcept
@@ -216,17 +220,17 @@ namespace darmok
         return _scene->getComponentInParent<SkeletalAnimator>(entity);
     }
 
-    void SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         auto animator = getAnimator(entity);
         if (!animator)
         {
-            return;
+            return unexpected<std::string>{"missing animator"};
         }
         auto skinnable = _scene->getComponent<Skinnable>(entity);
         if (!skinnable)
         {
-            return;
+            return unexpected<std::string>{"missing skinnable"};
         }
 
         auto armature = skinnable->getArmature();
@@ -243,6 +247,7 @@ namespace darmok
             }
         }
         encoder.setUniform(_skinningUniform, &_skinning.front(), uint16_t(_skinning.size()));
+        return {};
     }
 
     ConstSkeletalAnimatorTweenDefinitionWrapper::ConstSkeletalAnimatorTweenDefinitionWrapper(const Definition& def) noexcept

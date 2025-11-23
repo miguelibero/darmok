@@ -58,11 +58,11 @@ namespace darmok
         Scene& getScene();
         const Scene& getScene() const;
 
-        void init(Scene& scene, App& app);
-        bgfx::ViewId renderReset(bgfx::ViewId viewId);
-        void render();
-		void update(float deltaTime);
-		void shutdown();
+        expected<void, std::string> init(Scene& scene, App& app);
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId);
+        expected<void, std::string> render();
+        expected<void, std::string> update(float deltaTime);
+        expected<void, std::string> shutdown();
 
         entt::id_type getId() const noexcept;
         std::string getName() const noexcept;
@@ -178,9 +178,9 @@ namespace darmok
         void configureView(bgfx::ViewId viewId, const std::string& name) const;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
-        void beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
         // serialization
         using Definition = protobuf::Camera;

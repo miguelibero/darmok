@@ -91,9 +91,9 @@ namespace darmok::physics3d
     public:
         using Config = PhysicsDebugConfig;
         PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
-        void init(Camera& cam, Scene& scene, App& app);
-        void shutdown();
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder);
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
         void onInputEvent(const std::string& tag) noexcept override;
 

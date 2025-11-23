@@ -26,8 +26,8 @@ namespace darmok
 
 		bool isEnabled() const noexcept;
 
-		void init(App& app) override;
-		void shutdown() noexcept override;
+		expected<void, std::string> init(App& app) noexcept override;
+		expected<void, std::string> shutdown() noexcept override;
 	private:
 		std::unique_ptr<RmluiDebuggerComponentImpl> _impl;
     };

@@ -17,9 +17,9 @@ namespace darmok
     {
     public:
         SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<Camera> _cam;
         std::unique_ptr<Mesh> _mesh;
@@ -53,9 +53,9 @@ namespace darmok
         using Config = GridRendererConfig;
 
         GridRenderer(const Config& config = {}) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         Config _config;
         OptionalRef<Camera> _cam;

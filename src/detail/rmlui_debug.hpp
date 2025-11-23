@@ -18,8 +18,8 @@ namespace darmok
 		RmluiDebuggerComponentImpl(const Config& config = {}) noexcept;
 		~RmluiDebuggerComponentImpl() noexcept;
 
-		void init(App& app) noexcept;
-		void shutdown() noexcept;
+		expected<void, std::string> init(App& app) noexcept;
+		expected<void, std::string> shutdown() noexcept;
 
 		bool isEnabled() const noexcept;
 		void toggle() noexcept;

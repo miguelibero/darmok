@@ -15,25 +15,23 @@ namespace darmok
 	{
 	}
 
-	RmluiDebuggerComponentImpl::~RmluiDebuggerComponentImpl() noexcept
-	{
-		shutdown();
-	}
+    RmluiDebuggerComponentImpl::~RmluiDebuggerComponentImpl() noexcept = default;
 
     const std::string RmluiDebuggerComponentImpl::_tag = "debugger";
 
-	void RmluiDebuggerComponentImpl::init(App& app) noexcept
+    expected<void, std::string> RmluiDebuggerComponentImpl::init(App& app) noexcept
 	{
         _app = app;
         _originalCursorMode = app.getWindow().getCursorMode();
         app.getInput().addListener(_tag, _config.enableEvents, *this);
+        return {};
 	}
 
-    void RmluiDebuggerComponentImpl::shutdown() noexcept
+    expected<void, std::string> RmluiDebuggerComponentImpl::shutdown() noexcept
     {
         if (!_app)
         {
-            return;
+            return unexpected<std::string>{"uninitialized" };
         }
         if (_canvas)
         {
@@ -42,6 +40,7 @@ namespace darmok
         }
         _app->getInput().removeListener(_tag, *this);
         _app.reset();
+        return {};
     }
 
     void RmluiDebuggerComponentImpl::onInputEvent(const std::string& tag) noexcept
@@ -127,14 +126,11 @@ namespace darmok
     }
 
     RmluiDebuggerComponent::RmluiDebuggerComponent(const Config& config) noexcept
-        : _impl(std::make_unique<RmluiDebuggerComponentImpl>(config))
+        : _impl{ std::make_unique<RmluiDebuggerComponentImpl>(config) }
     {
     }
 
-    RmluiDebuggerComponent::~RmluiDebuggerComponent() noexcept
-    {
-        // empty on purpose
-    }
+    RmluiDebuggerComponent::~RmluiDebuggerComponent() noexcept = default;
 
     void RmluiDebuggerComponent::toggle() noexcept
     {
@@ -146,14 +142,14 @@ namespace darmok
         return _impl->isEnabled();
     }
 
-    void RmluiDebuggerComponent::init(App& app)
+    expected<void, std::string> RmluiDebuggerComponent::init(App& app) noexcept
     {
         return _impl->init(app);
     }
 
-    void RmluiDebuggerComponent::shutdown() noexcept
+    expected<void, std::string> RmluiDebuggerComponent::shutdown() noexcept
     {
-        _impl->shutdown();
+        return _impl->shutdown();
     }
 }
 

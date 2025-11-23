@@ -98,10 +98,10 @@ namespace darmok
     {
     public:
         TextRenderer(const std::shared_ptr<Program>& prog = nullptr) noexcept;
-        void init(Camera& cam, Scene& scene, App& app) noexcept override;
-        void shutdown() noexcept override;
-        void update(float deltaTime) override;
-        void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
+        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;

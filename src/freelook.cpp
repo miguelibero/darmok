@@ -41,15 +41,16 @@ namespace darmok
         return _listeners.eraseIf(filter);
     }
 
-    void FreelookController::init(Scene& scene, App& app) noexcept
+    expected<void, std::string> FreelookController::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _input = app.getInput();
         _win = app.getWindow();
         _input->addListener("freelook", _config.enableEvents, *this);
+        return {};
     };
 
-    void FreelookController::shutdown() noexcept
+    expected<void, std::string> FreelookController::shutdown() noexcept
     {
         if (_input)
         {
@@ -57,6 +58,7 @@ namespace darmok
         }
         _input.reset();
         _win.reset();
+        return {};
     }
 
     void FreelookController::onInputEvent(const std::string& tag) noexcept
@@ -100,11 +102,11 @@ namespace darmok
         return _enabled;
     }
 
-    void FreelookController::update(float deltaTime) noexcept
+    expected<void, std::string> FreelookController::update(float deltaTime) noexcept
     {
         if (!_enabled)
         {
-            return;
+            return {};
         }
         glm::vec2 lookRot{
             _input->getAxis(_config.lookLeft, _config.lookRight),
@@ -131,5 +133,6 @@ namespace darmok
         {
             trans->setLocalMatrix(mtx);
         }
+        return {};
     }
 }

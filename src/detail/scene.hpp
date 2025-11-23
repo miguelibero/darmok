@@ -30,7 +30,7 @@ namespace darmok
         SceneImpl(Scene& scene) noexcept;
         ~SceneImpl() noexcept;
 
-        void addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
+        expected<void, std::string> addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
         bool removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
@@ -68,11 +68,11 @@ namespace darmok
         void setViewport(const std::optional<Viewport>& vport) noexcept;
         Viewport getCurrentViewport() const noexcept;
 
-        void init(App& app);
-        void update(float deltaTime);
-        bgfx::ViewId renderReset(bgfx::ViewId viewId);
-        void render();
-        void shutdown();
+        expected<void, std::string> init(App& app);
+        expected<void, std::string> update(float deltaTime);
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId);
+        expected<void, std::string> render();
+        expected<void, std::string> shutdown();
 
         void setUpdateFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getUpdateFilter() const noexcept;
@@ -95,8 +95,8 @@ namespace darmok
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
 
-        void onCameraConstructed(EntityRegistry& registry, Entity entity);
-        void onCameraDestroyed(EntityRegistry& registry, Entity entity);
+        expected<void, std::string> onCameraConstructed(EntityRegistry& registry, Entity entity) noexcept;
+        expected<void, std::string> onCameraDestroyed(EntityRegistry& registry, Entity entity) noexcept;
 
         Viewport getRenderChainViewport() const noexcept override;
         void onRenderChainChanged() noexcept override;

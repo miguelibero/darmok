@@ -221,9 +221,9 @@ namespace darmok::physics3d
         using Shape = protobuf::PhysicsShape;
 
         PhysicsSystemImpl(PhysicsSystem& system, const Definition& def, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
-        void init(Scene& scene, App& app) noexcept;
-        void shutdown() noexcept;
-        void update(float deltaTime);
+        expected<void, std::string> init(Scene& scene, App& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
+        expected<void, std::string> update(float deltaTime) noexcept;
 
         bool isPaused() const noexcept;
         void setPaused(bool paused) noexcept;
@@ -309,7 +309,7 @@ namespace darmok::physics3d
         void onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept;
         void onCharacterDestroyed(EntityRegistry& registry, Entity entity);
 
-        static std::string getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
+        static std::string_view getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
 
         void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
         void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);

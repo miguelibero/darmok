@@ -784,7 +784,6 @@ namespace darmok
         , _archive{ *_impl }
     {
         registerComponent<Transform>();
-        registerComponent<BoundingBox>();
         registerComponent<Renderable>();
         registerComponent<Camera>();
         registerComponent<Skinnable>();
@@ -792,6 +791,7 @@ namespace darmok
         registerComponent<DirectionalLight>();
         registerComponent<SpotLight>();
         registerComponent<AmbientLight>();
+        // registerComponent<BoundingBox>();
 	}
 
     SceneLoader::~SceneLoader() = default;

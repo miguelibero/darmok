@@ -202,7 +202,7 @@ namespace darmok
         .end();
     }
 
-    void ShadowRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> ShadowRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
 		_cam = cam;
 		_scene = scene;
@@ -255,7 +255,7 @@ namespace darmok
         _shadowLightDataBuffer = bgfx::createDynamicVertexBuffer(1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
     }
 
-    void ShadowRenderer::shutdown() noexcept
+    expected<void, std::string> ShadowRenderer::shutdown() noexcept
     {
         for (auto& pass : _passes)
         {
@@ -292,7 +292,7 @@ namespace darmok
         _app.reset();
     }
 
-    void ShadowRenderer::update(float deltaTime)
+    expected<void, std::string> ShadowRenderer::update(float deltaTime) noexcept
     {
         updateLights();
         updateCamera();
@@ -621,7 +621,7 @@ namespace darmok
         return _crop * getPointLightMatrix(light, lightTrans, face);
     }
 
-    bgfx::ViewId ShadowRenderer::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string> ShadowRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
         for (auto& pass : _passes)
         {
@@ -630,7 +630,7 @@ namespace darmok
         return viewId;
     }
 
-    void ShadowRenderer::render() noexcept
+    expected<void, std::string> ShadowRenderer::render() noexcept
     {
         auto encoder = bgfx::begin();
         for (auto& pass : _passes)
@@ -640,7 +640,7 @@ namespace darmok
         bgfx::end(encoder);
     }
 
-    void ShadowRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> ShadowRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         configureUniforms(encoder);
     }
@@ -663,28 +663,30 @@ namespace darmok
     {
     }
 
-    void ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _debugRender.init(app);
+        return {};
     }
 
-    void ShadowDebugRenderer::shutdown() noexcept
+    expected<void, std::string> ShadowDebugRenderer::shutdown() noexcept
     {
         _debugRender.shutdown();
         _scene.reset();
+        return {};
     }
 
-    void ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         if (!_scene)
         {
-            return;
+            return unexpected<std::string>{"renderer not initialized"};
         }
         auto cam = _renderer.getCamera();
         if (!cam)
         {
-            return;
+            return unexpected<std::string>{"camera not found"};
         }
         MeshData meshData;
         meshData.type = Mesh::Definition::Transient;
@@ -721,5 +723,6 @@ namespace darmok
             _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
             ++debugColor;
         }
+        return {};
     }
 }
