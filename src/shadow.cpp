@@ -227,7 +227,7 @@ namespace darmok
         }
         
         Texture::Config texConfig;
-        *texConfig.mutable_size() = protobuf::convert(glm::uvec2(_config.mapSize));
+        *texConfig.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ _config.mapSize });
         texConfig.set_layers(_config.maxPassAmount);
         texConfig.set_format(Texture::Definition::D16);
         texConfig.set_type(Texture::Definition::Texture2D);

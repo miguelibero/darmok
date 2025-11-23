@@ -2,7 +2,7 @@
 
 namespace darmok
 {
-	protobuf::Uvec2 protobuf::convert(const glm::uvec2& v)
+	protobuf::Uvec2 Converter<protobuf::Uvec2, glm::uvec2>::run(const glm::uvec2& v)
 	{
 		protobuf::Uvec2 vec;
 		vec.set_x(v.x);
@@ -10,7 +10,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Vec2 protobuf::convert(const glm::vec2& v)
+	protobuf::Vec2 Converter<protobuf::Vec2, glm::vec2>::run(const glm::vec2& v)
 	{
 		protobuf::Vec2 vec;
 		vec.set_x(v.x);
@@ -18,7 +18,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Vec3 protobuf::convert(const glm::vec3& v)
+	protobuf::Vec3 Converter<protobuf::Vec3, glm::vec3>::run(const glm::vec3& v)
 	{
 		protobuf::Vec3 vec;
 		vec.set_x(v.x);
@@ -27,7 +27,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Vec4 protobuf::convert(const glm::vec4& v)
+	protobuf::Vec4 Converter<protobuf::Vec4, glm::vec4>::run(const glm::vec4& v)
 	{
 		protobuf::Vec4 vec;
 		vec.set_x(v.x);
@@ -37,7 +37,7 @@ namespace darmok
 		return vec;
 	}
 
-	protobuf::Quat protobuf::convert(const glm::quat& v)
+	protobuf::Quat Converter<protobuf::Quat, glm::quat>::run(const glm::quat& v)
 	{
 		protobuf::Quat quat;
 		quat.set_x(v.x);
@@ -47,26 +47,26 @@ namespace darmok
 		return quat;
 	}
 
-	protobuf::Mat3 protobuf::convert(const glm::mat3& v)
+	protobuf::Mat3 Converter<protobuf::Mat3, glm::mat3>::run(const glm::mat3& v)
 	{
 		protobuf::Mat3 mat;
-		*mat.mutable_col1() = convert(v[0]);
-		*mat.mutable_col2() = convert(v[1]);
-		*mat.mutable_col3() = convert(v[2]);
+		*mat.mutable_col1() = convert<protobuf::Vec3>(v[0]);
+		*mat.mutable_col2() = convert<protobuf::Vec3>(v[1]);
+		*mat.mutable_col3() = convert<protobuf::Vec3>(v[2]);
 		return mat;
 	}
 
-	protobuf::Mat4 protobuf::convert(const glm::mat4& v)
+	protobuf::Mat4 Converter<protobuf::Mat4, glm::mat4>::run(const glm::mat4& v)
 	{
 		protobuf::Mat4 mat;
-		*mat.mutable_col1() = convert(v[0]);
-		*mat.mutable_col2() = convert(v[1]);
-		*mat.mutable_col3() = convert(v[2]);
-		*mat.mutable_col4() = convert(v[3]);
+		*mat.mutable_col1() = convert<protobuf::Vec4>(v[0]);
+		*mat.mutable_col2() = convert<protobuf::Vec4>(v[1]);
+		*mat.mutable_col3() = convert<protobuf::Vec4>(v[2]);
+		*mat.mutable_col4() = convert<protobuf::Vec4>(v[3]);
 		return mat;
 	}
 
-	protobuf::Color3 protobuf::convert(const darmok::Color3& v)
+	protobuf::Color3 Converter<protobuf::Color3, Color3>::run(const Color3& v)
 	{
 		protobuf::Color3 color;
 		color.set_r(v.r);
@@ -75,7 +75,7 @@ namespace darmok
 		return color;
 	}
 
-	protobuf::Color protobuf::convert(const darmok::Color& v)
+	protobuf::Color Converter<protobuf::Color, Color>::run(const Color& v)
 	{
 		protobuf::Color color;
 		color.set_r(v.r);
@@ -85,56 +85,56 @@ namespace darmok
 		return color;
 	}
 
-	glm::uvec2 protobuf::convert(const protobuf::Uvec2& v)
+	glm::uvec2 Converter<glm::uvec2, protobuf::Uvec2>::run(const protobuf::Uvec2& v)
 	{
 		return { v.x(), v.y() };
 	}
 
-	glm::vec2 protobuf::convert(const protobuf::Vec2& v)
+	glm::vec2 Converter<glm::vec2, protobuf::Vec2>::run(const protobuf::Vec2& v)
 	{
 		return { v.x(), v.y() };
 	}
 
-	glm::vec3 protobuf::convert(const protobuf::Vec3& v)
+	glm::vec3 Converter<glm::vec3, protobuf::Vec3>::run(const protobuf::Vec3& v)
 	{
 		return { v.x(), v.y(), v.z() };
 	}
 
-	glm::vec4 protobuf::convert(const protobuf::Vec4& v)
+	glm::vec4 Converter<glm::vec4, protobuf::Vec4>::run(const protobuf::Vec4& v)
 	{
 		return { v.x(), v.y(), v.z(), v.w() };
 	}
 
-	glm::quat protobuf::convert(const protobuf::Quat& v)
+	glm::quat Converter<glm::quat, protobuf::Quat>::run(const protobuf::Quat& v)
 	{
 		return { v.w(), v.x(), v.y(), v.z() };
 	}
 
-	glm::mat3 protobuf::convert(const protobuf::Mat3& v)
+	glm::mat3 Converter<glm::mat3, protobuf::Mat3>::run(const protobuf::Mat3& v)
 	{
 		return {
-			convert(v.col1()),
-			convert(v.col2()),
-			convert(v.col3())
+			convert<glm::vec3>(v.col1()),
+			convert<glm::vec3>(v.col2()),
+			convert<glm::vec3>(v.col3())
 		};
 	}
 
-	glm::mat4 protobuf::convert(const protobuf::Mat4& v)
+	glm::mat4 Converter<glm::mat4, protobuf::Mat4>::run(const protobuf::Mat4& v)
 	{
 		return {
-			convert(v.col1()),
-			convert(v.col2()),
-			convert(v.col3()),
-			convert(v.col4())
+			convert<glm::vec4>(v.col1()),
+			convert<glm::vec4>(v.col2()),
+			convert<glm::vec4>(v.col3()),
+			convert<glm::vec4>(v.col4())
 		};
 	}
 
-	darmok::Color protobuf::convert(const protobuf::Color& v)
+	Color Converter<Color, protobuf::Color>::run(const protobuf::Color& v)
 	{
 		return { v.r(), v.g(), v.b(), v.a() };
 	}
 
-	darmok::Color3 protobuf::convert(const protobuf::Color3& v)
+	Color3 Converter<Color3, protobuf::Color3>::run(const protobuf::Color3& v)
 	{
 		return { v.r(), v.g(), v.b() };
 	}

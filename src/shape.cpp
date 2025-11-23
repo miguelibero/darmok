@@ -25,9 +25,23 @@ namespace darmok
     }
 
     Rectangle::Rectangle(const glm::vec2& size, const glm::vec2& origin) noexcept
-        : size(size)
-        , origin(origin)
+        : size{ size }
+        , origin{ origin }
     {
+    }
+
+    Rectangle::Rectangle(const Definition& def) noexcept
+        : size{ convert<glm::vec2>(def.size()) }
+        , origin{ convert<glm::vec2>(def.origin()) }
+    {
+    }
+
+    Rectangle::operator Definition() const noexcept
+    {
+        Definition def;
+        *def.mutable_size() = convert<protobuf::Vec2>(size);
+        *def.mutable_origin() = convert<protobuf::Vec2>(origin);
+        return def;
     }
 
     std::string Rectangle::toString() const noexcept
@@ -44,23 +58,30 @@ namespace darmok
         return { Line{ v0, v1 }, Line{v1, v2}, Line{ v2, v3 }, Line{ v3, v0 } };
     }
 
-    expected<void, std::string> Rectangle::load(const Definition& def)
-    {
-        size = protobuf::convert(def.size());
-        origin = protobuf::convert(def.origin());
-        return {};
-    }
-
     Cube::Cube(const glm::vec3& size, const glm::vec3& origin) noexcept
-        : size(size)
-        , origin(origin)
+        : size{ size }
+        , origin{ origin }
     {
     }
 
     Cube::Cube(const BoundingBox& bbox) noexcept
-        : size(bbox.max - bbox.min)
-        , origin(bbox.min + (size * 0.5F))
+        : size{ bbox.max - bbox.min }
+        , origin{ bbox.min + (size * 0.5F) }
     {
+    }
+
+    Cube::Cube(const Definition& def) noexcept
+        : size{ convert<glm::vec3>(def.size()) }
+        , origin{ convert<glm::vec3>(def.origin()) }
+    {
+    }
+
+    Cube::operator Definition() const noexcept
+    {
+        Definition def;
+        *def.mutable_size() = convert<protobuf::Vec3>(size);
+        *def.mutable_origin() = convert<protobuf::Vec3>(origin);
+		return def;
     }
 
     const Cube& Cube::standard() noexcept
@@ -93,21 +114,32 @@ namespace darmok
         return cube;
     }
 
-    expected<void, std::string> Cube::load(const Definition& def)
-    {
-        size = protobuf::convert(def.size());
-        origin = protobuf::convert(def.origin());
-        return {};
-    }
-
     Triangle::Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept
         : vertices{ vert1, vert2, vert3 }
     {
     }
 
     Triangle::Triangle(const Vertices& vertices) noexcept
-        : vertices(vertices)
+        : vertices{ vertices }
     {
+    }
+
+    Triangle::Triangle(const Definition& def) noexcept
+        : vertices{
+            convert<glm::vec3>(def.vertex1()),
+            convert<glm::vec3>(def.vertex2()),
+            convert<glm::vec3>(def.vertex3())
+		}
+    {
+    }
+
+    Triangle::operator Definition() const noexcept
+    {
+        Definition def;
+        *def.mutable_vertex1() = convert<protobuf::Vec3>(vertices[0]);
+        *def.mutable_vertex2() = convert<protobuf::Vec3>(vertices[1]);
+        *def.mutable_vertex3() = convert<protobuf::Vec3>(vertices[2]);
+		return def;
     }
 
     std::string Triangle::toString() const noexcept
@@ -175,7 +207,7 @@ namespace darmok
     }
 
     TextureTriangle::TextureTriangle(const Coordinates& coordinates) noexcept
-        : coordinates(coordinates)
+        : coordinates{ coordinates }
     {
     }
 
@@ -201,9 +233,26 @@ namespace darmok
     }
 
     Polygon::Polygon(const Triangles& tris, const glm::vec3& origin) noexcept
-        : triangles(tris)
-        , origin(origin)
+        : triangles{ tris }
+        , origin{ origin }
     {
+    }
+
+    Polygon::Polygon(const Definition& def) noexcept
+		: triangles{ def.triangles().begin(), def.triangles().end() }
+		, origin{ convert<glm::vec3>(def.origin()) }
+    {
+    }
+
+    Polygon::operator Definition() const noexcept
+    {
+        Definition def;
+        for (const auto& tri : triangles)
+        {
+            *def.add_triangles() = static_cast<protobuf::Triangle>(tri);
+        }
+		*def.mutable_origin() = convert<protobuf::Vec3>(origin);
+        return def;
     }
 
     std::string Polygon::toString() const noexcept
@@ -234,15 +283,29 @@ namespace darmok
     }
 
     Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
-        : radius(radius)
-        , origin(origin)
+        : radius{ radius }
+        , origin{ origin }
     {
     }
 
     Sphere::Sphere(float radius, const glm::vec3& origin) noexcept
-        : radius(radius)
-        , origin(origin)
+        : radius{ radius }
+        , origin{ origin }
     {
+    }
+
+    Sphere::Sphere(const Definition& def) noexcept
+        : radius{ def.radius() }
+        , origin{ convert<glm::vec3>(def.origin()) }
+    {
+	}
+
+    Sphere::operator Definition() const noexcept
+    {
+        Definition def;
+        def.set_radius(radius);
+        *def.mutable_origin() = convert<protobuf::Vec3>(origin);
+        return def;
     }
 
     std::string Sphere::toString() const noexcept
@@ -264,13 +327,6 @@ namespace darmok
         return copy;
     }
 
-    expected<void, std::string> Sphere::load(const Definition& def)
-    {
-        origin = protobuf::convert(def.origin());
-        radius = def.radius();
-        return {};
-    }
-
     Plane::Plane(const glm::vec3& normal, float distance) noexcept
         : normal(normal)
         , distance(distance)
@@ -278,10 +334,24 @@ namespace darmok
     }
 
     Plane::Plane(const Triangle& tri) noexcept
-        : normal(glm::normalize(tri.getNormal()))
-        , distance(glm::dot(normal, tri.vertices[0]))
+        : normal{ glm::normalize(tri.getNormal()) }
+        , distance{ glm::dot(normal, tri.vertices[0]) }
     {
     }
+
+    Plane::Plane(const Definition& def) noexcept
+		: normal{ convert<glm::vec3>(def.normal()) }
+        , distance{ def.distance() }
+    {
+	}
+
+    Plane::operator Definition() const noexcept
+    {
+        Definition def;
+        *def.mutable_normal() = convert<protobuf::Vec3>(normal);
+        def.set_distance(distance);
+        return def;
+	}
 
     bool Plane::contains(const glm::vec3& point) const noexcept
     {
@@ -377,13 +447,6 @@ namespace darmok
         distance = glm::dot(normal, origin);
 
         return *this;
-    }
-
-    expected<void, std::string> Plane::load(const Definition& def)
-    {
-        normal = protobuf::convert(def.normal());
-        distance = def.distance();
-        return {};
     }
 
     Ray::Ray(const glm::vec3& origin, const glm::vec3& dir) noexcept
@@ -582,11 +645,27 @@ namespace darmok
     }
 
     Capsule::Capsule(float cylinderHeight, float radius, const glm::vec3& origin) noexcept
-        : cylinderHeight(cylinderHeight)
-        , radius(radius)
-        , origin(origin)
+        : cylinderHeight{ cylinderHeight }
+        , radius{ radius }
+        , origin{ origin }
     {
     }
+
+    Capsule::Capsule(const Definition& def) noexcept
+		: cylinderHeight{ def.cylinder_height() }
+        , radius{ def.radius() }
+        , origin{ convert<glm::vec3>(def.origin()) }
+    {
+    }
+
+    Capsule::operator Definition() const noexcept
+    {
+        Definition def;
+        def.set_cylinder_height(cylinderHeight);
+        def.set_radius(radius);
+        *def.mutable_origin() = convert<protobuf::Vec3>(origin);
+        return def;
+	}
 
     std::string Capsule::toString() const noexcept
     {
@@ -615,21 +694,13 @@ namespace darmok
         return copy;
     }
 
-    expected<void, std::string> Capsule::load(const Definition& def)
-    {
-        origin = protobuf::convert(def.origin());
-        radius = def.radius();
-        cylinderHeight = def.cylinder_height();
-        return {};
-    }
-
     BoundingBox::BoundingBox() noexcept
-        : min(0), max(0)
+        : min{ 0 }, max{ 0 }
     {
     }
 
     BoundingBox::BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept
-        : min(min), max(max)
+        : min{ min }, max{ max }
     {
     }
 
@@ -656,8 +727,8 @@ namespace darmok
     }
 
     BoundingBox::BoundingBox(const Polygon& poly) noexcept
-        : min(bx::kFloatInfinity)
-        , max(-bx::kFloatInfinity)
+        : min{ bx::kFloatInfinity }
+        , max{-bx::kFloatInfinity}
     {
         if (poly.triangles.empty())
         {
@@ -673,8 +744,8 @@ namespace darmok
     }
 
     BoundingBox::BoundingBox(const Triangle& tri) noexcept
-        : min(bx::kFloatInfinity)
-        , max(-bx::kFloatInfinity)
+        : min{ bx::kFloatInfinity }
+        , max{ -bx::kFloatInfinity }
     {
         for (auto& v : tri.vertices)
         {
@@ -683,14 +754,28 @@ namespace darmok
     }
 
     BoundingBox::BoundingBox(const Frustum& frust) noexcept
-        : min(bx::kFloatInfinity)
-        , max(-bx::kFloatInfinity)
+        : min{ bx::kFloatInfinity }
+        , max{ -bx::kFloatInfinity }
     {
         for (auto& corner : frust.corners)
         {
             expandToPosition(corner);
         }
     }
+
+    BoundingBox::BoundingBox(const Definition& def) noexcept
+        : min{ convert<glm::vec3>(def.min()) }
+		, max{ convert<glm::vec3>(def.max()) }
+    {
+    }
+
+    BoundingBox::operator Definition() const noexcept
+    {
+        Definition def;
+        *def.mutable_min() = convert<protobuf::Vec3>(min);
+        *def.mutable_max() = convert<protobuf::Vec3>(max);
+        return def;
+	}
 
     BoundingBox& BoundingBox::operator+=(const BoundingBox& bb) noexcept
     {
@@ -841,13 +926,6 @@ namespace darmok
     glm::mat4 BoundingBox::getOrtho() const noexcept
     {
         return Math::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
-    }
-
-    expected<void, std::string> BoundingBox::load(const Definition& def)
-    {
-        min = protobuf::convert(def.min());
-        max = protobuf::convert(def.max());
-        return {};
     }
 
     Frustum::Frustum(const glm::mat4& mtx, bool inverse) noexcept

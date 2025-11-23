@@ -11,8 +11,8 @@ namespace darmok
         void bindGlm(LuaProtobufBinding<T>& binding)
         {
             binding.userType["glm"] = sol::property(
-                [](const T& self) { return protobuf::convert(self); },
-                [](T& self, const G& v) { self = protobuf::convert(v); }
+                [](const T& self) { return convert<G>(self); },
+                [](T& self, const G& v) { self = convert<T>(v); }
             );
         }
 

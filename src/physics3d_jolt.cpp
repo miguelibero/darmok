@@ -1,5 +1,5 @@
 #include "detail/physics3d_jolt.hpp"
-#include "detail/character_jolt.hpp"
+#include "detail/physics3d_character_jolt.hpp"
 
 #include <darmok/physics3d.hpp>
 #include <darmok/transform.hpp>
@@ -191,8 +191,6 @@ namespace darmok::physics3d
         return JPH::cDefaultConvexRadius;
     }
 
-
-
     static JPH::Ref<JPH::Shape> getShape(JPH::ShapeSettings& settings)
     {
         auto result = settings.Create();
@@ -214,9 +212,8 @@ namespace darmok::physics3d
         return getShape(offsetSettings);
     }
 
-    JPH::ShapeRefC JoltUtils::convert(const ShapeDefinition& shapeDef, float scale)
+    JPH::ShapeRefC JoltUtils::convert(const PhysicsShape& shape, float scale)
     {
-		auto shape = ConstPhysicsShapeDefinitionWrapper{ shapeDef }.getShape();
         std::optional<Cube> optCube;
         if (auto cubePtr = std::get_if<Cube>(&shape))
         {
@@ -261,76 +258,21 @@ namespace darmok::physics3d
     {
     }
 
-    ConstPhysicsShapeDefinitionWrapper::Shape ConstPhysicsShapeDefinitionWrapper::getShape() const noexcept
-    {
-        if (_def.has_cube())
-        {
-            return darmok::protobuf::convert(_def.cube());
-        }
-        else if (_def.has_sphere())
-        {
-            return darmok::protobuf::convert(_def.sphere());
-        }
-        else if (_def.has_capsule())
-        {
-            return darmok::protobuf::convert(_def.capsule());
-        }
-        else if (_def.has_polygon())
-        {
-            return darmok::protobuf::convert(_def.polygon());
-        }
-        else if (_def.has_bounding_box())
-        {
-            return darmok::protobuf::convert(_def.bounding_box());
-        }
-		return Cube{};
-    }
-
     glm::vec3 ConstPhysicsShapeDefinitionWrapper::getOrigin() const noexcept
     {
         if (_def.has_cube())
         {
-            return darmok::protobuf::convert(_def.cube().origin());
+            return darmok::convert<glm::vec3>(_def.cube().origin());
         }
         else if (_def.has_sphere())
         {
-            return darmok::protobuf::convert(_def.sphere().origin());
+            return darmok::convert<glm::vec3>(_def.sphere().origin());
         }
         else if (_def.has_capsule())
         {
-            return darmok::protobuf::convert(_def.capsule().origin());
+            return darmok::convert<glm::vec3>(_def.capsule().origin());
         }
-        return glm::vec3(0);
-    }
-
-    PhysicsShapeDefinitionWrapper::PhysicsShapeDefinitionWrapper(Definition& def) noexcept
-		: ConstPhysicsShapeDefinitionWrapper{ def }
-        , _def{ def }
-    {
-	}
-
-    void PhysicsShapeDefinitionWrapper::setShape(const Shape& shape) noexcept
-    {
-        if(auto cubePtr = std::get_if<Cube>(&shape))
-        {
-            *_def.mutable_cube() = darmok::protobuf::convert(*cubePtr);
-        }
-        else if (auto spherePtr = std::get_if<Sphere>(&shape))
-        {
-            *_def.mutable_sphere() = darmok::protobuf::convert(*spherePtr);
-        }
-        else if (auto capsPtr = std::get_if<Capsule>(&shape))
-        {
-            *_def.mutable_capsule() = darmok::protobuf::convert(*capsPtr);
-        }
-        else if (auto polyPtr = std::get_if<Polygon>(&shape))
-        {
-            *_def.mutable_polygon() = darmok::protobuf::convert(*polyPtr);
-        }
-        else if (auto bboxPtr = std::get_if<BoundingBox>(&shape))
-        {
-            *_def.mutable_bounding_box() = darmok::protobuf::convert(*bboxPtr);
-		}
+        return glm::vec3{ 0 };
     }
 
     ConstPhysicsBodyDefinitionWrapper::ConstPhysicsBodyDefinitionWrapper(const Definition& def) noexcept
@@ -341,11 +283,11 @@ namespace darmok::physics3d
     ConstPhysicsBodyDefinitionWrapper::CharacterDefinition ConstPhysicsBodyDefinitionWrapper::toCharacter() noexcept
     {
         CharacterDefinition charDef;
-        *charDef.mutable_base()->mutable_shape() = _def.shape();
+        *charDef.mutable_shape() = _def.shape();
 		charDef.set_mass(_def.mass());
 		charDef.set_friction(_def.friction());
 		charDef.set_gravity_factor(_def.gravity_factor());
-		charDef.mutable_base()->set_layer(_def.layer_mask());
+		charDef.set_layer(_def.layer_mask());
 
         return charDef;
     }
@@ -609,7 +551,7 @@ namespace darmok::physics3d
             _def.max_body_pairs(), _def.max_contact_constraints(),
             _broadPhaseLayer, _objVsBroadPhaseLayerFilter, _objLayerPairFilter);
         _deltaTimeRest = 0.F;
-        _joltSystem->SetGravity(JoltUtils::convert(darmok::protobuf::convert(_def.gravity())));
+        _joltSystem->SetGravity(JoltUtils::convert(darmok::convert<glm::vec3>(_def.gravity())));
         _joltSystem->SetContactListener(this);
 
         scene.onConstructComponent<PhysicsBody>().connect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
@@ -1328,20 +1270,20 @@ namespace darmok::physics3d
             return {};
         }
         const JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings();
-        settings->mMaxSlopeAngle = def.base().max_slope_angle();
-        settings->mShape = JoltUtils::convert(def.base().shape(), trans.scale);
+        settings->mMaxSlopeAngle = def.max_slope_angle();
+        settings->mShape = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
         settings->mFriction = def.friction();
-        settings->mSupportingVolume = JoltUtils::convert(darmok::protobuf::convert(def.base().supporting_plane()));
+        settings->mSupportingVolume = JoltUtils::convert(darmok::convert<Plane>(def.supporting_plane()));
         settings->mMass = def.mass();
         settings->mGravityFactor = def.gravity_factor();
-        settings->mUp = JoltUtils::convert(darmok::protobuf::convert(def.base().up()));
-        settings->mLayer = def.base().layer();
+        settings->mUp = JoltUtils::convert(darmok::convert<glm::vec3>(def.up()));
+        settings->mLayer = def.layer();
         settings->mEnhancedInternalEdgeRemoval = true;
         auto userData = (uint64_t)_body.ptr();
         _character = new JPH::Character(settings, trans.position, trans.rotation, userData, joltSystem.ptr());
         _character->AddToPhysicsSystem();
         _maxSepDistance = def.max_separation_distance();
-        _shape = ConstPhysicsShapeDefinitionWrapper{ def.base().shape() }.getShape();
+        _shape = darmok::convert<PhysicsShape>(def.shape());
         return _character->GetBodyID();
     }
 
@@ -1366,7 +1308,7 @@ namespace darmok::physics3d
             break;
         }
 
-        auto shape = JoltUtils::convert(def.shape(), trans.scale);
+        auto shape = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
         JPH::BodyCreationSettings settings(shape, trans.position, trans.rotation,
             joltMotion, def.layer_mask());
         settings.mGravityFactor = def.gravity_factor();
@@ -1379,7 +1321,7 @@ namespace darmok::physics3d
             settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
             settings.mMassPropertiesOverride.mMass = def.mass();
         }
-        _shape = ConstPhysicsShapeDefinitionWrapper{ def.shape() }.getShape();
+        _shape = darmok::convert<PhysicsShape>(def.shape());
         return getBodyInterface()->CreateAndAddBody(settings, activation);
     }
 
@@ -1489,7 +1431,7 @@ namespace darmok::physics3d
         return _system->getImpl();
     }
 
-    PhysicsBodyImpl::Shape PhysicsBodyImpl::getShape() const noexcept
+    PhysicsShape PhysicsBodyImpl::getShape() const noexcept
     {
         return _shape.value_or(BoundingBox{});
     }
@@ -1757,11 +1699,11 @@ namespace darmok::physics3d
         }
     }
 
-    PhysicsBody::PhysicsBody(const Shape& shape, MotionType motion) noexcept
+    PhysicsBody::PhysicsBody(const PhysicsShape& shape, MotionType motion) noexcept
     {
         auto def = createDefinition();
 		def.set_motion(motion);
-        PhysicsShapeDefinitionWrapper{ *def.mutable_shape() }.setShape(shape);
+        *def.mutable_shape() = darmok::convert<protobuf::PhysicsShape>(shape);
         _impl = std::make_unique<PhysicsBodyImpl>(def);
     }
 
@@ -1788,28 +1730,32 @@ namespace darmok::physics3d
 		return def;
     }
 
-    PhysicsBody::BaseCharacterDefinition PhysicsBody::createBaseCharacterDefinition() noexcept
+    PhysicsBody::ShapeDefinition PhysicsBody::createCharacterShape() noexcept
     {
-        BaseCharacterDefinition def;
-        auto& capsule = *def.mutable_shape()->mutable_capsule();
+        ShapeDefinition shape;
+        auto& capsule = *shape.mutable_capsule();
         capsule.set_cylinder_height(1.F);
-		capsule.set_radius(0.25F);
-		capsule.mutable_origin()->set_y(0.75F);
+        capsule.set_radius(0.25F);
+        capsule.mutable_origin()->set_y(0.75F);
+        return shape;
+    }
 
-        def.set_max_slope_angle(45.0F);
-        def.set_layer(0);
-		def.mutable_up()->set_y(1.0F);
-		def.mutable_supporting_plane()->mutable_normal()->set_y(1.0F);
-        def.mutable_supporting_plane()->set_distance(-1.0e10f);
-		def.set_max_slope_angle(glm::radians(50.F));
-
-		return def;
+    Plane::Definition PhysicsBody::createSupportingPlaneDefinition() noexcept
+    {
+		Plane::Definition def;
+        def.mutable_normal()->set_y(1.0F);
+        def.set_distance(-1.0e10f);
+        return def;
     }
 
     PhysicsBody::CharacterDefinition PhysicsBody::createCharacterDefinition() noexcept
     {
         CharacterDefinition def;
-		*def.mutable_base() = createBaseCharacterDefinition();
+		*def.mutable_shape() = createCharacterShape();
+		*def.mutable_supporting_plane() = createSupportingPlaneDefinition();
+        def.mutable_up()->set_y(1.0F);
+        def.set_max_slope_angle(glm::radians(50.F));
+
 		def.set_mass(80.F);
 		def.set_friction(1.F);
         def.set_gravity_factor(1.F);
@@ -1817,7 +1763,7 @@ namespace darmok::physics3d
         return def;
     }
 
-    PhysicsBody::Shape PhysicsBody::getShape() const noexcept
+    PhysicsShape PhysicsBody::getShape() const noexcept
     {
         return _impl->getShape();
     }
@@ -2005,5 +1951,60 @@ namespace darmok::physics3d
         ss << "RaycastHit(dist=" << distance << ", ";
         ss << body.get().toString() << ")";
         return ss.str();
+    }
+}
+
+namespace darmok
+{
+    physics3d::PhysicsShape Converter<physics3d::PhysicsShape, physics3d::protobuf::PhysicsShape>::run(const physics3d::protobuf::PhysicsShape& v)
+    {
+        if (v.has_cube())
+        {
+            return convert<Cube>(v.cube());
+        }
+        else if (v.has_sphere())
+        {
+            return convert<Sphere>(v.sphere());
+        }
+        else if (v.has_capsule())
+        {
+            return convert<Capsule>(v.capsule());
+        }
+        else if (v.has_polygon())
+        {
+            return convert<Polygon>(v.polygon());
+        }
+        else if (v.has_bounding_box())
+        {
+            return convert<BoundingBox>(v.bounding_box());
+        }
+        return Cube{};
+    }
+
+    
+    physics3d::protobuf::PhysicsShape Converter<physics3d::protobuf::PhysicsShape, physics3d::PhysicsShape>::run(const physics3d::PhysicsShape& v)
+    {
+        physics3d::protobuf::PhysicsShape def;
+        if (auto cubePtr = std::get_if<Cube>(&v))
+        {
+            *def.mutable_cube() = convert<protobuf::Cube>(*cubePtr);
+        }
+        else if (auto spherePtr = std::get_if<Sphere>(&v))
+        {
+            *def.mutable_sphere() = convert<protobuf::Sphere>(*spherePtr);
+        }
+        else if (auto capsPtr = std::get_if<Capsule>(&v))
+        {
+            *def.mutable_capsule() = convert<protobuf::Capsule>(*capsPtr);
+        }
+        else if (auto polyPtr = std::get_if<Polygon>(&v))
+        {
+            *def.mutable_polygon() = convert<protobuf::Polygon>(*polyPtr);
+        }
+        else if (auto bboxPtr = std::get_if<BoundingBox>(&v))
+        {
+            *def.mutable_bounding_box() = convert<protobuf::BoundingBox>(*bboxPtr);
+        }
+        return def;
     }
 }

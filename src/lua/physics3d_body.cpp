@@ -2,8 +2,10 @@
 #include "lua/scene.hpp"
 #include "lua/utils.hpp"
 #include "lua/protobuf.hpp"
+#include <darmok/glm_serialize.hpp>
+#include <darmok/shape_serialize.hpp>
 #include <darmok/physics3d.hpp>
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
 
 namespace darmok::physics3d
 {
@@ -72,20 +74,20 @@ namespace darmok::physics3d
         return body.removeListeners(LuaCollisionListenerFilter(table)) > 0;
     }
 
-    PhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const Shape& shape) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent1(LuaEntity& entity, const PhysicsShape& shape) noexcept
     {
         return entity.addComponent<PhysicsBody>(shape);
     }
 
-    PhysicsBody& LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const Shape& shape, MotionType motion) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent2(LuaEntity& entity, const PhysicsShape& shape, MotionType motion) noexcept
     {
         return entity.addComponent<PhysicsBody>(shape, motion);
     }
 
-    PhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const Shape& shape, MotionType motion, bool trigger) noexcept
+    PhysicsBody& LuaPhysicsBody::addEntityComponent3(LuaEntity& entity, const PhysicsShape& shape, MotionType motion, bool trigger) noexcept
     {
         auto def = PhysicsBody::createDefinition();
-        PhysicsShapeDefinitionWrapper{ *def.mutable_shape() }.setShape(shape);
+        *def.mutable_shape() = convert<protobuf::PhysicsShape>(shape);
         def.set_motion(motion);
         def.set_trigger(trigger);
         return entity.addComponent<PhysicsBody>(def);
@@ -126,22 +128,21 @@ namespace darmok::physics3d
         });
 
         LuaUtils::newProtobuf<ShapeDefinition>(lua, "Physics3dShape")
-            .protobufProperty<darmok::protobuf::Cube>("cube")
-            .protobufProperty<darmok::protobuf::Sphere>("sphere")
-            .protobufProperty<darmok::protobuf::Capsule>("capsule")
-            .protobufProperty<darmok::protobuf::Polygon>("polygon")
-            .protobufProperty<darmok::protobuf::BoundingBox>("bounding_box")
+            .convertProtobufProperty<Cube>("cube")
+            .convertProtobufProperty<Sphere>("sphere")
+            .convertProtobufProperty<Capsule>("capsule")
+            .convertProtobufProperty<Polygon>("polygon")
+            .convertProtobufProperty<BoundingBox>("bounding_box")
             ;
+
 		LuaUtils::newProtobuf<Definition>(lua, "Physics3dBodyDefinition")
             .protobufProperty<ShapeDefinition>("shape")
             ;
-        LuaUtils::newProtobuf<BaseCharacterDefinition>(lua, "Physics3dBaseCharacterDefinition")
-            .protobufProperty<ShapeDefinition>("shape")
-            .protobufProperty<darmok::protobuf::Vec3>("up")
-            .protobufProperty<darmok::protobuf::Plane>("supporting_plane")
-            ;
+
         LuaUtils::newProtobuf<CharacterDefinition>(lua, "Physics3dCharacterDefinition")
-            .protobufProperty<BaseCharacterDefinition>("base")
+            .convertProtobufProperty<PhysicsShape, protobuf::PhysicsShape>("shape")
+            .convertProtobufProperty<glm::vec3, darmok::protobuf::Vec3>("up")
+            .convertProtobufProperty<Plane>("supporting_plane")
             ;
 
         lua.new_usertype<PhysicsBody>("Physics3dBody", sol::no_constructor,

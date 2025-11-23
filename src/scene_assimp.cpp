@@ -165,15 +165,15 @@ namespace darmok
             TransformDefinition trans;
             trans.set_name(AssimpUtils::getString(assimpMesh->mName));
             trans.set_parent(entt::to_integral(entity));
-            *trans.mutable_scale() = protobuf::convert(glm::vec3{ 1.f });
+            *trans.mutable_scale() = convert<protobuf::Vec3>(glm::vec3{ 1.f });
             _scene.setComponent(childEntity, trans);
             entity = childEntity;
         }
 
         BoundingBox::Definition bounds;
         auto& assimpAabb = assimpMesh->mAABB;
-        *bounds.mutable_min() = protobuf::convert(AssimpUtils::convert(assimpAabb.mMin));
-        *bounds.mutable_max() = protobuf::convert(AssimpUtils::convert(assimpAabb.mMax));
+        *bounds.mutable_min() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMin));
+        *bounds.mutable_max() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMax));
         _scene.setComponent(entity, bounds);
 
         if (!meshPath.empty())
@@ -361,7 +361,7 @@ namespace darmok
 
         auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
         auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
-		auto pbColor = protobuf::convert(color);
+		auto pbColor = convert<protobuf::Color3>(color);
 
         if (assimpLight.mType == aiLightSource_POINT)
         {
@@ -402,7 +402,7 @@ namespace darmok
 			protobuf::AmbientLight light;
             intensity = AssimpUtils::getIntensity(assimpLight.mColorAmbient);
             color = AssimpUtils::convert(assimpLight.mColorAmbient * (1.F / intensity));
-            pbColor = protobuf::convert(color);
+            pbColor = convert<protobuf::Color3>(color);
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
             _scene.setComponent(entity, light);
@@ -555,16 +555,16 @@ namespace darmok
         aiColor4D baseColor;
         if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
         {
-            *matDef.mutable_base_color() = protobuf::convert(AssimpUtils::convert(baseColor));
+            *matDef.mutable_base_color() = convert<protobuf::Color>(AssimpUtils::convert(baseColor));
         }
         else if (assimpMat.Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
         {
-            *matDef.mutable_base_color() = protobuf::convert(AssimpUtils::convert(baseColor));
+            *matDef.mutable_base_color() = convert<protobuf::Color>(AssimpUtils::convert(baseColor));
         }
         aiColor3D specularColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_SPECULAR, specularColor) == AI_SUCCESS)
         {
-            *matDef.mutable_specular_color() = protobuf::convert(AssimpUtils::convert(specularColor));
+            *matDef.mutable_specular_color() = convert<protobuf::Color3>(AssimpUtils::convert(specularColor));
         }
         ai_real v = 0;
         if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
@@ -590,7 +590,7 @@ namespace darmok
         aiColor3D emissiveColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
         {
-            *matDef.mutable_emissive_color() = protobuf::convert(AssimpUtils::convert(emissiveColor));
+            *matDef.mutable_emissive_color() = convert<protobuf::Color3>(AssimpUtils::convert(emissiveColor));
         }
 
         if (_config.has_opacity())

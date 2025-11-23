@@ -43,7 +43,7 @@ namespace darmok
 
 	expected<Image, std::string> ConstTextureDefinitionWrapper::createImage(bx::AllocatorI& alloc) noexcept
 	{
-		auto size = protobuf::convert(_def.config().size());
+		auto size = convert<glm::uvec2>(_def.config().size());
 		Image img{ size, alloc, static_cast<bimg::TextureFormat::Enum>(_def.config().format()) };
 		auto result = img.setData(DataView{ _def.data() });
 		if (!result)
@@ -603,7 +603,7 @@ namespace darmok
 
 	glm::uvec2 Texture::getSize() const noexcept
 	{
-		return protobuf::convert(_config.size());
+		return convert<glm::uvec2>(_config.size());
 	}
 
 	Texture::Type Texture::getType() const noexcept

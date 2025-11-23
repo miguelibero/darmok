@@ -4,7 +4,7 @@
 #include "lua/glm.hpp"
 #include "lua/utils.hpp"
 
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
 #include <darmok/optional_ref.hpp>
 
 #include <vector>
@@ -42,7 +42,6 @@ namespace darmok::physics3d
 	class LuaCharacterController final
 	{
 	public:
-		using Shape = CharacterController::Shape;
 		using Definition = CharacterController::Definition;
 		static void bind(sol::state_view& lua) noexcept;
 	private:
@@ -53,7 +52,7 @@ namespace darmok::physics3d
 		static void setDelegate(CharacterController& ctrl, const sol::table& table) noexcept;
 
 		static CharacterController& addEntityComponent1(LuaEntity& entity, const Definition& def) noexcept;
-		static CharacterController& addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept;
+		static CharacterController& addEntityComponent2(LuaEntity& entity, const PhysicsShape& shape) noexcept;
 		static OptionalRef<CharacterController>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const CharacterController& ctrl, const std::shared_ptr<Scene>& scene) noexcept;
 	};

@@ -625,7 +625,7 @@ namespace darmok
         }
         else
         {
-			setOrtho(protobuf::convert(def.ortho_center()), def.near(), def.far());
+			setOrtho(convert<glm::vec2>(def.ortho_center()), def.near(), def.far());
         }
         return {};
     }

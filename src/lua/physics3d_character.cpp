@@ -1,9 +1,10 @@
-#include "lua/character.hpp"
+#include "lua/physics3d_character.hpp"
 #include "lua/scene.hpp"
 #include "lua/utils.hpp"
 #include "lua/physics3d.hpp"
 #include "lua/protobuf.hpp"
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok::physics3d
 {
@@ -57,7 +58,7 @@ namespace darmok::physics3d
 		return entity.addComponent<CharacterController>(def);
 	}
 
-	CharacterController& LuaCharacterController::addEntityComponent2(LuaEntity& entity, const Shape& shape) noexcept
+	CharacterController& LuaCharacterController::addEntityComponent2(LuaEntity& entity, const PhysicsShape& shape) noexcept
 	{
 		return entity.addComponent<CharacterController>(shape);
 	}
@@ -79,9 +80,13 @@ namespace darmok::physics3d
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Definition>(lua, "CharacterControllerDefinition")
-			.protobufProperty<protobuf::BaseCharacter>("base");
-		lua.new_usertype<CharacterController>("CharacterController", sol::no_constructor,
+		LuaUtils::newProtobuf<Definition>(lua, "Physics3dCharacterControllerDefinition")
+			.convertProtobufProperty<PhysicsShape, protobuf::PhysicsShape>("shape")
+			.convertProtobufProperty<glm::vec3, darmok::protobuf::Vec3>("up")
+			.convertProtobufProperty<Plane>("supporting_plane")
+			;
+
+		lua.new_usertype<CharacterController>("Physics3dCharacterController", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<CharacterController>::value),
 			"add_entity_component", sol::overload(
 				&LuaCharacterController::addEntityComponent1,

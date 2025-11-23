@@ -158,6 +158,7 @@ set(CORE_SOURCES
 )
 
 set(CORE_HEADERS
+  convert.hpp
   glm.hpp
   glm_serialize.hpp
   utils.hpp
@@ -406,19 +407,18 @@ endif()
 if(DARMOK_BUILD_JOLT)
   list(APPEND HEADERS
     physics3d.hpp
-    character.hpp
+    physics3d_character.hpp
     physics3d_debug.hpp
   )
   list(APPEND SOURCES
     physics3d_jolt.cpp
-    character_jolt.cpp
+    physics3d_character_jolt.cpp
     physics3d_debug_jolt.cpp
   )
-
   list(APPEND LUA_SOURCES
     physics3d_system.cpp
     physics3d_body.cpp
-    character.cpp
+    physics3d_character.cpp
     physics3d_debug.cpp
   )
 endif()

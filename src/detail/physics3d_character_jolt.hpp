@@ -2,7 +2,7 @@
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
 #include <darmok/optional_ref.hpp>
 #include <memory>
 #include <vector>

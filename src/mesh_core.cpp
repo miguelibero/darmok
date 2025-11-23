@@ -417,7 +417,7 @@ namespace darmok
 		exportData(vertexLayout, vertices, indices);
 		*def.mutable_vertices() = std::move(vertices).toString();
 		*def.mutable_indices() = std::move(indices).toString();
-		*def.mutable_bounds() = protobuf::convert(getBounds());
+		*def.mutable_bounds() = convert<protobuf::BoundingBox>(getBounds());
 		return def;
 	}
 
@@ -982,11 +982,11 @@ namespace darmok
 			}
 
 			vertices.push_back({
-				.position = protobuf::convert(v.position()),
-				.texCoord = protobuf::convert(v.tex_coord()),
-				.normal = protobuf::convert(v.normal()),
-				.tangent = protobuf::convert(v.tangent()),
-				.color = protobuf::convert(v.color()),
+				.position = convert<glm::vec3>(v.position()),
+				.texCoord = convert<glm::vec2>(v.tex_coord()),
+				.normal = convert<glm::vec3>(v.normal()),
+				.tangent = convert<glm::vec3>(v.tangent()),
+				.color = convert<Color>(v.color()),
 				.weights = std::move(weights)
 				});
 
@@ -995,22 +995,22 @@ namespace darmok
 	}
 
 	MeshData::MeshData(const CubeDefinition& def) noexcept
-		: MeshData(protobuf::convert(def.shape()), def.type())
+		: MeshData(convert<Cube>(def.shape()), def.type())
 	{
 	}
 
 	MeshData::MeshData(const SphereDefinition& def) noexcept
-		: MeshData(protobuf::convert(def.shape()), def.lod())
+		: MeshData(convert<Sphere>(def.shape()), def.lod())
 	{
 	}
 
 	MeshData::MeshData(const CapsuleDefinition& def) noexcept
-		: MeshData(protobuf::convert(def.shape()), def.lod())
+		: MeshData(convert<Capsule>(def.shape()), def.lod())
 	{
 	}
 
 	MeshData::MeshData(const RectangleDefinition& def) noexcept
-		: MeshData(protobuf::convert(def.shape()), def.type())
+		: MeshData(convert<Rectangle>(def.shape()), def.type())
 	{
 	}
 

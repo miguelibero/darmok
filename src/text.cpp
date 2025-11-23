@@ -230,10 +230,10 @@ namespace darmok
 
 			config.fixEndOfLine(pos, lineSize);
 
-			auto glyphSize = protobuf::convert(glyph->size());
-			auto glyphTexPos = protobuf::convert(glyph->texture_position());
-			auto glyphOffset = protobuf::convert(glyph->offset());
-			auto glyphOriginalSize = protobuf::convert(glyph->original_size());
+			auto glyphSize = convert<glm::uvec2>(glyph->size());
+			auto glyphTexPos = convert<glm::uvec2>(glyph->texture_position());
+			auto glyphOffset = convert<glm::vec2>(glyph->offset());
+			auto glyphOriginalSize = convert<glm::uvec2>(glyph->original_size());
 			glyphOffset += pos;
 
 			MeshData glyphMesh{ Rectangle{glyphSize, glm::vec2{glyphSize} *0.5F} };

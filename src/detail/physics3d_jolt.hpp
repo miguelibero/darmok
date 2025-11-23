@@ -10,7 +10,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene_fwd.hpp>
 #include <darmok/physics3d.hpp>
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/collection.hpp>
 
@@ -67,36 +67,35 @@ namespace darmok::physics3d
         float scale = 1.F;
     };
 
-    struct JoltUtils final
+    namespace JoltUtils
     {
         using ShapeDefinition = protobuf::PhysicsShape;
-		using Shape = PhysicsBody::Shape;
-        static JPH::Vec3 convert(const glm::vec3& v) noexcept;
-        static glm::vec3 convert(const JPH::Vec3& v) noexcept;
-        static JPH::Vec3 convertSize(const glm::vec3& v) noexcept;
-        static JPH::Vec4 convert(const glm::vec4& v) noexcept;
-        static glm::vec4 convert(const JPH::Vec4& v) noexcept;
-        static JPH::Mat44 convert(const glm::mat4& v) noexcept;
-        static glm::mat4 convert(const JPH::Mat44& v) noexcept;
-        static JPH::Quat convert(const glm::quat& v) noexcept;
-        static glm::quat convert(const JPH::Quat& v) noexcept;
-        static Color convert(const JPH::Color& v) noexcept;
-        static glm::vec2 convert(const JPH::Float2& v) noexcept;
-        static glm::vec3 convert(const JPH::Float3& v) noexcept;
-        static glm::vec4 convert(const JPH::Float4& v) noexcept;
-        static JPH::Triangle convert(const Triangle& v) noexcept;
-        static JPH::TriangleList convert(const Polygon& v) noexcept;
-        static JPH::Plane convert(const Plane& v) noexcept;
-        static JPH::AABox convert(const BoundingBox& v) noexcept;
-        static BoundingBox convert(const JPH::AABox& v) noexcept;
-        static JPH::RRayCast convert(const Ray& v) noexcept;
-        static RaycastHit convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept;
-        static expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
-        static JPH::ShapeRefC convert(const ShapeDefinition& shapeDef, float scale = 1.F);
-        static float getConvexRadius(const glm::vec3& size) noexcept;
+        JPH::Vec3 convert(const glm::vec3& v) noexcept;
+        glm::vec3 convert(const JPH::Vec3& v) noexcept;
+        JPH::Vec3 convertSize(const glm::vec3& v) noexcept;
+        JPH::Vec4 convert(const glm::vec4& v) noexcept;
+        glm::vec4 convert(const JPH::Vec4& v) noexcept;
+        JPH::Mat44 convert(const glm::mat4& v) noexcept;
+        glm::mat4 convert(const JPH::Mat44& v) noexcept;
+        JPH::Quat convert(const glm::quat& v) noexcept;
+        glm::quat convert(const JPH::Quat& v) noexcept;
+        Color convert(const JPH::Color& v) noexcept;
+        glm::vec2 convert(const JPH::Float2& v) noexcept;
+        glm::vec3 convert(const JPH::Float3& v) noexcept;
+        glm::vec4 convert(const JPH::Float4& v) noexcept;
+        JPH::Triangle convert(const Triangle& v) noexcept;
+        JPH::TriangleList convert(const Polygon& v) noexcept;
+        JPH::Plane convert(const Plane& v) noexcept;
+        JPH::AABox convert(const BoundingBox& v) noexcept;
+        BoundingBox convert(const JPH::AABox& v) noexcept;
+        JPH::RRayCast convert(const Ray& v) noexcept;
+        RaycastHit convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept;
+        expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
+        JPH::ShapeRefC convert(const PhysicsShape& shape, float scale = 1.F);
+        float getConvexRadius(const glm::vec3& size) noexcept;
 
         template<typename T>
-        static bool removeRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
+        bool removeRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
         {
             auto ptr = &elm;
             auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
@@ -325,7 +324,6 @@ namespace darmok::physics3d
         using Definition = protobuf::PhysicsBody;
 		using CharacterDefinition = protobuf::Character;
         using ShapeDefinition = PhysicsBody::ShapeDefinition;
-		using Shape = PhysicsBody::Shape;
         using MotionType = Definition::MotionType;
 
         PhysicsBodyImpl(const Definition& def) noexcept;
@@ -338,7 +336,7 @@ namespace darmok::physics3d
 
         OptionalRef<PhysicsSystem> getSystem() const noexcept;
 
-        Shape getShape() const noexcept;
+        PhysicsShape getShape() const noexcept;
         BoundingBox getLocalBounds() const;
         BoundingBox getWorldBounds() const;
 
@@ -399,6 +397,6 @@ namespace darmok::physics3d
         std::optional<std::variant<Definition, CharacterDefinition>> _initDef;
         JPH::Ref<JPH::Character> _character;
         float _maxSepDistance;
-        std::optional<Shape> _shape;
+        std::optional<PhysicsShape> _shape;
     };
 }

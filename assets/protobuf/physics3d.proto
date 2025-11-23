@@ -42,20 +42,17 @@ message PhysicsSystem {
     map<string,uint32> layers = 8;
 };
 
-message BaseCharacter {
+message Character {
     PhysicsShape shape = 1;
     darmok.protobuf.Vec3 up = 2;
     darmok.protobuf.Plane supporting_plane = 3;
     float max_slope_angle = 4;
     uint32 layer = 5;
-}
 
-message Character {
-    BaseCharacter base = 1;
-    float mass = 2;
-    float friction = 3;
-    float gravity_factor = 4;
-    float max_separation_distance = 5;
+    float mass = 6;
+    float friction = 7;
+    float gravity_factor = 8;
+    float max_separation_distance = 9;
 }
 
 message CharacterController {
@@ -64,10 +61,15 @@ message CharacterController {
         CollideWithBackFaces = 1;
     }
 
-    BaseCharacter base = 1;
-    float max_strength = 2;
-    BackFaceMode back_face_mode = 3;
-    float padding = 4;
-    float penetration_recovery_speed = 5;
-    float predictive_contact_distance = 6;
+    PhysicsShape shape = 1;
+    darmok.protobuf.Vec3 up = 2;
+    darmok.protobuf.Plane supporting_plane = 3;
+    float max_slope_angle = 4;
+    uint32 layer = 5;
+
+    float max_strength = 6;
+    BackFaceMode back_face_mode = 7;
+    float padding = 8;
+    float penetration_recovery_speed = 9;
+    float predictive_contact_distance = 10;
 }

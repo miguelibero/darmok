@@ -22,7 +22,13 @@ namespace darmok
         glm::vec2 size;
         glm::vec2 origin;
 
+        using Definition = protobuf::Rectangle;
+
         Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
+		Rectangle(const Definition& def) noexcept;
+
+		operator Definition() const noexcept;
+
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] std::vector<Line> toLines() const noexcept;
 
@@ -32,10 +38,6 @@ namespace darmok
         [[nodiscard]] Rectangle operator*(float scale) const noexcept;
 
         [[nodiscard]] bool operator==(const Rectangle& other) const = default;
-
-        // serialization
-        using Definition = protobuf::Rectangle;
-        expected<void, std::string> load(const Definition& def);
     };
 
     struct BoundingBox;
@@ -45,8 +47,13 @@ namespace darmok
         glm::vec3 size;
         glm::vec3 origin;
 
+        using Definition = protobuf::Cube;
+
         Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         explicit Cube(const BoundingBox& bbox) noexcept;
+		Cube(const Definition& def) noexcept;
+
+		operator Definition() const noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
 
@@ -57,11 +64,6 @@ namespace darmok
 
         [[nodiscard]] static const Cube& standard() noexcept;
         [[nodiscard]] bool empty() const noexcept;
-
-        // serialization
-        using Definition = protobuf::Cube;
-        expected<void, std::string> load(const Definition& def);
-
     };
 
     struct TextureTriangle;
@@ -71,8 +73,13 @@ namespace darmok
         using Vertices = std::array<glm::vec3, 3>;
         Vertices vertices;
 
+        using Definition = protobuf::Triangle;
+
         Triangle(const glm::vec3& vert1, const glm::vec3& vert2, const glm::vec3& vert3) noexcept;
         Triangle(const Vertices& vertices = {}) noexcept;
+		Triangle(const Definition& def) noexcept;
+		operator Definition() const noexcept;
+
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] glm::vec3 getNormal() const;
@@ -107,7 +114,11 @@ namespace darmok
         Triangles triangles;
         glm::vec3 origin;
 
+        using Definition = protobuf::Polygon;
+
         Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
+		Polygon(const Definition& def) noexcept;
+		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         Polygon& operator*=(float scale) noexcept;
@@ -121,8 +132,12 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
+        using Definition = protobuf::Sphere;
+
         Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
         Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
+		Sphere(const Definition& def) noexcept;
+		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] static const Sphere& standard() noexcept;
@@ -131,10 +146,6 @@ namespace darmok
         [[nodiscard]] Sphere operator*(float scale) const noexcept;
 
         [[nodiscard]] bool operator==(const Sphere& other) const = default;
-
-        // serialization
-        using Definition = protobuf::Sphere;
-        expected<void, std::string> load(const Definition& def);
     };
 
     struct BoundingBox;
@@ -144,8 +155,12 @@ namespace darmok
         glm::vec3 normal;
         float distance;
 
+        using Definition = protobuf::Plane;
+
         Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
+		Plane(const Definition& def) noexcept;
         explicit Plane(const Triangle& tri) noexcept;
+		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 
         [[nodiscard]] Line getNormalLine() const noexcept;
@@ -167,10 +182,6 @@ namespace darmok
         bool isInFront(const BoundingBox& bbox) const noexcept;
         bool isInFront(const Sphere& sphere) const noexcept;
         bool contains(const glm::vec3& point) const noexcept;
-
-        // serialization
-        using Definition = protobuf::Plane;
-        expected<void, std::string> load(const Definition& def);
     };
 
     struct DARMOK_EXPORT Grid final
@@ -198,7 +209,11 @@ namespace darmok
         float radius;
         glm::vec3 origin;
 
+        using Definition = protobuf::Capsule;
+
         Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
+		Capsule(const Definition& def) noexcept;
+		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] static const Capsule& standard() noexcept;
 
@@ -206,10 +221,6 @@ namespace darmok
         [[nodiscard]] Capsule operator*(float scale) const noexcept;
 
         [[nodiscard]] bool operator==(const Capsule& other) const = default;
-
-        // serialization
-        using Definition = protobuf::Capsule;
-        expected<void, std::string> load(const Definition& def);
     };
 
     struct DARMOK_EXPORT NormalIntersection final
@@ -347,14 +358,18 @@ namespace darmok
         glm::vec3 min;
         glm::vec3 max;
 
+        using Definition = protobuf::BoundingBox;
+
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;
+		BoundingBox(const Definition& def) noexcept;
         explicit BoundingBox(const Cube& cube) noexcept;
         explicit BoundingBox(const Sphere& sphere) noexcept;
         explicit BoundingBox(const Capsule& capsule) noexcept;
         explicit BoundingBox(const Polygon& poly) noexcept;
         explicit BoundingBox(const Triangle& tri) noexcept;
         explicit BoundingBox(const Frustum& frust) noexcept;
+		operator Definition() const noexcept;
 
         [[nodiscard]] bool operator==(const BoundingBox& other) const = default;
 
@@ -389,10 +404,6 @@ namespace darmok
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] glm::mat4 getOrtho() const noexcept;
-
-        // serialization
-        using Definition = protobuf::BoundingBox;
-        expected<void, std::string> load(const Definition& def);
     };
 }
 

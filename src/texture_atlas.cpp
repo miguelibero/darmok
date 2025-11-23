@@ -112,8 +112,8 @@ namespace darmok
 		Bounds getBounds(const Element& elm) noexcept
 		{
 			return {
-				protobuf::convert(elm.original_size()),
-				protobuf::convert(elm.offset())
+				convert<glm::uvec2>(elm.original_size()),
+				convert<glm::vec2>(elm.offset())
 			};
 		}
 
@@ -130,18 +130,18 @@ namespace darmok
 			
 			for (auto& pos : positions)
 			{
-				*elm.add_positions() = protobuf::convert(pos * bounds.size);
+				*elm.add_positions() = convert<protobuf::Uvec2>(pos * bounds.size);
 				auto texCoord = pos;
 				texCoord.y = texCoord.y ? 0 : 1;
 				texCoord = bounds.offset + texCoord * bounds.size;
-				*elm.add_texture_coords() = protobuf::convert(texCoord);
+				*elm.add_texture_coords() = convert<protobuf::Uvec2>(texCoord);
 			}
 			for (auto& idx : indices)
 			{
 				elm.add_indices(idx);
 			}
-			*elm.mutable_texture_position() = protobuf::convert(bounds.offset);
-			auto protoSize = protobuf::convert(bounds.size);
+			*elm.mutable_texture_position() = convert<protobuf::Uvec2>(bounds.offset);
+			auto protoSize = convert<protobuf::Uvec2>(bounds.size);
 			*elm.mutable_size() = protoSize;
 			*elm.mutable_original_size() = protoSize;
 
@@ -155,16 +155,16 @@ namespace darmok
 			std::vector<VertexIndex> totalIndices;
 			totalIndices.reserve(elm.indices_size() * config.amount.x * config.amount.y);
 
-			const glm::vec2 fatlasSize(textureSize);
+			const glm::vec2 fatlasSize{ textureSize };
 
-			auto pivot = protobuf::convert(elm.pivot());
-			auto originalSize = protobuf::convert(elm.original_size());
-			auto baseOffset = config.offset - glm::vec3(pivot * glm::vec2(originalSize), 0);
+			auto pivot = convert<glm::vec2>(elm.pivot());
+			auto originalSize = convert<glm::uvec2>(elm.original_size());
+			auto baseOffset = config.offset - glm::vec3{ pivot * glm::vec2{originalSize}, 0 };
 			// don't think this is needed since it's already factored into the position values
 			// baseOffset += glm::vec3(offset, 0);
-			auto amountStep = glm::vec2(originalSize);
-			auto amountOffsetMax = (glm::vec2(config.amount) - glm::vec2(1)) * amountStep * 0.5F;
-			auto amountOffset = -glm::vec3(amountOffsetMax, 0.F);
+			auto amountStep = glm::vec2{ originalSize };
+			auto amountOffsetMax = (glm::vec2{ config.amount } - glm::vec2{ 1 }) * amountStep * 0.5F;
+			auto amountOffset = -glm::vec3{ amountOffsetMax, 0.F };
 
 			uint32_t vertexIndex = 0;
 			for (; amountOffset.x <= amountOffsetMax.x; amountOffset.x += amountStep.x)
@@ -175,8 +175,8 @@ namespace darmok
 					auto elmOffset = baseOffset + amountOffset;
 					for (uint32_t i = 0; i < vertexAmount; i++)
 					{
-						auto texPos = protobuf::convert(elm.positions()[i]);
-						auto texCoord = protobuf::convert(elm.texture_coords()[i]);
+						auto texPos = convert<glm::uvec2>(elm.positions()[i]);
+						auto texCoord = convert<glm::uvec2>(elm.texture_coords()[i]);
 						auto pos = (elmOffset + glm::vec3(texPos.x, float(originalSize.y) - texPos.y, 0)) * config.scale;
 						writer.write(bgfx::Attrib::Position, vertexIndex + i, pos);
 						auto ftexCoord = glm::vec2(texCoord) / fatlasSize;
@@ -211,19 +211,19 @@ namespace darmok
 			{
 				return false;
 			}
-			if (protobuf::convert(elm.positions()[0]) != glm::uvec2(elm.size().x(), 0))
+			if (convert<glm::uvec2>(elm.positions()[0]) != glm::uvec2{ elm.size().x(), 0 })
 			{
 				return false;
 			}
-			if (protobuf::convert(elm.positions()[1]) != protobuf::convert(elm.size()))
+			if (convert<glm::uvec2>(elm.positions()[1]) != convert<glm::uvec2>(elm.size()))
 			{
 				return false;
 			}
-			if (protobuf::convert(elm.positions()[2]) != glm::uvec2(0, elm.size().y()))
+			if (convert<glm::uvec2>(elm.positions()[2]) != glm::uvec2{ 0, elm.size().y() })
 			{
 				return false;
 			}
-			if (protobuf::convert(elm.positions()[3]) != glm::uvec2(0))
+			if (convert<glm::uvec2>(elm.positions()[3]) != glm::uvec2{ 0 })
 			{
 				return false;
 			}
@@ -265,15 +265,15 @@ namespace darmok
 			{
 				for (const auto& pos : TextureAtlasDetail::readUvec2List(xmlVertices.text().get()))
 				{
-					*elm.add_positions() = protobuf::convert(pos);
+					*elm.add_positions() = convert<protobuf::Uvec2>(pos);
 				}
 			}
 			else
 			{
-				*elm.add_positions() = protobuf::convert(glm::uvec2(size.x(), 0));
+				*elm.add_positions() = convert<protobuf::Uvec2>(glm::uvec2{ size.x(), 0 });
 				*elm.add_positions() = size;
-				*elm.add_positions() = protobuf::convert(glm::uvec2(0, size.y()));
-				*elm.add_positions() = protobuf::convert(glm::uvec2(0));
+				*elm.add_positions() = convert<protobuf::Uvec2>(glm::uvec2{ 0, size.y() });
+				*elm.add_positions() = convert<protobuf::Uvec2>(glm::uvec2{ 0 });
 			}
 
 			auto xmlVerticesUV = xml.child("verticesUV");
@@ -281,7 +281,7 @@ namespace darmok
 			{
 				for (const auto& texCoord : TextureAtlasDetail::readUvec2List(xmlVerticesUV.text().get()))
 				{
-					*elm.add_texture_coords() = protobuf::convert(texCoord);
+					*elm.add_texture_coords() = convert<protobuf::Uvec2>(texCoord);
 				}
 			}
 			else
@@ -344,7 +344,7 @@ namespace darmok
 			}
 			if (!isRect(elm))
 			{
-				auto convertUvec2 = [](const protobuf::Uvec2& v) { return protobuf::convert(v); };
+				auto convertUvec2 = convert<glm::uvec2, protobuf::Uvec2>;
 
 				if (elm.positions_size() > 0)
 				{

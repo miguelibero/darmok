@@ -80,7 +80,7 @@ namespace darmok
 					size.x = size.y = sizeConfig;
 				}
 			}
-			*def.mutable_font_size() = protobuf::convert(size);
+			*def.mutable_font_size() = convert<protobuf::Uvec2>(size);
 		}
 
 	};
@@ -439,10 +439,10 @@ namespace darmok
 
 			auto& glyph = *data.atlas.add_elements();
 			glyph.set_name(StringUtils::toUtf8(chr));
-			*glyph.mutable_size() = protobuf::convert(glyphSize);
-			*glyph.mutable_texture_position() = protobuf::convert(pos);
-			*glyph.mutable_offset() = protobuf::convert(glpyhOffset);
-			*glyph.mutable_original_size() = protobuf::convert(glyphOriginalSize);
+			*glyph.mutable_size() = convert<protobuf::Uvec2>(glyphSize);
+			*glyph.mutable_texture_position() = convert<protobuf::Uvec2>(pos);
+			*glyph.mutable_offset() = convert<protobuf::Vec2>(glpyhOffset);
+			*glyph.mutable_original_size() = convert<protobuf::Uvec2>(glyphOriginalSize);
 
 			pos.x += glyphSize.x;
 		}

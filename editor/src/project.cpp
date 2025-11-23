@@ -361,7 +361,7 @@ namespace darmok::editor
 
         auto camTrans = Transform::createDefinition();
         camTrans.set_name("Main Camera");
-        *camTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 1.f, -10.f });
+        *camTrans.mutable_position() = convert(glm::vec3{ 0.f, 1.f, -10.f });
         scene.setComponent(camEntity, camTrans);
 
         auto lightsEntity = scene.createEntity();
@@ -385,9 +385,9 @@ namespace darmok::editor
         auto dirLightTrans = Transform::createDefinition();
         dirLightTrans.set_name("Directional Light");
         dirLightTrans.set_parent(entt::to_integral(lightsEntity));
-        *dirLightTrans.mutable_position() = protobuf::convert(glm::vec3{ 0.f, 3.f, 0.f });
+        *dirLightTrans.mutable_position() = convert(glm::vec3{ 0.f, 3.f, 0.f });
         auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
-        *dirLightTrans.mutable_rotation() = protobuf::convert(rot);
+        *dirLightTrans.mutable_rotation() = convert(rot);
         scene.setComponent(dirLightEntity, dirLightTrans);
 
         auto mesh = Mesh::createSource();

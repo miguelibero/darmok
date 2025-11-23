@@ -2,7 +2,7 @@
 
 #include <darmok/glm.hpp>
 #include <darmok/color.hpp>
-#include <darmok/protobuf.hpp>
+#include <darmok/convert.hpp>
 #include <darmok/protobuf/math.pb.h>
 
 #include <ostream>
@@ -12,31 +12,115 @@
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 
-
 namespace darmok
 {
-	namespace protobuf
+	template<>
+	struct Converter<protobuf::Uvec2, glm::uvec2>
 	{
-		Uvec2 convert(const glm::uvec2& v);
-		Vec2 convert(const glm::vec2& v);
-		Vec3 convert(const glm::vec3& v);
-		Vec4 convert(const glm::vec4& v);
-		Quat convert(const glm::quat& v);
-		Mat3 convert(const glm::mat3& v);
-		Mat4 convert(const glm::mat4& v);
-		Color convert(const darmok::Color& v);
-		Color3 convert(const darmok::Color3& v);
+		static protobuf::Uvec2 run(const glm::uvec2& v);
+	};
 
-		glm::uvec2 convert(const Uvec2& v);
-		glm::vec2 convert(const Vec2& v);
-		glm::vec3 convert(const Vec3& v);
-		glm::vec4 convert(const Vec4& v);
-		glm::quat convert(const Quat& v);
-		glm::mat3 convert(const Mat3& v);
-		glm::mat4 convert(const Mat4& v);
-		darmok::Color convert(const Color& v);
-		darmok::Color3 convert(const Color3& v);
-	}
+	template<>
+	struct Converter<protobuf::Vec2, glm::vec2>
+	{
+		static protobuf::Vec2 run(const glm::vec2& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Vec3, glm::vec3>
+	{
+		static protobuf::Vec3 run(const glm::vec3& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Vec4, glm::vec4>
+	{
+		static protobuf::Vec4 run(const glm::vec4& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Quat, glm::quat>
+	{
+		static protobuf::Quat run(const glm::quat& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Mat3, glm::mat3>
+	{
+		static protobuf::Mat3 run(const glm::mat3& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Mat4, glm::mat4>
+	{
+		static protobuf::Mat4 run(const glm::mat4& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Color, Color>
+	{
+		static protobuf::Color run(const Color& v);
+	};
+
+	template<>
+	struct Converter<protobuf::Color3, Color3>
+	{
+		static protobuf::Color3 run(const Color3& v);
+	};
+
+	template<>
+	struct Converter<glm::uvec2, protobuf::Uvec2>
+	{
+		static glm::uvec2 run(const protobuf::Uvec2& v);
+	};
+
+	template<>
+	struct Converter<glm::vec2, protobuf::Vec2>
+	{
+		static glm::vec2 run(const protobuf::Vec2& v);
+	};
+
+	template<>
+	struct Converter<glm::vec3, protobuf::Vec3>
+	{
+		static glm::vec3 run(const protobuf::Vec3& v);
+	};
+
+	template<>
+	struct Converter<glm::vec4, protobuf::Vec4>
+	{
+		static glm::vec4 run(const protobuf::Vec4& v);
+	};
+
+	template<>
+	struct Converter<glm::quat, protobuf::Quat>
+	{
+		static glm::quat run(const protobuf::Quat& v);
+	};
+
+	template<>
+	struct Converter<glm::mat3, protobuf::Mat3>
+	{
+		static glm::mat3 run(const protobuf::Mat3& v);
+	};
+
+	template<>
+	struct Converter<glm::mat4, protobuf::Mat4>
+	{
+		static glm::mat4 run(const protobuf::Mat4& v);
+	};
+
+	template<>
+	struct Converter<Color, protobuf::Color>
+	{
+		static Color run(const protobuf::Color& v);
+	};
+
+	template<>
+	struct Converter<Color3, protobuf::Color3>
+	{
+		static Color3 run(const protobuf::Color3& v);
+	};
 }
 
 namespace glm

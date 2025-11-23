@@ -26,20 +26,20 @@ namespace darmok
         for (size_t i = 0; i < _assimpMesh.mNumVertices; ++i)
         {
 			auto& v = *vertices.Add();
-			*v.mutable_color() = protobuf::convert(Colors::white());
+			*v.mutable_color() = convert<protobuf::Color>(Colors::white());
 
-			*v.mutable_position() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mVertices[i]));
-            *v.mutable_normal() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mNormals[i]));
+			*v.mutable_position() = convert<protobuf::Vec3>(AssimpUtils::convert(_assimpMesh.mVertices[i]));
+            *v.mutable_normal() = convert<protobuf::Vec3>(AssimpUtils::convert(_assimpMesh.mNormals[i]));
             if (_assimpMesh.mTangents != nullptr)
             {
-                *v.mutable_tangent() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mTangents[i]));
+                *v.mutable_tangent() = convert<protobuf::Vec3>(AssimpUtils::convert(_assimpMesh.mTangents[i]));
             }
             for (size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; j++)
             {
                 if (_assimpMesh.mColors[j])
                 {
                     auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::Color0 + j);
-					*v.mutable_color() = protobuf::convert(AssimpUtils::convert(_assimpMesh.mColors[j][i]));
+					*v.mutable_color() = convert<protobuf::Color>(AssimpUtils::convert(_assimpMesh.mColors[j][i]));
                 }
             }
             for (size_t j = 0; j < AI_MAX_NUMBER_OF_TEXTURECOORDS; j++)
@@ -48,7 +48,7 @@ namespace darmok
                 {
                     auto attrib = (bgfx::Attrib::Enum)(bgfx::Attrib::TexCoord0 + j);
                     glm::vec2 texCoord = AssimpUtils::convert(_assimpMesh.mTextureCoords[j][i]);
-                    *v.mutable_tex_coord() = protobuf::convert(texCoord);
+                    *v.mutable_tex_coord() = convert<protobuf::Vec2>(texCoord);
                 }
             }
         }

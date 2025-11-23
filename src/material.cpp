@@ -124,7 +124,7 @@ namespace darmok
 	{
 		Definition def;
 		def.mutable_program()->set_standard(Program::Standard::Forward);
-		*def.mutable_base_color() = protobuf::convert(Colors::white());
+		*def.mutable_base_color() = convert<protobuf::Color>(Colors::white());
 		def.set_opacity_type(Material::Definition::Opaque);
 		def.set_shininess(32.0f);
 		return def;
@@ -146,15 +146,15 @@ namespace darmok
 		auto mat = std::make_shared<Material>();
 	
 		mat->programDefines = ProgramDefines(def->program_defines().begin(), def->program_defines().end());
-		mat->baseColor = protobuf::convert(def->base_color());
-		mat->emissiveColor = protobuf::convert(def->emissive_color());
+		mat->baseColor = convert<Color>(def->base_color());
+		mat->emissiveColor = convert<Color3>(def->emissive_color());
 		mat->metallicFactor = def->metallic_factor();
 		mat->roughnessFactor = def->roughness_factor();
 		mat->normalScale = def->normal_scale();
 		mat->occlusionStrength = def->occlusion_strength();
 		mat->multipleScattering = def->multiple_scattering();
 		mat->whiteFurnanceFactor = def->white_furnance_factor();
-		mat->specularColor = protobuf::convert(def->specular_color());
+		mat->specularColor = convert<Color3>(def->specular_color());
 		mat->shininess = def->shininess();
 		mat->opacityType = def->opacity_type();
 		mat->twoSided = def->twosided();

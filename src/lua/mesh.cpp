@@ -35,13 +35,13 @@ namespace darmok
 			.protobufProperty<protobuf::CubeMeshSource>("cube")
 			.protobufProperty<protobuf::SphereMeshSource>("sphere")
 			.protobufProperty<protobuf::CapsuleMeshSource>("capsule")
-			.protobufProperty<protobuf::RectangleMeshSource>("rectangle");
+			.protobufProperty<protobuf::RectangleMeshSource>("rectangle")
+			;
 
 		auto meshDef = LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition")
 			.protobufProperty<protobuf::VertexLayout>("layout")
-			.convertProtobufProperty<BoundingBox, protobuf::BoundingBox>("bounds",
-				[](const protobuf::BoundingBox& proto) { return protobuf::convert(proto); },
-				[](const BoundingBox& bounds) { return protobuf::convert(bounds); });
+			.convertProtobufProperty<BoundingBox>("bounds")
+			;
 		
 		meshDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
 		{

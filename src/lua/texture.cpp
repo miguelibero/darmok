@@ -70,7 +70,7 @@ namespace darmok
 	Texture::Config LuaTexture::createSizeConfig(const VarLuaTable<glm::uvec2>& size) noexcept
 	{
 		Texture::Config config;		
-		*config.mutable_size() = protobuf::convert(LuaGlm::tableGet(size));
+		*config.mutable_size() = convert<protobuf::Uvec2>(LuaGlm::tableGet(size));
 		return config;
 	};
 

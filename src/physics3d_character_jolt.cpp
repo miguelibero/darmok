@@ -1,6 +1,6 @@
-#include "detail/character_jolt.hpp"
+#include "detail/physics3d_character_jolt.hpp"
 #include "detail/physics3d_jolt.hpp"
-#include <darmok/character.hpp>
+#include <darmok/physics3d_character.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/shape_serialize.hpp>
@@ -266,14 +266,14 @@ namespace darmok::physics3d
         auto joltTrans = getSystemImpl().loadTransform(trans);
 
         const JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
-        settings->mMaxSlopeAngle = _def.base().max_slope_angle();
+        settings->mMaxSlopeAngle = _def.max_slope_angle();
 		settings->mMaxStrength = _def.max_strength();
-        settings->mShape = JoltUtils::convert(_def.base().shape(), joltTrans.scale);
+        settings->mShape = JoltUtils::convert(convert<PhysicsShape>(_def.shape()), joltTrans.scale);
         settings->mBackFaceMode = (JPH::EBackFaceMode)_def.back_face_mode();
         settings->mCharacterPadding = _def.padding();
         settings->mPenetrationRecoverySpeed = _def.penetration_recovery_speed();
         settings->mPredictiveContactDistance = _def.predictive_contact_distance();
-        settings->mSupportingVolume = JoltUtils::convert(darmok::protobuf::convert(_def.base().supporting_plane()));
+        settings->mSupportingVolume = JoltUtils::convert(convert<Plane>(_def.supporting_plane()));
 
         auto userData = (uint64_t)_ctrl.ptr();
         _jolt = new JPH::CharacterVirtual(settings, joltTrans.position, joltTrans.rotation, userData, joltSystem.ptr());
@@ -320,7 +320,7 @@ namespace darmok::physics3d
 
         JPH::CharacterVirtual::ExtendedUpdateSettings updateSettings;
 
-        auto layer = _def.base().layer();
+        auto layer = _def.layer();
 
         auto gravity = -_jolt->GetUp() * joltSystem->GetGravity().Length();
         _jolt->ExtendedUpdate(deltaTime, gravity, updateSettings,
@@ -341,10 +341,10 @@ namespace darmok::physics3d
     {        
     }
 
-    CharacterController::CharacterController(const Shape& shape) noexcept
+    CharacterController::CharacterController(const PhysicsShape& shape) noexcept
     {
         auto def = createDefinition();
-        PhysicsShapeDefinitionWrapper{ *def.mutable_base()->mutable_shape() }.setShape(shape);
+        *def.mutable_shape() = convert<protobuf::PhysicsShape>(shape);
         _impl = std::make_unique<CharacterControllerImpl>(def);
     }
 
@@ -378,7 +378,11 @@ namespace darmok::physics3d
     CharacterController::Definition CharacterController::createDefinition() noexcept
     {
         Definition def;
-		*def.mutable_base() = PhysicsBody::createBaseCharacterDefinition();
+        *def.mutable_shape() = PhysicsBody::createCharacterShape();
+        *def.mutable_supporting_plane() = PhysicsBody::createSupportingPlaneDefinition();
+        def.mutable_up()->set_y(1.0F);
+        def.set_max_slope_angle(glm::radians(50.F));
+
         def.set_max_strength(100.0f);
         def.set_back_face_mode(Definition::CollideWithBackFaces);
         def.set_padding(0.02f);

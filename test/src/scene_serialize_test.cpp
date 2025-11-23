@@ -250,7 +250,7 @@ TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")
         child2EntityId = sceneWrap.createEntity();
         auto child2 = Transform::createDefinition();
         child2.set_parent(parentEntityId);
-        *child2.mutable_position() = protobuf::convert(glm::vec3(42, 0, 666));
+        *child2.mutable_position() = convert(glm::vec3(42, 0, 666));
         sceneWrap.setComponent(child2EntityId, child2);
     }
 

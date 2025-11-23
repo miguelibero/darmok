@@ -69,7 +69,7 @@ namespace darmok
     expected<void, std::string> PointLight::load(const Definition& def)
     {
 		setIntensity(def.intensity());
-		setColor(protobuf::convert(def.color()));
+		setColor(convert<Color3>(def.color()));
 		setRange(def.range());
 		setShadowType(def.shadow_type());
         return {};
@@ -79,7 +79,7 @@ namespace darmok
     {
         Definition def;
         def.set_intensity(1.f);
-        *def.mutable_color() = protobuf::convert(Colors::white3());
+        *def.mutable_color() = convert<protobuf::Color3>(Colors::white3());
         return def;
     }
 
@@ -126,7 +126,7 @@ namespace darmok
     expected<void, std::string> DirectionalLight::load(const Definition& def)
     {
         setIntensity(def.intensity());
-        setColor(protobuf::convert(def.color()));
+        setColor(convert<Color3>(def.color()));
         setShadowType(def.shadow_type());
         return {};
     }
@@ -135,7 +135,7 @@ namespace darmok
     {
         Definition def;
         def.set_intensity(1.f);
-        *def.mutable_color() = protobuf::convert(Colors::white3());
+        *def.mutable_color() = convert<protobuf::Color3>(Colors::white3());
         return def;
     }
 
@@ -170,7 +170,7 @@ namespace darmok
     expected<void, std::string> AmbientLight::load(const Definition& def)
     {
         setIntensity(def.intensity());
-        setColor(protobuf::convert(def.color()));
+        setColor(convert<Color3>(def.color()));
         return {};
     }
 
@@ -178,7 +178,7 @@ namespace darmok
     {
         Definition def;
         def.set_intensity(1.f);
-        *def.mutable_color() = protobuf::convert(Colors::white3());
+        *def.mutable_color() = convert<protobuf::Color3>(Colors::white3());
         return def;
     }
 
@@ -261,7 +261,7 @@ namespace darmok
     expected<void, std::string> SpotLight::load(const Definition& def)
     {
         setIntensity(def.intensity());
-        setColor(protobuf::convert(def.color()));
+        setColor(convert<Color3>(def.color()));
         setRange(def.range());
         setInnerConeAngle(def.inner_cone_angle());
         setConeAngle(def.cone_angle());
@@ -273,7 +273,7 @@ namespace darmok
     {
         Definition def;
         def.set_intensity(1.f);
-        *def.mutable_color() = protobuf::convert(Colors::white3());
+        *def.mutable_color() = convert<protobuf::Color3>(Colors::white3());
         return def;
     }
 

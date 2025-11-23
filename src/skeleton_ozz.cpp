@@ -458,7 +458,7 @@ namespace darmok
 
     glm::vec2 OzzSkeletalAnimatorAnimationState::getBlendPosition() const noexcept
     {
-        return protobuf::convert(_def.blend_position());
+        return convert<glm::vec2>(_def.blend_position());
     }
 
     OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, std::vector<AnimationState>&& states) noexcept

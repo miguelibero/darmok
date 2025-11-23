@@ -6,6 +6,7 @@
 #include <darmok/material.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {
@@ -109,9 +110,9 @@ namespace darmok
 			.protobufProperty<protobuf::ProgramRef>("program")
 			.protobufProperty<protobuf::MaterialTexture>("textures")
 			.protobufProperty<protobuf::UniformValue>("uniform_values")
-			.protobufProperty<protobuf::Color>("base_color")
-			.protobufProperty<protobuf::Color3>("emissive_color")
-			.protobufProperty<protobuf::Color3>("specular_color");
+			.convertProtobufProperty<Color, protobuf::Color>("base_color")
+			.convertProtobufProperty<Color3, protobuf::Color3>("emissive_color")
+			.convertProtobufProperty<Color3, protobuf::Color3>("specular_color");
 		matDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
 			{
 				return scene.getAsset<Material::Definition>(path);

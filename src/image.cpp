@@ -430,7 +430,7 @@ namespace darmok
 	Image::TextureConfig Image::getTextureConfig() const noexcept
 	{
 		TextureConfig config;
-		*config.mutable_size() = protobuf::convert(getSize());
+		*config.mutable_size() = convert<protobuf::Uvec2>(getSize());
 		config.set_format(Texture::Format(getFormat()));
 		config.set_type(Texture::Type(getTextureType()));
 		config.set_depth(getDepth());

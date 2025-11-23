@@ -229,7 +229,7 @@ namespace darmok
         auto size = 4 * sizeof(Rml::byte) * dimensions.x * dimensions.y;
         Texture::Config config;
         config.set_format(Texture::Definition::RGBA8);
-        *config.mutable_size() = protobuf::convert(glm::uvec2(dimensions.x, dimensions.y));
+        *config.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ dimensions.x, dimensions.y });
 
         DataView data(source.data(), size);
 

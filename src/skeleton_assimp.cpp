@@ -1115,7 +1115,7 @@ namespace darmok
             }
             auto& joint = *_def.add_joints();
             joint.set_name(boneName);
-            *joint.mutable_inverse_bind_pose() = protobuf::convert(AssimpUtils::convert(bone->mOffsetMatrix));
+            *joint.mutable_inverse_bind_pose() = convert<protobuf::Mat4>(AssimpUtils::convert(bone->mOffsetMatrix));
         }
         return {};
     }

@@ -200,7 +200,7 @@ namespace darmok::editor
         if (create)
         {
             sphereSrc.set_lod(32);
-            sphere = protobuf::convert(Sphere{});
+            sphere = convert(Sphere{});
         }
         if (ImguiUtils::beginFrame("Sphere"))
         {
@@ -231,7 +231,7 @@ namespace darmok::editor
         auto& cube = *cubeSrc.mutable_shape();
         if (create)
         {
-            cube = protobuf::convert(Cube{});
+            cube = convert(Cube{});
         }
         if (ImguiUtils::beginFrame("Cube"))
         {
@@ -261,7 +261,7 @@ namespace darmok::editor
         if (create)
         {
             capSrc.set_lod(32);
-            capsule = protobuf::convert(Capsule{});
+            capsule = convert(Capsule{});
         }
         auto changed = false;
         if (ImguiUtils::beginFrame("Capsule"))
@@ -291,7 +291,7 @@ namespace darmok::editor
         auto& rect = *rectSrc.mutable_shape();
         if (create)
         {
-            rect = protobuf::convert(Rectangle{});
+            rect = convert(Rectangle{});
         }
         auto changed = false;
         if (ImguiUtils::beginFrame("Rectangle"))

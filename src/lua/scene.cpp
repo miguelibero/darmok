@@ -18,8 +18,8 @@
 #endif
 
 #ifdef DARMOK_JOLT
-#include "physics3d.hpp"
-#include "character.hpp"
+#include "lua/physics3d.hpp"
+#include "lua/physics3d_character.hpp"
 #endif
 
 namespace darmok

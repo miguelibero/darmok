@@ -13,15 +13,16 @@ namespace darmok
 	{
 		if (def.has_mat4())
 		{
-			*this = protobuf::convert(def.mat4());
+			*this = convert<glm::mat4>(def.mat4());
 		}
 		else if (def.has_mat3())
 		{
-			*this = protobuf::convert(def.mat3());
+			*this = convert<glm::mat3>(def.mat3());
 		}
 		else if (def.has_vec4())
 		{
-			*this = protobuf::convert(def.vec4());
+			*this = convert<glm::vec4>(def.vec4());
+			*this = convert<glm::vec4>(def.vec4());
 		}
 	}
 

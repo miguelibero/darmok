@@ -2,6 +2,7 @@
 
 #include "lua/lua.hpp"
 #include <darmok/protobuf.hpp>
+#include <darmok/convert.hpp>
 
 namespace darmok
 {
@@ -217,6 +218,16 @@ namespace darmok
 			);
 
 			return *this;
+		}
+
+		template<typename V, typename P = typename V::Definition>
+		LuaProtobufBinding& convertProtobufProperty(std::string_view name) noexcept
+			requires std::is_base_of_v<Message, P> && IsMutuallyConvertible<V, P>
+		{
+			return convertProtobufProperty<V, P>(name,
+				convert<V, P>,
+				convert<P, V>
+			);
 		}
     };
 

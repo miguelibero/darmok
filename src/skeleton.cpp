@@ -297,7 +297,7 @@ namespace darmok
             auto len = glm::length(pos);
             for (auto& anim : _def->animations())
             {
-                auto blendPos = protobuf::convert(anim.blend_position());
+                auto blendPos = convert<glm::vec2>(anim.blend_position());
                 auto lenAnim2 = glm::length(blendPos);
                 auto p = lenAnim + lenAnim2;
                 glm::vec2 a{ (len - lenAnim) * p, glm::angle(pos, animPos) };
@@ -310,7 +310,7 @@ namespace darmok
             auto a = pos - animPos;
             for (auto& anim : _def->animations())
             {
-                auto b = protobuf::convert(anim.blend_position()) - animPos;
+                auto b = convert<glm::vec2>(anim.blend_position()) - animPos;
                 parts.emplace_back(a, b);
             }
         }
@@ -340,7 +340,7 @@ namespace darmok
 
         for (auto& anim : _def->animations())
         {
-            auto w = calcBlendWeight(pos, protobuf::convert(anim.blend_position()));
+            auto w = calcBlendWeight(pos, convert<glm::vec2>(anim.blend_position()));
             weights.push_back(w);
         }
 
@@ -466,7 +466,7 @@ namespace darmok
         if (itr != json.end())
         {
             auto vec = itr->get<glm::vec2>();
-            *_def->mutable_blend_position() = protobuf::convert(vec);
+            *_def->mutable_blend_position() = convert<protobuf::Vec2>(vec);
         }
         itr = json.find("animation");
         if (itr != json.end())
@@ -648,7 +648,7 @@ namespace darmok
         _joints.reserve(def.joints_size());
         for (auto& joint : def.joints())
         {
-            _joints.emplace_back(joint.name(), protobuf::convert(joint.inverse_bind_pose()));
+            _joints.emplace_back(joint.name(), convert<glm::mat4>(joint.inverse_bind_pose()));
         }
     }
 

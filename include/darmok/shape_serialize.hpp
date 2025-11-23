@@ -1,29 +1,106 @@
 #pragma once
 
 #include <darmok/shape.hpp>
-#include <darmok/protobuf.hpp>
+#include <darmok/convert.hpp>
 #include <darmok/protobuf/shape.pb.h>
 
 namespace darmok
 {
-    namespace protobuf
+    /*
+    template<>
+    struct Converter<protobuf::BoundingBox, BoundingBox>
     {
-        darmok::BoundingBox convert(const protobuf::BoundingBox& v);
-        darmok::Cube convert(const protobuf::Cube& v);
-        darmok::Sphere convert(const protobuf::Sphere& v);
-        darmok::Capsule convert(const protobuf::Capsule& v);
-        darmok::Rectangle convert(const protobuf::Rectangle& v);
-        darmok::Plane convert(const protobuf::Plane& v);
-        darmok::Triangle convert(const protobuf::Triangle& v);
-        darmok::Polygon convert(const protobuf::Polygon& v);
+        static protobuf::BoundingBox run(const BoundingBox& v);
+    };
 
-        protobuf::BoundingBox convert(const darmok::BoundingBox& v);
-        protobuf::Cube convert(const darmok::Cube& v);
-        protobuf::Sphere convert(const darmok::Sphere& v);
-        protobuf::Capsule convert(const darmok::Capsule& v);
-        protobuf::Rectangle convert(const darmok::Rectangle& v);
-        protobuf::Plane convert(const darmok::Plane& v);
-        protobuf::Triangle convert(const darmok::Triangle& v);
-        protobuf::Polygon convert(const darmok::Polygon& v);
-    }
+    template<>
+    struct Converter<protobuf::Cube, Cube>
+    {
+        static protobuf::Cube run(const Cube& v);
+    };
+
+    template<>
+    struct Converter<protobuf::Sphere, Sphere>
+    {
+        static protobuf::Sphere run(const Sphere& v);
+    };
+
+    template<>
+    struct Converter<protobuf::Capsule, Capsule>
+    {
+        static protobuf::Capsule run(const Capsule& v);
+    };
+
+    template<>
+    struct Converter<protobuf::Rectangle, Rectangle>
+    {
+        static protobuf::Rectangle run(const Rectangle& v);
+    };
+
+    template<>
+    struct Converter<protobuf::Plane, Plane>
+    {
+        static protobuf::Plane run(const Plane& v);
+    };
+
+    template<>
+    struct Converter<protobuf::Triangle, Triangle>
+    {
+        static protobuf::Triangle run(const Triangle& v);
+    };
+
+    template<>
+    struct Converter<protobuf::Polygon, Polygon>
+    {
+        static protobuf::Polygon run(const Polygon& v);
+    };
+
+    template<>
+    struct Converter<BoundingBox, protobuf::BoundingBox>
+    {
+        static BoundingBox run(const protobuf::BoundingBox& v);
+    };
+
+    template<>
+    struct Converter<Cube, protobuf::Cube>
+    {
+        static Cube run(const protobuf::Cube& v);
+    };
+
+    template<>
+    struct Converter<Sphere, protobuf::Sphere>
+    {
+        static Sphere run(const protobuf::Sphere& v);
+    };
+
+    template<>
+    struct Converter<Capsule, protobuf::Capsule>
+    {
+        static Capsule run(const protobuf::Capsule& v);
+    };
+
+    template<>
+    struct Converter<Rectangle, protobuf::Rectangle>
+    {
+        static Rectangle run(const protobuf::Rectangle& v);
+    };
+
+    template<>
+    struct Converter<Plane, protobuf::Plane>
+    {
+        static Plane run(const protobuf::Plane& v);
+    };
+
+    template<>
+    struct Converter<Triangle, protobuf::Triangle>
+    {
+        static Triangle run(const protobuf::Triangle& v);
+    };
+
+    template<>
+    struct Converter<Polygon, protobuf::Polygon>
+    {
+        static Polygon run(const protobuf::Polygon& v);
+    };
+    */
 }

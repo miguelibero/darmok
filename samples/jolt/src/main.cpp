@@ -99,7 +99,7 @@ namespace
 				Cube doorShape{ {1.5f, 2.f, 0.2f}, {0, 1.f, 0} };
 				auto def = PhysicsBody::createDefinition();
 				def.set_trigger(true);
-				*def.mutable_shape()->mutable_cube() = darmok::protobuf::convert(doorShape);
+				*def.mutable_shape()->mutable_cube() = darmok::convert(doorShape);
 				def.set_motion(PhysicsBody::Definition::Kinematic);
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, def);
 				_scene->addComponent<Transform>(doorEntity)
@@ -134,7 +134,7 @@ namespace
 				_characterCtrl->setDelegate(*this);
 
 				auto charDef = PhysicsBody::createCharacterDefinition();
-				*charDef.mutable_base()->mutable_shape()->mutable_capsule() = darmok::protobuf::convert(playerShape);
+				*charDef.mutable_base()->mutable_shape()->mutable_capsule() = darmok::convert(playerShape);
 				
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, charDef);
 				_characterBody->addListener(*this);

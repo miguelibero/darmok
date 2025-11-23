@@ -4,6 +4,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/convert.hpp>
 #include <darmok/protobuf/physics3d.pb.h>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
@@ -25,6 +26,8 @@ namespace darmok
 
 namespace darmok::physics3d
 {
+    using PhysicsShape = std::variant<Cube, Sphere, Capsule, Polygon, BoundingBox>;   
+
     enum class GroundState
     {
         Grounded,
@@ -101,22 +104,12 @@ namespace darmok::physics3d
 
     struct ConstPhysicsShapeDefinitionWrapper
     {
-        using Shape = std::variant<Cube,Sphere,Capsule,Polygon,BoundingBox>;
         using Definition = protobuf::PhysicsShape;
 		using CharacterDefinition = protobuf::Character;
         ConstPhysicsShapeDefinitionWrapper(const Definition& def) noexcept;
         glm::vec3 getOrigin() const noexcept;
-        Shape getShape() const noexcept;
     private:
         const Definition& _def;
-    };
-
-	struct PhysicsShapeDefinitionWrapper : public ConstPhysicsShapeDefinitionWrapper
-    {
-        PhysicsShapeDefinitionWrapper(Definition& def) noexcept;
-        void setShape(const Shape& shape) noexcept;
-    private:
-        Definition& _def;
     };
 
     struct ConstPhysicsBodyDefinitionWrapper
@@ -209,19 +202,18 @@ namespace darmok::physics3d
     {
     public:
 		using Definition = protobuf::PhysicsBody;
-        using CharacterDefinition = protobuf::Character;
-        using BaseCharacterDefinition = protobuf::BaseCharacter;
+        using CharacterDefinition = protobuf::Character;        
         using MotionType = Definition::MotionType;
         using ShapeDefinition = protobuf::PhysicsShape;
-		using Shape = ConstPhysicsShapeDefinitionWrapper::Shape;
 
-        PhysicsBody(const Shape& shape, MotionType motion = Definition::Dynamic) noexcept;
+        PhysicsBody(const PhysicsShape& shape, MotionType motion = Definition::Dynamic) noexcept;
         PhysicsBody(const Definition& def = createDefinition()) noexcept;
         PhysicsBody(const CharacterDefinition& def) noexcept;
         ~PhysicsBody() noexcept;
 
         static Definition createDefinition() noexcept;
-        static BaseCharacterDefinition createBaseCharacterDefinition() noexcept;
+        static ShapeDefinition createCharacterShape() noexcept;
+		static Plane::Definition createSupportingPlaneDefinition() noexcept;
         static CharacterDefinition createCharacterDefinition() noexcept;
 
         PhysicsBodyImpl& getImpl() noexcept;
@@ -229,7 +221,7 @@ namespace darmok::physics3d
 
         OptionalRef<PhysicsSystem> getSystem() const noexcept;
 
-        Shape getShape() const noexcept;
+        PhysicsShape getShape() const noexcept;
         MotionType getMotionType() const noexcept;
         BoundingBox getLocalBounds() const;
         BoundingBox getWorldBounds() const;
@@ -268,4 +260,20 @@ namespace darmok::physics3d
     private:
         std::unique_ptr<PhysicsBodyImpl> _impl;
     };
+}
+
+namespace darmok
+{
+    template<>
+    struct Converter<physics3d::PhysicsShape, physics3d::protobuf::PhysicsShape>
+    {
+        static physics3d::PhysicsShape run(const physics3d::protobuf::PhysicsShape& v);
+    };
+
+    template<>
+    struct Converter<physics3d::protobuf::PhysicsShape, physics3d::PhysicsShape>
+    {
+        static physics3d::protobuf::PhysicsShape run(const physics3d::PhysicsShape& v);
+    };
+
 }

@@ -24,9 +24,9 @@ namespace darmok
     glm::mat4 ConstTransformDefinitionWrapper::getLocalMatrix() noexcept
     {
         return Math::transform(
-            protobuf::convert(_def.position()),
-            protobuf::convert(_def.rotation()),
-            protobuf::convert(_def.scale())
+            convert<glm::vec3>(_def.position()),
+            convert<glm::quat>(_def.rotation()),
+            convert<glm::vec3>(_def.scale())
         );
     }
 
@@ -42,9 +42,9 @@ namespace darmok
         glm::quat rot;
         glm::vec3 scale;
         Math::decompose(mat, pos, rot, scale);
-        *_def.mutable_position() = protobuf::convert(pos);
-        *_def.mutable_rotation() = protobuf::convert(rot);
-        *_def.mutable_scale() = protobuf::convert(scale);
+        *_def.mutable_position() = convert<protobuf::Vec3>(pos);
+        *_def.mutable_rotation() = convert<protobuf::Quat>(rot);
+        *_def.mutable_scale() = convert<protobuf::Vec3>(scale);
         return *this;
     }
 
@@ -392,9 +392,9 @@ namespace darmok
     expected<void, std::string> Transform::load(const Definition& def, IComponentLoadContext& ctxt)
     {
 		setName(def.name());
-        setPosition(protobuf::convert(def.position()));
-        setScale(protobuf::convert(def.scale()));
-        setRotation(protobuf::convert(def.rotation()));
+        setPosition(convert<glm::vec3>(def.position()));
+        setRotation(convert<glm::quat>(def.rotation()));
+        setScale(convert<glm::vec3>(def.scale()));
         auto parentEntity = ctxt.getEntity(def.parent());
         auto parentTrans = ctxt.getScene().getComponent<Transform>(parentEntity);
         setParent(parentTrans);
@@ -404,7 +404,7 @@ namespace darmok
     Transform::Definition Transform::createDefinition() noexcept
     {
         Transform::Definition def;
-        *def.mutable_scale() = protobuf::convert(glm::vec3{ 1.f });
+        *def.mutable_scale() = convert<protobuf::Vec3>(glm::vec3{ 1.f });
         return def;
     }
 }
