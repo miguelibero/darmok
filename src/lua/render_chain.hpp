@@ -38,9 +38,9 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static ScreenSpaceRenderPass& addChainStep1(RenderChain& chain, const std::shared_ptr<Program>& prog);
-        static ScreenSpaceRenderPass& addChainStep2(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name);
-        static ScreenSpaceRenderPass& addChainStep3(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name, int priority);
-        static ScreenSpaceRenderPass& addChainStep4(RenderChain& chain, const std::shared_ptr<Program>& prog, int priority);
+        static std::reference_wrapper<ScreenSpaceRenderPass> addChainStep1(RenderChain& chain, const std::shared_ptr<Program>& prog);
+        static std::reference_wrapper<ScreenSpaceRenderPass> addChainStep2(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name);
+        static std::reference_wrapper<ScreenSpaceRenderPass> addChainStep3(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name, int priority);
+        static std::reference_wrapper<ScreenSpaceRenderPass> addChainStep4(RenderChain& chain, const std::shared_ptr<Program>& prog, int priority);
     };
 }

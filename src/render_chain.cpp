@@ -457,6 +457,7 @@ namespace darmok
 
 		const Rectangle screen{ glm::uvec2{2} };
 		_mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
+		return {};
 	}
 
 	expected<void, std::string> ScreenSpaceRenderPass::shutdown() noexcept
@@ -470,6 +471,7 @@ namespace darmok
 		_viewId.reset();
 		_mesh.reset();
 		_chain.reset();
+		return {};
 	}
 
 	expected<void, std::string> ScreenSpaceRenderPass::updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept
@@ -480,6 +482,7 @@ namespace darmok
 		{
 			write->configureView(_viewId.value());
 		}
+		return {};
 	}
 
 	expected<bgfx::ViewId, std::string> ScreenSpaceRenderPass::renderReset(bgfx::ViewId viewId) noexcept
@@ -495,6 +498,7 @@ namespace darmok
 	expected<void, std::string> ScreenSpaceRenderPass::update(float deltaTime) noexcept
 	{
 		_basicUniforms.update(deltaTime);
+		return {};
 	}
 
 	ScreenSpaceRenderPass& ScreenSpaceRenderPass::setTexture(const std::string& name, uint8_t stage, const std::shared_ptr<Texture>& texture) noexcept

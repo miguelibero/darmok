@@ -32,6 +32,9 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
+	template<typename T>
+	using unexpected = darmok::unexpected<T>;
+
 	class JoltSampleAppDelegate final : public IAppDelegate, public ICollisionListener, public ICharacterDelegate, public IImguiRenderer
 	{
 	public:
@@ -40,10 +43,10 @@ namespace
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
-			_scene = _app.addComponent<SceneAppComponent>().getScene();
-			_scene->addSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
+			_scene = _app.tryAddComponent<SceneAppComponent>()->getScene();
+			_scene->tryAddSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
 
 			auto prog = StandardProgramLoader::load(Program::Standard::ForwardBasic);
 
@@ -57,21 +60,22 @@ namespace
 				_cam = _scene->addComponent<Camera>(camEntity)
 					.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
 
-				_cam->addComponent<ForwardRenderer>();
-				_cam->addComponent<LightingRenderComponent>();
+				_cam->tryAddComponent<ForwardRenderer>();
+				_cam->tryAddComponent<LightingRenderComponent>();
 
-				_freeLook = _scene->addSceneComponent<FreelookController>(*_cam);
+
+				_freeLook = _scene->tryAddSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDER
 				PhysicsDebugConfig physicsDebugconfig;
 #ifdef DARMOK_FREETYPE
 				physicsDebugconfig.render.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf").value();
 #endif
-				_physicsDebugRender = _cam->addComponent<PhysicsDebugRenderer>(physicsDebugconfig);
+				_physicsDebugRender = _cam->tryAddComponent<PhysicsDebugRenderer>(physicsDebugconfig);
 				_physicsDebugRender->setEnabled(false);
 #endif
 			}
 
-			_imgui = _app.addComponent<ImguiAppComponent>(*this);
+			_imgui = _app.tryAddComponent<ImguiAppComponent>(*this);
 			ImGui::SetCurrentContext(_imgui->getContext());
 
 			{ // lights
@@ -98,7 +102,7 @@ namespace
 				Cube doorShape{ {1.5f, 2.f, 0.2f}, {0, 1.f, 0} };
 				auto def = PhysicsBody::createDefinition();
 				def.set_trigger(true);
-				*def.mutable_shape()->mutable_cube() = darmok::convert(doorShape);
+				*def.mutable_shape() = darmok::convert<PhysicsBody::ShapeDefinition, PhysicsShape>(doorShape);
 				def.set_motion(PhysicsBody::Definition::Kinematic);
 				_doorBody = _scene->addComponent<PhysicsBody>(doorEntity, def);
 				_scene->addComponent<Transform>(doorEntity)
@@ -133,7 +137,7 @@ namespace
 				_characterCtrl->setDelegate(*this);
 
 				auto charDef = PhysicsBody::createCharacterDefinition();
-				*charDef.mutable_base()->mutable_shape()->mutable_capsule() = darmok::convert(playerShape);
+				*charDef.mutable_shape() = darmok::convert<PhysicsBody::ShapeDefinition, PhysicsShape>(playerShape);
 				
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, charDef);
 				_characterBody->addListener(*this);
@@ -142,6 +146,8 @@ namespace
 				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, Colors::red());
 				_characterTrans = _scene->addComponent<Transform>(playerEntity);
 			}
+
+			return {};
 		}
 
 		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override
@@ -236,17 +242,17 @@ namespace
 			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
 		};
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			if (_freeLook->isEnabled())
 			{
 				_imgui->setInputEnabled(false);
-				return;
+				return {};
 			}
 			_imgui->setInputEnabled(true);
 			if (_imguiMouse)
 			{
-				return;
+				return {};
 			}
 			auto& mouse = _app.getInput().getMouse();
 			if (mouse.getButton(MouseButton::Left))
@@ -260,7 +266,7 @@ namespace
 					_characterCtrl->setPosition(ray * dist.value());
 				}
 				_characterCtrl->setLinearVelocity(glm::vec3{ 0 });
-				return;
+				return {};
 			}
 
 			auto& kb = _app.getInput().getKeyboard();
@@ -282,6 +288,8 @@ namespace
 			{
 				_characterCtrl->setLinearVelocity(dir);
 			}
+
+			return {};
 		}
 
 	private:

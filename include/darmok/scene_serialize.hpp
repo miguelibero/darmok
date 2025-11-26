@@ -13,6 +13,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <fmt/format.h>
 
 namespace darmok
 {
@@ -504,5 +505,17 @@ namespace darmok
         Config _config;
         OptionalRef<IProgramSourceLoader> _progLoader;
     };
+}
 
+namespace fmt
+{
+    template<>
+    struct formatter<darmok::Entity> : public formatter<entt::entt_traits<darmok::Entity>::entity_type>
+    {
+        template <typename FormatContext>
+        auto format(const darmok::Entity& v, FormatContext& ctx) const
+        {
+            return formatter<entt::entt_traits<darmok::Entity>::entity_type>::format(entt::to_integral(v), ctx);
+        }
+    };
 }

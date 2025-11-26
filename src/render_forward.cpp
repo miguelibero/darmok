@@ -24,7 +24,12 @@ namespace darmok
 		_cam = cam;
 		_scene = scene;
 		_app = app;
-		_materials = app.getOrAddComponent<MaterialAppComponent>();
+		auto result = app.getOrAddComponent<MaterialAppComponent>();
+		if (!result)
+		{
+			return unexpected<std::string>{std::move(result).error()};
+		}
+		_materials = result.value().get();
 		return {};
 	}
 

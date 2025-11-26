@@ -48,7 +48,7 @@ namespace darmok
 		SceneDefinitionWrapper sceneWrapper{ *scene };
 		return sceneWrapper.forEachChild(_entity, [&callback, &scene](auto entity, auto& trans) -> bool {
 			auto result = callback(LuaEntityDefinition{ entity, scene }, trans);
-			return LuaUtils::checkResult("for each entity child", result);
+			return LuaUtils::checkResult<bool>(result, "for each entity child");
 		});
 	}
 
@@ -58,7 +58,7 @@ namespace darmok
 		SceneDefinitionWrapper sceneWrapper{ *scene };
 		return sceneWrapper.forEachParent(_entity, [&callback, &scene](auto entity, auto& trans) -> bool {
 			auto result = callback(LuaEntityDefinition{ entity, scene }, trans);
-			return LuaUtils::checkResult("for each entity parent", result);
+			return LuaUtils::checkResult<bool>(result, "for each entity parent");
 		});
 	}
 
@@ -279,7 +279,7 @@ namespace darmok
 				entityDef = ConstSceneDefinitionWrapper{ *sceneDef }.getEntity(compAny);
 			}
 			auto result = func(LuaEntityDefinition{ entityDef, _sceneDef }, LuaEntity{ entity, _scene });
-			LuaUtils::throwResult(result, "scene loader component listener callback");
+			LuaUtils::checkResult(result, "scene loader component listener callback");
 		});
 	}
 

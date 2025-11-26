@@ -175,9 +175,9 @@ namespace darmok
 		);
 	}
 
-	LightingRenderComponent& LuaLightingRenderComponent::addCameraComponent(Camera& cam) noexcept
+	std::reference_wrapper<LightingRenderComponent> LuaLightingRenderComponent::addCameraComponent(Camera& cam)
 	{
-		return cam.addComponent<LightingRenderComponent>();
+		return LuaUtils::unwrapExpected(cam.addComponent<LightingRenderComponent>());
 	}
 
 	OptionalRef<LightingRenderComponent>::std_t LuaLightingRenderComponent::getCameraComponent(Camera& cam) noexcept

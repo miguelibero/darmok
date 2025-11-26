@@ -539,7 +539,11 @@ namespace darmok::physics3d
     {
         if (_scene)
         {
-            shutdown();
+            auto result = shutdown();
+            if(!result)
+            {
+                return unexpected{ std::move(result).error() };
+			}
         }
         _scene = scene;
         JPH::Factory::sInstance = new JPH::Factory();
@@ -568,6 +572,7 @@ namespace darmok::physics3d
         {
             charCtrl.getImpl().init(charCtrl, _system);
         }
+		return {};
     }
 
     expected<void, std::string> PhysicsSystemImpl::shutdown() noexcept
@@ -592,6 +597,8 @@ namespace darmok::physics3d
         JPH::UnregisterTypes();
         delete JPH::Factory::sInstance;
         JPH::Factory::sInstance = nullptr;
+
+        return {};
     }
 
     void PhysicsSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept
@@ -1111,12 +1118,12 @@ namespace darmok::physics3d
     
     expected<void, std::string> PhysicsSystem::init(Scene& scene, App& app) noexcept
     {
-        _impl->init(scene, app);
+        return _impl->init(scene, app);
     }
     
     expected<void, std::string> PhysicsSystem::shutdown() noexcept
     {
-        _impl->shutdown();
+        return _impl->shutdown();
     }
     
     expected<void, std::string> PhysicsSystem::update(float deltaTime) noexcept

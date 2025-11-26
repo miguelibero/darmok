@@ -9,11 +9,13 @@
 #include <darmok/shape.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/math.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/stream.hpp>
 
 #include "detail/rmlui.hpp"
 #include <glm/gtc/type_ptr.hpp>
@@ -660,7 +662,7 @@ namespace darmok
             auto result = shutdown();
             if(!result)
             {
-                return unexpected(result.error());
+                return unexpected{ std::move(result).error() };
 			}
         }
 
@@ -687,7 +689,7 @@ namespace darmok
             _frameBuffer.emplace(size, false);
         }
         _context->EnableMouseCursor(true);
-        return {}
+        return {};
     }
 
     expected<void, std::string> RmluiCanvasImpl::shutdown() noexcept
@@ -1753,13 +1755,20 @@ namespace darmok
         app.getInput().getKeyboard().addListener(*this);
         app.getInput().getMouse().addListener(*this);
 
+		std::vector<std::string> errors;
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
-            canvas.getImpl().init(app, *this);
+            auto result = canvas.getImpl().init(app, *this);
+            if(!result)
+            {
+                errors.push_back(std::move(result).error());
+			}
         }
 
         scene.onConstructComponent<RmluiCanvas>().connect<&RmluiSceneComponentImpl::onCanvasConstructed>(*this);
         scene.onDestroyComponent<RmluiCanvas>().connect<&RmluiSceneComponentImpl::onCanvasDestroyed>(*this);
+
+		return StringUtils::joinExpectedErrors(errors);
     }
 
     expected<void, std::string> RmluiSceneComponentImpl::update(float deltaTime) noexcept
@@ -1767,7 +1776,7 @@ namespace darmok
         getRmluiSystem().update(deltaTime);
         if (!_scene)
         {
-            return;
+            return unexpected<std::string>{ "scene not initialized" };
         }
         auto entities = _scene->getUpdateEntities<RmluiCanvas>();
         for (auto entity : entities)
@@ -1775,6 +1784,8 @@ namespace darmok
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
             canvas.getImpl().update(deltaTime);
         }
+
+        return {};
     }
 
     expected<bgfx::ViewId, std::string> RmluiSceneComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
@@ -1798,13 +1809,18 @@ namespace darmok
             _app->getInput().getMouse().removeListener(*this);
         }
 
+        std::vector<std::string> errors;
         if (_scene)
         {
             _scene->onConstructComponent<Camera>().disconnect<&RmluiSceneComponentImpl::onCanvasConstructed>(*this);
             _scene->onDestroyComponent<Camera>().disconnect<&RmluiSceneComponentImpl::onCanvasDestroyed>(*this);
             for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
             {
-                canvas.getImpl().shutdown();
+                auto result = canvas.getImpl().shutdown();
+                if(!result)
+                {
+                    errors.push_back(result.error());
+				}
             }
         }
 
@@ -1818,6 +1834,8 @@ namespace darmok
         _scene.reset();
 
         Rml::ReleaseTextures();
+
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     RmluiSystemInterface& RmluiSceneComponentImpl::getRmluiSystem() noexcept
@@ -1871,7 +1889,11 @@ namespace darmok
         }
         if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
         {
-            canvas->getImpl().init(_app.value(), *this);
+            auto result = canvas->getImpl().init(_app.value(), *this);
+            if(!result)
+            {
+                StreamUtils::log(fmt::format("rmlui canvas init {}: {}", entt::to_integral(entity), result.error()), true);
+			}
         }
     }
 
@@ -1883,7 +1905,11 @@ namespace darmok
         }
         if (auto canvas = _scene->getComponent<RmluiCanvas>(entity))
         {
-            canvas->getImpl().shutdown();
+            auto result = canvas->getImpl().shutdown();
+            if (!result)
+            {
+                StreamUtils::log(fmt::format("rmlui canvas shutdown {}: {}", entity, result.error()), true);
+            }
         }
     }
 
@@ -2135,22 +2161,24 @@ namespace darmok
 
     expected<void, std::string> RmluiSceneComponent::update(float deltaTime) noexcept
     {
-        _impl->update(deltaTime);
+        return _impl->update(deltaTime);
     }
 
-    void RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> RmluiRendererImpl::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
+        return {};
     }
 
-    void RmluiRendererImpl::shutdown() noexcept
+    expected<void, std::string> RmluiRendererImpl::shutdown() noexcept
     {
         _cam.reset();
         _scene.reset();
+        return {};
     }
 
-    void RmluiRendererImpl::render() noexcept
+    expected<void, std::string> RmluiRendererImpl::render() noexcept
     {
         auto encoder = bgfx::begin();
         for (auto entity : _cam->getEntities<RmluiCanvas>())
@@ -2159,9 +2187,10 @@ namespace darmok
             canvas.getImpl().render(*encoder);
         }
         bgfx::end(encoder);
+        return {};
     }
 
-    bgfx::ViewId RmluiRendererImpl::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string > RmluiRendererImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
@@ -2171,48 +2200,46 @@ namespace darmok
         return viewId;
     }
 
-    void RmluiRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
             canvas.getImpl().beforeRenderView(viewId, encoder);
         }
+        return {};
     }
 
     RmluiRenderer::RmluiRenderer() noexcept
-        : _impl(std::make_unique<RmluiRendererImpl>())
+        : _impl{ std::make_unique<RmluiRendererImpl>() }
     {
     }
 
-    RmluiRenderer::~RmluiRenderer() noexcept
+    RmluiRenderer::~RmluiRenderer() noexcept = default;
+
+    expected<void, std::string> RmluiRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-        // left empty to get the forward declaration of the impl working
+        return _impl->init(cam, scene, app);
     }
 
-    void RmluiRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> RmluiRenderer::shutdown() noexcept
     {
-        _impl->init(cam, scene, app);
+        return _impl->shutdown();
     }
 
-    void RmluiRenderer::shutdown() noexcept
+    expected<void, std::string> RmluiRenderer::render() noexcept
     {
-        _impl->shutdown();
+        return _impl->render();
     }
 
-    void RmluiRenderer::render() noexcept
-    {
-        _impl->render();
-    }
-
-    bgfx::ViewId RmluiRenderer::renderReset(bgfx::ViewId viewId) noexcept
+    expected<bgfx::ViewId, std::string> RmluiRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
         return _impl->renderReset(viewId);
     }
 
-    void RmluiRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        _impl->beforeRenderView(viewId, encoder);
+        return _impl->beforeRenderView(viewId, encoder);
     }
 
 }

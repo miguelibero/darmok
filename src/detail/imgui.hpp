@@ -42,11 +42,11 @@ namespace darmok
 		ImguiAppComponentImpl(IImguiRenderer& renderer, float fontSize = 18.0f);
 		~ImguiAppComponentImpl() noexcept;
 
-		void init(App& app);
-		void shutdown() noexcept;
-		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-		void render() noexcept;
-		void update(float dt) noexcept;
+		expected<void, std::string> init(App& app) noexcept;
+		expected<void, std::string> shutdown() noexcept;
+		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
+		expected<void, std::string> render() noexcept;
+		expected<void, std::string> update(float dt) noexcept;
 		ImGuiContext* getContext() noexcept;
 
 		bool getInputEnabled() const noexcept;

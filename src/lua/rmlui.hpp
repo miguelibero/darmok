@@ -207,7 +207,7 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static RmluiSceneComponent& addSceneComponent(Scene& scene) noexcept;
+        static std::reference_wrapper<RmluiSceneComponent> addSceneComponent(Scene& scene) noexcept;
         static OptionalRef<RmluiSceneComponent>::std_t getSceneComponent(Scene& scene) noexcept;
     };
 
@@ -216,7 +216,7 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static RmluiRenderer& addCameraComponent(Camera& cam) noexcept;
+        static std::reference_wrapper<RmluiRenderer> addCameraComponent(Camera& cam) noexcept;
         static OptionalRef<RmluiRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
 
         static void loadFont1(const std::string& path) noexcept;

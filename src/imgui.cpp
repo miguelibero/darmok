@@ -367,12 +367,9 @@ namespace darmok
 		IMGUI_CHECKVERSION();
 	}
 
-	ImguiAppComponentImpl::~ImguiAppComponentImpl() noexcept
-	{
-		shutdown();
-	}
+	ImguiAppComponentImpl::~ImguiAppComponentImpl() noexcept = default;
 
-	void ImguiAppComponentImpl::init(App& app)
+	expected<void, std::string> ImguiAppComponentImpl::init(App& app) noexcept
 	{
 		_app = app;
 		ImGui::SetAllocatorFunctions(memAlloc, memFree, &app.getAssets().getAllocator());
@@ -401,9 +398,11 @@ namespace darmok
 		_renderer.imguiSetup();
 		_renderPass.emplace(_renderer, _imgui);
 		ImGui::SetCurrentContext(nullptr);
+
+		return {};
 	}
 
-	bgfx::ViewId ImguiAppComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
+	expected<bgfx::ViewId, std::string> ImguiAppComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		if (_renderPass)
 		{
@@ -412,15 +411,16 @@ namespace darmok
 		return viewId;
 	}
 
-	void ImguiAppComponentImpl::render() noexcept
+	expected<void, std::string> ImguiAppComponentImpl::render() noexcept
 	{
 		if (_renderPass)
 		{
 			_renderPass->render();
 		}
+		return {};
 	}
 
-	void ImguiAppComponentImpl::shutdown() noexcept
+	expected<void, std::string> ImguiAppComponentImpl::shutdown() noexcept
 	{
 		_app.reset();
 		_renderPass.reset();
@@ -430,13 +430,15 @@ namespace darmok
 			ImGui::DestroyContext(_imgui);
 			_imgui = nullptr;
 		}
+		return {};
 	}
 
-	void ImguiAppComponentImpl::update(float dt) noexcept
+	expected<void, std::string> ImguiAppComponentImpl::update(float dt) noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 		updateInput(dt);
 		ImGui::SetCurrentContext(nullptr);
+		return {};
 	}
 
 	ImGuiContext* ImguiAppComponentImpl::getContext() noexcept
@@ -517,34 +519,31 @@ namespace darmok
 	{
 	}
 
-	ImguiAppComponent::~ImguiAppComponent()
+	ImguiAppComponent::~ImguiAppComponent() = default;
+
+	expected<void, std::string> ImguiAppComponent::init(App& app) noexcept
 	{
-		// empty for the impl forward declaration
+		return _impl->init(app);
 	}
 
-	void ImguiAppComponent::init(App& app)
+	expected<void, std::string> ImguiAppComponent::shutdown() noexcept
 	{
-		_impl->init(app);
+		return _impl->shutdown();
 	}
 
-	void ImguiAppComponent::shutdown() noexcept
-	{
-		_impl->shutdown();
-	}
-
-	bgfx::ViewId ImguiAppComponent::renderReset(bgfx::ViewId viewId) noexcept
+	expected<bgfx::ViewId, std::string> ImguiAppComponent::renderReset(bgfx::ViewId viewId) noexcept
 	{
 		return _impl->renderReset(viewId);
 	}
 
-	void ImguiAppComponent::render() noexcept
+	expected<void, std::string> ImguiAppComponent::render() noexcept
 	{
-		_impl->render();
+		return _impl->render();
 	}
 
-	void ImguiAppComponent::update(float dt) noexcept
+	expected<void, std::string> ImguiAppComponent::update(float dt) noexcept
 	{
-		_impl->update(dt);
+		return _impl->update(dt);
 	}
 
 	ImGuiContext* ImguiAppComponent::getContext() noexcept

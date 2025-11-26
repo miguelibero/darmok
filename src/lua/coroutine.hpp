@@ -177,7 +177,7 @@ namespace darmok
     public:
 		LuaCoroutine startCoroutine(const sol::function& func) noexcept;
 		bool stopCoroutine(const LuaCoroutine& coroutine) noexcept;
-        void update(float deltaTime) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
 
 		static void bind(sol::state_view& lua) noexcept;
 		bool hasFinished(const void* coroutinePtr) const noexcept;
@@ -187,7 +187,7 @@ namespace darmok
 		Coroutines _coroutines;
 		std::unordered_map<const void*, std::shared_ptr<ILuaYieldInstruction>> _awaits;
 
-		bool resumeCoroutine(sol::coroutine& coroutine) noexcept;
+		expected<bool, std::string> resumeCoroutine(sol::coroutine& coroutine) noexcept;
 		bool doStopCoroutine(const void* coroutinePtr) noexcept;
 		Coroutines::const_iterator findCoroutine(const void* coroutinePtr) const noexcept;
 		static std::shared_ptr<ILuaYieldInstruction> readYieldInstruction(const sol::object& obj) noexcept;

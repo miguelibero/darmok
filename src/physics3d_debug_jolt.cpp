@@ -354,12 +354,12 @@ namespace darmok::physics3d
 
     PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept = default;
 
-    expected<void, std::string> PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
+    expected<void, std::string> PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         return _impl->init(cam, scene, app);
     }
 
-    expected<void, std::string> PhysicsDebugRenderer::shutdown()
+    expected<void, std::string> PhysicsDebugRenderer::shutdown() noexcept
     {
         return _impl->shutdown();
     }
@@ -375,7 +375,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         return _impl->beforeRenderView(viewId, encoder);
     }
@@ -386,21 +386,20 @@ namespace darmok::physics3d
 namespace darmok::physics3d
 {
     PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
-        : _impl(std::make_unique<PhysicsDebugRendererImpl>())
+        : _impl{ std::make_unique<PhysicsDebugRendererImpl>() }
     {
     }
 
-    PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept
+    PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept = default;
+
+    expected<void, std::string> PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-        // empty on purpose
+        return {};
     }
 
-    void PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app)
+    expected<void, std::string> PhysicsDebugRenderer::shutdown() noexcept
     {
-    }
-
-    void PhysicsDebugRenderer::shutdown()
-    {
+        return {};
     }
 
     bool PhysicsDebugRenderer::isEnabled() const noexcept
@@ -413,8 +412,9 @@ namespace darmok::physics3d
         return *this;
     }
 
-    void PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
+        return {};
     }
 }
 

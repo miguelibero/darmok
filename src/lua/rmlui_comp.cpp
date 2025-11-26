@@ -11,9 +11,9 @@
 
 namespace darmok
 {
-    RmluiSceneComponent& LuaRmluiSceneComponent::addSceneComponent(Scene& scene) noexcept
+    std::reference_wrapper<RmluiSceneComponent> LuaRmluiSceneComponent::addSceneComponent(Scene& scene) noexcept
     {
-        return scene.addSceneComponent<RmluiSceneComponent>();
+        return LuaUtils::unwrapExpected(scene.addSceneComponent<RmluiSceneComponent>());
     }
 
     OptionalRef<RmluiSceneComponent>::std_t LuaRmluiSceneComponent::getSceneComponent(Scene& scene) noexcept
@@ -30,9 +30,9 @@ namespace darmok
         );
     }
 
-    RmluiRenderer& LuaRmluiRenderer::addCameraComponent(Camera& cam) noexcept
+    std::reference_wrapper<RmluiRenderer> LuaRmluiRenderer::addCameraComponent(Camera& cam) noexcept
     {
-        return cam.addComponent<RmluiRenderer>();
+        return LuaUtils::unwrapExpected(cam.addComponent<RmluiRenderer>());
     }
 
     OptionalRef<RmluiRenderer>::std_t LuaRmluiRenderer::getCameraComponent(Camera& cam) noexcept

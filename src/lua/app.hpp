@@ -27,7 +27,7 @@ namespace darmok
 		LuaAppUpdater(const sol::object& obj) noexcept;		
 		const LuaDelegate& getDelegate() const noexcept;
 
-		void update(float deltaTime) override;
+		expected<void, std::string> update(float deltaTime) noexcept override;
 	private:
 		LuaDelegate _delegate;
 	};
@@ -57,7 +57,7 @@ namespace darmok
 		static void addLuaComponent(App& app, const sol::table& table);
 		static sol::object getLuaComponent(App& app, const sol::object& type) noexcept;
 
-		static LuaCoroutine startCoroutine(App& app, const sol::function& func) noexcept;
+		static LuaCoroutine startCoroutine(App& app, const sol::function& func);
 		static bool stopCoroutine(App& app, const LuaCoroutine& coroutine) noexcept;
 
 		static bool getDebug() noexcept;
@@ -80,11 +80,11 @@ namespace darmok
     {
     public:
 		LuaAppDelegateImpl(App& app) noexcept;
-		std::optional<int32_t> setup(const CmdArgs& args) noexcept;
-		void init();
-		void earlyShutdown();
-		void shutdown() noexcept;
-		void render() noexcept;
+		expected<int32_t, std::string> setup(const CmdArgs& args) noexcept;
+		expected<void, std::string> init() noexcept;
+		expected<void, std::string> earlyShutdown()noexcept;
+		expected<void, std::string> shutdown() noexcept;
+		expected<void, std::string> render() noexcept;
 
     private:
 
@@ -107,8 +107,8 @@ namespace darmok
 		std::vector<DbgText> _dbgTexts;
 
 		std::optional<std::filesystem::path> findMainLua(const std::filesystem::path& path);
-		bool importAssets(const CommandLineFileImporterConfig& cfg);
-		std::optional<int32_t> loadLua(const std::filesystem::path& mainPath);
+		bool importAssets(const CommandLineFileImporterConfig& cfg) noexcept;
+		expected<int32_t, std::string> loadLua(const std::filesystem::path& mainPath) noexcept;
 		void unloadLua() noexcept;
 
 		void addPackagePath(const std::string& path, bool binary = false) noexcept;
@@ -121,10 +121,10 @@ namespace darmok
 		LuaAppComponent(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		void init(App& app) override;
-		void shutdown() override;
-		bgfx::ViewId renderReset(bgfx::ViewId viewId) override;
-		void update(float deltaTime) override;
+		expected<void, std::string> init(App& app) noexcept override;
+		expected<void, std::string> shutdown() noexcept override;
+		expected < bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+		expected<void, std::string> update(float deltaTime) noexcept override;
 
 	private:
 		sol::main_table _table;

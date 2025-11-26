@@ -50,8 +50,7 @@ namespace darmok
         if (sol::safe_function update = _env[updateFunc])
         {
             auto result = update(deltaTime);
-            auto finished = LuaUtils::checkResult("running rmlui canvas update", result);
-            if (finished)
+            if (LuaUtils::checkResult<bool>(result, "running rmlui canvas update"))
             {
                 _lua[updateFunc] = nullptr;
             }
@@ -65,9 +64,9 @@ namespace darmok
         env["element"] = std::ref(element);
         env["document"] = element.GetOwnerDocument();
 
-        auto r = _lua.safe_script(value, env);
+        auto result = _lua.safe_script(value, env);
         auto logDesc = "running rmlui event " + ev.GetType() + " on element " + element.GetAddress();
-        LuaUtils::checkResult(logDesc, r);
+        LuaUtils::checkResult(result, logDesc);
     }
 
     bool LuaRmluiCanvasDelegate::loadRmluiScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine) noexcept
@@ -85,8 +84,8 @@ namespace darmok
         }
 
         buffer += "\n" + std::string(content);
-        auto r = _lua.safe_script(buffer, _env);
-        LuaUtils::checkResult(logDesc, r);
+        auto result = _lua.safe_script(buffer, _env);
+        LuaUtils::checkResult(result, logDesc);
 
         return true;
     }

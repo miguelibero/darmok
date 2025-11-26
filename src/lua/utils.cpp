@@ -39,34 +39,6 @@ namespace darmok
 			func.set_error_handler(lua.safe_script("return function(err) return debug.traceback(err, 2) end"));
 		}
 
-		bool checkResult(std::string_view desc, const sol::protected_function_result& result) noexcept
-		{
-			if (!result.valid())
-			{
-				throwResult(result, desc);
-				return false;
-			}
-			sol::object obj = result;
-			if (obj.get_type() == sol::type::boolean)
-			{
-				return obj.as<bool>();
-			}
-			return obj != sol::nil;
-		}
-
-		void throwResult(const sol::protected_function_result& result, std::string_view prefix)
-		{
-			if (!result.valid())
-			{
-				sol::error err = result;
-				if(!prefix.empty())
-				{
-					err = sol::error{ std::string{prefix} + err.what() };
-				}
-				throw err;
-			}
-		}
-
 		entt::id_type ptrTypeId(const void* ptr) noexcept
 		{
 			auto addr = reinterpret_cast<std::uintptr_t>(ptr);
@@ -104,21 +76,47 @@ namespace darmok
 			return std::nullopt;
 		}
 
-		int deny(lua_State* L)
+		int deny(lua_State* L) noexcept
 		{
 			return luaL_error(L, "operation not allowed");
 		}
+
+		void unwrapExpected(expected<void, std::string> v, std::string_view prefix)
+		{
+			if (v)
+			{
+				return;
+			}
+			if (prefix.empty())
+			{
+				throw sol::error{ std::move(v).error() };
+			}
+			throw sol::error{ std::string{prefix} + v.error() };
+		}
+
+		template<>
+		expected<void, std::string> wrapObject(const sol::object& v, std::string_view prefix)
+		{
+			return {};
+		}
+
+		template<>
+		expected<sol::object, std::string> wrapObject(const sol::object& v, std::string_view prefix)
+		{
+			return v;
+		}
 	}
 
-	LuaTableDelegateDefinition::LuaTableDelegateDefinition(const std::string& key, const std::string& desc) noexcept
-		: _key(key)
-		, _desc(desc)
+	LuaTableDelegateDefinition::LuaTableDelegateDefinition(std::string key, std::string desc) noexcept
+		: _key{ std::move(key) }
+		, _desc{ std::move(desc) }
 	{
 	}
 
-	LuaDelegate::LuaDelegate(const sol::object& obj, const std::string& tableKey) noexcept
-		: _tableKey(tableKey.empty() ? "__call" : tableKey)
-		, _obj(obj)
+	LuaDelegate::LuaDelegate(const sol::object& obj, std::string tableKey, std::string desc) noexcept
+		: _obj{ obj }
+		, _tableKey{ tableKey.empty() ? "__call" : std::move(tableKey) }
+		, _desc{ std::move(desc) }
 	{
 	}
 

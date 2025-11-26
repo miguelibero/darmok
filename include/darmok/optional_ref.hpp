@@ -19,35 +19,40 @@ namespace darmok
         using std_t = std::optional<std::reference_wrapper<T>>;
 
         OptionalRef() noexcept
-        : _value(nullptr)
+            : _value{ nullptr } 
         {
         }
 
         OptionalRef(std::nullopt_t) noexcept
-        : _value(nullptr)
+            : _value{ nullptr }
         {
         }
 
         OptionalRef(const std_t& value) noexcept
-            : _value(value ? &value.value().get() : nullptr)
+            : _value{ value ? &value.value().get() : nullptr }
+        {
+        }
+
+        OptionalRef(const std::reference_wrapper<T>& value) noexcept
+            : _value{ &value.get() }
         {
         }
 
         OptionalRef(const OptionalRef<T>& other) noexcept = default;
 
         OptionalRef(OptionalRef<T>&& other) noexcept
-            : _value(other._value)
+            : _value{ other._value }
         {
             other.reset();
         }
 
         OptionalRef(T* value) noexcept
-            : _value(value)
+            : _value{ value }
         {
         }
 
         OptionalRef(T& value) noexcept
-            : _value(&value)
+            : _value{ &value }
         {
         }
 

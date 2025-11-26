@@ -3,14 +3,13 @@
 namespace darmok
 {
 	LuaInputEventListener::LuaInputEventListener(const sol::object& dlg) noexcept
-		: _delegate(dlg, "on_input_event")
+		: _delegate{ dlg, "on_input_event", "input event listener: " }
 	{
 	}
 
 	void LuaInputEventListener::onInputEvent(const std::string& tag)
 	{
-		auto desc = "input event listener: " + tag;
-		LuaUtils::checkResult(desc, _delegate(tag));
+		_delegate(tag);
 	}
 
 	const LuaDelegate& LuaInputEventListener::getDelegate() const noexcept

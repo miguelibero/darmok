@@ -857,7 +857,7 @@ namespace darmok
 		return _runResult;
 	}
 
-	void AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
+	expected<void, std::string> AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
 		if (auto type = component->getAppComponentType())
 		{
@@ -865,9 +865,14 @@ namespace darmok
 		}
 		if (_running)
 		{
-			component->init(_app);
+			auto result = component->init(_app);
+			if (!result)
+			{
+				return result;
+			}
 		}
-		_components.emplace_back(std::move(component));
+		_components.push_back(std::move(component));
+		return {};
 	}
 
 	AppImpl::Components::iterator AppImpl::findComponent(entt::id_type type) noexcept
@@ -1137,9 +1142,9 @@ namespace darmok
 		_impl->setRendererType(renderer);
 	}
 
-	void App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
+	expected<void, std::string> App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
 	{
-		_impl->addComponent(std::move(component));
+		return _impl->addComponent(std::move(component));
 	}
 
 	bool App::removeComponent(entt::id_type type) noexcept

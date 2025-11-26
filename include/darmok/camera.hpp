@@ -112,7 +112,7 @@ namespace darmok
 
         EntityView getEntities(const EntityFilter& filter) const;
 
-        Camera& addComponent(std::unique_ptr<ICameraComponent>&& comp) noexcept;
+        expected<void, std::string> addComponent(std::unique_ptr<ICameraComponent>&& comp) noexcept;
         bool removeComponent(entt::id_type type) noexcept;
         [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
         [[nodiscard]] OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
@@ -143,22 +143,40 @@ namespace darmok
         }
 
         template<typename T, typename... A>
-        T& addComponent(A&&... args)
+        expected<std::reference_wrapper<T>, std::string> addComponent(A&&... args) noexcept
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addComponent(std::move(ptr));
+            auto result = addComponent(std::move(ptr));
+            if (!result)
+            {
+				return unexpected{ std::move(result).error() };
+            }
             return ref;
         }
 
         template<typename T, typename... A>
-        T& getOrAddComponent(A&&... args) noexcept
+        OptionalRef<T> tryAddComponent(A&&... args) noexcept
+        {
+            auto result = addComponent<T>(std::forward<A>(args)...);
+            return result ? result.value().get() : nullptr;
+        }
+
+        template<typename T, typename... A>
+        expected<std::reference_wrapper<T>, std::string> getOrAddComponent(A&&... args) noexcept
         {
             if (auto comp = getComponent<T>())
             {
                 return comp.value();
             }
             return addComponent<T>(std::forward<A>(args)...);
+        }
+
+        template<typename T, typename... A>
+        OptionalRef<T> tryGetOrAddComponent(A&&... args) noexcept
+        {
+            auto result = getOrAddComponent<T>(std::forward<A>(args)...);
+            return result ? result.value().get() : nullptr;
         }
 
         // trying to maintain Unity API https://docs.unity3d.com/ScriptReference/Camera.html

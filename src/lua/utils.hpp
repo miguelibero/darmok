@@ -3,6 +3,7 @@
 #include "lua/lua.hpp"
 #include <darmok/utils.hpp>
 #include <darmok/string.hpp>
+#include <darmok/expected.hpp>
 
 #include <vector>
 #include <string>
@@ -18,10 +19,58 @@ namespace darmok
         bool isArray(const sol::table& table)  noexcept;
         void logError(std::string_view desc, const sol::error& err) noexcept;
         void setupErrorHandler(sol::state_view lua, sol::function& func) noexcept;
-        bool checkResult(std::string_view desc, const sol::protected_function_result& result) noexcept;
-        void throwResult(const sol::protected_function_result& result, std::string_view prefix = "");
         std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
-        int deny(lua_State* L);
+        int deny(lua_State* L) noexcept;
+
+        template<typename T>
+        T unwrapExpected(expected<T, std::string> v, std::string_view prefix = {})
+        {
+            if (v)
+            {
+				return std::move(v).value();
+            }
+            if (prefix.empty())
+            {
+                throw sol::error{ std::move(v).error() };
+            }
+            throw sol::error{ std::string{prefix} + v.error() };
+        }
+
+        template<>
+        void unwrapExpected(expected<void, std::string> v, std::string_view prefix);
+
+        template<typename T = sol::object>
+        expected<T, std::string> wrapObject(const sol::object& v, std::string_view prefix = {})
+        {
+            if (!v.is<T>())
+            {
+                return unexpected<std::string>{ std::string{ prefix } + "unexpected type" };
+            }
+            return v.as<T>();
+        }
+
+        template<>
+        expected<void, std::string> wrapObject(const sol::object& v, std::string_view prefix);
+
+        template<>
+        expected<sol::object, std::string> wrapObject(const sol::object& v, std::string_view prefix);
+
+        template<typename T = sol::object>
+        expected<T, std::string> wrapResult(const sol::protected_function_result& v, std::string_view prefix = {})
+        {
+            if (!v.valid())
+            {
+                sol::error err = v;
+                return unexpected<std::string>{ std::string{ prefix } + err.what() };
+            }
+			return wrapObject<T>(v, prefix);
+        }
+
+        template<typename T = sol::object>
+        T checkResult(const sol::protected_function_result& v, std::string_view prefix = {})
+        {
+            return unwrapExpected(wrapResult<T>(v, prefix));
+        }
 
         template<typename T>
         void newEnum(sol::state_view lua, std::string_view name = {}, bool stringValues = false)
@@ -53,22 +102,30 @@ namespace darmok
     class LuaTableDelegateDefinition final
     {
     public:
-        LuaTableDelegateDefinition(const std::string& key, const std::string& desc) noexcept;
+        LuaTableDelegateDefinition(std::string key, std::string desc = {}) noexcept;
 
         template<typename... Args>
-        sol::protected_function_result operator()(const sol::table& table, Args&&... args) const noexcept
+        sol::object operator()(const sol::table& table, Args&&... args) const
+        {
+			auto result = tryGet<sol::object>(table, std::forward<Args>(args)...);
+			return LuaUtils::unwrapExpected(std::move(result));
+        }
+
+        template<typename T, typename... Args>
+        expected<T, std::string> tryGet(const sol::table& table, Args&&... args) const noexcept
         {
             auto elm = table[_key];
             if (elm.get_type() != sol::type::function)
             {
-                return elm;
+				return LuaUtils::wrapObject<T>(elm, _desc);
             }
             sol::protected_function func = elm;
-            return func(table, std::forward<Args>(args)...);
+            auto result = func(table, std::forward<Args>(args)...);
+			return LuaUtils::wrapResult<T>(std::move(result), _desc);
         }
 
         template<typename T, typename... Args>
-        void operator()(const std::vector<T>& tables, Args&&... args) const noexcept
+        void operator()(const std::vector<T>& tables, Args&&... args) const
         {
             for (auto& table : tables)
             {
@@ -83,7 +140,7 @@ namespace darmok
     class LuaDelegate final
     {
     public:
-        LuaDelegate(const sol::object& obj, const std::string& tableKey) noexcept;
+        LuaDelegate(const sol::object& obj, std::string tableKey, std::string desc = {}) noexcept;
         operator bool() const noexcept;
 
         bool operator==(const sol::object& obj) const noexcept;
@@ -92,27 +149,42 @@ namespace darmok
         bool operator!=(const LuaDelegate& dlg) const noexcept;
 
         template<typename... Args>
-        sol::protected_function_result operator()(Args&&... args) const noexcept
+        sol::object operator()(Args&&... args) const
         {
+            auto result = tryGet<sol::object>(std::forward<Args>(args)...);
+            return LuaUtils::unwrapExpected(std::move(result));
+        }
+
+        template<typename T, typename... Args>
+        expected<T, std::string> tryGet(Args&&... args) const noexcept
+        {
+            auto run = [&](sol::protected_function func) -> expected<T, std::string>
+            {
+                auto result = func(std::forward<Args>(args)...);
+				return LuaUtils::wrapResult<T>(std::move(result), _desc);
+            };
+
             auto type = _obj.get_type();
             if (type == sol::type::function)
             {
-                sol::protected_function func = _obj;
-                return func(std::forward<Args>(args)...);
+                return run(_obj);
             }
-            else if (type == sol::type::table)
+            if (type == sol::type::table)
             {
                 auto table = _obj.as<sol::table>();
                 if (sol::protected_function func = table[_tableKey])
                 {
-                    return func(table, std::forward<Args>(args)...);
+                    return run(func);
                 }
+				return unexpected<std::string>{ "function not found in table" };
             }
-            return sol::protected_function_result(_obj.lua_state(), -1, 0, 0, sol::call_status::runtime);
+
+            return LuaUtils::wrapObject<T>(_obj, _desc);
         }
     private:
         sol::main_object _obj;
         std::string _tableKey;
+        std::string _desc;
     };
 
 

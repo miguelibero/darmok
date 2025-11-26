@@ -99,9 +99,9 @@ namespace darmok::physics3d
         static void activateBodies1(PhysicsSystem& system, const BoundingBox& bbox) noexcept;
         static void activateBodies2(PhysicsSystem& system, const BoundingBox& bbox, LayerMask layers) noexcept;
 
-        static PhysicsSystem& addSceneComponent1(Scene& scene) noexcept;
-        static PhysicsSystem& addSceneComponent2(Scene& scene, const Definition& def) noexcept;
-        static PhysicsSystem& addSceneComponent3(Scene& scene, const Definition& def, bx::AllocatorI& alloc) noexcept;
+        static std::reference_wrapper<PhysicsSystem> addSceneComponent1(Scene& scene) noexcept;
+        static std::reference_wrapper<PhysicsSystem> addSceneComponent2(Scene& scene, const Definition& def) noexcept;
+        static std::reference_wrapper<PhysicsSystem> addSceneComponent3(Scene& scene, const Definition& def, bx::AllocatorI& alloc) noexcept;
         static OptionalRef<PhysicsSystem>::std_t getSceneComponent(Scene& scene) noexcept;
     };
 

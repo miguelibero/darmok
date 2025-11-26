@@ -411,7 +411,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
     }
 
-    Camera& Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
+    expected<void, std::string> Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
     {
         if (auto type = component->getCameraComponentType())
         {
@@ -419,10 +419,14 @@ namespace darmok
         }
         if (_scene)
         {
-            component->init(*this, _scene.value(), _app.value());
+            auto result = component->init(*this, _scene.value(), _app.value());
+            if (!result)
+            {
+                return result;
+            }
         }
-        _components.emplace_back(std::move(component));
-        return *this;
+        _components.push_back(std::move(component));
+        return {};
     }
 
     struct CameraComponentTypeHashFinder final

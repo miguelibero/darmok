@@ -117,22 +117,40 @@ namespace darmok
         }
 
         template<typename T, typename... A>
-        T& addSceneComponent(A&&... args)
+        expected<std::reference_wrapper<T>, std::string> addSceneComponent(A&&... args) noexcept
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addSceneComponent(std::move(ptr));
+            auto result = addSceneComponent(std::move(ptr));
+            if(!result)
+            {
+                return unexpected{ std::move(result).error() };
+			}
             return ref;
         }
 
         template<typename T, typename... A>
-        T& getOrAddSceneComponent(A&&... args) noexcept
+        OptionalRef<T> tryAddSceneComponent(A&&... args)
+        {
+            auto result = addSceneComponent<T>(std::forward<A>(args)...);
+            return result ? result.value().get() : nullptr;
+        }
+
+        template<typename T, typename... A>
+        expected<std::reference_wrapper<T>, std::string> getOrAddSceneComponent(A&&... args) noexcept
         {
             if (auto comp = getSceneComponent<T>())
             {
                 return comp.value();
             }
             return addSceneComponent<T>(std::forward<A>(args)...);
+        }
+
+        template<typename T, typename... A>
+        OptionalRef<T> tryGetOrAddSceneComponent(A&&... args)
+        {
+            auto result = getOrAddSceneComponent<T>(std::forward<A>(args)...);
+            return result ? result.value().get() : nullptr;
         }
 
         Entity createEntity() noexcept;            
@@ -440,9 +458,9 @@ namespace darmok
 
         SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
         std::shared_ptr<Scene> getScene(size_t i = 0) const noexcept;
-        SceneAppComponent& setScene(const std::shared_ptr<Scene>& scene, size_t i = 0) noexcept;
+        expected<void, std::string> setScene(const std::shared_ptr<Scene>& scene, size_t i = 0) noexcept;
         std::shared_ptr<Scene> addScene() noexcept;
-        SceneAppComponent& addScene(const std::shared_ptr<Scene>& scene) noexcept;
+        expected<void, std::string> addScene(const std::shared_ptr<Scene>& scene) noexcept;
         const Scenes& getScenes() const noexcept;
 
         expected<void, std::string> init(App& app) noexcept override;

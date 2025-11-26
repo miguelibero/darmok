@@ -94,11 +94,15 @@ namespace darmok
         expected<void, std::string> addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept;
 
         template<typename T, typename... A>
-        T& addStep(A&&... args)
+        expected<std::reference_wrapper<T>, std::string> addStep(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            addStep(std::move(ptr));
+            auto result = addStep(std::move(ptr));
+            if (!result)
+            {
+				return unexpected{ std::move(result).error() };
+            }
             return ref;
         }
 

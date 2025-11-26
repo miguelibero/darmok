@@ -1,5 +1,6 @@
 #include "lua/render_chain.hpp"
 #include "lua/glm.hpp"
+#include "lua/utils.hpp"
 #include <darmok/render_chain.hpp>
 
 namespace darmok
@@ -35,24 +36,24 @@ namespace darmok
         );
     }
 
-    ScreenSpaceRenderPass& LuaScreenSpaceRenderPass::addChainStep1(RenderChain& chain, const std::shared_ptr<Program>& prog)
+    std::reference_wrapper<ScreenSpaceRenderPass> LuaScreenSpaceRenderPass::addChainStep1(RenderChain& chain, const std::shared_ptr<Program>& prog)
     {
-        return chain.addStep<ScreenSpaceRenderPass>(prog);
+        return LuaUtils::unwrapExpected(chain.addStep<ScreenSpaceRenderPass>(prog));
     }
 
-    ScreenSpaceRenderPass& LuaScreenSpaceRenderPass::addChainStep2(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name)
+    std::reference_wrapper<ScreenSpaceRenderPass> LuaScreenSpaceRenderPass::addChainStep2(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name)
     {
-        return chain.addStep<ScreenSpaceRenderPass>(prog, name);
+        return LuaUtils::unwrapExpected(chain.addStep<ScreenSpaceRenderPass>(prog, name));
     }
 
-    ScreenSpaceRenderPass& LuaScreenSpaceRenderPass::addChainStep3(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name, int priority)
+    std::reference_wrapper<ScreenSpaceRenderPass> LuaScreenSpaceRenderPass::addChainStep3(RenderChain& chain, const std::shared_ptr<Program>& prog, const std::string& name, int priority)
     {
-        return chain.addStep<ScreenSpaceRenderPass>(prog, name, priority);
+        return LuaUtils::unwrapExpected(chain.addStep<ScreenSpaceRenderPass>(prog, name, priority));
     }
 
-    ScreenSpaceRenderPass& LuaScreenSpaceRenderPass::addChainStep4(RenderChain& chain, const std::shared_ptr<Program>& prog, int priority)
+    std::reference_wrapper<ScreenSpaceRenderPass> LuaScreenSpaceRenderPass::addChainStep4(RenderChain& chain, const std::shared_ptr<Program>& prog, int priority)
     {
-        return chain.addStep<ScreenSpaceRenderPass>(prog, "", priority);
+        return LuaUtils::unwrapExpected(chain.addStep<ScreenSpaceRenderPass>(prog, "", priority));
     }
 
     void LuaScreenSpaceRenderPass::bind(sol::state_view& lua) noexcept

@@ -20,8 +20,8 @@ namespace darmok
 		return _table;
 	}
 
-	const LuaTableDelegateDefinition LuaKeyboardListener::_keyDelegate("on_keyboard_key", "running keyboard key listener");
-	const LuaTableDelegateDefinition LuaKeyboardListener::_charDelegate("on_keyboard_char", "running keyboard on_keyboard_char listener");
+	const LuaTableDelegateDefinition LuaKeyboardListener::_keyDelegate{ "on_keyboard_key", "running keyboard key listener" };
+	const LuaTableDelegateDefinition LuaKeyboardListener::_charDelegate{ "on_keyboard_char", "running keyboard on_keyboard_char listener" };
 
 	void LuaKeyboardListener::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
 	{
@@ -141,9 +141,9 @@ namespace darmok
 		return _table;
 	}
 
-	const LuaTableDelegateDefinition LuaMouseListener::_posDelegate("on_mouse_position_change", "running mouse position change listener");
-	const LuaTableDelegateDefinition LuaMouseListener::_scrollDelegate("on_mouse_scroll_change", "running mouse scroll change listener");
-	const LuaTableDelegateDefinition LuaMouseListener::_buttonDelegate("on_mouse_button", "running mouse button listener");
+	const LuaTableDelegateDefinition LuaMouseListener::_posDelegate{ "on_mouse_position_change", "running mouse position change listener" };
+	const LuaTableDelegateDefinition LuaMouseListener::_scrollDelegate{ "on_mouse_scroll_change", "running mouse scroll change listener" };
+	const LuaTableDelegateDefinition LuaMouseListener::_buttonDelegate{ "on_mouse_button", "running mouse button listener" };
 
 	void LuaMouseListener::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute)
 	{

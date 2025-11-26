@@ -559,14 +559,13 @@ namespace darmok
     }
 
     LuaRmluiEventListener::LuaRmluiEventListener(const sol::object& obj) noexcept
-        : _delegate(obj, "on_rmlui_event")
+        : _delegate{ obj, "on_rmlui_event", "rmlui event" }
     {
     }
 
     void LuaRmluiEventListener::ProcessEvent(Rml::Event& event) noexcept
     {
-        auto result = _delegate(event);
-        LuaUtils::checkResult("rmlui event: " + event.GetType(), result);
+        _delegate(event);
     }
     void LuaRmluiEventListener::OnDetach(Rml::Element* element) noexcept
     {

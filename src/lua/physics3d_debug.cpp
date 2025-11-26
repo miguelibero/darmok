@@ -9,14 +9,14 @@
 
 namespace darmok::physics3d
 {
-    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent1(Camera& cam) noexcept
+    std::reference_wrapper<PhysicsDebugRenderer> LuaPhysicsDebugRenderer::addCameraComponent1(Camera& cam) noexcept
     {
-        return cam.addComponent<PhysicsDebugRenderer>();
+        return LuaUtils::unwrapExpected(cam.addComponent<PhysicsDebugRenderer>());
     }
 
-    PhysicsDebugRenderer& LuaPhysicsDebugRenderer::addCameraComponent2(Camera& cam, const Config& config) noexcept
+    std::reference_wrapper<PhysicsDebugRenderer> LuaPhysicsDebugRenderer::addCameraComponent2(Camera& cam, const Config& config) noexcept
     {
-        return cam.addComponent<PhysicsDebugRenderer>(config);
+        return LuaUtils::unwrapExpected(cam.addComponent<PhysicsDebugRenderer>(config));
     }
 
     OptionalRef<PhysicsDebugRenderer>::std_t LuaPhysicsDebugRenderer::getCameraComponent(Camera& cam) noexcept

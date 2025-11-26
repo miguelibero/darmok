@@ -15,7 +15,7 @@ namespace darmok
     	static void bind(sol::state_view& lua) noexcept;
     private:
         using Config = FreelookConfig;
-        static FreelookController& addSceneComponent1(Scene& scene, Camera& cam) noexcept;
-		static FreelookController& addSceneComponent2(Scene& scene, Camera& cam, const Config& config) noexcept;
+        static std::reference_wrapper<FreelookController> addSceneComponent1(Scene& scene, Camera& cam) noexcept;
+		static std::reference_wrapper<FreelookController> addSceneComponent2(Scene& scene, Camera& cam, const Config& config) noexcept;
     };
 }

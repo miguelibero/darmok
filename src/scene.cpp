@@ -255,7 +255,7 @@ namespace darmok
             return result;
         }
 		std::vector<std::string> errors;
-        for (auto& comp : Components(_components))
+        for (auto& comp : Components{ _components })
         {
             auto result = comp->init(_scene, app);
             if (!result)
@@ -337,7 +337,7 @@ namespace darmok
     {
         _registry.clear();
         std::vector<std::string> errors;
-        auto components = Components(_components);
+        auto components = Components{ _components };
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
             auto result = (*itr)->shutdown();
@@ -364,7 +364,7 @@ namespace darmok
         _renderChain.beforeRenderReset();
 
         {
-            auto components = Components(_components);
+            auto components = Components{ _components };
             for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
             {
                 auto result = (*itr)->renderReset(viewId);
@@ -480,7 +480,7 @@ namespace darmok
             }
         }
 
-        for (auto& comp : Components(_components))
+        for (auto& comp : Components{ _components })
         {
             auto result = comp->update(deltaTime);
             if (!result)
@@ -835,11 +835,15 @@ namespace darmok
         return _scenes[i];
     }
 
-    SceneAppComponent& SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene, size_t i) noexcept
+    expected<void, std::string> SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene, size_t i) noexcept
     {
-        if (i < 0 || !scene)
+        if (i < 0)
         {
-            return *this;
+            return unexpected<std::string>{"invalid index"};
+        }
+        if (!scene)
+        {
+            return unexpected<std::string>{"empty scene"};
         }
         if (i >= _scenes.size())
         {
@@ -848,35 +852,50 @@ namespace darmok
         auto& oldScene = _scenes[i];
         if (_app && oldScene)
         {
-            oldScene->getImpl().shutdown();
+            auto result = oldScene->getImpl().shutdown();
+            if(!result)
+            {
+                return result;
+			}
         }
         _scenes[i] = scene;
         if (_app)
         {
-            scene->getImpl().init(*_app);
+            auto result = scene->getImpl().init(*_app);
+            if (!result)
+            {
+                return result;
+            }
         }
-        return *this;
+        return {};
     }
 
     std::shared_ptr<Scene> SceneAppComponent::addScene() noexcept
     {
         auto scene = std::make_shared<Scene>();
-        addScene(scene);
+        if (!addScene(scene))
+        {
+            return nullptr;
+        }
         return scene;
     }
 
-    SceneAppComponent& SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
+    expected<void, std::string> SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
     {
-        if (scene)
+        if (!scene)
         {
-            _scenes.push_back(scene);
-            if (_app)
+            return unexpected<std::string>{"empty scene"};
+        }
+        _scenes.push_back(scene);
+        if (_app)
+        {
+            auto result = scene->getImpl().init(*_app);
+            if (!result)
             {
-                scene->getImpl().init(*_app);
+                return result;
             }
         }
-
-        return *this;
+        return {};
     }
 
     const SceneAppComponent::Scenes& SceneAppComponent::getScenes() const noexcept

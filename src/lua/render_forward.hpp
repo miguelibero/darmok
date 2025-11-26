@@ -14,7 +14,7 @@ namespace darmok
         static void bind(sol::state_view& lua) noexcept;
     private:
 
-        static ForwardRenderer& addCameraComponent(Camera& cam) noexcept;
+        static std::reference_wrapper<ForwardRenderer> addCameraComponent(Camera& cam);
         static OptionalRef<ForwardRenderer>::std_t getCameraComponent(Camera& cam) noexcept;
     };
 }

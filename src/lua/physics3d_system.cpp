@@ -48,7 +48,7 @@ namespace darmok::physics3d
     }
 
     LuaPhysicsUpdater::LuaPhysicsUpdater(const sol::object& obj) noexcept
-        : _delegate(obj, "fixed_update")
+        : _delegate{ obj, "fixed_update", "running fixed updater" }
     {
     }
 
@@ -59,7 +59,7 @@ namespace darmok::physics3d
 
     void LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime)
     {
-        LuaUtils::throwResult(_delegate(fixedDeltaTime), "running fixed updater");
+        _delegate(fixedDeltaTime);
     }
 
     LuaPhysicsUpdaterFilter::LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept
@@ -143,19 +143,19 @@ namespace darmok::physics3d
         system.activateBodies(bbox, layers);
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent1(Scene& scene) noexcept
+    std::reference_wrapper<PhysicsSystem> LuaPhysicsSystem::addSceneComponent1(Scene& scene) noexcept
     {
-        return scene.addSceneComponent<PhysicsSystem>();
+        return LuaUtils::unwrapExpected(scene.addSceneComponent<PhysicsSystem>());
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent2(Scene& scene, const Definition& def) noexcept
+    std::reference_wrapper<PhysicsSystem> LuaPhysicsSystem::addSceneComponent2(Scene& scene, const Definition& def) noexcept
     {
-        return scene.addSceneComponent<PhysicsSystem>(def);
+        return LuaUtils::unwrapExpected(scene.addSceneComponent<PhysicsSystem>(def));
     }
 
-    PhysicsSystem& LuaPhysicsSystem::addSceneComponent3(Scene& scene, const Definition& def, bx::AllocatorI& alloc) noexcept
+    std::reference_wrapper<PhysicsSystem> LuaPhysicsSystem::addSceneComponent3(Scene& scene, const Definition& def, bx::AllocatorI& alloc) noexcept
     {
-        return scene.addSceneComponent<PhysicsSystem>(def, alloc);
+        return LuaUtils::unwrapExpected(scene.addSceneComponent<PhysicsSystem>(def, alloc));
     }
 
     OptionalRef<PhysicsSystem>::std_t LuaPhysicsSystem::getSceneComponent(Scene& scene) noexcept

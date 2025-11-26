@@ -402,7 +402,7 @@ namespace darmok
 		return found;
 	}
 
-    void LuaCoroutineRunner::update(float deltaTime) noexcept
+	expected<void, std::string> LuaCoroutineRunner::update(float deltaTime) noexcept
 	{
 		std::vector<const void*> finishedCoroutines;
 		Coroutines coroutines(_coroutines);
@@ -433,18 +433,23 @@ namespace darmok
 		{
 			doStopCoroutine(coroutinePtr);
 		}
+
+		return {};
 	}
 
-	bool LuaCoroutineRunner::resumeCoroutine(sol::coroutine& coroutine) noexcept
+	expected<bool, std::string> LuaCoroutineRunner::resumeCoroutine(sol::coroutine& coroutine) noexcept
 	{
 		static const std::string logDesc = "running coroutine";
 		if (!coroutine.runnable())
 		{
 			return false;
 		}
-		auto result = coroutine();
-		LuaUtils::checkResult(logDesc, result);
-		sol::object robj = result;
+		auto result = LuaUtils::wrapResult(coroutine());
+		if(!result)
+		{
+			return unexpected{ std::move(result).error() };
+		}
+		auto robj = result.value();
 		if (auto instr = readYieldInstruction(robj))
 		{
 			_awaits.emplace(coroutine.pointer(), std::move(instr));

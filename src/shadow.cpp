@@ -253,6 +253,8 @@ namespace darmok
         _shadowData2Uniform = bgfx::createUniform("u_shadowData2", bgfx::UniformType::Vec4);
         _shadowTransBuffer = bgfx::createDynamicVertexBuffer(1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _shadowLightDataBuffer = bgfx::createDynamicVertexBuffer(1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+    
+        return {};
     }
 
     expected<void, std::string> ShadowRenderer::shutdown() noexcept
@@ -290,6 +292,8 @@ namespace darmok
         _cam.reset();
         _scene.reset();
         _app.reset();
+
+        return {};
     }
 
     expected<void, std::string> ShadowRenderer::update(float deltaTime) noexcept
@@ -297,6 +301,8 @@ namespace darmok
         updateLights();
         updateCamera();
         updateBuffers();
+
+        return {};
     }
 
     bool ShadowRenderer::isEnabled() const noexcept
@@ -638,11 +644,14 @@ namespace darmok
             pass.render(*encoder);
         }
         bgfx::end(encoder);
+
+        return {};
     }
 
     expected<void, std::string> ShadowRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         configureUniforms(encoder);
+        return {};
     }
 
     void ShadowRenderer::configureUniforms(bgfx::Encoder& encoder) const noexcept

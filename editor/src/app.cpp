@@ -36,7 +36,7 @@ namespace darmok::editor
         // empty on purpose
     }    
 
-    std::optional<int32_t> EditorApp::setup(const CmdArgs& args) noexcept
+    expected<int32_t, std::string> EditorApp::setup(const CmdArgs& args) noexcept
     {
         _inspectorView.setup();
 
@@ -56,28 +56,33 @@ namespace darmok::editor
             _progCompConfig.includePaths.emplace(path);
         }
 
-        return std::nullopt;
+        return 0;
     }
 
-    void EditorApp::init()
+    expected<void, std::string> EditorApp::init() noexcept
     {
         auto& win = _app.getWindow();
         win.requestTitle("darmok editor");
         _app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-        _imgui = _app.getOrAddComponent<ImguiAppComponent>(*this);
+        auto imguiResult = _app.getOrAddComponent<ImguiAppComponent>(*this);
+        if(!imguiResult)
+        {
+            return unexpected{"failed to add imgui component: " + imguiResult.error()};
+		}
+        _imgui = imguiResult.value();
         
         auto projResult = _proj.init(_progCompConfig);
         if(!projResult)
         {
-            throw std::runtime_error("failed to initialize project: " + projResult.error());
+            return unexpected{"failed to initialize project: " + projResult.error()};
 		}
         _sceneView.init(_proj.getScene(), _proj.getCamera().value());
         _inspectorView.init(*this);
         _assetsView.init(_proj.getSceneDefinition(), *this);
     }
 
-    void EditorApp::shutdown()
+    expected<void, std::string> EditorApp::shutdown() noexcept
     {
         stopScene();
         _inspectorView.shutdown();
@@ -94,6 +99,8 @@ namespace darmok::editor
         _symbolsFont = nullptr;
         _mainToolbarHeight = 0.F;
         _fileInputResults.clear();
+
+        return {};
     }
 
     void EditorApp::imguiSetup()
@@ -567,7 +574,7 @@ namespace darmok::editor
         _assetsView.render();
     }
 
-    void EditorApp::update(float deltaTime)
+    expected<void, std::string> EditorApp::update(float deltaTime) noexcept
     {
         _sceneView.update(deltaTime);
     }

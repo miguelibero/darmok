@@ -46,10 +46,9 @@ namespace darmok
 	{
 	}
 
-	void LuaAppUpdater::update(float deltaTime)
+	expected<void, std::string> LuaAppUpdater::update(float deltaTime) noexcept
 	{
-		static const std::string desc = "running updater";
-		LuaUtils::checkResult(desc, _delegate(deltaTime));
+		return _delegate.tryGet<void>(deltaTime);
 	}
 
 	const LuaDelegate& LuaAppUpdater::getDelegate() const noexcept
@@ -83,10 +82,10 @@ namespace darmok
 		return app.removeUpdaters(LuaAppUpdaterFilter(updater)) > 0;
 	}
 
-	LuaCoroutine LuaApp::startCoroutine(App& app, const sol::function& func) noexcept
+	LuaCoroutine LuaApp::startCoroutine(App& app, const sol::function& func)
 	{
-		auto& runner = app.getOrAddComponent<LuaCoroutineRunner>();
-		return runner.startCoroutine(func);
+		auto runner = LuaUtils::unwrapExpected(app.getOrAddComponent<LuaCoroutineRunner>());
+		return runner.get().startCoroutine(func);
 	}
 
 	bool LuaApp::stopCoroutine(App& app, const LuaCoroutine& coroutine) noexcept
@@ -118,7 +117,7 @@ namespace darmok
 
 	void LuaApp::addLuaComponent(App& app, const sol::table& table)
 	{
-		app.addComponent(std::make_unique<LuaAppComponent>(table));
+		LuaUtils::unwrapExpected(app.addComponent(std::make_unique<LuaAppComponent>(table)));
 	}
 
 	sol::object LuaApp::getLuaComponent(App& app, const sol::object& type) noexcept
@@ -232,38 +231,35 @@ namespace darmok
 	{
 	}
 
-	LuaAppDelegate::~LuaAppDelegate() noexcept
-	{
-		// intentionally left blank for the unique_ptr<LuaAppDelegateImpl> forward declaration
-	}
+	LuaAppDelegate::~LuaAppDelegate() noexcept = default;
 
-	std::optional<int32_t> LuaAppDelegate::setup(const CmdArgs& args)
+	expected<int32_t, std::string> LuaAppDelegate::setup(const CmdArgs& args) noexcept
 	{
 		return _impl->setup(args);
 	}
 
-	void LuaAppDelegate::init()
+	expected<void, std::string> LuaAppDelegate::init() noexcept
 	{
-		_impl->init();
+		return _impl->init();
 	}
 
-	void LuaAppDelegate::earlyShutdown()
+	expected<void, std::string> LuaAppDelegate::earlyShutdown() noexcept
 	{
-		_impl->earlyShutdown();
+		return _impl->earlyShutdown();
 	}
 
-	void LuaAppDelegate::shutdown()
+	expected<void, std::string> LuaAppDelegate::shutdown() noexcept
 	{
-		_impl->shutdown();
+		return _impl->shutdown();
 	}
 
-	void LuaAppDelegate::render() const
+	expected<void, std::string> LuaAppDelegate::render() const noexcept
 	{
-		_impl->render();
+		return _impl->render();
 	}
 
 	LuaAppDelegateImpl::LuaAppDelegateImpl(App& app) noexcept
-		: _app(app)
+		: _app{ app }
 	{
 	}
 
@@ -281,7 +277,7 @@ namespace darmok
 		_dbgTexts.emplace_back(pos, msg);
 	}
 
-	std::optional<int32_t> LuaAppDelegateImpl::setup(const CmdArgs& args) noexcept
+	expected<int32_t, std::string> LuaAppDelegateImpl::setup(const CmdArgs& args) noexcept
 	{
 		CLI::App cli{ "darmok lua" };
 
@@ -318,7 +314,7 @@ namespace darmok
 		}
 	}
 
-	std::optional<int32_t> LuaAppDelegateImpl::loadLua(const std::filesystem::path& mainPath)
+	expected<int32_t, std::string> LuaAppDelegateImpl::loadLua(const std::filesystem::path& mainPath) noexcept
 	{
 		auto mainDir = mainPath.parent_path().string();
 
@@ -385,16 +381,7 @@ namespace darmok
 #endif
 
 		auto result = lua.safe_script_file(mainPath.string(), sol::script_pass_on_error);
-		if (!result.valid())
-		{
-			throw LuaError("running main", result);
-		}
-		auto relm = result[0];
-		if (relm.is<int>())
-		{
-			return relm.get<int>();
-		}
-		return std::nullopt;
+		return LuaUtils::wrapResult<int32_t>(result);
 	}
 
 	void LuaAppDelegateImpl::unloadLua() noexcept
@@ -472,26 +459,30 @@ namespace darmok
 		lua["package"][key] = current;
 	}
 
-	void LuaAppDelegateImpl::init()
+	expected<void, std::string> LuaAppDelegateImpl::init() noexcept
 	{
 		if (_lua == nullptr)
 		{
-			auto r = loadLua(_mainLuaPath);
+			auto result = loadLua(_mainLuaPath);
+			if(!result)
+			{
+				return unexpected<std::string>{result.error()};
+			}
 		}
 		auto& lua = *_lua;
-		sol::protected_function init = lua["init"];
-		if (init)
+		if (sol::protected_function init = lua["init"])
 		{
-			auto result = init();
-			if (!result.valid())
+			auto result = LuaUtils::wrapResult<void>(init());
+			if (!result)
 			{
-				throw LuaError{ "running init", result };
+				return result;
 			}
 		}
 		LuaApp::addUpdater(_app, lua["update"]);
+		return {};
 	}
 
-	bool LuaAppDelegateImpl::importAssets(const CommandLineFileImporterConfig& cfg)
+	bool LuaAppDelegateImpl::importAssets(const CommandLineFileImporterConfig& cfg) noexcept
 	{
 		if (cfg.dry || cfg.inputPath.empty())
 		{
@@ -511,35 +502,34 @@ namespace darmok
 		return true;
 	}
 
-	void LuaAppDelegateImpl::render() noexcept
+	expected<void, std::string> LuaAppDelegateImpl::render() noexcept
 	{
 		for (auto& text : _dbgTexts)
 		{
 			bgfx::dbgTextPrintf(text.pos.x, text.pos.y, 0x0f, text.message.c_str());
 		}
 		_dbgTexts.clear();
+		return {};
 	}
 
-	void LuaAppDelegateImpl::earlyShutdown()
+	expected<void, std::string> LuaAppDelegateImpl::earlyShutdown() noexcept
 	{
 		if (!_lua)
 		{
-			return;
+			return unexpected<std::string>{"lua not loaded"};
 		}
 		sol::protected_function shutdown = (*_lua)["shutdown"];
-		if (shutdown)
+		if (!shutdown)
 		{
-			auto result = shutdown();
-			if (!result.valid())
-			{
-				throw LuaError("running shutown", result);
-			}
+			return {};
 		}
+		return LuaUtils::wrapResult<void>(shutdown());
 	}
 
-	void LuaAppDelegateImpl::shutdown() noexcept
+	expected<void, std::string> LuaAppDelegateImpl::shutdown() noexcept
 	{
 		unloadLua();
+		return {};
 	}
 
 	LuaAppComponent::LuaAppComponent(const sol::table& table) noexcept
@@ -552,28 +542,28 @@ namespace darmok
 		return _table;
 	}
 
-	const LuaTableDelegateDefinition LuaAppComponent::_initDef("init", "app component init");
-	const LuaTableDelegateDefinition LuaAppComponent::_shutdownDef("shutdown", "app component shutdown");
-	const LuaTableDelegateDefinition LuaAppComponent::_renderResetDef("render_reset", "app component render reset");
-	const LuaTableDelegateDefinition LuaAppComponent::_updateDef("update", "app component update");
+	const LuaTableDelegateDefinition LuaAppComponent::_initDef{ "init" };
+	const LuaTableDelegateDefinition LuaAppComponent::_shutdownDef{ "shutdown" };
+	const LuaTableDelegateDefinition LuaAppComponent::_renderResetDef{ "render_reset" };
+	const LuaTableDelegateDefinition LuaAppComponent::_updateDef{ "update" };
 
-	void LuaAppComponent::init(App& app)
+	expected<void, std::string> LuaAppComponent::init(App& app) noexcept
 	{
-		_initDef(_table, app);
+		return _initDef.tryGet<void>(_table, app);
 	}
 
-	void LuaAppComponent::shutdown()
+	expected<void, std::string> LuaAppComponent::shutdown() noexcept
 	{
-		_shutdownDef(_table);
+		return _shutdownDef.tryGet<void>(_table);
 	}
 
-	bgfx::ViewId LuaAppComponent::renderReset(bgfx::ViewId viewId)
+	expected<bgfx::ViewId, std::string> LuaAppComponent::renderReset(bgfx::ViewId viewId) noexcept
 	{
-		return _renderResetDef(_table, viewId).as<bgfx::ViewId>();
+		return _renderResetDef.tryGet<bgfx::ViewId>(_table, viewId);
 	}
 
-	void LuaAppComponent::update(float deltaTime)
+	expected<void, std::string>  LuaAppComponent::update(float deltaTime) noexcept
 	{
-		_updateDef(_table, deltaTime);
+		return _updateDef.tryGet<void>(_table, deltaTime);
 	}
 }

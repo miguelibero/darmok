@@ -10,14 +10,14 @@
 
 namespace darmok
 {
-    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addAppComponent1(App& app) noexcept
+    std::reference_wrapper<RmluiDebuggerComponent> LuaRmluiDebuggerComponent::addAppComponent1(App& app) noexcept
     {
-        return app.addComponent<RmluiDebuggerComponent>();
+        return LuaUtils::unwrapExpected(app.addComponent<RmluiDebuggerComponent>());
     }
 
-    RmluiDebuggerComponent& LuaRmluiDebuggerComponent::addAppComponent2(App& app, const Config& config) noexcept
+    std::reference_wrapper<RmluiDebuggerComponent> LuaRmluiDebuggerComponent::addAppComponent2(App& app, const Config& config) noexcept
     {
-        return app.addComponent<RmluiDebuggerComponent>(config);
+        return LuaUtils::unwrapExpected(app.addComponent<RmluiDebuggerComponent>(config));
     }
 
     OptionalRef<RmluiDebuggerComponent>::std_t LuaRmluiDebuggerComponent::getAppComponent(App& app) noexcept

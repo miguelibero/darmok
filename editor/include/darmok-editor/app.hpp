@@ -40,10 +40,10 @@ namespace darmok::editor
         static constexpr const char* entityDragType = "Entity";
 
         // IAppDelegate
-        std::optional<int32_t> setup(const CmdArgs& args) noexcept override;
-        void init() override;
-		void shutdown() override;
-		void update(float deltaTime) override;
+        expected<int32_t, std::string> setup(const CmdArgs& args) noexcept override;
+        expected<void, std::string> init() noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
 
         // IImguiRenderer
         void imguiSetup() override;

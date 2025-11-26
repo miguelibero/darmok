@@ -192,9 +192,9 @@ namespace darmok
         );
     }
 
-    SkeletalAnimationSceneComponent& LuaSkeletalAnimationSceneComponent::addSceneComponent(Scene& scene) noexcept
+    std::reference_wrapper<SkeletalAnimationSceneComponent> LuaSkeletalAnimationSceneComponent::addSceneComponent(Scene& scene) noexcept
     {
-        return scene.addSceneComponent<SkeletalAnimationSceneComponent>();
+        return LuaUtils::unwrapExpected(scene.addSceneComponent<SkeletalAnimationSceneComponent>());
     }
 
     OptionalRef<SkeletalAnimationSceneComponent>::std_t LuaSkeletalAnimationSceneComponent::getSceneComponent(Scene& scene) noexcept
@@ -211,9 +211,9 @@ namespace darmok
         );
     }
 
-    SkeletalAnimationRenderComponent& LuaSkeletalAnimationRenderComponent::addCameraComponent(Camera& cam) noexcept
+    std::reference_wrapper<SkeletalAnimationRenderComponent> LuaSkeletalAnimationRenderComponent::addCameraComponent(Camera& cam) noexcept
     {
-        return cam.addComponent<SkeletalAnimationRenderComponent>();
+        return LuaUtils::unwrapExpected(cam.addComponent<SkeletalAnimationRenderComponent>());
     }
 
     OptionalRef<SkeletalAnimationRenderComponent>::std_t LuaSkeletalAnimationRenderComponent::getCameraComponent(Camera& cam) noexcept

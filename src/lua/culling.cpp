@@ -1,4 +1,5 @@
 #include "lua/culling.hpp"
+#include "lua/utils.hpp"
 #include <darmok/culling.hpp>
 #include <darmok/camera.hpp>
 
@@ -13,9 +14,9 @@ namespace darmok
         );
     }
 
-    OcclusionCuller& LuaOcclusionCuller::addCameraComponent(Camera& cam) noexcept
+    std::reference_wrapper<OcclusionCuller> LuaOcclusionCuller::addCameraComponent(Camera& cam)
     {
-        return cam.addComponent<OcclusionCuller>();
+        return LuaUtils::unwrapExpected(cam.addComponent<OcclusionCuller>());
     }
 
     OptionalRef<OcclusionCuller>::std_t LuaOcclusionCuller::getCameraComponent(Camera& cam) noexcept
@@ -32,9 +33,9 @@ namespace darmok
         );
     }
 
-    FrustumCuller& LuaFrustumCuller::addCameraComponent(Camera& cam) noexcept
+    std::reference_wrapper<FrustumCuller> LuaFrustumCuller::addCameraComponent(Camera& cam)
     {
-        return cam.addComponent<FrustumCuller>();
+        return LuaUtils::unwrapExpected(cam.addComponent<FrustumCuller>());
     }
 
     OptionalRef<FrustumCuller>::std_t LuaFrustumCuller::getCameraComponent(Camera& cam) noexcept
@@ -54,14 +55,14 @@ namespace darmok
         );
     }
 
-    CullingDebugRenderer& LuaCullingDebugRenderer::addCameraComponent1(Camera& cam) noexcept
+    std::reference_wrapper<CullingDebugRenderer> LuaCullingDebugRenderer::addCameraComponent1(Camera& cam)
     {
-        return cam.addComponent<CullingDebugRenderer>();
+        return LuaUtils::unwrapExpected(cam.addComponent<CullingDebugRenderer>());
     }
 
-    CullingDebugRenderer& LuaCullingDebugRenderer::addCameraComponent2(Camera& cam, Camera& mainCam) noexcept
+    std::reference_wrapper<CullingDebugRenderer> LuaCullingDebugRenderer::addCameraComponent2(Camera& cam, Camera& mainCam)
     {
-        return cam.addComponent<CullingDebugRenderer>(mainCam);
+        return LuaUtils::unwrapExpected(cam.addComponent<CullingDebugRenderer>(mainCam));
     }
 
     OptionalRef<CullingDebugRenderer>::std_t LuaCullingDebugRenderer::getCameraComponent(Camera& cam) noexcept

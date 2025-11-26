@@ -401,11 +401,11 @@ namespace darmok
     class RmluiRendererImpl final
     {
     public:
-		void init(Camera& cam, Scene& scene, App& app) noexcept;
-		void shutdown() noexcept;
-		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
-		void render() noexcept;
+		expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept;
+		expected<void, std::string> shutdown() noexcept;
+		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
+		expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> render() noexcept;
 
 	private:
 		OptionalRef<Camera> _cam;

@@ -39,11 +39,11 @@ namespace darmok
 		_cursorModeDelegate(_table, mode);
 	}
 
-	const LuaTableDelegateDefinition LuaWindowListener::_sizeDelegate("on_window_size", "running window size listener");
-	const LuaTableDelegateDefinition LuaWindowListener::_pixelSizeDelegate("on_window_pixel_size", "running window pixel size listener");
-	const LuaTableDelegateDefinition LuaWindowListener::_phaseDelegate("on_window_phase", "running window phase listener");
-	const LuaTableDelegateDefinition LuaWindowListener::_videoModeDelegate("on_window_video_mode", "running window video mode listener");
-	const LuaTableDelegateDefinition LuaWindowListener::_cursorModeDelegate("on_window_cursor_mode", "running window cursor mode listener");
+	const LuaTableDelegateDefinition LuaWindowListener::_sizeDelegate{ "on_window_size", "running window size listener" };
+	const LuaTableDelegateDefinition LuaWindowListener::_pixelSizeDelegate{ "on_window_pixel_size", "running window pixel size listener" };
+	const LuaTableDelegateDefinition LuaWindowListener::_phaseDelegate{ "on_window_phase", "running window phase listener" };
+	const LuaTableDelegateDefinition LuaWindowListener::_videoModeDelegate{ "on_window_video_mode", "running window video mode listener" };
+	const LuaTableDelegateDefinition LuaWindowListener::_cursorModeDelegate{ "on_window_cursor_mode", "running window cursor mode listener" };
 
 	LuaWindowListenerFilter::LuaWindowListenerFilter(const sol::table& table) noexcept
 		: _table(table)
