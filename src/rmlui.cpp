@@ -1360,14 +1360,11 @@ namespace darmok
     }
 
     RmluiCanvas::RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size) noexcept
-        : _impl(std::make_unique<RmluiCanvasImpl>(*this, name, size))
+        : _impl{ std::make_unique<RmluiCanvasImpl>(*this, name, size) }
     {
     }
 
-    RmluiCanvas::~RmluiCanvas() noexcept
-    {
-        // empty on purpose
-    }
+    RmluiCanvas::~RmluiCanvas() noexcept = default;
 
     const std::string& RmluiCanvas::getName() const noexcept
     {

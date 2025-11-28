@@ -965,8 +965,8 @@ namespace darmok
         {
             outputPath = itr->get<std::filesystem::path>();
         }
+        
         itr = configJson.find("outputFormat");
-
         _outputFormat = OutputFormat::Binary;
         if (itr != configJson.end())
         {
@@ -1002,14 +1002,17 @@ namespace darmok
             return unexpected{ "empty scene" };
         }
 
+        auto basePath = input.getRelativePath().parent_path();
+
         if (outputPath.empty())
         {
             const std::string stem = input.path.stem().string();
             outputPath = stem + std::string{ protobuf::getExtension(_outputFormat) };
+            outputPath = basePath / outputPath;
         }
-        auto basePath = input.getRelativePath().parent_path();
+
         auto binary = _outputFormat == protobuf::Format::Binary;
-        effect.outputs.emplace_back(basePath / outputPath, binary);
+        effect.outputs.emplace_back(outputPath, binary);
 
         if (_currentConfig->embed_textures())
         {

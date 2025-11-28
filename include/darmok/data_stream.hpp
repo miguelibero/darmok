@@ -28,7 +28,7 @@ namespace darmok
     class DARMOK_EXPORT DataStreamBuffer final : public std::streambuf
     {
     public:
-        DataStreamBuffer(Data& data, size_t overflowSizeIncrease = 64) noexcept;
+        DataStreamBuffer(Data& data, float overflowSizeFactor = 2.f) noexcept;
         size_t size() const noexcept;
     protected:
         int_type overflow(int_type ch) override;
@@ -36,7 +36,7 @@ namespace darmok
         std::streampos seekpos(std::streampos pos, std::ios_base::openmode which) override;
     private:
         Data& _data;
-        size_t _overflowSizeIncrease;
+        float _overflowSizeFactor;
     };
 
     class DARMOK_EXPORT DataOutputStream final : public std::ostream

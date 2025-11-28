@@ -25,19 +25,23 @@ namespace
 {
 	using namespace darmok;
 
+	template<typename T>
+	using unexpected = tl::unexpected<T>;
+
 	class CircleUpdater final : public ISceneComponent
 	{
 	public:
-		CircleUpdater(Transform& trans, float speed = 1.f)
+		CircleUpdater(Transform& trans, float speed = 1.f) noexcept
 			: _trans{ trans }
 			, _speed{ speed }
 		{
 		}
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			auto pos = glm::rotateZ(_trans.getPosition(), dt * _speed);
 			_trans.setPosition(pos);
+			return {};
 		}
 
 	private:
@@ -48,18 +52,18 @@ namespace
 	class OzzSampleAppDelegate final : public IAppDelegate, public IInputEventListener
 	{
 	public:
-		OzzSampleAppDelegate(App& app)
+		OzzSampleAppDelegate(App& app) noexcept
 			: _app{ app }
 			, _animTime{ 0.f }
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
 			_app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
-			scene.addSceneComponent<SkeletalAnimationSceneComponent>();
+			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
+			scene.tryAddSceneComponent<SkeletalAnimationSceneComponent>();
 
 			auto prog = StandardProgramLoader::load(Program::Standard::Forward);
 			
@@ -70,10 +74,10 @@ namespace
 
 			auto& cam = scene.addComponent<Camera>(camEntity)
 				.setPerspective(glm::radians(60.f), 0.3, 1000);
-			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<LightingRenderComponent>();
-			cam.addComponent<SkeletalAnimationRenderComponent>();
-			_freeLook = scene.addSceneComponent<FreelookController>(cam);
+			cam.tryAddComponent<ForwardRenderer>();
+			cam.tryAddComponent<LightingRenderComponent>();
+			cam.tryAddComponent<SkeletalAnimationRenderComponent>();
+			_freeLook = *scene.tryAddSceneComponent<FreelookController>(cam);
 
 			auto unlitProg = StandardProgramLoader::load(Program::Standard::Unlit);
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
@@ -85,7 +89,7 @@ namespace
 			lightTrans.setParent(lightRootTrans);
 			auto lightMesh = std::make_shared<Mesh>(MeshData{ Sphere{0.01} }.createMesh(unlitProg->getVertexLayout()));
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
-			scene.addSceneComponent<CircleUpdater>(lightTrans);
+			scene.tryAddSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
 			scene.addComponent<AmbientLight>(lightEntity, 0.5);
 
@@ -110,7 +114,7 @@ namespace
 			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
 #ifdef DARMOK_FREETYPE
 			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf").value());
-			cam.addComponent<TextRenderer>();
+			cam.tryAddComponent<TextRenderer>();
 #endif
 
 			auto& texLoader = _app.getAssets().getTextureLoader();
@@ -128,7 +132,17 @@ namespace
 			mat->occlusionStrength = 0.75f;
 			mat->metallicFactor = 1.f;
 
-			auto skinRoot = _app.getAssets().getSceneLoader()(scene, "scene.dsc").value();
+			auto sceneDefResult = _app.getAssets().getSceneDefinitionLoader()("scene.dsc");
+			if(!sceneDefResult)
+			{
+				return unexpected{ std::move(sceneDefResult).error() };
+			}
+			auto loadResult = SceneLoader{}(*sceneDefResult.value(), scene);
+			if(!loadResult)
+			{
+				return unexpected{ std::move(loadResult).error() };
+			}
+			auto skinRoot = loadResult.value();
 			
 			auto skinEntity = scene.createEntity();
 			auto& skinTrans = scene.addComponent<Transform>(skinEntity, glm::vec3{ 1, 0, 0 });
@@ -144,6 +158,8 @@ namespace
 			}
 			
 			_app.getInput().addListener("talk", _talkInputs, *this);
+
+			return {};
 		}
 
 		void onInputEvent(const std::string& tag) override
@@ -151,18 +167,20 @@ namespace
 			_animator->play(tag);
 		}
 
-		void render() const override
+		expected<void, std::string> render() const noexcept override
 		{
 			const bgfx::Stats* stats = bgfx::getStats();
 
 			bgfx::dbgTextPrintf(0, 1, 0x0f, "Blend position: %s", glm::to_string(_animator->getBlendPosition()).c_str());
+
+			return {};
 		}
 
-		void update(float deltaTime) noexcept override
+		expected<void, std::string> update(float deltaTime) noexcept override
 		{
 			if (_freeLook->isEnabled())
 			{
-				return;
+				return {};
 			}
 
 			glm::vec2 dir{
@@ -175,6 +193,7 @@ namespace
 			{
 				_animator->play("locomotion");
 			}
+			return {};
 		}
 
 	private:

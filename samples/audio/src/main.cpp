@@ -12,20 +12,29 @@ namespace
 {
 	using namespace darmok;
 
+	template<typename T>
+	using unexpected = tl::unexpected<T>;
+
 	class AudioSampleAppDelegate final : public IAppDelegate, public IImguiRenderer
 	{
 	public:
 		AudioSampleAppDelegate(App& app)
-			: _app(app)
+			: _app{ app }
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
 			// Enable debug text.
 			_app.setDebugFlag(BGFX_DEBUG_TEXT);
+
+			auto result = _app.addComponent<ImguiAppComponent>(*this);
+			if(!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
 			
-			auto& imgui = _app.addComponent<darmok::ImguiAppComponent>(*this);
+			auto& imgui = result.value().get();
 			// the current imgui context is static, we have to do this if darmok is dynamically linked
 			// to set the static in this part
 			ImGui::SetCurrentContext(imgui.getContext());
@@ -37,10 +46,11 @@ namespace
 			_musicVolume = audio.getVolume(AudioGroup::Music);
 		}
 
-		void shutdown() override
+		expected<void, std::string> shutdown() noexcept override
 		{
 			_sound.reset();
 			_music.reset();
+			return {};
 		}
 
 		void imguiRender() override
@@ -84,10 +94,11 @@ namespace
 			}
 		}
 
-		void render() const override
+		expected<void, std::string> render() const noexcept override
 		{
 			bgfx::dbgTextPrintf(1, 1, 0x0f, "Sound Duration %f", _sound->getDuration());
 			bgfx::dbgTextPrintf(1, 2, 0x0f, "Music Duration %f", _music->getDuration());
+			return {};
 		}
 	private:
 		App& _app;

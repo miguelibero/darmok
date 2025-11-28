@@ -92,6 +92,7 @@ namespace darmok
         std::optional<Viewport> _viewport;
         EntityFilter _updateFilter;
 
+        Components copySceneComponents() const noexcept;
         Components::iterator findSceneComponent(entt::id_type type) noexcept;
         Components::const_iterator findSceneComponent(entt::id_type type) const noexcept;
 

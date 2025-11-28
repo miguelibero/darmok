@@ -411,7 +411,11 @@ namespace darmok
 
 	expected<void, std::string> RenderChain::render() noexcept
 	{
-		if (empty() || !_viewId)
+		if (empty())
+		{
+			return {};
+		}
+		if (!_viewId)
 		{
 			return unexpected<std::string>{"empty viewId"};
 		}

@@ -16,7 +16,7 @@ namespace
 
 	struct VideoModeState final
 	{
-		void onWindowVideoMode(const VideoMode& mode)
+		void onWindowVideoMode(const VideoMode& mode) noexcept
 		{
 			_screenMode = (int)mode.screenMode;
 			_monitor = mode.monitor;
@@ -168,28 +168,32 @@ namespace
 	class ImguiSampleAppDelegate final : public IAppDelegate, public IImguiRenderer, IWindowListener
 	{
 	public:
-		ImguiSampleAppDelegate(App& app)
-			: _app(app)
+		ImguiSampleAppDelegate(App& app) noexcept
+			: _app{ app }
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
 			// Enable debug text.
 			_app.setDebugFlag(BGFX_DEBUG_TEXT);
-			auto& imgui = _app.addComponent<darmok::ImguiAppComponent>(*this);
+			auto imgui = _app.tryAddComponent<darmok::ImguiAppComponent>(*this);
 			// the current imgui context is static, we have to do this if darmok is dynamically linked
 			// to set the static in this part
-			ImGui::SetCurrentContext(imgui.getContext());
+			ImGui::SetCurrentContext(imgui->getContext());
 
 			_videoModeState.update(_app.getWindow().getVideoModeInfo());
 			_videoModeState.onWindowVideoMode(_app.getWindow().getVideoMode());
 			_app.getWindow().addListener(*this);
+
+			return {};
 		}
 
-		void shutdown() override
+		expected<void, std::string> shutdown() noexcept override
 		{
 			_app.getWindow().removeListener(*this);
+
+			return {};
 		}
 
 		void imguiRender() override
@@ -215,7 +219,7 @@ namespace
 			_videoModeState.onWindowVideoMode(mode);
 		}
 
-		void render() const override
+		expected<void, std::string> render() const noexcept override
 		{
 			const bgfx::Stats* stats = bgfx::getStats();
 
@@ -248,14 +252,18 @@ namespace
 				, glm::to_string(_app.getInput().getGamepad()->getStick(GamepadStick::Left)).c_str()
 				, glm::to_string(_app.getInput().getGamepad()->getStick(GamepadStick::Right)).c_str()
 			);
+
+			return {};
 		}
 
-		void update(float deltaTime) override
+		expected<void, std::string> update(float deltaTime) noexcept override
 		{
 			_mouseVelocity = _app.getInput().getMouse().getVelocity();
 			updateMaxVec(_mouseVelocity, _mouseVelocityMax);
 			_mouseScroll = _app.getInput().getMouse().getScroll();
 			updateMaxVec(_mouseScroll, _mouseScrollMax);
+
+			return {};
 		}
 
 	private:

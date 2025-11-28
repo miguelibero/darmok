@@ -214,7 +214,7 @@ namespace darmok
 
         std::vector<std::string> errors;
 
-        for(auto comp : Components{_components})
+        for(auto& comp : copyComponents())
         {
             auto result = comp->init(*this, scene, app);
             if(!result)
@@ -229,7 +229,7 @@ namespace darmok
     {
         updateProjection();
         _renderChain.beforeRenderReset();
-        for (auto comp : Components{_components})
+        for (auto& comp : copyComponents())
         {
             auto result = comp->renderReset(viewId);
             if (!result)
@@ -254,7 +254,7 @@ namespace darmok
             return {};
         }
         std::vector<std::string> errors;
-        for (auto comp : Components{_components})
+        for (auto& comp : copyComponents())
         {
             auto result = comp->render();
             if (!result)
@@ -268,7 +268,7 @@ namespace darmok
     expected<void, std::string> Camera::shutdown()
     {
         std::vector<std::string> errors;
-        auto components = Components{_components};
+        auto components = copyComponents();
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
             auto result = (*itr)->shutdown();
@@ -293,7 +293,7 @@ namespace darmok
             _updateEnabled.reset();
         }
         std::vector<std::string> errors;
-        for (auto comp : Components{ _components })
+        for (auto& comp : copyComponents())
         {
             auto result = comp->update(deltaTime);
             if (!result)
@@ -373,7 +373,7 @@ namespace darmok
     {
         setViewTransform(viewId);
 		std::vector<std::string> errors;
-        for (auto comp : Components{_components})
+        for (auto& comp : copyComponents())
         {
             auto result = comp->beforeRenderView(viewId, encoder);
             if (!result)
@@ -386,7 +386,7 @@ namespace darmok
 
     bool Camera::shouldEntityBeCulled(Entity entity) const noexcept
     {
-        for (auto comp : Components{_components})
+        for (auto& comp : copyComponents())
         {
             if (comp->shouldEntityBeCulled(entity))
             {
@@ -400,7 +400,7 @@ namespace darmok
     {
         setEntityTransform(entity, encoder);
 		std::vector<std::string> errors;
-        for (auto comp : Components{_components})
+        for (auto& comp : copyComponents())
         {
             auto result = comp->beforeRenderEntity(entity, viewId, encoder);
             if (!result)
@@ -442,6 +442,11 @@ namespace darmok
             return false;
         }
     };
+
+    Camera::Components Camera::copyComponents() const noexcept
+    {
+        return _components;
+    }
 
     Camera::Components::iterator Camera::findComponent(entt::id_type type) noexcept
     {

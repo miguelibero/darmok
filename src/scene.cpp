@@ -16,11 +16,11 @@
 namespace darmok
 {
     SceneImpl::SceneImpl(Scene& scene) noexcept
-        : _scene(scene)
-        , _renderChain(*this)
-        , _paused(false)
-        , _pendingDestroyAll(false)
-        , _pendingDestroyFilter({}, EntityFilterOperation::Or)
+        : _scene{ scene }
+        , _renderChain{ *this }
+        , _paused{ false }
+        , _pendingDestroyAll{ false }
+        , _pendingDestroyFilter{ {}, EntityFilterOperation::Or }
     {
     }
 
@@ -113,6 +113,11 @@ namespace darmok
             return false;
         }
     };
+
+    SceneImpl::Components SceneImpl::copySceneComponents() const noexcept
+    {
+        return _components;
+    }
 
     SceneImpl::Components::iterator SceneImpl::findSceneComponent(entt::id_type type) noexcept
     {
@@ -255,7 +260,7 @@ namespace darmok
             return result;
         }
 		std::vector<std::string> errors;
-        for (auto& comp : Components{ _components })
+        for (auto& comp : copySceneComponents())
         {
             auto result = comp->init(_scene, app);
             if (!result)
@@ -337,7 +342,7 @@ namespace darmok
     {
         _registry.clear();
         std::vector<std::string> errors;
-        auto components = Components{ _components };
+        auto components = copySceneComponents();
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
             auto result = (*itr)->shutdown();
@@ -363,17 +368,15 @@ namespace darmok
     {
         _renderChain.beforeRenderReset();
 
+        auto components = copySceneComponents();
+        for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
         {
-            auto components = Components{ _components };
-            for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
+            auto result = (*itr)->renderReset(viewId);
+            if (!result)
             {
-                auto result = (*itr)->renderReset(viewId);
-                if (!result)
-                {
-                    return result;
-				}
-				viewId = result.value();
-            }
+                return result;
+			}
+			viewId = result.value();
         }
 
         // iteration in reverse to maintain the order in wich the cameras where added
@@ -385,6 +388,7 @@ namespace darmok
             {
                 return result;
             }
+            viewId = result.value();
         }
 
         auto result = _renderChain.renderReset(viewId);
@@ -480,7 +484,7 @@ namespace darmok
             }
         }
 
-        for (auto& comp : Components{ _components })
+        for (auto& comp : copySceneComponents())
         {
             auto result = comp->update(deltaTime);
             if (!result)

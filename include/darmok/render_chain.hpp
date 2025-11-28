@@ -106,6 +106,13 @@ namespace darmok
             return ref;
         }
 
+        template<typename T, typename... A>
+        OptionalRef<T> tryAddStep(A&&... args)
+        {
+            auto result = addStep<T>(std::forward<A>(args)...);
+            return result ? &result.value().get() : nullptr;
+        }
+
         expected<bool, std::string> removeStep(const IRenderChainStep& step) noexcept;
         bool empty() const noexcept;
 

@@ -133,7 +133,7 @@ namespace darmok
         OptionalRef<T> tryAddSceneComponent(A&&... args)
         {
             auto result = addSceneComponent<T>(std::forward<A>(args)...);
-            return result ? result.value().get() : nullptr;
+            return result ? &result.value().get() : nullptr;
         }
 
         template<typename T, typename... A>
@@ -150,7 +150,7 @@ namespace darmok
         OptionalRef<T> tryGetOrAddSceneComponent(A&&... args)
         {
             auto result = getOrAddSceneComponent<T>(std::forward<A>(args)...);
-            return result ? result.value().get() : nullptr;
+            return result ? &result.value().get() : nullptr;
         }
 
         Entity createEntity() noexcept;            

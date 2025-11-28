@@ -36,9 +36,9 @@ namespace darmok
 	}
 
 	AppRunner::AppRunner(std::unique_ptr<App>&& app, const CmdArgs& args) noexcept
-		: _app(std::move(app))
-		, _args(args)
-		, _setupDone(false)
+		: _app{ std::move(app) }
+		, _args{ args }
+		, _setupDone{ false }
 	{
 	}
 
@@ -89,9 +89,12 @@ namespace darmok
 		{
 			_app->onUnexpected(AppPhase::Setup, result.error());
 			return -1;
-
 		}
-		return result.value();
+		if (auto v = result.value())
+		{
+			return v;
+		}
+		return std::nullopt;
 	}
 
 	bool AppRunner::init() noexcept
@@ -361,7 +364,7 @@ namespace darmok
 		_renderReset = true;
 
 		std::vector<std::string> errors;
-		for (const auto& comp : Components(_components))
+		for (const auto& comp : Components{_components})
 		{
 			auto result = comp->init(_app);
 			if(!result)
@@ -404,7 +407,7 @@ namespace darmok
 		_running = false;
 
 		{
-			auto components = Components(_components);
+			auto components = Components{_components};
 			for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
 			{
 				auto result = (*itr)->shutdown();
@@ -447,7 +450,7 @@ namespace darmok
 
 	void AppImpl::onUnexpected(AppPhase phase, const std::string& error) noexcept
 	{
-		std::ostringstream out("[DARMOK] exception running app ");
+		std::ostringstream out{ "[DARMOK] error running app " };
 		switch (phase)
 		{
 		case AppPhase::Setup:
@@ -481,7 +484,7 @@ namespace darmok
 				}
 			}
 
-			for (const auto& comp : Components(_components))
+			for (const auto& comp : Components{_components})
 			{
 				auto result = comp->update(deltaTime);
 				if (!result)
@@ -565,7 +568,7 @@ namespace darmok
 			viewId = result.value();
 		}
 
-		for (const auto& comp : Components(_components))
+		for (const auto& comp : Components{_components})
 		{
 			auto result = comp->renderReset(viewId);
 			if (!result)
@@ -590,7 +593,7 @@ namespace darmok
 				errors.push_back(std::move(result).error());
 			}
 		}
-		for (const auto& comp : Components(_components))
+		for (const auto& comp : Components{_components})
 		{
 			auto result = comp->render();
 			if (!result)
@@ -925,14 +928,11 @@ namespace darmok
 	}
 
 	App::App(std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
-		: _impl(std::make_unique<AppImpl>(*this, std::move(factory)))
+		: _impl{ std::make_unique<AppImpl>(*this, std::move(factory)) }
 	{
 	}
 
-	App::~App() noexcept
-	{
-		// intentionally left blank for the unique_ptr<AppImpl> forward declaration
-	}
+	App::~App() noexcept = default;
 
 	expected<int32_t, std::string> App::setup(const CmdArgs& args) noexcept
 	{

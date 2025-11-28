@@ -29,16 +29,17 @@ namespace
 	class CircleUpdater final : public ISceneComponent
 	{
 	public:
-		CircleUpdater(Transform& trans, float speed = 1.f)
+		CircleUpdater(Transform& trans, float speed = 1.f) noexcept
 			: _trans{ trans }
 			, _speed{ speed }
 		{
 		}
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			auto pos = glm::rotateZ(_trans.getPosition(), dt * _speed);
 			_trans.setPosition(pos);
+			return {};
 		}
 
 	private:
@@ -49,7 +50,7 @@ namespace
 	class RotateUpdater final : public ISceneComponent
 	{
 	public:
-		RotateUpdater(Transform& trans, float speed = 50.f)
+		RotateUpdater(Transform& trans, float speed = 50.f) noexcept
 			: _trans{ trans }
 			, _speed{ speed }
 			, _paused{ false }
@@ -61,15 +62,16 @@ namespace
 			_paused = !_paused;
 		}
 
-		void update(float dt) noexcept override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			if (_paused)
 			{
-				return;
+				return {};
 			}
 			auto r = _trans.getRotation();
 			r = glm::quat{ glm::radians(glm::vec3{0.f, dt * _speed, 0.f}) } *r;
 			_trans.setRotation(r);
+			return {};
 		}
 
 	private:
@@ -81,17 +83,17 @@ namespace
 	class PbrSampleAppDelegate : public IAppDelegate, IFreelookListener, IInputEventListener
 	{
 	public:
-		PbrSampleAppDelegate(App& app)
+		PbrSampleAppDelegate(App& app) noexcept
 			: _app{ app }
 		{
 			// app.setRendererType(bgfx::RendererType::Direct3D12);
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
 			_app.setResetFlag(BGFX_RESET_VSYNC);
 
-			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 			auto prog = StandardProgramLoader::load(Program::Standard::Forward);
 			auto unlitProg = StandardProgramLoader::load(Program::Standard::Unlit);
 			auto& layout = prog->getVertexLayout();
@@ -99,10 +101,10 @@ namespace
 			_cam = createCamera(scene);
 			_freeCam = createCamera(scene, _cam);
 
-			_freelook = scene.addSceneComponent<FreelookController>(*_freeCam);
+			_freelook = scene.tryAddSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
 
-			scene.getRenderChain().addStep<ScreenSpaceRenderPass>(
+			scene.getRenderChain().tryAddStep<ScreenSpaceRenderPass>(
 				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
 
 			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
@@ -117,7 +119,7 @@ namespace
 			auto pointLightEntity = scene.createEntity();
 			auto& pointLightTrans = scene.addComponent<Transform>(pointLightEntity, glm::vec3{ 0.f, 1.f, 0.f });
 			pointLightTrans.setParent(lightRootTrans);
-			scene.addSceneComponent<CircleUpdater>(pointLightTrans);
+			scene.tryAddSceneComponent<CircleUpdater>(pointLightTrans);
 			auto& pointLight = scene.addComponent<PointLight>(pointLightEntity, 100);
 			pointLight.setShadowType(LightDefinition::HardShadow);
 			scene.addComponent<Renderable>(pointLightEntity, debugSphereMesh, unlitProg, Colors::green());
@@ -128,7 +130,7 @@ namespace
 				.lookDir(glm::vec3{ 0.f, -1.f, -1.f });
 			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 1);
 			dirLight.setShadowType(LightDefinition::SoftShadow);
-			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(dirLightTrans));
+			_rotateUpdaters.emplace_back(*scene.tryAddSceneComponent<RotateUpdater>(dirLightTrans));
 			scene.addComponent<Renderable>(dirLightEntity, debugArrowMesh, unlitProg, Colors::magenta());
 			scene.addComponent<BoundingBox>(dirLightEntity, debugArrowMeshData.getBounds());
 
@@ -139,7 +141,7 @@ namespace
 			spotLight.setShadowType(LightDefinition::HardShadow);
 			scene.addComponent<Renderable>(spotLightEntity, debugArrowMesh, unlitProg, Colors::cyan());
 			scene.addComponent<BoundingBox>(spotLightEntity, debugArrowMeshData.getBounds());
-			_rotateUpdaters.emplace_back(scene.addSceneComponent<RotateUpdater>(spotLightTrans, -50.f));
+			_rotateUpdaters.emplace_back(*scene.tryAddSceneComponent<RotateUpdater>(spotLightTrans, -50.f));
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
@@ -173,17 +175,19 @@ namespace
 			scene.addComponent<BoundingBox>(floorEntity, floorShape);
 
 			_app.getInput().addListener("pause", { _pauseEvent }, *this);
+
+			return {};
 		}
 
-		void update(float deltaTime) noexcept override
+		expected<void, std::string> update(float deltaTime) noexcept override
 		{
 			if (_freelook && _freelook->isEnabled())
 			{
-				return;
+				return {};
 			}
 			if (!_trans)
 			{
-				return;
+				return {};
 			}
 			glm::vec3 dir{ 0.f };
 			dir.x = _app.getInput().getAxis(_moveLeft, _moveRight);
@@ -191,6 +195,7 @@ namespace
 
 			auto pos = _trans->getPosition();
 			_trans->setPosition(pos + (dir * deltaTime));
+			return {};
 		}
 
 	private:
@@ -260,24 +265,24 @@ namespace
 				.setPerspective(glm::radians(60.f), 0.3f, farPlane);
 
 			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx").value();
-			cam.addComponent<SkyboxRenderer>(skyboxTex);
-			cam.addComponent<GridRenderer>();
-			cam.addComponent<LightingRenderComponent>();
+			cam.tryAddComponent<SkyboxRenderer>(skyboxTex);
+			cam.tryAddComponent<GridRenderer>();
+			cam.tryAddComponent<LightingRenderComponent>();
 
 			ShadowRendererConfig shadowConfig;
 			shadowConfig.cascadeAmount = 3;
-			cam.addComponent<ShadowRenderer>(shadowConfig);
-			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<FrustumCuller>();
-			// cam.addComponent<OcclusionCuller>();
+			cam.tryAddComponent<ShadowRenderer>(shadowConfig);
+			cam.tryAddComponent<ForwardRenderer>();
+			cam.tryAddComponent<FrustumCuller>();
+			// cam.tryAddComponent<OcclusionCuller>();
 
 			if (mainCamera)
 			{
-				cam.addComponent<CullingDebugRenderer>(mainCamera.value());
+				cam.tryAddComponent<CullingDebugRenderer>(mainCamera.value());
 				cam.setEnabled(false);
 				if (auto shadow = mainCamera->getComponent<ShadowRenderer>())
 				{
-					cam.addComponent<ShadowDebugRenderer>(shadow.value());
+					cam.tryAddComponent<ShadowDebugRenderer>(shadow.value());
 				}
 			}
 

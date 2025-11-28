@@ -380,8 +380,18 @@ namespace darmok
 		addPackagePath(STR(LUA_CPATH), true);
 #endif
 
-		auto result = lua.safe_script_file(mainPath.string(), sol::script_pass_on_error);
-		return LuaUtils::wrapResult<int32_t>(result);
+		auto result = lua.safe_script_file(mainPath.string(), sol::script_pass_on_error);		
+		if (!result.valid())
+		{
+			sol::error err = result;
+			return unexpected<std::string>{ err.what() };
+		}
+		sol::object obj = result;
+		if (obj.is<int32_t>())
+		{
+			return obj.as<int32_t>();
+		}
+		return 0;
 	}
 
 	void LuaAppDelegateImpl::unloadLua() noexcept

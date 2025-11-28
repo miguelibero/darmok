@@ -81,6 +81,7 @@ namespace darmok
 			return luaL_error(L, "operation not allowed");
 		}
 
+		template<>
 		void unwrapExpected(expected<void, std::string> v, std::string_view prefix)
 		{
 			if (v)

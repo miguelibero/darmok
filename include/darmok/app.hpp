@@ -264,7 +264,7 @@ namespace darmok
 		OptionalRef<T> tryAddComponent(A&&... args) noexcept
 		{
 			auto result = addComponent<T>(std::forward<A>(args)...);
-			return result ? result.value().get() : nullptr;
+			return result ? &result.value().get() : nullptr;
 		}
 
 		template<typename T, typename... A>
@@ -281,7 +281,7 @@ namespace darmok
 		OptionalRef<T> tryGetOrAddComponent(A&&... args) noexcept
 		{
 			auto result = getOrAddComponent<T>(std::forward<A>(args)...);
-			return result ? result.value().get() : nullptr;
+			return result ? &result.value().get() : nullptr;
 		}
 
 	protected:

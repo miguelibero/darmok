@@ -15,6 +15,9 @@ namespace
 {
 	using namespace darmok;
 
+	template<typename T>
+	using unexpected = tl::unexpected<T>;
+
 	class RotateUpdater final : public ISceneComponent
 	{
 	public:
@@ -24,9 +27,10 @@ namespace
 		{
 		}
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			_trans.rotate(glm::radians(glm::vec3{ 0, 0, dt * _speed }));
+			return {};
 		}
 
 	private:
@@ -42,11 +46,22 @@ namespace
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
-			auto scene = _app.addComponent<SceneAppComponent>().getScene();
-			auto result = _app.getAssets().getSceneLoader()(*scene, "human.dsc");
-			assert(result);
+			auto scene = _app.tryAddComponent<SceneAppComponent>()->getScene();
+
+			auto defResult = _app.getAssets().getSceneDefinitionLoader()("human.dsc");
+			if(!defResult)
+			{
+				return unexpected{ std::string{ "error loading scene definition: "} + defResult.error() };
+			}
+
+			auto sceneDef = defResult.value();
+			auto result = SceneLoader{}(*sceneDef, *scene);
+			if (!result)
+			{
+				return unexpected{ std::string{ "error loading scene: "} + result.error() };
+			}
 
 			auto ambientLightEntity = scene->createEntity();
 			scene->addComponent<AmbientLight>(ambientLightEntity, 0.5);
@@ -65,6 +80,8 @@ namespace
 				cam.addComponent<ForwardRenderer>();
 				cam.addComponent<LightingRenderComponent>();
 			}
+
+			return {};
 		}
 	private:
 		App& _app;

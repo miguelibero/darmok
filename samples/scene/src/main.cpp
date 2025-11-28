@@ -35,20 +35,20 @@ namespace
 	class ScreenBounceUpdater final : public IAppUpdater
 	{
 	public:
-		ScreenBounceUpdater(Window& win, Transform& trans, const glm::vec2& size = {1, 1}, float speed = 100.f)
-			: _win(win)
-			, _trans(trans)
-			, _size(size)
-			, _dir(speed)
+		ScreenBounceUpdater(Window& win, Transform& trans, const glm::vec2& size = {1, 1}, float speed = 100.f) noexcept
+			: _win{ win }
+			, _trans{ trans }
+			, _size{ size }
+			, _dir{ speed }
 		{
 		}
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
-			auto margin = _size * 0.5F * glm::vec2(_trans.getScale());
-			auto max = glm::vec2(_win.getPixelSize()) - margin;
+			auto margin = _size * 0.5F * glm::vec2{ _trans.getScale() };
+			auto max = glm::vec2{ _win.getPixelSize() } - margin;
 			auto min = margin;
-			auto pos = _trans.getPosition() + (glm::vec3(_dir, 0) * dt);
+			auto pos = _trans.getPosition() + (glm::vec3{ _dir, 0 } *dt);
 			if (pos.x > max.x)
 			{
 				pos.x = max.x;
@@ -70,6 +70,7 @@ namespace
 				_dir.y *= -1;
 			}
 			_trans.setPosition(pos);
+			return {};
 		}
 	private:
 		Window& _win;
@@ -82,15 +83,16 @@ namespace
 	{
 	public:
 		RotateUpdater(Transform& trans, float speed = 100.f)
-			: _trans(trans)
-			, _speed(speed)
+			: _trans{ trans }
+			, _speed{ speed }
 		{
 		}
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			auto r = _trans.getRotation() * glm::quat(glm::radians(glm::vec3(0, dt * _speed, 0)));
 			_trans.setRotation(r);
+			return {};
 		}
 
 	private:
@@ -102,14 +104,14 @@ namespace
 	{
 	public:
 		SceneSampleAppDelegate(App& app)
-			: _app(app)
+			: _app{ app }
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
-			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
-			scene.addSceneComponent<FrameAnimationUpdater>();
+			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
+			scene.tryAddSceneComponent<FrameAnimationUpdater>();
 
 			_prog = StandardProgramLoader::load(Program::Standard::Unlit);
 
@@ -134,6 +136,8 @@ namespace
 			createBouncingSprite(scene);
 			createSpriteAnimation(scene);
 			createRotatingCube(scene);
+
+			return {};
 		}
 
 		void createBouncingSprite(Scene& scene)

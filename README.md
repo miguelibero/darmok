@@ -36,9 +36,6 @@ currently using:
 
 planned to use:
 * [slang](https://github.com/shader-slang/slang) unified shader language that compiles to  the different render
-* [tracy](https://github.com/wolfpld/tracy) for frame profiling
-    (blocked because of [bgfx#3308](https://github.com/bkaradzic/bgfx/pull/3308)
-    and the vcpkg bgfx build not having a profiler feature)
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * [Box2D](https://box2d.org/) 2D physics

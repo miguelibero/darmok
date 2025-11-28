@@ -12,15 +12,15 @@ namespace darmok
     }
 
     DataInputStream::DataInputStream(const DataView& data) noexcept
-    : std::istream(&_buffer)
-    , _buffer(data)
+        : std::istream(&_buffer)
+        , _buffer{ data }
     {
         rdbuf(&_buffer);
     }
 
-    DataStreamBuffer::DataStreamBuffer(Data& data, size_t overflowSizeIncrease) noexcept
-        : _data(data)
-        , _overflowSizeIncrease(overflowSizeIncrease)
+    DataStreamBuffer::DataStreamBuffer(Data& data, float overflowSizeFactor) noexcept
+        : _data{ data }
+        , _overflowSizeFactor{ overflowSizeFactor }
     {
         auto base = (char*)data.ptr();
         auto size = data.size();
@@ -84,7 +84,8 @@ namespace darmok
         if (ch != EOF)
         {
             auto oldSize = int(pptr() - pbase());
-            _data.resize(_data.size() + _overflowSizeIncrease);
+			auto dataSize = _data.size();
+            _data.resize((dataSize ? dataSize : 1) * _overflowSizeFactor);
             auto base = (char*)_data.ptr();
             auto size = _data.size();
             setp(base, base + size);
@@ -97,13 +98,13 @@ namespace darmok
 
     DataOutputStream::DataOutputStream(Data& data) noexcept
         : std::ostream(&_buffer)
-        , _buffer(data)
+        , _buffer{ data }
     {
         rdbuf(&_buffer);
     }
 
     DataMemoryBlock::DataMemoryBlock(Data& data) noexcept
-        : _data(data)
+        : _data{ data }
     {
     }
 

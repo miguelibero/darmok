@@ -530,15 +530,16 @@ namespace darmok
     {
         auto fpath = (_basePath / path).relative_path();
 
-        for (auto& basePath : _rootPaths)
+        for (auto& rootPath : _rootPaths)
         {
-            auto combPath = basePath / fpath;
+            auto combPath = rootPath / fpath;
             if (std::filesystem::exists(combPath))
             {
                 return Data::fromFile(combPath, _alloc);
             }
         }
-        return unexpected<std::string>("path does not exist");
+        auto err = std::string{ "path " } + path.string() + " does not exist";
+        return unexpected{ std::move(err) };
     }
 }
 

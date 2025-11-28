@@ -22,7 +22,7 @@ namespace
 {
 	using namespace darmok;
 
-	class WobbleUpdater : public ISceneComponent
+	class WobbleUpdater final : public ISceneComponent
 	{
 	public:
 		WobbleUpdater(Transform& trans, float speed = 0.1f, float maxAngle = 10.f)
@@ -33,7 +33,7 @@ namespace
 		{
 		}
 
-		void update(float dt) override
+		expected<void, std::string> update(float dt) noexcept override
 		{
 			auto rot = _trans.getRotation();
 			glm::quat target{ glm::radians(_factor * _maxAngle * glm::vec3{ 1.f }) };
@@ -43,6 +43,7 @@ namespace
 				_factor *= -1.f;
 			}
 			_trans.setRotation(rot);
+			return {};
 		}
 
 	private:
@@ -55,14 +56,14 @@ namespace
 	class RmluiSampleAppDelegate final : public IAppDelegate
 	{
 	public:
-		RmluiSampleAppDelegate(App& app)
+		RmluiSampleAppDelegate(App& app) noexcept
 			: _app{ app }
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
-			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 			scene.addSceneComponent<RmluiSceneComponent>();
 
 			// scene.setViewport(Viewport(glm::ivec2(500), glm::ivec2(200)));
@@ -125,6 +126,8 @@ namespace
 			// _app.getWindow().requestVideoMode({
 			// 	.screenMode = WindowScreenMode::WindowedFullscreen,
 			// });
+
+			return {};
 		}
 	private:
 		App& _app;

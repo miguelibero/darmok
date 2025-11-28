@@ -22,16 +22,16 @@ namespace
 	class SceneTextAppDelegate : public IAppDelegate, public IImguiRenderer
 	{
 	public:
-		SceneTextAppDelegate(App& app)
+		SceneTextAppDelegate(App& app) noexcept
 			: _app{ app }
 		{
 		}
 
-		void init() override
+		expected<void, std::string> init() noexcept override
 		{
-			auto& imgui = _app.addComponent<darmok::ImguiAppComponent>(*this);
+			auto& imgui = *_app.tryAddComponent<darmok::ImguiAppComponent>(*this);
 
-			auto& scene = *_app.addComponent<SceneAppComponent>().getScene();
+			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 
 			auto arial = _app.getAssets().getFontLoader()("arialuni.ttf").value();
 			auto noto = _app.getAssets().getFontLoader()("../../assets/noto.ttf").value();
@@ -48,8 +48,8 @@ namespace
 
 			cam.setOrtho();
 
-			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<TextRenderer>();
+			cam.tryAddComponent<ForwardRenderer>();
+			cam.tryAddComponent<TextRenderer>();
 
 			auto baseEntity = scene.createEntity();
 			auto& baseTrans = scene.addComponent<Transform>(baseEntity)
@@ -70,6 +70,8 @@ namespace
 			_text3->setContentSize(glm::vec2{ 200.f, noto->getLineSize() });
 			scene.addComponent<Transform>(text3Entity, glm::vec3{ 0.f, -0.2f, 0.f })
 				.setParent(baseTrans);
+
+			return {};
 		}
 
 		void imguiRender()

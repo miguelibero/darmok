@@ -159,7 +159,7 @@ namespace darmok
         OptionalRef<T> tryAddComponent(A&&... args) noexcept
         {
             auto result = addComponent<T>(std::forward<A>(args)...);
-            return result ? result.value().get() : nullptr;
+            return result ? &result.value().get() : nullptr;
         }
 
         template<typename T, typename... A>
@@ -176,7 +176,7 @@ namespace darmok
         OptionalRef<T> tryGetOrAddComponent(A&&... args) noexcept
         {
             auto result = getOrAddComponent<T>(std::forward<A>(args)...);
-            return result ? result.value().get() : nullptr;
+            return result ? &result.value().get() : nullptr;
         }
 
         // trying to maintain Unity API https://docs.unity3d.com/ScriptReference/Camera.html
@@ -232,6 +232,7 @@ namespace darmok
 
         Components::iterator findComponent(entt::id_type type) noexcept;
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
+        Components copyComponents() const noexcept;
 
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;

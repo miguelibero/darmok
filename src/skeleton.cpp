@@ -222,15 +222,15 @@ namespace darmok
 
     expected<void, std::string> SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        auto animator = getAnimator(entity);
-        if (!animator)
-        {
-            return unexpected<std::string>{"missing animator"};
-        }
         auto skinnable = _scene->getComponent<Skinnable>(entity);
         if (!skinnable)
         {
-            return unexpected<std::string>{"missing skinnable"};
+            return {};
+        }
+        auto animator = getAnimator(entity);
+        if (!animator)
+        {
+            return {};
         }
 
         auto armature = skinnable->getArmature();
