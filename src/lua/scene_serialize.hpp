@@ -102,7 +102,7 @@ namespace darmok
 		std::optional<LuaEntity> run(const LuaSceneDefinition& sceneDef, std::shared_ptr<Scene> scene);
 		IComponentLoadContext& getComponentLoadContext(const protobuf::Scene& sceneDef);
 		void setParent(const LuaEntity& entity);
-		void addComponentListener(const sol::object& type, const sol::function& func);
+		void addComponentListener(const sol::object& type, const sol::protected_function& func);
 		void clearComponentListeners();
 		AssetPack& getAssetPack();
 		LuaEntityDefinition getEntityDefinition(const LuaEntity& entity);

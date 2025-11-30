@@ -263,15 +263,15 @@ namespace darmok
 		_loader->setParent(entity.getReal());
 	}
 
-	void LuaSceneLoader::addComponentListener(const sol::object& type, const sol::function& func)
+	void LuaSceneLoader::addComponentListener(const sol::object& type, const sol::protected_function& func)
 	{
 		auto typeId = LuaUtils::getTypeId(type).value();
 
-		_loader->addComponentListener([this, typeId, func](const SceneLoader::Any& compAny, Entity entity)
+		_loader->addComponentListener([this, typeId, func](const SceneLoader::Any& compAny, Entity entity) -> expected<void, std::string>
 		{
 			if (typeId != protobuf::getTypeId(compAny))
 			{
-				return;
+				return {};
 			}
 			auto entityDef = nullEntityId;
 			if (auto sceneDef = _sceneDef.lock())
@@ -279,7 +279,7 @@ namespace darmok
 				entityDef = ConstSceneDefinitionWrapper{ *sceneDef }.getEntity(compAny);
 			}
 			auto result = func(LuaEntityDefinition{ entityDef, _sceneDef }, LuaEntity{ entity, _scene });
-			LuaUtils::checkResult(result, "scene loader component listener callback");
+			return LuaUtils::wrapResult<void>(result);
 		});
 	}
 

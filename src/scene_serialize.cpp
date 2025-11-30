@@ -544,7 +544,7 @@ namespace darmok
 		_assetConfig = std::move(assetConfig);
     }
 
-    void SceneLoaderImpl::addComponentListener(std::function<void(const Any& compAny, Entity entity)>&& func) noexcept
+    void SceneLoaderImpl::addComponentListener(ComponentListener func) noexcept
     {
         _compListeners.push_back(std::move(func));
     }
@@ -554,12 +554,18 @@ namespace darmok
 		_compListeners.clear();
     }
 
-    void SceneLoaderImpl::callComponentListeners(const Any& compAny, Entity entity) noexcept
+    SceneLoaderImpl::Result SceneLoaderImpl::callComponentListeners(const Any& compAny, Entity entity) noexcept
     {
+        std::vector<std::string> errors;
         for (auto& listener : _compListeners)
         {
-            listener(compAny, entity);
+            auto result = listener(compAny, entity);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     const Scene& SceneLoaderImpl::getScene() const noexcept
@@ -774,9 +780,9 @@ namespace darmok
         _impl.addPostLoad(std::move(func));
     }
 
-    void SceneArchive::callComponentListeners(const Any& compAny, Entity entity) noexcept
+    SceneArchive::Result SceneArchive::callComponentListeners(const Any& compAny, Entity entity) noexcept
     {
-        _impl.callComponentListeners(compAny, entity);
+        return _impl.callComponentListeners(compAny, entity);
     }
 
     SceneLoader::SceneLoader() noexcept
@@ -832,7 +838,7 @@ namespace darmok
         return *this;
     }
 
-    SceneLoader& SceneLoader::addComponentListener(std::function<void(const Any& compDef, Entity entity)>&& func) noexcept
+    SceneLoader& SceneLoader::addComponentListener(ComponentListener func) noexcept
     {
         _impl->addComponentListener(std::move(func));
         return *this;

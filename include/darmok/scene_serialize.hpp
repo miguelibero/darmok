@@ -315,12 +315,10 @@ namespace darmok
     class SceneLoaderImpl;
 
     template <typename T, typename Def = T::Definition>
-    concept HasBasicSceneComponentLoad = requires(T& c, const Def& def) {
-        { c.load(def) } -> std::same_as<expected<void, std::string>>;
-    };
+    concept HasBasicSceneComponentLoad = HasDefinitionLoad<T, Def>;
 
     template <typename T, typename Def = T::Definition>
-    concept HasContextSceneComponentLoad = requires(T & c, const Def& def, IComponentLoadContext& ctx) {
+    concept HasContextSceneComponentLoad = requires(T& c, const Def& def, IComponentLoadContext& ctx) {
         { c.load(def, ctx) } -> std::same_as<expected<void, std::string>>;
     };
 
@@ -416,8 +414,7 @@ namespace darmok
                 return unexpected{ std::move(result).error() };
             }
            
-            callComponentListeners(*data.any, entity);
-            return {};
+            return callComponentListeners(*data.any, entity);
         }
 
         Entity getEntity(EntityId entityId) const noexcept;
@@ -426,7 +423,7 @@ namespace darmok
         ComponentData getComponentData() noexcept;
         IComponentLoadContext& getComponentLoadContext() noexcept;
         void addPostLoad(LoadFunction&& func);
-        void callComponentListeners(const Any& compAny, Entity entity) noexcept;
+        Result callComponentListeners(const Any& compAny, Entity entity) noexcept;
     };
 
     class SceneLoader final
@@ -439,6 +436,7 @@ namespace darmok
         using ComponentData = SceneConverterComponentData;
         using Message = protobuf::Message;
         using Any = google::protobuf::Any;
+        using ComponentListener = std::function<expected<void, std::string>(const Any& compAny, Entity entity)>;
 
         SceneLoader() noexcept;
         ~SceneLoader() noexcept;
@@ -478,7 +476,7 @@ namespace darmok
             });
         }
 
-        SceneLoader& addComponentListener(std::function<void(const Any& compAny, Entity entity)>&& func) noexcept;
+        SceneLoader& addComponentListener(ComponentListener func) noexcept;
 		SceneLoader& clearComponentListeners() noexcept;
 
     private:

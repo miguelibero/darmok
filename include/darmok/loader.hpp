@@ -391,6 +391,16 @@ namespace darmok
         }
     };
 
+    template <typename T, typename Def = T::Definition>
+    concept HasStaticDefinitionLoad = requires(const Def & def) {
+        { T::load(def) } -> std::same_as<expected<T, std::string>>;
+    };
+
+    template <typename T, typename Def = T::Definition>
+    concept HasDefinitionLoad = requires(T& c, const Def & def) {
+        { c.load(def) } -> std::same_as<expected<void, std::string>>;
+    };
+
     template<typename Interface, typename DefinitionLoader>
     class DARMOK_EXPORT FromDefinitionLoader : public Interface
     {
@@ -641,6 +651,82 @@ namespace darmok
                 }
             }
         }
+    private:
+
+        template<typename Def>
+        static std::optional<Result> tryCreate(const Def& def) noexcept
+        {
+            if constexpr (std::is_move_constructible_v<Resource> && HasStaticDefinitionLoad<Resource, Def>)
+            {
+                auto result = Resource::load(def);
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
+                return std::make_shared<Resource>(std::move(result).value());
+            }
+            else if constexpr (std::is_default_constructible_v<Resource> && HasDefinitionLoad<Resource, Def>)
+            {
+                auto res = std::make_shared<Resource>();
+                auto result = res->load(def);
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
+                return res;
+            }
+            else if constexpr (std::is_constructible_v<Resource, Def>)
+            {
+                return std::make_shared<Resource>(def);
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+
+        template<typename Def>
+        static std::optional<expected<void, Error>> tryLoad(Resource& res, const Def& def) noexcept
+        {
+            if constexpr (HasDefinitionLoad<Resource, Def>)
+            {
+                return res.load(def);
+            }
+            else if constexpr (std::is_assignable_v<Resource, Def>)
+            {
+                res = def;
+                return expected<void, Error>{};
+            }
+            else if constexpr (std::is_move_assignable_v<Resource>)
+            {
+                auto result = tryCreate(def);
+                if (!result)
+                {
+                    return std::nullopt;
+                }
+                if (!*result)
+                {
+                    return unexpected<Error>{ std::move(*result).error() };
+                }
+                res = std::move(*result->value());
+                return expected<void, Error>{};
+            }
+            else if constexpr (std::is_copy_assignable_v<Resource>)
+            {
+                auto result = tryCreate(def);
+                if (!result)
+                {
+                    return std::nullopt;
+                }
+                if (!*result)
+                {
+                    return unexpected<Error>{ std::move(*result).error() };
+                }
+                res = result->value();
+                return expected<void, Error>{};
+            }
+            return std::nullopt;
+        }
 
     protected:
 
@@ -650,44 +736,30 @@ namespace darmok
             {
                 return unexpected<Error>{"empty definition"};
             }
-            if constexpr (std::is_constructible_v<Resource, std::shared_ptr<Definition>>)
+            auto resultPtr = tryCreate(def);
+            if (resultPtr)
             {
-                return std::make_shared<Resource>(def);
+                return *resultPtr;
             }
-            if constexpr (std::is_constructible_v<Resource, Definition>)
+            auto result = tryCreate(*def);
+            if (result)
             {
-                return std::make_shared<Resource>(*def);
+                return *result;
             }
             return unexpected<Error>{"could not create resource"};
         }
 
         virtual expected<void, Error> load(Resource& res, std::shared_ptr<Definition> def) noexcept
         {
-            if constexpr (std::is_move_assignable_v<Resource>)
+            auto resultPtr = tryLoad(res, def);
+            if (resultPtr)
             {
-                auto result = create(def);
-                if (!result)
-                {
-                    return unexpected<Error>{ result.error() };
-                }
-                if (result.value())
-                {
-                    res = std::move(*result.value());
-                }
-				return {};
+                return *resultPtr;
             }
-            if constexpr (std::is_copy_assignable_v<Resource>)
+            auto result = tryLoad(res, *def);
+            if (result)
             {
-                auto result = create(def);
-                if (!result)
-                {
-                    return unexpected<Error>{ result.error() };
-                }
-                if (result.value())
-                {
-                    res = *result.value();
-                }
-                return {};
+                return *result;
             }
             return unexpected<Error>{"could not load resource"};
         }

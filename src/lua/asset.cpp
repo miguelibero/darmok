@@ -21,52 +21,52 @@ namespace darmok
 {	
 	std::shared_ptr<Program> LuaAssetContext::loadProgram(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getProgramLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getProgramLoader()(path));
 	}
 
 	std::shared_ptr<Texture> LuaAssetContext::loadTexture(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getTextureLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getTextureLoader()(path));
 	}
 
 	std::shared_ptr<TextureAtlas> LuaAssetContext::loadTextureAtlas(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getTextureAtlasLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getTextureAtlasLoader()(path));
 	}
 
 	std::shared_ptr<MeshDefinition> LuaAssetContext::loadMeshDefinition(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getMeshLoader().loadDefinition(path).value();
+		return LuaUtils::unwrapExpected(assets.getMeshLoader().loadDefinition(path));
 	}
 
 	std::shared_ptr<Sound> LuaAssetContext::loadSound(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getSoundLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getSoundLoader()(path));
 	}
 
 	std::shared_ptr<Music> LuaAssetContext::loadMusic(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getMusicLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getMusicLoader()(path));
 	}
 
 	LuaSceneDefinition LuaAssetContext::loadSceneDefinition(IAssetContext& assets, const std::string& path)
 	{
-		return { assets.getSceneDefinitionLoader()(path).value() };
+		return { LuaUtils::unwrapExpected(assets.getSceneDefinitionLoader()(path)) };
 	}
 
 	std::shared_ptr<Skeleton> LuaAssetContext::loadSkeleton(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getSkeletonLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getSkeletonLoader()(path));
 	}
 
 	std::shared_ptr<SkeletalAnimation> LuaAssetContext::loadSkeletalAnimation(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getSkeletalAnimationLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getSkeletalAnimationLoader()(path));
 	}
 
 	std::shared_ptr<SkeletalAnimatorDefinition> LuaAssetContext::loadSkeletalAnimatorDefinition(IAssetContext& assets, const std::string& path)
 	{
-		return assets.getSkeletalAnimatorDefinitionLoader()(path).value();
+		return LuaUtils::unwrapExpected(assets.getSkeletalAnimatorDefinitionLoader()(path));
 	}
 
 	sol::table LuaAssetContext::loadSkeletalAnimations(IAssetContext& assets, const SkeletalAnimatorDefinition& def, sol::this_state ts)
