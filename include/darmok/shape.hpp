@@ -23,6 +23,7 @@ namespace darmok
         glm::vec2 origin;
 
         using Definition = protobuf::Rectangle;
+        static Definition createDefinition();
 
         Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
 		Rectangle(const Definition& def) noexcept;
@@ -48,6 +49,7 @@ namespace darmok
         glm::vec3 origin;
 
         using Definition = protobuf::Cube;
+        static Definition createDefinition();
 
         Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
         explicit Cube(const BoundingBox& bbox) noexcept;
@@ -210,6 +212,7 @@ namespace darmok
         glm::vec3 origin;
 
         using Definition = protobuf::Capsule;
+        static Definition createDefinition();
 
         Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
 		Capsule(const Definition& def) noexcept;

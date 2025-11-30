@@ -20,12 +20,12 @@ namespace darmok::editor
 {
     const std::string EditorInspectorView::_windowName = "Inspector";
 
-    EditorInspectorView::EditorInspectorView()
+    EditorInspectorView::EditorInspectorView() noexcept
         : _selected{ nullEntityId }
     {
     }
 
-    void EditorInspectorView::setup()
+    expected<void, std::string> EditorInspectorView::setup() noexcept
     {
         _editors.add<TransformInspectorEditor>();
         _editors.add<CameraInspectorEditor>();
@@ -47,21 +47,24 @@ namespace darmok::editor
         _editors.add<ArmatureInspectorEditor>();
         _editors.add<SkinnableInspectorEditor>();
         _editors.add<SkeletalAnimatorInspectorEditor>();
+        return {};
     }
 
-    void EditorInspectorView::init(EditorApp& app)
+    expected<void, std::string> EditorInspectorView::init(EditorApp& app) noexcept
     {
         _editors.init(app);
 		_sceneDef = app.getProject().getSceneDefinition();
+        return {};
     }
 
-    void EditorInspectorView::shutdown()
+    expected<void, std::string> EditorInspectorView::shutdown() noexcept
     {
         _sceneDef.reset();
         _editors.shutdown();
+        return {};
     }
 
-    void EditorInspectorView::selectObject(const SelectableObject& obj)
+    void EditorInspectorView::selectObject(const SelectableObject& obj) noexcept
     {
         _selected = obj;
     }
@@ -87,12 +90,12 @@ namespace darmok::editor
 		return std::nullopt;
     }
 
-    const std::string& EditorInspectorView::getWindowName()
+    const std::string& EditorInspectorView::getWindowName() noexcept
     {
         return _windowName;
     }
 
-    EditorInspectorView::RenderResult EditorInspectorView::renderEntity(EntityId entity)
+    EditorInspectorView::RenderResult EditorInspectorView::renderEntity(EntityId entity) noexcept
     {
         if (!_sceneDef)
         {
@@ -118,12 +121,12 @@ namespace darmok::editor
         }
         if (!errors.empty())
         {
-			return unexpected{ StringUtils::joinExpectedErrors(errors) };
+			return unexpected{ StringUtils::joinErrors(errors) };
         }
         return changed;
     }
 
-    EditorInspectorView::RenderResult EditorInspectorView::renderAsset(std::filesystem::path path)
+    EditorInspectorView::RenderResult EditorInspectorView::renderAsset(std::filesystem::path path) noexcept
     {
         if (!_sceneDef)
         {
@@ -137,7 +140,7 @@ namespace darmok::editor
         return _editors.render(*asset, true);
     }
 
-    EditorInspectorView::RenderResult EditorInspectorView::render()
+    EditorInspectorView::RenderResult EditorInspectorView::render() noexcept
     {
         if (!_sceneDef)
         {

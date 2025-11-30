@@ -353,6 +353,39 @@ namespace darmok
                 return doLoad<T>(std::move(data));
             });
         }
+
+        template<typename T, typename Def = T::Definition>
+        static expected<void, std::string> loadComponent(T& comp, const Def& def, OptionalRef<IComponentLoadContext> ctxt = nullptr) noexcept
+        {
+            expected<void, std::string> result;
+            if constexpr (HasContextSceneComponentLoad<T, Def>)
+            {
+                if (!ctxt)
+                {
+                    return unexpected<std::string>{"missing component load context"};
+                }
+                return comp.load(def, *ctxt);
+            }
+            else if constexpr (HasBasicSceneComponentLoad<T, Def>)
+            {
+                return comp.load(def);
+            }
+            else if constexpr (std::is_assignable_v<T&, Def>)
+            {
+                comp = def;
+                return {};
+            }
+            else if constexpr (IsConvertible<T, Def> && std::is_assignable_v<T&, T>)
+            {
+                comp = convert<T>(def);
+                return {};
+            }
+            else
+            {
+                return unexpected<std::string>{ "coult not load" };
+            }
+        }
+
     private:
         SceneLoaderImpl& _impl;
 
@@ -377,27 +410,12 @@ namespace darmok
                 return unexpected<std::string>{"Could not unpack component"};
             }
 
-            expected<void, std::string> result;
-            if constexpr (HasContextSceneComponentLoad<T>)
-            {
-                result = comp->load(def, getComponentLoadContext());
-            }
-            else if constexpr (HasBasicSceneComponentLoad<T>)
-            {
-                result = comp->load(def);
-            }
-            else if constexpr (std::is_assignable_v<T&, Def>)
-            {
-                *comp = def;
-            }
-            else if constexpr (IsConvertible<T, Def> && std::is_assignable_v<T&, T>)
-            {
-                *comp = convert<T>(def);
-            }
+            auto result = SceneArchive::loadComponent(*comp, def, getComponentLoadContext());
             if (!result)
             {
-                return result;
+                return unexpected{ std::move(result).error() };
             }
+           
             callComponentListeners(*data.any, entity);
             return {};
         }

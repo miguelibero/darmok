@@ -27,14 +27,6 @@ namespace darmok
         return ss.str();
 	}
 
-    void throwIfError(bx::Error& err)
-    {
-        if(auto msg = checkError(err))
-        {
-            throw std::runtime_error{ *msg };
-		}
-    }
-
     RandomGenerator::RandomGenerator(uint32_t seed) noexcept
         : _seed{ seed }
     {

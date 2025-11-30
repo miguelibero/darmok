@@ -46,8 +46,8 @@ namespace darmok::editor
         expected<void, std::string> update(float deltaTime) noexcept override;
 
         // IImguiRenderer
-        void imguiSetup() override;
-        void imguiRender() override;
+        expected<void, std::string> imguiSetup() noexcept override;
+        expected<void, std::string> imguiRender() noexcept override;
 
         EditorProject& getProject() noexcept;
         const EditorProject& getProject() const noexcept;
@@ -88,27 +88,27 @@ namespace darmok::editor
         static const char* _sceneTreeWindowName;
 
         // IEditorAssetsViewDelegate
-        std::optional<std::filesystem::path> getSelectedAssetPath() const override;
-        void onAssetPathSelected(const std::filesystem::path& assetPath) override;
+        std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept override;
+        void onAssetPathSelected(const std::filesystem::path& assetPath) noexcept override;
 
-        void renderMainMenu();
-        void renderMainToolbar();
-        void renderDockspace();
-        bool renderSceneTree();
-        void renderAboutDialog();
+        expected<void, std::string> renderMainMenu() noexcept;
+        expected<void, std::string> renderMainToolbar() noexcept;
+        void renderDockspace() noexcept;
+        bool renderSceneTree() noexcept;
+        void renderAboutDialog() noexcept;
 
         using TransformDefinition = protobuf::Transform;
 
-        bool renderEntityDragDropTarget(EntityId entity);
-        bool renderSceneTreeBranch(EntityId entity);
-        void onSceneTreeTransformClicked(EntityId entity);
-        void onSceneTreeSceneClicked();
+        bool renderEntityDragDropTarget(EntityId entity) noexcept;
+        bool renderSceneTreeBranch(EntityId entity) noexcept;
+        void onSceneTreeTransformClicked(EntityId entity) noexcept;
+        void onSceneTreeSceneClicked() noexcept;
 
         void onObjectSelected(const SelectableObject& obj) noexcept;
 
-        void playScene();
-        void stopScene();
-        void pauseScene();
+        void playScene() noexcept;
+        void stopScene() noexcept;
+        void pauseScene() noexcept;
 
         EntityId getSelectedEntity() const noexcept;
 

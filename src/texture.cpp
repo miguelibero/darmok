@@ -13,14 +13,7 @@ namespace darmok
 
 	expected<Image, std::string> ConstTextureSourceWrapper::createImage(bx::AllocatorI& alloc, bimg::TextureFormat::Enum format) noexcept
 	{
-		try
-		{
-			return Image{ DataView{ _src.data() }, alloc, format };
-		}
-		catch (const std::exception& ex)
-		{
-			return unexpected<std::string>{ ex.what() };
-		}
+		return Image::load(DataView{ _src.data() }, alloc, format);
 	}
 
 	TextureSourceWrapper::TextureSourceWrapper(Source& src) noexcept

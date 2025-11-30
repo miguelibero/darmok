@@ -16,8 +16,8 @@ namespace darmok
 	public:
 		virtual ~IImguiRenderer() = default;
 
-		virtual void imguiSetup() {};
-		virtual void imguiRender() = 0;
+		virtual expected<void, std::string> imguiSetup() noexcept { return {}; };
+		virtual expected<void, std::string> imguiRender() noexcept = 0;
 	};
 
 	class ImguiAppComponentImpl;

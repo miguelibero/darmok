@@ -31,7 +31,7 @@ namespace darmok::editor
 		.filterDesc = "Darmok Project Files"
     };
 
-    EditorProject::EditorProject(App& app)
+    EditorProject::EditorProject(App& app) noexcept
         : _app{ app }
         , _requestReset{ false }
         , _requestUpdateScene{ false }
@@ -39,7 +39,7 @@ namespace darmok::editor
     {
     }
 
-    expected<void, std::string> EditorProject::init(const ProgramCompilerConfig& progCompilerConfig)
+    expected<void, std::string> EditorProject::init(const ProgramCompilerConfig& progCompilerConfig) noexcept
     {
         auto result = doResetScene();
         if (!result)
@@ -56,27 +56,24 @@ namespace darmok::editor
         return {};
     }
 
-    void EditorProject::shutdown()
+    expected<void, std::string> EditorProject::shutdown() noexcept
     {
         clearPath();
         _requestReset = false;
         _requestUpdateScene = false;
+        return {};
     }
 
-    void EditorProject::doSaveScene()
+    expected<void, std::string> EditorProject::doSaveScene() noexcept
     {
         if (_path.empty())
         {
-            return;
+            return {};
         }
-        auto result = protobuf::write(_sceneDef, _path);
-        if (!result)
-        {
-            StreamUtils::log("error writing scene: " + result.error());
-        }
+        return protobuf::write(_sceneDef, _path);
     }
 
-    void EditorProject::saveScene(bool forceNewPath)
+    expected<void, std::string> EditorProject::saveScene(bool forceNewPath) noexcept
     {
         if (_path.empty() || forceNewPath)
         {
@@ -95,12 +92,12 @@ namespace darmok::editor
 			options.title = "Save Project";
 			options.defaultPath = _path;
             _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
-            return;
+            return {};
         }
-        doSaveScene();
+        return doSaveScene();
     }
 
-    expected<void, std::string> EditorProject::doExportScene(std::filesystem::path path)
+    expected<void, std::string> EditorProject::doExportScene(std::filesystem::path path) noexcept
     {
         SceneDefinitionCompiler compiler{};
         auto sceneDef = _sceneDef;
@@ -117,7 +114,7 @@ namespace darmok::editor
         return {};
     }
 
-    void EditorProject::exportScene()
+    expected<void, std::string> EditorProject::exportScene() noexcept
     {
         auto dialogCallback = [this](auto& result)
         {
@@ -139,9 +136,10 @@ namespace darmok::editor
         options.title = "Export Scene";
         options.defaultPath = _path;
         _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
+        return {};
     }
 
-    expected<void, std::string> EditorProject::render()
+    expected<void, std::string> EditorProject::render() noexcept
     {
         if (_requestReset)
         {
@@ -168,12 +166,13 @@ namespace darmok::editor
         return {};
     }
 
-    void EditorProject::updateScene()
+    expected<void, std::string> EditorProject::updateScene() noexcept
     {
         _requestUpdateScene = true;
+        return {};
     }
 
-    EntityId EditorProject::addEntity(EntityId parentEntity)
+    expected<EntityId, std::string> EditorProject::addEntity(EntityId parentEntity) noexcept
     {
         auto entity = _sceneWrapper.createEntity();
         auto trans = Transform::createDefinition();
@@ -183,18 +182,23 @@ namespace darmok::editor
             trans.set_parent(entt::to_integral(parentEntity));
         }
         _sceneWrapper.setComponent(entity, trans);
-        updateScene();
+        auto result = updateScene();
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
         return entity;
     }
 
     const char* EditorProject::_confirmNewPopup = "Confirm New Project";
 
-    void EditorProject::resetScene()
+    expected<void, std::string> EditorProject::resetScene() noexcept
     {
         _requestReset = true;
+        return {};
     }
 
-    void EditorProject::clearPath()
+    void EditorProject::clearPath() noexcept
     {
         if (_path.has_parent_path())
         {
@@ -203,22 +207,37 @@ namespace darmok::editor
         _path.clear();
     }
 
-    expected<void, std::string> EditorProject::doResetScene()
+    expected<void, std::string> EditorProject::doResetScene() noexcept
     {
         _requestReset = false;
         clearPath();
 
-        auto& scenes = _app.getOrAddComponent<SceneAppComponent>();
-        _scene = scenes.getScene();
-
-        configureDefaultScene(_sceneWrapper);
+        auto result = _app.getOrAddComponent<SceneAppComponent>();
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        _scene = result.value().get().getScene();
+        {
+            auto result = configureDefaultScene(_sceneWrapper);
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
         
         _scene->destroyEntitiesImmediate();
-        configureEditorScene(*_scene);
+        {
+            auto result = configureEditorScene(*_scene);
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
         return doUpdateScene();
     }
 
-    expected<void, std::string> EditorProject::doUpdateScene()
+    expected<void, std::string> EditorProject::doUpdateScene() noexcept
     {
         _requestUpdateScene = false;
 
@@ -226,17 +245,20 @@ namespace darmok::editor
         {
             _app.addAssetsRootPath(_path.parent_path());
         }
-
-        auto result = _sceneLoader(_sceneDef, *_scene);
-        if (result)
+        auto loadResult = _sceneLoader(_sceneDef, *_scene);
+        if (!loadResult)
         {
-            _app.getOrAddComponent<SceneAppComponent>().update(0.f);
-            return {};
+            return unexpected{ std::move(loadResult).error() };
         }
-        return unexpected{ result.error() };
+        auto compResult = _app.getOrAddComponent<SceneAppComponent>();
+        if (!compResult)
+        {
+            return unexpected{ std::move(compResult).error() };
+        }
+        return compResult.value().get().update(0.f);
     }
 
-    expected<void, std::string> EditorProject::reloadScene()
+    expected<void, std::string> EditorProject::reloadScene() noexcept
     {
         if (_path.empty())
         {
@@ -245,14 +267,13 @@ namespace darmok::editor
         auto result = protobuf::read(_sceneDef, _path);
         if (!result)
         {
-            StreamUtils::log("error reading scene: " + result.error());
             return result;
         }
         updateScene();
         return {};
     }
 
-    void EditorProject::openScene()
+    expected<void, std::string> EditorProject::openScene() noexcept
     {
         auto dialogCallback = [this](auto& dialogResult)
         {
@@ -275,54 +296,55 @@ namespace darmok::editor
         options.title = "Open Project";
         options.defaultPath = "./";
         _app.getWindow().openFileDialog(std::move(options), std::move(dialogCallback));
+        return {};
     }
 
-    std::shared_ptr<Scene> EditorProject::getScene()
+    std::shared_ptr<Scene> EditorProject::getScene() noexcept
     {
         return _scene;
     }
 
-    std::shared_ptr<const Scene> EditorProject::getScene() const
+    std::shared_ptr<const Scene> EditorProject::getScene() const noexcept
     {
         return _scene;
     }
 
-    SceneDefinitionWrapper& EditorProject::getSceneDefinition()
+    SceneDefinitionWrapper& EditorProject::getSceneDefinition() noexcept
     {
         return _sceneWrapper;
     }
 
-    const SceneDefinitionWrapper& EditorProject::getSceneDefinition() const
+    const SceneDefinitionWrapper& EditorProject::getSceneDefinition() const noexcept
     {
 		return _sceneWrapper;
     }
 
-    OptionalRef<Camera> EditorProject::getCamera()
+    OptionalRef<Camera> EditorProject::getCamera() noexcept
     {
         return _cam;
     }
 
-    OptionalRef<const Camera> EditorProject::getCamera() const
+    OptionalRef<const Camera> EditorProject::getCamera() const noexcept
     {
         return _cam;
     }
 
-    IComponentLoadContext& EditorProject::getComponentLoadContext()
+    IComponentLoadContext& EditorProject::getComponentLoadContext() noexcept
     {
         return _sceneLoader.getComponentLoadContext();
     }
 
-    const IComponentLoadContext& EditorProject::getComponentLoadContext() const
+    const IComponentLoadContext& EditorProject::getComponentLoadContext() const noexcept
     {
         return _sceneLoader.getComponentLoadContext();
     }
 
-    AssetPack& EditorProject::getAssets()
+    AssetPack& EditorProject::getAssets() noexcept
     {
 		return _sceneLoader.getAssetPack();
     }
 
-    void EditorProject::configureEditorScene(Scene& scene)
+    expected<void, std::string> EditorProject::configureEditorScene(Scene& scene) noexcept
     {
         static const std::string name = "Editor Camera";
         auto camEntity = scene.createEntity();
@@ -333,21 +355,59 @@ namespace darmok::editor
             .lookAt(glm::vec3{ 0 })
             .setName(name);
         cam.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
-        if (auto skyboxTexResult = _app.getAssets().getTextureLoader()("cubemap.ktx"))
         {
-            cam.addComponent<SkyboxRenderer>(skyboxTexResult.value());
+            auto texResult = _app.getAssets().getTextureLoader()("cubemap.ktx");
+            if (!texResult)
+            {
+                return unexpected{ std::move(texResult).error() };
+            }
+            auto result = cam.addComponent<SkyboxRenderer>(texResult.value());
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
         }
-        cam.addComponent<GridRenderer>();
-        cam.addComponent<LightingRenderComponent>();
-        ShadowRendererConfig shadowConfig;
-        shadowConfig.cascadeAmount = 3;
-        cam.addComponent<ShadowRenderer>(shadowConfig);
-        cam.addComponent<ForwardRenderer>();
-        cam.addComponent<FrustumCuller>();
+        {
+            auto result = cam.addComponent<GridRenderer>();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
+        {
+            auto result = cam.addComponent<LightingRenderComponent>();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
+        {
+            ShadowRendererConfig shadowConfig;
+            shadowConfig.cascadeAmount = 3;
+            auto result = cam.addComponent<ShadowRenderer>(shadowConfig);
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
+        {
+            auto result = cam.addComponent<ForwardRenderer>();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
+        {
+            auto result = cam.addComponent<FrustumCuller>();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+        }
         _cam = cam;
     }
 
-    void EditorProject::configureDefaultScene(SceneDefinitionWrapper& scene)
+    expected<void, std::string> EditorProject::configureDefaultScene(SceneDefinitionWrapper& scene) noexcept
     {
         scene.setName("Scene");
 
@@ -361,7 +421,7 @@ namespace darmok::editor
 
         auto camTrans = Transform::createDefinition();
         camTrans.set_name("Main Camera");
-        *camTrans.mutable_position() = convert(glm::vec3{ 0.f, 1.f, -10.f });
+        *camTrans.mutable_position() = convert<protobuf::Vec3>(glm::vec3{ 0.f, 1.f, -10.f });
         scene.setComponent(camEntity, camTrans);
 
         auto lightsEntity = scene.createEntity();
@@ -385,9 +445,9 @@ namespace darmok::editor
         auto dirLightTrans = Transform::createDefinition();
         dirLightTrans.set_name("Directional Light");
         dirLightTrans.set_parent(entt::to_integral(lightsEntity));
-        *dirLightTrans.mutable_position() = convert(glm::vec3{ 0.f, 3.f, 0.f });
+        *dirLightTrans.mutable_position() = convert<protobuf::Vec3>(glm::vec3{ 0.f, 3.f, 0.f });
         auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
-        *dirLightTrans.mutable_rotation() = convert(rot);
+        *dirLightTrans.mutable_rotation() = convert<protobuf::Quat>(rot);
         scene.setComponent(dirLightEntity, dirLightTrans);
 
         auto mesh = Mesh::createSource();
@@ -409,5 +469,7 @@ namespace darmok::editor
         auto renderableTrans = Transform::createDefinition();
         renderableTrans.set_name("Sphere");
         scene.setComponent(renderableEntity, renderableTrans);
+
+        return {};
     }
 }

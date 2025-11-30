@@ -38,7 +38,11 @@ namespace darmok::editor
 
     expected<int32_t, std::string> EditorApp::setup(const CmdArgs& args) noexcept
     {
-        _inspectorView.setup();
+        auto inspectorResult = _inspectorView.setup();
+        if (!inspectorResult)
+        {
+            return unexpected{ std::move(inspectorResult).error() };
+        }
 
         CLI::App cli{ "darmok editor" };
         std::string version = "VERSION " DARMOK_VERSION;
@@ -77,18 +81,47 @@ namespace darmok::editor
         {
             return unexpected{"failed to initialize project: " + projResult.error()};
 		}
-        _sceneView.init(_proj.getScene(), _proj.getCamera().value());
-        _inspectorView.init(*this);
-        _assetsView.init(_proj.getSceneDefinition(), *this);
+        auto sceneResult = _sceneView.init(_proj.getScene(), _proj.getCamera().value());
+        if (!sceneResult)
+        {
+            return sceneResult;
+        }
+        auto inspectorResult = _inspectorView.init(*this);
+        if (!inspectorResult)
+        {
+            return inspectorResult;
+        }
+        auto assetsResult = _assetsView.init(_proj.getSceneDefinition(), *this);
+        if (!assetsResult)
+        {
+            return assetsResult;
+        }
+        return {};
     }
 
     expected<void, std::string> EditorApp::shutdown() noexcept
     {
         stopScene();
-        _inspectorView.shutdown();
-        _assetsView.shutdown();
-        _sceneView.shutdown();
-        _proj.shutdown();
+        auto result = _inspectorView.shutdown();
+        if (!result)
+        {
+            return result;
+        }
+        result = _assetsView.shutdown();
+        if (!result)
+        {
+            return result;
+        }
+        result = _sceneView.shutdown();
+        if (!result)
+        {
+            return result;
+        }
+        result = _proj.shutdown();
+        if (!result)
+        {
+            return result;
+        }
         _imgui.reset();
         _app.removeComponent<ImguiAppComponent>();
         _app.removeComponent<SceneAppComponent>();
@@ -103,7 +136,7 @@ namespace darmok::editor
         return {};
     }
 
-    void EditorApp::imguiSetup()
+    expected<void, std::string> EditorApp::imguiSetup() noexcept
     {
         ImGuiIO& io = ImGui::GetIO();
 
@@ -118,13 +151,15 @@ namespace darmok::editor
         _symbolsFont = io.Fonts->AddFontFromFileTTF("assets/MaterialIcons-Regular.ttf", 30.0f, &config, iconRanges);
 
         io.Fonts->Build();
+
+        return {};
     }
 
     const ImGuiWindowFlags EditorApp::_fixedFlags = ImGuiWindowFlags_NoDocking
         | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
         | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-    void EditorApp::renderDockspace()
+    void EditorApp::renderDockspace() noexcept
     {
         ImGui::SetNextWindowPos(ImVec2(0, _mainToolbarHeight));
         auto& io = ImGui::GetIO();
@@ -158,17 +193,17 @@ namespace darmok::editor
         }
     }   
 
-    void EditorApp::playScene()
+    void EditorApp::playScene() noexcept
     {
         _scenePlaying = true;
     }
 
-    void EditorApp::stopScene()
+    void EditorApp::stopScene() noexcept
     {
         _scenePlaying = false;
     }
 
-    void EditorApp::pauseScene()
+    void EditorApp::pauseScene() noexcept
     {
     }
 
@@ -177,31 +212,32 @@ namespace darmok::editor
         return _inspectorView.getSelectedEntity();
     }
 
-    void EditorApp::renderMainMenu()
+    expected<void, std::string> EditorApp::renderMainMenu() noexcept
     {
+        expected<void, std::string> result;
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
             {
                 if (ImGui::MenuItem("New", "Ctrl+N"))
                 {
-                    _proj.resetScene();
+                    result = _proj.resetScene();
                 }
                 if (ImGui::MenuItem("Open...", "Ctrl+O"))
                 {
-                    _proj.openScene();
+                    result = _proj.openScene();
                 }
                 if (ImGui::MenuItem("Save", "Ctrl+S"))
                 {
-                    _proj.saveScene();
+                    result = _proj.saveScene();
                 }
                 if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
                 {
-                    _proj.saveScene(true);
+                    result = _proj.saveScene(true);
                 }
                 if (ImGui::MenuItem("Export..."))
                 {
-                    _proj.exportScene();
+                    result = _proj.exportScene();
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit"))
@@ -214,7 +250,11 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("Add Entity"))
                 {
-                    _proj.addEntity(_inspectorView.getSelectedEntity());
+                    auto entityResult = _proj.addEntity(_inspectorView.getSelectedEntity());
+                    if (!entityResult)
+                    {
+                        result = unexpected{ std::move(entityResult).error() };
+                    }
                 }
                 ImGui::EndMenu();
             }
@@ -273,6 +313,7 @@ namespace darmok::editor
             }
             ImGui::EndMainMenuBar();
         }
+        return result;
     }
 
     void EditorApp::drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept
@@ -300,12 +341,14 @@ namespace darmok::editor
         ImGui::EndDisabled();
     }
 
-    void EditorApp::renderAboutDialog()
+    void EditorApp::renderAboutDialog() noexcept
     {
     }
 
-    void EditorApp::renderMainToolbar()
+    expected<void, std::string> EditorApp::renderMainToolbar() noexcept
     {
+        expected<void, std::string> result;
+             
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ImGui::Begin("Main Toolbar", nullptr, _fixedFlags | ImGuiWindowFlags_MenuBar);
@@ -323,12 +366,12 @@ namespace darmok::editor
             ImGui::BeginGroup();
             if (ImGui::ButtonEx(ICON_MD_SAVE))
             {
-                _proj.saveScene();
+                result = _proj.saveScene();
             }
             ImGui::SameLine();
             if (ImGui::ButtonEx(ICON_MD_FOLDER_OPEN))
             {
-                _proj.openScene();
+                result = _proj.openScene();
             }
             ImGui::EndGroup();
             ImGui::SameLine();
@@ -392,7 +435,7 @@ namespace darmok::editor
         ImGui::End();
     }
 
-    void EditorApp::onSceneTreeSceneClicked()
+    void EditorApp::onSceneTreeSceneClicked() noexcept
     {
         onObjectSelected(nullEntityId);
     }
@@ -405,14 +448,14 @@ namespace darmok::editor
         _sceneView.selectEntity(entity);
     }
 
-    void EditorApp::onSceneTreeTransformClicked(EntityId entity)
+    void EditorApp::onSceneTreeTransformClicked(EntityId entity) noexcept
     {
         onObjectSelected(entity);
     }
 
     const char* EditorApp::_sceneTreeWindowName = "Scene Tree";
 
-    bool EditorApp::renderSceneTree()
+    bool EditorApp::renderSceneTree() noexcept
     {
         auto& scene = _proj.getSceneDefinition();
         auto changed = false;
@@ -461,7 +504,7 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorApp::renderSceneTreeBranch(EntityId entity)
+    bool EditorApp::renderSceneTreeBranch(EntityId entity) noexcept
     {
         auto& scene = _proj.getSceneDefinition();
         std::string name;
@@ -520,7 +563,7 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorApp::renderEntityDragDropTarget(EntityId entity)
+    bool EditorApp::renderEntityDragDropTarget(EntityId entity) noexcept
     {
         if (!ImGui::BeginDragDropTarget())
         {
@@ -551,32 +594,46 @@ namespace darmok::editor
         return changed;
     }
 
-    void EditorApp::imguiRender()
+    expected<void, std::string> EditorApp::imguiRender() noexcept
     {
         auto changed = false;
-        _sceneView.beforeRender();
+        auto result = _sceneView.beforeRender();
+        if (!result)
+        {
+            return result;
+        }
         renderMainMenu();
         renderDockspace();
         renderMainToolbar();
         renderSceneTree();
-        auto inspectorResult = _inspectorView.render();
-        if (!inspectorResult)
+        auto boolResult = _inspectorView.render();
+        if (!boolResult)
         {
-			StreamUtils::log("failed to render inspector: " + inspectorResult.error());
+            return unexpected<std::string>{ "failed to render inspector: " + boolResult.error() };
         }
 
-        auto projResult = _proj.render();
-        if (!projResult)
+        result = _proj.render();
+        if (!result)
         {
-            StreamUtils::log("failed to render project: " + projResult.error());
+            return unexpected<std::string>{ "failed to render project: " + result.error() };
         }
-        _sceneView.render();
-        _assetsView.render();
+        result = _sceneView.render();
+        if (!result)
+        {
+            return unexpected<std::string>{ "failed to render scene: " + result.error() };
+        }
+        boolResult = _assetsView.render();
+        if (!boolResult)
+        {
+            return unexpected<std::string>{ "failed to render assets: " + boolResult.error() };
+        }
+        return {};
     }
 
     expected<void, std::string> EditorApp::update(float deltaTime) noexcept
     {
         _sceneView.update(deltaTime);
+        return {};
     }
 
     EditorProject& EditorApp::getProject() noexcept
@@ -641,12 +698,12 @@ namespace darmok::editor
         return false;
     }
 
-    std::optional<std::filesystem::path> EditorApp::getSelectedAssetPath() const
+    std::optional<std::filesystem::path> EditorApp::getSelectedAssetPath() const noexcept
     {
         return _inspectorView.getSelectedAssetPath();
     }
 
-    void EditorApp::onAssetPathSelected(const std::filesystem::path& assetPath)
+    void EditorApp::onAssetPathSelected(const std::filesystem::path& assetPath) noexcept
     {
 		_inspectorView.selectObject(assetPath);
     }

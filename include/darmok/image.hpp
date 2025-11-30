@@ -33,16 +33,17 @@ namespace darmok
 		using TextureConfig = protobuf::TextureConfig;
 		using TextureType = protobuf::Texture::Type;
 
-		Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
 		Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size = { 1, 1 }) noexcept;
-		Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
-		Image(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count);
-		Image(bimg::ImageContainer* container);
+		Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) noexcept;
+		Image(bimg::ImageContainer* container) noexcept;
 		~Image() noexcept;
 		Image(const Image& other) noexcept;
 		Image& operator=(const Image& other) noexcept;
 		Image(Image&& other) noexcept;
 		Image& operator=(Image&& other) noexcept;
+
+		static expected<Image, std::string> load(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) noexcept;
+		static expected<Image, std::string> load(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) noexcept;
 
 		[[nodiscard]] bool empty() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;

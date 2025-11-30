@@ -17,52 +17,61 @@
 
 namespace darmok
 {
-	Image::Image(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
-		: _container{ nullptr }
+	expected<Image, std::string> Image::load(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format) noexcept
 	{
-		if(!data.empty())
+		bx::Error err;
+		auto container = bimg::imageParse(&alloc, data.ptr(), (uint32_t)data.size(), format, &err);
+		if (err.isOk())
 		{
-			bx::Error err;
-			_container = bimg::imageParse(&alloc, data.ptr(), (uint32_t)data.size(), format, &err);
-			throwIfError(err);
+			return Image{ container };
 		}
+		return unexpected<std::string>{ err.getMessage().getCPtr() };
 	}
 
-	Image::Image(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
+	expected<Image, std::string> Image::load(const std::array<DataView, 6>& facesData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format) noexcept
 	{
-		auto right	= Image{ faceData[0], alloc, format };
-		auto left	= Image{ faceData[1], alloc, format };
-		auto top	= Image{ faceData[2], alloc, format };
-		auto bottom = Image{ faceData[3], alloc, format };
-		auto front	= Image{ faceData[4], alloc, format };
-		auto back	= Image{ faceData[5], alloc, format };
-
-		auto fformat = right.getFormat();
-
-		if (left.getFormat() != fformat || top.getFormat() != fformat || bottom.getFormat() != fformat
-			|| front.getFormat() != fformat || back.getFormat() != fformat)
+		std::vector<Image> faces;
+		bimg::TextureFormat::Enum fformat;
+		glm::uvec2 size;
+		for (auto& faceData : facesData)
 		{
-			throw new std::runtime_error("all faces should have the same format");
+			auto result = load(faceData, alloc, format);
+			if (!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
+			auto face = std::move(result).value();
+			if (!faces.empty())
+			{
+				if (face.getFormat() != fformat)
+				{
+					return unexpected<std::string>{"all faces should have the same format"};
+				}
+				if (face.getSize() != size)
+				{
+					return unexpected<std::string>{"all faces should have the same size"};
+				}
+			}
+			else
+			{
+				fformat = face.getFormat();
+				size = face.getSize();
+			}
+			faces.push_back(std::move(face));
 		}
 
-		auto size = right.getSize();
-		if (left.getSize() != size || top.getSize() != size || bottom.getSize() != size
-			|| front.getSize() != size || back.getSize() != size)
-		{
-			throw new std::runtime_error("all faces should have the same size");
-		}
-
-		_container = bimg::imageAlloc(&alloc, fformat, size.x, size.y, 1, 1, true, false);
+		auto container = bimg::imageAlloc(&alloc, fformat, size.x, size.y, 1, 1, true, false);
 
 		// Copy each face into the cubemap
-		auto ptr = static_cast<uint8_t*>(_container->m_data);
-		auto memSize = right.getData().size();
-		std::memcpy(ptr + memSize * 0, right.getData().ptr(), memSize);
-		std::memcpy(ptr + memSize * 1, left.getData().ptr(), memSize);
-		std::memcpy(ptr + memSize * 2, top.getData().ptr(), memSize);
-		std::memcpy(ptr + memSize * 3, bottom.getData().ptr(), memSize);
-		std::memcpy(ptr + memSize * 4, front.getData().ptr(), memSize);
-		std::memcpy(ptr + memSize * 5, back.getData().ptr(), memSize);
+		auto ptr = static_cast<uint8_t*>(container->m_data);
+		auto memSize = faces[0].getData().size();
+		size_t i = 0;
+		for (auto& face : faces)
+		{
+			std::memcpy(ptr + memSize * i, face.getData().ptr(), memSize);
+			++i;
+		}
+		return Image{ container };
 	}
 
 	Image::Image(const Color& color, bx::AllocatorI& alloc, const glm::uvec2& size) noexcept
@@ -72,7 +81,7 @@ namespace darmok
 		bimg::imageSolid(_container->m_data, size.x, size.y, c);
 	}
 
-	Image::Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format)
+	Image::Image(const glm::uvec2& size, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format) noexcept
 		: _container{ bimg::imageAlloc(
 			&alloc, format, size.x, size.y, 0, 1, false, false
 		) }
@@ -111,7 +120,7 @@ namespace darmok
 		bimg::imageCopy(_container->m_data, size.x, size.y, info.depth, info.bitsPerPixel, pitch, other._container->m_data);
 	}
 
-    Image::Image(bimg::ImageContainer* container)
+    Image::Image(bimg::ImageContainer* container) noexcept
 		: _container{ container }
 	{
 	}
@@ -450,9 +459,14 @@ namespace darmok
 		auto dataResult = _dataLoader(path);
 		if (!dataResult)
 		{
-			return unexpected{ dataResult.error() };
+			return unexpected{ std::move(dataResult).error() };
 		}
-		return std::make_shared<Image>(dataResult.value(), _alloc);
+		auto loadResult = Image::load(dataResult.value(), _alloc);
+		if (!loadResult)
+		{
+			return unexpected{ std::move(loadResult).error() };
+		}
+		return std::make_shared<Image>(std::move(loadResult).value());
 	}
 
 	ImageFileImporter::ImageFileImporter() noexcept
@@ -538,8 +552,12 @@ namespace darmok
 					faceDataView[i] = faceData[i];
 					++i;
 				}
-				Image img{ faceDataView, _alloc, format };
-				writeResult = img.write(_outputEncoding, out);
+				auto imgResult = Image::load(faceDataView, _alloc, format);
+				if (!imgResult)
+				{
+					return unexpected{ "failed to load image " + imgResult.error() };
+				}
+				writeResult = imgResult.value().write(_outputEncoding, out);
 			}
 			else
 			{
@@ -549,8 +567,12 @@ namespace darmok
 					return unexpected{ "failed to read data: " + readResult.error() };
 				}
 
-				Image img{ readResult.value(), _alloc, format };
-				writeResult = img.write(_outputEncoding, out);
+				auto loadResult = Image::load(readResult.value(), _alloc, format);
+				if (loadResult)
+				{
+					return unexpected{ "failed to load image: " + loadResult.error() };
+				}
+				writeResult = loadResult.value().write(_outputEncoding, out);
 			}
 
 			if (!writeResult)

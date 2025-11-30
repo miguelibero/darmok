@@ -33,7 +33,7 @@ namespace darmok::editor
                 cam.set_perspective_fovy(glm::radians(60.f));
                 break;
             case 1:
-                *cam.mutable_ortho_center() = convert(glm::vec2{ 0.f });
+                *cam.mutable_ortho_center() = convert<protobuf::Vec2>(glm::vec2{ 0.f });
                 break;
             }
             changed = true;

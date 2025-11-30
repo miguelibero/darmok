@@ -14,7 +14,7 @@
 
 namespace darmok::editor
 {
-    void EditorAssetsView::init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate)
+    expected<void, std::string> EditorAssetsView::init(SceneDefinitionWrapper& scene, IEditorAssetsViewDelegate& delegate) noexcept
     {
         _scene = scene;
         _delegate = delegate;
@@ -24,31 +24,33 @@ namespace darmok::editor
         addAssetName<Mesh::Source>("mesh");
         addAssetName<Material::Definition>("material");
         addAssetName<Armature::Definition>("armature");
+        return {};
     }
 
-    const std::string& EditorAssetsView::getWindowName()
+    const std::string& EditorAssetsView::getWindowName() noexcept
     {
 		static const std::string name = "###Assets";
         return name;
     }
 
-    void EditorAssetsView::shutdown()
+    expected<void, std::string> EditorAssetsView::shutdown() noexcept
     {
         _delegate.reset();
         _assetNames.clear();
+        return {};
     }
 
-    void EditorAssetsView::focus()
+    void EditorAssetsView::focus() noexcept
     {
         ImGui::SetWindowFocus(getWindowName().c_str());
     }
 
-    bool EditorAssetsView::render()
+    expected<bool, std::string> EditorAssetsView::render() noexcept
     {
         static const ImVec2 cellPadding{ 10.0f, 10.0f };
         if (!_scene)
         {
-            return false;
+            return unexpected<std::string>{ "scene not loaded" };
         }
         bool changed = false;
 
@@ -110,7 +112,7 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorAssetsView::drawFolder(const std::filesystem::path& path, bool selected)
+    bool EditorAssetsView::drawFolder(const std::filesystem::path& path, bool selected) noexcept
     {
         std::string name = path.filename().string();
         auto selectionChanged = false;
@@ -134,7 +136,7 @@ namespace darmok::editor
         return selected;
     }
 
-    bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::filesystem::path& path, bool selected)
+    bool EditorAssetsView::drawAsset(const google::protobuf::Any& asset, const std::filesystem::path& path, bool selected) noexcept
     {
         std::string name = path.filename().string();
         auto selectionChanged = false;
@@ -171,7 +173,7 @@ namespace darmok::editor
         return std::nullopt;
     }
 
-    std::filesystem::path EditorAssetsView::addAsset(const Message& msg)
+    std::filesystem::path EditorAssetsView::addAsset(const Message& msg) noexcept
     {
         auto path = _currentPath;
 		if (auto name = getAssetTypeName(protobuf::getTypeId(msg)))

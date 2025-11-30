@@ -21,26 +21,26 @@ namespace darmok::editor
     public:
         using RenderResult = expected<bool, std::string>;
 
-        EditorInspectorView();
-        void setup();
-        void init(EditorApp& app);
-        void shutdown();
-        RenderResult render();
+        EditorInspectorView() noexcept;
+        expected<void, std::string> setup() noexcept;
+        expected<void, std::string> init(EditorApp& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
+        RenderResult render() noexcept;
 
-        void selectObject(const SelectableObject& obj);
+        void selectObject(const SelectableObject& obj) noexcept;
 
 		bool isSceneSelected() const noexcept;
         EntityId getSelectedEntity() const noexcept;
 		std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept;
 
-        static const std::string& getWindowName();
+        static const std::string& getWindowName() noexcept;
     private:
         ObjectEditorContainer _editors;
         static const std::string _windowName;
         SelectableObject _selected;
         OptionalRef<SceneDefinitionWrapper> _sceneDef;
 
-        RenderResult renderEntity(EntityId entity);
-        RenderResult renderAsset(std::filesystem::path path);
+        RenderResult renderEntity(EntityId entity) noexcept;
+        RenderResult renderAsset(std::filesystem::path path) noexcept;
     };
 }

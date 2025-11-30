@@ -15,7 +15,7 @@
 #include <bx/timer.h>
 #include <bx/file.h>
 #include <bimg/bimg.h>
-#include <fmt/printf.h>
+#include <fmt/format.h>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -318,7 +318,7 @@ namespace darmok
 		return 0;
 	}
 
-	void AppImpl::bgfxInit()
+	void AppImpl::bgfxInit() noexcept
 	{
 		bgfx::Init init;
 		_renderSize = _window.getSize();
@@ -613,7 +613,7 @@ namespace darmok
 		return flags & ~flag;
 	}
 
-	void AppImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
+	void AppImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
 		if (!down)
 		{
@@ -642,7 +642,7 @@ namespace darmok
 		return renderers;
 	}
 
-	void AppImpl::setRendererType(bgfx::RendererType::Enum renderer)
+	expected<void, std::string> AppImpl::setRendererType(bgfx::RendererType::Enum renderer) noexcept
 	{
 		// Count means default renderer chosen by bgfx based on the platform
 		if (renderer != bgfx::RendererType::Count)
@@ -651,21 +651,22 @@ namespace darmok
 			auto itr = std::find(renderers.begin(), renderers.end(), renderer);
 			if (itr == renderers.end())
 			{
-				throw std::invalid_argument("renderer not supported");
+				return unexpected<std::string>{ "renderer not supported" };
 			}
 		}
 		if (renderer == bgfx::getCaps()->rendererType)
 		{
-			return;
+			return {};
 		}
 		_rendererType = renderer;
 		if (_running)
 		{
 			_runResult = AppRunResult::Restart;
 		}
+		return {};
 	}
 
-	void AppImpl::setNextRenderer()
+	expected<void, std::string> AppImpl::setNextRenderer() noexcept
 	{
 		auto renderer = bgfx::getCaps()->rendererType;
 		const auto& renderers = getSupportedRenderers();
@@ -676,17 +677,17 @@ namespace darmok
 			i = std::distance(renderers.begin(), itr);
 			i = (i + 1) % renderers.size();
 		}
-		setRendererType(renderers.at(i));
+		return setRendererType(renderers.at(i));
 	}
 
-	void AppImpl::requestNextVideoMode()
+	void AppImpl::requestNextVideoMode() noexcept
 	{
 		VideoMode mode = _window.getVideoMode();
 		mode.screenMode = (WindowScreenMode)((toUnderlying(mode.screenMode) + 1) % toUnderlying(WindowScreenMode::Count));
 		_window.requestVideoMode(mode);
 	}
 
-	void AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers)
+	expected<void, std::string> AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers) noexcept
 	{
 		static const KeyboardModifiers ctrl{ KeyboardModifier::Ctrl };
 		static const KeyboardModifiers alt{ KeyboardModifier::Alt };
@@ -695,13 +696,13 @@ namespace darmok
 		if (key == KeyboardKey::KeyQ && modifiers == ctrl)
 		{
 			quit();
-			return;
+			return {};
 		}
 		if ((key == KeyboardKey::Return && modifiers == alt)
 			|| (key == KeyboardKey::KeyF && modifiers == ctrl))
 		{
 			requestNextVideoMode();
-			return;
+			return {};
 		}
 		if (key == KeyboardKey::F1)
 		{
@@ -718,50 +719,49 @@ namespace darmok
 			{
 				toggleDebugFlag(BGFX_DEBUG_STATS);
 			}
-			return;
+			return {};
 		}
 		if (key == KeyboardKey::F2 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_TEXT);
-			return;
+			return {};
 		}
 		if (key == KeyboardKey::F3 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
-			return;
+			return {};
 		}
 		if (key == KeyboardKey::F4 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_PROFILER);
-			return;
+			return {};
 		}
 		if ((key == KeyboardKey::F5 && modifiers.empty())
 			|| (key == KeyboardKey::KeyR && modifiers == ctrl))
 		{
 			_runResult = AppRunResult::Restart;
-			return;
+			return {};
 		}
 		if ((key == KeyboardKey::F5 && modifiers == ctrl))
 		{
-			setNextRenderer();
-			return;
+			return setNextRenderer();
 		}
 		if ((key == KeyboardKey::Print && modifiers.empty())
 			|| (key == KeyboardKey::KeyP && modifiers == ctrl))
 		{
 			auto filePath = "temp/screenshot-" + getTimeSuffix();
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
-			return;
+			return {};
 		}
 		if (key == KeyboardKey::Print && modifiers == ctrl)
 		{
 			toggleTaskflowProfile();
-			return;
+			return {};
 		}
 		if (key == KeyboardKey::Pause)
 		{
 			_paused = !_paused;
-			return;
+			return {};
 		}
 	}
 
@@ -772,7 +772,7 @@ namespace darmok
 		return std::to_string(val);
 	}
 
-	void AppImpl::toggleTaskflowProfile()
+	void AppImpl::toggleTaskflowProfile() noexcept
 	{
 		if (!_taskExecutor)
 		{
@@ -985,12 +985,12 @@ namespace darmok
 		return _impl->getAssets();
 	}
 
-	tf::Executor& App::getTaskExecutor()
+	tf::Executor& App::getTaskExecutor() noexcept
 	{
 		return _impl->getTaskExecutor();
 	}
 
-	const tf::Executor& App::getTaskExecutor() const
+	const tf::Executor& App::getTaskExecutor() const noexcept
 	{
 		return _impl->getTaskExecutor();
 	}
@@ -1137,9 +1137,9 @@ namespace darmok
 		return _impl->getResetFlag(flag);
 	}
 
-	void App::setRendererType(bgfx::RendererType::Enum renderer)
+	expected<void, std::string> App::setRendererType(bgfx::RendererType::Enum renderer) noexcept
 	{
-		_impl->setRendererType(renderer);
+		return _impl->setRendererType(renderer);
 	}
 
 	expected<void, std::string> App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
@@ -1167,29 +1167,6 @@ namespace darmok
 		return _impl->getComponent(type);
 	}
 
-	BgfxFatalException::BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg)
-		: std::runtime_error(msg)
-		, _filePath(filePath)
-		, _line(line)
-		, _code(code)
-	{
-	}
-
-	const char* BgfxFatalException::getFilePath() const noexcept
-	{
-		return _filePath;
-	}
-
-	uint16_t BgfxFatalException::getLine() const noexcept
-	{
-		return _line;
-	}
-
-	bgfx::Fatal::Enum BgfxFatalException::getCode() const noexcept
-	{
-		return _code;
-	}
-
 	BgfxCallbacks::BgfxCallbacks() noexcept
 		: _cache()
 	{
@@ -1201,12 +1178,17 @@ namespace darmok
 		return instance;
 	}
 
+	std::vector<std::string> BgfxCallbacks::popFatalErrors() noexcept
+	{
+		return std::move(_fatalErrors);
+	}
+
 	void BgfxCallbacks::fatal(
 		const char* filePath
 		, uint16_t line
 		, bgfx::Fatal::Enum code
 		, const char* str
-	)
+	) noexcept
 	{
 		if (bgfx::Fatal::DebugCheck == code)
 		{
@@ -1217,7 +1199,7 @@ namespace darmok
 			}
 			return;
 		}
-		throw BgfxFatalException(filePath, line, code, str);
+		_fatalErrors.emplace_back(fmt::format("{}:{} {}| {}", filePath, line, code, str));
 	}
 
 	void BgfxCallbacks::traceVargs(
@@ -1225,7 +1207,7 @@ namespace darmok
 		, uint16_t line
 		, const char* format
 		, va_list argList
-	)
+	) noexcept
 	{
 		std::string str;
 		bx::stringPrintfVargs(str, format, argList);
@@ -1240,7 +1222,7 @@ namespace darmok
 		, uint32_t abgr
 		, const char* filePath
 		, uint16_t line
-	)
+	) noexcept
 	{
 		// TODO: vcpkg bgfx build without profiler enabled
 	}
@@ -1250,17 +1232,17 @@ namespace darmok
 		, uint32_t abgr
 		, const char* filePath
 		, uint16_t line
-	)
+	) noexcept
 	{
 		// TODO: vcpkg bgfx build without profiler enabled
 	}
 
-	void BgfxCallbacks::profilerEnd()
+	void BgfxCallbacks::profilerEnd() noexcept
 	{
 		// TODO: vcpkg bgfx build without profiler enabled
 	}
 
-	uint32_t BgfxCallbacks::cacheReadSize(uint64_t resId)
+	uint32_t BgfxCallbacks::cacheReadSize(uint64_t resId) noexcept
 	{
 		const std::lock_guard lock(_cacheMutex);
 		auto itr = _cache.find(resId);
@@ -1271,7 +1253,7 @@ namespace darmok
 		return static_cast<uint32_t>(itr->second.size());
 	}
 
-	bool BgfxCallbacks::cacheRead(uint64_t resId, void* dataPtr, uint32_t size)
+	bool BgfxCallbacks::cacheRead(uint64_t resId, void* dataPtr, uint32_t size) noexcept
 	{
 		const std::lock_guard lock(_cacheMutex);
 		auto itr = _cache.find(resId);
@@ -1288,7 +1270,7 @@ namespace darmok
 		return true;
 	}
 
-	void BgfxCallbacks::cacheWrite(uint64_t resId, const void* data, uint32_t size)
+	void BgfxCallbacks::cacheWrite(uint64_t resId, const void* data, uint32_t size) noexcept
 	{
 		_cache.emplace(resId, Data(data, size));
 	}
@@ -1301,7 +1283,7 @@ namespace darmok
 		, const void* data
 		, uint32_t /* size */
 		, bool yflip
-	)
+	) noexcept
 	{
 		std::filesystem::path path(filePath);
 		auto ext = path.extension().string();
@@ -1316,7 +1298,10 @@ namespace darmok
 			bx::Error err;
 			bimg::imageWritePng(&writer, width, height, pitch, data, format, yflip, &err);
 			bx::close(&writer);
-			throwIfError(err);
+			if (!err.isOk())
+			{
+				_fatalErrors.emplace_back(fmt::format("screenshot error: {}", err.getMessage()));
+			}
 		}
 	}
 
@@ -1326,17 +1311,17 @@ namespace darmok
 		, uint32_t pitch
 		, bgfx::TextureFormat::Enum format
 		, bool yflip
-	)
+	) noexcept
 	{
 		// TODO
 	}
 
-	void BgfxCallbacks::captureEnd()
+	void BgfxCallbacks::captureEnd() noexcept
 	{
 		// TODO
 	}
 
-	void BgfxCallbacks::captureFrame(const void* data, uint32_t size)
+	void BgfxCallbacks::captureFrame(const void* data, uint32_t size) noexcept
 	{
 		// TODO
 	}

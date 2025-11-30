@@ -23,61 +23,48 @@
 
 namespace darmok
 {
-	class BgfxFatalException : public std::runtime_error
-	{
-	public:
-		BgfxFatalException(const char* filePath, uint16_t line, bgfx::Fatal::Enum code, const char* msg);
-		[[nodiscard]] const char* getFilePath() const noexcept;
-		[[nodiscard]] uint16_t getLine() const noexcept;
-		[[nodiscard]] bgfx::Fatal::Enum getCode() const noexcept;
-	private:
-		const char* _filePath;
-		uint16_t _line;
-		bgfx::Fatal::Enum _code;
-
-	};
-
 	class BgfxCallbacks final : public bgfx::CallbackI
 	{
 	public:
 
 		static BgfxCallbacks& get() noexcept;
+		std::vector<std::string> popFatalErrors() noexcept;
 
 		void fatal(
 			const char* filePath
 			, uint16_t line
 			, bgfx::Fatal::Enum code
 			, const char* str
-		) override;
+		) noexcept override;
 
 		void traceVargs(
 			const char* filePath
 			, uint16_t line
 			, const char* format
 			, va_list argList
-		) override;
+		) noexcept override;
 
 		void profilerBegin(
 			const char* name
 			, uint32_t abgr
 			, const char* filePath
 			, uint16_t line
-		) override;
+		) noexcept override;
 
 		void profilerBeginLiteral(
 			const char* name
 			, uint32_t abgr
 			, const char* filePath
 			, uint16_t line
-		) override;
+		) noexcept override;
 
-		void profilerEnd() override;
+		void profilerEnd() noexcept override;
 
-		uint32_t cacheReadSize(uint64_t resId) override;
+		uint32_t cacheReadSize(uint64_t resId) noexcept override;
 
-		bool cacheRead(uint64_t resId, void* data, uint32_t size) override;
+		bool cacheRead(uint64_t resId, void* data, uint32_t size) noexcept override;
 
-		void cacheWrite(uint64_t resId, const void* data, uint32_t size) override;
+		void cacheWrite(uint64_t resId, const void* data, uint32_t size) noexcept override;
 
 		void screenShot(
 			const char* filePath
@@ -87,7 +74,7 @@ namespace darmok
 			, const void* data
 			, uint32_t size
 			, bool yflip
-		) override;
+		) noexcept override;
 
 		void captureBegin(
 			uint32_t width
@@ -95,14 +82,15 @@ namespace darmok
 			, uint32_t pitch
 			, bgfx::TextureFormat::Enum format
 			, bool yflip
-		) override;
+		) noexcept override;
 
-		void captureEnd() override;
+		void captureEnd() noexcept override;
 
-		void captureFrame(const void* data, uint32_t size) override;
+		void captureFrame(const void* data, uint32_t size) noexcept override;
 	private:
 		std::mutex _cacheMutex;
 		std::unordered_map<uint64_t, Data> _cache;
+		std::vector<std::string> _fatalErrors;
 		BgfxCallbacks() noexcept;
 	};
 
@@ -110,7 +98,6 @@ namespace darmok
 	{
 	public:
 		AppImpl(App& app, std::unique_ptr<IAppDelegateFactory>&& factory) noexcept;
-		~AppImpl() = default;
 		AppImpl(const AppImpl&) = delete;
 		AppImpl(AppImpl&&) = delete;
 		AppImpl& operator=(const AppImpl&) = delete;
@@ -138,7 +125,7 @@ namespace darmok
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;
 
-		void setRendererType(bgfx::RendererType::Enum renderer);
+		expected<void, std::string> setRendererType(bgfx::RendererType::Enum renderer) noexcept;
 
 		void setPaused(bool paused) noexcept;
 		[[nodiscard]] bool isPaused() const noexcept;
@@ -175,7 +162,7 @@ namespace darmok
 #endif
 
 		template <typename F>
-		void deltaTimeCall(const F& logicCallback)
+		void deltaTimeCall(const F& logicCallback) noexcept
 		{
 			if (getWindow().getPhase() != WindowPhase::Running)
 			{
@@ -201,13 +188,13 @@ namespace darmok
 
 		[[nodiscard]] float updateTimePassed() noexcept;
 
-		void handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers);
-		void toggleTaskflowProfile();
+		expected<void, std::string> handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers) noexcept;
+		void toggleTaskflowProfile() noexcept;
 
-		void bgfxInit();
-		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
-		void setNextRenderer();
-		void requestNextVideoMode();
+		void bgfxInit() noexcept;
+		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
+		expected<void, std::string> setNextRenderer() noexcept;
+		void requestNextVideoMode() noexcept;
 		expected<bgfx::ViewId, std::string> renderReset() noexcept;
 		std::string getTimeSuffix() noexcept;
 

@@ -177,7 +177,7 @@ namespace darmok::editor
                 else if (changed)
                 {
                     auto& comp = scene.template getOrAddComponent<T>(entity);
-                    auto result = comp.load(def, BaseObjectEditor::getComponentLoadContext());
+                    auto result = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
                     if (!result)
                     {
                         return unexpected{ std::move(result).error() };

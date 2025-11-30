@@ -21,7 +21,6 @@ namespace darmok
     }
 
     [[nodiscard]] std::optional<std::string> checkError(bx::Error& err) noexcept;
-	void throwIfError(bx::Error& err);
 
     class DARMOK_EXPORT RandomGenerator final
     {

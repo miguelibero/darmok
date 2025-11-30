@@ -93,15 +93,16 @@ namespace darmok
 		return ++viewId;
 	}
 
-	void ImguiRenderPass::render() noexcept
+	expected<void, std::string> ImguiRenderPass::render() noexcept
 	{
 		ImGui::SetCurrentContext(_imgui);
 		beginFrame();
-		_renderer.imguiRender();
+		auto result = _renderer.imguiRender();
 		auto encoder = bgfx::begin();
 		endFrame(*encoder);
 		bgfx::end(encoder);
 		ImGui::SetCurrentContext(nullptr);
+		return result;
 	}
 
 	void ImguiRenderPass::beginFrame() const noexcept
@@ -395,11 +396,11 @@ namespace darmok
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
 
-		_renderer.imguiSetup();
+		auto result = _renderer.imguiSetup();
 		_renderPass.emplace(_renderer, _imgui);
 		ImGui::SetCurrentContext(nullptr);
 
-		return {};
+		return result;
 	}
 
 	expected<bgfx::ViewId, std::string> ImguiAppComponentImpl::renderReset(bgfx::ViewId viewId) noexcept
@@ -415,7 +416,7 @@ namespace darmok
 	{
 		if (_renderPass)
 		{
-			_renderPass->render();
+			return _renderPass->render();
 		}
 		return {};
 	}

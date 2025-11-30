@@ -386,10 +386,10 @@ namespace darmok::editor
                 if(typeId == protobuf::getTypeId<protobuf::Vec2>())
                 {
                     auto vec = static_cast<protobuf::Vec2*>(fieldMsg);
-                    auto glm = convert(*vec);
+                    auto glm = convert<glm::vec2>(*vec);
                     if (ImGui::InputFloat2(label, glm::value_ptr(glm)))
                     {
-                        *vec = convert(glm);
+                        *vec = convert<protobuf::Vec2>(glm);
                         return true;
                     }
                     return false;
@@ -397,10 +397,10 @@ namespace darmok::editor
                 else if (typeId == protobuf::getTypeId<protobuf::Vec3>())
                 {
                     auto vec = static_cast<protobuf::Vec3*>(fieldMsg);
-                    auto glm = convert(*vec);
+                    auto glm = convert<glm::vec3>(*vec);
                     if (ImGui::InputFloat3(label, glm::value_ptr(glm)))
                     {
-                        *vec = convert(glm);
+                        *vec = convert<protobuf::Vec3>(glm);
                         return true;
                     }
                     return false;
@@ -408,10 +408,10 @@ namespace darmok::editor
                 else if (typeId == protobuf::getTypeId<protobuf::Vec4>())
                 {
                     auto vec = static_cast<protobuf::Vec4*>(fieldMsg);
-                    auto glm = convert(*vec);
+                    auto glm = convert<glm::vec4>(*vec);
                     if (ImGui::InputFloat4(label, glm::value_ptr(glm)))
                     {
-                        *vec = convert(glm);
+                        *vec = convert<protobuf::Vec4>(glm);
                         return true;
                     }
                     return false;
@@ -419,10 +419,10 @@ namespace darmok::editor
                 else if (typeId == protobuf::getTypeId<protobuf::Uvec2>())
                 {
                     auto vec = static_cast<protobuf::Uvec2*>(fieldMsg);
-                    auto glm = convert(*vec);
+                    auto glm = convert<glm::uvec2>(*vec);
                     if (ImGui::InputScalarN(label, ImGuiDataType_U32, glm::value_ptr(glm), 2))
                     {
-                        *vec = convert(glm);
+                        *vec = convert<protobuf::Uvec2>(glm);
                         return true;
                     }
                     return false;
@@ -430,11 +430,11 @@ namespace darmok::editor
                 else if (typeId == protobuf::getTypeId<protobuf::Quat>())
                 {
                     auto quat = static_cast<protobuf::Quat*>(fieldMsg);
-                    auto glm = convert(*quat);
+                    auto glm = convert<glm::quat>(*quat);
                     auto angles = glm::degrees(glm::eulerAngles(glm));
                     if (ImGui::InputFloat3(label, glm::value_ptr(angles)))
                     {
-                        *quat = convert(glm::quat{ glm::radians(angles) });
+                        *quat = convert<protobuf::Quat>(glm::quat{ glm::radians(angles) });
                         return true;
                     }
                     return false;
@@ -442,10 +442,10 @@ namespace darmok::editor
                 else if (typeId == protobuf::getTypeId<protobuf::Color>())
                 {
                     auto color = static_cast<protobuf::Color*>(fieldMsg);
-                    auto glm = Colors::normalize(convert(*color));
+                    auto glm = Colors::normalize(convert<Color>(*color));
                     if (ImGui::ColorEdit4(label, glm::value_ptr(glm)))
                     {
-                        *color = convert(Colors::denormalize(glm));
+                        *color = convert<protobuf::Color>(Colors::denormalize(glm));
                         return true;
                     }
                     return false;
@@ -453,10 +453,10 @@ namespace darmok::editor
                 else if (typeId == protobuf::getTypeId<protobuf::Color3>())
                 {
                     auto color = static_cast<protobuf::Color3*>(fieldMsg);
-                    auto glm = Colors::normalize(convert(*color));
+                    auto glm = Colors::normalize(convert<Color3>(*color));
                     if (ImGui::ColorEdit3(label, glm::value_ptr(glm)))
                     {
-                        *color = convert(Colors::denormalize(glm));
+                        *color = convert<protobuf::Color3>(Colors::denormalize(glm));
                         return true;
                     }
                     return false;

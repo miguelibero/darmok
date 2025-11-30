@@ -129,50 +129,77 @@ namespace darmok
         return handle;
     }
 
-	Program::Program(const Definition& def)
-        : _vertexLayout{ ConstVertexLayoutWrapper{ def.varying().vertex() }.getBgfx() }
+    Program::Program(bgfx::VertexLayout layout, Handles handles) noexcept
+        : _vertexLayout{ std::move(layout) }
+        , _fragmentHandles{ std::move(handles).fragmentHandles }
+        , _vertexHandles{ std::move(handles).vertexHandles }
+        , _handles{ std::move(handles).programHandles }
+    {
+        auto addDefines = [this](const Defines& defines)
+        {
+            _allDefines.insert(defines.begin(), defines.end());
+        };
+
+        for (auto& elm : _fragmentHandles)
+        {
+            addDefines(elm.first);
+        }
+        for (auto& elm : _vertexHandles)
+        {
+            addDefines(elm.first);
+        }
+        for (auto& elm : _handles)
+        {
+            addDefines(elm.first);
+        }
+    }
+
+	expected<Program, std::string> Program::load(const Definition& def) noexcept
 	{
         auto profileResult = ConstProgramDefinitionWrapper{ def }.getCurrentProfile();
 		if (!profileResult)
 		{
-			throw std::runtime_error{ profileResult.error() };
+            return unexpected{ std::move(profileResult).error() };
 		}
 
         auto& profile = profileResult.value().get();
+
+        Handles handles;
 		
         auto fragResult = createShaders(profile.fragment_shaders(), def.name());
         if (!fragResult)
         {
-            throw std::runtime_error{ fragResult.error() };
+            return unexpected{ std::move(fragResult).error()};
         }
-		_fragmentHandles = std::move(fragResult.value());
+        handles.fragmentHandles = std::move(fragResult.value());
         auto vertResult = createShaders(profile.vertex_shaders(), def.name());
         if (!vertResult)
         {
-            throw std::runtime_error{ vertResult.error() };
+            return unexpected{ std::move(vertResult).error() };
         }
-        _vertexHandles = std::move(vertResult.value());
+        handles.vertexHandles = std::move(vertResult.value());
 
-        for (auto& [defines, vertHandle] : _vertexHandles)
+        for (auto& [defines, vertHandle] : handles.vertexHandles)
         {
-            _allDefines.insert(defines.begin(), defines.end());
-            auto fragHandle = findBestShader(defines, _fragmentHandles);
+            auto fragHandle = findBestShader(defines, handles.fragmentHandles);
             auto result = createHandle(defines, vertHandle, fragHandle);
             if(!result)
             {
-                throw std::runtime_error{ result.error() };
+                return unexpected{ std::move(result).error() };
 			}
         }
-        for (auto& [defines, fragHandle] : _fragmentHandles)
+        for (auto& [defines, fragHandle] : handles.fragmentHandles)
         {
-            _allDefines.insert(defines.begin(), defines.end());
-            auto vertHandle = findBestShader(defines, _vertexHandles);
+            auto vertHandle = findBestShader(defines, handles.vertexHandles);
             auto result = createHandle(defines, vertHandle, fragHandle);
             if (!result)
             {
-                throw std::runtime_error{ result.error() };
+                return unexpected{ std::move(result).error() };
             }
         }
+        auto vertexLayout = ConstVertexLayoutWrapper{ def.varying().vertex() }.getBgfx();
+
+        return Program{ std::move(vertexLayout), std::move(handles) };
     }
 
     expected<bgfx::ProgramHandle, std::string> Program::createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle)

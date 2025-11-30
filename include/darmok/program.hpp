@@ -27,48 +27,57 @@ namespace darmok
 	public:
 		using Defines = ProgramDefines;
 		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
-		using Handles = std::unordered_map<Defines, bgfx::ProgramHandle>;
+		using ProgramHandles = std::unordered_map<Defines, bgfx::ProgramHandle>;
 		using Definition = protobuf::Program;
 		using Source = protobuf::ProgramSource;
 		using Standard = protobuf::StandardProgram;
 		using Ref = protobuf::ProgramRef;
 
-		Program(const Definition& def);
+		struct Handles final
+		{
+			ShaderHandles vertexHandles;
+			ShaderHandles fragmentHandles;
+			ProgramHandles programHandles;
+		};
+		
+		Program(bgfx::VertexLayout layout, Handles handles) noexcept;
 		~Program() noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
 		Program(Program&& other) = default;
 		Program& operator=(Program&& other) = default;
 
+		static expected<Program, std::string> load(const Definition& def) noexcept;
+
 		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
 		template<class T>
-        [[nodiscard]] static Program fromStaticMem(const T& mem)
+        [[nodiscard]] static expected<Program, std::string> fromStaticMem(const T& mem) noexcept
 		{
 			Definition def;
 			auto result = protobuf::readStaticMem(def, mem);
 			if (!result)
 			{
-				throw std::runtime_error{ result.error()};
+				unexpected<std::string>{ std::move(result).error() };
 			}
 			return Program{ def };
 		}
 
 		[[nodiscard]] static Source createSource() noexcept;
-		[[nodiscard]] static expected<protobuf::Varying, std::string> loadRefVarying(const Ref& ref, OptionalRef<IProgramSourceLoader> loader = nullptr);
-		[[nodiscard]] static ILoader<Program::Definition>::Result loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader = nullptr);
-		[[nodiscard]] static ILoader<Program>::Result loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader = nullptr);
+		[[nodiscard]] static expected<protobuf::Varying, std::string> loadRefVarying(const Ref& ref, OptionalRef<IProgramSourceLoader> loader = nullptr) noexcept;
+		[[nodiscard]] static ILoader<Program::Definition>::Result loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader = nullptr) noexcept;
+		[[nodiscard]] static ILoader<Program>::Result loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader = nullptr) noexcept;
 	private:
 
-		expected<ShaderHandles, std::string> createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name);
+		static expected<ShaderHandles, std::string> createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name) noexcept;
 		static bgfx::ShaderHandle findBestShader(const Defines& defines, const ShaderHandles& handles) noexcept;
-		expected<bgfx::ProgramHandle, std::string> createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle);
+		static expected<bgfx::ProgramHandle, std::string> createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle) noexcept;
 
 		Defines _allDefines;
 		ShaderHandles _vertexHandles;
 		ShaderHandles _fragmentHandles;
-		Handles _handles;
+		ProgramHandles _handles;
 		bgfx::VertexLayout _vertexLayout;
 	};
 
@@ -77,8 +86,8 @@ namespace darmok
 	public:
 		using Type = protobuf::StandardProgram::Type;
 		using Definition = protobuf::Program;
-		static std::shared_ptr<Program> load(Type type);
-		static std::shared_ptr<Definition> loadDefinition(Type type);
+		static expected<std::shared_ptr<Program>, std::string> load(Type type) noexcept;
+		static expected<std::shared_ptr<Definition>, std::string> loadDefinition(Type type) noexcept;
 		static std::optional<Type> getType(const std::shared_ptr<Program>& prog) noexcept;
 		static std::optional<Type> getType(const std::shared_ptr<Definition>& def) noexcept;
 	private:

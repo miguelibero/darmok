@@ -17,30 +17,30 @@ namespace darmok::editor
     class EditorProject final
     {
     public:
-        EditorProject(App& app);
+        EditorProject(App& app) noexcept;
 
-        expected<void, std::string> init(const ProgramCompilerConfig& progCompilerConfig);
-        void shutdown();
+        expected<void, std::string> init(const ProgramCompilerConfig& progCompilerConfig) noexcept;
+        expected<void, std::string> shutdown() noexcept;
 
-        void saveScene(bool forceNewPath = false);
-        void openScene();
-        expected<void, std::string> reloadScene();
-        void exportScene();
-        void resetScene();
-        void updateScene();
+        expected<void, std::string> saveScene(bool forceNewPath = false) noexcept;
+        expected<void, std::string> openScene() noexcept;
+        expected<void, std::string> reloadScene() noexcept;
+        expected<void, std::string> exportScene() noexcept;
+        expected<void, std::string> resetScene() noexcept;
+        expected<void, std::string> updateScene() noexcept;
 
-        expected<void, std::string> render();
-        EntityId addEntity(EntityId parentEntity = 0);
+        expected<void, std::string> render() noexcept;
+        expected<EntityId, std::string> addEntity(EntityId parentEntity = 0) noexcept;
 
-        std::shared_ptr<Scene> getScene();
-        std::shared_ptr<const Scene> getScene() const;
-        SceneDefinitionWrapper& getSceneDefinition();
-        const SceneDefinitionWrapper& getSceneDefinition() const;
-        OptionalRef<Camera> getCamera();
-        OptionalRef<const Camera> getCamera() const;
-        IComponentLoadContext& getComponentLoadContext();
-        const IComponentLoadContext& getComponentLoadContext() const;
-        AssetPack& getAssets();
+        std::shared_ptr<Scene> getScene() noexcept;
+        std::shared_ptr<const Scene> getScene() const noexcept;
+        SceneDefinitionWrapper& getSceneDefinition() noexcept;
+        const SceneDefinitionWrapper& getSceneDefinition() const noexcept;
+        OptionalRef<Camera> getCamera() noexcept;
+        OptionalRef<const Camera> getCamera() const noexcept;
+        IComponentLoadContext& getComponentLoadContext() noexcept;
+        const IComponentLoadContext& getComponentLoadContext() const noexcept;
+        AssetPack& getAssets() noexcept;
 
     private:
         App& _app;
@@ -60,14 +60,14 @@ namespace darmok::editor
         static const FileDialogOptions _dialogOptions;
         static const char* _confirmNewPopup;
 
-        void configureEditorScene(Scene& scene);
-        void configureDefaultScene(SceneDefinitionWrapper& scene);
+        expected<void, std::string> configureEditorScene(Scene& scene) noexcept;
+        expected<void, std::string> configureDefaultScene(SceneDefinitionWrapper& scene) noexcept;
 
-        expected<void, std::string> doResetScene();
-        expected<void, std::string> doUpdateScene();
-        expected<void, std::string> doExportScene(std::filesystem::path path);
-        void doSaveScene();
-        void clearPath();
+        expected<void, std::string> doResetScene() noexcept;
+        expected<void, std::string> doUpdateScene() noexcept;
+        expected<void, std::string> doExportScene(std::filesystem::path path) noexcept;
+        expected<void, std::string> doSaveScene() noexcept;
+        void clearPath() noexcept;
     };
 
 

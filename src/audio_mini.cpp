@@ -106,7 +106,7 @@ namespace darmok
     }
 
     MiniaudioSoundLoader::MiniaudioSoundLoader(IDataLoader& dataLoader) noexcept
-        : _dataLoader(dataLoader)
+        : _dataLoader{ dataLoader }
     {
     }
 

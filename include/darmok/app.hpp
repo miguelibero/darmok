@@ -171,8 +171,8 @@ namespace darmok
 		[[nodiscard]] AssetContext& getAssets() noexcept;
 		[[nodiscard]] const AssetContext& getAssets() const noexcept;
 
-		[[nodiscard]] tf::Executor& getTaskExecutor();
-		[[nodiscard]] const tf::Executor& getTaskExecutor() const;
+		[[nodiscard]] tf::Executor& getTaskExecutor() noexcept;
+		[[nodiscard]] const tf::Executor& getTaskExecutor() const noexcept;
 
 #ifdef DARMOK_MINIAUDIO
 		[[nodiscard]] AudioSystem& getAudio() noexcept;
@@ -187,7 +187,7 @@ namespace darmok
 		void setResetFlag(uint32_t flag, bool enabled = true) noexcept;
 		[[nodiscard]] bool getResetFlag(uint32_t flag) const noexcept;
 
-		void setRendererType(bgfx::RendererType::Enum renderer);
+		expected<void, std::string> setRendererType(bgfx::RendererType::Enum renderer) noexcept;
 
 		void setClearColor(const Color& color) noexcept;
 		void setUpdateConfig(const AppUpdateConfig& config) noexcept;

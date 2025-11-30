@@ -1,9 +1,9 @@
 #include <darmok-editor/inspector/mesh.hpp>
 #include <darmok-editor/app.hpp>
 #include <darmok-editor/utils.hpp>
-#include <darmok/shape_serialize.hpp>
 #include <darmok/assimp.hpp>
 #include <darmok/mesh_assimp.hpp>
+#include <darmok/shape.hpp>
 
 #include <imgui.h>
 #include <assimp/scene.h>
@@ -122,8 +122,8 @@ namespace darmok::editor
             return unexpected{ "selected mesh not found in scene" };
         }
 
-        AssimpMeshSourceConverter convert{ *assimpMesh, src };
-        return convert();
+        AssimpMeshSourceConverter converter{ *assimpMesh, src };
+        return converter();
     }
 
     MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderData(Mesh::Source& src) noexcept
@@ -200,7 +200,7 @@ namespace darmok::editor
         if (create)
         {
             sphereSrc.set_lod(32);
-            sphere = convert(Sphere{});
+            sphere = convert<protobuf::Sphere>(Sphere{});
         }
         if (ImguiUtils::beginFrame("Sphere"))
         {
@@ -231,7 +231,7 @@ namespace darmok::editor
         auto& cube = *cubeSrc.mutable_shape();
         if (create)
         {
-            cube = convert(Cube{});
+            cube = Cube::createDefinition();
         }
         if (ImguiUtils::beginFrame("Cube"))
         {
@@ -261,7 +261,7 @@ namespace darmok::editor
         if (create)
         {
             capSrc.set_lod(32);
-            capsule = convert(Capsule{});
+            capsule = Capsule::createDefinition();
         }
         auto changed = false;
         if (ImguiUtils::beginFrame("Capsule"))
@@ -291,7 +291,7 @@ namespace darmok::editor
         auto& rect = *rectSrc.mutable_shape();
         if (create)
         {
-            rect = convert(Rectangle{});
+            rect = Rectangle::createDefinition();
         }
         auto changed = false;
         if (ImguiUtils::beginFrame("Rectangle"))

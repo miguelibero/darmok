@@ -35,19 +35,19 @@ namespace darmok::editor
     class EditorSceneView final
     {
     public:
-        EditorSceneView(App& app);
-        void init(const std::shared_ptr<Scene>& scene, Camera& cam);
-        void shutdown();
-        void beforeRender();
-        void render();
-        void update(float deltaTime);
+        EditorSceneView(App& app) noexcept;
+        expected<void, std::string> init(const std::shared_ptr<Scene>& scene, Camera& cam) noexcept;
+        expected<void, std::string> shutdown() noexcept;
+        expected<void, std::string> beforeRender() noexcept;
+        expected<void, std::string> render() noexcept;
+        expected<void, std::string> update(float deltaTime) noexcept;
 
-        TransformGizmoMode getTransformGizmoMode() const;
-        EditorSceneView& setTransformGizmoMode(TransformGizmoMode mode);
-        EditorSceneView& selectEntity(Entity entity);
+        TransformGizmoMode getTransformGizmoMode() const noexcept;
+        EditorSceneView& setTransformGizmoMode(TransformGizmoMode mode) noexcept;
+        EditorSceneView& selectEntity(Entity entity) noexcept;
 
-        MouseSceneViewMode getMouseMode() const;
-        static const std::string& getWindowName();
+        MouseSceneViewMode getMouseMode() const noexcept;
+        static const std::string& getWindowName() noexcept;
 
     private:
         static const std::string _windowName;
@@ -60,9 +60,9 @@ namespace darmok::editor
         std::shared_ptr<FrameBuffer> _sceneBuffer;
         Entity _selectedEntity;
 
-        void updateSize(const glm::uvec2& size) noexcept;
-        void updateInputEvents(float deltaTime);
-        void updateCamera(float deltaTime);
-        void renderGizmos();
+        expected<void, std::string> updateSize(const glm::uvec2& size) noexcept;
+        void updateInputEvents(float deltaTime) noexcept;
+        void updateCamera(float deltaTime) noexcept;
+        void renderGizmos() noexcept;
     };
 }

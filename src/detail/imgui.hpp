@@ -20,7 +20,7 @@ namespace darmok
 		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui);
 		~ImguiRenderPass() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-		void render() noexcept;
+		expected<void, std::string> render() noexcept;
 		void updateFonts() noexcept;
 	private:
 		IImguiRenderer& _renderer;

@@ -207,23 +207,22 @@ namespace darmok
         file->Read(data.ptr(), data.size(), fileHandle);
         file->Close(fileHandle);
 
-        try
-        {
-            Image img(data, alloc);
-            auto size = img.getSize();
-            dimensions.x = size.x;
-            dimensions.y = size.y;
-            auto flags = _canvas.getTextureFlags(source);
-            auto texture = std::make_unique<Texture>(img, flags);
-            Rml::TextureHandle handle = texture->getHandle().idx + 1;
-            _textureSources.emplace(source, *texture);
-            _textures.emplace(handle, std::move(texture));
-            return handle;
-        }
-        catch (...)
+   
+        auto imgResult = Image::load(data, alloc);
+        if (!imgResult)
         {
             return 0;
         }
+        auto img = std::move(imgResult).value();
+        auto size = img.getSize();
+        dimensions.x = size.x;
+        dimensions.y = size.y;
+        auto flags = _canvas.getTextureFlags(source);
+        auto texture = std::make_unique<Texture>(img, flags);
+        Rml::TextureHandle handle = texture->getHandle().idx + 1;
+        _textureSources.emplace(source, *texture);
+        _textures.emplace(handle, std::move(texture));
+        return handle;
     }
 
     Rml::TextureHandle RmluiRenderInterface::GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept

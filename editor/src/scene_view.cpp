@@ -21,7 +21,7 @@ namespace darmok::editor
 {
     const std::string EditorSceneView::_windowName = "Scene View";
 
-    EditorSceneView::EditorSceneView(App& app)
+    EditorSceneView::EditorSceneView(App& app) noexcept
         : _app(app)
         , _mouseMode(MouseSceneViewMode::None)
         , _focused(false)
@@ -30,7 +30,7 @@ namespace darmok::editor
     {
     }
 
-    void EditorSceneView::init(const std::shared_ptr<Scene>& scene, Camera& cam)
+    expected<void, std::string> EditorSceneView::init(const std::shared_ptr<Scene>& scene, Camera& cam) noexcept
     {
         _scene = scene;
         _cam = cam;
@@ -40,10 +40,10 @@ namespace darmok::editor
         {
             size = _sceneBuffer->getSize();
         }
-        updateSize(size);
+        return updateSize(size);
     }
     
-    void EditorSceneView::shutdown()
+    expected<void, std::string> EditorSceneView::shutdown() noexcept
     {
         _scene.reset();
         _sceneBuffer.reset();
@@ -51,45 +51,45 @@ namespace darmok::editor
         _focused = false;
         _mouseMode = MouseSceneViewMode::None;
         _transGizmoMode = TransformGizmoMode::Grab;
+        return {};
     }
 
-
-    TransformGizmoMode EditorSceneView::getTransformGizmoMode() const
+    TransformGizmoMode EditorSceneView::getTransformGizmoMode() const noexcept
     {
         return _transGizmoMode;
     }
 
-    EditorSceneView& EditorSceneView::setTransformGizmoMode(TransformGizmoMode mode)
+    EditorSceneView& EditorSceneView::setTransformGizmoMode(TransformGizmoMode mode) noexcept
     {
         _transGizmoMode = mode;
         return *this;
     }
 
-    EditorSceneView& EditorSceneView::selectEntity(Entity entity)
+    EditorSceneView& EditorSceneView::selectEntity(Entity entity) noexcept
     {
         _selectedEntity = entity;
         return *this;
     }
 
-    MouseSceneViewMode EditorSceneView::getMouseMode() const
+    MouseSceneViewMode EditorSceneView::getMouseMode() const noexcept
     {
         return _mouseMode;
     }
 
-    const std::string& EditorSceneView::getWindowName()
+    const std::string& EditorSceneView::getWindowName() noexcept
     {
         return _windowName;
     }
 
-    void EditorSceneView::updateSize(const glm::uvec2& size) noexcept
+    expected<void, std::string> EditorSceneView::updateSize(const glm::uvec2& size) noexcept
     {
         if (!_cam)
         {
-            return;
+            return {};
         }
         if (_sceneBuffer && size == _sceneBuffer->getSize())
         {
-            return;
+            return {};
         }
         if (size.x <= 0.F || size.y <= 0.F)
         {
@@ -99,16 +99,21 @@ namespace darmok::editor
         else
         {
             _sceneBuffer = std::make_shared<FrameBuffer>(size);
-            _cam->getRenderChain().setOutput(_sceneBuffer);
+            auto result = _cam->getRenderChain().setOutput(_sceneBuffer);
+            if (!result)
+            {
+                return result;
+            }
             _cam->setEnabled(true);
             _cam->setBaseViewport(Viewport{ size });
         }
 
-        // TODO: maby a bit harsh
+        // TODO: maybe a bit harsh
         _app.requestRenderReset();
+        return {};
     }
 
-    void EditorSceneView::renderGizmos()
+    void EditorSceneView::renderGizmos() noexcept
     {
         if (!_cam || !_scene)
         {
@@ -170,7 +175,7 @@ namespace darmok::editor
         }
     }
 
-    void EditorSceneView::updateInputEvents(float deltaTime)
+    void EditorSceneView::updateInputEvents(float deltaTime) noexcept
     {
         static const InputEvents gizmoModeGrabEvents = {
             KeyboardInputEvent{ KeyboardKey::KeyW }
@@ -204,7 +209,7 @@ namespace darmok::editor
         }
     }
     
-    void EditorSceneView::updateCamera(float deltaTime)
+    void EditorSceneView::updateCamera(float deltaTime) noexcept
     {
         auto trans = _cam->getTransform();
         if (!trans)
@@ -270,23 +275,29 @@ namespace darmok::editor
         }
     }
 
-    void EditorSceneView::update(float deltaTime)
+    expected<void, std::string> EditorSceneView::update(float deltaTime) noexcept
     {
         updateCamera(deltaTime);
         updateInputEvents(deltaTime);
+        return {};
     }
 
-    void EditorSceneView::beforeRender()
+    expected<void, std::string> EditorSceneView::beforeRender() noexcept
     {
         ImGuizmo::BeginFrame();
+        return {};
     }
 
-    void EditorSceneView::render()
+    expected<void, std::string> EditorSceneView::render() noexcept
     {
         if (ImGui::Begin(_windowName.c_str()))
         {
             auto size = ImGui::GetContentRegionAvail();
-            updateSize(glm::uvec2(size.x, size.y));
+            auto sizeResult = updateSize(glm::uvec2(size.x, size.y));
+            if (!sizeResult)
+            {
+                return sizeResult;
+            }
 
             if (_sceneBuffer)
             {
@@ -321,6 +332,7 @@ namespace darmok::editor
             }
         }
         ImGui::End();
+        return {};
     }
 
 }

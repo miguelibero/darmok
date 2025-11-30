@@ -44,6 +44,11 @@ namespace darmok
         return def;
     }
 
+    Rectangle::Definition Rectangle::createDefinition()
+    {
+        return standard();
+    }
+
     std::string Rectangle::toString() const noexcept
     {
         return fmt::format("Rectangle(size={}, origin={})", size, origin);
@@ -93,6 +98,11 @@ namespace darmok
     bool Cube::empty() const noexcept
     {
         return glm::length2(size) == 0.F;
+    }
+
+    Cube::Definition Cube::createDefinition()
+    {
+        return standard();
     }
 
     std::string Cube::toString() const noexcept
@@ -671,6 +681,11 @@ namespace darmok
     {
 		return fmt::format("Capsule(cylinderHeight={}, radius={}, origin={})",
 			cylinderHeight, radius, origin);
+    }
+
+    Capsule::Definition Capsule::createDefinition()
+    {
+        return standard();
     }
 
     const Capsule& Capsule::standard() noexcept
