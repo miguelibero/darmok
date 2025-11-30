@@ -22,6 +22,9 @@ namespace
 {
 	using namespace darmok;
 
+	template<typename T>
+	using unexpected = tl::unexpected<T>;
+
 	struct Culling2D final
 	{
 		bool v; // entt does not accept empty structs
@@ -82,7 +85,7 @@ namespace
 	class RotateUpdater final : public IAppUpdater
 	{
 	public:
-		RotateUpdater(Transform& trans, float speed = 100.f)
+		RotateUpdater(Transform& trans, float speed = 100.f) noexcept
 			: _trans{ trans }
 			, _speed{ speed }
 		{
@@ -103,7 +106,7 @@ namespace
 	class SceneSampleAppDelegate final : public IAppDelegate
 	{
 	public:
-		SceneSampleAppDelegate(App& app)
+		SceneSampleAppDelegate(App& app) noexcept
 			: _app{ app }
 		{
 		}
@@ -113,7 +116,12 @@ namespace
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 			scene.tryAddSceneComponent<FrameAnimationUpdater>();
 
-			_prog = StandardProgramLoader::load(Program::Standard::Unlit);
+			auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+			if (!progResult)
+			{
+				return unexpected{ std::move(progResult).error() };
+			}
+			_prog = progResult.value();
 
 			auto cam3d = scene.createEntity();
 			scene.addComponent<Transform>(cam3d)
@@ -140,7 +148,7 @@ namespace
 			return {};
 		}
 
-		void createBouncingSprite(Scene& scene)
+		void createBouncingSprite(Scene& scene) noexcept
 		{
 			auto tex = _app.getAssets().getTextureLoader()("engine.png").value();
 			auto sprite = scene.createEntity();
@@ -171,7 +179,7 @@ namespace
 			_app.addUpdater<ScreenBounceUpdater>(win, trans, size, 100.f);
 		}
 
-		void createSpriteAnimation(Scene& scene)
+		void createSpriteAnimation(Scene& scene) noexcept
 		{
 			auto texAtlasDef = _app.getAssets().getTextureAtlasLoader().loadDefinition("warrior-0.xml").value();
 			auto texDef = _app.getAssets().getTextureLoader().loadDefinition(texAtlasDef->texture_path()).value();
@@ -197,7 +205,7 @@ namespace
 			scene.addComponent<Transform>(anim, glm::vec3{ winSize, 0.f } / 2.f);
 		}
 
-		void createRotatingCube(Scene& scene)
+		void createRotatingCube(Scene& scene) noexcept
 		{
 			auto texture = _app.getAssets().getTextureLoader()("brick.png").value();
 			auto material = std::make_shared<Material>(_prog, texture);

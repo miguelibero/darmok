@@ -406,8 +406,6 @@ namespace darmok
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
 
-		ImGui::SetCurrentContext(nullptr);
-
 		auto result = _renderer.imguiSetup();
 		if (!result)
 		{
@@ -419,6 +417,8 @@ namespace darmok
 		{
 			return result;
 		}
+
+		ImGui::SetCurrentContext(nullptr);
 
 		return result;
 	}

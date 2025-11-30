@@ -27,7 +27,7 @@ namespace darmok
 		auto result = app.getOrAddComponent<MaterialAppComponent>();
 		if (!result)
 		{
-			return unexpected<std::string>{std::move(result).error()};
+			return unexpected{std::move(result).error()};
 		}
 		_materials = result.value().get();
 		return {};

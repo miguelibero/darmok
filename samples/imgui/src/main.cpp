@@ -196,7 +196,7 @@ namespace
 			return {};
 		}
 
-		void imguiRender() override
+		expected<void, std::string> imguiRender() noexcept override
 		{
 			ImGui::TextWrapped("lala");
 			ImGui::InputText("text", &_text);
@@ -212,6 +212,8 @@ namespace
 				_mouseVelocityMax = glm::vec2(0);
 				_mouseScrollMax = glm::vec2(0);
 			}
+
+			return {};
 		}
 
 		void onWindowVideoMode(const VideoMode& mode) override

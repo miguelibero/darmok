@@ -187,6 +187,7 @@ namespace darmok
             {
                 return unexpected{ std::move(result).error() };
 			}
+            handles.programHandles[defines] = result.value();
         }
         for (auto& [defines, fragHandle] : handles.fragmentHandles)
         {
@@ -196,9 +197,9 @@ namespace darmok
             {
                 return unexpected{ std::move(result).error() };
             }
+            handles.programHandles[defines] = result.value();
         }
         auto vertexLayout = ConstVertexLayoutWrapper{ def.varying().vertex() }.getBgfx();
-
         return Program{ std::move(vertexLayout), std::move(handles) };
     }
 

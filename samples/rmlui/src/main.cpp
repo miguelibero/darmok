@@ -25,7 +25,7 @@ namespace
 	class WobbleUpdater final : public ISceneComponent
 	{
 	public:
-		WobbleUpdater(Transform& trans, float speed = 0.1f, float maxAngle = 10.f)
+		WobbleUpdater(Transform& trans, float speed = 0.1f, float maxAngle = 10.f) noexcept
 			: _trans{ trans }
 			, _speed{ speed }
 			, _maxAngle{ maxAngle }
@@ -64,7 +64,7 @@ namespace
 		expected<void, std::string> init() noexcept override
 		{
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
-			scene.addSceneComponent<RmluiSceneComponent>();
+			scene.tryAddSceneComponent<RmluiSceneComponent>();
 
 			// scene.setViewport(Viewport(glm::ivec2(500), glm::ivec2(200)));
 
@@ -76,8 +76,8 @@ namespace
 				.lookAt({ 0.f, 0.f, 0.f });
 			cam.setPerspective(glm::radians(60.f), 0.3f, 5.f);
 			
-			cam.addComponent<ForwardRenderer>();
-			cam.addComponent<RmluiRenderer>();
+			cam.tryAddComponent<ForwardRenderer>();
+			cam.tryAddComponent<RmluiRenderer>();
 
 			glm::uvec2 canvasSize{ 800, 600 };
 
@@ -86,7 +86,7 @@ namespace
 			auto& canvasTrans = scene.addComponent<Transform>(canvasEntity);
 			canvasTrans.setScale(glm::vec3{ 2.f } / static_cast<float>(glm::compMax(canvasSize)));
 			canvasTrans.setEulerAngles(glm::radians(glm::vec3{ 0.f, 0.f, 30.f }));
-			scene.addSceneComponent<WobbleUpdater>(canvasTrans);
+			scene.tryAddSceneComponent<WobbleUpdater>(canvasTrans);
 
 			auto& canvas = scene.addComponent<RmluiCanvas>(canvasEntity, "rmlui", canvasSize);
 			canvas.setOffset(glm::vec3{ canvasSize, 0.f } *-0.5f);
@@ -95,7 +95,7 @@ namespace
 			auto& context = canvas.getContext();
 
 #ifdef RMLUI_DEBUGGER
-			_app.addComponent<RmluiDebuggerComponent>();
+			_app.tryAddComponent<RmluiDebuggerComponent>();
 #endif
 
 			// sample taken from the RmlUI README

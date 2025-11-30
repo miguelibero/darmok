@@ -26,6 +26,9 @@ namespace
 {
 	using namespace darmok;
 
+	template<typename T>
+	using unexpected = darmok::unexpected<T>;
+
 	class CircleUpdater final : public ISceneComponent
 	{
 	public:
@@ -94,8 +97,18 @@ namespace
 			_app.setResetFlag(BGFX_RESET_VSYNC);
 
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
-			auto prog = StandardProgramLoader::load(Program::Standard::Forward);
-			auto unlitProg = StandardProgramLoader::load(Program::Standard::Unlit);
+			auto progResult = StandardProgramLoader::load(Program::Standard::Forward);
+			if (!progResult)
+			{
+				return unexpected{ std::move(progResult).error() };
+			}
+			auto prog = progResult.value();
+			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::Unlit);
+			if (!progResult)
+			{
+				return unexpected{ std::move(unlitProgResult).error() };
+			}
+			auto unlitProg = unlitProgResult.value();
 			auto& layout = prog->getVertexLayout();
 
 			_cam = createCamera(scene);
@@ -104,8 +117,13 @@ namespace
 			_freelook = scene.tryAddSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
 
+			auto tonemapResult = StandardProgramLoader::load(Program::Standard::Tonemap);
+			if (!tonemapResult)
+			{
+				return unexpected{ std::move(tonemapResult).error() };
+			}
 			scene.getRenderChain().tryAddStep<ScreenSpaceRenderPass>(
-				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
+				tonemapResult.value(), "Tonemap");
 
 			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
 			auto debugArrowMesh = debugArrowMeshData.createSharedMesh(unlitProg->getVertexLayout());

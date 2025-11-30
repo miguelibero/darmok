@@ -53,7 +53,7 @@ namespace
 			return {};
 		}
 
-		void imguiRender() override
+		expected<void, std::string> imguiRender() noexcept override
 		{
 			auto& audio = _app.getAudio();
 			if (ImGui::Button("Play Sound"))
@@ -92,6 +92,8 @@ namespace
 			{
 				audio.setVolume(AudioGroup::Music, _musicVolume);
 			}
+
+			return {};
 		}
 
 		expected<void, std::string> render() const noexcept override

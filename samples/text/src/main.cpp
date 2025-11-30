@@ -74,7 +74,7 @@ namespace
 			return {};
 		}
 
-		void imguiRender()
+		expected<void, std::string> imguiRender() noexcept
 		{
 			if (ImGui::InputText("Text", &_textStr))
 			{
@@ -89,6 +89,7 @@ namespace
 				_text2->setColor(c);
 				_text3->setColor(c);
 			}
+			return {};
 		}
 	private:
 		App& _app;

@@ -80,8 +80,13 @@ namespace
 			auto& freelook = freelookResult.value().get();
 			freelook.addListener(*this);
 
+			auto progResult = StandardProgramLoader::load(Program::Standard::Tonemap);
+			if (!progResult)
+			{
+				return unexpected{ std::move(progResult).error() };
+			}
 			auto tonemapResult = scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
-				StandardProgramLoader::load(Program::Standard::Tonemap), "Tonemap");
+				progResult.value(), "Tonemap");
 			if (!tonemapResult)
 			{
 				return unexpected{ std::move(tonemapResult).error() };
@@ -97,7 +102,12 @@ namespace
 			dirLight.setShadowType(LightDefinition::SoftShadow);
 			scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
-			auto prog = StandardProgramLoader::load(Program::Standard::ForwardBasic);
+			progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
+			if (!progResult)
+			{
+				return unexpected{ std::move(progResult).error() };
+			}
+			auto prog = progResult.value();
 			auto arrowMesh = std::make_shared<Mesh>(MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout()));
 			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
@@ -121,6 +131,8 @@ namespace
 			}
 
 			_mouseVel = glm::vec2{ 0 };
+
+			return {};
 		}
 
 	protected:
@@ -191,11 +203,11 @@ namespace
 
 			if (mainCamera)
 			{
-				cam.addComponent<CullingDebugRenderer>(mainCamera);
+				cam.tryAddComponent<CullingDebugRenderer>(mainCamera);
 				cam.setEnabled(false);
 				if (auto shadow = mainCamera->getComponent<ShadowRenderer>())
 				{
-					cam.addComponent<ShadowDebugRenderer>(shadow.value());
+					cam.tryAddComponent<ShadowDebugRenderer>(shadow.value());
 				}
 			}
 

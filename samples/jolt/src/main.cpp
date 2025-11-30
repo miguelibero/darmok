@@ -33,12 +33,12 @@ namespace
 	using namespace darmok::physics3d;
 
 	template<typename T>
-	using unexpected = darmok::unexpected<T>;
+	using unexpected = tl::unexpected<T>;
 
 	class JoltSampleAppDelegate final : public IAppDelegate, public ICollisionListener, public ICharacterDelegate, public IImguiRenderer
 	{
 	public:
-		JoltSampleAppDelegate(App& app)
+		JoltSampleAppDelegate(App& app) noexcept
 			: _app{ app }
 		{
 		}
@@ -48,7 +48,12 @@ namespace
 			_scene = _app.tryAddComponent<SceneAppComponent>()->getScene();
 			_scene->tryAddSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
 
-			auto prog = StandardProgramLoader::load(Program::Standard::ForwardBasic);
+			auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
+			if (!progResult)
+			{
+				return unexpected{ std::move(progResult).error() };
+			}
+			auto prog = progResult.value();
 
 			// camera
 			{
@@ -150,13 +155,13 @@ namespace
 			return {};
 		}
 
-		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override
+		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept override
 		{
 			// settings.canPushCharacter = false;
 			// settings.canReceiveImpulses = false;
 		}
 
-		void onCollisionEnter(PhysicsBody& me, PhysicsBody& body, const Collision& collision) override
+		void onCollisionEnter(PhysicsBody& me, PhysicsBody& body, const Collision& collision) noexcept override
 		{
 			if (_doorBody == body)
 			{
@@ -169,7 +174,7 @@ namespace
 			setMaterial(body, _doorBody == body ? _triggerDoorMat : _touchedCubeMat);
 		}
 
-		void onCollisionExit(PhysicsBody& me, PhysicsBody& body) override
+		void onCollisionExit(PhysicsBody& me, PhysicsBody& body) noexcept override
 		{
 			if (_doorBody == body)
 			{
@@ -182,7 +187,7 @@ namespace
 			setMaterial(body, _doorBody == body ? _doorMat : _cubeMat);
 		}
 
-		void imguiRender() override
+		expected<void, std::string> imguiRender() noexcept override
 		{
 			ImGui::TextWrapped("character controller");
 			if (ImGui::BeginTable("table1", 2))
@@ -217,6 +222,7 @@ namespace
 				ImGui::EndTable();
 			}
 			_imguiMouse = ImGui::GetIO().WantCaptureMouse;
+			return {};
 		}
 
 	protected:
@@ -320,7 +326,7 @@ namespace
 		OptionalRef<PhysicsDebugRenderer> _physicsDebugRender;
 #endif
 
-		bool setMaterial(PhysicsBody& body, const std::shared_ptr<Material>& mat)
+		bool setMaterial(PhysicsBody& body, const std::shared_ptr<Material>& mat) noexcept
 		{
 			auto entity = _scene->getEntity(body);
 			auto renderable = _scene->getComponent<Renderable>(entity);

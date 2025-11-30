@@ -65,8 +65,13 @@ namespace
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 			scene.tryAddSceneComponent<SkeletalAnimationSceneComponent>();
 
-			auto prog = StandardProgramLoader::load(Program::Standard::Forward);
-			
+			auto progResult = StandardProgramLoader::load(Program::Standard::Forward);
+			if (!progResult)
+			{
+				return unexpected{ std::move(progResult).error() };
+			}
+			auto prog = progResult.value();
+
 			auto camEntity = scene.createEntity();
 			scene.addComponent<Transform>(camEntity)
 				.setPosition({ 0.f, 2, -2 })
@@ -79,7 +84,12 @@ namespace
 			cam.tryAddComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = *scene.tryAddSceneComponent<FreelookController>(cam);
 
-			auto unlitProg = StandardProgramLoader::load(Program::Standard::Unlit);
+			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::Unlit);
+			if (!unlitProgResult)
+			{
+				return unexpected{ std::move(unlitProgResult).error() };
+			}
+			auto unlitProg = unlitProgResult.value();
 			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
 
 			auto lightRootEntity = scene.createEntity();
@@ -162,7 +172,7 @@ namespace
 			return {};
 		}
 
-		void onInputEvent(const std::string& tag) override
+		void onInputEvent(const std::string& tag) noexcept override
 		{
 			_animator->play(tag);
 		}
