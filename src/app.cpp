@@ -16,6 +16,7 @@
 #include <bx/file.h>
 #include <bimg/bimg.h>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum_format.hpp>
 
 #if BX_PLATFORM_EMSCRIPTEN
 #	include <emscripten.h>
@@ -620,7 +621,7 @@ namespace darmok
 			return;
 		}
 		// TODO: only enable these in debug builds
-		handleDebugShortcuts(key, modifiers);
+		auto result = handleDebugShortcuts(key, modifiers);
 	}
 
 	const std::vector<bgfx::RendererType::Enum>& AppImpl::getSupportedRenderers() noexcept
@@ -763,6 +764,7 @@ namespace darmok
 			_paused = !_paused;
 			return {};
 		}
+		return {};
 	}
 
 	std::string AppImpl::getTimeSuffix() noexcept
@@ -1178,11 +1180,6 @@ namespace darmok
 		return instance;
 	}
 
-	std::vector<std::string> BgfxCallbacks::popFatalErrors() noexcept
-	{
-		return std::move(_fatalErrors);
-	}
-
 	void BgfxCallbacks::fatal(
 		const char* filePath
 		, uint16_t line
@@ -1199,7 +1196,7 @@ namespace darmok
 			}
 			return;
 		}
-		_fatalErrors.emplace_back(fmt::format("{}:{} {}| {}", filePath, line, code, str));
+		StreamUtils::log(fmt::format("{} {}", code, str), true);
 	}
 
 	void BgfxCallbacks::traceVargs(
@@ -1300,7 +1297,7 @@ namespace darmok
 			bx::close(&writer);
 			if (!err.isOk())
 			{
-				_fatalErrors.emplace_back(fmt::format("screenshot error: {}", err.getMessage()));
+				StreamUtils::log(fmt::format("screenshot error: {}", err.getMessage().getCPtr()));
 			}
 		}
 	}

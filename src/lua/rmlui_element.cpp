@@ -60,7 +60,7 @@ namespace darmok
             elm.SetAttribute(name, val.as<bool>());
             break;
         default:
-            throw std::invalid_argument("cannot set attribute of that lua type");
+            throw sol::error{ "cannot set attribute of that lua type" };
             break;
         }
     }

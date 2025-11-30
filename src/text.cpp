@@ -266,14 +266,16 @@ namespace darmok
 		, _colorUniform{ bgfx::kInvalidHandle }
 		, _textureUniform{ bgfx::kInvalidHandle }
 	{
-		if (_prog == nullptr)
-		{
-			_prog = StandardProgramLoader::load(Program::Standard::Gui);
-		}
 	}
 
 	expected<void, std::string> TextRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
+		auto progResult = StandardProgramLoader::load(Program::Standard::Gui);
+		if (!progResult)
+		{
+			return unexpected{ std::move(progResult).error() };
+		}
+		_prog = progResult.value();
 		_scene = scene;
 		_cam = cam;
 		_colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);

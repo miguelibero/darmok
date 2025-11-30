@@ -433,6 +433,8 @@ namespace darmok::editor
         ImGui::PopFont();
         _mainToolbarHeight = ImGui::GetWindowSize().y;
         ImGui::End();
+
+        return {};
     }
 
     void EditorApp::onSceneTreeSceneClicked() noexcept

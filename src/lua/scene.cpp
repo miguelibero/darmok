@@ -45,7 +45,7 @@ namespace darmok
 	{
 		if (_entity == entt::null)
 		{
-			throw sol::error("cannot create null entity");
+			throw sol::error{ "cannot create null entity" };
 		}
 	}
 

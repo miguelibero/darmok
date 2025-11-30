@@ -28,7 +28,6 @@ namespace darmok
 	public:
 
 		static BgfxCallbacks& get() noexcept;
-		std::vector<std::string> popFatalErrors() noexcept;
 
 		void fatal(
 			const char* filePath
@@ -90,7 +89,6 @@ namespace darmok
 	private:
 		std::mutex _cacheMutex;
 		std::unordered_map<uint64_t, Data> _cache;
-		std::vector<std::string> _fatalErrors;
 		BgfxCallbacks() noexcept;
 	};
 

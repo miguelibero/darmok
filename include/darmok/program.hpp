@@ -61,7 +61,7 @@ namespace darmok
 			{
 				unexpected<std::string>{ std::move(result).error() };
 			}
-			return Program{ def };
+			return load(def);
 		}
 
 		[[nodiscard]] static Source createSource() noexcept;

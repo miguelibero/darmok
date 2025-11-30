@@ -74,7 +74,7 @@ namespace darmok
         return toHex();
     }
 
-    void DataView::write(const std::filesystem::path& path) const
+    expected<void, std::string> DataView::write(const std::filesystem::path& path) const noexcept
     {
         FILE* fh;
 #ifdef _MSC_VER        
@@ -90,10 +90,11 @@ namespace darmok
         if (err)
         {
             std::string error = strerror(err);
-            throw std::runtime_error("failed to open file: " + error);
+            return unexpected<std::string>{ "failed to open file: " + error };
         }
         fwrite(_ptr, sizeof(uint8_t), _size, fh);
         fclose(fh);
+        return {};
     }
 
     std::string DataView::toHex(size_t offset, size_t size) const noexcept

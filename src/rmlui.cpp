@@ -69,12 +69,9 @@ namespace darmok
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
         _dataUniform = bgfx::createUniform("u_rmluiData", bgfx::UniformType::Vec4);
 
-        Program::Definition progDef;
-        auto result = protobuf::readStaticMem(progDef, rmlui_program);
-        assert(result);
-        if (result)
+        if (auto result = Program::fromStaticMem(rmlui_program))
         {
-            _program = std::make_unique<Program>(progDef);
+            _program = std::make_unique<Program>(std::move(result).value());
         }
     }
 

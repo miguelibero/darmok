@@ -47,7 +47,7 @@ namespace darmok
 		auto evs = readEvents(evObj);
 		if (evs.empty())
 		{
-			throw std::invalid_argument("could not parse events");
+			throw sol::error{ "could not parse events" };
 		}
 		auto listener = std::make_unique<LuaInputEventListener>(listenerObj);
 		if (listener->getDelegate())

@@ -69,7 +69,7 @@ namespace darmok
         static std::string getTypeName(ShaderType type);
 
         static std::filesystem::path getDefaultOutputFile(const CompilerConfig& config, const CompilerOperation& op) noexcept;
-        std::vector<CompilerOperation> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
+        expected<std::vector<CompilerOperation>, std::string> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
         static std::vector<CompilerOperation> getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath = "") noexcept;
     
         static protobuf::Shader& getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op);

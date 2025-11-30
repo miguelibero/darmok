@@ -55,7 +55,7 @@ namespace darmok
             }
         }
 
-        void log(const std::string& msg, bool error) noexcept
+        void log(std::string_view msg, bool error) noexcept
         {
             if (error)
             {

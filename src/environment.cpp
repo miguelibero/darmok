@@ -21,18 +21,16 @@ namespace darmok
     expected<void, std::string> SkyboxRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
-
-        Program::Definition progDef;
-        auto result = protobuf::readStaticMem(progDef, skybox_program);
-        assert(result);
-        if (result)
+        auto progResult = Program::fromStaticMem(skybox_program);
+        if (!progResult)
         {
-            _program = std::make_unique<Program>(progDef);
+            return unexpected{ std::move(progResult).error() };
         }
+        _program = std::make_unique<Program>(std::move(progResult).value());
 
         _texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
-        Cube screen(glm::uvec3{ 2 });
+        Cube screen{ glm::uvec3{ 2 } };
         _mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
 
         return {};
@@ -84,13 +82,12 @@ namespace darmok
 
     expected<void, std::string> GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-        Program::Definition progDef;
-        auto result = protobuf::readStaticMem(progDef, grid_program);
-        assert(result);
-        if (result)
+        auto progResult = Program::fromStaticMem(grid_program);
+        if (!progResult)
         {
-            _program = std::make_unique<Program>(progDef);
+            return unexpected{ std::move(progResult).error() };
         }
+        _program = std::make_unique<Program>(std::move(progResult).value());
 
         _color1Uniform = bgfx::createUniform("u_gridColor1", bgfx::UniformType::Vec4);
         _color2Uniform = bgfx::createUniform("u_gridColor2", bgfx::UniformType::Vec4);

@@ -323,13 +323,17 @@ namespace darmok
         return renderers;
     }
 
-    std::vector<ShaderParser::CompilerOperation> ShaderParser::prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath) const noexcept
+    expected<std::vector<ShaderParser::CompilerOperation>, std::string> ShaderParser::prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath) const noexcept
     {
         if (config.path.empty())
         {
-            return {};
+            return unexpected<std::string>{ "empty path" };
         }
-        shader.write(config.path);
+        auto result = shader.write(config.path);
+        if (!result)
+        {
+            return unexpected{ std::string{"error writing shader: "} + result.error() };
+        }
         ShaderDefines defines;
         DataInputStream in{ shader };
         getDefines(in, defines);
@@ -367,7 +371,7 @@ namespace darmok
                         .defines = defines,
                     };
                     op.outputPath = baseOutputStr + getDefaultOutputFile(config, op).string();
-                    ops.push_back(op);
+                    ops.push_back(std::move(op));
                 }
             }
         }
@@ -677,9 +681,13 @@ namespace darmok
 
 		auto compileShaders = [&](DataView srcData) -> std::optional<std::string>
         {
-            auto ops = shaderParser.prepareCompilerOperations(shaderConfig, srcData);
+            auto opsResult = shaderParser.prepareCompilerOperations(shaderConfig, srcData);
+            if (!opsResult)
+            {
+                return opsResult.error();
+            }
             ShaderCompiler shaderCompiler{ shaderConfig };
-            for (auto& op : ops)
+            for (auto& op : opsResult.value())
             {
                 auto compileResult = shaderCompiler(op);
                 if (!compileResult)

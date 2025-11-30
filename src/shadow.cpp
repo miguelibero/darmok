@@ -219,12 +219,12 @@ namespace darmok
             0.5f, 0.5f, tz,   1.0f,
         };
 
-        Program::Definition shadowProgDef;
-        auto result = protobuf::readStaticMem(shadowProgDef, shadow_program);
-        if (result)
+        auto progResult = Program::fromStaticMem(shadow_program);
+        if (!progResult)
         {
-            _program = std::make_unique<Program>(shadowProgDef);
+            return unexpected{ std::move(progResult).error() };
         }
+        _program = std::make_unique<Program>(std::move(progResult).value());
         
         Texture::Config texConfig;
         *texConfig.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ _config.mapSize });
@@ -675,15 +675,13 @@ namespace darmok
     expected<void, std::string> ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
-        _debugRender.init(app);
-        return {};
+        return _debugRender.init(app);
     }
 
     expected<void, std::string> ShadowDebugRenderer::shutdown() noexcept
     {
-        _debugRender.shutdown();
         _scene.reset();
-        return {};
+        return _debugRender.shutdown();;
     }
 
     expected<void, std::string> ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept

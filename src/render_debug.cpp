@@ -14,18 +14,24 @@ namespace darmok
     {
     }
 
-    void DebugRenderer::init(App& app) noexcept
+    expected<void, std::string> DebugRenderer::init(App& app) noexcept 
     {
-        _prog = StandardProgramLoader::load(Program::Standard::Unlit);
+        auto result = StandardProgramLoader::load(Program::Standard::Unlit);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        _prog = result.value();
         _textureUniform = bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler);
         _hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
         _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
 
-        Image img(Colors::white(), app.getAssets().getAllocator());
+        Image img{ Colors::white(), app.getAssets().getAllocator() };
         _tex = std::make_unique<Texture>(img);
+        return {};
     }
 
-    void DebugRenderer::shutdown() noexcept
+    expected<void, std::string> DebugRenderer::shutdown() noexcept
     {
         _prog.reset();
         std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms =
@@ -38,6 +44,7 @@ namespace darmok
                 uniform.get().idx = bgfx::kInvalidHandle;
             }
         }
+        return {};
     }
 
     const std::shared_ptr<Program>& DebugRenderer::getProgram() noexcept

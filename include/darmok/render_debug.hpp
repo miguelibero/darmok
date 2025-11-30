@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/export.h>
+#include <darmok/render_scene.hpp>
 #include <darmok/color_fwd.hpp>
 #include <darmok/texture.hpp>
 #include <bgfx/bgfx.h>
@@ -18,8 +19,8 @@ namespace darmok
     {
     public:
         DebugRenderer() noexcept;
-        void init(App& app) noexcept;
-        void shutdown() noexcept;
+        expected<void, std::string> init(App& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
         void renderMesh(MeshData& meshData, bgfx::ViewId viewId, bgfx::Encoder& encoder, uint8_t color, bool lines = true) noexcept;
         void renderMesh(Mesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color = Color(255), bool lines = true) noexcept;
         const std::shared_ptr<Program>& getProgram() noexcept;

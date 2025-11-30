@@ -49,9 +49,19 @@ namespace darmok
 		, _imgui{ imgui }
 		, _lodEnabledUniform{ bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4) }
 		, _textureUniform{ bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler) }
-		, _program{ std::make_unique<Program>(Program::fromStaticMem(imgui_program)) }
+	{
+	}
+
+	expected<void, std::string> ImguiRenderPass::init() noexcept
 	{
 		updateFonts();
+		auto progResult = Program::fromStaticMem(imgui_program);
+		if (!progResult)
+		{
+			return unexpected{ std::move(progResult).error() };
+		}
+		_program = std::make_unique<Program>(std::move(progResult).value());
+		return {};
 	}
 
 	void ImguiRenderPass::updateFonts() noexcept
@@ -396,9 +406,19 @@ namespace darmok
 			| ImGuiConfigFlags_NavEnableKeyboard
 			;
 
-		auto result = _renderer.imguiSetup();
-		_renderPass.emplace(_renderer, _imgui);
 		ImGui::SetCurrentContext(nullptr);
+
+		auto result = _renderer.imguiSetup();
+		if (!result)
+		{
+			return result;
+		}
+		_renderPass.emplace(_renderer, _imgui);
+		result = _renderPass->init();
+		if (!result)
+		{
+			return result;
+		}
 
 		return result;
 	}

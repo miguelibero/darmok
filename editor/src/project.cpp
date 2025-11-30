@@ -405,6 +405,7 @@ namespace darmok::editor
             }
         }
         _cam = cam;
+        return {};
     }
 
     expected<void, std::string> EditorProject::configureDefaultScene(SceneDefinitionWrapper& scene) noexcept

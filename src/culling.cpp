@@ -55,7 +55,12 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _prog = StandardProgramLoader::load(Program::Standard::Unlit);
+        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        if (!progResult)
+        {
+            return unexpected{ std::move(progResult).error() };
+        }
+        _prog = progResult.value();
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
         return {};
     }
@@ -254,16 +259,14 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        _debugRender.init(app);
-        return {};
+        return _debugRender.init(app);
     }
 
     expected<void, std::string> CullingDebugRenderer::shutdown() noexcept
     {
         _cam.reset();
         _scene.reset();
-        _debugRender.shutdown();
-        return {};
+        return _debugRender.shutdown();
     }
 
     expected<void, std::string> CullingDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept

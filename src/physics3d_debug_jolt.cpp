@@ -40,10 +40,13 @@ namespace darmok::physics3d
 
     JoltPhysicsDebugRenderer::JoltPhysicsDebugRenderer() noexcept
         : _colorUniform{ bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4) }
-        , _program{ StandardProgramLoader::load(Program::Standard::Unlit) }
         , _solidMeshData{Mesh::Definition::Transient}
         , _wireMeshData{Mesh::Definition::Transient}
     {
+        if (auto result = StandardProgramLoader::load(Program::Standard::Unlit))
+        {
+            _program = result.value();
+        }
         Initialize();
     }
 

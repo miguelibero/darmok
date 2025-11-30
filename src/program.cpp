@@ -11,16 +11,16 @@
 
 namespace darmok
 {    
-    expected<protobuf::Varying, std::string> Program::loadRefVarying(const Ref& ref, OptionalRef<IProgramSourceLoader> loader)
+    expected<protobuf::Varying, std::string> Program::loadRefVarying(const Ref& ref, OptionalRef<IProgramSourceLoader> loader) noexcept
     {
         if (ref.has_standard())
         {
             auto def = StandardProgramLoader::loadDefinition(ref.standard());
             if (!def)
             {
-                return unexpected{ "empty standard program" };
+                return unexpected{ "standard program error: " + std::move(def).error() };
             }
-            return def->varying();
+            return def.value()->varying();
         }
         if (ref.has_path())
         {
@@ -43,7 +43,7 @@ namespace darmok
         return unexpected{ "empty program ref" };
     }
 
-    ILoader<Program::Definition>::Result Program::loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader)
+    ILoader<Program::Definition>::Result Program::loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader) noexcept
     {
         if (ref.has_standard())
         {
@@ -65,7 +65,7 @@ namespace darmok
         return nullptr;
     }
 
-    ILoader<Program>::Result Program::loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader)
+    ILoader<Program>::Result Program::loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader) noexcept
     {
         if (ref.has_standard())
         {
@@ -87,7 +87,7 @@ namespace darmok
         return nullptr;
     }
 
-    expected<Program::ShaderHandles, std::string> Program::createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name)
+    expected<Program::ShaderHandles, std::string> Program::createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name) noexcept
     {		
         ShaderHandles handles;
 
@@ -202,20 +202,14 @@ namespace darmok
         return Program{ std::move(vertexLayout), std::move(handles) };
     }
 
-    expected<bgfx::ProgramHandle, std::string> Program::createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle)
+    expected<bgfx::ProgramHandle, std::string> Program::createHandle(const Defines& defines, bgfx::ShaderHandle vertHandle, bgfx::ShaderHandle fragHandle) noexcept
     {
-        auto itr = _handles.find(defines);
-        if (itr != _handles.end())
-        {
-            return itr->second;
-        }
         auto handle = bgfx::createProgram(vertHandle, fragHandle);
         if (!isValid(handle))
         {
             auto definesStr = StringUtils::join(", ", defines.begin(), defines.end());
             return unexpected{ "failed to create program: " + definesStr };
         }
-        _handles[defines] = handle;
         return handle;
     }
 
@@ -293,7 +287,7 @@ namespace darmok
         return unexpected{"undefined standar program type"};
     }
 
-    std::shared_ptr<Program::Definition> StandardProgramLoader::loadDefinition(Type type)
+    expected<std::shared_ptr<Program::Definition>, std::string> StandardProgramLoader::loadDefinition(Type type) noexcept
     {
         auto itr = _defCache.find(type);
         if (itr != _defCache.end())
@@ -308,13 +302,13 @@ namespace darmok
         auto result = loadDefinition(*def, type);
         if(!result)
         {
-            return nullptr;
+            return unexpected{ std::move(result).error() };
 		}
         _defCache[type] = def;
         return def;
     }
 
-    std::shared_ptr<Program> StandardProgramLoader::load(Type type)
+    expected<std::shared_ptr<Program>, std::string> StandardProgramLoader::load(Type type) noexcept
     {
         auto itr = _cache.find(type);
         if (itr != _cache.end())
@@ -324,12 +318,17 @@ namespace darmok
                 return prog;
             }
         }
-        auto def = loadDefinition(type);
-        if (!def)
+        auto defResult = loadDefinition(type);
+        if (!defResult)
         {
-            return nullptr;
+            return unexpected{ std::move(defResult).error() };
         }
-        auto prog = std::make_shared<Program>(*def);
+        auto progResult = Program::load(*defResult.value());
+        if (!progResult)
+        {
+            return unexpected{ std::move(progResult).error() };
+        }
+        auto prog = std::make_shared<Program>(std::move(progResult).value());
         _cache[type] = prog;
         return prog;
     }

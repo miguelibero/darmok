@@ -10,7 +10,12 @@ namespace darmok
 	{
 		lua.new_usertype<Program>("Program", 
 			sol::factories(
-				[](const Program::Definition& def) { return std::make_shared<Program>(def); }
+				[](const Program::Definition& def)
+				{
+					auto result = Program::load(def);
+					auto prog = LuaUtils::unwrapExpected(std::move(result));
+					return std::make_shared<Program>(std::move(prog));
+				}
 			),
 			"vertex_layout", sol::property([](const Program& prog) { return prog.getVertexLayout(); })
 		);

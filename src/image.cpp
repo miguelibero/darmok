@@ -187,12 +187,9 @@ namespace darmok
 		return Texture::Definition::Texture2D;
 	}
 
-	bx::AllocatorI& Image::getAllocator() const
+	bx::AllocatorI& Image::getAllocator() const noexcept
 	{
-		if (!_container)
-		{
-			throw std::runtime_error("image is empty");
-		}
+		assert(_container);
 		return *_container->m_allocator;
 	}
 
