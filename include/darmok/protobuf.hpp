@@ -85,404 +85,446 @@ namespace darmok
         }
 
         template<typename T>
-        struct FieldConverter final
+        struct BX_NO_VTABLE IFieldConverter
         {
+            IFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+                : _field{ &field }
+            {
+            }
+
+            virtual ~IFieldConverter() = default;
+
+            [[nodiscard]] virtual bool check() const noexcept = 0;
+            [[nodiscard]] virtual T get(const google::protobuf::Message& msg) noexcept = 0;
+            [[nodiscard]] virtual T get(const google::protobuf::Message& msg, int i) noexcept = 0;
+            [[nodiscard]] virtual void set(google::protobuf::Message& msg, const T& val) noexcept = 0;
+            [[nodiscard]] virtual void add(google::protobuf::Message& msg, const T& val) noexcept = 0;
+
+            [[nodiscard]] expected<std::vector<T>, std::string> tryGetVector(const google::protobuf::Message& msg) noexcept
+            {
+                if (!_field->is_repeated())
+                {
+                    return unexpected<std::string>{"field is not repeated"};
+                }
+                if (!check())
+                {
+                    return unexpected<std::string>{"invalid type"};
+                }
+                return getVector(msg);
+            }
+
+            [[nodiscard]] std::vector<T> getVector(const google::protobuf::Message& msg) noexcept
+            {
+                std::vector<T> vec;
+                auto size = msg.GetReflection()->FieldSize(msg, _field);
+                vec.reserve(size);
+                for (int i = 0; i < size; ++i)
+                {
+                    vec.push_back(get(msg, i));
+                }
+                return vec;
+            }
+
+            [[nodiscard]] expected<void, std::string> trySetVector(google::protobuf::Message& msg, const std::vector<T>& val) noexcept
+            {
+                if (!_field->is_repeated())
+                {
+                    return unexpected<std::string>{"field is not repeated"};
+                }
+                if (!check())
+                {
+                    return unexpected<std::string>{"invalid type"};
+                }
+                setVector(msg, val);
+                return {};
+            }
+
+            void setVector(google::protobuf::Message& msg, const std::vector<T>& val) noexcept
+            {
+                msg.GetReflection()->ClearField(&msg, _field);
+                for (const auto& elm : val)
+                {
+                    add(msg, elm);
+                }
+            }
+
+        protected:
+            const google::protobuf::FieldDescriptor* _field;
         };
 
         template <typename A, typename B>
         concept IsFieldConvertible = std::is_same_v<A, B>;
 
-        template<typename T>
+        template<typename T = int32_t>
             requires IsFieldConvertible<T, int32_t>
-        struct FieldConverter<T>
+        struct Int32FieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_INT32 || type == FieldDescriptor::CPPTYPE_ENUM;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetInt32(msg, &field);
+                return msg.GetReflection()->GetInt32(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedInt32(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedInt32(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetInt32(&msg, &field, val);
+                msg.GetReflection()->SetInt32(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddInt32(&msg, &field, val);
+                msg.GetReflection()->AddInt32(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = int64_t>
             requires IsFieldConvertible<T, int64_t>
-        struct FieldConverter<T>
+        struct Int64FieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_INT64;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetInt64(msg, &field);
+                return msg.GetReflection()->GetInt64(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedInt64(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedInt64(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetInt64(&msg, &field, val);
+                msg.GetReflection()->SetInt64(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddInt64(&msg, &field, val);
+                msg.GetReflection()->AddInt64(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = uint32_t>
             requires IsFieldConvertible<T, uint32_t>
-        struct FieldConverter<T>
+        struct Uint32FieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_UINT32;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetUInt32(msg, &field);
+                return msg.GetReflection()->GetUInt32(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedUInt32(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedUInt32(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetUInt32(&msg, &field, val);
+                msg.GetReflection()->SetUInt32(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddUInt32(&msg, &field, val);
+                msg.GetReflection()->AddUInt32(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = uint64_t>
             requires IsFieldConvertible<T, uint64_t>
-        struct FieldConverter<T>
+        struct Uint64FieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_UINT64;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetUInt64(msg, &field);
+                return msg.GetReflection()->GetUInt64(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedUInt64(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedUInt64(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetUInt64(&msg, &field, val);
+                msg.GetReflection()->SetUInt64(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddUInt64(&msg, &field, val);
+                msg.GetReflection()->AddUInt64(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = float>
             requires IsFieldConvertible<T, float>
-        struct FieldConverter<T>
+        struct FloatFieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_FLOAT;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetFloat(msg, &field);
+                return msg.GetReflection()->GetFloat(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedFloat(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedFloat(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetFloat(&msg, &field, val);
+                msg.GetReflection()->SetFloat(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddFloat(&msg, &field, val);
+                msg.GetReflection()->AddFloat(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = double>
             requires IsFieldConvertible<T, double>
-        struct FieldConverter<T>
+        struct DoubleFieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_DOUBLE;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetDouble(msg, &field);
+                return msg.GetReflection()->GetDouble(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedDouble(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedDouble(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetDouble(&msg, &field, val);
+                msg.GetReflection()->SetDouble(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddDouble(&msg, &field, val);
+                msg.GetReflection()->AddDouble(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = bool>
             requires IsFieldConvertible<T, bool>
-        struct FieldConverter<T>
+        struct BoolFieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_BOOL;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetBool(msg, &field);
+                return msg.GetReflection()->GetBool(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedBool(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedBool(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetBool(&msg, &field, val);
+                msg.GetReflection()->SetBool(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddBool(&msg, &field, val);
+                msg.GetReflection()->AddBool(&msg, _field, val);
             }
         };
 
-        template<typename T>
+        template<typename T = std::string>
             requires IsFieldConvertible<T, std::string>
-        struct FieldConverter<T>
+        struct StringFieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_STRING;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetString(msg, &field);
+                return msg.GetReflection()->GetString(msg, _field);
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedString(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedString(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetString(&msg, &field, val);
+                msg.GetReflection()->SetString(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddString(&msg, &field, val);
+                msg.GetReflection()->AddString(&msg, _field, val);
             }
         };
 
-        template<typename T>
-            requires std::is_enum_v<T>
-        struct FieldConverter<T>
+        template<typename T = int>
+            requires std::is_enum_v<T> || std::is_same_v<T, int>
+        struct EnumFieldConverter final : public IFieldConverter<T>
         {
-            const google::protobuf::FieldDescriptor& field;
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
 
-            FieldConverter(const google::protobuf::FieldDescriptor& field)
-                : field{ field }
+            [[nodiscard]] bool check() const noexcept override
             {
-            }
-
-            static bool check(google::protobuf::FieldDescriptor::CppType type)
-            {
+                auto type = _field->cpp_type();
                 return type == FieldDescriptor::CPPTYPE_ENUM;
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetEnum(msg, &field);
+                return msg.GetReflection()->GetEnum(msg, _field)->number();
             }
 
-            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedEnum(msg, &field, i);
+                return msg.GetReflection()->GetRepeatedEnum(msg, _field, i)->number();
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                auto enumVal = field.enum_type()->FindValueByNumber(val);
-                msg.GetReflection()->SetEnum(&msg, &field, enumVal);
+                auto enumVal = _field->enum_type()->FindValueByNumber(val);
+                msg.GetReflection()->SetEnum(&msg, _field, enumVal);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                auto enumVal = field.enum_type()->FindValueByNumber(val);
-                msg.GetReflection()->AddEnum(&msg, &field, enumVal);
+                auto enumVal = _field->enum_type()->FindValueByNumber(val);
+                msg.GetReflection()->AddEnum(&msg, _field, enumVal);
+            }
+        };
+
+        template<typename T = google::protobuf::Message>
+            requires std::is_assignable_v<T, google::protobuf::Message>
+        struct MessageFieldConverter final : public IFieldConverter<T>
+        {
+            using IFieldConverter<T>::IFieldConverter;
+            using IFieldConverter<T>::_field;
+
+            [[nodiscard]] bool check() const noexcept override
+            {
+                auto type = _field->cpp_type();
+                return type == FieldDescriptor::CPPTYPE_MESSAGE;
+            }
+
+            [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
+            {
+                return msg.GetReflection()->GetMessage(msg, _field);
+            }
+
+            [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
+            {
+                return msg.GetReflection()->GetRepeatedMessage(msg, _field, i);
+            }
+
+            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            {
+                msg.GetReflection()->SetAllocatedMessage(&msg, _field, val);
+            }
+
+            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            {
+                msg.GetReflection()->AddMessage(&msg, _field, val);
             }
         };
 
         template<typename T>
-        [[nodiscard]] expected<FieldConverter<T>, std::string> createFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+        [[nodiscard]] expected<std::unique_ptr<IFieldConverter<T>>, std::string> createFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
         {
-            if(!FieldConverter<T>::check(field.cpp_type()))
+            switch (field.cpp_type())
             {
-                return unexpected<std::string>{"cannot convert type"};
+            case FieldDescriptor::CPPTYPE_INT32:
+                return std::make_unique<Int32FieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_INT64:
+                return std::make_unique<Int64FieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_UINT32:
+                return std::make_unique<Uint32FieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_UINT64:
+                return std::make_unique<Uint64FieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_DOUBLE:
+                return std::make_unique<DoubleFieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_FLOAT:
+                return std::make_unique<FloatFieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_BOOL:
+                return std::make_unique<BoolFieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_STRING:
+                return std::make_unique<StringFieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_ENUM:
+                return std::make_unique<EnumFieldConverter<T>>(field);
+            case FieldDescriptor::CPPTYPE_MESSAGE:
+                return std::make_unique<MessageFieldConverter<T>>(field);
             }
-            return FieldConverter<T>{ field };
-        }
-
-        template<typename T>
-        [[nodiscard]] expected<std::vector<T>, std::string> toVector(const google::protobuf::Message& msg, const google::protobuf::FieldDescriptor& field) noexcept
-        {
-            using namespace google::protobuf;
-            if (!field.is_repeated())
-            {
-                return unexpected<std::string>{"field is not repeated"};
-            }
-            auto converterResult = createFieldConverter<T>(field);
-            if (!converterResult)
-            {
-                return unexpected{ std::move(converterResult).error() };
-            }
-            auto& converter = converterResult.value();
-
-            std::vector<T> vec;
-            auto size = msg.GetReflection()->FieldSize(msg, &field);
-            vec.reserve(size);
-
-            for (int i = 0; i < size; ++i)
-            {
-                vec.push_back(converter.get(msg, i));
-            }
-            return vec;
-        }
-
-        template<typename T>
-        [[nodiscard]] expected<void, std::string> fromVector(google::protobuf::Message& msg, const google::protobuf::FieldDescriptor& field, const std::vector<T>& val) noexcept
-        {
-            if (!field.is_repeated())
-            {
-                return unexpected<std::string>{"field is not repeated"};
-            }
-            auto converterResult = createFieldConverter<T>(field);
-            if (!converterResult)
-            {
-                return unexpected{ std::move(converterResult).error() };
-            }
-            auto& converter = converterResult.value();
-            msg.GetReflection()->ClearField(&msg, &field);
-            for (const auto& elm : val)
-            {
-                converter.add(msg, elm);
-            }
-            return {};
-        }
+            return unexpected<std::string>{"cannot convert type"};
+        }        
     }
 
     template<typename Interface>

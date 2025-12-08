@@ -21,6 +21,7 @@ namespace darmok
         void setupErrorHandler(sol::state_view lua, sol::function& func) noexcept;
         std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;
         int deny(lua_State* L) noexcept;
+        std::string prefixError(std::string_view error, std::string_view prefix) noexcept;
 
         template<typename T>
         T unwrapExpected(expected<T, std::string> v, std::string_view prefix = {})
@@ -29,11 +30,7 @@ namespace darmok
             {
 				return std::move(v).value();
             }
-            if (prefix.empty())
-            {
-                throw sol::error{ std::move(v).error() };
-            }
-            throw sol::error{ std::string{prefix} + v.error() };
+            throw sol::error{ prefixError(v.error(), prefix) };
         }
 
         template<>
@@ -44,7 +41,7 @@ namespace darmok
         {
             if (!v.is<T>())
             {
-                return unexpected<std::string>{ std::string{ prefix } + "unexpected type" };
+                return unexpected{ prefixError("unexpected type", prefix) };
             }
             return v.as<T>();
         }
@@ -61,15 +58,25 @@ namespace darmok
             if (!v.valid())
             {
                 sol::error err = v;
-                return unexpected<std::string>{ std::string{ prefix } + err.what() };
+                return unexpected{ prefixError(err.what(), prefix)};
             }
 			return wrapObject<T>(v, prefix);
         }
 
-        template<typename T = sol::object>
-        T checkResult(const sol::protected_function_result& v, std::string_view prefix = {})
+        template<typename T = bool>
+        T checkResult(const sol::protected_function_result& v, std::string_view prefix = {}, const T& def = {})
         {
-            return unwrapExpected(wrapResult<T>(v, prefix));
+            if (!v.valid())
+            {
+                sol::error err = v;
+                throw sol::error{ prefixError(err.what(), prefix) };
+            }
+            sol::object obj = v;
+            if (obj.is<T>())
+            {
+                return obj.as<T>();
+            }
+            return def;
         }
 
         template<typename T>

@@ -81,6 +81,15 @@ namespace darmok
 			return luaL_error(L, "operation not allowed");
 		}
 
+		std::string prefixError(std::string_view error, std::string_view prefix) noexcept
+		{
+			if (prefix.empty())
+			{
+				return std::string{ error };
+			}
+			return std::string{ prefix } + ": " + std::string{ error };
+		}
+
 		template<>
 		void unwrapExpected(expected<void, std::string> v, std::string_view prefix)
 		{

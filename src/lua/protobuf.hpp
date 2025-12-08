@@ -35,90 +35,90 @@ namespace darmok
 				case FieldDescriptor::CPPTYPE_INT32:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<int32_t>(msg, field));
+							return protobuf::Int32FieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<int32_t>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::Int32FieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_INT64:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<int64_t>(msg, field));
+							return protobuf::Int64FieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<int64_t>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::Int64FieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_UINT32:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<uint32_t>(msg, field));
+							return protobuf::Uint32FieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<uint32_t>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::Uint32FieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_UINT64:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<uint64_t>(msg, field));
+							return protobuf::Uint64FieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<uint64_t>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::Uint64FieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_DOUBLE:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<double>(msg, field));
+							return protobuf::DoubleFieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<double>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::DoubleFieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_FLOAT:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<float>(msg, field));
+							return protobuf::FloatFieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<float> val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::FloatFieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_BOOL:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<bool>(msg, field));
+							return protobuf::BoolFieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<bool>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::BoolFieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_ENUM:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<int>(msg, field));
+							return protobuf::EnumFieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, std::vector<int> val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::EnumFieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_STRING:
 					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
-							return LuaUtils::unwrapExpected(protobuf::toVector<std::string>(msg, field));
+							return protobuf::StringFieldConverter{ field }.getVector(msg);
 						},
 						[&field](Message& msg, const std::vector<std::string>& val) {
-							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+							protobuf::StringFieldConverter{ field }.setVector(msg, val);
 						}
 					);
 					break;
