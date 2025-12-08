@@ -106,17 +106,23 @@ namespace darmok
 		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
 		LuaUtils::newEnum<MaterialTextureType>(lua, "MaterialTextureType");
 		LuaUtils::newEnum<MaterialOpacityType>(lua, "MaterialOpacityType");
-		auto matDef = LuaUtils::newProtobuf<Material::Definition>(lua, "MaterialDefinition")
+
+		auto def = lua.new_usertype<Material::Definition>("MaterialDefinition",
+			sol::factories(
+				[]() { return Material::createDefinition(); }
+			),
+			"get_scene_asset", [](LuaSceneDefinition& scene, std::string_view path)
+			{
+				return scene.getAsset<Material::Definition>(path);
+			}
+		);
+		LuaProtobufBinding{ std::move(def) }
 			.protobufProperty<protobuf::ProgramRef>("program")
 			.protobufProperty<protobuf::MaterialTexture>("textures")
 			.protobufProperty<protobuf::UniformValue>("uniform_values")
 			.convertProtobufProperty<Color, protobuf::Color>("base_color")
 			.convertProtobufProperty<Color3, protobuf::Color3>("emissive_color")
 			.convertProtobufProperty<Color3, protobuf::Color3>("specular_color");
-		matDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
-			{
-				return scene.getAsset<Material::Definition>(path);
-			};
 
 		lua.new_usertype<Material>("Material",
 			sol::factories(

@@ -21,23 +21,58 @@ namespace darmok
 		);
 		LuaUtils::newEnum<Program::Standard::Type>(lua, "StandardProgramType");
 		lua.new_usertype<StandardProgramLoader>("StandardProgramLoader", sol::no_constructor,
-			"load", &StandardProgramLoader::load
+			"load", [](StandardProgramLoader::Type type)
+			{
+				return LuaUtils::unwrapExpected(StandardProgramLoader::load(type));
+			},
+			"load_definition", [](StandardProgramLoader::Type type)
+			{
+				return LuaUtils::unwrapExpected(StandardProgramLoader::loadDefinition(type));
+			}
 		);
 
-		auto progSrc = LuaUtils::newProtobuf<Program::Source>(lua, "ProgramSource")
-			.protobufProperty<protobuf::Varying>("varying");
-		progSrc.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
+		{
+			LuaProtobufBinding<protobuf::VertexAttribute>{lua, "VertexAttribute"};
+			LuaProtobufBinding<protobuf::FragmentAttribute>{lua, "FragmentAttribute"};
+
+			LuaProtobufBinding<protobuf::VertexLayout>{lua, "VertexLayout"}
+				.protobufProperty<protobuf::VertexAttribute>("attributes");
+
+			LuaProtobufBinding<protobuf::FragmentLayout>{lua, "FragmentLayout"}
+				.protobufProperty<protobuf::FragmentAttribute>("attributes");
+
+			LuaProtobufBinding<protobuf::Varying>{lua, "Varying"}
+				.protobufProperty<protobuf::VertexLayout>("vertex")
+				.protobufProperty<protobuf::FragmentLayout>("fragment");
+		}
+
+		auto src = lua.new_usertype<Program::Source>("ProgramSource",
+			sol::factories(
+				[]() { return Program::createSource(); }
+			),
+			"get_scene_asset", [](LuaSceneDefinition& scene, std::string_view path)
 			{
 				return scene.getAsset<Program::Source>(path);
-			};
-
-		auto progDef = LuaUtils::newProtobuf<Program::Definition>(lua, "ProgramDefinition")
-			.protobufProperty<protobuf::ProgramProfile>("profiles")
+			}
+		);
+		LuaProtobufBinding{ std::move(src) }
 			.protobufProperty<protobuf::Varying>("varying");
-		progDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
+
+		LuaProtobufBinding<protobuf::Shader>{lua, "ShaderDefinition"};
+		LuaProtobufBinding<protobuf::ProgramProfile>{lua, "ProgramProfileDefinition"};
+
+		auto def = lua.new_usertype<Program::Definition>("ProgramDefinition",
+			sol::factories(
+				[]() { return Program::createDefinition(); }
+			),
+			"get_scene_asset", [](LuaSceneDefinition& scene, std::string_view path)
 			{
 				return scene.getAsset<Program::Definition>(path);
-			};
+			}
+		);
+		LuaProtobufBinding{ std::move(def) }
+			.protobufProperty<protobuf::ProgramProfile>("profiles")
+			.protobufProperty<protobuf::Varying>("varying");
 	}
 
 }

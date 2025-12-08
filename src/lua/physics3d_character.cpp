@@ -80,7 +80,12 @@ namespace darmok::physics3d
 
 	void LuaCharacterController::bind(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Definition>(lua, "Physics3dCharacterControllerDefinition")
+		auto def = lua.new_usertype<Definition>("Physics3dCharacterControllerDefinition",
+			sol::factories(
+				[]() { return CharacterController::createDefinition(); }
+			)
+		);
+		LuaProtobufBinding{ std::move(def) }
 			.convertProtobufProperty<PhysicsShape, protobuf::PhysicsShape>("shape")
 			.convertProtobufProperty<glm::vec3, darmok::protobuf::Vec3>("up")
 			.convertProtobufProperty<Plane>("supporting_plane")

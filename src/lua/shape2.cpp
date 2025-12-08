@@ -3,6 +3,7 @@
 #include "lua/protobuf.hpp"
 #include "lua/scene_serialize.hpp"
 #include <darmok/shape.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {
@@ -58,13 +59,23 @@ namespace darmok
 
 	void LuaShape::bindBoundingBox(sol::state_view& lua) noexcept
 	{
-		auto def = LuaUtils::newProtobuf<BoundingBox::Definition>(lua, "BoundingBoxDefinition")
-			.protobufProperty<protobuf::Vec3>("min")
-			.protobufProperty<protobuf::Vec3>("max");
-		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
-		{
-			return entity.getComponent<BoundingBox::Definition>();
-		};
+		auto def = lua.new_usertype<BoundingBox::Definition>("BoundingBoxDefinition",
+			sol::factories([]() {
+				return BoundingBox::createDefinition();
+			}),
+			"get_entity_component", [](LuaEntityDefinition& entity)
+			{
+				return entity.getComponent<BoundingBox::Definition>();
+			},
+			sol::meta_function::to_string, [](const BoundingBox::Definition& def)
+			{
+				return BoundingBox{ def }.toString();
+			}
+		);
+		LuaProtobufBinding{ std::move(def) }
+			.convertProtobufProperty<glm::vec3, protobuf::Vec3>("min")
+			.convertProtobufProperty<glm::vec3, protobuf::Vec3>("max");
+
 
 		lua.new_usertype<BoundingBox>("BoundingBox",
 			sol::factories(

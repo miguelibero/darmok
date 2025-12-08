@@ -243,8 +243,14 @@ namespace darmok
 		auto& sphere = *src.mutable_sphere();
 		sphere.mutable_shape()->set_radius(1.f);
 		sphere.set_lod(32);
-
 		return src;
+	}
+
+	Mesh::Definition Mesh::createDefinition() noexcept
+	{
+		Definition def;
+		// TODO:
+		return def;
 	}
 
 	std::string Mesh::toString() const noexcept

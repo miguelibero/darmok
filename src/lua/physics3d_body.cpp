@@ -126,7 +126,12 @@ namespace darmok::physics3d
             { "Air", GroundState::Air },
         });
 
-        LuaUtils::newProtobuf<ShapeDefinition>(lua, "Physics3dShape")
+        auto shapeDef = lua.new_usertype<ShapeDefinition>("Physics3dShape",
+            sol::factories(
+                []() { return PhysicsBody::createShapeDefinition(); }
+            )
+        );
+        LuaProtobufBinding{ std::move(shapeDef) }
             .convertProtobufProperty<Cube>("cube")
             .convertProtobufProperty<Sphere>("sphere")
             .convertProtobufProperty<Capsule>("capsule")
@@ -134,11 +139,19 @@ namespace darmok::physics3d
             .convertProtobufProperty<BoundingBox>("bounding_box")
             ;
 
-		LuaUtils::newProtobuf<Definition>(lua, "Physics3dBodyDefinition")
+        auto def = lua.new_usertype<Definition>("Physics3dBodyDefinition", 
+            sol::factories(
+                []() { return PhysicsBody::createDefinition(); }
+            ));
+        LuaProtobufBinding{ std::move(def) }
             .protobufProperty<ShapeDefinition>("shape")
             ;
 
-        LuaUtils::newProtobuf<CharacterDefinition>(lua, "Physics3dCharacterDefinition")
+        auto charDef = lua.new_usertype<CharacterDefinition>("Physics3dCharacterDefinition",
+            sol::factories(
+                []() { return PhysicsBody::createCharacterDefinition(); }
+            ));
+        LuaProtobufBinding{ std::move(charDef) }
             .convertProtobufProperty<PhysicsShape, protobuf::PhysicsShape>("shape")
             .convertProtobufProperty<glm::vec3, darmok::protobuf::Vec3>("up")
             .convertProtobufProperty<Plane>("supporting_plane")

@@ -108,26 +108,26 @@ namespace darmok
 
     void LuaSkeletalAnimator::bind(sol::state_view& lua) noexcept
     {
-        LuaUtils::newProtobuf<protobuf::ArmatureJoint>(lua, "ArmatureJointDefinition")
+        LuaProtobufBinding<protobuf::ArmatureJoint>{lua, "ArmatureJointDefinition"}
             .protobufProperty<protobuf::Mat4>("inverse_bind_pose");
 
-        LuaUtils::newProtobuf<Armature::Definition>(lua, "ArmatureDefinition")
+        LuaProtobufBinding<Armature::Definition>{lua, "ArmatureDefinition"}
             .protobufProperty<protobuf::ArmatureJoint>("joints");
 
-        LuaUtils::newProtobuf<SkeletalAnimator::Definition>(lua, "SkeletalAnimatorDefinition")
+        LuaProtobufBinding<SkeletalAnimator::Definition>{lua, "SkeletalAnimatorDefinition"}
             .protobufProperty<protobuf::SkeletalAnimatorState>("states")
             .protobufProperty<protobuf::SkeletalAnimatorTransition>("transitions");
 
-        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorTween>(lua, "SkeletalAnimatorTweenDefinition");
+        LuaProtobufBinding<protobuf::SkeletalAnimatorTween>{lua, "SkeletalAnimatorTweenDefinition"};
 
-        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorAnimation>(lua, "SkeletalAnimatorAnimation")
+        LuaProtobufBinding<protobuf::SkeletalAnimatorAnimation>{lua, "SkeletalAnimatorAnimation"}
             .protobufProperty<protobuf::Vec2>("blend_position");
 
-        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorState>(lua, "SkeletalAnimatorStateDefinition")
+        LuaProtobufBinding<protobuf::SkeletalAnimatorState>{lua, "SkeletalAnimatorStateDefinition"}
             .protobufProperty<protobuf::SkeletalAnimatorAnimation>("animations")
             .protobufProperty<protobuf::SkeletalAnimatorTween>("tween");
 
-        LuaUtils::newProtobuf<protobuf::SkeletalAnimatorTransition>(lua, "SkeletalAnimatorTransitionDefinition")
+            LuaProtobufBinding<protobuf::SkeletalAnimatorTransition>{lua, "SkeletalAnimatorTransitionDefinition"}
             .protobufProperty<protobuf::SkeletalAnimatorTween>("tween");
 
         lua.new_usertype<SkeletalAnimator>("SkeletalAnimator", sol::no_constructor,

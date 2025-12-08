@@ -116,14 +116,19 @@ namespace darmok
 
 	void LuaTransform::bind(sol::state_view& lua) noexcept
 	{
-		auto def = LuaUtils::newProtobuf<Transform::Definition>(lua, "TransformDefinition")
+		auto def = lua.new_usertype<Transform::Definition>("TransformDefinition",
+			sol::factories([]() {
+				return Transform::createDefinition();
+			}),
+			"get_entity_component", [](LuaEntityDefinition& entity)
+			{
+				return entity.getComponent<Transform::Definition>();
+			}
+		);
+		LuaProtobufBinding{ std::move(def) }
 			.protobufProperty<protobuf::Vec3>("position")
 			.protobufProperty<protobuf::Quat>("rotation")
 			.protobufProperty<protobuf::Vec3>("scale");
-		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
-		{
-			return entity.getComponent<Transform::Definition>();
-		};
 
 		lua.new_usertype<Transform>("Transform", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Transform>::value),

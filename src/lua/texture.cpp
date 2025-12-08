@@ -27,9 +27,11 @@ namespace darmok
 
 		LuaUtils::newEnum<Texture::Type>(lua, "TextureType");
 		LuaUtils::newEnum<Texture::Format>(lua, "TextureFormat");
-		LuaUtils::newProtobuf<Texture::Config>(lua, "TextureConfig");
-		LuaUtils::newProtobuf<Texture::Source>(lua, "TextureSource");
-		LuaUtils::newProtobuf<Texture::Definition>(lua, "TextureDefinition")
+		LuaProtobufBinding<Texture::Config>{lua, "TextureConfig"}
+			.convertProtobufProperty<glm::uvec2, protobuf::Uvec2>("size");
+
+			LuaProtobufBinding<Texture::Source>{lua, "TextureSource"};
+		LuaProtobufBinding<Texture::Definition>{lua, "TextureDefinition"}
 			.protobufProperty<Texture::Config>("config");
 
 		lua.new_usertype<Texture>("Texture",

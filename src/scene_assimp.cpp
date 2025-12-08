@@ -158,6 +158,12 @@ namespace darmok
 		}
         auto& meshPath = meshResult.value();
         auto matPath = getMaterial(assimpMesh->mMaterialIndex);
+
+        BoundingBox::Definition bounds;
+        auto& assimpAabb = assimpMesh->mAABB;
+        *bounds.mutable_min() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMin));
+        *bounds.mutable_max() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMax));
+        _scene.setComponent(entity, bounds);
         
         if (addChild)
         {
@@ -169,12 +175,6 @@ namespace darmok
             _scene.setComponent(childEntity, trans);
             entity = childEntity;
         }
-
-        BoundingBox::Definition bounds;
-        auto& assimpAabb = assimpMesh->mAABB;
-        *bounds.mutable_min() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMin));
-        *bounds.mutable_max() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMax));
-        _scene.setComponent(entity, bounds);
 
         if (!meshPath.empty())
         {
@@ -1002,15 +1002,14 @@ namespace darmok
             return unexpected{ "empty scene" };
         }
 
-        auto basePath = input.getRelativePath().parent_path();
-
         if (outputPath.empty())
         {
             const std::string stem = input.path.stem().string();
             outputPath = stem + std::string{ protobuf::getExtension(_outputFormat) };
-            outputPath = basePath / outputPath;
         }
 
+        auto basePath = input.getRelativePath().parent_path();
+        outputPath = basePath / outputPath;
         auto binary = _outputFormat == protobuf::Format::Binary;
         effect.outputs.emplace_back(outputPath, binary);
 

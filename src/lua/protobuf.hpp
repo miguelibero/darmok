@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lua/lua.hpp"
+#include "lua/utils.hpp"
 #include <darmok/protobuf.hpp>
 #include <darmok/convert.hpp>
 
@@ -10,9 +11,8 @@ namespace darmok
 	requires std::is_base_of_v<google::protobuf::Message, T>
     class LuaProtobufBinding final
     {
-    public:
-        sol::usertype<T> userType;
 	private:
+		sol::usertype<T> _userType;
         using Message = google::protobuf::Message;
 
         static std::string_view getProtobufName(std::string_view name) noexcept
@@ -31,7 +31,100 @@ namespace darmok
 
 			if (field.is_repeated())
 			{
-
+				switch (field.cpp_type()) {
+				case FieldDescriptor::CPPTYPE_INT32:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<int32_t>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<int32_t>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_INT64:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<int64_t>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<int64_t>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_UINT32:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<uint32_t>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<uint32_t>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_UINT64:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<uint64_t>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<uint64_t>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_DOUBLE:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<double>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<double>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_FLOAT:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<float>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<float> val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_BOOL:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<bool>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<bool>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_ENUM:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<int>(msg, field));
+						},
+						[&field](Message& msg, std::vector<int> val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_STRING:
+					_userType[fieldName] = sol::property(
+						[&field](const Message& msg) {
+							return LuaUtils::unwrapExpected(protobuf::toVector<std::string>(msg, field));
+						},
+						[&field](Message& msg, const std::vector<std::string>& val) {
+							LuaUtils::unwrapExpected(protobuf::fromVector(msg, field, val));
+						}
+					);
+					break;
+				case FieldDescriptor::CPPTYPE_MESSAGE:
+					break;
+				}
 			}
 			else if (field.is_map())
 			{
@@ -41,7 +134,7 @@ namespace darmok
 			{
 				switch (field.cpp_type()) {
 				case FieldDescriptor::CPPTYPE_INT32:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetInt32(msg, &field);
 						},
@@ -51,7 +144,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_INT64:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetInt64(msg, &field);
 						},
@@ -61,7 +154,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_UINT32:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetUInt32(msg, &field);
 						},
@@ -71,7 +164,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_UINT64:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetUInt64(msg, &field);
 						},
@@ -81,7 +174,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_DOUBLE:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetDouble(msg, &field);
 						},
@@ -91,7 +184,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_FLOAT:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetFloat(msg, &field);
 						},
@@ -101,7 +194,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_BOOL:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetBool(msg, &field);
 						},
@@ -111,7 +204,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_ENUM:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetEnum(msg, &field);
 						},
@@ -122,7 +215,7 @@ namespace darmok
 					);
 					break;
 				case FieldDescriptor::CPPTYPE_STRING:
-					userType[fieldName] = sol::property(
+					_userType[fieldName] = sol::property(
 						[&field](const Message& msg) {
 							return msg.GetReflection()->GetString(msg, &field);
 						},
@@ -138,12 +231,12 @@ namespace darmok
 		}
 
     public:
-        LuaProtobufBinding(sol::state_view& lua, std::string_view name = {}, bool autoRegister = true) noexcept
-            : userType{ lua.new_usertype<T>(getProtobufName(name), sol::default_constructor) }
-        {
-			if(autoRegister)
+		LuaProtobufBinding(sol::usertype<T>&& userType, bool autoRegister = true) noexcept
+			: _userType{ std::move(userType) }
+		{
+			if (autoRegister)
 			{
-				userType["type_id"] = sol::property(&protobuf::getTypeId<T>);
+				_userType["type_id"] = sol::property(&protobuf::getTypeId<T>);
 				auto desc = T::descriptor();
 				for (int i = 0; i < desc->field_count(); ++i)
 				{
@@ -155,6 +248,11 @@ namespace darmok
 					basicProperty(*field);
 				}
 			}
+		}
+
+        LuaProtobufBinding(sol::state_view& lua, std::string_view name = {}, bool autoRegister = true) noexcept
+            : LuaProtobufBinding( lua.new_usertype<T>(getProtobufName(name), sol::default_constructor))
+        {
         }
 
 		LuaProtobufBinding& basicProperty(std::string_view name) noexcept
@@ -179,7 +277,7 @@ namespace darmok
                 return *this;
             }
 
-			userType[name] = sol::property(
+			_userType[name] = sol::property(
                 [field](T& msg) {
                     auto sub = msg.GetReflection()->MutableMessage(&msg, field);
                     return static_cast<P&>(*sub);
@@ -206,7 +304,7 @@ namespace darmok
 				return *this;
 			}
 
-			userType[name] = sol::property(
+			_userType[name] = sol::property(
 				[field, convertTo = std::move(convertTo)](T& msg) -> V {
 					auto sub = msg.GetReflection()->MutableMessage(&msg, field);
 					return convertTo(static_cast<P&>(*sub));
@@ -230,13 +328,4 @@ namespace darmok
 			);
 		}
     };
-
-    namespace LuaUtils
-    {
-        template<typename T>
-        LuaProtobufBinding<T> newProtobuf(sol::state_view& lua, std::string_view name = {})
-        {
-            return { lua, name };
-        }
-    }
 }

@@ -8,9 +8,9 @@ namespace darmok
     namespace LuaMathProtobufDetail
     {
         template<typename G, typename T>
-        void bindGlm(LuaProtobufBinding<T>& binding)
+        void bindGlm(sol::usertype<T>& userType)
         {
-            binding.userType["glm"] = sol::property(
+            userType["glm"] = sol::property(
                 [](const T& self) { return convert<G>(self); },
                 [](T& self, const G& v) { self = convert<T>(v); }
             );
@@ -22,48 +22,58 @@ namespace darmok
 	void LuaMath::bindProtobuf(sol::state_view& lua) noexcept
 	{
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Uvec2>(lua, "Uvec2Def");
-            LuaMathProtobufDetail::bindGlm<glm::uvec2>(binding);
-        }
- 
-        {
-            auto binding = LuaUtils::newProtobuf<protobuf::Vec2>(lua, "Vec2Def");
-            LuaMathProtobufDetail::bindGlm<glm::vec2>(binding);
-        }
-        
-        {
-            auto binding = LuaUtils::newProtobuf<protobuf::Vec3>(lua, "Vec3Def");
-            LuaMathProtobufDetail::bindGlm<glm::vec3>(binding);
+            auto def = lua.new_usertype<protobuf::Uvec2>("Uvec2Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::uvec2>(def);
+            LuaProtobufBinding{ std::move(def) };
         }
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Vec4>(lua, "Vec4Def");
-            LuaMathProtobufDetail::bindGlm<glm::vec4>(binding);
+            auto def = lua.new_usertype<protobuf::Vec2>("Vec2Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::vec2>(def);
+            LuaProtobufBinding{ std::move(def) };
         }
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Quat>(lua, "QuatDef");
-            LuaMathProtobufDetail::bindGlm<glm::quat>(binding);
+            auto def = lua.new_usertype<protobuf::Vec3>("Vec3Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::vec3>(def);
+            LuaProtobufBinding{ std::move(def) };
         }
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Mat3>(lua, "Mat3Def")
-                .protobufProperty<protobuf::Vec3>("col1")
-                .protobufProperty<protobuf::Vec3>("col2")
-                .protobufProperty<protobuf::Vec3>("col3");
-            LuaMathProtobufDetail::bindGlm<glm::mat3>(binding);
+            auto def = lua.new_usertype<protobuf::Vec4>("Vec4Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::vec4>(def);
+            LuaProtobufBinding{ std::move(def) };
         }
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Mat4>(lua, "Mat4Def")
-                .protobufProperty<protobuf::Vec4>("col2")
-                .protobufProperty<protobuf::Vec4>("col3")
-                .protobufProperty<protobuf::Vec4>("col4");
-            LuaMathProtobufDetail::bindGlm<glm::mat4>(binding);
+            auto def = lua.new_usertype<protobuf::Quat>("QuatDef", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::quat>(def);
+            LuaProtobufBinding{ std::move(def) };
         }
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Color>(lua, "ColorDef");
-            LuaMathProtobufDetail::bindGlm<darmok::Color>(binding);
+            auto def = lua.new_usertype<protobuf::Mat3>("Mat3Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::mat3>(def);
+            LuaProtobufBinding{ std::move(def) }
+                .convertProtobufProperty<glm::vec3, protobuf::Vec3>("col1")
+                .convertProtobufProperty<glm::vec3, protobuf::Vec3>("col2")
+                .convertProtobufProperty<glm::vec3, protobuf::Vec3>("col3")
+                ;
         }
         {
-            auto binding = LuaUtils::newProtobuf<protobuf::Color3>(lua, "Color3Def");
-            LuaMathProtobufDetail::bindGlm<darmok::Color3>(binding);
+            auto def = lua.new_usertype<protobuf::Mat4>("Mat4Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<glm::mat4>(def);
+            LuaProtobufBinding{ std::move(def) }
+                .convertProtobufProperty<glm::vec4, protobuf::Vec4>("col1")
+                .convertProtobufProperty<glm::vec4, protobuf::Vec4>("col2")
+                .convertProtobufProperty<glm::vec4, protobuf::Vec4>("col3")
+                .convertProtobufProperty<glm::vec4, protobuf::Vec4>("col4")
+                ;
+        }
+        {
+            auto def = lua.new_usertype<protobuf::Color>("ColorDef", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<darmok::Color>(def);
+            LuaProtobufBinding{ std::move(def) };
+        }
+        {
+            auto def = lua.new_usertype<protobuf::Color3>("Color3Def", sol::default_constructor);
+            LuaMathProtobufDetail::bindGlm<darmok::Color3>(def);
+            LuaProtobufBinding{ std::move(def) };
         }
 	}
 }

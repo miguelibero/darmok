@@ -28,7 +28,16 @@ namespace darmok
 		LuaUtils::newEnum<MeshData::RectangleType>(lua, "RectangleMeshType");
 		LuaUtils::newEnum<MeshData::LineType>(lua, "LineMeshType");
 
-		LuaUtils::newProtobuf<Mesh::Source>(lua, "MeshSource")
+		auto src = lua.new_usertype<Mesh::Source>("MeshSource",
+			sol::factories(
+				[]() { return Mesh::createSource(); }
+			),
+			"get_scene_asset", [](LuaSceneDefinition& scene, std::string_view path)
+			{
+				return scene.getAsset<Mesh::Source>(path);
+			}
+		);
+		LuaProtobufBinding{ std::move(src) }
 			.protobufProperty<protobuf::ProgramRef>("program")
 			.protobufProperty<protobuf::DataMeshSource>("data")
 			.protobufProperty<protobuf::CubeMeshSource>("cube")
@@ -37,15 +46,19 @@ namespace darmok
 			.protobufProperty<protobuf::RectangleMeshSource>("rectangle")
 			;
 
-		auto meshDef = LuaUtils::newProtobuf<Mesh::Definition>(lua, "MeshDefinition")
+		auto def = lua.new_usertype<Mesh::Definition>("MeshDefinition",
+			sol::factories(
+				[]() { return Mesh::createDefinition(); }
+			),
+			"get_scene_asset", [](LuaSceneDefinition& scene, std::string_view path)
+			{
+				return scene.getAsset<Mesh::Definition>(path);
+			}
+		);
+		LuaProtobufBinding{ std::move(def) }
 			.protobufProperty<protobuf::VertexLayout>("layout")
 			.convertProtobufProperty<BoundingBox>("bounds")
 			;
-		
-		meshDef.userType["get_scene_asset"] = [](LuaSceneDefinition& scene, std::string_view path)
-		{
-			return scene.getAsset<Mesh::Definition>(path);
-		};
 
 		lua.new_usertype<MeshData>("MeshData",
 			sol::constructors<

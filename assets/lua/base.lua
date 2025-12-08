@@ -196,7 +196,6 @@ function Entity:is_child_or_self(entity)
 	return self:is_child(entity)
 end
 
-
 function Entity:is_parent_or_self(entity)
 	if not entity then
 		return false

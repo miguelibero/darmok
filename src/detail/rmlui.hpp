@@ -292,6 +292,7 @@ namespace darmok
 		OptionalRef<Transform> getTransform() const noexcept;
 		void configureViewSize(bgfx::ViewId viewId) const noexcept;
 		void updateViewName() noexcept;
+		void doShutdown() noexcept;
 	};
 
 	class Transform;

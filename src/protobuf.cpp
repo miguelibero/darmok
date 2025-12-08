@@ -9,7 +9,7 @@ namespace darmok
 {
     namespace protobuf
     {
-        Format getPathFormat(const std::filesystem::path& path)
+        Format getPathFormat(const std::filesystem::path& path) noexcept
         {
             if (path.extension() == ".json")
             {
@@ -22,7 +22,7 @@ namespace darmok
             return Format::Binary;
         }
 
-        std::string_view getExtension(Format format)
+        std::string_view getExtension(Format format) noexcept
         {
             if (format == Format::Json)
             {
@@ -31,34 +31,34 @@ namespace darmok
             return ".pb";
         }
 
-        std::optional<Format> getFormat(std::string_view name)
+        std::optional<Format> getFormat(std::string_view name) noexcept
         {
             return magic_enum::enum_cast<Format>(name);
         }
 
-        std::size_t getHash(const Message& msg)
+        std::size_t getHash(const Message& msg) noexcept
         {
             // TODO: better algorithm
             return std::hash<std::string>{}(msg.SerializeAsString());
         }
 
-        const bgfx::Memory* copyMem(const std::string& data)
+        const bgfx::Memory* copyMem(const std::string& data) noexcept
         {
             return bgfx::copy(data.data(), static_cast<uint32_t>(data.size()));
         }
 
-        const bgfx::Memory* refMem(const std::string& data)
+        const bgfx::Memory* refMem(const std::string& data) noexcept
         {
             return bgfx::makeRef(data.data(), static_cast<uint32_t>(data.size()));
         }
 
-        std::pair<std::ifstream, Format> createInputStream(const std::filesystem::path& path)
+        std::pair<std::ifstream, Format> createInputStream(const std::filesystem::path& path) noexcept
         {
             auto format = getPathFormat(path);
             return { createInputStream(path, format), format };
         }
 
-        std::ifstream createInputStream(const std::filesystem::path& path, Format format)
+        std::ifstream createInputStream(const std::filesystem::path& path, Format format) noexcept
         {
             int streamFlags = 0;
             if (format == Format::Binary)
@@ -68,13 +68,13 @@ namespace darmok
             return std::ifstream(path, streamFlags);
         }
 
-        std::pair<std::ofstream, Format> createOutputStream(const std::filesystem::path& path)
+        std::pair<std::ofstream, Format> createOutputStream(const std::filesystem::path& path) noexcept
         {
             auto format = getPathFormat(path);
             return { createOutputStream(path, format), format };
         }
 
-        std::ios_base::openmode getOutputStreamMode(Format format)
+        std::ios_base::openmode getOutputStreamMode(Format format) noexcept
         {
             if (format == Format::Binary)
             {
@@ -83,18 +83,18 @@ namespace darmok
             return std::ios::out;
         }
 
-        std::ofstream createOutputStream(const std::filesystem::path& path, Format format)
+        std::ofstream createOutputStream(const std::filesystem::path& path, Format format) noexcept
         {
             return std::ofstream{ path, getOutputStreamMode(format) };
         }
 
-        expected<void, std::string> read(Message& msg, const std::filesystem::path& path)
+        expected<void, std::string> read(Message& msg, const std::filesystem::path& path) noexcept
         {
             auto [input, format] = createInputStream(path);
             return read(msg, input, format);
         }
 
-        expected<void, std::string> read(Message& msg, std::istream& input, Format format)
+        expected<void, std::string> read(Message& msg, std::istream& input, Format format) noexcept
         {
             if (!input)
             {
@@ -111,7 +111,7 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> readJson(Message& msg, std::istream& input)
+        expected<void, std::string> readJson(Message& msg, std::istream& input) noexcept
         {
             auto readResult = StreamUtils::readString(input);
             if (!readResult)
@@ -126,7 +126,7 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> readJson(Message& msg, const nlohmann::json& json)
+        expected<void, std::string> readJson(Message& msg, const nlohmann::json& json) noexcept
         {
             const auto* desc = msg.GetDescriptor();
 
@@ -146,7 +146,7 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> readJson(Message& msg, const FieldDescriptor& field, const nlohmann::json& json)
+        expected<void, std::string> readJson(Message& msg, const FieldDescriptor& field, const nlohmann::json& json) noexcept
         {
             const auto& name = field.name();
             auto itr = json.find(name);
@@ -265,13 +265,13 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> write(const Message& msg, const std::filesystem::path& path)
+        expected<void, std::string> write(const Message& msg, const std::filesystem::path& path) noexcept
         {
             auto [output, format] = createOutputStream(path);
             return write(msg, output, format);
         }
 
-        expected<void, std::string> write(const Message& msg, std::ostream& output, Format format)
+        expected<void, std::string> write(const Message& msg, std::ostream& output, Format format) noexcept
         {
             if (!output)
             {
@@ -288,7 +288,7 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> writeJson(const Message& msg, std::ostream& output)
+        expected<void, std::string> writeJson(const Message& msg, std::ostream& output) noexcept
         {
             google::protobuf::util::JsonPrintOptions options;
             options.add_whitespace = true;
@@ -305,7 +305,7 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> writeJson(const Message& msg, nlohmann::json& json)
+        expected<void, std::string> writeJson(const Message& msg, nlohmann::json& json) noexcept
         {
             const auto* desc = msg.GetDescriptor();
 
@@ -325,7 +325,7 @@ namespace darmok
             return {};
         }
 
-        expected<void, std::string> writeJson(const Message& msg, const FieldDescriptor& field, nlohmann::json& json)
+        expected<void, std::string> writeJson(const Message& msg, const FieldDescriptor& field, nlohmann::json& json) noexcept
         {
             const auto& name = field.name();
             const auto* desc = msg.GetDescriptor();
@@ -447,17 +447,17 @@ namespace darmok
 
         static constexpr std::string_view typeUrlPrefix = "type.googleapis.com/";
 
-        IdType getTypeId(const Message& msg)
+        IdType getTypeId(const Message& msg) noexcept
         {
             return static_cast<IdType>(std::hash<std::string>{}(getFullName(msg)));
         }
 
-        IdType getTypeId(const Descriptor& desc)
+        IdType getTypeId(const Descriptor& desc) noexcept
         {
             return static_cast<IdType>(std::hash<std::string>{}(desc.full_name()));
         }
 
-        std::string getFullName(const Message& msg)
+        std::string getFullName(const Message& msg) noexcept
         {
             if (isAny(msg))
             {
@@ -471,7 +471,7 @@ namespace darmok
             return msg.GetDescriptor()->full_name();
         }
 
-        std::string getTypeUrl(const Message& msg)
+        std::string getTypeUrl(const Message& msg) noexcept
         {
             if (isAny(msg))
             {
@@ -480,17 +480,17 @@ namespace darmok
             return getTypeUrl(*msg.GetDescriptor());
         }
 
-        std::string getTypeUrl(const Descriptor& desc)
+        std::string getTypeUrl(const Descriptor& desc) noexcept
         {
             return std::string{ typeUrlPrefix } + desc.full_name();
         }
 
-        bool isAny(const Message& msg)
+        bool isAny(const Message& msg) noexcept
         {
             return msg.GetDescriptor()->full_name() == "google.protobuf.Any";
         }
 
-        std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc)
+        std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc) noexcept
         {
             std::vector<std::string> values;
             auto prefix = enumDesc.full_name() + "_";
@@ -506,7 +506,7 @@ namespace darmok
             }
             return values;
         }
-    }
+    }        
 }
 
 void to_json(nlohmann::json& json, const google::protobuf::Message& msg)
@@ -514,7 +514,7 @@ void to_json(nlohmann::json& json, const google::protobuf::Message& msg)
     auto result = darmok::protobuf::writeJson(msg, json);
     if (!result)
     {
-		throw std::runtime_error("failed to write json: " + result.error());
+        throw std::runtime_error{ "failed to write json: " + result.error() };
     }
 }
 
@@ -523,6 +523,6 @@ void from_json(const nlohmann::json& json, google::protobuf::Message& msg)
     auto result = darmok::protobuf::readJson(msg, json);
     if (!result)
     {
-        throw std::runtime_error("failed to read json: " + result.error());
+        throw std::runtime_error{ "failed to read json: " + result.error() };
     }
 }

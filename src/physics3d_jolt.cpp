@@ -1727,7 +1727,15 @@ namespace darmok::physics3d
 		return def;
     }
 
-    PhysicsBody::ShapeDefinition PhysicsBody::createCharacterShape() noexcept
+    PhysicsBody::ShapeDefinition PhysicsBody::createShapeDefinition() noexcept
+    {
+        ShapeDefinition shape;
+        auto& sphere = *shape.mutable_sphere();
+        sphere.set_radius(0.5F);
+        return shape;
+    }
+
+    PhysicsBody::ShapeDefinition PhysicsBody::createCharacterShapeDefinition() noexcept
     {
         ShapeDefinition shape;
         auto& capsule = *shape.mutable_capsule();
@@ -1748,7 +1756,7 @@ namespace darmok::physics3d
     PhysicsBody::CharacterDefinition PhysicsBody::createCharacterDefinition() noexcept
     {
         CharacterDefinition def;
-		*def.mutable_shape() = createCharacterShape();
+		*def.mutable_shape() = createCharacterShapeDefinition();
 		*def.mutable_supporting_plane() = createSupportingPlaneDefinition();
         def.mutable_up()->set_y(1.0F);
         def.set_max_slope_angle(glm::radians(50.F));

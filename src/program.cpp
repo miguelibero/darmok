@@ -241,8 +241,14 @@ namespace darmok
 
     Program::Source Program::createSource() noexcept
     {
-        Program::Source src;
+        Source src;
         return src;
+    }
+
+    Program::Definition Program::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
     }
 
 	bgfx::ProgramHandle Program::getHandle(const Defines& defines) const noexcept

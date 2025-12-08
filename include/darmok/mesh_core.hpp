@@ -86,6 +86,7 @@ namespace darmok
         void updateIndices(DataView data, uint32_t offset = 0);
 
         [[nodiscard]] static Source createSource() noexcept;
+        [[nodiscard]] static Definition createDefinition() noexcept;
     private:
         struct StaticVariant final
         {

@@ -649,7 +649,10 @@ namespace darmok
     {
     }
 
-    RmluiCanvasImpl::~RmluiCanvasImpl() noexcept = default;
+    RmluiCanvasImpl::~RmluiCanvasImpl() noexcept
+    {
+        doShutdown();
+    }
 
     expected<void, std::string> RmluiCanvasImpl::init(App& app, RmluiSceneComponentImpl& comp) noexcept
     {
@@ -690,6 +693,12 @@ namespace darmok
 
     expected<void, std::string> RmluiCanvasImpl::shutdown() noexcept
     {
+        doShutdown();
+        return {};
+    }
+
+    void RmluiCanvasImpl::doShutdown() noexcept
+    {
         _dataTypeRegisters.clear();
         _defaultDataTypeRegister.reset();
 
@@ -697,28 +706,13 @@ namespace darmok
         {
             Rml::RemoveContext(_context->GetName());
             _context.reset();
-            Rml::ReleaseTextures(_render ? _render.get() : nullptr);
         }
-
-        // the render interface should be destroyed here
-        // but with Rmlui 6.0 that throws an assert
-        // the fix is added here https://github.com/mikke89/RmlUi/issues/703
-
-        // TODO: remove recycleRender once 6.1 is out on vcpkg
-        // do this:
-        // _render.reset();
-        // Rml::ReleaseRenderManagers();
-        // instead of this:
-        if (_render)
-        {
-            _comp->recycleRender(std::move(_render));
-        }
-
+        Rml::ReleaseRenderManagers();
+        Rml::ReleaseTextures(_render ? _render.get() : nullptr);
+        _render.reset();
         _comp.reset();
         _cam.reset();
         _defaultCam.reset();
-
-        return {};
     }
 
     OptionalRef<Texture> RmluiCanvasImpl::getFrameTexture() const noexcept

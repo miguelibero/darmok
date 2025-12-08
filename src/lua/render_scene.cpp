@@ -47,11 +47,16 @@ namespace darmok
 
 	void LuaRenderable::bind(sol::state_view& lua) noexcept
 	{
-		auto def = LuaUtils::newProtobuf<Renderable::Definition>(lua, "RenderableDefinition");
-		def.userType["get_entity_component"] = [](LuaEntityDefinition& entity)
-		{
-			return entity.getComponent<Renderable::Definition>();
-		};
+		auto def = lua.new_usertype<Renderable::Definition>("RenderableDefinition",
+			sol::factories([]() {
+				return Renderable::createDefinition();
+				}),
+			"get_entity_component", [](LuaEntityDefinition& entity)
+			{
+				return entity.getComponent<Renderable::Definition>();
+			}
+		);
+		LuaProtobufBinding{ std::move(def) };
 
 		lua.new_usertype<Renderable>("Renderable", sol::no_constructor,
 			"type_id", sol::property(&entt::type_hash<Renderable>::value),

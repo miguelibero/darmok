@@ -377,7 +377,7 @@ namespace darmok::physics3d
     CharacterController::Definition CharacterController::createDefinition() noexcept
     {
         Definition def;
-        *def.mutable_shape() = PhysicsBody::createCharacterShape();
+        *def.mutable_shape() = PhysicsBody::createCharacterShapeDefinition();
         *def.mutable_supporting_plane() = PhysicsBody::createSupportingPlaneDefinition();
         def.mutable_up()->set_y(1.0F);
         def.set_max_slope_angle(glm::radians(50.F));

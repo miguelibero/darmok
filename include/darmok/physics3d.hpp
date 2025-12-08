@@ -212,7 +212,8 @@ namespace darmok::physics3d
         ~PhysicsBody() noexcept;
 
         static Definition createDefinition() noexcept;
-        static ShapeDefinition createCharacterShape() noexcept;
+        static ShapeDefinition createShapeDefinition() noexcept;
+        static ShapeDefinition createCharacterShapeDefinition() noexcept;
 		static Plane::Definition createSupportingPlaneDefinition() noexcept;
         static CharacterDefinition createCharacterDefinition() noexcept;
 

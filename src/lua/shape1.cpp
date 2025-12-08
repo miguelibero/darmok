@@ -2,6 +2,7 @@
 #include "lua/glm.hpp"
 #include "lua/protobuf.hpp"
 #include <darmok/shape.hpp>
+#include <darmok/glm_serialize.hpp>
 
 namespace darmok
 {
@@ -23,9 +24,15 @@ namespace darmok
 
 	void LuaShape::bindRectangle(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Rectangle::Definition>(lua, "RectangleDefinition")
-			.protobufProperty<protobuf::Vec2>("size")
-			.protobufProperty<protobuf::Vec2>("origin");
+		auto def = lua.new_usertype<Rectangle::Definition>("RectangleDefinition",
+			sol::factories([]() {
+				return Rectangle::createDefinition();
+			})
+		);
+		LuaProtobufBinding{ std::move(def) }
+			.convertProtobufProperty<glm::vec2, protobuf::Vec2>("size")
+			.convertProtobufProperty<glm::vec2, protobuf::Vec2>("origin")
+			;
 
 		lua.new_usertype<Rectangle>("Rectangle",
 			sol::factories(
@@ -45,9 +52,15 @@ namespace darmok
 
 	void LuaShape::bindCube(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Cube::Definition>(lua, "CubeDefinition")
-			.protobufProperty<protobuf::Vec3>("size")
-			.protobufProperty<protobuf::Vec3>("origin");
+		auto def = lua.new_usertype<Cube::Definition>("CubeDefinition",
+			sol::factories([]() {
+				return Cube::createDefinition();
+			})
+		);
+		LuaProtobufBinding{ std::move(def) }
+			.convertProtobufProperty<glm::vec3, protobuf::Vec3>("size")
+			.convertProtobufProperty<glm::vec3, protobuf::Vec3>("origin")
+			;
 
 		lua.new_usertype<Cube>("Cube",
 			sol::factories(
@@ -67,8 +80,13 @@ namespace darmok
 
 	void LuaShape::bindSphere(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Sphere::Definition>(lua, "SphereDefinition")
-			.protobufProperty<protobuf::Vec3>("origin");
+		auto def = lua.new_usertype<Sphere::Definition>("SphereDefinition",
+			sol::factories([]() {
+				return Sphere::createDefinition();
+			})
+		);
+		LuaProtobufBinding{ std::move(def) }
+			.convertProtobufProperty<glm::vec3, protobuf::Vec3>("origin");
 
 		lua.new_usertype<Sphere>("Sphere",
 			sol::factories(
@@ -161,8 +179,14 @@ namespace darmok
 
 	void LuaShape::bindCapsule(sol::state_view& lua) noexcept
 	{
-		LuaUtils::newProtobuf<Capsule::Definition>(lua, "CapsuleDefinition")
-			.protobufProperty<protobuf::Vec3>("origin");
+		auto def = lua.new_usertype<Capsule::Definition>("CapsuleDefinition",
+			sol::factories([]() {
+				return Capsule::createDefinition();
+			})
+		);
+		LuaProtobufBinding{ std::move(def) }
+			.convertProtobufProperty<glm::vec3, protobuf::Vec3>("origin")
+			;
 
 		lua.new_usertype<Capsule>("Capsule",
 			sol::factories(

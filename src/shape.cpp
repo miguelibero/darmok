@@ -292,6 +292,11 @@ namespace darmok
         return v;
     }
 
+    Sphere::Definition Sphere::createDefinition() noexcept
+    {
+        return {};
+    }
+
     Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
         : radius{ radius }
         , origin{ origin }
@@ -707,6 +712,11 @@ namespace darmok
         Capsule copy(*this);
         copy *= scale;
         return copy;
+    }
+
+    BoundingBox::Definition BoundingBox::createDefinition() noexcept
+    {
+        return {};
     }
 
     BoundingBox::BoundingBox() noexcept

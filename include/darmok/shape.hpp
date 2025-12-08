@@ -135,6 +135,7 @@ namespace darmok
         glm::vec3 origin;
 
         using Definition = protobuf::Sphere;
+        [[nodiscard]] static Definition createDefinition() noexcept;
 
         Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
         Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
@@ -362,6 +363,7 @@ namespace darmok
         glm::vec3 max;
 
         using Definition = protobuf::BoundingBox;
+        [[nodiscard]] static Definition createDefinition() noexcept;
 
         BoundingBox() noexcept;
         BoundingBox(const glm::vec3& min, const glm::vec3& max) noexcept;

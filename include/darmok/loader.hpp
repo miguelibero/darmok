@@ -739,12 +739,12 @@ namespace darmok
             auto resultPtr = tryCreate(def);
             if (resultPtr)
             {
-                return *resultPtr;
+                return resultPtr.value();
             }
             auto result = tryCreate(*def);
             if (result)
             {
-                return *result;
+                return result.value();
             }
             return unexpected<Error>{"could not create resource"};
         }
@@ -754,12 +754,12 @@ namespace darmok
             auto resultPtr = tryLoad(res, def);
             if (resultPtr)
             {
-                return *resultPtr;
+                return resultPtr.value();
             }
             auto result = tryLoad(res, *def);
             if (result)
             {
-                return *result;
+                return result.value();
             }
             return unexpected<Error>{"could not load resource"};
         }

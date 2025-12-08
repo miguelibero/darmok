@@ -165,7 +165,12 @@ namespace darmok::physics3d
 
     void LuaPhysicsSystem::bind(sol::state_view& lua) noexcept
     {
-		LuaUtils::newProtobuf<Definition>(lua, "Physics3dSystemDefinition")
+        auto def = lua.new_usertype<Definition>("Physics3dSystemDefinition",
+            sol::factories(
+                []() { return PhysicsSystem::createDefinition(); }
+            )
+        );
+        LuaProtobufBinding{ std::move(def) }
             .protobufProperty<darmok::protobuf::Vec3>("gravity");
 
         lua.new_usertype<Collision>("Physics3DCollision", sol::no_constructor,
