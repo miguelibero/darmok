@@ -16,9 +16,9 @@ namespace darmok
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        static void play1(AudioSystem& audio, const std::shared_ptr<Sound>& sound) noexcept;
-        static void play2(AudioSystem& audio, const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos) noexcept;
-        static void play3(AudioSystem& audio, const std::shared_ptr<Music>& music) noexcept;
+        static void play1(AudioSystem& audio, const std::shared_ptr<Sound>& sound);
+        static void play2(AudioSystem& audio, const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos);
+        static void play3(AudioSystem& audio, const std::shared_ptr<Music>& music);
 
         static float getSoundVolume(const AudioSystem& audio);
         static void setSoundVolume(AudioSystem& audio, float v);
@@ -29,5 +29,8 @@ namespace darmok
         static bool getMusicPlaying(const AudioSystem& audio) noexcept;
         static bool getMusicStopped(const AudioSystem& audio) noexcept;
         static bool getMusicPaused(const AudioSystem& audio) noexcept;
+
+        static void stopMusic(AudioSystem& audio);
+        static void pauseMusic(AudioSystem& audio);
     };
 }

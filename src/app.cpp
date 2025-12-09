@@ -358,7 +358,11 @@ namespace darmok
 		_input.getKeyboard().addListener(*this);
 		_assets.getImpl().init(_app);
 #ifdef DARMOK_MINIAUDIO
-		_audio.getImpl().init();
+		auto audioResult = _audio.getImpl().init();
+		if (!audioResult)
+		{
+			return unexpected<std::string>{"audio: " + audioResult.error() };
+		}
 #endif
 
 		_running = true;

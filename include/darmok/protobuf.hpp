@@ -442,23 +442,23 @@ namespace darmok
 
             [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetEnum(msg, _field)->number();
+                return static_cast<T>(msg.GetReflection()->GetEnum(msg, _field)->number());
             }
 
             [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedEnum(msg, _field, i)->number();
+                return static_cast<T>(msg.GetReflection()->GetRepeatedEnum(msg, _field, i)->number());
             }
 
             [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                auto enumVal = _field->enum_type()->FindValueByNumber(val);
+                auto enumVal = _field->enum_type()->FindValueByNumber(static_cast<int>(val));
                 msg.GetReflection()->SetEnum(&msg, _field, enumVal);
             }
 
             [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                auto enumVal = _field->enum_type()->FindValueByNumber(val);
+                auto enumVal = _field->enum_type()->FindValueByNumber(static_cast<int>(val));
                 msg.GetReflection()->AddEnum(&msg, _field, enumVal);
             }
         };
@@ -478,22 +478,22 @@ namespace darmok
 
             [[nodiscard]] T get(const google::protobuf::Message& msg) noexcept override
             {
-                return msg.GetReflection()->GetMessage(msg, _field);
+                return *static_cast<const T*>(msg.GetReflection()->GetMessage(msg, _field));
             }
 
             [[nodiscard]] T get(const google::protobuf::Message& msg, int i) noexcept override
             {
-                return msg.GetReflection()->GetRepeatedMessage(msg, _field, i);
+                return *static_cast<const T*>(msg.GetReflection()->GetRepeatedMessage(msg, _field, i));
             }
 
             [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->SetAllocatedMessage(&msg, _field, val);
+                *static_cast<T*>(msg.GetReflection()->MutableMessage(&msg, _field)) = val;
             }
 
             [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
-                msg.GetReflection()->AddMessage(&msg, _field, val);
+                *static_cast<T*>(msg.GetReflection()->AddMessage(&msg, _field)) = val;
             }
         };
 

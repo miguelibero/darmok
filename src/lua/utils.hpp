@@ -165,23 +165,20 @@ namespace darmok
         template<typename T, typename... Args>
         expected<T, std::string> tryGet(Args&&... args) const noexcept
         {
-            auto run = [&](sol::protected_function func) -> expected<T, std::string>
-            {
-                auto result = func(std::forward<Args>(args)...);
-				return LuaUtils::wrapResult<T>(std::move(result), _desc);
-            };
-
             auto type = _obj.get_type();
             if (type == sol::type::function)
             {
-                return run(_obj);
+                auto func = _obj.as<sol::protected_function>();
+                auto result = func(std::forward<Args>(args)...);
+                return LuaUtils::wrapResult<T>(std::move(result), _desc);
             }
             if (type == sol::type::table)
             {
                 auto table = _obj.as<sol::table>();
                 if (sol::protected_function func = table[_tableKey])
                 {
-                    return run(func);
+                    auto result = func(table, std::forward<Args>(args)...);
+                    return LuaUtils::wrapResult<T>(std::move(result), _desc);
                 }
 				return unexpected<std::string>{ "function not found in table" };
             }

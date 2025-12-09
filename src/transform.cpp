@@ -91,7 +91,6 @@ namespace darmok
 
     Transform::~Transform() noexcept
     {
-        /*
         if (_parent)
         {
             _parent->_children.erase(*this);
@@ -100,7 +99,6 @@ namespace darmok
         {
             child.get().setParent(nullptr);
         }
-        */
     }
 
     void Transform::reset() noexcept

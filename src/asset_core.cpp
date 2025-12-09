@@ -1027,10 +1027,7 @@ namespace darmok
     {
     }
 
-    FileImporter::~FileImporter() noexcept
-    {
-        // empty on purpose
-    }
+    FileImporter::~FileImporter() noexcept = default;
 
     FileImporter& FileImporter::setCachePath(const fs::path& cachePath) noexcept
     {
@@ -1180,10 +1177,7 @@ namespace darmok
     {
     }
 
-    BaseCommandLineFileImporter::~BaseCommandLineFileImporter() noexcept
-    {
-        // empty on purpose
-    }
+    BaseCommandLineFileImporter::~BaseCommandLineFileImporter() noexcept = default;
 
     int BaseCommandLineFileImporter::operator()(const CmdArgs& args) noexcept
     {

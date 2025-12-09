@@ -27,7 +27,7 @@ namespace darmok
 		using Result = Interface::Result;
 		using Resource = Interface::Resource;
 
-		AssetPackLoader(const protobuf::AssetPack& assets)
+		AssetPackLoader(const protobuf::AssetPack& assets) noexcept
 			: _assets{ assets }
 		{
 		}

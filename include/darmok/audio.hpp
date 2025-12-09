@@ -17,9 +17,9 @@ namespace darmok
     class DARMOK_EXPORT Sound final
     {
     public:
-        Sound(std::unique_ptr<SoundImpl>&& impl);
-        ~Sound();
-        float getDuration() const;
+        Sound(std::unique_ptr<SoundImpl> impl) noexcept;
+        ~Sound() noexcept;
+        float getDuration() const noexcept;
         SoundImpl& getImpl() noexcept;
         const SoundImpl& getImpl() const noexcept;
     private:
@@ -31,9 +31,9 @@ namespace darmok
     class DARMOK_EXPORT Music final
     {
     public:
-        Music(std::unique_ptr<MusicImpl>&& impl);
-        ~Music();
-        float getDuration() const;
+        Music(std::unique_ptr<MusicImpl> impl) noexcept;
+        ~Music() noexcept;
+        float getDuration() const noexcept;
         MusicImpl& getImpl() noexcept;
         const MusicImpl& getImpl() const noexcept;
     private:
@@ -55,15 +55,15 @@ namespace darmok
         const AudioSystemImpl& getImpl() const noexcept;
         AudioSystemImpl& getImpl() noexcept;
 
-        void play(const std::shared_ptr<Sound>& sound) noexcept;
-        void play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
-        void play(const std::shared_ptr<Music>& music) noexcept;
+        expected<void, std::string> play(const std::shared_ptr<Sound>& sound) noexcept;
+        expected<void, std::string> play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept;
+        expected<void, std::string> play(const std::shared_ptr<Music>& music) noexcept;
 
-        float getVolume(AudioGroup group) const;
-        void setVolume(AudioGroup group, float v);
+        float getVolume(AudioGroup group) const noexcept;
+        void setVolume(AudioGroup group, float v) noexcept;
 
-        void stopMusic();
-        void pauseMusic();
+        void stopMusic() noexcept;
+        expected<void, std::string> pauseMusic() noexcept;
         MusicState getMusicState() const noexcept;
 
     private:

@@ -12,26 +12,44 @@
 
 namespace darmok
 {
-    struct AudioUtils final
+    namespace MiniaudioDetail
     {
-        static void checkResult(ma_result result)
+        static expected<void, std::string> wrapExpected(ma_result result)
         {
             if (result != MA_SUCCESS)
             {
-                throw std::runtime_error(ma_result_description(result));
+                return unexpected<std::string>{ ma_result_description(result) };
             }
+            return {};
         }
     };
 
-    SoundImpl::SoundImpl(Data&& data)
-        : _data(std::move(data))
-        , _decoder(_data)
+    SoundImpl::SoundImpl(Data data, MiniaudioDecoder decoder, float duration) noexcept
+        : _data{ std::move(data) }
+        , _decoder{ std::move(decoder) }
+        , _duration{ duration }
     {
     }
 
-    float SoundImpl::getDuration() const
+    expected<SoundImpl, std::string> SoundImpl::create(Data data) noexcept
     {
-        return _decoder.getDuration();
+        auto result = MiniaudioDecoder::create(data);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        auto decoder = std::move(result).value();
+        auto duration = decoder.getDuration();
+        if (!duration)
+        {
+            return unexpected{ std::move(duration).error() };
+        }
+        return SoundImpl{ std::move(data), std::move(decoder), duration.value() };
+    }
+
+    float SoundImpl::getDuration() const noexcept
+    {
+        return _duration;
     }
 
     DataView SoundImpl::getData() noexcept
@@ -39,17 +57,14 @@ namespace darmok
         return _data;
     }
 
-    Sound::Sound(std::unique_ptr<SoundImpl>&& impl)
+    Sound::Sound(std::unique_ptr<SoundImpl> impl) noexcept
         : _impl(std::move(impl))
     {
     }
 
-    Sound::~Sound()
-    {
-        // empty on purpose
-    }
+    Sound::~Sound() = default;
 
-    float Sound::getDuration() const
+    float Sound::getDuration() const noexcept
     {
         return _impl->getDuration();
     }
@@ -64,15 +79,32 @@ namespace darmok
         return *_impl;
     }
 
-    MusicImpl::MusicImpl(Data&& data)
-        : _data(std::move(data))
-        , _decoder(_data)
+    MusicImpl::MusicImpl(Data data, MiniaudioDecoder decoder, float duration) noexcept
+        : _data{ std::move(data) }
+        , _decoder{ std::move(decoder) }
+        , _duration{ duration }
     {
     }
 
-    float MusicImpl::getDuration() const
+    expected<MusicImpl, std::string> MusicImpl::create(Data data) noexcept
     {
-        return _decoder.getDuration();
+        auto result = MiniaudioDecoder::create(data);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        auto decoder = std::move(result).value();
+        auto duration = decoder.getDuration();
+        if (!duration)
+        {
+            return unexpected{ std::move(duration).error() };
+        }
+        return MusicImpl{ std::move(data), std::move(decoder), duration.value() };
+    }
+
+    float MusicImpl::getDuration() const noexcept
+    {
+        return _duration;
     }
 
     DataView MusicImpl::getData() noexcept
@@ -80,17 +112,14 @@ namespace darmok
         return _data;
     }
 
-    Music::Music(std::unique_ptr<MusicImpl>&& impl)
-        : _impl(std::move(impl))
+    Music::Music(std::unique_ptr<MusicImpl> impl) noexcept
+        : _impl{ std::move(impl) }
     {
     }
 
-    Music::~Music()
-    {
-        // empty on purpose
-    }
+    Music::~Music() = default;
 
-    float Music::getDuration() const
+    float Music::getDuration() const noexcept
     {
         return _impl->getDuration();
     }
@@ -115,10 +144,16 @@ namespace darmok
         auto dataResult = _dataLoader(path);
         if (!dataResult)
         {
-            return unexpected<std::string>{ dataResult.error() };
+            return unexpected{ std::move(dataResult).error() };
         }
         auto& data = dataResult.value();
-        return std::make_shared<Sound>(std::make_unique<SoundImpl>(std::move(data)));
+        auto implResult = SoundImpl::create(data);
+        if (!implResult)
+        {
+            return unexpected{ std::move(implResult).error() };
+        }
+        auto impl = std::make_unique<SoundImpl>(std::move(implResult).value());
+        return std::make_shared<Sound>(std::move(impl));
     }
 
     MiniaudioMusicLoader::MiniaudioMusicLoader(IDataLoader& dataLoader) noexcept
@@ -134,175 +169,359 @@ namespace darmok
 			return unexpected<std::string>{ dataResult.error() };
         }
 		auto& data = dataResult.value();
-        return std::make_shared<Music>(std::make_unique<MusicImpl>(std::move(data)));
+        auto implResult = MusicImpl::create(data);
+        if (!implResult)
+        {
+            return unexpected{ std::move(implResult).error() };
+        }
+        auto impl = std::make_unique<MusicImpl>(std::move(implResult).value());
+        return std::make_shared<Music>(std::move(impl));
     }
 
-    MiniaudioDecoder::MiniaudioDecoder(DataView data) noexcept
+    expected<MiniaudioDecoder, std::string> MiniaudioDecoder::create(DataView data) noexcept
     {
-        auto result = ma_decoder_init_memory(data.ptr(), data.size(), nullptr, &_decoder);
-        AudioUtils::checkResult(result);
-        // ma_decoder_seek_to_pcm_frame(&_decoder, 0);
+        auto decoder = std::make_unique<ma_decoder>();
+        auto maResult = ma_decoder_init_memory(data.ptr(), data.size(), nullptr, decoder.get());
+        auto initResult = MiniaudioDetail::wrapExpected(maResult);
+        if (!initResult)
+        {
+            return unexpected{ std::move(initResult).error() };
+        }
+        return MiniaudioDecoder{ std::move(decoder) };
+    }
+
+    MiniaudioDecoder::MiniaudioDecoder(std::unique_ptr<ma_decoder> decoder) noexcept
+        : _decoder{ std::move(decoder) }
+    {
+        // ma_decoder_seek_to_pcm_frame(_decoder.get(), 0);
+    }
+
+    bool MiniaudioDecoder::uninit() noexcept
+    {
+        if (_decoder)
+        {
+            ma_decoder_uninit(_decoder.get());
+            _decoder.reset();
+            return true;
+        }
+        return false;
     }
 
     MiniaudioDecoder::~MiniaudioDecoder() noexcept
     {
-        ma_decoder_uninit(&_decoder);
+        uninit();
     }
 
-    float MiniaudioDecoder::getDuration() const
+    MiniaudioDecoder& MiniaudioDecoder::operator=(MiniaudioDecoder&& other) noexcept
     {
+        uninit();
+        _decoder = std::move(other)._decoder;
+        return *this;
+    }
+
+    expected<float, std::string> MiniaudioDecoder::getDuration() const noexcept
+    {
+        if (!_decoder)
+        {
+            return unexpected<std::string>{"uninitialized"};
+        }
         float len = 0;
-        auto result = ma_data_source_get_length_in_seconds(&_decoder, &len);
-        AudioUtils::checkResult(result);
+        auto maResult = ma_data_source_get_length_in_seconds(_decoder.get(), &len);
+        auto result = MiniaudioDetail::wrapExpected(maResult);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
         return len;
     }
 
     MiniaudioDecoder::operator ma_decoder* () noexcept
     {
-        return &_decoder;
+        return _decoder.get();
     }
 
-    MiniaudioSoundGroup::MiniaudioSoundGroup(ma_engine& engine, ma_uint32 flags) noexcept
-        : _group{}
+    expected<MiniaudioSoundGroup, std::string> MiniaudioSoundGroup::create(ma_engine& engine, ma_uint32 flags) noexcept
     {
-        auto result = ma_sound_group_init(&engine, flags, nullptr, &_group);
-        AudioUtils::checkResult(result);
+        auto group = std::make_unique<ma_sound_group>();
+        auto maResult = ma_sound_group_init(&engine, flags, nullptr, group.get());
+        auto initResult = MiniaudioDetail::wrapExpected(maResult);
+        if (!initResult)
+        {
+            return unexpected{ std::move(initResult).error() };
+        }
+        return MiniaudioSoundGroup{ std::move(group) };
+    }
+
+    MiniaudioSoundGroup::MiniaudioSoundGroup(std::unique_ptr<ma_sound_group> group) noexcept
+        : _group{ std::move(group) }
+    {
+    }
+
+    MiniaudioSoundGroup& MiniaudioSoundGroup::operator=(MiniaudioSoundGroup&& other) noexcept
+    {
+        uninit();
+        _group = std::move(other)._group;
+        return *this;
+    }
+
+    bool MiniaudioSoundGroup::uninit() noexcept
+    {
+        if (_group)
+        {
+            ma_sound_group_uninit(_group.get());
+            _group.reset();
+            return true;
+        }
+        return false;
     }
 
     MiniaudioSoundGroup::~MiniaudioSoundGroup() noexcept
     {
-        ma_sound_group_uninit(&_group);
+        uninit();
     }
 
     MiniaudioSoundGroup::operator ma_sound_group*() noexcept
     {
-        return &_group;
+        return _group.get();
     }
 
     float MiniaudioSoundGroup::getVolume() const noexcept
     {
-        return ma_sound_group_get_volume(&_group);
+        if (!_group)
+        {
+            return 0.0f;
+        }
+        return ma_sound_group_get_volume(_group.get());
     }
 
     void MiniaudioSoundGroup::setVolume(float v) noexcept
     {
-        ma_sound_group_set_volume(&_group, v);
+        if (_group)
+        {
+            ma_sound_group_set_volume(_group.get(), v);
+        }
     }
 
-    MiniaudioSound::MiniaudioSound(DataView data, ma_engine& engine, const OptionalRef<MiniaudioSoundGroup>& group) noexcept
-        : _decoder(data)
-        , _sound{}
+    expected<MiniaudioSound, std::string> MiniaudioSound::create(DataView data, ma_engine& engine, const OptionalRef<MiniaudioSoundGroup>& group) noexcept
     {
+        auto decoderResult = MiniaudioDecoder::create(data);
+        if (!decoderResult)
+        {
+            return unexpected{ std::move(decoderResult).error() };
+        }
+        auto decoder = std::move(decoderResult).value();
         auto config = ma_sound_config_init();
-        config.pDataSource = _decoder;
+        config.pDataSource = decoder;
         if (group)
         {
             config.pInitialAttachment = group.value();
         }
-        auto result = ma_sound_init_ex(&engine, &config, &_sound);
-        AudioUtils::checkResult(result);
+        auto sound = std::make_unique<ma_sound>();
+        auto maResult = ma_sound_init_ex(&engine, &config, sound.get());
+        auto initResult = MiniaudioDetail::wrapExpected(maResult);
+        if (!initResult)
+        {
+            return unexpected{ std::move(initResult).error() };
+        }
+        return MiniaudioSound{ std::move(sound), std::move(decoder) };
+    }
+
+    MiniaudioSound::MiniaudioSound(std::unique_ptr<ma_sound> sound, MiniaudioDecoder decoder) noexcept
+        : _sound{ std::move(sound) }
+        , _decoder{ std::move(decoder) }
+    {
     }
 
     MiniaudioSound::~MiniaudioSound() noexcept
     {
-        ma_sound_uninit(&_sound);
+        uninit();
+    }
+
+    bool MiniaudioSound::uninit() noexcept
+    {
+        if (_sound)
+        {
+            ma_sound_uninit(_sound.get());
+            _sound.reset();
+            return true;
+        }
+        return false;
+    }
+
+    MiniaudioSound& MiniaudioSound::operator=(MiniaudioSound&& other) noexcept
+    {
+        uninit();
+        _sound = std::move(other)._sound;
+        _decoder = std::move(other)._decoder;
+        return *this;
     }
 
     bool MiniaudioSound::atEnd() const noexcept
     {
-        return ma_sound_at_end(&_sound);
+        if (!_sound)
+        {
+            return true;
+        }
+        return ma_sound_at_end(_sound.get());
     }
 
     bool MiniaudioSound::isPlaying() const noexcept
     {
-        return ma_sound_is_playing(&_sound);
+        if (!_sound)
+        {
+            return false;
+        }
+        return ma_sound_is_playing(_sound.get());
     }
 
     void MiniaudioSound::setPosition(const glm::vec3& pos) noexcept
     {
-        ma_sound_set_position(&_sound, pos.x, pos.y, pos.z);
+        if (!_sound)
+        {
+            return;
+        }
+        ma_sound_set_position(_sound.get(), pos.x, pos.y, pos.z);
     }
 
     void MiniaudioSound::setLooping(bool v) noexcept
     {
-        ma_sound_set_looping(&_sound, v);
+        if (!_sound)
+        {
+            return;
+        }
+        ma_sound_set_looping(_sound.get(), v);
     }
 
-    void MiniaudioSound::start()
+    expected<void, std::string> MiniaudioSound::start() noexcept
     {
-        auto result = ma_sound_start(&_sound);
-        AudioUtils::checkResult(result);
+        if (!_sound)
+        {
+            return unexpected<std::string>{"uninitialized"};
+        }
+        auto maResult = ma_sound_start(_sound.get());
+        return MiniaudioDetail::wrapExpected(maResult);
     }
 
-    void MiniaudioSound::stop()
+    expected<void, std::string> MiniaudioSound::stop() noexcept
     {
-        auto result = ma_sound_stop(&_sound);
-        AudioUtils::checkResult(result);
+        if (!_sound)
+        {
+            return unexpected<std::string>{"uninitialized"};
+        }
+        auto maResult = ma_sound_stop(_sound.get());
+        return MiniaudioDetail::wrapExpected(maResult);
     }
 
-    void AudioSystemImpl::init()
+    AudioSystemImpl::~AudioSystemImpl() noexcept
     {
+        shutdown();
+    }
+
+    expected<void, std::string> AudioSystemImpl::init() noexcept
+    {
+        shutdown();
+        _engine = std::make_unique<ma_engine>();
         ma_engine_config config = ma_engine_config_init();
-        auto result = ma_engine_init(&config, &_engine);
-        AudioUtils::checkResult(result);
-
-        _soundGroup = std::make_unique<MiniaudioSoundGroup>(_engine);
-        _musicGroup = std::make_unique<MiniaudioSoundGroup>(_engine, MA_SOUND_FLAG_STREAM);
+        auto maResult = ma_engine_init(&config, _engine.get());
+        auto initResult = MiniaudioDetail::wrapExpected(maResult);
+        if (!initResult)
+        {
+            return unexpected{ std::move(initResult).error() };
+        }
+        auto groupResult = MiniaudioSoundGroup::create(*_engine);
+        if (!groupResult)
+        {
+            return unexpected{ std::move(groupResult).error() };
+        }
+        _soundGroup = std::move(groupResult).value();
+        groupResult = MiniaudioSoundGroup::create(*_engine, MA_SOUND_FLAG_STREAM);
+        if (!groupResult)
+        {
+            return unexpected{ std::move(groupResult).error() };
+        }
+        _musicGroup = std::move(groupResult).value();
+        return {};
     }
 
-    void AudioSystemImpl::shutdown()
+    void AudioSystemImpl::shutdown() noexcept
     {
         _sounds.clear();
         _music.reset();
         _soundGroup.reset();
         _musicGroup.reset();
-        ma_engine_uninit(&_engine);
+        if (_engine)
+        {
+            ma_engine_uninit(&*_engine);
+            _engine.reset();
+        }
     }
 
-    void AudioSystemImpl::update()
+    void AudioSystemImpl::update() noexcept
     {
         auto itr = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& elm) {
-            return elm.miniaudio->atEnd();
+            return elm.miniaudio.atEnd();
         });
         _sounds.erase(itr, _sounds.end());
     }
 
-    MiniaudioSound& AudioSystemImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound)
+    expected<std::reference_wrapper<MiniaudioSound>, std::string> AudioSystemImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound) noexcept
     {
-        auto& elm = _sounds.emplace_back(
-            std::make_unique<MiniaudioSound>(
-                sound->getImpl().getData(), _engine, _soundGroup.get())
-        );
-        return *elm.miniaudio;
+        if (!_engine)
+        {
+            return unexpected<std::string>{"engine unitialized"};
+        }
+        auto soundGroupPtr = _soundGroup ? &*_soundGroup : nullptr;
+        auto result = MiniaudioSound::create(sound->getImpl().getData(), *_engine, soundGroupPtr);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        auto& elm = _sounds.emplace_back(std::move(result).value(), sound);
+        return std::ref(elm.miniaudio);
     }
 
-    void AudioSystemImpl::play(const std::shared_ptr<Sound>& sound)
+    expected<void, std::string> AudioSystemImpl::play(const std::shared_ptr<Sound>& sound) noexcept
     {
-        auto& maSound = createMiniaudioSound(sound);
-        maSound.start();
+        auto result = createMiniaudioSound(sound);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        auto& maSound = result.value().get();
+        return maSound.start();
     }
 
-    void AudioSystemImpl::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos)
+    expected<void, std::string> AudioSystemImpl::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept
     {
-        auto& maSound = createMiniaudioSound(sound);
+        auto result = createMiniaudioSound(sound);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        auto& maSound = result.value().get();
         maSound.setPosition(pos);
-        maSound.start();
+        return maSound.start();
     }
 
-    void AudioSystemImpl::play(const std::shared_ptr<Music>& music)
+    expected<void, std::string> AudioSystemImpl::play(const std::shared_ptr<Music>& music) noexcept
     {
-        _music = MusicElement{
-            std::make_unique<MiniaudioSound>(
-                music->getImpl().getData(), _engine, _musicGroup.get()
-            ),
-            music
-        };
-        auto& maSound = *_music->miniaudio;
+        if (!_engine)
+        {
+            return unexpected<std::string>{"engine unitialized"};
+        }
+        auto musicGroupPtr = _musicGroup ? &*_musicGroup : nullptr;
+        auto result = MiniaudioSound::create(music->getImpl().getData(), *_engine, musicGroupPtr);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        _music = { std::move(result).value(), music };
+        auto& maSound = _music->miniaudio;
         maSound.setLooping(true);
-        maSound.start();
+        return maSound.start();
     }
 
-    float AudioSystemImpl::getVolume(AudioGroup group) const
+    float AudioSystemImpl::getVolume(AudioGroup group) const noexcept
     {
         switch (group)
         {
@@ -322,7 +541,7 @@ namespace darmok
         return 0.F;
     }
 
-    void AudioSystemImpl::setVolume(AudioGroup group, float v)
+    void AudioSystemImpl::setVolume(AudioGroup group, float v) noexcept
     {
         switch (group)
         {
@@ -341,34 +560,44 @@ namespace darmok
         }
     }
 
-    void AudioSystemImpl::stopMusic()
+    void AudioSystemImpl::stopMusic() noexcept
     {
         _music.reset();
     }
 
-    void AudioSystemImpl::pauseMusic()
+    expected<void, std::string> AudioSystemImpl::pauseMusic() noexcept
     {
-        if (!_music || !_music->miniaudio)
+        if (!_music)
         {
-            return;
+            return unexpected<std::string>{ "music not initialized" };
         }
-        if(_music->miniaudio->isPlaying())
+        if(_music->miniaudio.isPlaying())
         {
-            _music->miniaudio->stop();
+            auto stopResult = _music->miniaudio.stop();
+            if (!stopResult)
+            {
+                return unexpected{ std::move(stopResult).error() };
+            }
         }
         else
         {
-            _music->miniaudio->start();
+            auto startResult = _music->miniaudio.start();
+            if (!startResult)
+            {
+                return unexpected{ std::move(startResult).error() };
+            }
         }
+
+        return {};
     }
 
     MusicState AudioSystemImpl::getMusicState() const noexcept
     {
-        if (!_music || !_music->miniaudio)
+        if (!_music)
         {
             return MusicState::Stopped;
         }
-        auto& audio = *_music->miniaudio;
+        auto& audio = _music->miniaudio;
         return audio.isPlaying() ? MusicState::Playing : MusicState::Paused;
     }
 
@@ -393,42 +622,42 @@ namespace darmok
         return *_impl;
     }
     
-    void AudioSystem::play(const std::shared_ptr<Sound>& sound) noexcept
+    expected<void, std::string> AudioSystem::play(const std::shared_ptr<Sound>& sound) noexcept
     {
         return _impl->play(sound);
     }
 
-    void AudioSystem::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept
+    expected<void, std::string> AudioSystem::play(const std::shared_ptr<Sound>& sound, const glm::vec3& pos) noexcept
     {
         return _impl->play(sound, pos);
     }
 
-    void AudioSystem::play(const std::shared_ptr<Music>& music) noexcept
+    expected<void, std::string> AudioSystem::play(const std::shared_ptr<Music>& music) noexcept
     {
         return _impl->play(music);
     }
 
-    float AudioSystem::getVolume(AudioGroup group) const
+    float AudioSystem::getVolume(AudioGroup group) const noexcept
     {
         return _impl->getVolume(group);
     }
 
-    void AudioSystem::setVolume(AudioGroup group, float v)
+    void AudioSystem::setVolume(AudioGroup group, float v) noexcept
     {
         _impl->setVolume(group, v);
     }
 
-    void AudioSystem::stopMusic()
+    void AudioSystem::stopMusic() noexcept
     {
         return _impl->stopMusic();
     }
 
-    void AudioSystem::pauseMusic()
+    expected<void, std::string> AudioSystem::pauseMusic() noexcept
     {
         return _impl->pauseMusic();
     }
 
-    MusicState AudioSystem::getMusicState()  const noexcept
+    MusicState AudioSystem::getMusicState() const noexcept
     {
         return _impl->getMusicState();
     }

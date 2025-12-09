@@ -56,8 +56,8 @@ namespace darmok
 
         using Result = expected<std::shared_ptr<aiScene>, std::string>;
 
-		AssimpLoader();
-		~AssimpLoader();
+		AssimpLoader() noexcept;
+		~AssimpLoader() noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
         Result loadFromFile(const std::filesystem::path& path, const Config& config) const;
         Result loadFromMemory(DataView data, const Config& config) const;

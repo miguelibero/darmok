@@ -280,7 +280,7 @@ namespace darmok
 			_userType[name] = sol::property(
                 [field](T& msg) {
                     auto sub = msg.GetReflection()->MutableMessage(&msg, field);
-                    return static_cast<P&>(*sub);
+                    return static_cast<P*>(sub);
                 },
                 [field](T& msg, const P& val) {
                     auto sub = msg.GetReflection()->MutableMessage(&msg, field);

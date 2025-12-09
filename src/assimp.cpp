@@ -211,7 +211,7 @@ namespace darmok
         format = path.extension().string();
     }
 
-    AssimpLoader::AssimpLoader()
+    AssimpLoader::AssimpLoader() noexcept
         : _impl{std::make_unique<AssimpLoaderImpl>()}
     {
     }

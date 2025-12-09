@@ -159,12 +159,6 @@ namespace darmok
         auto& meshPath = meshResult.value();
         auto matPath = getMaterial(assimpMesh->mMaterialIndex);
 
-        BoundingBox::Definition bounds;
-        auto& assimpAabb = assimpMesh->mAABB;
-        *bounds.mutable_min() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMin));
-        *bounds.mutable_max() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMax));
-        _scene.setComponent(entity, bounds);
-        
         if (addChild)
         {
             auto childEntity = _scene.createEntity();
@@ -175,6 +169,12 @@ namespace darmok
             _scene.setComponent(childEntity, trans);
             entity = childEntity;
         }
+
+        BoundingBox::Definition bounds;
+        auto& assimpAabb = assimpMesh->mAABB;
+        *bounds.mutable_min() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMin));
+        *bounds.mutable_max() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMax));
+        _scene.setComponent(entity, bounds);
 
         if (!meshPath.empty())
         {

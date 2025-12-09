@@ -21,22 +21,22 @@
 #	define DARMOK_IMPLEMENT_MAIN 0
 #endif // DARMOK_IMPLEMENT_MAIN
 
-#define DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ...)						\
-    class appDlgClass##Factory final : public darmok::IAppDelegateFactory			\
-	{																				\
-	public:																			\
-        std::unique_ptr<darmok::IAppDelegate> operator()(darmok::App& app) override \
-        {																			\
-            return std::make_unique<appDlgClass>(app, ##__VA_ARGS__);				\
-        }																			\
-	};																				\
+#define DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ...)									\
+    class appDlgClass##Factory final : public darmok::IAppDelegateFactory						\
+	{																							\
+	public:																						\
+        std::unique_ptr<darmok::IAppDelegate> operator()(darmok::App& app) noexcept override	\
+        {																						\
+            return std::make_unique<appDlgClass>(app, ##__VA_ARGS__);							\
+        }																						\
+	};																							\
 
 
 #if DARMOK_IMPLEMENT_MAIN
 #define DARMOK_RUN_APP(appDlgClass, ...)								    \
     DARMOK_CREATE_APP_DELEGATE_FACTORY(appDlgClass, ##__VA_ARGS__)	        \
 																		    \
-	int main(int argc, const char* argv[])							    \
+	int main(int argc, const char* argv[])									\
 	{																	    \
 		return darmok::main(argc, argv,									    \
 			std::make_unique<appDlgClass##Factory>());				        \
@@ -93,7 +93,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppDelegateFactory() = default;
-		virtual std::unique_ptr<IAppDelegate> operator()(App& app) = 0;
+		virtual std::unique_ptr<IAppDelegate> operator()(App& app) noexcept = 0;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IAppUpdater
@@ -118,7 +118,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IAppUpdaterFilter() = default;
-		virtual bool operator()(const IAppUpdater& updater) const = 0;
+		virtual bool operator()(const IAppUpdater& updater) const noexcept = 0;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE IAppComponent

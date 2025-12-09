@@ -1,21 +1,22 @@
 #include "lua/audio.hpp"
+#include "lua/utils.hpp"
 #include <darmok/audio.hpp>
 
 namespace darmok
 {
-    void LuaAudioSystem::play1(AudioSystem& audio, const std::shared_ptr<Sound>& sound) noexcept
+    void LuaAudioSystem::play1(AudioSystem& audio, const std::shared_ptr<Sound>& sound)
     {
-        audio.play(sound);
+        LuaUtils::unwrapExpected(audio.play(sound));
     }
 
-    void LuaAudioSystem::play2(AudioSystem& audio, const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos) noexcept
+    void LuaAudioSystem::play2(AudioSystem& audio, const std::shared_ptr<Sound>& sound, const VarLuaTable<glm::vec3>& pos)
     {
-        audio.play(sound, LuaGlm::tableGet(pos));
+        LuaUtils::unwrapExpected(audio.play(sound, LuaGlm::tableGet(pos)));
     }
 
-    void LuaAudioSystem::play3(AudioSystem& audio, const std::shared_ptr<Music>& music) noexcept
+    void LuaAudioSystem::play3(AudioSystem& audio, const std::shared_ptr<Music>& music)
     {
-        audio.play(music);
+        LuaUtils::unwrapExpected(audio.play(music));
     }
 
     float LuaAudioSystem::getSoundVolume(const AudioSystem& audio)
@@ -53,6 +54,16 @@ namespace darmok
         return audio.getMusicState() == MusicState::Paused;
     }
 
+    void LuaAudioSystem::stopMusic(AudioSystem& audio)
+    {
+        audio.stopMusic();
+    }
+
+    void LuaAudioSystem::pauseMusic(AudioSystem& audio)
+    {
+        LuaUtils::unwrapExpected(audio.pauseMusic());
+    }
+
     void LuaAudioSystem::bind(sol::state_view& lua) noexcept
     {
         lua.new_enum<MusicState>("MusicState", {
@@ -75,8 +86,8 @@ namespace darmok
             ),
 			"sound_volume", sol::property(&LuaAudioSystem::getSoundVolume, &LuaAudioSystem::setSoundVolume),
             "music_volume", sol::property(&LuaAudioSystem::getMusicVolume, &LuaAudioSystem::setMusicVolume),
-            "stop_music", &AudioSystem::stopMusic,
-            "pause_music", &AudioSystem::pauseMusic,
+            "stop_music", &LuaAudioSystem::stopMusic,
+            "pause_music", &LuaAudioSystem::pauseMusic,
 			"music_state", sol::property(&AudioSystem::getMusicState),
             "music_paused", sol::property(&LuaAudioSystem::getMusicPaused),
             "music_playing", sol::property(&LuaAudioSystem::getMusicPlaying),
