@@ -34,10 +34,10 @@ namespace darmok::physics3d
         using Contact = CharacterContact;
         using ContactSettings = CharacterContactSettings;
         virtual entt::id_type getCharacterDelegateType() const noexcept { return 0; };
-        virtual void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) { }
-        virtual bool onContactValidate(CharacterController& character, PhysicsBody& body) { return true; }
-        virtual void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) { }
-        virtual void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) { }
+        virtual expected<void, std::string> onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) noexcept { return {}; }
+        virtual expected<bool, std::string> onContactValidate(CharacterController& character, PhysicsBody& body) noexcept { return true; }
+        virtual expected<void, std::string> onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept { return {}; }
+        virtual expected<void, std::string> onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) noexcept { return {}; }
     };
 
     template<typename T>

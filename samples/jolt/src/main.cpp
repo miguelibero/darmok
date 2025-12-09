@@ -155,13 +155,14 @@ namespace
 			return {};
 		}
 
-		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept override
+		expected<void, std::string> onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept override
 		{
 			// settings.canPushCharacter = false;
 			// settings.canReceiveImpulses = false;
+			return {};
 		}
 
-		void onCollisionEnter(PhysicsBody& me, PhysicsBody& body, const Collision& collision) noexcept override
+		expected<void, std::string> onCollisionEnter(PhysicsBody& me, PhysicsBody& body, const Collision& collision) noexcept override
 		{
 			if (_doorBody == body)
 			{
@@ -169,12 +170,13 @@ namespace
 			}
 			if (_floorBody == body)
 			{
-				return;
+				return {};
 			}
 			setMaterial(body, _doorBody == body ? _triggerDoorMat : _touchedCubeMat);
+			return {};
 		}
 
-		void onCollisionExit(PhysicsBody& me, PhysicsBody& body) noexcept override
+		expected<void, std::string> onCollisionExit(PhysicsBody& me, PhysicsBody& body) noexcept override
 		{
 			if (_doorBody == body)
 			{
@@ -182,9 +184,10 @@ namespace
 			}
 			if (_floorBody == body)
 			{
-				return;
+				return {};
 			}
 			setMaterial(body, _doorBody == body ? _doorMat : _cubeMat);
+			return {};
 		}
 
 		expected<void, std::string> imguiRender() noexcept override

@@ -18,24 +18,24 @@ namespace darmok::physics3d
 	const LuaTableDelegateDefinition LuaCharacterDelegate::_contactAddedDef("on_contact_added", "running character contact added");
 	const LuaTableDelegateDefinition LuaCharacterDelegate::_contactSolveDef("on_contact_solve", "running character contact solve");
 
-	void LuaCharacterDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity)
+	expected<void, std::string> LuaCharacterDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) noexcept
 	{
-		_adjustBodyDef(_table, character, body, linearVelocity, angularVelocity);
+		return _adjustBodyDef.tryGet<void>(_table, character, body, linearVelocity, angularVelocity);
 	}
 
-	bool LuaCharacterDelegate::onContactValidate(CharacterController& character, PhysicsBody& body)
+	expected<bool, std::string> LuaCharacterDelegate::onContactValidate(CharacterController& character, PhysicsBody& body) noexcept
 	{
-		return _contactValidateDef(_table, character, body).as<bool>();
+		return _contactValidateDef.tryGet<bool>(_table, character, body);
 	}
 
-	void LuaCharacterDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings)
+	expected<void, std::string> LuaCharacterDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept
 	{
-		_contactAddedDef(_table, character, body, contact, settings);
+		return _contactAddedDef.tryGet<void>(_table, character, body, contact, settings);
 	}
 
-	void LuaCharacterDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity)
+	expected<void, std::string> LuaCharacterDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) noexcept
 	{
-		_contactSolveDef(_table, character, body, contact, characterVelocity);
+		return _contactSolveDef.tryGet<void>(_table, character, body, contact, characterVelocity);
 	}
 
 	void LuaCharacterController::setLinearVelocity(CharacterController& ctrl, const VarLuaTable<glm::vec3>& velocity)

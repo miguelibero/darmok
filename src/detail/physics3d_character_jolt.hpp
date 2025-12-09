@@ -28,7 +28,7 @@ namespace darmok::physics3d
         ~CharacterControllerImpl() noexcept;
         void init(CharacterController& ctrl, PhysicsSystem& system) noexcept;
         void shutdown() noexcept;
-        void update(Entity entity, float deltaTime) noexcept;
+        expected<void, std::string> update(Entity entity, float deltaTime) noexcept;
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
@@ -58,10 +58,11 @@ namespace darmok::physics3d
         JPH::Ref<JPH::CharacterVirtual> _jolt;
         OptionalRef<Delegate> _delegate;
         std::unique_ptr<Delegate> _delegatePointer;
+        std::vector<std::string> _pendingErrors;
 
         PhysicsSystemImpl& getSystemImpl() noexcept;
 
-        bool tryCreateCharacter(Transform& transform) noexcept;
+        expected<void, std::string> tryCreateCharacter(Transform& transform) noexcept;
         OptionalRef<PhysicsBody> getPhysicsBody() const noexcept;
     };
 }

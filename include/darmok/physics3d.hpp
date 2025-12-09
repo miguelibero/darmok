@@ -41,7 +41,7 @@ namespace darmok::physics3d
 	public:
 		virtual ~IPhysicsUpdater() = default;
         virtual entt::id_type getPhysicsUpdaterType() const noexcept { return 0; };
-		virtual void fixedUpdate(float fixedDeltaTime) = 0;
+		virtual expected<void, std::string> fixedUpdate(float fixedDeltaTime) noexcept = 0;
 	};
 
     template<typename T>
@@ -58,7 +58,7 @@ namespace darmok::physics3d
     {
     public:
         virtual ~IPhysicsUpdaterFilter() = default;
-        virtual bool operator()(const IPhysicsUpdater& updater) const = 0;
+        virtual bool operator()(const IPhysicsUpdater& updater) const noexcept = 0;
     };
 
     class PhysicsBody;
@@ -76,9 +76,9 @@ namespace darmok::physics3d
     public:
         virtual ~ICollisionListener() = default;
         virtual entt::id_type getCollisionListenerType() const noexcept { return 0; };
-        virtual void onCollisionEnter(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
-        virtual void onCollisionStay(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) {};
-        virtual void onCollisionExit(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2) {};
+        virtual expected<void, std::string> onCollisionEnter(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) noexcept { return {}; };
+        virtual expected<void, std::string> onCollisionStay(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2, const Collision& collision) noexcept { return {}; };
+        virtual expected<void, std::string> onCollisionExit(PhysicsBody& physicsBody1, PhysicsBody& physicsBody2) noexcept { return {}; };
     };
 
     template<typename T>
@@ -167,7 +167,7 @@ namespace darmok::physics3d
         OptionalRef<Transform> getRootTransform() noexcept;
         OptionalRef<const Transform> getRootTransform() const noexcept;
 
-        glm::vec3 getGravity() const;
+        glm::vec3 getGravity() const noexcept;
         bool isValidEntity(Entity entity) noexcept;
 
         bool isPaused() const noexcept;
@@ -224,32 +224,32 @@ namespace darmok::physics3d
 
         PhysicsShape getShape() const noexcept;
         MotionType getMotionType() const noexcept;
-        BoundingBox getLocalBounds() const;
-        BoundingBox getWorldBounds() const;
+        BoundingBox getLocalBounds() const noexcept;
+        BoundingBox getWorldBounds() const noexcept;
 
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
-        PhysicsBody& setPosition(const glm::vec3& pos);
-        glm::vec3 getPosition() const;
-        PhysicsBody& setRotation(const glm::quat& rot);
-        glm::quat getRotation() const;
-        PhysicsBody& setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity() const;
-        float getInverseMass() const;
-        PhysicsBody& setInverseMass(float v);
+        PhysicsBody& setPosition(const glm::vec3& pos) noexcept;
+        glm::vec3 getPosition() const noexcept;
+        PhysicsBody& setRotation(const glm::quat& rot) noexcept;
+        glm::quat getRotation() const noexcept;
+        PhysicsBody& setLinearVelocity(const glm::vec3& velocity) noexcept;
+        glm::vec3 getLinearVelocity() const noexcept;
+        float getInverseMass() const noexcept;
+        PhysicsBody& setInverseMass(float v) noexcept;
 
-        bool isActive() const;
-        PhysicsBody& activate();
-        PhysicsBody& deactivate();
-        bool isEnabled() const;
-        PhysicsBody& setEnabled(bool enabled);
+        bool isActive() const noexcept;
+        PhysicsBody& activate() noexcept;
+        PhysicsBody& deactivate() noexcept;
+        bool isEnabled() const noexcept;
+        PhysicsBody& setEnabled(bool enabled) noexcept;
 
-        PhysicsBody& addTorque(const glm::vec3& torque);
-        PhysicsBody& addForce(const glm::vec3& force);
-        PhysicsBody& addImpulse(const glm::vec3& impulse);
-        PhysicsBody& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime = 0.F);
-        PhysicsBody& movePosition(const glm::vec3& pos, float deltaTime = 0.F);
+        PhysicsBody& addTorque(const glm::vec3& torque) noexcept;
+        PhysicsBody& addForce(const glm::vec3& force) noexcept;
+        PhysicsBody& addImpulse(const glm::vec3& impulse) noexcept;
+        PhysicsBody& move(const glm::vec3& pos, const glm::quat& rot, float deltaTime = 0.F) noexcept;
+        PhysicsBody& movePosition(const glm::vec3& pos, float deltaTime = 0.F) noexcept;
 
         PhysicsBody& addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         PhysicsBody& addListener(ICollisionListener& listener) noexcept;
@@ -268,13 +268,13 @@ namespace darmok
     template<>
     struct Converter<physics3d::PhysicsShape, physics3d::protobuf::PhysicsShape>
     {
-        static physics3d::PhysicsShape run(const physics3d::protobuf::PhysicsShape& v);
+        static physics3d::PhysicsShape run(const physics3d::protobuf::PhysicsShape& v) noexcept;
     };
 
     template<>
     struct Converter<physics3d::protobuf::PhysicsShape, physics3d::PhysicsShape>
     {
-        static physics3d::protobuf::PhysicsShape run(const physics3d::PhysicsShape& v);
+        static physics3d::protobuf::PhysicsShape run(const physics3d::PhysicsShape& v) noexcept;
     };
 
 }

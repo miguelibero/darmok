@@ -3,6 +3,7 @@
 #include <darmok/physics3d_character.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/protobuf.hpp>
+#include <darmok/string.hpp>
 #include <Jolt/Physics/PhysicsSystem.h>
 
 namespace darmok::physics3d
@@ -194,7 +195,11 @@ namespace darmok::physics3d
         }
         auto linv = JoltUtils::convert(linearVelocity);
         auto angv = JoltUtils::convert(angularVelocity);
-        _delegate->onAdjustBodyVelocity(_ctrl.value(), body.value(), linv, angv);
+        auto result = _delegate->onAdjustBodyVelocity(_ctrl.value(), body.value(), linv, angv);
+        if (!result)
+        {
+            _pendingErrors.push_back("onAdjustBodyVelocity: " + result.error());
+        }
         linearVelocity = JoltUtils::convert(linv);
         angularVelocity = JoltUtils::convert(angv);
     }
@@ -210,7 +215,13 @@ namespace darmok::physics3d
         {
             return true;
         }
-        return _delegate->onContactValidate(_ctrl.value(), body.value());
+        auto result = _delegate->onContactValidate(_ctrl.value(), body.value());
+        if (!result)
+        {
+            _pendingErrors.push_back("onContactValidate: " + result.error());
+            return true;
+        }
+        return result.value();
     }
 
     void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings) noexcept
@@ -229,7 +240,11 @@ namespace darmok::physics3d
         {
             settings.mCanPushCharacter, settings.mCanReceiveImpulses
         };
-        _delegate->onContactAdded(_ctrl.value(), body.value(), contact, darmokSettings);
+        auto result = _delegate->onContactAdded(_ctrl.value(), body.value(), contact, darmokSettings);
+        if (!result)
+        {
+            _pendingErrors.push_back("onContactAdded: " + result.error());
+        }
         settings.mCanPushCharacter = darmokSettings.canPushCharacter;
         settings.mCanReceiveImpulses = darmokSettings.canReceiveImpulses;
     }
@@ -247,27 +262,45 @@ namespace darmok::physics3d
         }
         Contact contact{ JoltUtils::convert(contactPosition), JoltUtils::convert(contactNormal), JoltUtils::convert(contactVelocity) };
         glm::vec3 charVel = JoltUtils::convert(characterVelocity);
-        _delegate->onContactSolve(_ctrl.value(), body.value(), contact, charVel);
+        auto result = _delegate->onContactSolve(_ctrl.value(), body.value(), contact, charVel);
+        if (!result)
+        {
+            _pendingErrors.push_back("onContactSolve: " + result.error());
+        }
         newCharacterVelocity = JoltUtils::convert(charVel);
     }
 
-    bool CharacterControllerImpl::tryCreateCharacter(Transform& trans) noexcept
+    expected<void, std::string> CharacterControllerImpl::tryCreateCharacter(Transform& trans) noexcept
     {
-        if (_jolt || !_system)
+        if (_jolt)
         {
-            return false;
+            return {};
+        }
+        if (!_system)
+        {
+            return unexpected<std::string>{"uninitialized"};
         }
         auto joltSystem = getSystemImpl().getJolt();
         if (!joltSystem)
         {
-            return false;
+            return unexpected<std::string>{"missing jolt system"};
         }
-        auto joltTrans = getSystemImpl().loadTransform(trans);
+        auto transResult = getSystemImpl().tryLoadTransform(trans);
+        if (!transResult)
+        {
+            return unexpected{ std::move(transResult).error() };
+        }
+        auto joltTrans = std::move(transResult).value();
+        auto convertResult = JoltUtils::convert(convert<PhysicsShape>(_def.shape()), joltTrans.scale);
+        if (!convertResult)
+        {
+            return unexpected{ std::move(convertResult).error() };
+        }
 
         const JPH::Ref<JPH::CharacterVirtualSettings> settings = new JPH::CharacterVirtualSettings();
         settings->mMaxSlopeAngle = _def.max_slope_angle();
 		settings->mMaxStrength = _def.max_strength();
-        settings->mShape = JoltUtils::convert(convert<PhysicsShape>(_def.shape()), joltTrans.scale);
+        settings->mShape = convertResult.value();
         settings->mBackFaceMode = (JPH::EBackFaceMode)_def.back_face_mode();
         settings->mCharacterPadding = _def.padding();
         settings->mPenetrationRecoverySpeed = _def.penetration_recovery_speed();
@@ -277,28 +310,38 @@ namespace darmok::physics3d
         auto userData = (uint64_t)_ctrl.ptr();
         _jolt = new JPH::CharacterVirtual(settings, joltTrans.position, joltTrans.rotation, userData, joltSystem.ptr());
         _jolt->SetListener(this);
-        return true;
+        return {};
     }
 
-    void CharacterControllerImpl::update(Entity entity, float deltaTime) noexcept
+    expected<void, std::string> CharacterControllerImpl::update(Entity entity, float deltaTime) noexcept
     {
+        if (!_pendingErrors.empty())
+        {
+            auto err = StringUtils::joinErrors(_pendingErrors);
+            _pendingErrors.clear();
+            return unexpected{ std::move(err) };
+        }
         if (!_system)
         {
-            return;
+            return unexpected<std::string>{"missing system"};
         }
         auto& scene = *_system->getScene();
         auto& trans = scene.getOrAddComponent<Transform>(entity);
 
-        tryCreateCharacter(trans);
+        auto createResult = tryCreateCharacter(trans);
+        if (!createResult)
+        {
+            return createResult;
+        }
         if (!_jolt)
         {
-            return;
+            return unexpected<std::string>{"missing jolt controller"};
         }
 
         auto joltSystem = getSystemImpl().getJolt();
         if (!joltSystem)
         {
-            return;
+            return unexpected<std::string>{"missing jolt system"};
         }
 
         JPH::IgnoreMultipleBodiesFilter bodyFilter;
@@ -333,6 +376,8 @@ namespace darmok::physics3d
         {
             getSystemImpl().updateTransform(trans, _jolt->GetWorldTransform());
         }
+
+        return {};
     }
 
     CharacterController::CharacterController(const Definition& def) noexcept

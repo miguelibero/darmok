@@ -135,7 +135,7 @@ namespace darmok::editor
         auto asset = _sceneDef->getAsset(std::move(path));
         if(!asset)
         {
-            return unexpected{ "could not find asset" };
+            return unexpected{ "could not find asset in path " + path.string() };
 		}
         return _editors.render(*asset, true);
     }

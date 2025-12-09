@@ -8,6 +8,7 @@
 #include <darmok/collection.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/stream.hpp>
 
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
@@ -190,28 +191,32 @@ namespace darmok::physics3d
         return JPH::cDefaultConvexRadius;
     }
 
-    static JPH::Ref<JPH::Shape> getShape(JPH::ShapeSettings& settings)
+    expected<JPH::Ref<JPH::Shape>, std::string> joltGetShape(JPH::ShapeSettings& settings) noexcept
     {
         auto result = settings.Create();
         if (result.HasError())
         {
-            throw std::runtime_error(result.GetError().c_str());
+            return unexpected<std::string>{ result.GetError().c_str() };
         }
         return result.Get();
     }
 
-    JPH::ShapeRefC joltGetOffsetShape(JPH::ShapeSettings& settings, const glm::vec3& offset)
+    expected<JPH::ShapeRefC, std::string> joltGetOffsetShape(JPH::ShapeSettings& settings, const glm::vec3& offset) noexcept
     {
-        auto shape = getShape(settings);
-        if (offset == glm::vec3(0))
+        auto shapeResult = joltGetShape(settings);
+        if (!shapeResult)
         {
-            return shape;
+            return unexpected{ std::move(shapeResult).error() };
         }
-        JPH::RotatedTranslatedShapeSettings offsetSettings{ JoltUtils::convert(offset), JPH::Quat::sIdentity(), shape };
-        return getShape(offsetSettings);
+        if (offset == glm::vec3{ 0 })
+        {
+            return shapeResult.value();
+        }
+        JPH::RotatedTranslatedShapeSettings offsetSettings{ JoltUtils::convert(offset), JPH::Quat::sIdentity(), shapeResult.value() };
+        return joltGetShape(offsetSettings);
     }
 
-    JPH::ShapeRefC JoltUtils::convert(const PhysicsShape& shape, float scale)
+    expected<JPH::ShapeRefC, std::string> JoltUtils::convert(const PhysicsShape& shape, float scale) noexcept
     {
         std::optional<Cube> optCube;
         if (auto cubePtr = std::get_if<Cube>(&shape))
@@ -249,7 +254,7 @@ namespace darmok::physics3d
             JPH::MeshShapeSettings settings{ tris };
             return joltGetOffsetShape(settings, poly.origin);
         }
-        return nullptr;
+        return unexpected<std::string>{"unknown shape type"};
     }
 
     ConstPhysicsShapeDefinitionWrapper::ConstPhysicsShapeDefinitionWrapper(const Definition& def) noexcept
@@ -298,7 +303,7 @@ namespace darmok::physics3d
     {
     }
 
-    JoltJobSystemTaskflow::~JoltJobSystemTaskflow()
+    JoltJobSystemTaskflow::~JoltJobSystemTaskflow() noexcept
     {
         shutdown();
     }
@@ -310,28 +315,28 @@ namespace darmok::physics3d
         _future = executor.run(_taskflow);
     }
 
-    void JoltJobSystemTaskflow::shutdown()
+    void JoltJobSystemTaskflow::shutdown() noexcept
     {
         _future.wait();
         _taskflow.clear();
     }
 
-    const tf::Taskflow& JoltJobSystemTaskflow::getTaskflow() const
+    const tf::Taskflow& JoltJobSystemTaskflow::getTaskflow() const noexcept
     {
         return _taskflow;
     }
 
-    int JoltJobSystemTaskflow::GetMaxConcurrency() const
+    int JoltJobSystemTaskflow::GetMaxConcurrency() const noexcept
     {
         return _taskExecutor ? _taskExecutor->num_workers() : 0;
     }
 
-    JoltJobSystemTaskflow::JobHandle JoltJobSystemTaskflow::CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies)
+    JoltJobSystemTaskflow::JobHandle JoltJobSystemTaskflow::CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies) noexcept
     {
         return JobHandle{ new Job{name, color, this, jobFunction, numDependencies} };
     }
 
-    void JoltJobSystemTaskflow::QueueJob(Job* job)
+    void JoltJobSystemTaskflow::QueueJob(Job* job) noexcept
     {
         auto task = _taskflow.emplace([job]() { job->Execute();  });
         task.data(job);
@@ -342,7 +347,7 @@ namespace darmok::physics3d
 #endif   
     }
 
-    void JoltJobSystemTaskflow::QueueJobs(Job** jobs, JPH::uint numJobs)
+    void JoltJobSystemTaskflow::QueueJobs(Job** jobs, JPH::uint numJobs) noexcept
     {
         for (JPH::uint i = 0; i < numJobs; ++i)
         {
@@ -350,7 +355,7 @@ namespace darmok::physics3d
         }
     }
 
-    void JoltJobSystemTaskflow::FreeJob(Job* job)
+    void JoltJobSystemTaskflow::FreeJob(Job* job) noexcept
     {
         std::vector<tf::Task> tasks;
         _taskflow.for_each_task([job, &tasks](auto task)
@@ -423,13 +428,13 @@ namespace darmok::physics3d
         return JPH::BroadPhaseLayer(_def.getBroadLayer(objLayer));
     }
 
-    const char* JoltBroadPhaseLayerInterface::GetBroadPhaseLayerName(JPH::BroadPhaseLayer bpLayer) const
+    const char* JoltBroadPhaseLayerInterface::GetBroadPhaseLayerName(JPH::BroadPhaseLayer bpLayer) const noexcept
     {
         auto name = _def.getBroadLayerName(bpLayer.GetValue());
         return name ? name->c_str() : "";
     }
 
-    JoltObjectVsBroadPhaseLayerFilter::JoltObjectVsBroadPhaseLayerFilter(const Definition& def)
+    JoltObjectVsBroadPhaseLayerFilter::JoltObjectVsBroadPhaseLayerFilter(const Definition& def) noexcept
         : _def{ def } 
     {
     }
@@ -449,7 +454,7 @@ namespace darmok::physics3d
         return _def.getBroadLayer(layer1) == layer2.GetValue();
     }
 
-    JoltObjectLayerPairFilter::JoltObjectLayerPairFilter(const Definition& def)
+    JoltObjectLayerPairFilter::JoltObjectLayerPairFilter(const Definition& def) noexcept
         : _def{ def }
     {
     }
@@ -510,11 +515,12 @@ namespace darmok::physics3d
 #ifdef JPH_ENABLE_ASSERTS
 
     // Callback for asserts, connect this to your own assert handler if you have one
-    static bool joltAssertFailed(const char* expression, const char* message, const char* file, JPH::uint line)
+    bool joltAssertFailed(const char* expression, const char* message, const char* file, JPH::uint line) noexcept
     {
         std::stringstream ss;
         ss << file << ":" << line << ": (" << expression << ") " << (message != nullptr ? message : "");
-        // throw std::runtime_error(ss.str());
+        StreamUtils::log(ss.str(), true);
+
         return true; // breakpoint
     };
 
@@ -601,28 +607,32 @@ namespace darmok::physics3d
         return {};
     }
 
-    void PhysicsSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept
+    expected<void, std::string> PhysicsSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& body = registry.get<PhysicsBody>(entity);
         body.getImpl().init(body, _system);
+        return {};
     }
 
-    void PhysicsSystemImpl::onRigidbodyDestroyed(EntityRegistry& registry, Entity entity)
+    expected<void, std::string> PhysicsSystemImpl::onRigidbodyDestroyed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& body = registry.get<PhysicsBody>(entity).getImpl();
         body.shutdown();
+        return {};
     }
 
-    void PhysicsSystemImpl::onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept
+    expected<void, std::string> PhysicsSystemImpl::onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& character = registry.get<CharacterController>(entity);
         character.getImpl().init(character, _system);
+        return {};
     }
 
-    void PhysicsSystemImpl::onCharacterDestroyed(EntityRegistry& registry, Entity entity)
+    expected<void, std::string> PhysicsSystemImpl::onCharacterDestroyed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& character = registry.get<CharacterController>(entity).getImpl();
         character.shutdown();
+        return {};
     }
 
     std::string_view PhysicsSystemImpl::getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept
@@ -648,7 +658,11 @@ namespace darmok::physics3d
         {
             for (auto& updater : _updaters)
             {
-                updater.fixedUpdate(fdt);
+                auto result = updater.fixedUpdate(fdt);
+                if (!result)
+                {
+                    return result;
+                }
             }
 
             // TODO: skeletal animations here? or maybe with an updater
@@ -663,7 +677,11 @@ namespace darmok::physics3d
                 return unexpected{ errStr };
             }
 
-            processPendingCollisionEvents();
+            auto result = processPendingCollisionEvents();
+            if (!result)
+            {
+                return result;
+            }
         }
 
         if (_scene)
@@ -672,13 +690,21 @@ namespace darmok::physics3d
             for (auto entity : entities)
             {
                 auto& body = _scene->getComponent<PhysicsBody>(entity).value();
-                body.getImpl().update(entity, deltaTime);
+                auto result = body.getImpl().update(entity, deltaTime);
+                if (!result)
+                {
+                    return result;
+                }
             }
             entities = _scene->getUpdateEntities<CharacterController>();
             for (auto entity : entities)
             {
                 auto& charCtrl = _scene->getComponent<CharacterController>(entity).value();
-                charCtrl.getImpl().update(entity, deltaTime);
+                auto result = charCtrl.getImpl().update(entity, deltaTime);
+                if (!result)
+                {
+                    return result;
+                }
             }
         }
 
@@ -730,7 +756,7 @@ namespace darmok::physics3d
 		return _def.fixed_delta_time();
     }
 
-    const tf::Taskflow& PhysicsSystemImpl::getTaskflow() const
+    const tf::Taskflow& PhysicsSystemImpl::getTaskflow() const noexcept
     {
         return _jobSystem.getTaskflow();
     }
@@ -818,16 +844,6 @@ namespace darmok::physics3d
             mat = _root->getWorldInverse() * mat;
         }
         return JoltUtils::convertTransform(mat);
-    }
-
-    JoltTransform PhysicsSystemImpl::loadTransform(Transform& trans)
-    {
-        auto joltTrans = tryLoadTransform(trans);
-        if (joltTrans)
-        {
-            return joltTrans.value();
-        }
-        throw std::runtime_error(joltTrans.error());
     }
 
     void PhysicsSystemImpl::updateTransform(Transform& trans, const JPH::Mat44& jmtx) noexcept
@@ -932,9 +948,9 @@ namespace darmok::physics3d
         iface.ActivateBodiesInAABox(JoltUtils::convert(bbox), bphFilter, objFilter);
     }
 
-    void PhysicsSystemImpl::processPendingCollisionEvents()
+    expected<void, std::string> PhysicsSystemImpl::processPendingCollisionEvents() noexcept
     {
-        std::lock_guard<std::mutex> guard(_collisionMutex);
+        std::lock_guard<std::mutex> guard{ _collisionMutex };
         while (!_pendingCollisionEvents.empty())
         {
             CollisionEvent ev = _pendingCollisionEvents.front();
@@ -950,19 +966,25 @@ namespace darmok::physics3d
             {
                 continue;
             }
+            expected<void, std::string> result;
             switch (ev.type)
             {
             case CollisionEventType::Enter:
-                onCollisionEnter(rb1.value(), rb2.value(), ev.collision);
+                result = onCollisionEnter(rb1.value(), rb2.value(), ev.collision);
                 break;
             case CollisionEventType::Stay:
-                onCollisionStay(rb1.value(), rb2.value(), ev.collision);
+                result = onCollisionStay(rb1.value(), rb2.value(), ev.collision);
                 break;
             case CollisionEventType::Exit:
-                onCollisionExit(rb1.value(), rb2.value());
+                result = onCollisionExit(rb1.value(), rb2.value());
                 break;
             }
+            if (!result)
+            {
+                return result;
+            }
         }
+        return {};
     }
 
     Collision PhysicsSystemImpl::createCollision(const JPH::ContactManifold& manifold) noexcept
@@ -977,55 +999,93 @@ namespace darmok::physics3d
         return collision;
     }
 
-    void PhysicsSystemImpl::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
+    void PhysicsSystemImpl::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) noexcept
     {
         auto collision = createCollision(manifold);
-        std::lock_guard<std::mutex> guard(_collisionMutex);
+        std::lock_guard<std::mutex> guard{ _collisionMutex };
         _pendingCollisionEvents.emplace_back(CollisionEventType::Enter, body1.GetID(), body2.GetID(), collision);
     }
 
-    void PhysicsSystemImpl::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
+    void PhysicsSystemImpl::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) noexcept
     {
         auto collision = createCollision(manifold);
-        std::lock_guard<std::mutex> guard(_collisionMutex);
+        std::lock_guard<std::mutex> guard{ _collisionMutex };
         _pendingCollisionEvents.emplace_back(CollisionEventType::Stay, body1.GetID(), body2.GetID(), collision);
     }
 
-    void PhysicsSystemImpl::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair)
+    void PhysicsSystemImpl::OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) noexcept
     {
-        std::lock_guard<std::mutex> guard(_collisionMutex);
+        std::lock_guard<std::mutex> guard{ _collisionMutex };
         _pendingCollisionEvents.emplace_back(CollisionEventType::Exit, inSubShapePair.GetBody1ID(), inSubShapePair.GetBody2ID());
     }
 
-    void PhysicsSystemImpl::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
+    expected<void, std::string> PhysicsSystemImpl::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept
     {
-        body1.getImpl().onCollisionEnter(body2, collision);
-        body2.getImpl().onCollisionEnter(body1, collision);
+        auto result = body1.getImpl().onCollisionEnter(body2, collision);
+        if (!result)
+        {
+            return result;
+        }
+        result = body2.getImpl().onCollisionEnter(body1, collision);
+        if (!result)
+        {
+            return result;
+        }
         for (auto& listener : _listeners)
         {
-            listener.onCollisionEnter(body1, body2, collision);
+            result = listener.onCollisionEnter(body1, body2, collision);
+            if (!result)
+            {
+                return result;
+            }
         }
-        Collision collision2(collision);
+        return {};
     }
 
-    void PhysicsSystemImpl::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
+    expected<void, std::string> PhysicsSystemImpl::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept
     {
-        body1.getImpl().onCollisionStay(body2, collision);
-        body2.getImpl().onCollisionStay(body1, collision);
+        auto result = body1.getImpl().onCollisionStay(body2, collision);
+        if (!result)
+        {
+            return result;
+        }
+        result = body2.getImpl().onCollisionStay(body1, collision);
+        if (!result)
+        {
+            return result;
+        }
         for (auto& listener : _listeners)
         {
-            listener.onCollisionStay(body1, body2, collision);
+            result = listener.onCollisionStay(body1, body2, collision);
+            if (!result)
+            {
+                return result;
+            }
         }
+        return {};
     }
 
-    void PhysicsSystemImpl::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
+    expected<void, std::string> PhysicsSystemImpl::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) noexcept
     {
-        body1.getImpl().onCollisionExit(body2);
-        body2.getImpl().onCollisionExit(body1);
+        auto result = body1.getImpl().onCollisionExit(body2);
+        if (!result)
+        {
+            return result;
+        }
+        result = body2.getImpl().onCollisionExit(body1);
+        if (!result)
+        {
+            return result;
+        }
         for (auto& listener : _listeners)
         {
-            listener.onCollisionExit(body1, body2);
+            result = listener.onCollisionExit(body1, body2);
+            if (!result)
+            {
+                return result;
+            }
         }
+        return {};
     }
     
     PhysicsSystem::PhysicsSystem(const Definition& def, bx::AllocatorI& alloc) noexcept
@@ -1095,7 +1155,7 @@ namespace darmok::physics3d
         return _impl->getRootTransform();
     }
 
-    glm::vec3 PhysicsSystem::getGravity() const
+    glm::vec3 PhysicsSystem::getGravity() const noexcept
     {
         return _impl->getGravity();
     }
@@ -1202,7 +1262,7 @@ namespace darmok::physics3d
     {
     }
 
-    PhysicsBodyImpl::~PhysicsBodyImpl()
+    PhysicsBodyImpl::~PhysicsBodyImpl() noexcept
     {
         shutdown();
     }
@@ -1217,7 +1277,7 @@ namespace darmok::physics3d
         _system = system;
     }
 
-    void PhysicsBodyImpl::shutdown(bool systemShutdown)
+    void PhysicsBodyImpl::shutdown(bool systemShutdown) noexcept
     {
         if (!_system)
         {
@@ -1259,16 +1319,21 @@ namespace darmok::physics3d
         return _system->getImpl().getBodyLockInterface();
     }
 
-    JPH::BodyID PhysicsBodyImpl::createCharacter(const CharacterDefinition& def, const JoltTransform& trans)
+    expected<JPH::BodyID, std::string> PhysicsBodyImpl::createCharacter(const CharacterDefinition& def, const JoltTransform& trans) noexcept
     {
         auto joltSystem = getSystemImpl().getJolt();
         if (!joltSystem)
         {
-            return {};
+            return unexpected<std::string>{"missing jolt system"};
+        }
+        auto shapeResult = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
+        if (!shapeResult)
+        {
+            return unexpected{ std::move(shapeResult).error() };
         }
         const JPH::Ref<JPH::CharacterSettings> settings = new JPH::CharacterSettings{};
         settings->mMaxSlopeAngle = def.max_slope_angle();
-        settings->mShape = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
+        settings->mShape = shapeResult.value();
         settings->mFriction = def.friction();
         settings->mSupportingVolume = JoltUtils::convert(darmok::convert<Plane>(def.supporting_plane()));
         settings->mMass = def.mass();
@@ -1284,11 +1349,11 @@ namespace darmok::physics3d
         return _character->GetBodyID();
     }
 
-    JPH::BodyID PhysicsBodyImpl::createBody(const Definition& def, const JoltTransform& trans)
+    expected<JPH::BodyID, std::string> PhysicsBodyImpl::createBody(const Definition& def, const JoltTransform& trans) noexcept
     {
         if (!_system)
         {
-            return {};
+            return unexpected<std::string>{"missing jolt system"};
         }
 
         JPH::EMotionType joltMotion = JPH::EMotionType::Dynamic;
@@ -1305,8 +1370,12 @@ namespace darmok::physics3d
             break;
         }
 
-        auto shape = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
-        JPH::BodyCreationSettings settings{ shape, trans.position, trans.rotation,
+        auto shapeResult = JoltUtils::convert(darmok::convert<PhysicsShape>(def.shape()), trans.scale);
+        if (!shapeResult)
+        {
+            return unexpected{ std::move(shapeResult).error() };
+        }
+        JPH::BodyCreationSettings settings{ shapeResult.value(), trans.position, trans.rotation,
             joltMotion, static_cast<JPH::ObjectLayer>(def.layer()) };
         settings.mGravityFactor = def.gravity_factor();
         settings.mFriction = def.friction();
@@ -1322,50 +1391,81 @@ namespace darmok::physics3d
         return getBodyInterface()->CreateAndAddBody(settings, activation);
     }
 
-    bool PhysicsBodyImpl::tryCreateBody(OptionalRef<Transform> trans)
+    expected<void, std::string> PhysicsBodyImpl::tryCreateBody(OptionalRef<Transform> trans) noexcept
     {
-        if (!_bodyId.IsInvalid() || !_system || !_initDef)
+        if (!_bodyId.IsInvalid())
         {
-            return false;
+            return {};
+        }
+        if (!_system)
+        {
+            return unexpected<std::string>{"missing system ref"};
+        }
+        if (!_initDef)
+        {
+            return unexpected<std::string>{"missing definition"};
         }
 
         JoltTransform joltTrans;
         if (trans)
         {
-            joltTrans = getSystemImpl().loadTransform(trans.value());
+            auto transResult = getSystemImpl().tryLoadTransform(trans.value());
+            if (!transResult)
+            {
+                return unexpected{ std::move(transResult).error() };
+            }
+            joltTrans = transResult.value();
         }
-        auto configPtr = &_initDef.value();
-        if (auto charConfig = std::get_if<CharacterDefinition>(configPtr))
+        auto defPtr = &_initDef.value();
+        if (auto charDef = std::get_if<CharacterDefinition>(defPtr))
         {
-            _bodyId = createCharacter(*charConfig, joltTrans);
+            auto result = createCharacter(*charDef, joltTrans);
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            _bodyId = result.value();
         }
-        else if(auto bodyConfig = std::get_if<Definition>(configPtr))
+        else if(auto bodyDef = std::get_if<Definition>(defPtr))
         {
-            _bodyId = createBody(*bodyConfig, joltTrans);
+            auto result = createBody(*bodyDef, joltTrans);
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            _bodyId = result.value();
+        }
+        else
+        {
+            return unexpected<std::string>{"unknown definition"};
         }
         _initDef.reset();
-        return true;
+        return {};
     }
 
-    void PhysicsBodyImpl::update(Entity entity, float deltaTime)
+    expected<void, std::string> PhysicsBodyImpl::update(Entity entity, float deltaTime) noexcept
     {
         if (!_system)
         {
-            return;
+            return {};
         }
         auto trans = _system->getScene()->getComponent<Transform>(entity);
         if (!trans && getMotionType() != Definition::Static)
         {
             trans = _system->getScene()->addComponent<Transform>(entity);
         }
-        tryCreateBody(trans);
+        auto bodyResult = tryCreateBody(trans);
+        if (!bodyResult)
+        {
+            return unexpected{ std::move(bodyResult).error() };
+        }
         if (_character)
         {
             _character->PostSimulation(_maxSepDistance, false);
         }
         if (!isEnabled())
         {
-            return;
+            return {};
         }
         if (trans)
         {
@@ -1378,9 +1478,10 @@ namespace darmok::physics3d
                 getSystemImpl().updateTransform(trans.value(), getBodyInterface()->GetWorldTransform(_bodyId));
             }
         }
+        return {};
     }
 
-    void PhysicsBodyImpl::updateJolt(const glm::mat4& mtx)
+    void PhysicsBodyImpl::updateJolt(const glm::mat4& mtx) noexcept
     {
         auto iface = getBodyInterface();
         if (!iface)
@@ -1423,7 +1524,7 @@ namespace darmok::physics3d
         return _system;
     }
 
-    PhysicsSystemImpl& PhysicsBodyImpl::getSystemImpl()
+    PhysicsSystemImpl& PhysicsBodyImpl::getSystemImpl() noexcept
     {
         return _system->getImpl();
     }
@@ -1470,48 +1571,48 @@ namespace darmok::physics3d
         return (GroundState)_character->GetGroundState();
     }
 
-    void PhysicsBodyImpl::setPosition(const glm::vec3& pos)
+    void PhysicsBodyImpl::setPosition(const glm::vec3& pos) noexcept
     {
         auto jpos = JoltUtils::convert(pos);
         getBodyInterface()->SetPosition(_bodyId, jpos, JPH::EActivation::Activate);
     }
 
-    glm::vec3 PhysicsBodyImpl::getPosition() const
+    glm::vec3 PhysicsBodyImpl::getPosition() const noexcept
     {
         return JoltUtils::convert(getBodyInterface()->GetPosition(_bodyId));
     }
 
-    void PhysicsBodyImpl::setRotation(const glm::quat& rot)
+    void PhysicsBodyImpl::setRotation(const glm::quat& rot) noexcept
     {
         getBodyInterface()->SetRotation(_bodyId, JoltUtils::convert(rot), JPH::EActivation::Activate);
     }
 
-    glm::quat PhysicsBodyImpl::getRotation() const
+    glm::quat PhysicsBodyImpl::getRotation() const noexcept
     {
         return JoltUtils::convert(getBodyInterface()->GetRotation(_bodyId));
     }
 
-    void PhysicsBodyImpl::setLinearVelocity(const glm::vec3& velocity)
+    void PhysicsBodyImpl::setLinearVelocity(const glm::vec3& velocity) noexcept
     {
         getBodyInterface()->SetLinearVelocity(_bodyId, JoltUtils::convert(velocity));
     }
 
-    glm::vec3 PhysicsBodyImpl::getLinearVelocity() const
+    glm::vec3 PhysicsBodyImpl::getLinearVelocity() const noexcept
     {
         return JoltUtils::convert(getBodyInterface()->GetLinearVelocity(_bodyId));
     }
 
-    void PhysicsBodyImpl::setAngularVelocity(const glm::vec3& velocity)
+    void PhysicsBodyImpl::setAngularVelocity(const glm::vec3& velocity) noexcept
     {
         getBodyInterface()->SetAngularVelocity(_bodyId, JoltUtils::convert(velocity));
     }
 
-    glm::vec3 PhysicsBodyImpl::getAngularVelocity() const
+    glm::vec3 PhysicsBodyImpl::getAngularVelocity() const noexcept
     {
         return JoltUtils::convert(getBodyInterface()->GetAngularVelocity(_bodyId));
     }
 
-    BoundingBox PhysicsBodyImpl::getLocalBounds() const
+    BoundingBox PhysicsBodyImpl::getLocalBounds() const noexcept
     {
         auto shape = getBodyInterface()->GetShape(_bodyId);
         if (!shape)
@@ -1521,7 +1622,7 @@ namespace darmok::physics3d
         return JoltUtils::convert(shape->GetLocalBounds());
     }
 
-    BoundingBox PhysicsBodyImpl::getWorldBounds() const
+    BoundingBox PhysicsBodyImpl::getWorldBounds() const noexcept
     {
         auto shape = getBodyInterface()->GetShape(_bodyId);
         if (!shape)
@@ -1533,7 +1634,7 @@ namespace darmok::physics3d
         return JoltUtils::convert(shape->GetWorldSpaceBounds(trans, scale));
     }
 
-    float PhysicsBodyImpl::getInverseMass() const
+    float PhysicsBodyImpl::getInverseMass() const noexcept
     {
         auto lockFace = getBodyLockInterface();
         if (!lockFace)
@@ -1549,7 +1650,7 @@ namespace darmok::physics3d
         return 0.F;
     }
 
-    void PhysicsBodyImpl::setInverseMass(float v)
+    void PhysicsBodyImpl::setInverseMass(float v) noexcept
     {
         auto lockFace = getBodyLockInterface();
         if (!lockFace)
@@ -1564,7 +1665,7 @@ namespace darmok::physics3d
         }
     }
 
-    bool PhysicsBodyImpl::isActive() const
+    bool PhysicsBodyImpl::isActive() const noexcept
     {
         if (_bodyId.IsInvalid())
         {
@@ -1573,17 +1674,17 @@ namespace darmok::physics3d
         return getBodyInterface()->IsActive(_bodyId);
     }
 
-    void PhysicsBodyImpl::activate()
+    void PhysicsBodyImpl::activate() noexcept
     {
         getBodyInterface()->ActivateBody(_bodyId);
     }
 
-    void PhysicsBodyImpl::deactivate()
+    void PhysicsBodyImpl::deactivate() noexcept
     {
         getBodyInterface()->DeactivateBody(_bodyId);
     }
 
-    bool PhysicsBodyImpl::isEnabled() const
+    bool PhysicsBodyImpl::isEnabled() const noexcept
     {
         if (_bodyId.IsInvalid())
         {
@@ -1592,7 +1693,7 @@ namespace darmok::physics3d
         return getBodyInterface()->IsAdded(_bodyId);
     }
 
-    void PhysicsBodyImpl::setEnabled(bool enabled)
+    void PhysicsBodyImpl::setEnabled(bool enabled) noexcept
     {
         auto iface = getBodyInterface();
         auto added = iface->IsAdded(_bodyId);
@@ -1609,22 +1710,22 @@ namespace darmok::physics3d
         }
     }
 
-    void PhysicsBodyImpl::addTorque(const glm::vec3& torque)
+    void PhysicsBodyImpl::addTorque(const glm::vec3& torque) noexcept
     {
         getBodyInterface()->AddTorque(_bodyId, JoltUtils::convert(torque));
     }
 
-    void PhysicsBodyImpl::addForce(const glm::vec3& force)
+    void PhysicsBodyImpl::addForce(const glm::vec3& force) noexcept
     {
         getBodyInterface()->AddForce(_bodyId, JoltUtils::convert(force));
     }
 
-    void PhysicsBodyImpl::addImpulse(const glm::vec3& impulse)
+    void PhysicsBodyImpl::addImpulse(const glm::vec3& impulse) noexcept
     {
         getBodyInterface()->AddImpulse(_bodyId, JoltUtils::convert(impulse));
     }
 
-    void PhysicsBodyImpl::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
+    void PhysicsBodyImpl::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime) noexcept
     {
         auto minTime = getSystemImpl().getFixedDeltaTime();
         if (deltaTime < minTime)
@@ -1637,7 +1738,7 @@ namespace darmok::physics3d
             deltaTime);
     }
 
-    void PhysicsBodyImpl::movePosition(const glm::vec3& pos, float deltaTime)
+    void PhysicsBodyImpl::movePosition(const glm::vec3& pos, float deltaTime) noexcept
     {
         auto iface = getBodyInterface();
         auto rot = iface->GetRotation(_bodyId);
@@ -1672,28 +1773,43 @@ namespace darmok::physics3d
         return _listeners.eraseIf(filter);
     }
 
-    void PhysicsBodyImpl::onCollisionEnter(PhysicsBody& other, const Collision& collision)
+    expected<void, std::string> PhysicsBodyImpl::onCollisionEnter(PhysicsBody& other, const Collision& collision) noexcept
     {
         for (auto& listener : _listeners)
         {
-            listener.onCollisionEnter(_body.value(), other, collision);
+            auto result = listener.onCollisionEnter(_body.value(), other, collision);
+            if (!result)
+            {
+                return result;
+            }
         }
+        return {};
     }
 
-    void PhysicsBodyImpl::onCollisionStay(PhysicsBody& other, const Collision& collision)
+    expected<void, std::string> PhysicsBodyImpl::onCollisionStay(PhysicsBody& other, const Collision& collision) noexcept
     {
         for (auto& listener : _listeners)
         {
-            listener.onCollisionStay(_body.value(), other, collision);
+            auto result = listener.onCollisionStay(_body.value(), other, collision);
+            if (!result)
+            {
+                return result;
+            }
         }
+        return {};
     }
 
-    void PhysicsBodyImpl::onCollisionExit(PhysicsBody& other)
+    expected<void, std::string> PhysicsBodyImpl::onCollisionExit(PhysicsBody& other) noexcept
     {
         for (auto& listener : _listeners)
         {
-            listener.onCollisionExit(_body.value(), other);
+            auto result = listener.onCollisionExit(_body.value(), other);
+            if (!result)
+            {
+                return result;
+            }
         }
+        return {};
     }
 
     PhysicsBody::PhysicsBody(const PhysicsShape& shape, MotionType motion) noexcept
@@ -1778,12 +1894,12 @@ namespace darmok::physics3d
         return _impl->getMotionType();
     }
 
-    BoundingBox PhysicsBody::getLocalBounds() const
+    BoundingBox PhysicsBody::getLocalBounds() const noexcept
     {
         return _impl->getLocalBounds();
     }
 
-    BoundingBox PhysicsBody::getWorldBounds() const
+    BoundingBox PhysicsBody::getWorldBounds() const noexcept
     {
         return _impl->getWorldBounds();
     }
@@ -1798,103 +1914,103 @@ namespace darmok::physics3d
         return _impl->getGroundState();
     }
 
-    PhysicsBody& PhysicsBody::setPosition(const glm::vec3& pos)
+    PhysicsBody& PhysicsBody::setPosition(const glm::vec3& pos) noexcept
     {
         _impl->setPosition(pos);
         return *this;
     }
 
-    glm::vec3 PhysicsBody::getPosition() const
+    glm::vec3 PhysicsBody::getPosition() const noexcept
     {
         return _impl->getPosition();
     }
 
-    PhysicsBody& PhysicsBody::setRotation(const glm::quat& rot)
+    PhysicsBody& PhysicsBody::setRotation(const glm::quat& rot) noexcept
     {
         _impl->setRotation(rot);
         return *this;
     }
 
-    glm::quat PhysicsBody::getRotation() const
+    glm::quat PhysicsBody::getRotation() const noexcept
     {
         return _impl->getRotation();
     }
 
-    PhysicsBody& PhysicsBody::setLinearVelocity(const glm::vec3& velocity)
+    PhysicsBody& PhysicsBody::setLinearVelocity(const glm::vec3& velocity) noexcept
     {
         _impl->setLinearVelocity(velocity);
         return *this;
     }
 
-    glm::vec3 PhysicsBody::getLinearVelocity() const
+    glm::vec3 PhysicsBody::getLinearVelocity() const noexcept
     {
         return _impl->getLinearVelocity();
     }
 
-    float PhysicsBody::getInverseMass() const
+    float PhysicsBody::getInverseMass() const noexcept
     {
         return _impl->getInverseMass();
     }
 
-    PhysicsBody& PhysicsBody::setInverseMass(float v)
+    PhysicsBody& PhysicsBody::setInverseMass(float v) noexcept
     {
         _impl->setInverseMass(v);
         return *this;
     }
 
-    bool PhysicsBody::isActive() const
+    bool PhysicsBody::isActive() const noexcept
     {
         return _impl->isActive();
     }
 
-    PhysicsBody& PhysicsBody::activate()
+    PhysicsBody& PhysicsBody::activate() noexcept
     {
         _impl->activate();
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::deactivate()
+    PhysicsBody& PhysicsBody::deactivate() noexcept
     {
         _impl->deactivate();
         return *this;
     }
 
-    bool PhysicsBody::isEnabled() const
+    bool PhysicsBody::isEnabled() const noexcept
     {
         return _impl->isEnabled();
     }
 
-    PhysicsBody& PhysicsBody::setEnabled(bool enabled)
+    PhysicsBody& PhysicsBody::setEnabled(bool enabled) noexcept
     {
         _impl->setEnabled(enabled);
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::addTorque(const glm::vec3& torque)
+    PhysicsBody& PhysicsBody::addTorque(const glm::vec3& torque) noexcept
     {
         _impl->addTorque(torque);
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::addForce(const glm::vec3& force)
+    PhysicsBody& PhysicsBody::addForce(const glm::vec3& force) noexcept
     {
         _impl->addForce(force);
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::addImpulse(const glm::vec3& impulse)
+    PhysicsBody& PhysicsBody::addImpulse(const glm::vec3& impulse) noexcept
     {
         _impl->addImpulse(impulse);
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime)
+    PhysicsBody& PhysicsBody::move(const glm::vec3& pos, const glm::quat& rot, float deltaTime) noexcept
     {
         _impl->move(pos, rot, deltaTime);
         return *this;
     }
 
-    PhysicsBody& PhysicsBody::movePosition(const glm::vec3& pos, float deltaTime)
+    PhysicsBody& PhysicsBody::movePosition(const glm::vec3& pos, float deltaTime) noexcept
     {
         _impl->movePosition(pos, deltaTime);
         return *this;
@@ -1961,7 +2077,7 @@ namespace darmok::physics3d
 
 namespace darmok
 {
-    physics3d::PhysicsShape Converter<physics3d::PhysicsShape, physics3d::protobuf::PhysicsShape>::run(const physics3d::protobuf::PhysicsShape& v)
+    physics3d::PhysicsShape Converter<physics3d::PhysicsShape, physics3d::protobuf::PhysicsShape>::run(const physics3d::protobuf::PhysicsShape& v) noexcept
     {
         if (v.has_cube())
         {
@@ -1987,7 +2103,7 @@ namespace darmok
     }
 
     
-    physics3d::protobuf::PhysicsShape Converter<physics3d::protobuf::PhysicsShape, physics3d::PhysicsShape>::run(const physics3d::PhysicsShape& v)
+    physics3d::protobuf::PhysicsShape Converter<physics3d::protobuf::PhysicsShape, physics3d::PhysicsShape>::run(const physics3d::PhysicsShape& v) noexcept
     {
         physics3d::protobuf::PhysicsShape def;
         if (auto cubePtr = std::get_if<Cube>(&v))

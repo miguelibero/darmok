@@ -21,19 +21,19 @@ namespace darmok::physics3d
     const LuaTableDelegateDefinition LuaCollisionListener::_stayDef("on_collision_stay", "running physics collision stay");
     const LuaTableDelegateDefinition LuaCollisionListener::_exitDef("on_collision_exit", "running physics collision exit");
 
-    void LuaCollisionListener::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
+    expected<void, std::string> LuaCollisionListener::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept
     {
-        _enterDef(_table, body1, body2, collision);
+        return _enterDef.tryGet<void>(_table, body1, body2, collision);
     }
 
-    void LuaCollisionListener::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision)
+    expected<void, std::string> LuaCollisionListener::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept
     {
-        _stayDef(_table, body1, body2, collision);
+        return _stayDef.tryGet<void>(_table, body1, body2, collision);
     }
 
-    void LuaCollisionListener::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2)
+    expected<void, std::string> LuaCollisionListener::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) noexcept
     {
-        _exitDef(_table, body1, body2);
+        return _exitDef.tryGet<void>(_table, body1, body2);
     }
 
     LuaCollisionListenerFilter::LuaCollisionListenerFilter(const sol::table& table) noexcept
@@ -57,9 +57,9 @@ namespace darmok::physics3d
         return _delegate;
     }
 
-    void LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime)
+    expected<void, std::string> LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime) noexcept
     {
-        _delegate(fixedDeltaTime);
+        return _delegate.tryGet<void>(fixedDeltaTime);
     }
 
     LuaPhysicsUpdaterFilter::LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept

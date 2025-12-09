@@ -604,9 +604,17 @@ namespace darmok::editor
         {
             return result;
         }
-        renderMainMenu();
+        result = renderMainMenu();
+        if (!result)
+        {
+            return result;
+        }
         renderDockspace();
-        renderMainToolbar();
+        result = renderMainToolbar();
+        if (!result)
+        {
+            return result;
+        }
         renderSceneTree();
         auto boolResult = _inspectorView.render();
         if (!boolResult)
@@ -634,8 +642,7 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::update(float deltaTime) noexcept
     {
-        _sceneView.update(deltaTime);
-        return {};
+        return _sceneView.update(deltaTime);
     }
 
     EditorProject& EditorApp::getProject() noexcept

@@ -91,7 +91,7 @@ namespace darmok::physics3d
         JPH::RRayCast convert(const Ray& v) noexcept;
         RaycastHit convert(const JPH::RayCastResult& result, const Ray& ray, PhysicsBody& rb) noexcept;
         expected<JoltTransform, std::string> convertTransform(const glm::mat4& mat) noexcept;
-        JPH::ShapeRefC convert(const PhysicsShape& shape, float scale = 1.F);
+        expected<JPH::ShapeRefC, std::string> convert(const PhysicsShape& shape, float scale = 1.F) noexcept;
         float getConvexRadius(const glm::vec3& size) noexcept;
 
         template<typename T>
@@ -112,18 +112,18 @@ namespace darmok::physics3d
     {
     public:
         JoltJobSystemTaskflow() noexcept;
-        ~JoltJobSystemTaskflow();
+        ~JoltJobSystemTaskflow() noexcept;
 
         void init(tf::Executor& executor, JPH::uint maxBarriers = JPH::cMaxPhysicsBarriers) noexcept;
-        void shutdown();
+        void shutdown() noexcept;
 
-        const tf::Taskflow& getTaskflow() const;
+        const tf::Taskflow& getTaskflow() const noexcept;
 
-        int GetMaxConcurrency() const override;
-        JobHandle CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies = 0) override;
-        void QueueJob(Job* job) override;
-        void QueueJobs(Job** jobs, JPH::uint numJobs) override;
-        void FreeJob(Job* job) override;
+        int GetMaxConcurrency() const noexcept override;
+        JobHandle CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies = 0) noexcept override;
+        void QueueJob(Job* job) noexcept override;
+        void QueueJobs(Job** jobs, JPH::uint numJobs) noexcept override;
+        void FreeJob(Job* job) noexcept override;
     private:
         OptionalRef<tf::Executor> _taskExecutor;
         tf::Taskflow _taskflow;
@@ -138,7 +138,7 @@ namespace darmok::physics3d
         JoltBroadPhaseLayerInterface(const Definition& def) noexcept;
         JPH::uint GetNumBroadPhaseLayers() const noexcept override;
         JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer layer) const noexcept override;
-        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const
+        virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer layer) const noexcept
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
             override
 #endif
@@ -151,7 +151,7 @@ namespace darmok::physics3d
     {
     public:
         using Definition = protobuf::PhysicsSystem;
-        JoltObjectVsBroadPhaseLayerFilter(const Definition& def);
+        JoltObjectVsBroadPhaseLayerFilter(const Definition& def) noexcept;
         bool ShouldCollide(JPH::ObjectLayer layer1, JPH::BroadPhaseLayer layer2) const noexcept override;
     private:
         ConstPhysicsSystemDefinitionWrapper _def;
@@ -161,7 +161,7 @@ namespace darmok::physics3d
     {
     public:
         using Definition = protobuf::PhysicsSystem;
-        JoltObjectLayerPairFilter(const Definition& def);
+        JoltObjectLayerPairFilter(const Definition& def) noexcept;
         bool ShouldCollide(JPH::ObjectLayer object1, JPH::ObjectLayer object2) const noexcept override;
     private:
         ConstPhysicsSystemDefinitionWrapper _def;
@@ -241,7 +241,7 @@ namespace darmok::physics3d
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
         float getFixedDeltaTime() const noexcept;
-        const tf::Taskflow& getTaskflow() const;
+        const tf::Taskflow& getTaskflow() const noexcept;
         const Definition& getDefinition() const noexcept;
         OptionalRef<Scene> getScene() const noexcept;
         OptionalRef<JPH::PhysicsSystem> getJolt() noexcept;
@@ -254,9 +254,9 @@ namespace darmok::physics3d
         void setRootTransform(OptionalRef<Transform> root) noexcept;
         OptionalRef<Transform> getRootTransform() noexcept;
 
-        void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
-        void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const  JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override;
-        void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override;
+        void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) noexcept override;
+        void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const  JPH::ContactManifold& manifold, JPH::ContactSettings& settings) noexcept override;
+        void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) noexcept override;
 
         OptionalRef<PhysicsBody> getPhysicsBody(const JPH::BodyID& bodyId) const noexcept;
         static OptionalRef<PhysicsBody> getPhysicsBody(const JPH::Body& body) noexcept;
@@ -265,7 +265,7 @@ namespace darmok::physics3d
         std::vector<RaycastHit> raycastAll(const Ray& ray, LayerMask layers = kAllLayers) const noexcept;
         void activateBodies(const BoundingBox& bbox, LayerMask layers = kAllLayers) noexcept;
 
-        JoltTransform loadTransform(Transform& trans);
+        expected<JoltTransform, std::string> tryLoadTransform(Transform& trans) noexcept;
         void updateTransform(Transform& trans, const JPH::Mat44& mtx) noexcept;
     private:
         PhysicsSystem& _system;
@@ -299,21 +299,19 @@ namespace darmok::physics3d
         mutable std::mutex _collisionMutex;
         std::deque<CollisionEvent> _pendingCollisionEvents;
 
-        expected<JoltTransform, std::string> tryLoadTransform(Transform& trans) noexcept;
-
-        void processPendingCollisionEvents();
+        expected<void, std::string> processPendingCollisionEvents() noexcept;
         static Collision createCollision(const JPH::ContactManifold& manifold) noexcept;
         
-        void onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept;
-        void onRigidbodyDestroyed(EntityRegistry& registry, Entity entity);
-        void onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept;
-        void onCharacterDestroyed(EntityRegistry& registry, Entity entity);
+        expected<void, std::string> onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept;
+        expected<void, std::string> onRigidbodyDestroyed(EntityRegistry& registry, Entity entity) noexcept;
+        expected<void, std::string> onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept;
+        expected<void, std::string> onCharacterDestroyed(EntityRegistry& registry, Entity entity) noexcept;
 
         static std::string_view getUpdateErrorString(JPH::EPhysicsUpdateError err) noexcept;
 
-        void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
-        void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision);
-        void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2);
+        expected<void, std::string> onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept;
+        expected<void, std::string> onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept;
+        expected<void, std::string> onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) noexcept;
 
         JoltBroadPhaseLayerMaskFilter createBroadPhaseLayerFilter(LayerMask layer) const noexcept;
     };
@@ -328,17 +326,17 @@ namespace darmok::physics3d
 
         PhysicsBodyImpl(const Definition& def) noexcept;
         PhysicsBodyImpl(const CharacterDefinition& def) noexcept;
-        ~PhysicsBodyImpl();
+        ~PhysicsBodyImpl() noexcept;
         void init(PhysicsBody& body, PhysicsSystem& system) noexcept;
-        void shutdown(bool systemShutdown = false);
-        void update(Entity entity, float deltaTime);
+        void shutdown(bool systemShutdown = false) noexcept;
+        expected<void, std::string> update(Entity entity, float deltaTime) noexcept;
         std::string toString() const noexcept;		
 
         OptionalRef<PhysicsSystem> getSystem() const noexcept;
 
         PhysicsShape getShape() const noexcept;
-        BoundingBox getLocalBounds() const;
-        BoundingBox getWorldBounds() const;
+        BoundingBox getLocalBounds() const noexcept;
+        BoundingBox getWorldBounds() const noexcept;
 
         MotionType getMotionType() const noexcept;
         const JPH::BodyID& getBodyId() const noexcept;
@@ -346,49 +344,49 @@ namespace darmok::physics3d
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
-        void setPosition(const glm::vec3& pos);
-        glm::vec3 getPosition() const;
-        void setRotation(const glm::quat& rot);
-        glm::quat getRotation() const;
-        void setLinearVelocity(const glm::vec3& velocity);
-        glm::vec3 getLinearVelocity() const;
-        void setAngularVelocity(const glm::vec3& velocity);
-        glm::vec3 getAngularVelocity() const;
-        float getInverseMass() const;
-        void setInverseMass(float v);
+        void setPosition(const glm::vec3& pos) noexcept;
+        glm::vec3 getPosition() const noexcept;
+        void setRotation(const glm::quat& rot) noexcept;
+        glm::quat getRotation() const noexcept;
+        void setLinearVelocity(const glm::vec3& velocity) noexcept;
+        glm::vec3 getLinearVelocity() const noexcept;
+        void setAngularVelocity(const glm::vec3& velocity) noexcept;
+        glm::vec3 getAngularVelocity() const noexcept;
+        float getInverseMass() const noexcept;
+        void setInverseMass(float v) noexcept;
 
-        bool isActive() const;
-        void activate();
-        void deactivate();
+        bool isActive() const noexcept;
+        void activate() noexcept;
+        void deactivate() noexcept;
 
-        bool isEnabled() const;
-        void setEnabled(bool enabled);
+        bool isEnabled() const noexcept;
+        void setEnabled(bool enabled) noexcept;
 
-        void addTorque(const glm::vec3& torque);
-        void addForce(const glm::vec3& force);
-        void addImpulse(const glm::vec3& impulse);
-        void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime );
-        void movePosition(const glm::vec3& pos, float deltaTime);
+        void addTorque(const glm::vec3& torque) noexcept;
+        void addForce(const glm::vec3& force) noexcept;
+        void addImpulse(const glm::vec3& impulse) noexcept;
+        void move(const glm::vec3& pos, const glm::quat& rot, float deltaTime ) noexcept;
+        void movePosition(const glm::vec3& pos, float deltaTime) noexcept;
 
         void addListener(std::unique_ptr<ICollisionListener>&& listener) noexcept;
         void addListener(ICollisionListener& listener) noexcept;
         bool removeListener(const ICollisionListener& listener) noexcept;
         size_t removeListeners(const ICollisionListenerFilter& filter) noexcept;
 
-        void onCollisionEnter(PhysicsBody& other, const Collision& collision);
-        void onCollisionStay(PhysicsBody& other, const Collision& collision);
-        void onCollisionExit(PhysicsBody& other);
+        expected<void, std::string> onCollisionEnter(PhysicsBody& other, const Collision& collision) noexcept;
+        expected<void, std::string> onCollisionStay(PhysicsBody& other, const Collision& collision) noexcept;
+        expected<void, std::string> onCollisionExit(PhysicsBody& other) noexcept;
 
         static std::string_view getMotionTypeName(MotionType motion) noexcept;
 
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;
         OptionalRef<const JPH::BodyLockInterface> getBodyLockInterface() const noexcept;
-        JPH::BodyID createBody(const Definition& def, const JoltTransform& trans);
-        JPH::BodyID createCharacter(const CharacterDefinition& def, const JoltTransform& trans);
-        bool tryCreateBody(OptionalRef<Transform> transform);
-        PhysicsSystemImpl& getSystemImpl();
-        void updateJolt(const glm::mat4& worldMatrix);
+        expected<JPH::BodyID, std::string> createBody(const Definition& def, const JoltTransform& trans) noexcept;
+        expected<JPH::BodyID, std::string> createCharacter(const CharacterDefinition& def, const JoltTransform& trans) noexcept;
+        expected<void, std::string> tryCreateBody(OptionalRef<Transform> transform) noexcept;
+        PhysicsSystemImpl& getSystemImpl() noexcept;
+        void updateJolt(const glm::mat4& worldMatrix) noexcept;
 
         OptionalRef<PhysicsBody> _body;
         OptionalRef<PhysicsSystem> _system;

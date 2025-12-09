@@ -26,10 +26,10 @@ namespace darmok::physics3d
 	{
 	public:
 		LuaCharacterDelegate(const sol::table& table) noexcept;
-		void onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) override;
-		bool onContactValidate(CharacterController& character, PhysicsBody& body) override;
-		void onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) override;
-		void onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) override;
+		expected<void, std::string> onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) noexcept override;
+		expected<bool, std::string> onContactValidate(CharacterController& character, PhysicsBody& body) noexcept override;
+		expected<void, std::string> onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept override;
+		expected<void, std::string> onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) noexcept override;
 	private:
 		sol::main_table _table;
 

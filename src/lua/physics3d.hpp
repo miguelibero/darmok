@@ -30,9 +30,9 @@ namespace darmok::physics3d
         LuaCollisionListener(const sol::table& table) noexcept;
         sol::object getReal() const noexcept;
 
-        void onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
-        void onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) override;
-        void onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) override;
+        expected<void, std::string> onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept override;
+        expected<void, std::string> onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept override;
+        expected<void, std::string> onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) noexcept override;
 
     private:
         sol::main_table _table;
@@ -57,7 +57,7 @@ namespace darmok::physics3d
         LuaPhysicsUpdater(const sol::object& obj) noexcept;
         const LuaDelegate& getDelegate() const noexcept;
 
-        void fixedUpdate(float fixedDeltaTime) override;
+        expected<void, std::string> fixedUpdate(float fixedDeltaTime) noexcept override;
     private:
         LuaDelegate _delegate;
     };
