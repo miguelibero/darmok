@@ -19,7 +19,7 @@ namespace darmok
 	class SkeletonImpl final
 	{
 	public:
-		SkeletonImpl(ozz::animation::Skeleton&& skel) noexcept;
+		SkeletonImpl(ozz::animation::Skeleton skel) noexcept;
 		ozz::animation::Skeleton& getOzz() noexcept;
 		const ozz::animation::Skeleton& getOzz() const noexcept;
 	private:
@@ -29,7 +29,7 @@ namespace darmok
 	class SkeletalAnimationImpl final
 	{
 	public:
-		SkeletalAnimationImpl(ozz::animation::Animation&& anim) noexcept;
+		SkeletalAnimationImpl(ozz::animation::Animation anim) noexcept;
 		ozz::animation::Animation& getOzz() noexcept;
 		const ozz::animation::Animation& getOzz() const noexcept;
 		float getDuration() const noexcept;
@@ -69,7 +69,7 @@ namespace darmok
 
 		static std::optional<OzzSkeletalAnimatorAnimationState> create(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& anims);
 
-		void update(float deltaTime);
+		expected<void, std::string> update(float deltaTime) noexcept;
 		bool hasLooped() const noexcept;
 		bool hasFinished() const noexcept;
 		float getDuration() const noexcept;
@@ -93,13 +93,13 @@ namespace darmok
 	public:
 		using AnimationState = OzzSkeletalAnimatorAnimationState;
 
-		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, std::vector<AnimationState>&& states) noexcept;
+		OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, std::vector<AnimationState> states) noexcept;
 
 		static std::optional<OzzSkeletalAnimatorState> create(const ozz::animation::Skeleton& skel, const Definition& def, ISkeletalAnimationProvider& animations) noexcept;
 
-		void update(float deltaTime, const glm::vec2& blendPosition);
+		expected<void, std::string> update(float deltaTime, const glm::vec2& blendPosition) noexcept;
 		std::string_view getName() const noexcept override;
-		const ozz::vector<ozz::math::SoaTransform>& getLocals() const;
+		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
 		float getNormalizedTime() const noexcept override;
 		float getDuration() const noexcept override;
 		bool hasLooped() const noexcept;
@@ -130,13 +130,13 @@ namespace darmok
 	public:
 		using State = OzzSkeletalAnimatorState;
 
-		OzzSkeletalAnimatorTransition(const Definition& def, State&& currentState, State&& previousState) noexcept;
-		void update(float deltaTime, const glm::vec2& blendPosition);
+		OzzSkeletalAnimatorTransition(const Definition& def, State currentState, State previousState) noexcept;
+		expected<void, std::string> update(float deltaTime, const glm::vec2& blendPosition) noexcept;
 		float getDuration() const noexcept override;
 		float getNormalizedTime() const noexcept override;
 		void setNormalizedTime(float normalizedTime) noexcept;
 		bool hasFinished() const noexcept;
-		State&& finish() noexcept;
+		State finish() noexcept;
 
 		const ozz::vector<ozz::math::SoaTransform>& getLocals() const noexcept;
 
@@ -167,9 +167,9 @@ namespace darmok
 		using PlaybackState = SkeletalAnimatorPlaybackState;
 
 		SkeletalAnimatorImpl(SkeletalAnimator& animator) noexcept;
-		~SkeletalAnimatorImpl();
+		~SkeletalAnimatorImpl() noexcept;
 
-		void addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
+		void addListener(std::unique_ptr<ISkeletalAnimatorListener> listener) noexcept;
 		void addListener(ISkeletalAnimatorListener& listener) noexcept;
 		bool removeListener(const ISkeletalAnimatorListener& listener) noexcept;
 		size_t removeListeners(const ISkeletalAnimatorListenerFilter& filter) noexcept;
@@ -191,7 +191,7 @@ namespace darmok
 		void reset() noexcept;
 		PlaybackState getPlaybackState() noexcept;
 
-		void update(float deltaTime);
+		expected<void, std::string> update(float deltaTime) noexcept;
 
 		glm::mat4 getJointModelMatrix(const std::string& joint) const noexcept;
 		std::unordered_map<std::string, glm::mat4> getJointModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;

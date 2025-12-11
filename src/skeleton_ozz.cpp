@@ -44,26 +44,20 @@ namespace darmok
         }
     };
 
-    Skeleton::Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept
+    Skeleton::Skeleton(std::unique_ptr<SkeletonImpl> impl) noexcept
         : _impl{ std::move(impl) }
     {
     }
 
-    Skeleton::~Skeleton()
-    {
-        // intentionally empty to be able to forward declare the impl
-    }
+    Skeleton::~Skeleton() = default;
 
     std::string Skeleton::toString() const noexcept
     {
         auto& skel = _impl->getOzz();
-
-        std::stringstream ss;
-        ss << "Skeleton " << skel.num_joints() << "joints";
-        return ss.str();
+        return "Skeleton " + std::to_string(skel.num_joints()) + " joints";
     }
 
-    SkeletonImpl::SkeletonImpl(ozz::animation::Skeleton&& skel) noexcept
+    SkeletonImpl::SkeletonImpl(ozz::animation::Skeleton skel) noexcept
         : _skel{ std::move(skel) }
     {
     }
@@ -78,15 +72,12 @@ namespace darmok
         return _skel;
     }
 
-    SkeletalAnimation::SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept
+    SkeletalAnimation::SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl> impl) noexcept
         : _impl{ std::move(impl) }
     {
     }
 
-    SkeletalAnimation::~SkeletalAnimation()
-    {
-        // intentionally empty to be able to forward declare the impl
-    }
+    SkeletalAnimation::~SkeletalAnimation() = default;
 
     std::string SkeletalAnimation::toString() const noexcept
     {
@@ -97,7 +88,7 @@ namespace darmok
         return ss.str();
     }
 
-    SkeletalAnimationImpl::SkeletalAnimationImpl(ozz::animation::Animation&& anim) noexcept
+    SkeletalAnimationImpl::SkeletalAnimationImpl(ozz::animation::Animation anim) noexcept
         : _anim{ std::move(anim) }
     {
     }
@@ -250,7 +241,7 @@ namespace darmok
         return _skeleton->getImpl().getOzz();
     }
 
-    void SkeletalAnimatorImpl::addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept
+    void SkeletalAnimatorImpl::addListener(std::unique_ptr<ISkeletalAnimatorListener> listener) noexcept
     {
         _listeners.insert(std::move(listener));
     }
@@ -417,11 +408,11 @@ namespace darmok
         return _looped && !_def.loop();
     }
 
-    void OzzSkeletalAnimatorAnimationState::update(float deltaTime)
+    expected<void, std::string> OzzSkeletalAnimatorAnimationState::update(float deltaTime) noexcept
     {
         if (hasFinished())
         {
-            return;
+            return {};
         }
 
         auto normDeltaTime = deltaTime / getDuration();
@@ -430,7 +421,7 @@ namespace darmok
 
         if (hasFinished())
         {
-            return;
+            return {};
         }
 
         setNormalizedTime(normTime);
@@ -442,8 +433,10 @@ namespace darmok
         sampling.output = ozz::make_span(_locals);
         if (!sampling.Run())
         {
-            throw std::runtime_error("error in the sampling job");
+            return unexpected<std::string>{ "error in the sampling job" };
         }
+
+        return {};
     }
 
     bool OzzSkeletalAnimatorAnimationState::hasLooped() const noexcept
@@ -461,7 +454,7 @@ namespace darmok
         return convert<glm::vec2>(_def.blend_position());
     }
 
-    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, std::vector<AnimationState>&& states) noexcept
+    OzzSkeletalAnimatorState::OzzSkeletalAnimatorState(const ozz::animation::Skeleton& skel, const Definition& def, std::vector<AnimationState> states) noexcept
         : _def{ def }
         , _animationStates{ std::move(states) }
         , _blendPos{ 0.f }
@@ -539,12 +532,16 @@ namespace darmok
         _speed = _def.speed();
     }
 
-    void OzzSkeletalAnimatorState::update(float deltaTime, const glm::vec2& blendPosition)
+    expected<void, std::string> OzzSkeletalAnimatorState::update(float deltaTime, const glm::vec2& blendPosition) noexcept
     {
         deltaTime *= _speed;
         for (auto& anim : _animationStates)
         {
-            anim.update(deltaTime);
+            auto result = anim.update(deltaTime);
+            if (!result)
+            {
+                return result;
+            }
         }
 
         auto normDeltaTime = deltaTime / _duration;
@@ -554,13 +551,12 @@ namespace darmok
 
         if (_animationStates.size() <= 1)
         {
-            return;
+            return {};
         }
         ozz::animation::BlendingJob blending;
         blending.layers = ozz::make_span(_layers);
         blending.output = ozz::make_span(_locals);
         blending.threshold = _def.threshold();
-
 
         ConstSkeletalAnimatorTweenDefinitionWrapper tween{ _def.tween() };
         if (_blendPos != blendPosition)
@@ -592,7 +588,7 @@ namespace darmok
             {
                 // early exit since one of the animations is just in the blend position
                 _locals = anim.getLocals();
-                return;
+                return {};
             }
             if (i < weights.size())
             {
@@ -608,8 +604,9 @@ namespace darmok
 
         if (!blending.Run())
         {
-            throw std::runtime_error("error in the blending job");
+            return unexpected<std::string>{"error in the blending job"};
         }
+        return {};
     }
 
     std::string_view OzzSkeletalAnimatorState::getName() const noexcept
@@ -617,7 +614,7 @@ namespace darmok
         return _def.name();
     }
 
-    const ozz::vector<ozz::math::SoaTransform>& OzzSkeletalAnimatorState::getLocals() const
+    const ozz::vector<ozz::math::SoaTransform>& OzzSkeletalAnimatorState::getLocals() const noexcept
     {
         if (_animationStates.size() == 1)
         {
@@ -658,7 +655,7 @@ namespace darmok
         return _def.next_state();
     }
 
-    OzzSkeletalAnimatorTransition::OzzSkeletalAnimatorTransition(const Definition& def, State&& currentState, State&& previousState) noexcept
+    OzzSkeletalAnimatorTransition::OzzSkeletalAnimatorTransition(const Definition& def, State currentState, State previousState) noexcept
         : _def{ def }
         , _currentState{ std::move(currentState) }
         , _previousState{ std::move(previousState) }
@@ -682,21 +679,29 @@ namespace darmok
         _normalizedTime = std::fmodf(normalizedTime, 1.f);
     }
 
-    void OzzSkeletalAnimatorTransition::update(float deltaTime, const glm::vec2& blendPosition)
+    expected<void, std::string> OzzSkeletalAnimatorTransition::update(float deltaTime, const glm::vec2& blendPosition) noexcept
     {
         if (hasFinished())
         {
             _locals = _currentState.getLocals();
-            return;
+            return {};
         }
 
-        _previousState.update(deltaTime, blendPosition);
+        auto updateResult = _previousState.update(deltaTime, blendPosition);
+        if (!updateResult)
+        {
+            return updateResult;
+        }
         auto currentStateDeltaTime = deltaTime;
         if (_normalizedTime == 0.f)
         {
             currentStateDeltaTime += _def.offset();
         }
-        _currentState.update(currentStateDeltaTime, blendPosition);
+        auto result = _currentState.update(currentStateDeltaTime, blendPosition);
+        if (!result)
+        {
+            return {};
+        }
         _normalizedTime += deltaTime / getDuration();
         ConstSkeletalAnimatorTweenDefinitionWrapper tween{ _def.tween() };
         auto v = tween.calcTween(_normalizedTime);
@@ -715,8 +720,9 @@ namespace darmok
 
         if (!blending.Run())
         {
-            throw std::runtime_error("error in the blending job");
+            return unexpected<std::string>{ "error in the blending job" };
         }
+        return {};
     }
 
     bool OzzSkeletalAnimatorTransition::hasFinished() const noexcept
@@ -724,7 +730,7 @@ namespace darmok
         return _normalizedTime >= 1.f;
     }
 
-    OzzSkeletalAnimatorTransition::State&& OzzSkeletalAnimatorTransition::finish() noexcept
+    OzzSkeletalAnimatorTransition::State OzzSkeletalAnimatorTransition::finish() noexcept
     {
         return std::move(_currentState);
     }
@@ -938,9 +944,9 @@ namespace darmok
         return _impl->getJointModelMatrixes(dir);
     }
 
-    void SkeletalAnimator::update(float deltaTime)
+    expected<void, std::string> SkeletalAnimator::update(float deltaTime) noexcept
     {
-        _impl->update(deltaTime);
+        return _impl->update(deltaTime);
     }
 
     expected<void, std::string> SkeletalAnimator::load(const Definition& def, IComponentLoadContext& ctxt) noexcept
@@ -997,33 +1003,42 @@ namespace darmok
         return matrixes;
     }
 
-    void SkeletalAnimatorImpl::update(float deltaTime)
+    expected<void, std::string> SkeletalAnimatorImpl::update(float deltaTime) noexcept
     {
         deltaTime *= _speed;
         ozz::animation::LocalToModelJob ltm;
 
         if (_transition)
         {
-            _transition->update(deltaTime, _blendPosition);
+            auto result = _transition->update(deltaTime, _blendPosition);
+            if (!result)
+            {
+                return result;
+            }
             ltm.input = ozz::make_span(_transition->getLocals());
         }
         else if (_state)
         {
-            _state->update(deltaTime, _blendPosition);
+            auto result = _state->update(deltaTime, _blendPosition);
+            if (!result)
+            {
+                return result;
+            }
             ltm.input = ozz::make_span(_state->getLocals());
         }
         else
         {
-            return;
+            return {};
         }
 
         ltm.skeleton = &getOzz();
         ltm.output = ozz::make_span(_models);
         if (!ltm.Run())
         {
-            throw std::runtime_error("error in the model job");
+            return unexpected<std::string>{ "error in the model job" };
         }
         afterUpdate();
+        return {};
     }
 
     void SkeletalAnimatorImpl::afterUpdate() noexcept
@@ -1082,7 +1097,7 @@ namespace darmok
 		_impl->load(std::move(skel), std::move(anims), def);
     }
 
-    SkeletalAnimator& SkeletalAnimator::addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept
+    SkeletalAnimator& SkeletalAnimator::addListener(std::unique_ptr<ISkeletalAnimatorListener> listener) noexcept
     {
         _impl->addListener(std::move(listener));
         return *this;

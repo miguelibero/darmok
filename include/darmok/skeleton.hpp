@@ -30,8 +30,8 @@ namespace darmok
     class DARMOK_EXPORT Skeleton final
     {
     public:
-        Skeleton(std::unique_ptr<SkeletonImpl>&& impl) noexcept;
-        ~Skeleton();
+        Skeleton(std::unique_ptr<SkeletonImpl> impl) noexcept;
+        ~Skeleton() noexcept;
         std::string toString() const noexcept;
         SkeletonImpl& getImpl();
         const SkeletonImpl& getImpl() const;
@@ -44,8 +44,8 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimation final
     {
     public:
-        SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl>&& impl) noexcept;
-        ~SkeletalAnimation();
+        SkeletalAnimation(std::unique_ptr<SkeletalAnimationImpl> impl) noexcept;
+        ~SkeletalAnimation() noexcept;
         SkeletalAnimationImpl& getImpl();
         const SkeletalAnimationImpl& getImpl() const;
         std::string toString() const noexcept;
@@ -265,9 +265,9 @@ namespace darmok
         using PlaybackState = SkeletalAnimatorPlaybackState;
         SkeletalAnimator() noexcept;
         SkeletalAnimator(std::shared_ptr<Skeleton> skel, AnimationMap anims, Definition def) noexcept;
-        ~SkeletalAnimator();
+        ~SkeletalAnimator() noexcept;
 
-        SkeletalAnimator& addListener(std::unique_ptr<ISkeletalAnimatorListener>&& listener) noexcept;
+        SkeletalAnimator& addListener(std::unique_ptr<ISkeletalAnimatorListener> listener) noexcept;
         SkeletalAnimator& addListener(ISkeletalAnimatorListener& listener) noexcept;
         bool removeListener(const ISkeletalAnimatorListener& listener) noexcept;
         size_t removeListeners(const ISkeletalAnimatorListenerFilter& filter) noexcept;
@@ -291,7 +291,7 @@ namespace darmok
         glm::mat4 getJointModelMatrix(const std::string& node) const noexcept;
         std::unordered_map<std::string, glm::mat4> getJointModelMatrixes(const glm::vec3& dir = {1, 0, 0}) const noexcept;
 
-        void update(float deltaTime);
+        expected<void, std::string> update(float deltaTime) noexcept;
 
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept;
 		static Definition createDefinition() noexcept;

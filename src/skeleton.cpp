@@ -178,7 +178,11 @@ namespace darmok
         for (auto entity : entities)
         {
             auto& anim = _scene->getComponent<SkeletalAnimator>(entity).value();
-            anim.update(deltaTime);
+            auto updateResult = anim.update(deltaTime);
+            if (!updateResult)
+            {
+                return updateResult;
+            }
             skeletons.clear();
             auto matrixes = anim.getJointModelMatrixes();
             _scene->getComponentsInChildren<RenderableSkeleton>(entity, skeletons);

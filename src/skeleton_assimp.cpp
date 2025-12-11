@@ -1,6 +1,7 @@
 #include "detail/skeleton_assimp.hpp"
 #include "detail/skeleton_ozz.hpp"
 #include <darmok/string.hpp>
+#include <darmok/stream.hpp>
 #include <darmok/skeleton_assimp.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <ozz/animation/offline/raw_skeleton.h>
@@ -252,16 +253,16 @@ namespace darmok
         }
     }
 
-    AssimpOzzSkeletonConverter::Skeleton AssimpOzzSkeletonConverter::createSkeleton()
+    expected<AssimpOzzSkeletonConverter::Skeleton, std::string> AssimpOzzSkeletonConverter::createSkeleton() noexcept
     {
         RawSkeleton rawSkel;
         if (!update(rawSkel))
         {
-            throw std::runtime_error("failed to update the raw skeleton");
+            return unexpected<std::string>{ "failed to update the raw skeleton" };
         }
         if (!rawSkel.Validate())
         {
-            throw std::runtime_error("created an invalid raw skeleton");
+            return unexpected<std::string>{ "created an invalid raw skeleton" };
         }
         ozz::animation::offline::SkeletonBuilder builder;
         return std::move(*builder(rawSkel));
@@ -344,16 +345,16 @@ namespace darmok
         return std::nullopt;
     }
 
-    AssimpOzzAnimationConverter::Animation AssimpOzzAnimationConverter::createAnimation(const std::string& name)
+    expected<AssimpOzzAnimationConverter::Animation, std::string> AssimpOzzAnimationConverter::createAnimation(const std::string& name) noexcept
     {
         RawAnimation rawAnim;
         if (!update(name, rawAnim))
         {
-            throw std::runtime_error("failed to update the raw animation");
+            return unexpected<std::string>{ "failed to update the raw animation" };
         }
         if (!rawAnim.Validate())
         {
-            throw std::runtime_error("created an invalid raw skeleton");
+            return unexpected<std::string>{ "created an invalid raw skeleton" };
         }
 
         if (auto optimizedAnim = optimize(rawAnim))
@@ -365,18 +366,18 @@ namespace darmok
         return std::move(*builder(rawAnim));
     }
 
-    AssimpOzzAnimationConverter::Animation AssimpOzzAnimationConverter::createAnimation()
+    expected<AssimpOzzAnimationConverter::Animation, std::string> AssimpOzzAnimationConverter::createAnimation() noexcept
     {
         auto names = getAnimationNames();
         if (names.empty())
         {
-            throw std::runtime_error("no animations found");
+            return unexpected<std::string>{ "no animations found" };
         }
 
         return createAnimation(names.front());
     }
 
-    bool AssimpOzzAnimationConverter::update(const std::string& name, RawAnimation& anim)
+    expected<void, std::string> AssimpOzzAnimationConverter::update(const std::string& name, RawAnimation& anim) noexcept
     {
         for (size_t i = 0; i < _scene.mNumAnimations; ++i)
         {
@@ -385,10 +386,13 @@ namespace darmok
             {
                 continue;
             }
-            update(*assimpAnim, anim);
-            return true;
+            auto result = update(*assimpAnim, anim);
+            if (!result)
+            {
+                return result;
+            }
         }
-        return false;
+        return {};
     }
 
     bool AssimpOzzAnimationConverter::logInfo(const aiAnimation& assimpAnim, const std::string& prefix) noexcept
@@ -506,11 +510,13 @@ namespace darmok
         }
     }
 
-    void AssimpOzzAnimationConverter::update(const aiAnimation& assimpAnim, RawAnimation& anim)
+    expected<void, std::string> AssimpOzzAnimationConverter::update(const aiAnimation& assimpAnim, RawAnimation& anim) noexcept
     {
         anim.name = assimpAnim.mName.C_Str();
         anim.duration = float(assimpAnim.mDuration / assimpAnim.mTicksPerSecond);
         anim.tracks.resize(_boneNames.size());
+
+        std::vector<std::string> errors;
 
         for (size_t i = 0; i < _boneNames.size(); ++i)
         {
@@ -530,7 +536,7 @@ namespace darmok
                 std::string err = "could not find skeleton bone \"" + boneName
                     + "\" in animation \"" + assimpAnim.mName.C_Str() + "\"";
                 logInfo(assimpAnim, err);
-                // throw std::runtime_error(err);
+                errors.push_back(std::move(err));
                 continue;
             }
 
@@ -543,9 +549,10 @@ namespace darmok
             }
             update(boneName, tps, chan, track);
         }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    std::vector<std::string> AssimpOzzAnimationConverter::getAnimationNames()
+    std::vector<std::string> AssimpOzzAnimationConverter::getAnimationNames() noexcept
     {
         std::vector<std::string> names;
         for (size_t i = 0; i < _scene.mNumAnimations; ++i)
@@ -586,8 +593,13 @@ namespace darmok
         {
             return unexpected<std::string>{"could not load assimp scene"};
         }
-        auto ozz = AssimpOzzSkeletonConverter(*assimpResult.value()).createSkeleton();
-        return std::make_shared<Skeleton>(std::make_unique<SkeletonImpl>(std::move(ozz)));
+        auto ozzResult = AssimpOzzSkeletonConverter(*assimpResult.value()).createSkeleton();
+        if (!ozzResult)
+        {
+            return unexpected{ std::move(ozzResult).error() };
+        }
+        auto impl = std::make_unique<SkeletonImpl>(std::move(ozzResult).value());
+        return std::make_shared<Skeleton>(std::move(impl));
     }
 
     AssimpSkeletalAnimationLoaderImpl::AssimpSkeletalAnimationLoaderImpl(IDataLoader& dataLoader) noexcept
@@ -611,8 +623,13 @@ namespace darmok
             return unexpected<std::string>{"could not load assimp scene"};
         }
 
-        auto ozz = AssimpOzzAnimationConverter(*sceneResult.value()).createAnimation();
-        return std::make_shared<SkeletalAnimation>(std::make_unique<SkeletalAnimationImpl>(std::move(ozz)));
+        auto ozzResult = AssimpOzzAnimationConverter(*sceneResult.value()).createAnimation();
+        if (!ozzResult)
+        {
+            return unexpected{ std::move(ozzResult).error() };
+        }
+        auto impl = std::make_unique<SkeletalAnimationImpl>(std::move(ozzResult).value());
+        return std::make_shared<SkeletalAnimation>(std::move(impl));
     }
 
     AssimpSkeletonLoader::AssimpSkeletonLoader(IDataLoader& dataLoader) noexcept
@@ -900,8 +917,12 @@ namespace darmok
             if (out)
             {
                 auto& animName = _currentAnimationNames[i];
-                auto anim = read(input.path, animName);
-                AssimpOzzUtils::writeToStream(anim, *out, _bufferSize);
+                auto animResult = readAnimation(input.path, animName);
+                if (!animResult)
+                {
+                    return unexpected<std::string>{ fmt::format("failed to read animation {}: {}", animName, animResult.error()) };
+                }
+                AssimpOzzUtils::writeToStream(animResult.value(), *out, _bufferSize);
             }
             ++i;
         }
@@ -937,7 +958,7 @@ namespace darmok
         return settings;
     }
 
-    AssimpSkeletalAnimationFileImporterImpl::OzzAnimation AssimpSkeletalAnimationFileImporterImpl::read(const std::filesystem::path& path, const std::string& animationName)
+    expected<AssimpSkeletalAnimationFileImporterImpl::OzzAnimation, std::string> AssimpSkeletalAnimationFileImporterImpl::readAnimation(const std::filesystem::path& path, const std::string& animationName) noexcept
     {
         AssimpOzzAnimationConverter converter(*_currentScene, _log);
         if (_currentSkeleton)
@@ -1038,7 +1059,13 @@ namespace darmok
         }
         AssimpOzzAnimationConverter converter(*_assimpScene);
         // TODO: check samplingRate
-        return converter.update(animationName, *animation);
+        auto result = converter.update(animationName, *animation);
+        if (!result)
+        {
+            StreamUtils::log(result.error(), true);
+            return false;
+        }
+        return true;
     }
 
     AssimpOzzImporter::NodeProperties AssimpOzzImporter::GetNodeProperties(const char* nodeName)

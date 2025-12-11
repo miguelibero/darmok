@@ -54,7 +54,7 @@ namespace darmok
         using Skeleton = ozz::animation::Skeleton;
         using RawSkeleton = ozz::animation::offline::RawSkeleton;
         AssimpOzzSkeletonConverter(const aiScene& scene) noexcept;
-        Skeleton createSkeleton();
+        expected<Skeleton, std::string> createSkeleton() noexcept;
         bool update(RawSkeleton& skel) noexcept;
         std::vector<std::string> getSkeletonNames();
         AssimpOzzSkeletonConverter& setBoneNames(const std::vector<std::string>& names) noexcept;
@@ -96,10 +96,10 @@ namespace darmok
         AssimpOzzAnimationConverter& setOptimization(const OptimizationSettings& settings) noexcept;
         AssimpOzzAnimationConverter& setMinKeyframeDuration(float v) noexcept;
 
-        Animation createAnimation(const std::string& name);
-        Animation createAnimation();
-        bool update(const std::string& name, RawAnimation& anim);
-        std::vector<std::string> getAnimationNames();
+        expected<Animation, std::string> createAnimation(const std::string& name) noexcept;
+        expected<Animation, std::string> createAnimation() noexcept;
+        expected<void, std::string> update(const std::string& name, RawAnimation& anim) noexcept;
+        std::vector<std::string> getAnimationNames() noexcept;
     private:
         OptionalRef<std::ostream> _log;
         const aiScene& _scene;
@@ -110,7 +110,7 @@ namespace darmok
 
         std::optional<RawAnimation> optimize(const RawAnimation& animation) noexcept;
 
-        void update(const aiAnimation& assimpAnim, RawAnimation& anim);
+        expected<void, std::string> update(const aiAnimation& assimpAnim, RawAnimation& anim) noexcept;
         void update(const std::string& boneName, float tickPerSecond, const aiNodeAnim& assimpTrack, RawAnimation::JointTrack& track) noexcept;
         bool isBone(const aiNode& node) const noexcept;
         bool logInfo(const aiAnimation& assimpAnim, const std::string& prefix = "") noexcept;
@@ -219,7 +219,7 @@ namespace darmok
         OptimizationSettings loadOptimizationSettings(const nlohmann::json& config) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept;
         std::filesystem::path getOutputPath(const Input& input, const std::string& animName, const nlohmann::json& animConfig, const std::string& outputPath) noexcept;
-        OzzAnimation read(const std::filesystem::path& path, const std::string& animationName);
+        expected<OzzAnimation, std::string> readAnimation(const std::filesystem::path& path, const std::string& animationName) noexcept;
 
         Input _currentInput;
         std::optional<OptimizationSettings> _currentOptimization;
