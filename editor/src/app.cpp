@@ -9,6 +9,8 @@
 #include <darmok/light.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/physics3d.hpp>
+#include <darmok/physics3d_character.hpp>
 #include <darmok/stream.hpp>
 
 #include <imgui.h>
@@ -296,6 +298,12 @@ namespace darmok::editor
                     {
                         drawEntityComponentMenu("Skinnable", Skinnable::createDefinition());
                         drawEntityComponentMenu("Animator", SkeletalAnimator::createDefinition());
+                        ImGui::EndMenu();
+                    }
+                    if (ImGui::BeginMenu("Physics3d"))
+                    {
+                        drawEntityComponentMenu("Body", physics3d::PhysicsBody::createDefinition());
+                        drawEntityComponentMenu("Character Controller", physics3d::CharacterController::createDefinition());
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
@@ -700,9 +708,10 @@ namespace darmok::editor
         {
             options.title = label;
 		}
-        getWindow().openFileDialog(std::move(options), [this, ptr](const auto& result)
+		getWindow().openFileDialog(std::move(options), [this, ptr](const auto& result) -> expected<void, std::string>
         {
 			_fileInputResults[ptr] = result;
+            return {};
         });
         return false;
     }
@@ -715,5 +724,9 @@ namespace darmok::editor
     void EditorApp::onAssetPathSelected(const std::filesystem::path& assetPath) noexcept
     {
 		_inspectorView.selectObject(assetPath);
+    }
+
+    void EditorApp::onAssetFolderEntered(const std::filesystem::path& assetPath) noexcept
+    {
     }
 }

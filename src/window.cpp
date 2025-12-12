@@ -1,5 +1,6 @@
 #include "detail/window.hpp"
 #include "detail/platform.hpp"
+#include <darmok/string.hpp>
 #include <sstream>
 
 namespace darmok
@@ -90,96 +91,134 @@ namespace darmok
 		_listeners.clear();
 	}
 
-	bool WindowImpl::setSize(const glm::uvec2& size)
+	expected<void, std::string> WindowImpl::setSize(const glm::uvec2& size) noexcept
 	{
 		if (_size == size)
 		{
-			return false;
+			return {};
 		}
 		_size = size;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onWindowSize(size);
+			auto result = listener.onWindowSize(size);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool WindowImpl::setPixelSize(const glm::uvec2& size)
+	expected<void, std::string> WindowImpl::setPixelSize(const glm::uvec2& size) noexcept
 	{
 		if (_pixelSize == size)
 		{
-			return false;
+			return {};
 		}
 		_pixelSize = size;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onWindowPixelSize(size);
+			auto result = listener.onWindowPixelSize(size);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool WindowImpl::setPhase(WindowPhase phase)
+	expected<void, std::string> WindowImpl::setPhase(WindowPhase phase) noexcept
 	{
 		if (_phase == phase)
 		{
-			return false;
-		}
-		for (auto& listener : _listeners)
-		{
-			listener.onWindowPhase(phase);
+			return {};
 		}
 		_phase = phase;
-		return true;
+		std::vector<std::string> errors;
+		for (auto& listener : _listeners)
+		{
+			auto result = listener.onWindowPhase(phase);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
+		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool WindowImpl::setVideoMode(const VideoMode& mode)
+	expected<void, std::string> WindowImpl::setVideoMode(const VideoMode& mode) noexcept
 	{
 		if (_videoMode == mode)
 		{
-			return false;
+			return {};
 		}
 		_videoMode = mode;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onWindowVideoMode(mode);
+			auto result = listener.onWindowVideoMode(mode);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void WindowImpl::setVideoModeInfo(const VideoModeInfo& info)
+	expected<void, std::string> WindowImpl::setVideoModeInfo(const VideoModeInfo& info) noexcept
 	{
 		_videoModeInfo = info;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onWindowVideoModeInfo(info);
+			auto result = listener.onWindowVideoModeInfo(info);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void WindowImpl::setTitle(const std::string& title)
+	expected<void, std::string> WindowImpl::setTitle(const std::string& title) noexcept
 	{
 		_title = title;
+		return {};
 	}
 
-	void WindowImpl::onError(const std::string& error)
+	expected<void, std::string> WindowImpl::onError(const std::string& error) noexcept
 	{
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onWindowError(error);
+			auto result = listener.onWindowError(error);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool WindowImpl::setCursorMode(WindowCursorMode mode)
+	expected<void, std::string> WindowImpl::setCursorMode(WindowCursorMode mode) noexcept
 	{
 		if (_cursorMode == mode)
 		{
-			return false;
-		}
-		for (auto& listener : _listeners)
-		{
-			listener.onWindowCursorMode(mode);
+			return {};
 		}
 		_cursorMode = mode;
-		return true;
+		std::vector<std::string> errors;
+		for (auto& listener : _listeners)
+		{
+			auto result = listener.onWindowCursorMode(mode);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
+		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	const glm::uvec2& WindowImpl::getSize() const noexcept

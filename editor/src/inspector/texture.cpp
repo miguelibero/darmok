@@ -55,9 +55,9 @@ namespace darmok::editor
 			TextureDefinitionWrapper defWrapper{ def };
             if (auto result = defWrapper.loadSource(src, assets.getAllocator()))
             {
-                if (!def.data().empty())
+                if (auto texResult = Texture::load(def))
                 {
-                    _tex = std::make_shared<Texture>(def);
+                    _tex = std::make_shared<Texture>(std::move(texResult).value());
                 }
             }
         }

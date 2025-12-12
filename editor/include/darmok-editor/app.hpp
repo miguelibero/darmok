@@ -90,6 +90,7 @@ namespace darmok::editor
         // IEditorAssetsViewDelegate
         std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept override;
         void onAssetPathSelected(const std::filesystem::path& assetPath) noexcept override;
+        void onAssetFolderEntered(const std::filesystem::path& assetPath) noexcept override;
 
         expected<void, std::string> renderMainMenu() noexcept;
         expected<void, std::string> renderMainToolbar() noexcept;

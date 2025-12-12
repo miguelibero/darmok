@@ -139,9 +139,9 @@ namespace darmok
 	{
 	}
 
-	void WindowSizeEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowSizeEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setSize(_size);
+		return win.getImpl().setSize(_size);
 	}
 
 	WindowPixelSizeEvent::WindowPixelSizeEvent(const glm::uvec2& size) noexcept
@@ -150,9 +150,9 @@ namespace darmok
 	{
 	}
 
-	void WindowPixelSizeEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowPixelSizeEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setPixelSize(_size);
+		return win.getImpl().setPixelSize(_size);
 	}
 	
 	WindowPhaseEvent::WindowPhaseEvent(WindowPhase phase) noexcept
@@ -161,9 +161,9 @@ namespace darmok
 	{
 	}
 
-	void WindowPhaseEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowPhaseEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setPhase(_phase);
+		return win.getImpl().setPhase(_phase);
 	}
 
 	WindowErrorEvent::WindowErrorEvent(std::string err) noexcept
@@ -172,9 +172,9 @@ namespace darmok
 	{
 	}
 
-	void WindowErrorEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowErrorEvent::process(Window& win) noexcept
 	{
-		win.getImpl().onError(_error);
+		return win.getImpl().onError(_error);
 	}
 
 	WindowVideoModeEvent::WindowVideoModeEvent(VideoMode mode) noexcept
@@ -183,9 +183,9 @@ namespace darmok
 	{
 	}
 
-	void WindowVideoModeEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowVideoModeEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setVideoMode(_mode);
+		return win.getImpl().setVideoMode(_mode);
 	}
 
 	VideoModeInfoEvent::VideoModeInfoEvent(VideoModeInfo info) noexcept
@@ -194,9 +194,9 @@ namespace darmok
 	{
 	}
 
-	void VideoModeInfoEvent::process(Window& win) noexcept
+	expected<void, std::string> VideoModeInfoEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setVideoModeInfo(_info);
+		return win.getImpl().setVideoModeInfo(_info);
 	}
 
 	WindowCursorModeEvent::WindowCursorModeEvent(WindowCursorMode mode) noexcept
@@ -205,9 +205,9 @@ namespace darmok
 	{
 	}
 
-	void WindowCursorModeEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowCursorModeEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setCursorMode(_mode);
+		return win.getImpl().setCursorMode(_mode);
 	}
 
 	WindowTitleEvent::WindowTitleEvent(std::string title) noexcept
@@ -216,9 +216,9 @@ namespace darmok
 	{
 	}
 
-	void WindowTitleEvent::process(Window& win) noexcept
+	expected<void, std::string> WindowTitleEvent::process(Window& win) noexcept
 	{
-		win.getImpl().setTitle(_title);
+		return win.getImpl().setTitle(_title);
 	}
 
 	FileDialogEvent::FileDialogEvent(FileDialogResult result, FileDialogCallback callback) noexcept
@@ -228,12 +228,13 @@ namespace darmok
 	{
 	}
 
-	void FileDialogEvent::process(Window& win) noexcept
+	expected<void, std::string> FileDialogEvent::process(Window& win) noexcept
 	{
 		if (_callback)
 		{
-			_callback(_result);
+			return _callback(_result);
 		}
+		return {};
 	}
 
 	expected<void, std::string> PlatformEvent::process(PlatformEvent& ev, Input& input, Window& window) noexcept
@@ -259,36 +260,26 @@ namespace darmok
 		case PlatformEvent::Type::MouseButton:
 			return static_cast<MouseButtonEvent&>(ev).process(input);
 		case PlatformEvent::Type::WindowSize:
-			static_cast<WindowSizeEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowSizeEvent&>(ev).process(window);
 		case PlatformEvent::Type::WindowPixelSize:
-			static_cast<WindowPixelSizeEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowPixelSizeEvent&>(ev).process(window);
 		case PlatformEvent::Type::WindowPhase:
-			static_cast<WindowPhaseEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowPhaseEvent&>(ev).process(window);
 		case PlatformEvent::Type::WindowVideoMode:
-			static_cast<WindowVideoModeEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowVideoModeEvent&>(ev).process(window);
 		case PlatformEvent::Type::WindowCursorMode:
-			static_cast<WindowCursorModeEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowCursorModeEvent&>(ev).process(window);
 		case PlatformEvent::Type::WindowTitle:
-			static_cast<WindowTitleEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowTitleEvent&>(ev).process(window);
 		case PlatformEvent::Type::WindowError:
-			static_cast<WindowErrorEvent&>(ev).process(window);
-			break;
+			return static_cast<WindowErrorEvent&>(ev).process(window);
 		case PlatformEvent::Type::VideoModeInfo:
-			static_cast<VideoModeInfoEvent&>(ev).process(window);
-			break;
+			return static_cast<VideoModeInfoEvent&>(ev).process(window);
 		case PlatformEvent::Type::FileDialog:
-			static_cast<FileDialogEvent&>(ev).process(window);
-			break;
+			return static_cast<FileDialogEvent&>(ev).process(window);
 		default:
 			return unexpected<std::string>("unknown platform event type");
 		}
-		return {};
 	}
 
 	void PlatformEventQueue::post(std::unique_ptr<PlatformEvent>&& ev) noexcept

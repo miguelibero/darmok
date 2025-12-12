@@ -14,29 +14,29 @@ namespace darmok
 		return _table;
 	}
 
-	void LuaWindowListener::onWindowSize(const glm::uvec2& size)
+	expected<void, std::string> LuaWindowListener::onWindowSize(const glm::uvec2& size) noexcept
 	{
-		_sizeDelegate(_table, size);
+		return _sizeDelegate.tryGet<void>(_table, size);
 	}
 
-	void LuaWindowListener::onWindowPixelSize(const glm::uvec2& size)
+	expected<void, std::string> LuaWindowListener::onWindowPixelSize(const glm::uvec2& size) noexcept
 	{
-		_pixelSizeDelegate(_table, size);
+		return _pixelSizeDelegate.tryGet<void>(_table, size);
 	}
 
-	void LuaWindowListener::onWindowPhase(WindowPhase phase)
+	expected<void, std::string> LuaWindowListener::onWindowPhase(WindowPhase phase) noexcept
 	{
-		_phaseDelegate(_table, phase);
+		return _phaseDelegate.tryGet<void>(_table, phase);
 	}
 
-	void LuaWindowListener::onWindowVideoMode(const VideoMode& mode)
+	expected<void, std::string> LuaWindowListener::onWindowVideoMode(const VideoMode& mode) noexcept
 	{
-		_videoModeDelegate(_table, mode);
+		return _videoModeDelegate.tryGet<void>(_table, mode);
 	}
 
-	void LuaWindowListener::onWindowCursorMode(WindowCursorMode mode)
+	expected<void, std::string> LuaWindowListener::onWindowCursorMode(WindowCursorMode mode) noexcept
 	{
-		_cursorModeDelegate(_table, mode);
+		return _cursorModeDelegate.tryGet<void>(_table, mode);
 	}
 
 	const LuaTableDelegateDefinition LuaWindowListener::_sizeDelegate{ "on_window_size", "running window size listener" };

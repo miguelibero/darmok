@@ -1,0 +1,24 @@
+#pragma once
+
+#include <darmok-editor/editor.hpp>
+#include <darmok/physics3d.hpp>
+#include <darmok/physics3d_character.hpp>
+
+struct aiScene;
+
+namespace darmok::editor
+{
+    class Physics3dBodyInspectorEditor final : public ComponentObjectEditor<physics3d::PhysicsBody>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(physics3d::PhysicsBody::Definition& def) noexcept override;
+    };
+
+    class Physics3dCharacterControllerInspectorEditor final : public ComponentObjectEditor<physics3d::CharacterController>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(physics3d::CharacterController::Definition& def) noexcept override;
+    };
+}

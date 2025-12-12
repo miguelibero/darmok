@@ -1983,6 +1983,7 @@ namespace darmok
             { KeyboardKey::Backslash, Rml::Input::KI_OEM_5 },
             { KeyboardKey::GraveAccent, Rml::Input::KI_OEM_3 },
             { KeyboardKey::Pause, Rml::Input::KI_PAUSE },
+            { KeyboardKey::None, Rml::Input::KI_UNKNOWN },
         };
         static bool first = true;
 

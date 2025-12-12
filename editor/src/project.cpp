@@ -77,14 +77,14 @@ namespace darmok::editor
     {
         if (_path.empty() || forceNewPath)
         {
-            auto dialogCallback = [this](auto& result)
+			auto dialogCallback = [this](auto& result) -> expected<void, std::string>
             {
                 if (!result.empty())
                 {
                     clearPath();
                     _path = result.front();
                 }
-                doSaveScene();
+                return doSaveScene();
             };
 
 			auto options = _dialogOptions;
@@ -116,17 +116,13 @@ namespace darmok::editor
 
     expected<void, std::string> EditorProject::exportScene() noexcept
     {
-        auto dialogCallback = [this](auto& result)
+		auto dialogCallback = [this](auto& result) -> expected<void, std::string>
         {
             if (result.empty())
             {
-                return;
+                return {};
             }
-            auto exportResult = doExportScene(result.front());
-            if (!exportResult)
-            {
-                StreamUtils::log(exportResult.error());
-            }
+            return doExportScene(result.front());
         };
 
         FileDialogOptions options;
@@ -269,26 +265,25 @@ namespace darmok::editor
         {
             return result;
         }
-        updateScene();
-        return {};
+        return updateScene();
     }
 
     expected<void, std::string> EditorProject::openScene() noexcept
     {
-        auto dialogCallback = [this](auto& dialogResult)
+		auto dialogCallback = [this](auto& dialogResult) -> expected<void, std::string>
         {
             if (dialogResult.empty())
             {
-                return;
+                return {};
             }
             std::filesystem::path path{ dialogResult[0] };
             if (!std::filesystem::exists(path))
             {
-                return;
+                return unexpected<std::string>{"path does not exist"};
             }
             clearPath();
             _path = path;
-            (void)reloadScene();
+            return reloadScene();
 		};
 
 		auto options = _dialogOptions;

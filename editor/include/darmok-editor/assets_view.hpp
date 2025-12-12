@@ -24,6 +24,7 @@ namespace darmok::editor
         ~IEditorAssetsViewDelegate() = default;
         virtual std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept = 0;
         virtual void onAssetPathSelected(const std::filesystem::path& assetPath) noexcept = 0;
+        virtual void onAssetFolderEntered(const std::filesystem::path& assetPath) noexcept = 0;
     };
 
     class EditorAssetsView final

@@ -173,7 +173,7 @@ namespace darmok
 	{
 	public:
 		WindowSizeEvent(const glm::uvec2& size) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		glm::uvec2 _size;
 	};
@@ -182,7 +182,7 @@ namespace darmok
 	{
 	public:
 		WindowPixelSizeEvent(const glm::uvec2& size) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		glm::uvec2 _size;
 	};
@@ -191,7 +191,7 @@ namespace darmok
 	{
 	public:
 		WindowPhaseEvent(WindowPhase phase) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		WindowPhase _phase;
 	};
@@ -200,7 +200,7 @@ namespace darmok
 	{
 	public:
 		WindowErrorEvent(std::string err) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		std::string _error;
 	};
@@ -209,7 +209,7 @@ namespace darmok
 	{
 	public:
 		WindowVideoModeEvent(VideoMode mode) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		VideoMode _mode;
 	};
@@ -218,7 +218,7 @@ namespace darmok
 	{
 	public:
 		VideoModeInfoEvent(VideoModeInfo info) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		VideoModeInfo _info;
 	};
@@ -227,7 +227,7 @@ namespace darmok
 	{
 	public:
 		WindowCursorModeEvent(WindowCursorMode mode) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		WindowCursorMode _mode;
 	};
@@ -236,7 +236,7 @@ namespace darmok
 	{
 	public:
 		WindowTitleEvent(std::string title) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		std::string _title;
 	};
@@ -245,7 +245,7 @@ namespace darmok
 	{
 	public:
 		FileDialogEvent(FileDialogResult result, FileDialogCallback callback) noexcept;
-		void process(Window& win) noexcept;
+		expected<void, std::string> process(Window& win) noexcept;
 	private:
 		FileDialogResult _result;
 		FileDialogCallback _callback;

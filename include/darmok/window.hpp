@@ -5,6 +5,7 @@
 #include <darmok/color.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/window_fwd.hpp>
+#include <darmok/expected.hpp>
 
 #include <entt/entt.hpp>
 #include <bgfx/bgfx.h>
@@ -53,13 +54,13 @@ namespace darmok
 	public:
 		virtual ~IWindowListener() = default;
 		virtual entt::id_type getWindowListenerType() const noexcept { return 0; };
-		virtual void onWindowSize(const glm::uvec2& size) {};
-		virtual void onWindowPixelSize(const glm::uvec2& size) {};
-		virtual void onWindowPhase(WindowPhase phase) {};
-		virtual void onWindowVideoMode(const VideoMode& mode) {};
-		virtual void onWindowCursorMode(WindowCursorMode mode) {};
-		virtual void onWindowVideoModeInfo(const VideoModeInfo& info) {};
-		virtual void onWindowError(const std::string& error) {};
+		virtual expected<void, std::string> onWindowSize(const glm::uvec2& size) noexcept { return {}; };
+		virtual expected<void, std::string> onWindowPixelSize(const glm::uvec2& size) noexcept { return {}; };
+		virtual expected<void, std::string> onWindowPhase(WindowPhase phase) noexcept { return {}; };
+		virtual expected<void, std::string> onWindowVideoMode(const VideoMode& mode) noexcept { return {}; };
+		virtual expected<void, std::string> onWindowCursorMode(WindowCursorMode mode) noexcept { return {}; };
+		virtual expected<void, std::string> onWindowVideoModeInfo(const VideoModeInfo& info) noexcept { return {}; };
+		virtual expected<void, std::string> onWindowError(const std::string& error) noexcept { return {}; };
 	};
 
 	template<typename T>
@@ -98,7 +99,7 @@ namespace darmok
 	};
 
 	using FileDialogResult = std::vector<std::filesystem::path>;
-	using FileDialogCallback = std::function<void(const FileDialogResult&)>;
+	using FileDialogCallback = std::function<expected<void, std::string>(const FileDialogResult&)>;
 
 	class DARMOK_EXPORT Window final
 	{

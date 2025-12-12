@@ -132,6 +132,7 @@ namespace darmok::editor
             {
                 _currentPath.clear();
 			}
+            _delegate->onAssetFolderEntered(_currentPath);
         }
         return selected;
     }

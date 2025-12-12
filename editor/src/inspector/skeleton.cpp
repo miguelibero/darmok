@@ -21,11 +21,11 @@ namespace darmok::editor
     {
         if (!_scene)
         {
-            return unexpected{ "no scene loaded" };
+            return unexpected<std::string>{ "no scene loaded" };
         }
         if (_meshIndex < 0 || _meshIndex >= _meshes.size())
         {
-            return unexpected{ "invalid mesh index" };
+            return unexpected<std::string>{ "invalid mesh index" };
         }
         OptionalRef<const aiMesh> assimpMesh;
         auto& meshName = _meshes[_meshIndex];
@@ -42,7 +42,7 @@ namespace darmok::editor
 
         if (!assimpMesh)
         {
-            return unexpected{ "selected mesh not found in scene" };
+            return unexpected<std::string>{ "selected mesh not found in scene" };
         }
 
         AssimpArmatureDefinitionConverter convert{ *assimpMesh, armature };

@@ -18,14 +18,14 @@ namespace darmok
 
 		void shutdown() noexcept;
 
-		bool setSize(const glm::uvec2& size);
-		bool setPixelSize(const glm::uvec2& size);
-		bool setPhase(WindowPhase phase);
-		bool setVideoMode(const VideoMode& mode);
-		bool setCursorMode(WindowCursorMode mode);
-		void setVideoModeInfo(const VideoModeInfo& info);
-		void setTitle(const std::string& title);
-		void onError(const std::string& error);
+		expected<void, std::string> setSize(const glm::uvec2& size) noexcept;
+		expected<void, std::string> setPixelSize(const glm::uvec2& size) noexcept;
+		expected<void, std::string> setPhase(WindowPhase phase) noexcept;
+		expected<void, std::string> setVideoMode(const VideoMode& mode) noexcept;
+		expected<void, std::string> setCursorMode(WindowCursorMode mode) noexcept;
+		expected<void, std::string> setVideoModeInfo(const VideoModeInfo& info) noexcept;
+		expected<void, std::string> setTitle(const std::string& title) noexcept;
+		expected<void, std::string> onError(const std::string& error) noexcept;
 
 		const glm::uvec2& getSize() const noexcept;
 		const glm::uvec2& getPixelSize() const noexcept;

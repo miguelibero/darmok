@@ -14,11 +14,11 @@ namespace darmok
 	{
 	public:
 		LuaWindowListener(const sol::table& table) noexcept;
-		void onWindowSize(const glm::uvec2& size) override;
-		void onWindowPixelSize(const glm::uvec2& size) override;
-		void onWindowPhase(WindowPhase phase) override;
-		void onWindowVideoMode(const VideoMode& mode) override;
-		void onWindowCursorMode(WindowCursorMode mode) override;
+		expected<void, std::string> onWindowSize(const glm::uvec2& size) noexcept override;
+		expected<void, std::string> onWindowPixelSize(const glm::uvec2& size) noexcept override;
+		expected<void, std::string> onWindowPhase(WindowPhase phase) noexcept override;
+		expected<void, std::string> onWindowVideoMode(const VideoMode& mode) noexcept override;
+		expected<void, std::string> onWindowCursorMode(WindowCursorMode mode) noexcept override;
 		sol::object getReal() const noexcept;
 	private:
 		sol::main_table _table;

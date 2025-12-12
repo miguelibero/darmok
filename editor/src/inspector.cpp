@@ -12,6 +12,7 @@
 #include <darmok-editor/inspector/mesh.hpp>
 #include <darmok-editor/inspector/texture.hpp>
 #include <darmok-editor/inspector/skeleton.hpp>
+#include <darmok-editor/inspector/physics3d.hpp>
 #include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
@@ -47,6 +48,8 @@ namespace darmok::editor
         _editors.add<ArmatureInspectorEditor>();
         _editors.add<SkinnableInspectorEditor>();
         _editors.add<SkeletalAnimatorInspectorEditor>();
+        _editors.add<Physics3dBodyInspectorEditor>();
+        _editors.add<Physics3dCharacterControllerInspectorEditor>();
         return {};
     }
 
@@ -135,7 +138,7 @@ namespace darmok::editor
         auto asset = _sceneDef->getAsset(std::move(path));
         if(!asset)
         {
-            return unexpected{ "could not find asset in path " + path.string() };
+            return {};
 		}
         return _editors.render(*asset, true);
     }

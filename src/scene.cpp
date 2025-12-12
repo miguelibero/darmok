@@ -531,7 +531,8 @@ namespace darmok
     bool SceneImpl::removeComponent(Entity entity, entt::id_type typeId) noexcept
     {
         auto& reg = getRegistry();
-        return reg.storage(typeId)->remove(entity);
+        auto storage = reg.storage(typeId);
+        return storage && storage->remove(entity);
     }
 
     void SceneImpl::setUpdateFilter(const EntityFilter& filter) noexcept

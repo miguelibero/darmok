@@ -98,7 +98,12 @@ namespace darmok::editor
         }
         else
         {
-            _sceneBuffer = std::make_shared<FrameBuffer>(size);
+			auto fbResult = FrameBuffer::load(size);
+			if (!fbResult)
+            {
+                return unexpected{ std::move(fbResult).error() };
+            }
+            _sceneBuffer = std::make_shared<FrameBuffer>(std::move(fbResult).value());
             auto result = _cam->getRenderChain().setOutput(_sceneBuffer);
             if (!result)
             {
