@@ -190,7 +190,7 @@ namespace darmok
 		void toggleTaskflowProfile() noexcept;
 
 		void bgfxInit() noexcept;
-		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
+		expected<void, std::string> onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
 		expected<void, std::string> setNextRenderer() noexcept;
 		void requestNextVideoMode() noexcept;
 		expected<bgfx::ViewId, std::string> renderReset() noexcept;

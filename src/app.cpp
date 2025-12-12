@@ -637,14 +637,14 @@ namespace darmok
 		return flags & ~flag;
 	}
 
-	void AppImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
+	expected<void, std::string> AppImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
 		if (!down)
 		{
-			return;
+			return {};
 		}
 		// TODO: only enable these in debug builds
-		auto result = handleDebugShortcuts(key, modifiers);
+		return handleDebugShortcuts(key, modifiers);
 	}
 
 	const std::vector<bgfx::RendererType::Enum>& AppImpl::getSupportedRenderers() noexcept
@@ -876,7 +876,11 @@ namespace darmok
 			{
 				break;
 			}
-			PlatformEvent::process(*patEv, _input, _window);
+			auto processResult = PlatformEvent::process(*patEv, _input, _window);
+			if (!processResult)
+			{
+				onUnexpected(AppPhase::Update, processResult.error());
+			}
 			if (_window.getPhase() == WindowPhase::Destroyed)
 			{
 				return AppRunResult::Exit;

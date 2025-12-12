@@ -392,12 +392,12 @@ namespace darmok
 		using KeyboardModifierMap = std::unordered_map<std::variant<KeyboardModifier, KeyboardKey>, Rml::Input::KeyModifier>;
 		static const KeyboardModifierMap& getKeyboardModifierMap() noexcept;
 
-		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
-		void onKeyboardChar(char32_t chr) noexcept override;
-		void onMouseActive(bool active) noexcept override;
-		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
-		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
-		void onMouseButton(MouseButton button, bool down) noexcept override;
+		expected<void, std::string> onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
+		expected<void, std::string> onKeyboardChar(char32_t chr) noexcept override;
+		expected<void, std::string> onMouseActive(bool active) noexcept override;
+		expected<void, std::string> onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
+		expected<void, std::string> onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
+		expected<void, std::string> onMouseButton(MouseButton button, bool down) noexcept override;
 	};
 
     class RmluiRendererImpl final

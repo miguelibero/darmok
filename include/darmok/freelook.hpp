@@ -93,7 +93,7 @@ namespace darmok
         expected<void, std::string> init(Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
-        void onInputEvent(const std::string& tag) noexcept override;
+        expected<void, std::string> onInputEvent(const std::string& tag) noexcept override;
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
         FreelookController& addListener(IFreelookListener& listener) noexcept;

@@ -5,6 +5,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/expected.hpp>
 
 #include <functional>
 #include <string>
@@ -28,8 +29,8 @@ namespace darmok
 	public:
 		virtual ~IKeyboardListener() = default;
 		virtual entt::id_type getKeyboardListenerType() const noexcept { return 0; };
-		virtual void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) {};
-		virtual void onKeyboardChar(char32_t chr) {};
+		virtual expected<void, std::string> onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept { return {}; };
+		virtual expected<void, std::string> onKeyboardChar(char32_t chr) noexcept { return {}; };
 	};
 
 	template<typename T>
@@ -46,7 +47,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IKeyboardListenerFilter() = default;
-		virtual bool operator()(const IKeyboardListener& listener) const = 0;
+		virtual bool operator()(const IKeyboardListener& listener) const noexcept = 0;
 	};
 
 	class DARMOK_EXPORT Keyboard final
@@ -89,10 +90,10 @@ namespace darmok
 	public:
 		virtual ~IMouseListener() = default;
 		virtual entt::id_type getMouseListenerType() const noexcept { return 0; };
-		virtual void onMouseActive(bool active) {};
-		virtual void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) {};
-		virtual void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) {};
-		virtual void onMouseButton(MouseButton button, bool down) {};
+		virtual expected<void, std::string> onMouseActive(bool active) noexcept { return {}; };
+		virtual expected<void, std::string> onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept { return {}; };
+		virtual expected<void, std::string> onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept { return {}; };
+		virtual expected<void, std::string> onMouseButton(MouseButton button, bool down) noexcept { return {}; };
 	};
 
 	template<typename T>
@@ -152,10 +153,10 @@ namespace darmok
 	public:
 		virtual ~IGamepadListener() = default;
 		virtual entt::id_type getGamepadListenerType() const noexcept { return 0; };
-		virtual void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) {};
-		virtual void onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) {};
-		virtual void onGamepadButton(uint8_t num, GamepadButton button, bool down) {};
-		virtual void onGamepadConnect(uint8_t num, bool connected) {};
+		virtual expected<void, std::string> onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) noexcept { return {}; };
+		virtual expected<void, std::string> onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) noexcept { return {}; };
+		virtual expected<void, std::string> onGamepadButton(uint8_t num, GamepadButton button, bool down) noexcept { return {}; };
+		virtual expected<void, std::string> onGamepadConnect(uint8_t num, bool connected) noexcept { return {}; };
 	};
 
 	template<typename T>
@@ -172,7 +173,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IGamepadListenerFilter() = default;
-		virtual bool operator()(const IGamepadListener& listener) const = 0;
+		virtual bool operator()(const IGamepadListener& listener) const noexcept = 0;
 	};
 
 	class GamepadImpl;
@@ -286,7 +287,7 @@ namespace darmok
 	public:
 		virtual ~IInputEventListener() = default;
 		virtual entt::id_type getInputEventListenerType() const noexcept { return 0; };
-		virtual void onInputEvent(const std::string& tag) = 0;
+		virtual expected<void, std::string> onInputEvent(const std::string& tag) noexcept = 0;
 	};
 
 	template<typename T>
@@ -303,7 +304,7 @@ namespace darmok
 	{
 	public:
 		virtual ~IInputEventListenerFilter() = default;
-		virtual bool operator()(const std::string& tag, const IInputEventListener& listener) const = 0;
+		virtual bool operator()(const std::string& tag, const IInputEventListener& listener) const noexcept = 0;
 	};
 
 	struct DARMOK_EXPORT InputSensitivity
@@ -359,8 +360,8 @@ namespace darmok
 		size_t removeListeners(const IInputEventListenerFilter& filter) noexcept;
 
 		[[nodiscard]] static bool matchesEvent(const InputEvent& condition, const InputEvent& real) noexcept;
-		[[nodiscard]] static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
-		[[nodiscard]] static std::optional<InputDir> readDir(std::string_view name) noexcept;
+		[[nodiscard]] static expected<InputEvent, std::string> readEvent(std::string_view name) noexcept;
+		[[nodiscard]] static expected<InputDir, std::string> readDir(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
 		[[nodiscard]] static std::string_view getDirTypeName(InputDirType type) noexcept;
 

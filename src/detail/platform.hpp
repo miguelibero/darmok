@@ -72,7 +72,7 @@ namespace darmok
 		PlatformEvent(Type type);
 		virtual ~PlatformEvent() = default;
 
-		static void process(PlatformEvent& ev, Input& input, Window& win) noexcept;
+		static expected<void, std::string> process(PlatformEvent& ev, Input& input, Window& win) noexcept;
 
 	private:
 		Type _type;
@@ -82,7 +82,7 @@ namespace darmok
 	{
 	public:
 		KeyboardKeyEvent(KeyboardKey key, KeyboardModifiers modifiers, bool down) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		KeyboardKey _key;
 		KeyboardModifiers _modifiers;
@@ -93,7 +93,7 @@ namespace darmok
 	{
 	public:
 		KeyboardCharEvent(char32_t chr) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		char32_t _chr;
 	};
@@ -102,7 +102,7 @@ namespace darmok
 	{
 	public:
 		MousePositionEvent(const glm::vec2& pos) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		glm::vec2 _pos;
 	};
@@ -111,7 +111,7 @@ namespace darmok
 	{
 	public:
 		MouseActiveEvent(bool active) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		bool _active;
 	};
@@ -120,7 +120,7 @@ namespace darmok
 	{
 	public:
 		MouseScrollEvent(const glm::vec2& scroll) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		glm::vec2 _scroll;
 	};
@@ -129,7 +129,7 @@ namespace darmok
 	{
 	public:
 		MouseButtonEvent(MouseButton button, bool down) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		MouseButton _button;
 		bool _down;
@@ -139,7 +139,7 @@ namespace darmok
 	{
 	public:
 		GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::vec3& value) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 
 	private:
 		uint8_t _gamepad;
@@ -151,7 +151,7 @@ namespace darmok
 	{
 	public:
 		GamepadButtonEvent(uint8_t gampad, GamepadButton button, bool down) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 
 	private:
 		uint8_t _gamepad;
@@ -163,7 +163,7 @@ namespace darmok
 	{
 	public:
 		GamepadConnectEvent(uint8_t gamepad, bool connected) noexcept;
-		void process(Input& input) noexcept;
+		expected<void, std::string> process(Input& input) noexcept;
 	private:
 		uint8_t _gamepad;
 		bool _connected;

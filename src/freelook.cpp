@@ -61,9 +61,10 @@ namespace darmok
         return {};
     }
 
-    void FreelookController::onInputEvent(const std::string& tag) noexcept
+    expected<void, std::string> FreelookController::onInputEvent(const std::string& tag) noexcept
     {
         setEnabled(!_enabled);
+		return {};
     }
 
     FreelookController& FreelookController::setEnabled(bool enabled) noexcept

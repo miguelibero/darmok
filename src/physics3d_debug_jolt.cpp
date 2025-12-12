@@ -407,9 +407,10 @@ namespace darmok::physics3d
         return JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, viewId, encoder);
     }
 
-    void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
+    expected<void, std::string> PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
     {
         setEnabled(!_enabled);
+        return {};
     }
 
     PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept

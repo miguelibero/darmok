@@ -95,7 +95,7 @@ namespace darmok::physics3d
         expected<void, std::string> shutdown() noexcept;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
-        void onInputEvent(const std::string& tag) noexcept override;
+        expected<void, std::string> onInputEvent(const std::string& tag) noexcept override;
 
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;

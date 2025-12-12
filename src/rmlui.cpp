@@ -2047,17 +2047,17 @@ namespace darmok
         return 0;
     }
 
-    void RmluiSceneComponentImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& mods, bool down) noexcept
     {
         if (!_scene)
         {
-            return;
+            return {};
         }
         auto& keyMap = getKeyboardMap();
         auto itr = keyMap.find(key);
         if (itr == keyMap.end())
         {
-            return;
+            return unexpected<std::string>{"failed to find key"};
         }
         auto& rmlKey = itr->second;
         auto state = getKeyModifierState();
@@ -2065,41 +2065,43 @@ namespace darmok
         {
             canvas.getImpl().processKey(rmlKey, state, down);
         }
+        return {};
     }
 
-    void RmluiSceneComponentImpl::onKeyboardChar(char32_t chr) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::onKeyboardChar(char32_t chr) noexcept
     {
         if (!_scene)
         {
-            return;
+            return {};
         }
         Rml::String str = StringUtils::toUtf8(chr);
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
             canvas.getImpl().processTextInput(str);
         }
+        return {};
     }
 
-    void RmluiSceneComponentImpl::onMouseActive(bool active) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::onMouseActive(bool active) noexcept
     {
         if (active || !_scene)
         {
-            return;
+            return {};
         }
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
             canvas.getImpl().processMouseLeave();
         }
+        return {};
     }
 
-    void RmluiSceneComponentImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
         if (!_app || !_scene)
         {
-            return;
+            return {};
         }
         auto& win = _app->getWindow();
-
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
             if (!canvas.isInputEnabled())
@@ -2131,13 +2133,14 @@ namespace darmok
                 canvas.getImpl().setViewportMousePosition(vpPos);
             }
         }
+        return {};
     }
 
-    void RmluiSceneComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
     {
         if (!_scene)
         {
-            return;
+            return {};
         }
         auto rmlDelta = RmluiUtils::convert<float>(delta) * -1;
         auto state = getKeyModifierState();
@@ -2145,13 +2148,14 @@ namespace darmok
         {
             canvas.getImpl().processMouseWheel(rmlDelta, state);
         }
+        return {};
     }
 
-    void RmluiSceneComponentImpl::onMouseButton(MouseButton button, bool down) noexcept
+    expected<void, std::string> RmluiSceneComponentImpl::onMouseButton(MouseButton button, bool down) noexcept
     {
         if (!_scene)
         {
-            return;
+            return {};
         }
         int i = -1;
         switch (button)
@@ -2173,6 +2177,7 @@ namespace darmok
         {
             canvas.getImpl().processMouseButton(i, state, down);
         }
+        return {};
     }
 
     RmluiSceneComponent::RmluiSceneComponent() noexcept

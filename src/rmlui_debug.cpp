@@ -43,9 +43,10 @@ namespace darmok
         return {};
     }
 
-    void RmluiDebuggerComponentImpl::onInputEvent(const std::string& tag) noexcept
+    expected<void, std::string> RmluiDebuggerComponentImpl::onInputEvent(const std::string& tag) noexcept
     {
         toggle();
+        return {};
     }
 
     bool RmluiDebuggerComponentImpl::isEnabled() const noexcept

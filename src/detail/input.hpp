@@ -33,8 +33,8 @@ namespace darmok
 
 		void flush() noexcept;
 		void reset() noexcept;
-		void setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
-		void pushChar(char32_t chr) noexcept;
+		expected<void, std::string> setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept;
+		expected<void, std::string> pushChar(char32_t chr) noexcept;
 
 		static char keyToAscii(KeyboardKey key, bool upper = false) noexcept;
 		
@@ -43,7 +43,7 @@ namespace darmok
 
 		static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
-		static std::optional<KeyboardInputEvent> readEvent(std::string_view name) noexcept;
+		static expected<KeyboardInputEvent, std::string> readEvent(std::string_view name) noexcept;
 
 	private:
 		char32_t popChar() noexcept;
@@ -86,17 +86,17 @@ namespace darmok
 		bool removeListener(const IMouseListener& listener) noexcept;
 		size_t removeListeners(const IMouseListenerFilter& filter) noexcept;
 
-		bool setActive(bool active) noexcept;
-		bool setPosition(const glm::vec2& pos) noexcept;
-		bool setScroll(const glm::vec2& scroll) noexcept;
-		bool setButton(MouseButton button, bool down) noexcept;
+		expected<void, std::string> setActive(bool active) noexcept;
+		expected<void, std::string> setPosition(const glm::vec2& pos) noexcept;
+		expected<void, std::string> setScroll(const glm::vec2& scroll) noexcept;
+		expected<void, std::string> setButton(MouseButton button, bool down) noexcept;
 
 		static std::string_view getButtonName(MouseButton button) noexcept;
 		static std::optional<MouseButton> readButton(std::string_view name) noexcept;
 		static std::string_view getAnalogName(MouseAnalog analog) noexcept;
 		static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
 		static std::optional<MouseInputEvent> readEvent(std::string_view name) noexcept;
-		static std::optional<MouseInputDir> readDir(std::string_view name) noexcept;
+		static expected<MouseInputDir, std::string> readDir(std::string_view name) noexcept;
 	private:
 		glm::vec2 _position;
 		glm::vec2 _lastPosition;
@@ -139,10 +139,9 @@ namespace darmok
 		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;
 
 		bool setNumber(uint8_t num) noexcept;
-		bool setConnected(bool value) noexcept;
-
-		bool setStick(GamepadStick stick, const glm::vec3& value) noexcept;
-		bool setButton(GamepadButton button, bool down) noexcept;
+		expected<void, std::string> setConnected(bool value) noexcept;
+		expected<void, std::string> setStick(GamepadStick stick, const glm::vec3& value) noexcept;
+		expected<void, std::string> setButton(GamepadButton button, bool down) noexcept;
 
 		static std::optional<GamepadButton> readButton(std::string_view name) noexcept;
 		static std::string_view getButtonName(GamepadButton button) noexcept;
@@ -205,15 +204,15 @@ namespace darmok
 
 		void afterUpdate(float deltaTime) noexcept;
 
-		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
-		void onMouseButton(MouseButton button, bool down) override;
-		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
-		void onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) override;
+		expected<void, std::string> onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
+		expected<void, std::string> onMouseButton(MouseButton button, bool down) noexcept override;
+		expected<void, std::string> onGamepadButton(uint8_t num, GamepadButton button, bool down) noexcept override;
+		expected<void, std::string> onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) noexcept override;
 
 		static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
 		static std::string_view getDirTypeName(InputDirType type) noexcept;
-		static std::optional<InputEvent> readEvent(std::string_view name) noexcept;
-		static std::optional<InputDir> readDir(std::string_view name) noexcept;
+		static expected<InputEvent, std::string> readEvent(std::string_view name) noexcept;
+		static expected<InputDir, std::string> readDir(std::string_view name) noexcept;
 		static float getDir(const glm::vec2& vec, InputDirType dir) noexcept;
 
 	private:

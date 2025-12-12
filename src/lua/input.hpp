@@ -19,8 +19,8 @@ namespace darmok
 		LuaKeyboardListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		void onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) override;
-		void onKeyboardChar(char32_t chr) override;
+		expected<void, std::string> onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept override;
+		expected<void, std::string> onKeyboardChar(char32_t chr) noexcept override;
 
 	private:
 		sol::main_table _table;
@@ -60,9 +60,9 @@ namespace darmok
 		LuaMouseListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		void onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) override;
-		void onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) override;
-		void onMouseButton(MouseButton button, bool down) override;
+		expected<void, std::string> onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
+		expected<void, std::string> onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept override;
+		expected<void, std::string> onMouseButton(MouseButton button, bool down) noexcept override;
 
 	private:
 		sol::main_table _table;
@@ -106,9 +106,9 @@ namespace darmok
 		LuaGamepadListener(const sol::table& table) noexcept;
 		sol::object getReal() const noexcept;
 
-		void onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) override;
-		void onGamepadButton(uint8_t num, GamepadButton button, bool down) override;
-		void onGamepadConnect(uint8_t num, bool connected) override;
+		expected<void, std::string> onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) noexcept override;
+		expected<void, std::string> onGamepadButton(uint8_t num, GamepadButton button, bool down) noexcept override;
+		expected<void, std::string> onGamepadConnect(uint8_t num, bool connected) noexcept override;
 
 	private:
 		sol::main_table _table;
@@ -152,7 +152,7 @@ namespace darmok
 		LuaInputEventListener(const sol::object& dlg) noexcept;
 		const LuaDelegate& getDelegate() const noexcept;
 
-		void onInputEvent(const std::string& tag) override;
+		expected<void, std::string> onInputEvent(const std::string& tag) noexcept override;
 	private:
 		LuaDelegate _delegate;
 	};

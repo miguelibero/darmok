@@ -23,14 +23,14 @@ namespace darmok
 	const LuaTableDelegateDefinition LuaKeyboardListener::_keyDelegate{ "on_keyboard_key", "running keyboard key listener" };
 	const LuaTableDelegateDefinition LuaKeyboardListener::_charDelegate{ "on_keyboard_char", "running keyboard on_keyboard_char listener" };
 
-	void LuaKeyboardListener::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
+	expected<void, std::string> LuaKeyboardListener::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
-		_keyDelegate(_table, modifiers, down);
+		return _keyDelegate.tryGet<void>(_table, modifiers, down);
 	}
 
-	void LuaKeyboardListener::onKeyboardChar(char32_t chr)
+	expected<void, std::string> LuaKeyboardListener::onKeyboardChar(char32_t chr) noexcept
 	{
-		_charDelegate(_table, StringUtils::toUtf8(chr));
+		return _charDelegate.tryGet<void>(_table, StringUtils::toUtf8(chr));
 	}
 
 	LuaKeyboardListenerFilter::LuaKeyboardListenerFilter(const sol::table& table) noexcept
@@ -145,19 +145,19 @@ namespace darmok
 	const LuaTableDelegateDefinition LuaMouseListener::_scrollDelegate{ "on_mouse_scroll_change", "running mouse scroll change listener" };
 	const LuaTableDelegateDefinition LuaMouseListener::_buttonDelegate{ "on_mouse_button", "running mouse button listener" };
 
-	void LuaMouseListener::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute)
+	expected<void, std::string> LuaMouseListener::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
 	{
-		_posDelegate(_table, delta, absolute);
+		return _posDelegate.tryGet<void>(_table, delta, absolute);
 	}
 
-	void LuaMouseListener::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute)
+	expected<void, std::string> LuaMouseListener::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
 	{
-		_scrollDelegate(_table, delta, absolute);
+		return _scrollDelegate.tryGet<void>(_table, delta, absolute);
 	}
 
-	void LuaMouseListener::onMouseButton(MouseButton button, bool down)
+	expected<void, std::string> LuaMouseListener::onMouseButton(MouseButton button, bool down) noexcept
 	{
-		_buttonDelegate(_table, button, down);
+		return _buttonDelegate.tryGet<void>(_table, button, down);
 	}
 
 	LuaMouseListenerFilter::LuaMouseListenerFilter(const sol::table& table) noexcept
@@ -299,19 +299,19 @@ namespace darmok
 	const LuaTableDelegateDefinition LuaGamepadListener::_buttonDelegate("on_gamepad_button", "running gamepad button listener");
 	const LuaTableDelegateDefinition LuaGamepadListener::_connectDelegate("on_gamepad_connect", "running gamepad connect listener");
 
-	void LuaGamepadListener::onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute)
+	expected<void, std::string> LuaGamepadListener::onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) noexcept
 	{
-		_stickDelegate(_table, num, stick, delta, absolute);
+		return _stickDelegate.tryGet<void>(_table, num, stick, delta, absolute);
 	}
 
-	void LuaGamepadListener::onGamepadButton(uint8_t num, GamepadButton button, bool down)
+	expected<void, std::string> LuaGamepadListener::onGamepadButton(uint8_t num, GamepadButton button, bool down) noexcept
 	{
-		_buttonDelegate(_table, num, button, down);
+		return _buttonDelegate.tryGet<void>(_table, num, button, down);
 	}
 
-	void LuaGamepadListener::onGamepadConnect(uint8_t num, bool connected)
+	expected<void, std::string> LuaGamepadListener::onGamepadConnect(uint8_t num, bool connected) noexcept
 	{
-		_connectDelegate(_table, num, connected);
+		return _connectDelegate.tryGet<void>(_table, num, connected);
 	}
 
 	LuaGamepadListenerFilter::LuaGamepadListenerFilter(const sol::table& table) noexcept

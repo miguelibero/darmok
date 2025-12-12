@@ -18,10 +18,10 @@ namespace darmok
 	{
 	}
 
-	void KeyboardKeyEvent::process(Input& input) noexcept
+	expected<void, std::string> KeyboardKeyEvent::process(Input& input) noexcept
 	{
 		auto& keyb = input.getKeyboard().getImpl();
-		keyb.setKey(_key, _modifiers, _down);
+		return keyb.setKey(_key, _modifiers, _down);
 	}
 
 	KeyboardCharEvent::KeyboardCharEvent(char32_t chr) noexcept
@@ -30,9 +30,9 @@ namespace darmok
 	{
 	}
 
-	void KeyboardCharEvent::process(Input& input) noexcept
+	expected<void, std::string> KeyboardCharEvent::process(Input& input) noexcept
 	{
-		input.getKeyboard().getImpl().pushChar(_chr);
+		return input.getKeyboard().getImpl().pushChar(_chr);
 	}
 
 	MousePositionEvent::MousePositionEvent(const glm::vec2& pos) noexcept
@@ -41,9 +41,9 @@ namespace darmok
 	{
 	}
 
-	void MousePositionEvent::process(Input& input) noexcept
+	expected<void, std::string> MousePositionEvent::process(Input& input) noexcept
 	{
-		input.getMouse().getImpl().setPosition(_pos);
+		return input.getMouse().getImpl().setPosition(_pos);
 	}
 
 	MouseActiveEvent::MouseActiveEvent(bool active) noexcept
@@ -52,9 +52,9 @@ namespace darmok
 	{
 	}
 
-	void MouseActiveEvent::process(Input& input) noexcept
+	expected<void, std::string> MouseActiveEvent::process(Input& input) noexcept
 	{
-		input.getMouse().getImpl().setActive(_active);
+		return input.getMouse().getImpl().setActive(_active);
 	}
 
 	MouseScrollEvent::MouseScrollEvent(const glm::vec2& scroll) noexcept
@@ -63,9 +63,9 @@ namespace darmok
 	{
 	}
 
-	void MouseScrollEvent::process(Input& input) noexcept
+	expected<void, std::string> MouseScrollEvent::process(Input& input) noexcept
 	{
-		input.getMouse().getImpl().setScroll(_scroll);
+		return input.getMouse().getImpl().setScroll(_scroll);
 	}
 
 	MouseButtonEvent::MouseButtonEvent(MouseButton button, bool down) noexcept
@@ -75,9 +75,9 @@ namespace darmok
 	{
 	}
 
-	void MouseButtonEvent::process(Input& input) noexcept
+	expected<void, std::string> MouseButtonEvent::process(Input& input) noexcept
 	{
-		input.getMouse().getImpl().setButton(_button, _down);
+		return input.getMouse().getImpl().setButton(_button, _down);
 	}
 
 	GamepadStickEvent::GamepadStickEvent(uint8_t gampad, GamepadStick stick, const glm::vec3& value) noexcept
@@ -88,13 +88,14 @@ namespace darmok
 	{
 	}
 
-	void GamepadStickEvent::process(Input& input) noexcept
+	expected<void, std::string> GamepadStickEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
-		if (gamepad)
+		if (!gamepad)
 		{
-			gamepad->getImpl().setStick(_stick, _value);
+			return unexpected<std::string>{ "gamepad not found" };
 		}
+		return gamepad->getImpl().setStick(_stick, _value);
 	}
 
 	GamepadButtonEvent::GamepadButtonEvent(uint8_t gampad, GamepadButton button, bool down) noexcept
@@ -105,13 +106,14 @@ namespace darmok
 	{
 	}
 
-	void GamepadButtonEvent::process(Input& input) noexcept
+	expected<void, std::string> GamepadButtonEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
-		if (gamepad)
+		if (!gamepad)
 		{
-			gamepad->getImpl().setButton(_button, _down);
+			return unexpected<std::string>{ "gamepad not found" };
 		}
+		return gamepad->getImpl().setButton(_button, _down);
 	}
 
 	GamepadConnectEvent::GamepadConnectEvent(uint8_t gamepad, bool connected) noexcept
@@ -121,13 +123,14 @@ namespace darmok
 	{
 	}
 
-	void GamepadConnectEvent::process(Input& input) noexcept
+	expected<void, std::string> GamepadConnectEvent::process(Input& input) noexcept
 	{
 		auto gamepad = input.getGamepad(_gamepad);
-		if (gamepad)
+		if (!gamepad)
 		{
-			gamepad->getImpl().setConnected(_connected);
+			return unexpected<std::string>{ "gamepad not found" };
 		}
+		return gamepad->getImpl().setConnected(_connected);
 	}
 
 	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size) noexcept
@@ -233,37 +236,28 @@ namespace darmok
 		}
 	}
 
-	void PlatformEvent::process(PlatformEvent& ev, Input& input, Window& window) noexcept
+	expected<void, std::string> PlatformEvent::process(PlatformEvent& ev, Input& input, Window& window) noexcept
 	{
 		switch (ev._type)
 		{
 		case PlatformEvent::Type::KeyboardKey:
-			static_cast<KeyboardKeyEvent&>(ev).process(input);
-			break;
+			return static_cast<KeyboardKeyEvent&>(ev).process(input);
 		case PlatformEvent::Type::KeyboardChar:
-			static_cast<KeyboardCharEvent&>(ev).process(input);
-			break;
+			return static_cast<KeyboardCharEvent&>(ev).process(input);
 		case PlatformEvent::Type::GamepadConnect:
-			static_cast<GamepadConnectEvent&>(ev).process(input);
-			break;
+			return static_cast<GamepadConnectEvent&>(ev).process(input);
 		case PlatformEvent::Type::GamepadStick:
-			static_cast<GamepadStickEvent&>(ev).process(input);
-			break;
+			return static_cast<GamepadStickEvent&>(ev).process(input);
 		case PlatformEvent::Type::GamepadButton:
-			static_cast<GamepadButtonEvent&>(ev).process(input);
-			break;
+			return static_cast<GamepadButtonEvent&>(ev).process(input);
 		case PlatformEvent::Type::MousePosition:
-			static_cast<MousePositionEvent&>(ev).process(input);
-			break;
+			return static_cast<MousePositionEvent&>(ev).process(input);
 		case PlatformEvent::Type::MouseActive:
-			static_cast<MouseActiveEvent&>(ev).process(input);
-			break;
+			return static_cast<MouseActiveEvent&>(ev).process(input);
 		case PlatformEvent::Type::MouseScroll:
-			static_cast<MouseScrollEvent&>(ev).process(input);
-			break;
+			return static_cast<MouseScrollEvent&>(ev).process(input);
 		case PlatformEvent::Type::MouseButton:
-			static_cast<MouseButtonEvent&>(ev).process(input);
-			break;
+			return static_cast<MouseButtonEvent&>(ev).process(input);
 		case PlatformEvent::Type::WindowSize:
 			static_cast<WindowSizeEvent&>(ev).process(window);
 			break;
@@ -292,8 +286,9 @@ namespace darmok
 			static_cast<FileDialogEvent&>(ev).process(window);
 			break;
 		default:
-			break;
+			return unexpected<std::string>("unknown platform event type");
 		}
+		return {};
 	}
 
 	void PlatformEventQueue::post(std::unique_ptr<PlatformEvent>&& ev) noexcept

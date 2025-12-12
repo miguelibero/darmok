@@ -25,7 +25,7 @@ namespace darmok
 		flush();
 	}
 
-	void KeyboardImpl::setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
+	expected<void, std::string> KeyboardImpl::setKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
 		bool changed = false;
 		if (down)
@@ -47,23 +47,35 @@ namespace darmok
 			_modifiers = modifiers;
 			changed = true;
 		}
+		std::vector<std::string> errors;
 		if (changed)
 		{
 			for (auto& listener : _listeners)
 			{
-				listener.onKeyboardKey(key, modifiers, down);
+				auto result = listener.onKeyboardKey(key, modifiers, down);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void KeyboardImpl::pushChar(char32_t data) noexcept
+	expected<void, std::string> KeyboardImpl::pushChar(char32_t data) noexcept
 	{
 		_chars.at(_charsWrite) = data;
 		_charsWrite = (_charsWrite + 1) % _chars.size();
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onKeyboardChar(data);
+			auto result = listener.onKeyboardChar(data);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	bool KeyboardImpl::getKey(KeyboardKey key) const noexcept
@@ -204,13 +216,13 @@ namespace darmok
 		return StringUtils::readEnum<KeyboardModifier>(name, _modPrefix);
 	}
 
-	std::optional<KeyboardInputEvent> KeyboardImpl::readEvent(std::string_view name) noexcept
+	expected<KeyboardInputEvent, std::string> KeyboardImpl::readEvent(std::string_view name) noexcept
 	{
 		auto parts = StringUtils::split("+", name);
 		auto key = Keyboard::readKey(parts[0]);
 		if (!key)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{ "Invalid keyboard key name: " + parts[0] };
 		}
 		KeyboardModifiers mods;
 		for (size_t i = 1; i < parts.size(); i++)
@@ -330,11 +342,11 @@ namespace darmok
 		_listeners.clear();
 	}
 
-	bool MouseImpl::setActive(bool active) noexcept
+	expected<void, std::string> MouseImpl::setActive(bool active) noexcept
 	{
 		if (_active == active)
 		{
-			return false;
+			return {};
 		}
 		_active = active;
 		if (!active)
@@ -342,18 +354,23 @@ namespace darmok
 			_hasBeenInactive = true;
 		}
 		_lastPositionTimePassed = 0.F;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onMouseActive(active);
+			auto result = listener.onMouseActive(active);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool MouseImpl::setPosition(const glm::vec2& pos) noexcept
+	expected<void, std::string> MouseImpl::setPosition(const glm::vec2& pos) noexcept
 	{
 		if (_position == pos)
 		{
-			return false;
+			return {};
 		}
 		glm::vec2 delta(0);
 		if (!_hasBeenInactive)
@@ -361,40 +378,59 @@ namespace darmok
 			delta = pos - _position;
 		}
 		_position = pos;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onMousePositionChange(delta, _position);
+			auto result = listener.onMousePositionChange(delta, _position);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool MouseImpl::setScroll(const glm::vec2& scroll) noexcept
+	expected<void, std::string> MouseImpl::setScroll(const glm::vec2& scroll) noexcept
 	{
-		if (scroll == glm::vec2(0))
+		if (scroll == glm::vec2{ 0 })
 		{
-			return false;
+			return {};
 		}
 		_scroll += scroll;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onMouseScrollChange(scroll, _scroll);
+			auto result = listener.onMouseScrollChange(scroll, _scroll);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool MouseImpl::setButton(MouseButton button, bool down) noexcept
+	expected<void, std::string> MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
 		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size() || _buttons.at(idx) == down)
+		if (idx >= _buttons.size())
 		{
-			return false;
+			return unexpected<std::string>{"invalid button"};
+		}
+		if (_buttons.at(idx) == down)
+		{
+			return {};
 		}
 		_buttons.at(idx) = down;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onMouseButton(button, down);
+			auto result = listener.onMouseButton(button, down);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	void MouseImpl::afterUpdate(float deltaTime) noexcept
@@ -512,23 +548,23 @@ namespace darmok
 		return std::nullopt;
 	}
 
-	std::optional<MouseInputDir> MouseImpl::readDir(std::string_view name) noexcept
+	expected<MouseInputDir, std::string> MouseImpl::readDir(std::string_view name) noexcept
 	{
 		auto parts = StringUtils::split(":", name);
 		auto size = parts.size();
 		if (size < 2)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"could not find separator"};
 		}
 		auto analog = readAnalog(parts[0]);
 		if (!analog)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"could not read first part"};
 		}
 		auto type = InputImpl::readDirType(parts[1]);
 		if (!type)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"could not read second part"};
 		}
 		return MouseInputDir{ analog.value(), type.value() };
 	}
@@ -650,18 +686,24 @@ namespace darmok
 		clear();
 		return true;
 	}
-	bool GamepadImpl::setConnected(bool value) noexcept
+
+	expected<void, std::string> GamepadImpl::setConnected(bool value) noexcept
 	{
 		if (_connected == value)
 		{
-			return false;
+			return {};
 		}
 		clear();
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onGamepadConnect(_num, value);
+			auto result = listener.onGamepadConnect(_num, value);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	void GamepadImpl::clear() noexcept
@@ -672,25 +714,29 @@ namespace darmok
 
 	const float GamepadImpl::_stickThreshold = 0.5F;
 
-	bool GamepadImpl::setStick(GamepadStick stick, const glm::vec3& value) noexcept
+	expected<void, std::string> GamepadImpl::setStick(GamepadStick stick, const glm::vec3& value) noexcept
 	{
 		auto idx = toUnderlying(stick);
 		if (idx >= _sticks.size())
 		{
-			return false;
+			return unexpected<std::string>{"invalid stick"};
 		}
 		auto& oldValue = _sticks.at(idx);
 		if (oldValue == value)
 		{
-			return false;
+			return {};
 		}
 		_sticks.at(idx) = value;
 		auto delta = value - oldValue;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onGamepadStickChange(_num, stick, delta, value);
+			auto result = listener.onGamepadStickChange(_num, stick, delta, value);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-
 		for (int i = 0; i < toUnderlying(InputDirType::Count); ++i)
 		{
 			auto dir = InputDirType(i);
@@ -700,27 +746,39 @@ namespace darmok
 				_stickDirs[stick][dir] = active;
 				for (auto& listener : _listeners)
 				{
-					listener.onGamepadStickDir(_num, stick, dir, active);
+					auto result = listener.onGamepadStickDir(_num, stick, dir, active);
+					if (!result)
+					{
+						errors.push_back(std::move(result).error());
+					}
 				}
 			}
 		}
-
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	bool GamepadImpl::setButton(GamepadButton button, bool down) noexcept
+	expected<void, std::string> GamepadImpl::setButton(GamepadButton button, bool down) noexcept
 	{
 		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size() || _buttons.at(idx) == down)
+		if (idx >= _buttons.size())
 		{
-			return false;
+			return unexpected<std::string>{"invalid button"};
+		}
+		if (_buttons.at(idx) == down)
+		{
+			return {};
 		}
 		_buttons.at(idx) = down;
+		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
-			listener.onGamepadButton(_num, button, down);
+			auto result = listener.onGamepadButton(_num, button, down);
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	const glm::vec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
@@ -1185,12 +1243,13 @@ namespace darmok
 		return val;
 	}
 
-	void InputImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down)
+	expected<void, std::string> InputImpl::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
 		if (!down)
 		{
-			return;
+			return {};
 		}
+		std::vector<std::string> errors;
 		for (auto& data : _listeners)
 		{
 			for (auto& event : data.events)
@@ -1204,17 +1263,23 @@ namespace darmok
 				{
 					continue;
 				}
-				data.listener.get().onInputEvent(data.tag);
+				auto result = data.listener.get().onInputEvent(data.tag);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void InputImpl::onMouseButton(MouseButton button, bool down)
+	expected<void, std::string> InputImpl::onMouseButton(MouseButton button, bool down) noexcept
 	{
 		if (!down)
 		{
-			return;
+			return {};
 		}
+		std::vector<std::string> errors;
 		for (auto& data : _listeners)
 		{
 			for (auto& event : data.events)
@@ -1224,17 +1289,23 @@ namespace darmok
 				{
 					continue;
 				}
-				data.listener.get().onInputEvent(data.tag);
+				auto result = data.listener.get().onInputEvent(data.tag);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void InputImpl::onGamepadButton(uint8_t num, GamepadButton button, bool down)
+	expected<void, std::string> InputImpl::onGamepadButton(uint8_t num, GamepadButton button, bool down) noexcept
 	{
 		if (!down)
 		{
-			return;
+			return {};
 		}
+		std::vector<std::string> errors;
 		for (auto& data : _listeners)
 		{
 			for (auto& event : data.events)
@@ -1252,17 +1323,23 @@ namespace darmok
 				{
 					continue;
 				}
-				data.listener.get().onInputEvent(data.tag);
+				auto result = data.listener.get().onInputEvent(data.tag);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	void InputImpl::onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active)
+	expected<void, std::string> InputImpl::onGamepadStickDir(uint8_t num, GamepadStick stick, InputDirType dir, bool active) noexcept
 	{
 		if (!active)
 		{
-			return;
+			return {};
 		}
+		std::vector<std::string> errors;
 		for (auto & data : _listeners)
 		{
 			for (auto& event : data.events)
@@ -1280,9 +1357,14 @@ namespace darmok
 				{
 					continue;
 				}
-				data.listener.get().onInputEvent(data.tag);
+				auto result = data.listener.get().onInputEvent(data.tag);
+				if (!result)
+				{
+					errors.push_back(std::move(result).error());
+				}
 			}
 		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	const std::string InputImpl::_dirTypePrefix = "InputDirType.";
@@ -1301,7 +1383,7 @@ namespace darmok
 	const std::string InputImpl::_mousePrefix = "mouse:";
 	const std::string InputImpl::_gamepadPrefix = "gamepad:";
 
-	std::optional<InputEvent> InputImpl::readEvent(std::string_view name) noexcept
+	expected<InputEvent, std::string> InputImpl::readEvent(std::string_view name) noexcept
 	{
 		if (name.starts_with(_keyboardPrefix))
 		{
@@ -1309,30 +1391,40 @@ namespace darmok
 		}
 		if (name.starts_with(_mousePrefix))
 		{
-			return MouseImpl::readEvent(name.substr(_mousePrefix.size()));
+			if (auto result = MouseImpl::readEvent(name.substr(_mousePrefix.size())))
+			{
+				return *result;
+			}
+			return unexpected<std::string>{"could not read mouse event"};
 		}
 		if (name.starts_with(_gamepadPrefix))
 		{
-			return GamepadImpl::readEvent(name.substr(_gamepadPrefix.size()));
+			if (auto result = GamepadImpl::readEvent(name.substr(_gamepadPrefix.size())))
+			{
+				return *result;
+			}
+			return unexpected<std::string>{"could not read gamepad event"};
 		}
-		return std::nullopt;
+		return unexpected<std::string>{"unexpected event type"};
 	}
 
-	std::optional<InputDir> InputImpl::readDir(std::string_view name) noexcept
+	expected<InputDir, std::string> InputImpl::readDir(std::string_view name) noexcept
 	{
 		if (name.starts_with(_gamepadPrefix))
 		{
 			if (auto dir = GamepadImpl::readDir(name.substr(_gamepadPrefix.size())))
 			{
-				return dir;
+				return *dir;
 			}
+			return unexpected<std::string>{"could not read gamepad dir"};
 		}
 		if (name.starts_with(_mousePrefix))
 		{
-			if (auto dir = GamepadImpl::readDir(name.substr(_mousePrefix.size())))
+			if (auto dir = MouseImpl::readDir(name.substr(_mousePrefix.size())))
 			{
-				return dir;
+				return *dir;
 			}
+			return unexpected<std::string>{"could not read mouse dir"};
 		}
 		return readEvent(name);
 	}
@@ -1498,12 +1590,12 @@ namespace darmok
 		return _impl->removeListeners(filter);
 	}
 
-	std::optional<InputEvent> Input::readEvent(std::string_view name) noexcept
+	expected<InputEvent, std::string> Input::readEvent(std::string_view name) noexcept
 	{
 		return InputImpl::readEvent(name);
 	}
 
-	std::optional<InputDir> Input::readDir(std::string_view name) noexcept
+	expected<InputDir, std::string> Input::readDir(std::string_view name) noexcept
 	{
 		return InputImpl::readDir(name);
 	}

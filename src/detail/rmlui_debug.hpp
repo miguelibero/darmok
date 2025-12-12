@@ -32,7 +32,7 @@ namespace darmok
 		std::vector<std::reference_wrapper<RmluiCanvas>> _canvases;
 		static const std::string _tag;
 		
-		void onInputEvent(const std::string& tag) noexcept override;
+		expected<void, std::string> onInputEvent(const std::string& tag) noexcept override;
 
 		void updateCanvases();
 	};
