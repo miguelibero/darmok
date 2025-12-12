@@ -65,13 +65,13 @@ namespace darmok
 		size_t getVertexAmount(const Element& elm) noexcept;
 		bool isRect(const Element& elm) noexcept;
 
-		std::unique_ptr<Mesh> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config = {}) noexcept;
+		expected<std::unique_ptr<Mesh>, std::string> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config = {}) noexcept;
 		Element createElement(const Bounds& bounds) noexcept;
 		void readTexturePacker(Element& elm, const pugi::xml_node& xml, const glm::uvec2& textureSize) noexcept;
 		void writeTexturePacker(const Element& elm, pugi::xml_node& xml) noexcept;
 
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, const std::filesystem::path& basePath = {});
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, const std::filesystem::path& basePath = {});
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, const std::filesystem::path& basePath = {}) noexcept;
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, const std::filesystem::path& basePath = {}) noexcept;
 		
 		struct ImageLoadContext final
 		{
@@ -101,7 +101,7 @@ namespace darmok
 
 		using MeshConfig = TextureAtlasMeshConfig;
 
-		std::unique_ptr<Mesh> createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config = {}) const noexcept;
+		expected<std::unique_ptr<Mesh>, std::string> createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config = {}) const noexcept;
 		std::vector<AnimationFrame> createAnimation(const bgfx::VertexLayout& layout, std::string_view namePrefix = "", float frameDuration = 1.f / 30.f, const MeshConfig& config = {}) const noexcept;
 	};
 

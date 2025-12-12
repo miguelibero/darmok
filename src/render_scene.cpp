@@ -85,16 +85,16 @@ namespace darmok
 		return _mesh != nullptr && _material != nullptr && _material->valid();
 	}
 
-	bool Renderable::render(bgfx::Encoder& encoder) const
+	expected<void, std::string> Renderable::render(bgfx::Encoder& encoder) const noexcept
 	{
 		if (!_enabled)
 		{
-			return false;
+			return {};
 		}
 		return _mesh->render(encoder);
 	}
 
-	expected<void, std::string> Renderable::load(const Definition& def, IComponentLoadContext& ctxt)
+	expected<void, std::string> Renderable::load(const Definition& def, IComponentLoadContext& ctxt) noexcept
 	{
 		if (!def.mesh_path().empty())
 		{

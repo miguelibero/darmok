@@ -45,15 +45,15 @@ namespace darmok::physics3d
         using Config = PhysicsDebugRenderConfig;
 
         ~JoltPhysicsDebugRenderer() noexcept;
-        static void render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder);
-        static void shutdown();
+        static expected<void, std::string> render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        static void shutdown() noexcept;
 
-        void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override;
-        void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) override;
-        JPH::DebugRenderer::Batch CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount) override;
-        JPH::DebugRenderer::Batch CreateTriangleBatch(const JPH::DebugRenderer::Vertex* inVertices, int inVertexCount, const JPH::uint32* inIndices, int inIndexCount) override;
-        void DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) override;
-        void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override;
+        void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) noexcept override;
+        void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) noexcept override;
+        JPH::DebugRenderer::Batch CreateTriangleBatch(const JPH::DebugRenderer::Triangle* inTriangles, int inTriangleCount) noexcept override;
+        JPH::DebugRenderer::Batch CreateTriangleBatch(const JPH::DebugRenderer::Vertex* inVertices, int inVertexCount, const JPH::uint32* inIndices, int inIndexCount) noexcept override;
+        void DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) noexcept override;
+        void DrawText3D(JPH::RVec3Arg inPosition, const std::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) noexcept override;
     private:
         struct TextData final
         {
@@ -76,14 +76,14 @@ namespace darmok::physics3d
         std::shared_ptr<Program> _program;
 
         JoltPhysicsDebugRenderer() noexcept;
-        void doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder);
-        std::unique_ptr<Mesh> createMesh(const MeshData& meshData);
-        void renderMesh(const Mesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
-        void renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
-        void renderSubmit(EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white());
-        void renderText();
+        expected<void, std::string> doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        expected<void, std::string> renderMesh(const Mesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white()) noexcept;
+        expected<void, std::string> renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white()) noexcept;
+        expected<void, std::string> renderSubmit(EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white()) noexcept;
+        expected<void, std::string> renderText() noexcept;
 
-        bool tryRenderMeshBatch(MeshData& meshData, EDrawMode mode = EDrawMode::Solid);
+        expected<void, std::string> renderMeshBatch(MeshData& meshData, EDrawMode mode = EDrawMode::Solid) noexcept;
+		void onError(std::string_view prefix, std::string_view message) noexcept;
     };
 
     class PhysicsDebugRendererImpl final : public IInputEventListener

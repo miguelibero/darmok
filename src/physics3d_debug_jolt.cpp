@@ -12,6 +12,8 @@
 #include <darmok/texture.hpp>
 #include <darmok/vertex.hpp>
 #include <darmok/text.hpp>
+#include <darmok/string.hpp>
+#include <darmok/stream.hpp>
 #include "detail/physics3d_jolt.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -59,26 +61,26 @@ namespace darmok::physics3d
         }
     }
 
-    void JoltPhysicsDebugRenderer::shutdown()
+    void JoltPhysicsDebugRenderer::shutdown() noexcept
     {
-        const std::lock_guard lock(_instanceLock);
+        const std::lock_guard lock{ _instanceLock };
         _instance.reset();
     }
 
     std::unique_ptr<JoltPhysicsDebugRenderer> JoltPhysicsDebugRenderer::_instance;
     std::mutex JoltPhysicsDebugRenderer::_instanceLock;
 
-    void JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        const std::lock_guard lock(_instanceLock);
+        const std::lock_guard lock{ _instanceLock };
         if (!_instance)
         {
             _instance = std::unique_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer());
         }
-        _instance->doRender(joltSystem, config, viewId, encoder);
+        return _instance->doRender(joltSystem, config, viewId, encoder);
     }
 
-    void JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder)
+    expected<void, std::string> JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         _config = config;
 
@@ -93,39 +95,60 @@ namespace darmok::physics3d
 
         joltSystem.DrawBodies(settings, this, nullptr);
 
-        renderMesh(_wireMeshData, EDrawMode::Wireframe);
-        renderMesh(_solidMeshData, EDrawMode::Solid);
-        renderText();
+        std::vector<std::string> errors;
+
+        auto result = renderMesh(_wireMeshData, EDrawMode::Wireframe);
+        if(!result)
+        {
+            errors.push_back(std::move(result).error());
+		}
+        result = renderMesh(_solidMeshData, EDrawMode::Solid);
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
+        result = renderText();
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
 
         NextFrame();
+
+        return StringUtils::joinExpectedErrors(errors);
     }
 
-    bool JoltPhysicsDebugRenderer::tryRenderMeshBatch(MeshData& meshData, EDrawMode mode)
+    expected<void, std::string> JoltPhysicsDebugRenderer::renderMeshBatch(MeshData& meshData, EDrawMode mode) noexcept
     {
         if (meshData.vertices.size() < _config.meshBatchSize)
         {
-            return false;
+            return {};
         }
-        renderMesh(meshData, mode);
-        return true;
+        return renderMesh(meshData, mode);
     }
 
-    void JoltPhysicsDebugRenderer::renderMesh(MeshData& meshData, EDrawMode mode, const Color& color)
+    expected<void, std::string> JoltPhysicsDebugRenderer::renderMesh(MeshData& meshData, EDrawMode mode, const Color& color) noexcept
     {
         if (meshData.empty())
         {
-            return;
+            return {};
         }
-        auto mesh = createMesh(meshData);
+
+		auto meshResult = meshData.createMesh(_program->getVertexLayout());
+        if(!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+		}
+
         meshData.clear();
-        renderMesh(*mesh, mode, color);
+        return renderMesh(meshResult.value(), mode, color);
     }
 
-    void JoltPhysicsDebugRenderer::renderText()
+    expected<void, std::string> JoltPhysicsDebugRenderer::renderText() noexcept
     {
         if (!_config.font)
         {
-            return;
+            return {};
         }
         std::unordered_set<char32_t> chars;
         for (auto& textData : _textData)
@@ -135,7 +158,7 @@ namespace darmok::physics3d
         auto updateResult = _config.font->update(chars);
         if (!updateResult)
         {
-            return;
+            return updateResult;
 		}
 
         MeshData meshData;
@@ -147,10 +170,14 @@ namespace darmok::physics3d
             textMeshData *= glm::translate(glm::mat4(textData.height), textData.position);
 
             meshData += textMeshData;
-            tryRenderMeshBatch(meshData, EDrawMode::Solid);
+            auto error = renderMeshBatch(meshData, EDrawMode::Solid);
+            if (!error)
+            {
+                return error;
+            }
         }
         _textData.clear();
-        renderMesh(meshData, EDrawMode::Solid);
+        return renderMesh(meshData, EDrawMode::Solid);
     }
 
     bool PhysicsDebugRendererImpl::isEnabled() const noexcept
@@ -163,24 +190,29 @@ namespace darmok::physics3d
         _enabled = enabled;
     }
 
-    void JoltPhysicsDebugRenderer::renderMesh(const Mesh& mesh, EDrawMode mode, const Color& color)
+    expected<void, std::string> JoltPhysicsDebugRenderer::renderMesh(const Mesh& mesh, EDrawMode mode, const Color& color) noexcept
     {
         if (!_encoder)
         {
-            return;
+            return {};
         }
         auto& encoder = _encoder.value();
         if (mesh.render(encoder))
         {
-            renderSubmit(mode, color);
+            return renderSubmit(mode, color);
         }
+        return {};
     }
 
-    void JoltPhysicsDebugRenderer::renderSubmit(EDrawMode mode, const Color& color)
+    expected<void, std::string> JoltPhysicsDebugRenderer::renderSubmit(EDrawMode mode, const Color& color) noexcept
     {
-        if (!_encoder || !_viewId)
+        if (!_encoder)
         {
-            return;
+            return unexpected<std::string>{"missing encoder"};
+        }
+        if (!_viewId)
+        {
+            return unexpected<std::string>{"missing view id"};
         }
         auto v = Colors::normalize(color);
         _encoder->setUniform(_colorUniform, glm::value_ptr(v));
@@ -193,33 +225,48 @@ namespace darmok::physics3d
 
         _encoder->setState(state);
         _encoder->submit(_viewId.value(), _program->getHandle());
+        return {};
     }
 
-    void JoltPhysicsDebugRenderer::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color)
+    void JoltPhysicsDebugRenderer::DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg color) noexcept
     {
         MeshData data(Line(JoltUtils::convert(from), JoltUtils::convert(to)));
         data *= JoltUtils::convert(color);
         _wireMeshData += data;
-        tryRenderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
+        auto result = renderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
+        if (!result)
+        {
+			onError("DrawLine", result.error());
+        }
     }
 
-    void JoltPhysicsDebugRenderer::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow)
+    void JoltPhysicsDebugRenderer::onError(std::string_view prefix, std::string_view message) noexcept
+    {
+        StreamUtils::log(fmt::format("JoltPhysicsDebugRenderer::{}: {}", prefix, message), true);
+	}
+
+    void JoltPhysicsDebugRenderer::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow) noexcept
     {
         MeshData data(darmok::Triangle(JoltUtils::convert(v1), JoltUtils::convert(v2), JoltUtils::convert(v3)));
         data *= JoltUtils::convert(color);
+        expected<void, std::string> result;
         if (castShadow == ECastShadow::On)
         {
             _solidMeshData += data;
-            tryRenderMeshBatch(_solidMeshData, EDrawMode::Solid);
+            result = renderMeshBatch(_solidMeshData, EDrawMode::Solid);
         }
         else
         {
             _wireMeshData += data;
-            tryRenderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
+            result = renderMeshBatch(_wireMeshData, EDrawMode::Wireframe);
+        }
+        if (!result)
+        {
+            onError("DrawTriangle", result.error());
         }
     }
 
-    void JoltPhysicsDebugRenderer::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height)
+    void JoltPhysicsDebugRenderer::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height) noexcept
     {
 		auto content = StringUtils::toUtf32(str);
         if (content.empty())
@@ -235,7 +282,7 @@ namespace darmok::physics3d
         });
     }
 
-    JPH::DebugRenderer::Batch JoltPhysicsDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* triangles, int triangleCount)
+    JPH::DebugRenderer::Batch JoltPhysicsDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Triangle* triangles, int triangleCount) noexcept
     {
         MeshData data;
         for (int i = 0; i < triangleCount; i++)
@@ -251,10 +298,16 @@ namespace darmok::physics3d
                 ); 
             }
         }
-        return new JoltMeshBatch(createMesh(data));
+        auto meshResult = data.createMesh(_program->getVertexLayout());
+        if (!meshResult)
+        {
+            return nullptr;
+        }
+
+        return new JoltMeshBatch{ std::make_unique<Mesh>(std::move(meshResult).value()) };
     }
 
-    JPH::DebugRenderer::Batch JoltPhysicsDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* vertices, int vertexCount, const JPH::uint32* indices, int indexCount)
+    JPH::DebugRenderer::Batch JoltPhysicsDebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Vertex* vertices, int vertexCount, const JPH::uint32* indices, int indexCount) noexcept
     {
         MeshData data;
         for (int i = 0; i < vertexCount; i++)
@@ -271,15 +324,16 @@ namespace darmok::physics3d
         {
             data.indices.emplace_back(indices[i]);
         }
-        return new JoltMeshBatch{ createMesh(data) };
+        auto meshResult = data.createMesh(_program->getVertexLayout());
+        if (!meshResult)
+        {
+            return nullptr;
+        }
+
+        return new JoltMeshBatch{ std::make_unique<Mesh>(std::move(meshResult).value()) };
     }
 
-    std::unique_ptr<Mesh> JoltPhysicsDebugRenderer::createMesh(const MeshData& meshData)
-    {
-        return std::make_unique<Mesh>(meshData.createMesh(_program->getVertexLayout()));
-    }
-
-    void JoltPhysicsDebugRenderer::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float inLODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode)
+    void JoltPhysicsDebugRenderer::DrawGeometry(JPH::RMat44Arg modelMatrix, const JPH::AABox& worldSpaceBounds, float inLODScaleSq, JPH::ColorArg modelColor, const GeometryRef& geometry, ECullMode cullMode, ECastShadow castShadow, EDrawMode drawMode) noexcept
     {
         if (!geometry || geometry->mLODs.empty())
         {
@@ -292,8 +346,17 @@ namespace darmok::physics3d
         auto transMtx = JoltUtils::convert(modelMatrix);
         _encoder->setTransform(glm::value_ptr(transMtx));
 
-        batch.mesh->render(_encoder.value());
-        renderMesh(*batch.mesh, drawMode, JoltUtils::convert(modelColor));
+        auto result = batch.mesh->render(_encoder.value());
+        static constexpr std::string_view logPrefix = "DrawGeometry";
+        if (!result)
+        {
+            onError(logPrefix, result.error());
+        }
+        result = renderMesh(*batch.mesh, drawMode, JoltUtils::convert(modelColor));
+        if (!result)
+        {
+            onError(logPrefix, result.error());
+        }
     }
 
     PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Config& config) noexcept
@@ -341,8 +404,7 @@ namespace darmok::physics3d
             return unexpected<std::string>{"uninitialized jolt system"};
         }
 
-        JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, viewId, encoder);
-        return {};
+        return JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, viewId, encoder);
     }
 
     void PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept

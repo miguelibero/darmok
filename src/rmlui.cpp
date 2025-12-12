@@ -89,13 +89,24 @@ namespace darmok
         }
     }
 
+    void RmluiRenderInterface::onError(std::string_view prefix, std::string_view msg) noexcept
+    {
+        StreamUtils::log(fmt::format("RmluiRenderInterface::{}: {}", prefix, msg), true);
+    }
+
     Rml::CompiledGeometryHandle RmluiRenderInterface::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept
     {
-        DataView vertData(vertices.data(), sizeof(Rml::Vertex) * vertices.size());
-        DataView idxData(indices.data(), sizeof(int) * indices.size());
+        DataView vertData{ vertices.data(), sizeof(Rml::Vertex) * vertices.size() };
+        DataView idxData{ indices.data(), sizeof(int) * indices.size() };
         MeshConfig meshConfig;
         meshConfig.index32 = true;
-        auto mesh = std::make_unique<Mesh>(_program->getVertexLayout(), vertData, idxData, meshConfig);
+        auto meshResult = Mesh::load(_program->getVertexLayout(), vertData, idxData, meshConfig);
+        if (!meshResult)
+        {
+            onError("CompileGeometry", meshResult.error());
+            return 0;
+        }
+        auto mesh = std::make_unique<Mesh>(std::move(meshResult).value());
         Rml::CompiledGeometryHandle handle = mesh->getVertexHandleIndex() + 1;
         _meshes.emplace(handle, std::move(mesh));
         return handle;
@@ -114,8 +125,12 @@ namespace darmok
         }
 
         auto& encoder = _encoder.value();
-        meshItr->second->render(encoder);
-
+        auto renderResult = meshItr->second->render(encoder);
+        if (!renderResult)
+        {
+            onError("RenderGeometry", renderResult.error());
+            return;
+        }
         auto position = RmluiUtils::convert(translation);
 
         OptionalRef<Texture> tex;
@@ -137,25 +152,33 @@ namespace darmok
         }
     }
 
-    bool RmluiRenderInterface::renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
+    expected<void, std::string> RmluiRenderInterface::renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept
     {
         auto texture = getSpriteTexture(sprite);
         if (!texture)
         {
-            return false;
+            return unexpected<std::string>{"missing sprite texture"};
         }
         auto rect = RmluiUtils::convert(sprite.rectangle);
         auto atlasElm = TextureAtlasUtils::createElement(TextureAtlasBounds{ rect.size, rect.origin });
 
         TextureAtlasMeshConfig config;
         config.type = Mesh::Definition::Transient;
-        auto mesh = TextureAtlasUtils::createSprite(atlasElm, _program->getVertexLayout(), texture->getSize(), config);
+        auto meshResult = TextureAtlasUtils::createSprite(atlasElm, _program->getVertexLayout(), texture->getSize(), config);
+        if(!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+		}
 
         auto& encoder = _encoder.value();
-        mesh->render(encoder);
+        auto renderResult = meshResult.value()->render(encoder);
+        if (!renderResult)
+        {
+            return unexpected{ std::move(renderResult).error() };
+        }
         submit(position, texture);
 
-        return true;
+        return {};
     }
 
     void RmluiRenderInterface::submit(const glm::vec2& position, const OptionalRef<Texture>& texture) noexcept
@@ -196,6 +219,7 @@ namespace darmok
 
         if (!fileHandle)
         {
+            onError("LoadTexture", "empty file handle");
             return false;
         }
 
@@ -208,6 +232,7 @@ namespace darmok
         auto imgResult = Image::load(data, alloc);
         if (!imgResult)
         {
+            onError("LoadTexture", imgResult.error());
             return 0;
         }
         auto img = std::move(imgResult).value();
@@ -229,20 +254,12 @@ namespace darmok
         config.set_format(Texture::Definition::RGBA8);
         *config.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ dimensions.x, dimensions.y });
 
-        DataView data(source.data(), size);
-
-        try
-        {
-            uint64_t flags = _canvas.getDefaultTextureFlags();
-            auto texture = std::make_unique<Texture>(data, config, flags);
-            Rml::TextureHandle handle = texture->getHandle().idx + 1;
-            _textures.emplace(handle, std::move(texture));
-            return handle;
-        }
-        catch (...)
-        {
-            return 0;
-        }
+        DataView data{ source.data(), size };
+        uint64_t flags = _canvas.getDefaultTextureFlags();
+        auto texture = std::make_unique<Texture>(data, config, flags);
+        Rml::TextureHandle handle = texture->getHandle().idx + 1;
+        _textures.emplace(handle, std::move(texture));
+        return handle;
     }
 
     void RmluiRenderInterface::ReleaseTexture(Rml::TextureHandle handle) noexcept
@@ -390,7 +407,7 @@ namespace darmok
 
     */
 
-    glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position)
+    glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position) noexcept
     {
         return glm::translate(_trans, glm::vec3(position, 0.F));
     }
@@ -421,7 +438,7 @@ namespace darmok
         }
     }
 
-    void RmluiRenderInterface::renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRenderInterface::renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         _viewId = viewId;
         _encoder = encoder;
@@ -429,30 +446,33 @@ namespace darmok
 
         if (!_canvas.getContext().Render())
         {
-            return;
+            _encoder.reset();
+            return {};
         }
 
+        expected<void, std::string> result;
         if (auto cursorSprite = _canvas.getMouseCursorSprite())
         {
-            renderSprite(cursorSprite.value(), _canvas.getMousePosition());
+            result = renderSprite(cursorSprite.value(), _canvas.getMousePosition());
         }
 
         _encoder.reset();
+        return result;
     }
 
-    void RmluiRenderInterface::renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRenderInterface::renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         auto tex = _canvas.getFrameTexture();
         if (!tex)
         {
-            return;
+            return unexpected<std::string>{"missing frame texture"};
         }
         auto model = _canvas.getRenderMatrix();
         encoder.setTransform(glm::value_ptr(model));
 
         encoder.setTexture(0, _textureUniform, tex->getHandle());
 
-        glm::vec3 data(0);
+        glm::vec3 data{ 0 };
         if (auto depth = _canvas.getForcedDepth())
         {
             data.x = 1.F;
@@ -460,10 +480,13 @@ namespace darmok
         }
         encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
-        auto meshData = MeshData(Rectangle(_canvas.getCurrentSize()));
+        auto meshData = MeshData{ Rectangle{_canvas.getCurrentSize()} };
         meshData.type = Mesh::Definition::Transient;
-        auto mesh = meshData.createMesh(_program->getVertexLayout());
-
+        auto meshResult = meshData.createMesh(_program->getVertexLayout());
+		if (!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+        }
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_A
@@ -473,9 +496,16 @@ namespace darmok
             | BGFX_STATE_BLEND_ALPHA
             ;
 
-        mesh.render(encoder);
+        auto renderResult = meshResult.value().render(encoder);
+        if (!renderResult)
+        {
+            return unexpected{ std::move(renderResult).error() };
+        }
+
         encoder.setState(state);
         encoder.submit(viewId, _program->getHandle());
+
+        return {};
     }
 
     OptionalRef<Texture> RmluiRenderInterface::getSpriteTexture(const Rml::Sprite& sprite) noexcept
@@ -1125,19 +1155,24 @@ namespace darmok
         return false;
     }
 
-    void RmluiCanvasImpl::render(bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiCanvasImpl::render(bgfx::Encoder& encoder) noexcept
     {
+        if (!_visible)
+        {
+            return {};
+        }
+
         if (!_viewId)
         {
-            return;
+            return unexpected<std::string>{"missing view id"};
         }
 
         auto viewId = _viewId.value();
         encoder.touch(viewId);
 
-        if (!_visible || !_render || !_context)
+        if (!_render)
         {
-            return;
+            return unexpected<std::string>{"missing render interface"};
         }
 
         if (!_size && updateCurrentSize())
@@ -1145,20 +1180,16 @@ namespace darmok
             configureViewSize(viewId);
         }
 
-        if (!_frameBuffer)
-        {
-            return;
-        }
-
-        _render->renderCanvas(_viewId.value(), encoder);
+        return _render->renderCanvas(_viewId.value(), encoder);
     }
 
-    void RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         if (_render)
         {
-            _render->renderFrame(viewId, encoder);
+            return _render->renderFrame(viewId, encoder);
         }
+        return {};
     }
 
     OptionalRef<Transform> RmluiCanvasImpl::getTransform() const noexcept
@@ -2168,13 +2199,18 @@ namespace darmok
     expected<void, std::string> RmluiRendererImpl::render() noexcept
     {
         auto encoder = bgfx::begin();
+		std::vector<std::string> errors;
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
-            canvas.getImpl().render(*encoder);
+            auto result = canvas.getImpl().render(*encoder);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
         bgfx::end(encoder);
-        return {};
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     expected<bgfx::ViewId, std::string > RmluiRendererImpl::renderReset(bgfx::ViewId viewId) noexcept
@@ -2189,12 +2225,17 @@ namespace darmok
 
     expected<void, std::string> RmluiRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
+		std::vector<std::string> errors;
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
-            canvas.getImpl().beforeRenderView(viewId, encoder);
+            auto result = canvas.getImpl().beforeRenderView(viewId, encoder);
+            if (!result)
+            {
+				errors.push_back(std::move(result).error());
+            }
         }
-        return {};
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     RmluiRenderer::RmluiRenderer() noexcept

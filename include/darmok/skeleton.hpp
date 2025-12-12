@@ -307,9 +307,11 @@ namespace darmok
     class DARMOK_EXPORT RenderableSkeleton final
     {
     public:
-        RenderableSkeleton(const std::shared_ptr<Material>& mat = nullptr, const std::shared_ptr<Mesh>& boneMesh = nullptr) noexcept;
+        RenderableSkeleton(const std::shared_ptr<Mesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept;
         RenderableSkeleton& setFont(const std::shared_ptr<IFont>& font) noexcept;
         void update(Scene& scene, const std::unordered_map<std::string, glm::mat4>& boneMatrixes) noexcept;
+
+		static expected<Mesh, std::string> createBoneMesh(const std::optional<bgfx::VertexLayout>& layout = std::nullopt) noexcept;
     private:
         std::shared_ptr<IFont> _font;
         std::shared_ptr<Material> _material;

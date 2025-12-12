@@ -71,7 +71,7 @@ namespace darmok
     public:
         static RenderableSkeleton& addEntityComponent1(LuaEntity& entity) noexcept;
         static RenderableSkeleton& addEntityComponent2(LuaEntity& entity, const std::shared_ptr<Material>& mat) noexcept;
-		static RenderableSkeleton& addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Material>& mat, const std::shared_ptr<Mesh>& boneMesh) noexcept;
+		static RenderableSkeleton& addEntityComponent3(LuaEntity& entity, const std::shared_ptr<Mesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept;
 		static OptionalRef<RenderableSkeleton>::std_t getEntityComponent(LuaEntity& entity) noexcept;
 		static std::optional<LuaEntity> getEntity(const RenderableSkeleton& skel, std::shared_ptr<Scene>& scene) noexcept;
     

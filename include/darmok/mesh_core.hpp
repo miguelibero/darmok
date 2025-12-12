@@ -64,17 +64,13 @@ namespace darmok
         using Definition = protobuf::Mesh;
         using Type = protobuf::Mesh::Type;
         using Source = protobuf::MeshSource;
-
-        Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config = {}) noexcept;
-        Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
-        Mesh(const Definition& def);
         
         Mesh(Mesh&& other) = default;
         Mesh& operator=(Mesh&& other) = default;
         Mesh(const Mesh& other) = delete;
         Mesh& operator=(const Mesh& other) = delete;
 
-        bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+        expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;        
         [[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
@@ -87,6 +83,9 @@ namespace darmok
 
         [[nodiscard]] static Source createSource() noexcept;
         [[nodiscard]] static Definition createDefinition() noexcept;
+        [[nodiscard]] static expected<Mesh, std::string> load(const bgfx::VertexLayout& layout, DataView vertices, Config config = {}) noexcept;
+        [[nodiscard]] static expected<Mesh, std::string> load(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
+        [[nodiscard]] static expected<Mesh, std::string> load(const Definition& def) noexcept;
     private:
         struct StaticVariant final
         {
@@ -99,7 +98,7 @@ namespace darmok
 			StaticVariant& operator=(const StaticVariant& other) = delete;
             StaticVariant(StaticVariant&& other);
             StaticVariant& operator=(StaticVariant&& other);
-            bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+            expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
         };
 
         struct DynamicVariant final
@@ -113,7 +112,7 @@ namespace darmok
             DynamicVariant& operator=(const DynamicVariant& other) = delete;
             DynamicVariant(DynamicVariant&& other);
             DynamicVariant& operator=(DynamicVariant&& other);
-            bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+            expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
         };
 
         struct TransientVariant final
@@ -126,12 +125,13 @@ namespace darmok
             TransientVariant& operator=(const TransientVariant& other) = delete;
             TransientVariant(TransientVariant&& other) = default;
             TransientVariant& operator=(TransientVariant&& other) = default;
-            bool render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+            expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
         };
 
         using Variant = std::variant<StaticVariant, DynamicVariant, TransientVariant>;
 
-        static Variant createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
+        Mesh(Type type, Variant variant, const bgfx::VertexLayout& layout, size_t vertNum, size_t idxNum) noexcept;
+        static expected<Variant, std::string> createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
 
         Type _type;
         Variant _variant;
@@ -240,10 +240,10 @@ namespace darmok
 		[[nodiscard]] const std::string& getName() const noexcept;
 
         void exportData(const bgfx::VertexLayout& vertexLayout, Data& vertexData, Data& indexData) const noexcept;
-        [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
-        [[nodiscard]] Mesh createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
-        [[nodiscard]] std::shared_ptr<Mesh::Definition> createSharedDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
-        [[nodiscard]] std::shared_ptr<Mesh> createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const;
+        [[nodiscard]] Mesh::Definition createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const noexcept;
+        [[nodiscard]] std::shared_ptr<Mesh::Definition> createSharedDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const noexcept;
+        [[nodiscard]] expected<Mesh, std::string> createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const noexcept;
+        [[nodiscard]] expected<std::shared_ptr<Mesh>, std::string> createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config = {}) const noexcept;
         [[nodiscard]] static const bgfx::VertexLayout& getDefaultVertexLayout() noexcept;
 
         MeshData& convertQuadIndicesToLine() noexcept;

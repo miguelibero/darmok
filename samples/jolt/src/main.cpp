@@ -98,8 +98,10 @@ namespace
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape{ {10.f, .5f, 10.f}, {0.f, -0.25f, 0.f} };
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::Definition::Static);
-				auto floorMesh = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
-				_scene->addComponent<Renderable>(floorEntity, std::move(floorMesh), prog, Colors::grey());
+				if (auto floorMeshResult = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout()))
+				{
+					_scene->addComponent<Renderable>(floorEntity, floorMeshResult.value(), prog, Colors::grey());
+				}
 			}
 
 			{ // door
@@ -116,14 +118,19 @@ namespace
 
 				_doorMat = std::make_shared<Material>(prog, Color{ 255, 100, 100, 255 });
 				_triggerDoorMat = std::make_shared<Material>(prog, Colors::red());
-				auto doorMesh = MeshData{ doorShape }.createSharedMesh(prog->getVertexLayout());
-				_scene->addComponent<Renderable>(doorEntity, std::move(doorMesh), _doorMat);
+				if (auto doorMeshResult = MeshData{ doorShape }.createSharedMesh(prog->getVertexLayout()))
+				{
+					_scene->addComponent<Renderable>(doorEntity, doorMeshResult.value(), _doorMat);
+				}
 			}
 
 			{ // cubes
 				_cubeMat = std::make_shared<Material>(prog, Color{ 100, 255, 100, 255 });
 				_touchedCubeMat = std::make_shared<Material>(prog, Colors::green());
-				_cubeMesh = MeshData{ _cubeShape }.createSharedMesh(prog->getVertexLayout());
+				if (auto meshResult = MeshData{ _cubeShape }.createSharedMesh(prog->getVertexLayout()))
+				{
+					_cubeMesh = meshResult.value();
+				}
 
 				for (auto x = -5.f; x < 5.f; x += 1.1f)
 				{
@@ -147,9 +154,11 @@ namespace
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, charDef);
 				_characterBody->addListener(*this);
 
-				auto playerMesh = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout());
-				_scene->addComponent<Renderable>(playerEntity, std::move(playerMesh), prog, Colors::red());
-				_characterTrans = _scene->addComponent<Transform>(playerEntity);
+				if (auto playerMeshResult = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout()))
+				{
+					_scene->addComponent<Renderable>(playerEntity, playerMeshResult.value(), prog, Colors::red());
+					_characterTrans = _scene->addComponent<Transform>(playerEntity);
+				}
 			}
 
 			return {};

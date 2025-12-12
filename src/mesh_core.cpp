@@ -79,18 +79,18 @@ namespace darmok
 		return *this;
 	}
 
-	bool Mesh::StaticVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::StaticVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		if (!isValid(vertexBuffer))
 		{
-			return false;
+			return unexpected<std::string>{"invalid vertex buffer"};
 		}
 		encoder.setVertexBuffer(config.vertexStream, vertexBuffer, config.startVertex, config.numVertices);
 		if (isValid(indexBuffer))
 		{
 			encoder.setIndexBuffer(indexBuffer, config.startIndex, config.numIndices);
 		}
-		return true;
+		return {};
 	}
 
 	Mesh::DynamicVariant::DynamicVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
@@ -135,18 +135,18 @@ namespace darmok
 		return *this;
 	}
 
-	bool Mesh::DynamicVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::DynamicVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		if (!isValid(vertexBuffer))
 		{
-			return false;
+			return unexpected<std::string>{"invalid vertex buffer"};
 		}
 		encoder.setVertexBuffer(config.vertexStream, vertexBuffer, config.startVertex, config.numVertices);
 		if (isValid(indexBuffer))
 		{
 			encoder.setIndexBuffer(indexBuffer, config.startIndex, config.numIndices);
 		}
-		return true;
+		return {};
 	}
 
 	Mesh::TransientVariant::TransientVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
@@ -186,47 +186,62 @@ namespace darmok
 		}
 	}
 
-	bool Mesh::TransientVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::TransientVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		encoder.setVertexBuffer(config.vertexStream, &vertexBuffer, config.startVertex, config.numVertices);
 		if (config.numIndices > 0)
 		{
 			encoder.setIndexBuffer(&indexBuffer, config.startIndex, config.numIndices);
 		}
-		return true;
+		return {};
 	}
 
-	Mesh::Variant Mesh::createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
+	expected<Mesh, std::string> Mesh::load(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
-				auto flags = config.getFlags();
+		auto variantResult = createVariant(config.type, layout, vertices, indices, config);
+		if(!variantResult)
+		{
+			return unexpected(variantResult.error());
+		}
+		return Mesh{ config.type, std::move(variantResult).value(), layout,
+			layout.getStride() != 0 ? vertices.size() / layout.getStride() : 0,
+			config.getIndexSize() != 0 ? indices.size() / config.getIndexSize() : 0
+		};
+	}
+
+	expected<Mesh, std::string> Mesh::load(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
+	{
+		return load(layout, vertices, DataView{}, config);
+	}
+
+	expected<Mesh, std::string> Mesh::load(const Definition& def) noexcept
+	{
+		return load(ConstVertexLayoutWrapper{ def.layout() }.getBgfx(),
+			DataView{ def.vertices() }, DataView{ def.indices() }, Config::fromDefinition(def));
+	}
+
+	expected<Mesh::Variant, std::string> Mesh::createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
+	{
+		auto flags = config.getFlags();
 		switch (config.type)
 		{
 			case Definition::Dynamic:
-				return DynamicVariant(layout, vertices, indices, config);
+				return DynamicVariant{ layout, vertices, indices, config };
 			case Definition::Transient:
-				return TransientVariant(layout, vertices, indices, config);
+				return TransientVariant{ layout, vertices, indices, config };
+			case Definition::Static:
+				return StaticVariant{ layout, vertices, indices, config };
 			default:
-				return StaticVariant(layout, vertices, indices, config);
+				return unexpected<std::string>{ "unknown mesh type" };
 		}
 	}
 
-	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
-		: _type{ config.type }
-		, _variant{ createVariant(_type, layout, vertices, indices, config) }
+	Mesh::Mesh(Type type, Variant variant, const bgfx::VertexLayout& layout, size_t vertNum, size_t idxNum) noexcept
+		: _type{ type }
+		, _variant{ std::move(variant) }
 		, _layout{ layout }
-		, _vertNum{ layout.getStride() != 0 ? vertices.size() / layout.getStride() : 0 }
-		, _idxNum{ indices.size() / config.getIndexSize() }
-	{
-	}
-
-	Mesh::Mesh(const bgfx::VertexLayout& layout, DataView vertices, Config config) noexcept
-		: Mesh(layout, vertices, DataView{}, config)
-	{
-	}
-
-	Mesh::Mesh(const Definition& def)
-		: Mesh(ConstVertexLayoutWrapper{ def.layout() }.getBgfx(),
-			DataView{ def.vertices() }, DataView{ def.indices() }, Config::fromDefinition(def))
+		, _vertNum{ vertNum }
+		, _idxNum{ idxNum }
 	{
 	}
 
@@ -275,12 +290,12 @@ namespace darmok
 		}
 	}
 
-	bool Mesh::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		config.fix(static_cast<uint32_t>(_vertNum), static_cast<uint32_t>(_idxNum));
 		if (config.numVertices == 0)
 		{
-			return false;
+			return {};
 		}
 		return std::visit([&](const auto& data) { return data.render(encoder, config); }, _variant);
 	}
@@ -408,7 +423,7 @@ namespace darmok
 		indexData = DataView{ indices };
 	}
 
-	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	Mesh::Definition MeshData::createDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const noexcept
 	{
 		Mesh::Definition def;
 		def.set_name(_name);
@@ -426,19 +441,24 @@ namespace darmok
 		return def;
 	}
 
-	Mesh MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	expected<Mesh, std::string> MeshData::createMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const noexcept
 	{
-		return createDefinition(vertexLayout, config);
+		return Mesh::load(createDefinition(vertexLayout, config));
 	}
 
-	std::shared_ptr<Mesh::Definition> MeshData::createSharedDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	std::shared_ptr<Mesh::Definition> MeshData::createSharedDefinition(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const noexcept
 	{
-		return std::make_shared<Mesh::Definition>(createDefinition(vertexLayout, config));
+		return std::make_shared<Mesh::Definition>(std::move(createDefinition(vertexLayout, config)));
 	}
 
-	std::shared_ptr<Mesh> MeshData::createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const
+	expected<std::shared_ptr<Mesh>, std::string> MeshData::createSharedMesh(const bgfx::VertexLayout& vertexLayout, const Mesh::Config& config) const noexcept
 	{
-		return std::make_shared<Mesh>(createDefinition(vertexLayout, config));
+		auto result = Mesh::load(createDefinition(vertexLayout, config));
+		if(!result)
+		{
+			return unexpected{ std::move(result).error() };
+		}
+		return std::make_shared<Mesh>(std::move(result).value());
 	}
 
 	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices

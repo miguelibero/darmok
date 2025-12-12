@@ -459,8 +459,13 @@ namespace darmok
 		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 		_basicUniforms.init();
 
-		const Rectangle screen{ glm::uvec2{2} };
-		_mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
+		static const Rectangle screen{ glm::uvec2{2} };
+		auto meshResult = MeshData{ screen }.createMesh(_program->getVertexLayout());
+		if (!meshResult)
+		{
+			return unexpected{ std::move(meshResult).error() };
+		}
+		_mesh = std::make_unique<Mesh>(std::move(meshResult).value());
 		return {};
 	}
 
@@ -537,7 +542,11 @@ namespace darmok
 			return {};
 		}
 
-		_mesh->render(encoder);
+		auto result = _mesh->render(encoder);
+		if (!result)
+		{
+			return result;
+		}
 
 		encoder.setTexture(0, _texUniform, _readTex->getTexture()->getHandle());
 		_basicUniforms.configure(encoder);

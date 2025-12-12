@@ -115,15 +115,15 @@ namespace darmok
 		return *this;
 	}
 
-	bool Text::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const
+	expected<void, std::string> Text::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
 	{
 		if (!_font || !_mesh)
 		{
-			return false;
+			return {};
 		}
 		if (_vertexNum == 0 || _indexNum == 0)
 		{
-			return false;
+			return {};
 		}
 		return _mesh->render(encoder, {
 			.numVertices = _vertexNum,
@@ -131,11 +131,11 @@ namespace darmok
 		});
 	}
 
-	bool Text::update(const bgfx::VertexLayout& layout)
+	expected<void, std::string> Text::update(const bgfx::VertexLayout& layout) noexcept
 	{
 		if (!_font || !_changed)
 		{
-			return false;
+			return {};
 		}
 
 		auto data = createMeshData(_content, *_font, _renderConfig);
@@ -143,7 +143,7 @@ namespace darmok
 		{
 			_vertexNum = 0;
 			_indexNum = 0;
-			return false;
+			return {};
 		}
 
 		data *= _color;
@@ -154,7 +154,12 @@ namespace darmok
 		if (!_mesh)
 		{
 			Mesh::Config config{ .type = Mesh::Definition::Dynamic };
-			_mesh.emplace(layout, vertexData, indexData, config);
+			auto meshResult = Mesh::load(layout, vertexData, indexData, config);
+			if (!meshResult)
+			{
+				return unexpected{ std::move(meshResult).error() };
+			}
+			_mesh = std::move(meshResult).value();
 		}
 		else
 		{
@@ -164,7 +169,7 @@ namespace darmok
 		_vertexNum = static_cast<uint32_t>(data.vertices.size());
 		_indexNum = static_cast<uint32_t>(data.indices.size());
 		_changed = false;
-		return true;
+		return {};
 	}
 
 	glm::vec2 TextRenderConfig::getGlyphAdvanceFactor() const noexcept
@@ -321,12 +326,17 @@ namespace darmok
 		{
 			auto updateResult = font->update(chars);
 		}
+		std::vector<std::string> errors;
 		for (auto entity : entities)
 		{
 			auto& text = _scene->getComponent<Text>(entity).value();
-			text.update(_prog->getVertexLayout());
+			auto result = text.update(_prog->getVertexLayout());
+			if (!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
 		}
-		return {};
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	expected<void, std::string> TextRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept

@@ -39,29 +39,18 @@ namespace darmok
     {
         return *_impl;
     }
-    
-    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Material>& mat, const std::shared_ptr<Mesh>& boneMesh) noexcept
-        : _boneMesh{ boneMesh }
-        , _material{ mat }
+
+    expected<Mesh, std::string> RenderableSkeleton::createBoneMesh(const std::optional<bgfx::VertexLayout>& layout) noexcept
     {
-        if (!_material)
-        {
-            _material = std::make_shared<Material>();
-        }
-        if (!_boneMesh)
-        {
-            bgfx::VertexLayout layout;
-            if (auto prog = _material->program)
-            {
-                layout = prog->getVertexLayout();
-            }
-            else
-            {
-                layout = MeshData::getDefaultVertexLayout();
-            }
-            const Line line{ glm::vec3{0}, glm::vec3{1, 0, 0} };
-            _boneMesh = std::make_shared<Mesh>(MeshData{ line, Mesh::Definition::Arrow }.createMesh(layout));
-        }
+        bgfx::VertexLayout flayout = layout ? *layout : MeshData::getDefaultVertexLayout();
+        const Line line{ glm::vec3{0}, glm::vec3{1, 0, 0} };
+        return MeshData{ line, Mesh::Definition::Arrow }.createMesh(flayout);
+    }
+    
+    RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Mesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept
+        : _boneMesh{ boneMesh }
+        , _material{ mat}
+    {
     }
 
     RenderableSkeleton& RenderableSkeleton::setFont(const std::shared_ptr<IFont>& font) noexcept

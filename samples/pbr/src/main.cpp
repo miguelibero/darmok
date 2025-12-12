@@ -126,10 +126,20 @@ namespace
 				tonemapResult.value(), "Tonemap");
 
 			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
-			auto debugArrowMesh = debugArrowMeshData.createSharedMesh(unlitProg->getVertexLayout());
+			auto debugArrowMeshResult = debugArrowMeshData.createSharedMesh(unlitProg->getVertexLayout());
+			if(!debugArrowMeshResult)
+			{
+				return unexpected{ std::move(debugArrowMeshResult).error() };
+			}
+			auto debugArrowMesh = debugArrowMeshResult.value();
 
 			MeshData debugSphereMeshData{ Sphere{0.02f} };
-			auto debugSphereMesh = debugSphereMeshData.createSharedMesh(unlitProg->getVertexLayout());
+			auto debugSphereMeshResult = debugSphereMeshData.createSharedMesh(unlitProg->getVertexLayout());
+			if (!debugSphereMeshResult)
+			{
+				return unexpected{ std::move(debugSphereMeshResult).error() };
+			}
+			auto debugSphereMesh = debugSphereMeshResult.value();
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity);
@@ -170,7 +180,12 @@ namespace
 			goldMat->metallicFactor = 0.5f;
 
 			Cube cubeShape;
-			auto cubeMesh = MeshData{ cubeShape }.createSharedMesh(layout);
+			auto cubeMeshResult = MeshData{ cubeShape }.createSharedMesh(layout);
+			if (!cubeMeshResult)
+			{
+				return unexpected{ std::move(cubeMeshResult).error() };
+			}
+			auto cubeMesh = cubeMeshResult.value();
 			auto cube = scene.createEntity();
 			scene.addComponent<Renderable>(cube, std::move(cubeMesh), greenMat);
 			scene.addComponent<BoundingBox>(cube, cubeShape);
@@ -178,7 +193,13 @@ namespace
 
 			Sphere shereShape;
 			MeshData shereMeshData{ shereShape };
-			auto sphereMesh = shereMeshData.createSharedMesh(layout);
+			auto sphereMeshResult = shereMeshData.createSharedMesh(layout);
+			if(!sphereMeshResult)
+			{
+				return unexpected{ std::move(sphereMeshResult).error() };
+			}
+			auto sphereMesh = sphereMeshResult.value();
+
 			auto sphere = scene.createEntity();
 			scene.addComponent<Renderable>(sphere, std::move(sphereMesh), goldMat);
 			scene.addComponent<BoundingBox>(sphere, shereShape);
@@ -186,7 +207,13 @@ namespace
 
 			auto floorEntity = scene.createEntity();
 			Cube floorShape(glm::vec3{ 10.f, .5f, 10.f }, glm::vec3{ 0, -0.25, 2 });
-			auto floorMesh = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
+			auto floorMeshResult = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
+			if (!floorMeshResult)
+			{
+				return unexpected{ std::move(floorMeshResult).error() };
+			}
+			auto floorMesh = floorMeshResult.value();
+
 			auto floorMat = std::make_shared<Material>(prog, Colors::red());
 			floorMat->programDefines.insert("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);

@@ -17,7 +17,7 @@ namespace darmok
 	class ImguiRenderPass final
 	{
 	public:
-		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui);
+		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept;
 		~ImguiRenderPass() noexcept;
 		expected<void, std::string> init() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
@@ -33,8 +33,8 @@ namespace darmok
 		bgfx::UniformHandle _textureUniform;
 
 		void beginFrame() const noexcept;
-		bool render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept;
-		bool endFrame(bgfx::Encoder& encoder) const noexcept;
+		expected<void, std::string> render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept;
+		expected<void, std::string> endFrame(bgfx::Encoder& encoder) const noexcept;
 	};
 
     class ImguiAppComponentImpl final

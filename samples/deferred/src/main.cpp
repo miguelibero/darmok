@@ -108,7 +108,7 @@ namespace
 				return unexpected{ std::move(progResult).error() };
 			}
 			auto prog = progResult.value();
-			auto arrowMesh = std::make_shared<Mesh>(MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout()));
+			auto arrowMesh = std::make_shared<Mesh>(MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout()).value());
 			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)

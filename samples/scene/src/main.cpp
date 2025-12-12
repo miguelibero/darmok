@@ -130,13 +130,13 @@ namespace
 			scene.addComponent<Camera>(cam3d)
 				.setPerspective(glm::radians(60.f), 0.3f, 1000.f)
 				.setCullingFilter<Culling3D>()
-				.addComponent<ForwardRenderer>();
+				.tryAddComponent<ForwardRenderer>();
 
 			auto cam2d = scene.createEntity();
 			scene.addComponent<Camera>(cam2d)
 				.setOrtho(glm::vec2{ 0.f })
 				.setCullingFilter<Culling2D>()
-				.addComponent<ForwardRenderer>();
+				.tryAddComponent<ForwardRenderer>();
 
 			_debugMaterial = std::make_shared<Material>(_prog, Colors::red());
 			_debugMaterial->primitiveType = Material::Definition::Line;
@@ -160,7 +160,8 @@ namespace
 			MeshData meshData{ Rectangle{tex->getSize()}};
 			meshData.scalePositions(glm::vec3{ 0.5f } * glm::vec3{ fbScale, 1.f });
 
-			auto mesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()));
+			auto meshResult = meshData.createMesh(_prog->getVertexLayout());
+			auto mesh = std::make_shared<Mesh>(std::move(meshResult).value());
 			auto mat = std::make_shared<Material>(_prog, tex);
 			mat->opacityType = Material::Definition::Transparent;
 			scene.addComponent<Renderable>(sprite, std::move(mesh), mat);
@@ -169,7 +170,8 @@ namespace
 			auto size = scale * glm::vec2{ tex->getSize() } *fbScale;
 			meshData = MeshData{ Rectangle::standard(), Mesh::Definition::OutlineRectangle };
 			meshData.scalePositions(glm::vec3{ size, 0.f });
-			auto debugMesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()));
+			meshResult = meshData.createMesh(_prog->getVertexLayout());
+			auto debugMesh = std::make_shared<Mesh>(std::move(meshResult).value());
 
 			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
 			scene.addComponent<Transform>(spriteBorder).setParent(trans);
@@ -213,7 +215,7 @@ namespace
 
 			auto meshData = MeshData{ Cube{} };
 			meshData.subdivideDensity(0.25F);
-			auto cubeMesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()));
+			auto cubeMesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()).value());
 
 			auto cube = scene.createEntity();
 			scene.addComponent<Culling3D>(cube);

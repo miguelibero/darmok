@@ -79,8 +79,8 @@ namespace darmok
         Orientation getOrientation() const noexcept;
         Text& setOrientation(Orientation ori) noexcept;
 
-        bool update(const bgfx::VertexLayout& layout);
-        bool render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const;
+        expected<void, std::string> update(const bgfx::VertexLayout& layout) noexcept;
+        expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
         static MeshData createMeshData(std::u32string_view content, const IFont& font, const RenderConfig& config = {});
     private:

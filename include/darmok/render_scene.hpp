@@ -72,11 +72,11 @@ namespace darmok
         bgfx::VertexLayout getVertexLayout() const noexcept;
 
         bool valid() const noexcept;
-        bool render(bgfx::Encoder& encoder) const;
+        expected<void, std::string> render(bgfx::Encoder& encoder) const noexcept;
 
         using Definition = protobuf::Renderable;
 
-        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt);
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& ctxt) noexcept;
 		static Definition createDefinition() noexcept;
 
     private:

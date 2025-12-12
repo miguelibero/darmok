@@ -124,15 +124,14 @@ namespace darmok
 
     expected<void, std::string> OcclusionCuller::render() noexcept
     {
-        updateQueries();
-        return {};
+        return updateQueries();
     }
 
-    void OcclusionCuller::updateQueries() noexcept
+    expected<void, std::string> OcclusionCuller::updateQueries() noexcept
     {
         if (!_scene || !_viewId || !_cam || !_cam->isEnabled())
         {
-            return;
+            return {};
         }
 
         static const uint64_t state = BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_CULL_CCW;
@@ -144,15 +143,24 @@ namespace darmok
         auto& scene = _scene.value();
         auto entities = _cam->getEntities(CullingUtils::getEntityFilter());
         _cam->setViewTransform(viewId);
+        std::vector<std::string> errors;
         for (auto entity : entities)
         {
             if (auto bounds = CullingUtils::getEntityBounds(scene, entity))
             {
                 _cam->setEntityTransform(entity, encoder);
-                MeshData meshData(Cube{ *bounds });
+                MeshData meshData{ Cube{ *bounds } };
                 meshData.type = Mesh::Definition::Transient;
-                auto mesh = meshData.createMesh(layout);
-                mesh.render(encoder);
+                auto meshResult = meshData.createMesh(layout);
+                if (!meshResult)
+                {
+					errors.push_back(std::move(meshResult).error());
+				}
+                auto renderResult = meshResult.value().render(encoder);
+                if (!renderResult)
+                {
+                    errors.push_back(std::move(renderResult).error());
+                }
                 auto occlusion = getQuery(entity);
                 bgfx::setCondition(occlusion, true);
                 encoder.submit(viewId, prog, occlusion);
@@ -160,6 +168,7 @@ namespace darmok
         }
 
         bgfx::end(&encoder);
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     bgfx::OcclusionQueryHandle OcclusionCuller::getQuery(Entity entity) noexcept
@@ -281,7 +290,11 @@ namespace darmok
             for (auto& plane : frust.getPlanes())
             {
                 meshData += MeshData{plane, Mesh::Definition::OutlineRectangle};
-                _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
+                auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
+                if (!renderResult)
+                {
+					return unexpected{ std::move(renderResult).error() };
+                }
                 ++debugColor;
             }
         }
@@ -296,7 +309,11 @@ namespace darmok
                 {
                     meshData += MeshData{ Cube{ *bbox }, Mesh::Definition::OutlineRectangle };
                     _cam->setEntityTransform(entity, encoder);
-                    _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+                    auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+                    if (!renderResult)
+                    {
+						return unexpected{ std::move(renderResult).error() };
+                    }
                     ++debugColor;
                 }
             }

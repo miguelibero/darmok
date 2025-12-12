@@ -52,7 +52,7 @@ namespace darmok
         return _prog;
     }
 
-    void DebugRenderer::renderMesh(Mesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color, bool lines) noexcept
+    expected<void, std::string> DebugRenderer::renderMesh(const Mesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color, bool lines) noexcept
     {
         static const glm::vec4 noTextures(0);
         encoder.setUniform(_hasTexturesUniform, glm::value_ptr(noTextures));
@@ -67,16 +67,25 @@ namespace darmok
         {
             state &= ~BGFX_STATE_CULL_MASK;
         }
-        mesh.render(encoder);
+        auto result = mesh.render(encoder);
+        if (!result)
+        {
+            return result;
+        }
         encoder.setState(state);
         encoder.submit(viewId, _prog->getHandle());
+        return {};
     }
 
-    void DebugRenderer::renderMesh(MeshData& meshData, bgfx::ViewId viewId, bgfx::Encoder& encoder, uint8_t debugColor, bool lines) noexcept
+    expected<void, std::string> DebugRenderer::renderMesh(MeshData& meshData, bgfx::ViewId viewId, bgfx::Encoder& encoder, uint8_t debugColor, bool lines) noexcept
     {
         auto color = Colors::debug(debugColor);
-        auto mesh = meshData.createMesh(_prog->getVertexLayout());
+        auto meshResult = meshData.createMesh(_prog->getVertexLayout());
+        if(!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+		}
         meshData.clear();
-        renderMesh(mesh, viewId, encoder, color, lines);
+        return renderMesh(meshResult.value(), viewId, encoder, color, lines);
     }
 }

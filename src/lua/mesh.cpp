@@ -14,7 +14,10 @@ namespace darmok
 	void LuaMesh::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<Mesh>("Mesh", sol::factories(
-				[](const Mesh::Definition& def) { return std::make_shared<Mesh>(def); }
+				[](const Mesh::Definition& def) {
+					auto mesh = LuaUtils::unwrapExpected(Mesh::load(def));
+					return std::make_shared<Mesh>(std::move(mesh));
+				}
 			),
 			sol::meta_function::to_string, &Mesh::toString,
 			"vertex_layout", sol::property(&Mesh::getVertexLayout),
@@ -112,11 +115,13 @@ namespace darmok
 			"create_mesh", sol::overload(
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout)
 				{ 
-					return std::make_shared<Mesh>(data.createMesh(vertexLayout));
+					auto mesh = LuaUtils::unwrapExpected(data.createMesh(vertexLayout));
+					return std::make_shared<Mesh>(std::move(mesh));
 				},
 				[](const MeshData& data, const bgfx::VertexLayout& vertexLayout, const MeshConfig& config)
 				{
-					return std::make_shared<Mesh>(data.createMesh(vertexLayout, config));
+					auto mesh = LuaUtils::unwrapExpected(data.createMesh(vertexLayout, config));
+					return std::make_shared<Mesh>(std::move(mesh));
 				}
 			),
 			"subdivide_density", &MeshData::subdivideDensity,

@@ -148,9 +148,9 @@ namespace darmok
 			return elm;
 		}
 
-		std::unique_ptr<Mesh> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
+		expected < std::unique_ptr<Mesh>, std::string> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
 		{
-			auto vertexAmount = uint32_t(getVertexAmount(elm));
+			auto vertexAmount = static_cast<uint32_t>(getVertexAmount(elm));
 			VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
 			std::vector<VertexIndex> totalIndices;
 			totalIndices.reserve(elm.indices_size() * config.amount.x * config.amount.y);
@@ -202,7 +202,12 @@ namespace darmok
 
 			const Data vertexData = writer.finish();
 			Mesh::Config meshConfig{ .type = config.type };
-			return std::make_unique<Mesh>(layout, DataView{ vertexData }, DataView{ totalIndices }, meshConfig);
+			auto meshResult = Mesh::load(layout, DataView{ vertexData }, DataView{ totalIndices }, meshConfig);
+			if (!meshResult)
+			{
+				return unexpected{ std::move(meshResult).error() };
+			}
+			return std::make_unique<Mesh>(std::move(meshResult).value());
 		}
 
 		bool isRect(const Element& elm) noexcept
@@ -366,7 +371,7 @@ namespace darmok
 			}
 		}
 
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, const std::filesystem::path& basePath)
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_document& doc, const std::filesystem::path& basePath) noexcept
 		{
 			if (doc.empty())
 			{
@@ -375,7 +380,7 @@ namespace darmok
 			return readTexturePacker(atlas, doc.child("TextureAtlas"), basePath);
 		}
 
-		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, const std::filesystem::path& basePath)
+		expected<void, std::string> readTexturePacker(Atlas& atlas, const pugi::xml_node& node, const std::filesystem::path& basePath) noexcept
 		{
 			if (node.empty())
 			{
@@ -526,12 +531,12 @@ namespace darmok
 		return nullptr;
 	}
 
-	std::unique_ptr<Mesh> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
+	expected<std::unique_ptr<Mesh>, std::string> TextureAtlas::createSprite(std::string_view name, const bgfx::VertexLayout& layout, const MeshConfig& config) const noexcept
 	{
 		auto elm = getElement(name);
 		if (!elm)
 		{
-			return nullptr;
+			return unexpected<std::string>{ "missing element \"" + std::string{ name } + "\"" };
 		}
 		const auto& size = texture->getSize();
 		return TextureAtlasUtils::createSprite(*elm, layout, size, config);
@@ -546,10 +551,9 @@ namespace darmok
 		{
 			if (StringUtils::startsWith(elm.name(), namePrefix))
 			{
-				auto mesh = TextureAtlasUtils::createSprite(elm, layout, size, config);
-				if (mesh)
+				if (auto meshResult = TextureAtlasUtils::createSprite(elm, layout, size, config))
 				{
-					frames.emplace_back(std::move(mesh), frameDuration);
+					frames.emplace_back(std::move(meshResult).value(), frameDuration);
 				}
 			}
 		}

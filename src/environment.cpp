@@ -27,12 +27,15 @@ namespace darmok
             return unexpected{ std::move(progResult).error() };
         }
         _program = std::make_unique<Program>(std::move(progResult).value());
-
         _texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
-        Cube screen{ glm::uvec3{ 2 } };
-        _mesh = std::make_unique<Mesh>(MeshData{ screen }.createMesh(_program->getVertexLayout()));
-
+        static const Cube screen{ glm::uvec3{ 2 } };
+        auto meshResult = MeshData{ screen }.createMesh(_program->getVertexLayout());
+        if (!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+		}
+        _mesh = std::make_unique<Mesh>(std::move(meshResult).value());
         return {};
     }
 
@@ -57,7 +60,11 @@ namespace darmok
             return unexpected<std::string>{"not initialized"};
         }
 
-        _mesh->render(encoder);
+        auto renderResult = _mesh->render(encoder);
+        if(!renderResult)
+        {
+            return unexpected{ std::move(renderResult).error() };
+		}
 
         encoder.setTexture(0, _texUniform, _texture->getHandle());
 
@@ -95,7 +102,12 @@ namespace darmok
 
         static const Rectangle rect{ glm::vec2{2.0f} };
         MeshData meshData{ rect, Mesh::Definition::FullRectangle };
-        _mesh = std::make_unique<Mesh>(meshData.createMesh(_program->getVertexLayout()));
+        auto meshResult = meshData.createMesh(_program->getVertexLayout());
+        if (!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+        }
+        _mesh = std::make_unique<Mesh>(std::move(meshResult).value());
         _cam = cam;
         return {};
     }
@@ -128,7 +140,11 @@ namespace darmok
             return unexpected<std::string>{"uninitialized"};
         }
 
-        _mesh->render(encoder);
+        auto result = _mesh->render(encoder);
+        if (!result)
+        {
+            return result;
+        }
         auto& proj = _cam->getProjectionMatrix();
         auto depthRange = Math::projDepthRange(proj);
         glm::vec4 data{ depthRange, _config.grids[0].separation, _config.grids[1].separation };

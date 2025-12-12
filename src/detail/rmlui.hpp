@@ -107,8 +107,8 @@ namespace darmok
 		void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
 		*/
 
-		void renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
-		void renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 	private:
 		App& _app;
@@ -128,10 +128,11 @@ namespace darmok
 		std::unordered_map<Rml::CompiledShaderHandle, Material> _shaderMaterials;
 
 		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
-		glm::mat4 getTransformMatrix(const glm::vec2& position);
-		bool renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
+		glm::mat4 getTransformMatrix(const glm::vec2& position) noexcept;
+		expected<void, std::string> renderSprite(const Rml::Sprite& sprite, const glm::vec2& position) noexcept;
 
 		void submit(const glm::vec2& position, const OptionalRef<Texture>& texture) noexcept;
+		void onError(std::string_view prefix, std::string_view msg) noexcept;
 	};
 
 	class RmluiSystemInterface final : public Rml::SystemInterface
@@ -192,8 +193,8 @@ namespace darmok
 		expected<void, std::string> shutdown() noexcept;
 		bool update(float deltaTime) noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-		void render(bgfx::Encoder& encoder) noexcept;
-		void beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> render(bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
 		void setCamera(const OptionalRef<Camera>& camera) noexcept;
 		const OptionalRef<Camera>& getCamera() const noexcept;

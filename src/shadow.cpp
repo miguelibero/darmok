@@ -706,7 +706,11 @@ namespace darmok
             auto cascProjView = _renderer.getCameraProjMatrix(casc);
             meshData += MeshData{ Frustum{cascProjView}, Mesh::Definition::OutlineRectangle };
         }
-        _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+        auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+        if (!renderResult)
+        {
+            return renderResult;
+        }
         ++debugColor;
 
         auto entities = cam->getEntities<DirectionalLight>();
@@ -727,7 +731,11 @@ namespace darmok
             }
             meshData += MeshData{ Sphere{0.01f, lightPos}, 8 };
 
-            _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+            renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+            if (!renderResult)
+            {
+                return renderResult;
+            }
             ++debugColor;
         }
         return {};

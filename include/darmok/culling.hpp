@@ -38,7 +38,7 @@ namespace darmok
         std::unordered_map<Entity, bgfx::OcclusionQueryHandle> _queries;
         std::vector<bgfx::OcclusionQueryHandle> _freeQueries;
 
-        void updateQueries() noexcept;
+        expected<void, std::string> updateQueries() noexcept;
         bgfx::OcclusionQueryHandle getQuery(Entity entity) noexcept;
         void onRenderableDestroyed(EntityRegistry& registry, Entity entity) noexcept;
         std::optional<bgfx::OcclusionQueryResult::Enum> getQueryResult(Entity entity) const noexcept;

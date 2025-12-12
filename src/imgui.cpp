@@ -44,7 +44,7 @@ namespace darmok
 		}
 	};
 
-	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui)
+	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept
 		: _renderer{ renderer }
 		, _imgui{ imgui }
 		, _lodEnabledUniform{ bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4) }
@@ -108,11 +108,15 @@ namespace darmok
 		ImGui::SetCurrentContext(_imgui);
 		beginFrame();
 		auto result = _renderer.imguiRender();
+		if (!result)
+		{
+			return result;
+		}
 		auto encoder = bgfx::begin();
-		endFrame(*encoder);
+		auto frameResult = endFrame(*encoder);
 		bgfx::end(encoder);
 		ImGui::SetCurrentContext(nullptr);
-		return result;
+		return frameResult;
 	}
 
 	void ImguiRenderPass::beginFrame() const noexcept
@@ -120,7 +124,7 @@ namespace darmok
 		ImGui::NewFrame();
 	}
 
-	bool ImguiRenderPass::endFrame(bgfx::Encoder& encoder) const noexcept
+	expected<void, std::string> ImguiRenderPass::endFrame(bgfx::Encoder& encoder) const noexcept
 	{
 		ImGui::Render();
 		return render(encoder, ImGui::GetDrawData());
@@ -145,11 +149,11 @@ namespace darmok
 		return v.id;
 	}
 	
-	bool ImguiRenderPass::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
+	expected<void, std::string> ImguiRenderPass::render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept
 	{
 		if (!_viewId)
 		{
-			return false;
+			return unexpected<std::string>{"missing view id"};
 		}
 		auto clipPos = ImguiUtils::convert(drawData->DisplayPos); // (0,0) unless using multi-viewports
 		auto size = ImguiUtils::convert(drawData->DisplaySize);
@@ -159,7 +163,7 @@ namespace darmok
 		// Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
 		if (clipSize.x <= 0 || clipSize.y <= 0)
 		{
-			return false;
+			return {};
 		}
 
 		auto viewId = _viewId.value();
@@ -173,6 +177,7 @@ namespace darmok
 		}
 
 		auto& layout = _program->getVertexLayout();
+		std::vector<std::string> errors;
 
 		// Render command lists
 		for (int32_t ii = 0, num = drawData->CmdListsCount; ii < num; ++ii)
@@ -184,17 +189,14 @@ namespace darmok
 
 			const DataView vertData{ &drawList->VtxBuffer.front(), numVertices * sizeof(ImDrawVert) };
 			const DataView idxData{ &drawList->IdxBuffer.front(), numIndices * sizeof(ImDrawIdx) };
-			std::optional<Mesh> mesh;
-			try
+			MeshConfig config{ .type = Mesh::Definition::Transient };
+			auto meshResult = Mesh::load(layout, vertData, idxData, config);
+			if(!meshResult)
 			{
-				MeshConfig config{ .type = Mesh::Definition::Transient };
-				mesh.emplace(layout, vertData, idxData, config);
-			}
-			catch (...)
-			{
-				// not enough space in transient buffer just quit drawing the rest...
+				errors.push_back(std::move(meshResult).error());
 				break;
 			}
+			auto mesh = std::move(meshResult).value();
 
 			for (const ImDrawCmd* cmd = drawList->CmdBuffer.begin(), *cmdEnd = drawList->CmdBuffer.end(); cmd != cmdEnd; ++cmd)
 			{
@@ -256,14 +258,18 @@ namespace darmok
 							.numIndices = cmd->ElemCount
 						};
 
-						mesh->render(encoder, renderConfig);
+						auto renderResult = mesh.render(encoder, renderConfig);
+						if (!renderResult)
+						{
+							errors.push_back(std::move(renderResult).error());
+						}
 						encoder.submit(viewId, program);
 					}
 				}
 			}
 		}
 
-		return true;
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	const ImguiAppComponentImpl::KeyboardMap& ImguiAppComponentImpl::getKeyboardMap() noexcept
