@@ -21,7 +21,7 @@ namespace darmok
     expected<void, std::string> SkyboxRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
-        auto progResult = Program::fromStaticMem(skybox_program);
+        auto progResult = Program::loadStaticMem(skybox_program);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };
@@ -89,7 +89,7 @@ namespace darmok
 
     expected<void, std::string> GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-        auto progResult = Program::fromStaticMem(grid_program);
+        auto progResult = Program::loadStaticMem(grid_program);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };

@@ -11,7 +11,8 @@ namespace darmok
             sol::factories(
                 [](const VarLuaVecTable<glm::uvec2>& size)
                 {
-                    return std::make_shared<FrameBuffer>(LuaGlm::tableGet(size));
+					auto fb = LuaUtils::unwrapExpected(FrameBuffer::load(LuaGlm::tableGet(size)));
+                    return std::make_shared<FrameBuffer>(std::move(fb));
                 }
             ),
             "texture", sol::property(&FrameBuffer::getTexture),

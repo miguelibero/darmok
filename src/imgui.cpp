@@ -54,8 +54,12 @@ namespace darmok
 
 	expected<void, std::string> ImguiRenderPass::init() noexcept
 	{
-		updateFonts();
-		auto progResult = Program::fromStaticMem(imgui_program);
+		auto fontsResult = updateFonts();
+		if (!fontsResult)
+		{
+			return unexpected{ std::move(fontsResult).error() };
+		}
+		auto progResult = Program::loadStaticMem(imgui_program);
 		if (!progResult)
 		{
 			return unexpected{ std::move(progResult).error() };
@@ -64,7 +68,7 @@ namespace darmok
 		return {};
 	}
 
-	void ImguiRenderPass::updateFonts() noexcept
+	expected<void, std::string> ImguiRenderPass::updateFonts() noexcept
 	{
 		uint8_t* data;
 		int width, height, bytesPerPixel = 0;
@@ -76,7 +80,14 @@ namespace darmok
 		config.set_type(Texture::Definition::Texture2D);
 		*config.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ width, height });
 		DataView dataView{ data, static_cast<size_t>(width * height * bytesPerPixel) };
-		_fontsTexture = std::make_unique<Texture>(dataView, config);
+
+		auto texResult = Texture::load(dataView, config);
+		if(!texResult)
+		{
+			return unexpected{ std::move(texResult).error() };
+		}
+		_fontsTexture = std::make_unique<Texture>(std::move(texResult).value());
+		return {};
 	}
 
 	ImguiRenderPass::~ImguiRenderPass() noexcept
@@ -483,12 +494,13 @@ namespace darmok
 		_inputEnabled = enabled;
 	}
 
-	void ImguiAppComponentImpl::updateFonts() noexcept
+	expected<void, std::string> ImguiAppComponentImpl::updateFonts() noexcept
 	{
 		if (_renderPass)
 		{
-			_renderPass->updateFonts();
+			return _renderPass->updateFonts();
 		}
+		return {};
 	}
 
 	void ImguiAppComponentImpl::updateInput(float dt) noexcept
@@ -589,9 +601,8 @@ namespace darmok
 		return *this;
 	}
 
-	ImguiAppComponent& ImguiAppComponent::updateFonts() noexcept
+	expected<void, std::string> ImguiAppComponent::updateFonts() noexcept
 	{
-		_impl->updateFonts();
-		return *this;
+		return _impl->updateFonts();
 	}
 }

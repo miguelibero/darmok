@@ -26,17 +26,35 @@ namespace darmok
 		return config;
 	}
 
-	FrameBuffer::FrameBuffer(const glm::uvec2& size, bool depth) noexcept
-		: _colorTex{ std::make_shared<Texture>(createColorConfig(size), BGFX_TEXTURE_RT) }
-		, _depthTex{ depth ? std::make_shared<Texture>(createDepthConfig(size), BGFX_TEXTURE_RT) : nullptr }
-		, _handle{ bgfx::kInvalidHandle }
+	FrameBuffer::FrameBuffer(bgfx::FrameBufferHandle handle, std::shared_ptr<Texture> colorTex, std::shared_ptr<Texture> depthTex) noexcept
+		: _handle{ handle }
+		, _colorTex{ colorTex }
+		, _depthTex{ depthTex }
 	{
-		std::vector<bgfx::TextureHandle> handles{ _colorTex->getHandle() };
-		if (_depthTex)
+	}
+
+	expected<FrameBuffer, std::string> FrameBuffer::load(const glm::uvec2& size, bool depth) noexcept
+	{
+		auto texResult = Texture::load(createColorConfig(size), BGFX_TEXTURE_RT);
+		if(!texResult)
 		{
-			handles.push_back(_depthTex->getHandle());
+			return unexpected{ std::move(texResult).error() };
 		}
-		_handle = bgfx::createFrameBuffer(handles.size(), &handles.front());
+		auto colorTex = std::make_shared<Texture>(std::move(texResult).value());
+		std::vector<bgfx::TextureHandle> handles{ colorTex->getHandle() };
+		std::shared_ptr<Texture> depthTex = nullptr;
+		if(depth)
+		{
+			auto depthTexResult = Texture::load(createDepthConfig(size), BGFX_TEXTURE_RT);
+			if (!depthTexResult)
+			{
+				return unexpected{ std::move(depthTexResult).error() };
+			}
+			depthTex =  std::make_shared<Texture>(std::move(depthTexResult).value());
+			handles.push_back(depthTex->getHandle());
+		}
+		auto handle = bgfx::createFrameBuffer(handles.size(), &handles.front());
+		return FrameBuffer{ handle, colorTex, depthTex };
 	}
 
 	FrameBuffer::~FrameBuffer() noexcept
@@ -47,7 +65,7 @@ namespace darmok
 		}
 	}
 
-	FrameBuffer::FrameBuffer(FrameBuffer&& other)
+	FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
 		: _handle{ other._handle }
 		, _colorTex{ std::move(other._colorTex) }
 		, _depthTex{ std::move(other._depthTex) }
@@ -55,7 +73,7 @@ namespace darmok
 		other._handle.idx = bgfx::kInvalidHandle;
 	}
 
-	FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other)
+	FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept
 	{
 		_handle = other._handle;
 		other._handle.idx = bgfx::kInvalidHandle;
@@ -126,7 +144,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	expected<void, std::string> RenderChain::shutdown()
+	expected<void, std::string> RenderChain::shutdown() noexcept
 	{
 		std::vector<std::string> errors;
 		for (auto itr = _steps.rbegin(); itr != _steps.rend(); ++itr)
@@ -145,7 +163,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	expected<void, std::string> RenderChain::update(float deltaTime)
+	expected<void, std::string> RenderChain::update(float deltaTime) noexcept
 	{
 		std::vector<std::string> errors;
 		for (auto& step : _steps)
@@ -186,14 +204,20 @@ namespace darmok
 		return _output;
 	}
 
-	void RenderChain::beforeRenderReset() noexcept
+	expected<void, std::string> RenderChain::beforeRenderReset() noexcept
 	{
 		auto amount = _buffers.size();
 		_buffers.clear();
+		std::vector<std::string> errors;
 		for (size_t i = 0; i < amount; ++i)
 		{
-			addBuffer();
-		}		
+			auto result = addBuffer();
+			if(!result)
+			{
+				errors.push_back(std::move(result).error());
+			}
+		}
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	std::string RenderChain::getViewName(const std::string& baseName) const noexcept
@@ -292,7 +316,7 @@ namespace darmok
 		return nullptr;
 	}
 
-	void RenderChain::configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer) const
+	void RenderChain::configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer) const noexcept
 	{
 		bgfx::setViewName(viewId, getViewName(name).c_str());
 		uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
@@ -305,16 +329,26 @@ namespace darmok
 		vp.configureView(viewId);
 	}
 
-	FrameBuffer& RenderChain::addBuffer() noexcept
+	expected<std::reference_wrapper<FrameBuffer>, std::string> RenderChain::addBuffer() noexcept
 	{
 		auto vp = _delegate.getRenderChainViewport();
 		auto size = vp.origin + vp.size;
-		return *_buffers.emplace_back(std::make_unique<FrameBuffer>(size));
+		auto fbResult = FrameBuffer::load(size, true);
+		if(!fbResult)
+		{
+			return unexpected{ std::move(fbResult).error() };
+		}
+		return *_buffers.emplace_back(std::make_unique<FrameBuffer>(std::move(fbResult).value()));
 	}
 
 	expected<void, std::string> RenderChain::addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept
 	{
-		auto& readBuffer = addBuffer();
+		auto readBufferResult = addBuffer();
+		if(!readBufferResult)
+		{
+			return unexpected{ std::move(readBufferResult).error() };
+		}
+		auto& readBuffer = readBufferResult.value().get();
 		auto& ref = *step;
 		auto i = _steps.size();
 		_steps.push_back(std::move(step));

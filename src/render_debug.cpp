@@ -27,7 +27,12 @@ namespace darmok
         _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
 
         Image img{ Colors::white(), app.getAssets().getAllocator() };
-        _tex = std::make_unique<Texture>(img);
+		auto texResult = Texture::load(img);
+		if (!texResult)
+        {
+            return unexpected{ std::move(texResult).error() };
+        }
+        _tex = std::make_unique<Texture>(std::move(texResult).value());
         return {};
     }
 

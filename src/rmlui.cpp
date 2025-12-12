@@ -69,7 +69,7 @@ namespace darmok
         _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
         _dataUniform = bgfx::createUniform("u_rmluiData", bgfx::UniformType::Vec4);
 
-        if (auto result = Program::fromStaticMem(rmlui_program))
+        if (auto result = Program::loadStaticMem(rmlui_program))
         {
             _program = std::make_unique<Program>(std::move(result).value());
         }
@@ -240,7 +240,13 @@ namespace darmok
         dimensions.x = size.x;
         dimensions.y = size.y;
         auto flags = _canvas.getTextureFlags(source);
-        auto texture = std::make_unique<Texture>(img, flags);
+		auto texResult = Texture::load(img, flags);
+        if(!texResult)
+        {
+            onError("LoadTexture", texResult.error());
+            return 0;
+		}
+        auto texture = std::make_unique<Texture>(std::move(texResult).value());
         Rml::TextureHandle handle = texture->getHandle().idx + 1;
         _textureSources.emplace(source, *texture);
         _textures.emplace(handle, std::move(texture));
@@ -256,7 +262,13 @@ namespace darmok
 
         DataView data{ source.data(), size };
         uint64_t flags = _canvas.getDefaultTextureFlags();
-        auto texture = std::make_unique<Texture>(data, config, flags);
+		auto texResult = Texture::load(data, config, flags);
+        if (!texResult)
+        {
+            onError("GenerateTexture", texResult.error());
+            return 0;
+        }
+        auto texture = std::make_unique<Texture>(std::move(texResult).value());
         Rml::TextureHandle handle = texture->getHandle().idx + 1;
         _textures.emplace(handle, std::move(texture));
         return handle;
@@ -715,7 +727,12 @@ namespace darmok
         }
         if (size.x > 0 && size.y > 0)
         {
-            _frameBuffer.emplace(size, false);
+			auto fbResult = FrameBuffer::load(size, false);
+            if (!fbResult)
+            {
+				return unexpected{ std::move(fbResult).error() };
+            }
+			_frameBuffer = std::move(fbResult).value();
         }
         _context->EnableMouseCursor(true);
         return {};
@@ -768,8 +785,11 @@ namespace darmok
         }
         else if (!_frameBuffer || _frameBuffer->getSize() != size)
         {
-            _frameBuffer.emplace(size, false);
-            return true;
+            if (auto fbResult = FrameBuffer::load(size, false))
+            {
+				_frameBuffer = std::move(fbResult).value();
+                return true;
+            }
         }
         return false;
     }

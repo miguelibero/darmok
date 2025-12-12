@@ -397,61 +397,55 @@ namespace darmok
 	{
 	}
 
-	Texture::Texture(const Image& img, uint64_t flags)
-		: Texture(img.getData(), img.getTextureConfig(), flags)
+	expected<bgfx::TextureHandle, std::string> Texture::createTextureHandle(const Config& cfg, uint64_t flags, const bgfx::Memory* mem) noexcept
 	{
+		auto format = static_cast<bgfx::TextureFormat::Enum>(cfg.format());
+		switch (cfg.type())
+		{
+		case Definition::CubeMap:
+			return bgfx::createTextureCube(cfg.size().x(), cfg.mips(), cfg.layers(), format, flags, mem);
+			break;
+		case Definition::Texture2D:
+			return bgfx::createTexture2D(cfg.size().x(), cfg.size().y(), cfg.mips(), cfg.layers(), format, flags, mem);
+			break;
+		case Definition::Texture3D:
+			return bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags, mem);
+			break;
+		default:
+			return unexpected<std::string>{ "invalid texture type" };
+		}
 	}
 
-	Texture::Texture(const DataView& data, const Config& cfg, uint64_t flags)
-		: _handle{ bgfx::kInvalidHandle }
-		, _config{ cfg }
+	expected<Texture, std::string> Texture::load(const Config& cfg, uint64_t flags) noexcept
+	{
+		auto result = createTextureHandle(cfg, flags);
+		if(!result)
+		{
+			return unexpected{ std::move(result).error() };
+		}
+		return Texture{ result.value(), cfg };
+	}
+
+	expected<Texture, std::string> Texture::load(const Image& img, uint64_t flags) noexcept
+	{
+		return load(img.getData(), img.getTextureConfig(), flags);
+	}
+
+	expected<Texture, std::string> Texture::load(const DataView& data, const Config& cfg, uint64_t flags) noexcept
 	{
 		// copying the memory of the image becauyse bgfx needs to maintain the memory for some frames
 		const auto mem = data.copyMem();
-		auto w = static_cast<uint16_t>(_config.size().x());
-		auto h = static_cast<uint16_t>(_config.size().y());
-		auto format = static_cast<bgfx::TextureFormat::Enum>(_config.format());
-		switch (getType())
+		auto result = createTextureHandle(cfg, flags, mem);
+		if (!result)
 		{
-		case Definition::CubeMap:
-			_handle = bgfx::createTextureCube(w, _config.mips(), _config.layers(), format, flags, mem);
-			break;
-		case Definition::Texture3D:
-			_handle = bgfx::createTexture3D(w, h, _config.depth(), _config.mips(), format, flags, mem);
-			break;
-		case Definition::Texture2D:
-			_handle = bgfx::createTexture2D(w, h, _config.mips(), _config.layers(), format, flags, mem);
-			break;
-        default:
-            break;
+			return unexpected{ std::move(result).error() };
 		}
+		return Texture{ result.value(), cfg };
 	}
 
-	Texture::Texture(const Config& cfg, uint64_t flags)
-		: _handle{ bgfx::kInvalidHandle }
-		, _config{ cfg }
+	expected<Texture, std::string> Texture::load(const Definition& def) noexcept
 	{
-		bgfx::TextureHandle handle{ bgfx::kInvalidHandle };
-		auto format = static_cast<bgfx::TextureFormat::Enum>(cfg.format());
-		switch (getType())
-		{
-		case Definition::CubeMap:
-			_handle = bgfx::createTextureCube(cfg.size().x(), cfg.mips(), cfg.layers(), format, flags);
-			break;
-		case Definition::Texture2D:
-			_handle = bgfx::createTexture2D(cfg.size().x(), cfg.size().y(), cfg.mips(), cfg.layers(), format, flags);
-			break;
-		case Definition::Texture3D:
-			_handle = bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags);
-			break;
-        default:
-            break;
-		}
-	}
-
-	Texture::Texture(const Definition& def) noexcept
-		: Texture(DataView{ def.data() }, def.config(), def.flags())
-	{
+		return load(DataView{ def.data() }, def.config(), def.flags());
 	}
 
 	Texture::Texture(Texture&& other) noexcept

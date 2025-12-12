@@ -36,26 +36,44 @@ namespace darmok
 
 		lua.new_usertype<Texture>("Texture",
 			sol::factories(
-				[](const Image& img) { return std::make_shared<Texture>(img); },
-				[](const Image& img, uint64_t flags) { return std::make_shared<Texture>(img, flags); },
-				[](const Texture::Config& config) { return std::make_shared<Texture>(config); },
-				[](const Texture::Config& config, uint64_t flags) { return std::make_shared<Texture>(config, flags); },
-				[](const VarLuaTable<glm::uvec2>& size) { return std::make_shared<Texture>(createSizeConfig(size)); },
+				[](const Image& img) {
+					auto tex = LuaUtils::unwrapExpected(Texture::load(img));
+					return std::make_shared<Texture>(std::move(tex));
+				},
+				[](const Image& img, uint64_t flags) {
+					auto tex = LuaUtils::unwrapExpected(Texture::load(img, flags));
+					return std::make_shared<Texture>(std::move(tex));
+				},
+				[](const Texture::Config& config) {
+					auto tex = LuaUtils::unwrapExpected(Texture::load(config));
+					return std::make_shared<Texture>(std::move(tex));
+				},
+				[](const Texture::Config& config, uint64_t flags) {
+					auto tex = LuaUtils::unwrapExpected(Texture::load(config, flags));
+					return std::make_shared<Texture>(std::move(tex));
+				},
+				[](const VarLuaTable<glm::uvec2>& size) {
+					auto tex = LuaUtils::unwrapExpected(Texture::load(createSizeConfig(size)));
+					return std::make_shared<Texture>(std::move(tex));
+				},
 				[](const VarLuaTable<glm::uvec2>& size, uint64_t flags)
 				{
-					return std::make_shared<Texture>(createSizeConfig(size), flags);
+					auto tex = LuaUtils::unwrapExpected(Texture::load(createSizeConfig(size), flags));
+					return std::make_shared<Texture>(std::move(tex));
 				},
 				[](const VarLuaTable<glm::uvec2>& size, Texture::Format format)
 				{
 					auto config = createSizeConfig(size);
 					config.set_format(format);
-					return std::make_shared<Texture>(config);
+					auto tex = LuaUtils::unwrapExpected(Texture::load(config));
+					return std::make_shared<Texture>(std::move(tex));
 				},
 				[](const VarLuaTable<glm::uvec2>& size, Texture::Format format, uint64_t flags)
 				{
 					auto config = createSizeConfig(size);
 					config.set_format(format);
-					return std::make_shared<Texture>(config, flags);
+					auto tex = LuaUtils::unwrapExpected(Texture::load(config, flags));
+					return std::make_shared<Texture>(std::move(tex));
 				}
 			),
 			"type", sol::property(&Texture::getType),

@@ -22,7 +22,7 @@ namespace darmok
 		expected<void, std::string> init() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		expected<void, std::string> render() noexcept;
-		void updateFonts() noexcept;
+		expected<void, std::string> updateFonts() noexcept;
 	private:
 		IImguiRenderer& _renderer;
 		ImGuiContext* _imgui;
@@ -53,7 +53,7 @@ namespace darmok
 		bool getInputEnabled() const noexcept;
 		void setInputEnabled(bool enabled) noexcept;
 
-		void updateFonts() noexcept;
+		expected<void, std::string> updateFonts() noexcept;
     private:
 		IImguiRenderer& _renderer;
 		OptionalRef<App> _app;

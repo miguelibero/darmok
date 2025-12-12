@@ -90,7 +90,12 @@ namespace darmok
         auto size = vp.origin + vp.size;
         if (!_frameBuffer || _frameBuffer->getSize() != size)
         {
-            _frameBuffer = std::make_unique<FrameBuffer>(size);
+            auto fbResult = FrameBuffer::load(size);
+            if(!fbResult)
+            {
+                return unexpected{ std::move(fbResult).error() };
+			}
+            _frameBuffer = std::make_unique<FrameBuffer>(std::move(fbResult).value());
         }
         _frameBuffer->configureView(viewId);
 

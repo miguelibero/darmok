@@ -109,16 +109,16 @@ namespace darmok
 		using UniformKey = protobuf::TextureUniformKey;
 
 		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
-		Texture(const Config& cfg, uint64_t flags = defaultTextureLoadFlags);
-		Texture(const Image& img, uint64_t flags = defaultTextureLoadFlags);
-		Texture(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags);
-		Texture(const Definition& definition) noexcept;
+		~Texture() noexcept;
 		Texture(Texture&& other) noexcept;
 		Texture& operator=(Texture&& other) noexcept;
-
-		~Texture() noexcept;
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
+
+		static expected<Texture, std::string> load(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		static expected<Texture, std::string> load(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		static expected<Texture, std::string> load(const DataView& data, const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
+		static expected<Texture, std::string> load(const Definition& definition) noexcept;
 
 		static UniformKey createUniformKey(const std::string& name, uint8_t stage) noexcept;
 
@@ -166,6 +166,8 @@ namespace darmok
 		Config _config;
 		static const FlagMap _textureFlags;
 		static const FlagMap _samplerFlags;
+
+		static expected<bgfx::TextureHandle, std::string> createTextureHandle(const Config& cfg, uint64_t flags = defaultTextureLoadFlags, const bgfx::Memory* mem = nullptr) noexcept;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public ILoader<Texture>{};

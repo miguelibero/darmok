@@ -55,14 +55,14 @@ namespace darmok
         Camera(const glm::mat4& projMatrix = {}) noexcept;
         Camera(Camera&& other) noexcept;
 
-        Scene& getScene();
-        const Scene& getScene() const;
+        Scene& getScene() noexcept;
+        const Scene& getScene() const noexcept;
 
-        expected<void, std::string> init(Scene& scene, App& app);
-        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId);
-        expected<void, std::string> render();
-        expected<void, std::string> update(float deltaTime);
-        expected<void, std::string> shutdown();
+        expected<void, std::string> init(Scene& scene, App& app) noexcept;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
+        expected<void, std::string> render() noexcept;
+        expected<void, std::string> update(float deltaTime) noexcept;
+        expected<void, std::string> shutdown() noexcept;
 
         entt::id_type getId() const noexcept;
         std::string getName() const noexcept;
@@ -105,12 +105,12 @@ namespace darmok
         }
 
         template<typename T>
-        EntityView getEntities() const
+        EntityView getEntities() const noexcept
         {
             return getScene().getEntities<T>(getCullingFilter());
         }
 
-        EntityView getEntities(const EntityFilter& filter) const;
+        EntityView getEntities(const EntityFilter& filter) const noexcept;
 
         expected<void, std::string> addComponent(std::unique_ptr<ICameraComponent>&& comp) noexcept;
         bool removeComponent(entt::id_type type) noexcept;

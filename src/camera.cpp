@@ -70,12 +70,12 @@ namespace darmok
         return "Camera(" + getName() + ", " + glm::to_string(getProjectionMatrix()) + ")";
     }
 
-    Scene& Camera::getScene()
+    Scene& Camera::getScene() noexcept
     {
         return _scene.value();
     }
 
-    const Scene& Camera::getScene() const
+    const Scene& Camera::getScene() const noexcept
     {
         return _scene.value();
     }
@@ -207,7 +207,7 @@ namespace darmok
         return _cullingFilter;
     }
 
-    expected<void, std::string> Camera::init(Scene& scene, App& app)
+    expected<void, std::string> Camera::init(Scene& scene, App& app) noexcept
     {
         _scene = scene;
         _app = app;
@@ -225,10 +225,14 @@ namespace darmok
         return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<bgfx::ViewId, std::string> Camera::renderReset(bgfx::ViewId viewId)
+    expected<bgfx::ViewId, std::string> Camera::renderReset(bgfx::ViewId viewId) noexcept
     {
         updateProjection();
-        _renderChain.beforeRenderReset();
+        auto beforeResult = _renderChain.beforeRenderReset();
+        if (!beforeResult)
+        {
+			return unexpected{ std::move(beforeResult).error() };
+        }
         for (auto& comp : copyComponents())
         {
             auto result = comp->renderReset(viewId);
@@ -247,7 +251,7 @@ namespace darmok
         return viewId;
     }
 
-    expected<void, std::string> Camera::render()
+    expected<void, std::string> Camera::render() noexcept
     {
         if (!_enabled)
         {
@@ -265,7 +269,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<void, std::string> Camera::shutdown()
+    expected<void, std::string> Camera::shutdown() noexcept
     {
         std::vector<std::string> errors;
         auto components = copyComponents();
@@ -285,7 +289,7 @@ namespace darmok
         return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<void, std::string> Camera::update(float deltaTime)
+    expected<void, std::string> Camera::update(float deltaTime) noexcept
     {
         if (_updateEnabled)
         {
@@ -717,7 +721,7 @@ namespace darmok
         return setProjection(CameraOrthoData{ center, near, far });
     }
 
-    EntityView Camera::getEntities(const EntityFilter& filter) const
+    EntityView Camera::getEntities(const EntityFilter& filter) const noexcept
     {
         return getScene().getEntities(filter & getCullingFilter());
     }    

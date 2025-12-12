@@ -227,8 +227,13 @@ namespace darmok
 		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
 		_basicUniforms.init();
 
-		const Image img(Colors::white(), app.getAssets().getAllocator());
-		_defaultTexture = std::make_shared<Texture>(img);
+		const Image img{ Colors::white(), app.getAssets().getAllocator() };
+		auto texResult = Texture::load(img);
+		if(!texResult)
+		{
+			return unexpected<std::string>{ "failed to create default texture: " + texResult.error() };
+		}
+		_defaultTexture = std::make_shared<Texture>(std::move(texResult).value());
 		return {};
 	}
 

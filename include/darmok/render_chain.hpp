@@ -19,12 +19,14 @@ namespace darmok
     class DARMOK_EXPORT FrameBuffer final
     {
     public:
-        FrameBuffer(const glm::uvec2& size, bool depth = true) noexcept;
         ~FrameBuffer() noexcept;
+        FrameBuffer(bgfx::FrameBufferHandle handle, std::shared_ptr<Texture> colorTex, std::shared_ptr<Texture> depthTex = nullptr) noexcept;
         FrameBuffer(const FrameBuffer& other) = delete;
         FrameBuffer& operator=(const FrameBuffer& other) = delete;
-        FrameBuffer(FrameBuffer&& other);
-        FrameBuffer& operator=(FrameBuffer&& other);
+        FrameBuffer(FrameBuffer&& other) noexcept;
+        FrameBuffer& operator=(FrameBuffer&& other) noexcept;
+
+        static expected<FrameBuffer, std::string> load(const glm::uvec2& size, bool depth = true) noexcept;
 
         const std::shared_ptr<Texture>& getTexture() const noexcept;
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
@@ -32,9 +34,9 @@ namespace darmok
         void configureView(bgfx::ViewId viewId) const noexcept;
         glm::uvec2 getSize() const noexcept;
     private:
+        bgfx::FrameBufferHandle _handle;
         std::shared_ptr<Texture> _colorTex;
         std::shared_ptr<Texture> _depthTex;
-        bgfx::FrameBufferHandle _handle;
 
         static Texture::Config createColorConfig(const glm::uvec2& size) noexcept;
         static Texture::Config createDepthConfig(const glm::uvec2& size) noexcept;
@@ -58,10 +60,10 @@ namespace darmok
     {
     public:
         virtual ~IRenderChainDelegate() = default;
-        virtual Viewport getRenderChainViewport() const = 0;
-        virtual OptionalRef<RenderChain> getRenderChainParent() const { return nullptr; }
-        virtual std::string getRenderChainViewName(const std::string& baseName) const { return baseName; }
-        virtual void onRenderChainChanged() { }
+        virtual Viewport getRenderChainViewport() const noexcept = 0;
+        virtual OptionalRef<RenderChain> getRenderChainParent() const noexcept { return nullptr; }
+        virtual std::string getRenderChainViewName(const std::string& baseName) const noexcept { return baseName; }
+        virtual void onRenderChainChanged() noexcept { }
     };
 
     class DARMOK_EXPORT RenderChain final
@@ -76,17 +78,17 @@ namespace darmok
 		RenderChain& operator=(RenderChain&& other) = delete;
 
         expected<void, std::string> init() noexcept;
-        void beforeRenderReset() noexcept;
+        expected<void, std::string> beforeRenderReset() noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
-        expected<void, std::string> update(float deltaTime);
+        expected<void, std::string> update(float deltaTime) noexcept;
         expected<void, std::string> render() noexcept;
-        expected<void, std::string> shutdown();
+        expected<void, std::string> shutdown() noexcept;
 
         std::string getViewName(const std::string& baseName) const noexcept;
         OptionalRef<FrameBuffer> getInput() noexcept;
         OptionalRef<const FrameBuffer> getInput() const noexcept;
 
-        void configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer = nullptr) const;
+        void configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer = nullptr) const noexcept;
 
         expected<void, std::string> setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
         std::shared_ptr<FrameBuffer> getOutput() const noexcept;
@@ -94,7 +96,7 @@ namespace darmok
         expected<void, std::string> addStep(std::unique_ptr<IRenderChainStep>&& step) noexcept;
 
         template<typename T, typename... A>
-        expected<std::reference_wrapper<T>, std::string> addStep(A&&... args)
+        expected<std::reference_wrapper<T>, std::string> addStep(A&&... args) noexcept
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
@@ -107,7 +109,7 @@ namespace darmok
         }
 
         template<typename T, typename... A>
-        OptionalRef<T> tryAddStep(A&&... args)
+        OptionalRef<T> tryAddStep(A&&... args) noexcept
         {
             auto result = addStep<T>(std::forward<A>(args)...);
             return result ? &result.value().get() : nullptr;
@@ -127,7 +129,7 @@ namespace darmok
 
         OptionalRef<FrameBuffer> getReadBuffer(size_t i) const noexcept;
         OptionalRef<FrameBuffer> getWriteBuffer(size_t i) const noexcept;
-        FrameBuffer& addBuffer() noexcept;
+        expected<std::reference_wrapper<FrameBuffer>, std::string> addBuffer() noexcept;
         expected<void, std::string> updateStep(size_t i) noexcept;
     };
 

@@ -277,7 +277,12 @@ namespace darmok
 
 		if (!_texture || _texture->getSize() != result->image.getSize())
 		{
-			_texture = std::make_shared<Texture>(result->image.getTextureConfig());
+			auto texResult = Texture::load(result->image.getTextureConfig());
+			if(!texResult)
+			{
+				return unexpected{ texResult.error() };
+			}
+			_texture = std::make_shared<Texture>(std::move(texResult).value());
 		}
 		auto updateResult = _texture->update(result->image.getData());
 		if (!updateResult)

@@ -219,7 +219,7 @@ namespace darmok
             0.5f, 0.5f, tz,   1.0f,
         };
 
-        auto progResult = Program::fromStaticMem(shadow_program);
+        auto progResult = Program::loadStaticMem(shadow_program);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };
@@ -232,13 +232,18 @@ namespace darmok
         texConfig.set_format(Texture::Definition::D16);
         texConfig.set_type(Texture::Definition::Texture2D);
 
-        _tex = std::make_unique<Texture>(texConfig,
+		auto texResult = Texture::load(texConfig,
             BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
             BGFX_SAMPLER_MAG_POINT |
             // BGFX_SAMPLER_MAG_ANISOTROPIC |
             BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
             BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
         );
+		if (!texResult) 
+        {
+            return unexpected{ std::move(texResult).error() };
+        }
+        _tex = std::make_unique<Texture>(std::move(texResult).value());
 
         _passes.clear();
         _passes.reserve(_config.maxPassAmount);

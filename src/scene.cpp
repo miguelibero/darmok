@@ -237,7 +237,7 @@ namespace darmok
         return roots;
     }
 
-    expected<void, std::string> SceneImpl::init(App& app)
+    expected<void, std::string> SceneImpl::init(App& app) noexcept
     {
         if (_app == app)
         {
@@ -318,7 +318,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> SceneImpl::render()
+    expected<void, std::string> SceneImpl::render() noexcept
     {
         auto& cams = _registry.storage<Camera>();
 		std::vector<std::string> errors;
@@ -338,7 +338,7 @@ namespace darmok
         return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<void, std::string> SceneImpl::shutdown()
+    expected<void, std::string> SceneImpl::shutdown() noexcept
     {
         _registry.clear();
         std::vector<std::string> errors;
@@ -364,9 +364,13 @@ namespace darmok
         return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<bgfx::ViewId, std::string> SceneImpl::renderReset(bgfx::ViewId viewId)
+    expected<bgfx::ViewId, std::string> SceneImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
-        _renderChain.beforeRenderReset();
+        auto beforeResult = _renderChain.beforeRenderReset();
+        if(!beforeResult)
+        {
+            return unexpected{ std::move(beforeResult).error() };
+		}
 
         auto components = copySceneComponents();
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)
@@ -460,7 +464,7 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> SceneImpl::update(float deltaTime)
+    expected<void, std::string> SceneImpl::update(float deltaTime) noexcept
     {
         destroyPendingEntities();
         if (_paused)

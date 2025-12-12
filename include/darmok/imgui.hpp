@@ -50,7 +50,7 @@ namespace darmok
 		ImGuiContext* getContext() noexcept;
 		bool getInputEnabled() const noexcept;
 		ImguiAppComponent& setInputEnabled(bool enabled) noexcept;
-		ImguiAppComponent& updateFonts() noexcept;
+		expected<void, std::string> updateFonts() noexcept;
 
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;

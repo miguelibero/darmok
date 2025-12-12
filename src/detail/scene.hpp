@@ -68,11 +68,11 @@ namespace darmok
         void setViewport(const std::optional<Viewport>& vport) noexcept;
         Viewport getCurrentViewport() const noexcept;
 
-        expected<void, std::string> init(App& app);
-        expected<void, std::string> update(float deltaTime);
-        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId);
-        expected<void, std::string> render();
-        expected<void, std::string> shutdown();
+        expected<void, std::string> init(App& app) noexcept;
+        expected<void, std::string> update(float deltaTime) noexcept;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
+        expected<void, std::string> render() noexcept;
+        expected<void, std::string> shutdown() noexcept;
 
         void setUpdateFilter(const EntityFilter& filter) noexcept;
         const EntityFilter& getUpdateFilter() const noexcept;

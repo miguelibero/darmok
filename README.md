@@ -51,7 +51,7 @@ Some philosofical decisions (could be controversial)
 * use modern C++ (20) patterns where possible
 * use as much stl as possible (need to look into memory management at some point)
 * no naked pointers
-* return `expected` for error handling
+* return `expected` for error handling (everything noexcept if possible)
 * try to keep the API similar to Unity3D (where it makes sense) so that it's easy to port game logic
 
 **WARNING**: currently in early stages of development
@@ -116,7 +116,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * create lua script component
     * fix scene view gizmos
 * slang support
-* move from exceptions to expected when possible
 * move main thread to taskflow
 * frame limiting
 * more renderer features
