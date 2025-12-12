@@ -12,7 +12,7 @@ namespace darmok
 {
     namespace fs = std::filesystem;
 
-    ConstProgramDefinitionWrapper::ConstProgramDefinitionWrapper(const Definition& def)
+    ConstProgramDefinitionWrapper::ConstProgramDefinitionWrapper(const Definition& def) noexcept
         : _def{ def }
     {
     }
@@ -53,12 +53,12 @@ namespace darmok
         return profiles;
     }
 
-    ProgramSourceWrapper::ProgramSourceWrapper(Source& src)
+    ProgramSourceWrapper::ProgramSourceWrapper(Source& src) noexcept
         : _src{ src }
     {
     }
 
-    expected<void, std::string> ProgramSourceWrapper::read(const std::filesystem::path& path)
+    expected<void, std::string> ProgramSourceWrapper::read(const std::filesystem::path& path) noexcept
     {
         auto jsonResult = StreamUtils::parseJson(path);
         if(!jsonResult)
@@ -69,7 +69,7 @@ namespace darmok
         return read(*jsonResult, basePath);
     }
 
-    expected<void, std::string> ProgramSourceWrapper::read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath)
+    expected<void, std::string> ProgramSourceWrapper::read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath) noexcept
     {       
         auto itr = json.find("name");
         if (itr != json.end())
@@ -143,7 +143,7 @@ namespace darmok
         return ShaderType::Unknown;
     }
 
-    std::string ShaderParser::getTypeName(ShaderType type)
+    std::string ShaderParser::getTypeName(ShaderType type) noexcept
     {
         switch (type)
         {
@@ -154,7 +154,7 @@ namespace darmok
         case ShaderType::Compute:
             return "compute";
         default:
-            throw std::invalid_argument("unknown shader type");
+            return "";
         }
     }
 
@@ -378,7 +378,7 @@ namespace darmok
         return ops;
     }
 
-    protobuf::Shader& ShaderParser::getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op)
+    expected<std::reference_wrapper<protobuf::Shader>, std::string> ShaderParser::getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op) noexcept
     {
         auto& profiles = *def.mutable_profiles();
         auto itr = profiles.find(op.profile);
@@ -399,7 +399,7 @@ namespace darmok
             shaders = profile.mutable_vertex_shaders();
             break;
         default:
-			throw std::runtime_error{ "unsupported shader type" };
+			return unexpected<std::string>{ "unsupported shader type" };
         }
 
         auto itr2 = std::find_if(shaders->begin(), shaders->end(), [&op](auto& shader)
@@ -452,7 +452,7 @@ namespace darmok
 #endif
     }
 
-    expected<void, std::string> ShaderCompiler::operator()(const Operation& op) const
+    expected<void, std::string> ShaderCompiler::operator()(const Operation& op) const noexcept
     {
         if (!fs::exists(_config.programConfig.shadercPath))
         {
@@ -556,7 +556,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> ProgramFileImporterImpl::readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& path)
+    expected<void, std::string> ProgramFileImporterImpl::readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& path) noexcept
     {
         // maybe switch to arrays to avoid ordered_json
         auto basePath = path.parent_path();
@@ -623,7 +623,7 @@ namespace darmok
         return {};
     }
 
-    void ProgramCompilerConfig::read(const nlohmann::json& json, const ReadConfig& config)
+    void ProgramCompilerConfig::read(const nlohmann::json& json, const ReadConfig& config) noexcept
     {
         auto fixPath = [&config](std::filesystem::path path)
         {
@@ -662,7 +662,7 @@ namespace darmok
     {
     }
 
-    expected<protobuf::Program, std::string> ProgramCompiler::operator()(const protobuf::ProgramSource& src)
+    expected<protobuf::Program, std::string> ProgramCompiler::operator()(const protobuf::ProgramSource& src) noexcept
     {
         protobuf::Program def;
         def.set_name(src.name());
@@ -694,12 +694,17 @@ namespace darmok
                 {
                     return fmt::format("compiling {} profile {}: {}", shaderConfig.type, op.profile, compileResult.error());
                 }
-                auto& shader = ShaderParser::getShader(def, shaderConfig.type, op);
+                auto shaderResult = ShaderParser::getShader(def, shaderConfig.type, op);
+                if(!shaderResult)
+                {
+                    return fmt::format("getting shader {} profile {}: {}", shaderConfig.type, op.profile, shaderResult.error());
+				}
                 auto readResult = StreamUtils::readString(op.outputPath);
 				if (!readResult)
 				{
 					return fmt::format("reading file {}: {}", op.outputPath.string(), readResult.error());
 				}
+				auto& shader = shaderResult.value().get();
                 *shader.mutable_data() = std::move(readResult).value();
                 fs::remove(op.outputPath);
             }
@@ -873,15 +878,12 @@ namespace darmok
 		return std::make_shared<protobuf::Program>(std::move(result.value()));
     }
 
-    ProgramFileImporter::ProgramFileImporter()
+    ProgramFileImporter::ProgramFileImporter() noexcept
         : _impl{ std::make_unique<ProgramFileImporterImpl>() }
     {
     }
 
-    ProgramFileImporter::~ProgramFileImporter() noexcept
-    {
-        // empty on purpose
-    }
+    ProgramFileImporter::~ProgramFileImporter() = default;
 
     ProgramFileImporter& ProgramFileImporter::setShadercPath(const fs::path& path) noexcept
     {

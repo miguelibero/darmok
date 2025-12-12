@@ -28,7 +28,7 @@ namespace darmok
 	public:
 		using Definition = protobuf::Program;
 		using Profile = protobuf::ProgramProfile;
-		ConstProgramDefinitionWrapper(const Definition& def);
+		ConstProgramDefinitionWrapper(const Definition& def) noexcept;
 
 		expected<std::reference_wrapper<const Profile>, std::string> getCurrentProfile();
 
@@ -41,7 +41,7 @@ namespace darmok
 	class DARMOK_EXPORT ProgramDefinitionWrapper final : public ConstProgramDefinitionWrapper
 	{
 	public:
-		ProgramDefinitionWrapper(Definition& def);
+		ProgramDefinitionWrapper(Definition& def) noexcept;
 	private:
 		const Definition& _def;
 	};
@@ -50,10 +50,10 @@ namespace darmok
 	{
 	public:
 		using Source = protobuf::ProgramSource;
-		ProgramSourceWrapper(Source& src);
+		ProgramSourceWrapper(Source& src) noexcept;
 
-		expected<void, std::string> read(const std::filesystem::path& path);
-		expected<void, std::string> read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath);
+		expected<void, std::string> read(const std::filesystem::path& path) noexcept;
+		expected<void, std::string> read(const nlohmann::ordered_json& json, const std::filesystem::path& basePath) noexcept;
 	private:
 		Source& _src;
 	};
@@ -72,7 +72,7 @@ namespace darmok
 			std::filesystem::path basePath;
 		};
 
-		void read(const nlohmann::json& json, const ReadConfig& config);
+		void read(const nlohmann::json& json, const ReadConfig& config) noexcept;
 	};
 
 	class DARMOK_EXPORT ProgramCompiler final
@@ -80,7 +80,7 @@ namespace darmok
 	public:
 		using Config = ProgramCompilerConfig;
 		ProgramCompiler(const Config& config) noexcept;
-		expected<protobuf::Program, std::string> operator()(const protobuf::ProgramSource& src);
+		expected<protobuf::Program, std::string> operator()(const protobuf::ProgramSource& src) noexcept;
 
 	private:
 		Config _config;
@@ -116,7 +116,7 @@ namespace darmok
 	class DARMOK_EXPORT ProgramFileImporter final : public IFileTypeImporter
 	{
 	public:
-		ProgramFileImporter();
+		ProgramFileImporter() noexcept;
 		~ProgramFileImporter() noexcept;
 		ProgramFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		ProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;

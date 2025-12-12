@@ -66,13 +66,13 @@ namespace darmok
 
         static ShaderType getType(const std::string& name) noexcept;
         static ShaderType getType(const std::filesystem::path& path) noexcept;
-        static std::string getTypeName(ShaderType type);
+        static std::string getTypeName(ShaderType type) noexcept;
 
         static std::filesystem::path getDefaultOutputFile(const CompilerConfig& config, const CompilerOperation& op) noexcept;
         expected<std::vector<CompilerOperation>, std::string> prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath = "") const noexcept;
         static std::vector<CompilerOperation> getCompilerOperations(const CompilerConfig& config, const Defines& defines, const std::filesystem::path& baseOutputPath = "") noexcept;
     
-        static protobuf::Shader& getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op);
+        static expected<std::reference_wrapper<protobuf::Shader>, std::string> getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op) noexcept;
 
     private:
         IncludePaths _includePaths;
@@ -98,7 +98,7 @@ namespace darmok
         using PlatformType = ShaderCompilerPlatformType;
 
         ShaderCompiler(const Config& config) noexcept;
-        expected<void, std::string> operator()(const Operation& op) const;
+        expected<void, std::string> operator()(const Operation& op) const noexcept;
 
         static std::optional<PlatformType> getDefaultPlatform() noexcept;
 
@@ -129,6 +129,6 @@ namespace darmok
         std::optional<CompileConfig> _config;
         std::optional<protobuf::ProgramSource> _src;
 
-        expected<void, std::string> readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path);
+        expected<void, std::string> readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path) noexcept;
     };
 }
