@@ -209,9 +209,9 @@ namespace darmok
         using OptimizationSettings = AssimpOzzAnimationConverter::OptimizationSettings;
 
         AssimpSkeletalAnimationFileImporterImpl(size_t bufferSize = 4096) noexcept;
-        void setLogOutput(OptionalRef<std::ostream> log) noexcept;
         const std::string& getName() const noexcept;
 
+        expected<void, std::string> init(OptionalRef<std::ostream> log) noexcept;
         expected<Effect, std::string> prepare(const Input& input) noexcept;
         expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
     private:

@@ -73,8 +73,9 @@ namespace darmok
 
         virtual ~IFileTypeImporter() = default;
         virtual const std::string& getName() const noexcept = 0;
-        virtual void setLogOutput(OptionalRef<std::ostream> log) noexcept;
 
+        virtual expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept;
+        virtual expected<void, std::string> shutdown() noexcept;
         virtual expected<Effect, std::string> prepare(const Input& input) noexcept;
         virtual expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
     };

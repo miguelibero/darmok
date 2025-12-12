@@ -29,11 +29,11 @@ namespace darmok
     public:
         using Definition = protobuf::FreetypeFont;
 		using Result = expected<std::shared_ptr<IFont>, std::string>;
-        FreetypeFontLoaderImpl(bx::AllocatorI& alloc);
-        ~FreetypeFontLoaderImpl();
-        void init(App& app);
-        void shutdown();
-        Result create(std::shared_ptr<Definition> def);
+        FreetypeFontLoaderImpl(bx::AllocatorI& alloc) noexcept;
+        ~FreetypeFontLoaderImpl() noexcept;
+        expected<void, std::string> init(App& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
+        Result create(std::shared_ptr<Definition> def) noexcept;
     private:
         FT_Library _library;
         bx::AllocatorI& _alloc;
@@ -49,8 +49,8 @@ namespace darmok
 
         std::optional<Glyph> getGlyph(char32_t chr) const noexcept override;
         float getLineSize() const noexcept override;
-        std::shared_ptr<Texture> getTexture() const override;
-        [[nodiscard]] expected<void, std::string> update(const std::unordered_set<char32_t>& chars) override;
+        std::shared_ptr<Texture> getTexture() const noexcept override;
+        [[nodiscard]] expected<void, std::string> update(const std::unordered_set<char32_t>& chars) noexcept override;
         FT_Face getFace() const noexcept;
     private:
         std::shared_ptr<Texture> _texture;
@@ -82,8 +82,8 @@ namespace darmok
         FreetypeFontAtlasGenerator& setImageFormat(bimg::TextureFormat::Enum format) noexcept;
         FreetypeFontAtlasGenerator& setRenderMode(FT_Render_Mode mode) noexcept;
         glm::uvec2 calcSpace(std::u32string_view chars) noexcept;
-        Result operator()(std::u32string_view chars);
-        Result operator()(std::string_view str);
+        Result operator()(std::u32string_view chars) noexcept;
+        Result operator()(std::string_view str) noexcept;
     private:
         FT_Face _face;
         FT_Library _library;
@@ -92,8 +92,8 @@ namespace darmok
         FT_Render_Mode _renderMode;
         bimg::TextureFormat::Enum _imageFormat;
 
-        std::map<char32_t, FT_UInt> getIndices(std::u32string_view chars) const;
-        expected<std::reference_wrapper<const FT_Bitmap>, std::string> renderBitmap(FT_UInt index);
+        std::map<char32_t, FT_UInt> getIndices(std::u32string_view chars) const noexcept;
+        expected<std::reference_wrapper<const FT_Bitmap>, std::string> renderBitmap(FT_UInt index) noexcept;
     };
 
     class FreetypeFontFileImporterImpl final
@@ -102,14 +102,18 @@ namespace darmok
         using Input = FileImportInput;
         using Effect = FileImportEffect;
         using Config = FileImportConfig;
-        FreetypeFontFileImporterImpl();
-        ~FreetypeFontFileImporterImpl();
+
+        FreetypeFontFileImporterImpl() noexcept;
+        ~FreetypeFontFileImporterImpl() noexcept;
        
         const std::string& getName() const noexcept;
 
+        expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept;
+        expected<void, std::string> shutdown() noexcept;
         expected<Effect, std::string> prepare(const Input& input) noexcept;
         expected<void, std::string> operator()(const Input& input, Config& config) noexcept;
     private:
+
         using Atlas = protobuf::TextureAtlas;
         FT_Face _face;
         FT_Library _library;

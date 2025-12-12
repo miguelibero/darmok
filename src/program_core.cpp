@@ -749,9 +749,10 @@ namespace darmok
         _defaultConfig.includePaths.insert(path);
     }
 
-    void ProgramFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    expected<void, std::string> ProgramFileImporterImpl::init(OptionalRef<std::ostream> log) noexcept
     {
         _defaultConfig.log = log;
+        return {};
     }
 
     expected<ProgramFileImporterImpl::Effect, std::string> ProgramFileImporterImpl::prepare(const Input& input) noexcept
@@ -897,9 +898,9 @@ namespace darmok
         return *this;
     }
 
-    void ProgramFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    expected<void, std::string> ProgramFileImporter::init(OptionalRef<std::ostream> log) noexcept
     {
-        _impl->setLogOutput(log);
+        return _impl->init();
     }
 
     expected<ProgramFileImporter::Effect, std::string> ProgramFileImporter::prepare(const Input& input) noexcept

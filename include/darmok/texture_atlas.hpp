@@ -140,7 +140,7 @@ namespace darmok
 	public:
 		TexturePackerAtlasFileImporter(std::filesystem::path exePath = "") noexcept;
 		const std::string& getName() const noexcept override;
-		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
+		expected<void, std::string> init(OptionalRef<std::ostream> log) noexcept override;
 		expected<Effect, std::string> prepare(const Input& input) noexcept override;
 		expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
 	private:

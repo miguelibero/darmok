@@ -121,7 +121,7 @@ namespace darmok
 		ProgramFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		ProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
 
-		void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
+		expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept override;
 		expected<Effect, std::string> prepare(const Input& input) noexcept override;
 		expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
 

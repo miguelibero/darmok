@@ -41,8 +41,8 @@ namespace darmok
     public:
         FreetypeFontLoader(IFreetypeFontDefinitionLoader& defLoader, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFontLoader() noexcept;
-        void init(App& app) noexcept;
-        void shutdown() noexcept;
+        expected<void, std::string> init(App& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
     protected:
         Result create(std::shared_ptr<Definition> def) noexcept override;
     private:
@@ -58,6 +58,8 @@ namespace darmok
         ~FreetypeFontFileImporter() noexcept;
         const std::string& getName() const noexcept override;
 
+		expected<void, std::string> init(OptionalRef<std::ostream> log) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
         expected<Effect, std::string> prepare(const Input& input) noexcept override;
         expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
     private:

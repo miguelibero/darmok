@@ -42,9 +42,9 @@ namespace darmok
     public:
         AssimpSkeletalAnimationFileImporter() noexcept;
         ~AssimpSkeletalAnimationFileImporter() noexcept;
-        void setLogOutput(OptionalRef<std::ostream> log) noexcept override;
         const std::string& getName() const noexcept override;
 
+        expected<void, std::string> init(OptionalRef<std::ostream> log) noexcept override;
         expected<Effect, std::string> prepare(const Input& input) noexcept override;
         expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
     private:

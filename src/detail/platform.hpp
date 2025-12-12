@@ -3,6 +3,7 @@
 #include "input.hpp"
 #include <darmok/window.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/expected.hpp>
 #include <darmok/app_fwd.hpp>
 #include <bx/bx.h>
 #include <queue>
@@ -304,7 +305,7 @@ namespace darmok
 
 		[[nodiscard]] std::unique_ptr<PlatformEvent> pollEvent() noexcept;
 
-		int32_t run(std::unique_ptr<IPlatformRunnable>&& runnable);
+		expected<int32_t, std::string> run(std::unique_ptr<IPlatformRunnable> runnable) noexcept;
 
 	private:
 		Platform() noexcept;

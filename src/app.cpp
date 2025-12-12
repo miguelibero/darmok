@@ -28,12 +28,19 @@ namespace darmok
 	{
 		auto app = std::make_unique<App>(std::move(factory));
 		const CmdArgs args(argv, argc);
+		auto& appRef = *app;
 		auto runner = std::make_unique<AppRunner>(std::move(app), args);
 		if (auto code = runner->setup())
 		{
 			return code.value();
 		}
-		return Platform::get().run(std::move(runner));
+		auto result = Platform::get().run(std::move(runner));
+		if (!result)
+		{
+			appRef.onUnexpected(AppPhase::Run, result.error());
+			return -1;
+		}
+		return result.value();
 	}
 
 	AppRunner::AppRunner(std::unique_ptr<App>&& app, const CmdArgs& args) noexcept
@@ -356,7 +363,11 @@ namespace darmok
 		_taskExecutor.emplace(maxEncoders - 1);
 
 		_input.getKeyboard().addListener(*this);
-		_assets.getImpl().init(_app);
+		auto assetsResult = _assets.getImpl().init(_app);
+		if (!assetsResult)
+		{
+			return unexpected<std::string>{"assets: " + assetsResult.error() };
+		}
 #ifdef DARMOK_MINIAUDIO
 		auto audioResult = _audio.getImpl().init();
 		if (!audioResult)
@@ -426,7 +437,11 @@ namespace darmok
 		_updaters.clear();
 
 		_input.getImpl().shutdown();
-		_assets.getImpl().shutdown();
+		auto assetsResult = _assets.getImpl().shutdown();
+		if(!assetsResult)
+		{
+			errors.push_back("assets: " + assetsResult.error());
+		}
 		_window.getImpl().shutdown();
 #ifdef DARMOK_MINIAUDIO
         _audio.getImpl().shutdown();
@@ -507,7 +522,11 @@ namespace darmok
 			}
 		}
 
-		_assets.getImpl().update();
+		auto assetsResult = _assets.getImpl().update();
+		if(!assetsResult)
+		{
+			errors.push_back("assets: " + assetsResult.error());
+		}
 
 #ifdef DARMOK_MINIAUDIO
 		_audio.getImpl().update();

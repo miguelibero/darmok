@@ -29,10 +29,10 @@ namespace darmok
 
         virtual ~IFont() = default;
 
-        virtual std::optional<Glyph> getGlyph(char32_t chr) const = 0;
-        virtual std::shared_ptr<Texture> getTexture() const = 0;
-        virtual float getLineSize() const = 0;
-        [[nodiscard]] virtual expected<void, std::string> update(const std::unordered_set<char32_t>& chars)
+        virtual std::optional<Glyph> getGlyph(char32_t chr) const noexcept = 0;
+        virtual std::shared_ptr<Texture> getTexture() const noexcept = 0;
+        virtual float getLineSize() const noexcept = 0;
+        [[nodiscard]] virtual expected<void, std::string> update(const std::unordered_set<char32_t>& chars) noexcept
         {
             return {};
         };
@@ -119,7 +119,7 @@ namespace darmok
         TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept;
         std::optional<Glyph> getGlyph(char32_t chr) const noexcept override;
         float getLineSize() const noexcept override;
-        std::shared_ptr<Texture> getTexture() const override;
+        std::shared_ptr<Texture> getTexture() const noexcept override;
     private:
         std::shared_ptr<TextureAtlas> _atlas;
     };

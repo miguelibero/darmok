@@ -731,9 +731,10 @@ namespace darmok
     {
     }
 
-    void AssimpSkeletalAnimationFileImporterImpl::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    expected<void, std::string> AssimpSkeletalAnimationFileImporterImpl::init(OptionalRef<std::ostream> log) noexcept
     {
         _log = log;
+        return {};
     }
 
     std::filesystem::path AssimpSkeletalAnimationFileImporterImpl::getOutputPath(const Input& input, const std::string& animName, const std::string& outputPath) noexcept
@@ -989,9 +990,10 @@ namespace darmok
 
     AssimpSkeletalAnimationFileImporter::~AssimpSkeletalAnimationFileImporter() noexcept = default;
 
-    void AssimpSkeletalAnimationFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+
+    expected<void, std::string> AssimpSkeletalAnimationFileImporter::init(OptionalRef<std::ostream> log) noexcept
     {
-        _impl->setLogOutput(log);
+        return _impl->init(log);
     }
 
     const std::string& AssimpSkeletalAnimationFileImporter::getName() const noexcept

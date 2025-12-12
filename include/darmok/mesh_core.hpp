@@ -78,8 +78,8 @@ namespace darmok
         [[nodiscard]] uint16_t getVertexHandleIndex() const noexcept;
 
         // only if dynamic
-        void updateVertices(DataView data, uint32_t offset = 0);
-        void updateIndices(DataView data, uint32_t offset = 0);
+        expected<void, std::string> updateVertices(DataView data, uint32_t offset = 0) noexcept;
+        expected<void, std::string> updateIndices(DataView data, uint32_t offset = 0) noexcept;
 
         [[nodiscard]] static Source createSource() noexcept;
         [[nodiscard]] static Definition createDefinition() noexcept;
@@ -87,54 +87,64 @@ namespace darmok
         [[nodiscard]] static expected<Mesh, std::string> load(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config = {}) noexcept;
         [[nodiscard]] static expected<Mesh, std::string> load(const Definition& def) noexcept;
     private:
-        struct StaticVariant final
+        struct StaticMode final
         {
             bgfx::VertexBufferHandle vertexBuffer{ bgfx::kInvalidHandle };
             bgfx::IndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
 
-            StaticVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
-			~StaticVariant() noexcept;
-			StaticVariant(const StaticVariant& other) = delete;
-			StaticVariant& operator=(const StaticVariant& other) = delete;
-            StaticVariant(StaticVariant&& other);
-            StaticVariant& operator=(StaticVariant&& other);
+            StaticMode() = default;
+            ~StaticMode() noexcept;
+            StaticMode(const StaticMode& other) = delete;
+            StaticMode& operator=(const StaticMode& other) = delete;
+            StaticMode(StaticMode&& other) noexcept;
+            StaticMode& operator=(StaticMode&& other) noexcept;
+
+            static expected<StaticMode, std::string> create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
             expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+        private:
+			void clear() noexcept;
         };
 
-        struct DynamicVariant final
+        struct DynamicMode final
         {
             bgfx::DynamicVertexBufferHandle vertexBuffer{ bgfx::kInvalidHandle };
             bgfx::DynamicIndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
 
-            DynamicVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
-            ~DynamicVariant() noexcept;
-            DynamicVariant(const DynamicVariant& other) = delete;
-            DynamicVariant& operator=(const DynamicVariant& other) = delete;
-            DynamicVariant(DynamicVariant&& other);
-            DynamicVariant& operator=(DynamicVariant&& other);
+            DynamicMode() = default;
+            ~DynamicMode() noexcept;
+            DynamicMode(const DynamicMode& other) = delete;
+            DynamicMode& operator=(const DynamicMode& other) = delete;
+            DynamicMode(DynamicMode&& other) noexcept;
+            DynamicMode& operator=(DynamicMode&& other) noexcept;
+
+            static expected<DynamicMode, std::string> create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
             expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
+        private:
+            void clear() noexcept;
         };
 
-        struct TransientVariant final
+        struct TransientMode final
         {
             bgfx::TransientVertexBuffer vertexBuffer;
             bgfx::TransientIndexBuffer indexBuffer;
 
-            TransientVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config);
-            TransientVariant(const TransientVariant& other) = delete;
-            TransientVariant& operator=(const TransientVariant& other) = delete;
-            TransientVariant(TransientVariant&& other) = default;
-            TransientVariant& operator=(TransientVariant&& other) = default;
+            TransientMode() = default;
+            TransientMode(const TransientMode& other) = delete;
+            TransientMode& operator=(const TransientMode& other) = delete;
+            TransientMode(TransientMode&& other) = default;
+            TransientMode& operator=(TransientMode&& other) = default;
+            
+            static expected<TransientMode, std::string> create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
             expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
         };
 
-        using Variant = std::variant<StaticVariant, DynamicVariant, TransientVariant>;
+        using Mode = std::variant<StaticMode, DynamicMode, TransientMode>;
 
-        Mesh(Type type, Variant variant, const bgfx::VertexLayout& layout, size_t vertNum, size_t idxNum) noexcept;
-        static expected<Variant, std::string> createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
+        Mesh(Type type, Mode mode, const bgfx::VertexLayout& layout, size_t vertNum, size_t idxNum) noexcept;
+        static expected<Mode, std::string> createMode(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
 
         Type _type;
-        Variant _variant;
+        Mode _mode;
         bgfx::VertexLayout _layout;
         size_t _vertNum;
         size_t _idxNum;

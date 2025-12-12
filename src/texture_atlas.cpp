@@ -623,9 +623,10 @@ namespace darmok
 #endif
 	}
 
-	void TexturePackerAtlasFileImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+	expected<void, std::string> TexturePackerAtlasFileImporter::init(OptionalRef<std::ostream> log) noexcept
 	{
 		_log = log;
+		return {};
 	}
 
 	const std::string& TexturePackerAtlasFileImporter::getName() const noexcept

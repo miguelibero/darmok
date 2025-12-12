@@ -32,15 +32,7 @@ namespace darmok
 			return "(Unknown error)";
 		}
 
-		void throwIfError(FT_Error err)
-		{
-			if (auto msg = getErrorMessage(err))
-			{
-				throw std::runtime_error{ *msg };
-			}
-		}
-
-		expected<FT_Face, std::string> createFace(FT_Library library, const Definition& def)
+		expected<FT_Face, std::string> createFace(FT_Library library, const Definition& def) noexcept
 		{
 			FT_Face face = nullptr;
 			auto& data = def.data();
@@ -63,7 +55,7 @@ namespace darmok
 			return face;
 		}
 
-		void updateDefinition(Definition& def, const nlohmann::json& json)
+		void updateDefinition(Definition& def, const nlohmann::json& json) noexcept
 		{
 			glm::uvec2 size{ 0, 48 };
 			auto itr = json.find("fontSize");
@@ -157,35 +149,47 @@ namespace darmok
 		return def;
 	}
 
-	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(bx::AllocatorI& alloc)
+	FreetypeFontLoaderImpl::FreetypeFontLoaderImpl(bx::AllocatorI& alloc) noexcept
 		: _library{ nullptr }
 		, _alloc{ alloc }
 	{
 	}
 
-	FreetypeFontLoaderImpl::~FreetypeFontLoaderImpl()
+	FreetypeFontLoaderImpl::~FreetypeFontLoaderImpl() noexcept
 	{
-		shutdown();
+		auto result = shutdown();
 	}
 
-	void FreetypeFontLoaderImpl::init(App& app)
+	expected<void, std::string> FreetypeFontLoaderImpl::init(App& app) noexcept
 	{
-		shutdown();
+		auto result = shutdown();
+		if (!result)
+		{
+			return result;
+		}
 		auto err = FT_Init_FreeType(&_library);
-		FreetypeUtils::throwIfError(err);
+		if (auto msg = FreetypeUtils::getErrorMessage(err))
+		{
+			return unexpected{ std::move(*msg) };
+		}
+		return {};
 	}
 
-	void FreetypeFontLoaderImpl::shutdown()
+	expected<void, std::string> FreetypeFontLoaderImpl::shutdown() noexcept
 	{
 		if (_library)
 		{
 			auto err = FT_Done_FreeType(_library);
 			_library = nullptr;
-			FreetypeUtils::throwIfError(err);
+			if (auto msg = FreetypeUtils::getErrorMessage(err))
+			{
+				return unexpected{ std::move(*msg) };
+			}
 		}
+		return {};
 	}
 
-	FreetypeFontLoaderImpl::Result FreetypeFontLoaderImpl::create(std::shared_ptr<Definition> def)
+	FreetypeFontLoaderImpl::Result FreetypeFontLoaderImpl::create(std::shared_ptr<Definition> def) noexcept
 	{
 		if (!def)
 		{
@@ -208,14 +212,14 @@ namespace darmok
 
 	FreetypeFontLoader::~FreetypeFontLoader() noexcept = default;
 
-	void FreetypeFontLoader::init(App& app) noexcept
+	expected<void, std::string> FreetypeFontLoader::init(App& app) noexcept
 	{
-		_impl->init(app);
+		return _impl->init(app);
 	}
 
-	void FreetypeFontLoader::shutdown() noexcept
+	expected<void, std::string> FreetypeFontLoader::shutdown() noexcept
 	{
-		_impl->shutdown();
+		return _impl->shutdown();
 	}
 
 	FreetypeFontLoader::Result FreetypeFontLoader::create(std::shared_ptr<Definition> def) noexcept
@@ -256,12 +260,12 @@ namespace darmok
 		return _face;
 	}
 
-	std::shared_ptr<Texture> FreetypeFont::getTexture() const
+	std::shared_ptr<Texture> FreetypeFont::getTexture() const noexcept
 	{
 		return _texture;
 	}
 
-	expected<void, std::string> FreetypeFont::update(const std::unordered_set<char32_t>& chars)
+	expected<void, std::string> FreetypeFont::update(const std::unordered_set<char32_t>& chars) noexcept
 	{
 		if (_renderedChars == chars || chars.empty())
 		{
@@ -272,7 +276,7 @@ namespace darmok
 		auto result = generator(std::u32string{ chars.begin(), chars.end() });
 		if (!result)
 		{
-			return unexpected{ result.error() };
+			return unexpected{ std::move(result).error() };
 		}
 
 		if (!_texture || _texture->getSize() != result->image.getSize())
@@ -280,14 +284,14 @@ namespace darmok
 			auto texResult = Texture::load(result->image.getTextureConfig());
 			if(!texResult)
 			{
-				return unexpected{ texResult.error() };
+				return unexpected{ std::move(texResult).error() };
 			}
 			_texture = std::make_shared<Texture>(std::move(texResult).value());
 		}
 		auto updateResult = _texture->update(result->image.getData());
 		if (!updateResult)
 		{
-			return unexpected{ updateResult.error() };
+			return unexpected{ std::move(updateResult).error() };
 		}
 
 		_glyphs.clear();
@@ -350,7 +354,7 @@ namespace darmok
 		return pos;
 	}
 
-	std::map<char32_t, FT_UInt> FreetypeFontAtlasGenerator::getIndices(std::u32string_view chars) const
+	std::map<char32_t, FT_UInt> FreetypeFontAtlasGenerator::getIndices(std::u32string_view chars) const noexcept
 	{
 		std::map<char32_t, FT_UInt> indices;
 		if (chars.empty())
@@ -380,22 +384,22 @@ namespace darmok
 		return indices;
 	}
 
-	expected<std::reference_wrapper<const FT_Bitmap>, std::string> FreetypeFontAtlasGenerator::renderBitmap(FT_UInt index)
+	expected<std::reference_wrapper<const FT_Bitmap>, std::string> FreetypeFontAtlasGenerator::renderBitmap(FT_UInt index) noexcept
 	{
 		auto err = FT_Load_Glyph(_face, index, FT_LOAD_DEFAULT);
 		if (auto msg = FreetypeUtils::getErrorMessage(err))
 		{
-			return unexpected<std::string>{ *msg };
+			return unexpected{ std::move(*msg) };
 		}
 		err = FT_Render_Glyph(_face->glyph, _renderMode);
 		if (auto msg = FreetypeUtils::getErrorMessage(err))
 		{
-			return unexpected<std::string>{ *msg };
+			return unexpected{ std::move(*msg) };
 		}
 		return std::ref(_face->glyph->bitmap);
 	}
 
-	FreetypeFontAtlasGenerator::Result FreetypeFontAtlasGenerator::operator()(std::u32string_view chars)
+	FreetypeFontAtlasGenerator::Result FreetypeFontAtlasGenerator::operator()(std::u32string_view chars) noexcept
 	{
 		glm::uvec2 pos{ 0 };
 		FT_UInt fontHeight = _face->size->metrics.y_ppem;
@@ -411,7 +415,7 @@ namespace darmok
 			auto bitmapResult = renderBitmap(idx);
 			if (!bitmapResult)
 			{
-				return unexpected{ bitmapResult.error() };
+				return unexpected{ std::move(bitmapResult).error() };
 			}
 			auto& bitmap = bitmapResult.value().get();
 			if (pos.x + bitmap.width >= _size.x)
@@ -438,7 +442,7 @@ namespace darmok
 				auto updateResult = data.image.update(pos, bsize, bitmapData, pixelOffset, 1);
 				if (!updateResult)
 				{
-					return unexpected{ updateResult.error() };
+					return unexpected{ std::move(updateResult).error() };
 				}
 			}
 
@@ -454,23 +458,48 @@ namespace darmok
 		return data;
 	}
 
-	FreetypeFontAtlasGenerator::Result FreetypeFontAtlasGenerator::operator()(std::string_view str)
+	FreetypeFontAtlasGenerator::Result FreetypeFontAtlasGenerator::operator()(std::string_view str) noexcept
 	{
 		return (*this)(StringUtils::toUtf32(str));
 	}
 
-	FreetypeFontFileImporterImpl::FreetypeFontFileImporterImpl()
+	FreetypeFontFileImporterImpl::FreetypeFontFileImporterImpl() noexcept
 		: _library{ nullptr }
 		, _face{ nullptr }
 	{
-		auto err = FT_Init_FreeType(&_library);
-		FreetypeUtils::throwIfError(err);
 	}
 
-	FreetypeFontFileImporterImpl::~FreetypeFontFileImporterImpl()
+	expected<void, std::string> FreetypeFontFileImporterImpl::init(OptionalRef<std::ostream> lo) noexcept
 	{
-		auto err = FT_Done_FreeType(_library);
-		FreetypeUtils::throwIfError(err);
+		auto err = FT_Init_FreeType(&_library);
+		if (auto msg = FreetypeUtils::getErrorMessage(err))
+		{
+			return unexpected{ std::move(*msg) };
+		}
+		return {};
+	}
+
+	expected<void, std::string> FreetypeFontFileImporterImpl::shutdown() noexcept
+	{
+		if (_library)
+		{
+			auto err = FT_Done_FreeType(_library);
+			if (auto msg = FreetypeUtils::getErrorMessage(err))
+			{
+				return unexpected{ std::move(*msg) };
+			}
+			_library = nullptr;
+		}
+		return {};
+	}
+
+	FreetypeFontFileImporterImpl::~FreetypeFontFileImporterImpl() noexcept
+	{
+		auto result = shutdown();
+		if(!result)
+		{
+			StreamUtils::log("FreetypeFontFileImporterImpl destructor: " + result.error(), true);
+		}
 	}
 
 	expected<FreetypeFontFileImporterImpl::Effect, std::string> FreetypeFontFileImporterImpl::prepare(const Input& input) noexcept
@@ -485,15 +514,24 @@ namespace darmok
 		auto fileResult = Data::fromFile(input.path);
 		if (!fileResult)
 		{
-			return unexpected{ fileResult.error() };
+			return unexpected{ std::move(fileResult).error() };
 		}
+		if (!_library)
+		{
+			auto initResult = init();
+			if(!initResult)
+			{
+				return unexpected{ std::move(initResult).error() };
+			}
+		}
+
 		protobuf::FreetypeFont def;
 		def.set_data(fileResult.value().toString());
 		FreetypeUtils::updateDefinition(def, input.config);
 		auto faceResult = FreetypeUtils::createFace(_library, def);
 		if (!faceResult)
 		{
-			return unexpected{ faceResult.error() };
+			return unexpected{ std::move(faceResult).error() };
 		}
 		_face = faceResult.value();
 		FreetypeFontAtlasGenerator generator{ _face, _library, _alloc };
@@ -509,7 +547,7 @@ namespace darmok
 		auto result = generator(chars);
 		if (!result)
 		{
-			return unexpected{ result.error() };
+			return unexpected{ std::move(result).error() };
 		}
 
 		_atlas = std::move(result->atlas);
@@ -558,7 +596,7 @@ namespace darmok
 			auto imgWriteResult = _image->write(encoding, *out);
 			if (!imgWriteResult)
 			{
-				return unexpected{ imgWriteResult.error() };
+				return unexpected{ std::move(imgWriteResult).error() };
 			}
 		}
 		if (auto& out = config.outputStreams[1])
@@ -572,7 +610,7 @@ namespace darmok
 			auto atlasWriteResult = TextureAtlasUtils::writeTexturePacker(*_atlas, doc);
 			if (!atlasWriteResult)
 			{
-				return unexpected{ atlasWriteResult.error() };
+				return unexpected{ std::move(atlasWriteResult).error() };
 			}
 			doc.save(*out, PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 		}
@@ -593,6 +631,16 @@ namespace darmok
 	FreetypeFontFileImporter::FreetypeFontFileImporter() noexcept
 		: _impl{ std::make_unique<FreetypeFontFileImporterImpl>() }
 	{
+	}
+
+	expected<void, std::string> FreetypeFontFileImporter::init(OptionalRef<std::ostream> log) noexcept
+	{
+		return _impl->init(log);
+	}
+
+	expected<void, std::string> FreetypeFontFileImporter::shutdown() noexcept
+	{
+		return _impl->shutdown();
 	}
 
 	FreetypeFontFileImporter::~FreetypeFontFileImporter() noexcept = default;

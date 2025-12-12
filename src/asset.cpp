@@ -140,14 +140,19 @@ namespace darmok
 	}
 #endif
 
-	void AssetContextImpl::init(App& app)
+	expected<void, std::string> AssetContextImpl::init(App& app) noexcept
 	{
 #ifdef DARMOK_FREETYPE
-        _freetypeFontLoader.init(app);
+        auto result = _freetypeFontLoader.init(app);
+		if (!result)
+		{
+			return result;
+		}
 #endif
+		return {};
 	}
 
-	void AssetContextImpl::update()
+	expected<void, std::string> AssetContextImpl::update() noexcept
 	{
 		_progLoader.pruneCache();
 		_texLoader.pruneCache();
@@ -156,13 +161,19 @@ namespace darmok
 #ifdef DARMOK_FREETYPE
 		_freetypeFontLoader.pruneCache();
 #endif
+		return {};
 	}
 
-	void AssetContextImpl::shutdown()
+	expected<void, std::string> AssetContextImpl::shutdown() noexcept
 	{
 #ifdef DARMOK_FREETYPE
-		_freetypeFontLoader.shutdown();
+		auto result = _freetypeFontLoader.shutdown();
+		if (!result)
+		{
+			return result;
+		}
 #endif
+		return {};
 	}
 
 	AssetContext::AssetContext(Config&& config) noexcept

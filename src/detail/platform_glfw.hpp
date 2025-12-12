@@ -55,7 +55,7 @@ namespace darmok
 	public:
 		PlatformImpl(Platform& plat) noexcept;
 
-		int run(std::unique_ptr<IPlatformRunnable>&& runnable);
+		expected<int, std::string> run(std::unique_ptr<IPlatformRunnable> runnable) noexcept;
 		
 		void pushCmd(std::unique_ptr<PlatformCmd>&& cmd) noexcept;
 		std::unique_ptr<PlatformEvent> pollEvent() noexcept;

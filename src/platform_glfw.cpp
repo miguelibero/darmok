@@ -667,9 +667,9 @@ namespace darmok
 		}
 	}
 
-	int PlatformImpl::run(std::unique_ptr<IPlatformRunnable>&& runnable)
+	expected<int, std::string> PlatformImpl::run(std::unique_ptr<IPlatformRunnable> runnable) noexcept
 	{
-		static const std::string winTitle("darmok");
+		static const std::string winTitle{ "darmok" };
 		
 		_mte.runnable = std::move(runnable);
 
@@ -677,8 +677,7 @@ namespace darmok
 
 		if (!glfwInit())
 		{
-			throw std::runtime_error("glfwInit failed!");
-			return bx::kExitFailure;
+			return unexpected<std::string>{ "glfwInit failed!" };
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -689,8 +688,7 @@ namespace darmok
 		if (!_window)
 		{
 			glfwTerminate();
-			throw std::runtime_error("glfwCreateWindow failed!");
-			return bx::kExitFailure;
+			return unexpected<std::string>{ "glfwCreateWindow failed!" };
 		}
 
 		int left, right, top, bottom = 0;
@@ -1031,7 +1029,7 @@ namespace darmok
 		return _impl->pollEvent();
 	}
 
-	int32_t Platform::run(std::unique_ptr<IPlatformRunnable>&& runnable)
+	expected<int32_t, std::string> Platform::run(std::unique_ptr<IPlatformRunnable> runnable) noexcept
 	{
 		return _impl->run(std::move(runnable));
 	}

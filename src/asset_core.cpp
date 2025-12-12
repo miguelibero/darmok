@@ -78,8 +78,14 @@ namespace darmok
         return outputPath / (name + std::string{ defaultExt });
     }
 
-    void IFileTypeImporter::setLogOutput(OptionalRef<std::ostream> log) noexcept
+    expected<void, std::string> IFileTypeImporter::init(OptionalRef<std::ostream> log) noexcept
     {
+        return {};
+    };
+
+    expected<void, std::string> IFileTypeImporter::shutdown() noexcept
+    {
+        return {};
     };
 
     expected<IFileTypeImporter::Effect, std::string> IFileTypeImporter::prepare(const Input& input) noexcept
@@ -855,7 +861,7 @@ namespace darmok
     {
         auto fullPath = _outputPath / path;
         fs::create_directories(fullPath.parent_path());
-        std::ofstream out(fullPath);
+        std::ofstream out{ fullPath };
         out << "// generated antomatically by darmok, please do not modify manually!" << std::endl;
         for (auto& path : paths)
         {
@@ -866,6 +872,15 @@ namespace darmok
 
     bool FileImporterImpl::operator()(std::ostream& log) const noexcept
     {
+        for(auto& importer : _importers)
+        {
+            auto initResult = importer.second->init(log);
+            if (!initResult)
+            {
+                log << "error initializing importer \"" << importer.second->getName() << "\": " << initResult.error();
+                return false;
+            }
+		}
         log << "importing " << _inputPath << " -> " << _outputPath << "..." << std::endl;
         auto opsResult = getOperations();
         if (!opsResult)
@@ -896,6 +911,16 @@ namespace darmok
             {
                 log << "error writing cache: " << result.error();
                 hasError = true;
+            }
+        }
+
+        for (auto& importer : _importers)
+        {
+            auto initResult = importer.second->shutdown();
+            if (!initResult)
+            {
+                log << "error shutting down importer \"" << importer.second->getName() << "\": " << initResult.error();
+				hasError = true;
             }
         }
 
@@ -955,7 +980,6 @@ namespace darmok
         }
 
         result.inputCached = isCached(op.input.path);
-        op.importer.setLogOutput(log);
         size_t i = 0;
         auto relInput = fs::relative(op.input.path, _inputPath);
         FileImportConfig config{ .context = *this };

@@ -37,20 +37,29 @@ namespace darmok
 		};
 	}
 
-	Mesh::StaticVariant::StaticVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
+	expected<Mesh::StaticMode, std::string> Mesh::StaticMode::create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
 		auto flags = config.getFlags();
-		if (!vertices.empty())
+		if (vertices.empty())
 		{
-			vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout, flags);
+			return unexpected<std::string>{"empty vertex data"};
 		}
+		StaticMode mode;
+		mode.vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout, flags);
+		bgfx::IndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
 		if (!indices.empty())
 		{
-			indexBuffer = bgfx::createIndexBuffer(indices.copyMem(), flags);
+			mode.indexBuffer = bgfx::createIndexBuffer(indices.copyMem(), flags);
 		}
+		return mode;
 	}
 
-	Mesh::StaticVariant::~StaticVariant() noexcept
+	Mesh::StaticMode::~StaticMode() noexcept
+	{
+		clear();
+	}
+
+	void Mesh::StaticMode::clear() noexcept
 	{
 		if (isValid(vertexBuffer))
 		{
@@ -62,7 +71,7 @@ namespace darmok
 		}
 	}
 
-	Mesh::StaticVariant::StaticVariant(StaticVariant&& other)
+	Mesh::StaticMode::StaticMode(StaticMode&& other) noexcept
 		: vertexBuffer{ other.vertexBuffer }
 		, indexBuffer{ other.indexBuffer }
 	{
@@ -70,8 +79,9 @@ namespace darmok
 		other.indexBuffer.idx = bgfx::kInvalidHandle;
 	}
 
-	Mesh::StaticVariant& Mesh::StaticVariant::operator=(StaticVariant&& other)
+	Mesh::StaticMode& Mesh::StaticMode::operator=(StaticMode&& other) noexcept
 	{
+		clear();
 		vertexBuffer = other.vertexBuffer;
 		indexBuffer = other.indexBuffer;
 		other.vertexBuffer.idx = bgfx::kInvalidHandle;
@@ -79,7 +89,7 @@ namespace darmok
 		return *this;
 	}
 
-	expected<void, std::string> Mesh::StaticVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::StaticMode::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		if (!isValid(vertexBuffer))
 		{
@@ -93,32 +103,40 @@ namespace darmok
 		return {};
 	}
 
-	Mesh::DynamicVariant::DynamicVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
+	expected<Mesh::DynamicMode, std::string> Mesh::DynamicMode::create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
 		auto flags = config.getFlags() | BGFX_BUFFER_ALLOW_RESIZE;
-		if (!vertices.empty())
+		if (vertices.empty())
 		{
-			vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags);
+			return unexpected<std::string>{"empty vertex data"};
 		}
+		DynamicMode mode;
+		mode.vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags);
 		if (!indices.empty())
 		{
-			indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem(), flags);
+			mode.indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem(), flags);
 		}
+		return mode;
 	}
 
-	Mesh::DynamicVariant::~DynamicVariant() noexcept
+	Mesh::DynamicMode::~DynamicMode() noexcept
+	{
+		clear();
+	}
+
+	void Mesh::DynamicMode::clear() noexcept
 	{
 		if (isValid(vertexBuffer))
 		{
 			bgfx::destroy(vertexBuffer);
 		}
-		if (isValid(vertexBuffer))
+		if (isValid(indexBuffer))
 		{
 			bgfx::destroy(indexBuffer);
 		}
 	}
 
-	Mesh::DynamicVariant::DynamicVariant(DynamicVariant&& other)
+	Mesh::DynamicMode::DynamicMode(DynamicMode&& other) noexcept
 		: vertexBuffer{ other.vertexBuffer }
 		, indexBuffer{ other.indexBuffer }
 	{
@@ -126,8 +144,9 @@ namespace darmok
 		other.indexBuffer.idx = bgfx::kInvalidHandle;
 	}
 
-	Mesh::DynamicVariant& Mesh::DynamicVariant::operator=(DynamicVariant&& other)
+	Mesh::DynamicMode& Mesh::DynamicMode::operator=(DynamicMode&& other) noexcept
 	{
+		clear();
 		vertexBuffer = other.vertexBuffer;
 		indexBuffer = other.indexBuffer;
 		other.vertexBuffer.idx = bgfx::kInvalidHandle;
@@ -135,7 +154,7 @@ namespace darmok
 		return *this;
 	}
 
-	expected<void, std::string> Mesh::DynamicVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::DynamicMode::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		if (!isValid(vertexBuffer))
 		{
@@ -149,23 +168,24 @@ namespace darmok
 		return {};
 	}
 
-	Mesh::TransientVariant::TransientVariant(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config)
+	expected<Mesh::TransientMode, std::string> Mesh::TransientMode::create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
+		TransientMode mode;
 		if (!vertices.empty())
 		{
 			auto vertNum = static_cast<uint32_t>(vertices.size()) / layout.getStride();
 			if (vertNum > 0 && !bgfx::getAvailTransientVertexBuffer(vertNum, layout))
 			{
-				throw std::runtime_error("not enought transient vertex buffer space");
+				return unexpected<std::string>{ "not enought transient vertex buffer space" };
 			}
-			bgfx::allocTransientVertexBuffer(&vertexBuffer, vertNum, layout);
-			bx::memCopy(vertexBuffer.data, vertices.ptr(), vertices.size());
+			bgfx::allocTransientVertexBuffer(&mode.vertexBuffer, vertNum, layout);
+			bx::memCopy(mode.vertexBuffer.data, vertices.ptr(), vertices.size());
 		}
 		else
 		{
-			vertexBuffer.data = nullptr;
-			vertexBuffer.size = 0;
-			vertexBuffer.handle.idx = bgfx::kInvalidHandle;
+			mode.vertexBuffer.data = nullptr;
+			mode.vertexBuffer.size = 0;
+			mode.vertexBuffer.handle.idx = bgfx::kInvalidHandle;
 		}
 		if (!indices.empty())
 		{
@@ -173,20 +193,21 @@ namespace darmok
 			auto index32 = config.index32;
 			if (!bgfx::getAvailTransientIndexBuffer(idxNum, index32))
 			{
-				throw std::runtime_error("not enought transient index buffer space");
+				return unexpected<std::string>{ "not enought transient index buffer space" };
 			}
-			bgfx::allocTransientIndexBuffer(&indexBuffer, idxNum, index32);
-			bx::memCopy(indexBuffer.data, indices.ptr(), indices.size());
+			bgfx::allocTransientIndexBuffer(&mode.indexBuffer, idxNum, index32);
+			bx::memCopy(mode.indexBuffer.data, indices.ptr(), indices.size());
 		}
 		else
 		{
-			indexBuffer.data = nullptr;
-			indexBuffer.size = 0;
-			indexBuffer.handle.idx = bgfx::kInvalidHandle;
+			mode.indexBuffer.data = nullptr;
+			mode.indexBuffer.size = 0;
+			mode.indexBuffer.handle.idx = bgfx::kInvalidHandle;
 		}
+		return mode;
 	}
 
-	expected<void, std::string> Mesh::TransientVariant::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
+	expected<void, std::string> Mesh::TransientMode::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
 		encoder.setVertexBuffer(config.vertexStream, &vertexBuffer, config.startVertex, config.numVertices);
 		if (config.numIndices > 0)
@@ -198,12 +219,12 @@ namespace darmok
 
 	expected<Mesh, std::string> Mesh::load(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
-		auto variantResult = createVariant(config.type, layout, vertices, indices, config);
-		if(!variantResult)
+		auto modeResult = createMode(config.type, layout, vertices, indices, config);
+		if(!modeResult)
 		{
-			return unexpected(variantResult.error());
+			return unexpected(modeResult.error());
 		}
-		return Mesh{ config.type, std::move(variantResult).value(), layout,
+		return Mesh{ config.type, std::move(modeResult).value(), layout,
 			layout.getStride() != 0 ? vertices.size() / layout.getStride() : 0,
 			config.getIndexSize() != 0 ? indices.size() / config.getIndexSize() : 0
 		};
@@ -220,25 +241,25 @@ namespace darmok
 			DataView{ def.vertices() }, DataView{ def.indices() }, Config::fromDefinition(def));
 	}
 
-	expected<Mesh::Variant, std::string> Mesh::createVariant(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
+	expected<Mesh::Mode, std::string> Mesh::createMode(Type type, const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
 		auto flags = config.getFlags();
 		switch (config.type)
 		{
 			case Definition::Dynamic:
-				return DynamicVariant{ layout, vertices, indices, config };
+				return DynamicMode::create(layout, vertices, indices, config);
 			case Definition::Transient:
-				return TransientVariant{ layout, vertices, indices, config };
+				return TransientMode::create(layout, vertices, indices, config);
 			case Definition::Static:
-				return StaticVariant{ layout, vertices, indices, config };
+				return StaticMode::create(layout, vertices, indices, config);
 			default:
 				return unexpected<std::string>{ "unknown mesh type" };
 		}
 	}
 
-	Mesh::Mesh(Type type, Variant variant, const bgfx::VertexLayout& layout, size_t vertNum, size_t idxNum) noexcept
+	Mesh::Mesh(Type type, Mode mode, const bgfx::VertexLayout& layout, size_t vertNum, size_t idxNum) noexcept
 		: _type{ type }
-		, _variant{ std::move(variant) }
+		, _mode{ std::move(mode) }
 		, _layout{ layout }
 		, _vertNum{ vertNum }
 		, _idxNum{ idxNum }
@@ -297,7 +318,7 @@ namespace darmok
 		{
 			return {};
 		}
-		return std::visit([&](const auto& data) { return data.render(encoder, config); }, _variant);
+		return std::visit([&](const auto& mode) { return mode.render(encoder, config); }, _mode);
 	}
 
 	bool Mesh::empty() const noexcept
@@ -308,11 +329,11 @@ namespace darmok
 	uint16_t Mesh::getVertexHandleIndex() const noexcept
 	{
 		return std::visit([](const auto& data) {
-			if constexpr (std::is_same_v<std::decay_t<decltype(data)>, StaticVariant>)
+			if constexpr (std::is_same_v<std::decay_t<decltype(data)>, StaticMode>)
 			{
 				return data.vertexBuffer.idx;
 			}
-			else if constexpr (std::is_same_v<std::decay_t<decltype(data)>, DynamicVariant>)
+			else if constexpr (std::is_same_v<std::decay_t<decltype(data)>, DynamicMode>)
 			{
 				return data.vertexBuffer.idx;
 			}
@@ -320,19 +341,27 @@ namespace darmok
 			{
 				return data.vertexBuffer.handle.idx;
 			}
-			}, _variant);
+		}, _mode);
 	}
 
-	void Mesh::updateVertices(DataView data, uint32_t offset)
+	expected<void, std::string> Mesh::updateVertices(DataView data, uint32_t offset) noexcept
 	{
-		auto& buffer = std::get<DynamicVariant>(_variant).vertexBuffer;
-		bgfx::update(buffer, offset, data.copyMem());
+		if (auto dynamic = std::get_if<DynamicMode>(&_mode))
+		{
+			bgfx::update(dynamic->vertexBuffer, offset, data.copyMem());
+			return {};
+		}
+		return unexpected<std::string>{ "mesh is not dynamic" };
 	}
 
-	void Mesh::updateIndices(DataView data, uint32_t offset)
+	expected<void, std::string> Mesh::updateIndices(DataView data, uint32_t offset) noexcept
 	{
-		auto& buffer = std::get<DynamicVariant>(_variant).indexBuffer;
-		bgfx::update(buffer, offset, data.copyMem());
+		if (auto dynamic = std::get_if<DynamicMode>(&_mode))
+		{
+			bgfx::update(dynamic->indexBuffer, offset, data.copyMem());
+			return {};
+		}
+		return unexpected<std::string>{ "mesh is not dynamic" };
 	}	
 
 	MeshData::MeshData(MeshType type) noexcept

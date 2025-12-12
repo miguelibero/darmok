@@ -163,8 +163,16 @@ namespace darmok
 		}
 		else
 		{
-			_mesh->updateVertices(vertexData);
-			_mesh->updateIndices(indexData);
+			auto result = _mesh->updateVertices(vertexData);
+			if(!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
+			result = _mesh->updateIndices(indexData);
+			if (!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
 		}
 		_vertexNum = static_cast<uint32_t>(data.vertices.size());
 		_indexNum = static_cast<uint32_t>(data.indices.size());
@@ -383,13 +391,17 @@ namespace darmok
 	{
 	}
 
-	std::shared_ptr<Texture> TextureAtlasFont::getTexture() const
+	std::shared_ptr<Texture> TextureAtlasFont::getTexture() const noexcept
 	{
-		return _atlas->texture;
+		return _atlas ? _atlas->texture : nullptr;
 	}
 
 	std::optional<TextureAtlasFont::Glyph> TextureAtlasFont::getGlyph(char32_t chr) const noexcept
 	{
+		if (!_atlas)
+		{
+			return std::nullopt;
+		}
 		auto key = StringUtils::toUtf8(chr);
 		auto elm = _atlas->getElement(key);
 		if (!elm)
@@ -406,6 +418,10 @@ namespace darmok
 
 	float TextureAtlasFont::getLineSize() const noexcept
 	{
+		if (!_atlas)
+		{
+			return 0.0f;
+		}
 		auto elm = _atlas->getElement("line");
 		if (elm)
 		{

@@ -61,9 +61,9 @@ namespace darmok
 		ISoundLoader& getSoundLoader() noexcept;
 		IMusicLoader& getMusicLoader() noexcept;
 
-		void init(App& app);
-		void update();
-		void shutdown();
+		expected<void, std::string> init(App& app) noexcept;
+		expected<void, std::string> update() noexcept;
+		expected<void, std::string> shutdown() noexcept;
 	private:
 		Config _config;
 		ImageLoader _imageLoader;

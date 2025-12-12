@@ -14,6 +14,7 @@ namespace darmok
 		Setup,
 		Init,
 		Update,
-		Shutdown
+		Shutdown,
+		Run,
 	};
 }
