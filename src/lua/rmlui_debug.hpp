@@ -9,17 +9,21 @@ namespace darmok
 {
     class App;
     class RmluiDebuggerComponent;
-    struct RmluiDebuggerComponentConfig;
+
+    namespace protobuf
+    {
+        class RmluiDebuggerComponent;
+	}
 
     class LuaRmluiDebuggerComponent final
     {
     public:
         static void bind(sol::state_view& lua) noexcept;
     private:
-        using Config = RmluiDebuggerComponentConfig;
+        using Definition = protobuf::RmluiDebuggerComponent;
 
-        static std::reference_wrapper<RmluiDebuggerComponent> addAppComponent1(App& app) noexcept;
-        static std::reference_wrapper<RmluiDebuggerComponent> addAppComponent2(App& app, const Config& config) noexcept;
+        static std::reference_wrapper<RmluiDebuggerComponent> addAppComponent1(App& app);
+        static std::reference_wrapper<RmluiDebuggerComponent> addAppComponent2(App& app, const Definition& def);
         static OptionalRef<RmluiDebuggerComponent>::std_t getAppComponent(App& app) noexcept;
     };
 }

@@ -5,14 +5,14 @@
 
 namespace darmok
 {
-    std::reference_wrapper<FreelookController> LuaFreelookController::LuaFreelookController::addSceneComponent1(Scene& scene, Camera& cam) noexcept
+    std::reference_wrapper<FreelookController> LuaFreelookController::LuaFreelookController::addSceneComponent1(Scene& scene, Camera& cam)
     {
         return LuaUtils::unwrapExpected(scene.addSceneComponent<FreelookController>(cam));
     }
 
-    std::reference_wrapper<FreelookController> LuaFreelookController::addSceneComponent2(Scene& scene, Camera& cam, const Config& config) noexcept
+    std::reference_wrapper<FreelookController> LuaFreelookController::addSceneComponent2(Scene& scene, Camera& cam, const Definition& def)
     {
-        return LuaUtils::unwrapExpected(scene.addSceneComponent<FreelookController>(cam, config));
+        return LuaUtils::unwrapExpected(scene.addSceneComponent<FreelookController>(cam, def));
     }
 
     void LuaFreelookController::bind(sol::state_view& lua) noexcept

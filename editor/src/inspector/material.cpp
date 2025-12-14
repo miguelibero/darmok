@@ -29,21 +29,21 @@ namespace darmok::editor
 		return changed;
 	}
 
-	void MaterialInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container)
-	{
-		AssetObjectEditor<Material::Definition>::init(app, container);	
+	expected<void, std::string> MaterialInspectorEditor::init(EditorApp& app, ObjectEditorContainer& container) noexcept
+	{		
 		for(auto [val, name] : StringUtils::getEnumValues<Material::TextureDefinition::Type>())
 		{
 			StringUtils::camelCaseToHumanReadable(name);
 			name = name + " Texture";
 			_textureEditors.emplace(val, MaterialTextureEditor{ name, val });
 		}
+		return AssetObjectEditor<Material::Definition>::init(app, container);
 	}
 
-	void MaterialInspectorEditor::shutdown()
+	expected<void, std::string> MaterialInspectorEditor::shutdown() noexcept
 	{
-		AssetObjectEditor<Material::Definition>::shutdown();
 		_textureEditors.clear();
+		return AssetObjectEditor<Material::Definition>::shutdown();
 	}
 
 	std::string MaterialInspectorEditor::getTitle() const noexcept

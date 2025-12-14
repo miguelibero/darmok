@@ -9,9 +9,9 @@
 
 namespace darmok
 {
-	RmluiDebuggerComponentImpl::RmluiDebuggerComponentImpl(const Config& config) noexcept
-		: _config(config)
-        , _originalCursorMode(WindowCursorMode::Normal)
+	RmluiDebuggerComponentImpl::RmluiDebuggerComponentImpl(const Definition& def) noexcept
+        : _def{ def }
+        , _originalCursorMode{ WindowCursorMode::Normal }
 	{
 	}
 
@@ -23,7 +23,7 @@ namespace darmok
 	{
         _app = app;
         _originalCursorMode = app.getWindow().getCursorMode();
-        app.getInput().addListener(_tag, _config.enableEvents, *this);
+        app.getInput().addListener(_tag, _def.enable_events(), *this);
         return {};
 	}
 
@@ -126,8 +126,8 @@ namespace darmok
         }
     }
 
-    RmluiDebuggerComponent::RmluiDebuggerComponent(const Config& config) noexcept
-        : _impl{ std::make_unique<RmluiDebuggerComponentImpl>(config) }
+    RmluiDebuggerComponent::RmluiDebuggerComponent(const Definition& def) noexcept
+        : _impl{ std::make_unique<RmluiDebuggerComponentImpl>(def) }
     {
     }
 
@@ -151,6 +151,18 @@ namespace darmok
     expected<void, std::string> RmluiDebuggerComponent::shutdown() noexcept
     {
         return _impl->shutdown();
+    }
+
+    RmluiDebuggerComponent::Definition RmluiDebuggerComponent::createDefinition() noexcept
+    {
+        Definition def;
+		def.mutable_enable_events()->Add()->mutable_keyboard()->set_key(Keyboard::Definition::F9);
+        return def;
+    }
+
+    expected<void, std::string> RmluiDebuggerComponent::load(const Definition& def) noexcept
+    {
+        return {};
     }
 }
 

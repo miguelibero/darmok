@@ -226,7 +226,6 @@ set(HEADERS
   asset.hpp
   app_fwd.hpp
   app.hpp
-  input_fwd.hpp
   input.hpp
   window.hpp
   scene_fwd.hpp
@@ -644,6 +643,9 @@ set(PROTO_FILES
   assimp.proto
   text.proto
   physics3d.proto
+  rmlui.proto
+  input.proto
+  freelook.proto
 )
 set(PROTO_DIR ${PROJECT_SOURCE_DIR}/assets/protobuf)
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/include/public/darmok/protobuf")

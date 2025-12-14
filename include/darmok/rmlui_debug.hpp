@@ -4,22 +4,18 @@
 
 #include <darmok/input.hpp>
 #include <darmok/app.hpp>
+#include <darmok/protobuf/rmlui.pb.h>
 #include <memory>
 
 namespace darmok
 {
-	struct DARMOK_EXPORT RmluiDebuggerComponentConfig
-	{
-		InputEvents enableEvents = { KeyboardInputEvent{ KeyboardKey::F9 } };
-	};
-
     class RmluiDebuggerComponentImpl;
 
 	class DARMOK_EXPORT RmluiDebuggerComponent final : public ITypeAppComponent<RmluiDebuggerComponent>
     {
     public:
-		using Config = RmluiDebuggerComponentConfig;
-		RmluiDebuggerComponent(const Config& config = {}) noexcept;
+		using Definition = protobuf::RmluiDebuggerComponent;
+		RmluiDebuggerComponent(const Definition& def = {}) noexcept;
 		~RmluiDebuggerComponent() noexcept;
 
 		void toggle() noexcept;
@@ -28,6 +24,9 @@ namespace darmok
 
 		expected<void, std::string> init(App& app) noexcept override;
 		expected<void, std::string> shutdown() noexcept override;
+
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def) noexcept;
 	private:
 		std::unique_ptr<RmluiDebuggerComponentImpl> _impl;
     };

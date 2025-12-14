@@ -28,6 +28,7 @@ namespace darmok::editor
 
     expected<void, std::string> EditorInspectorView::setup() noexcept
     {
+        _editors.add<SceneInspectorEditor>();
         _editors.add<TransformInspectorEditor>();
         _editors.add<CameraInspectorEditor>();
         _editors.add<PointLightInspectorEditor>();
@@ -39,7 +40,6 @@ namespace darmok::editor
         _editors.add<SphereInspectorEditor>();
         _editors.add<CapsuleInspectorEditor>();
         _editors.add<RectangleInspectorEditor>();
-        _editors.add<SceneInspectorEditor>();
         _editors.add<MaterialInspectorEditor>();
         _editors.add<ProgramSourceInspectorEditor>();
         _editors.add<ProgramRefInspectorEditor>();
@@ -55,16 +55,14 @@ namespace darmok::editor
 
     expected<void, std::string> EditorInspectorView::init(EditorApp& app) noexcept
     {
-        _editors.init(app);
 		_sceneDef = app.getProject().getSceneDefinition();
-        return {};
+        return _editors.init(app);
     }
 
     expected<void, std::string> EditorInspectorView::shutdown() noexcept
     {
         _sceneDef.reset();
-        _editors.shutdown();
-        return {};
+        return _editors.shutdown();
     }
 
     void EditorInspectorView::selectObject(const SelectableObject& obj) noexcept
@@ -102,7 +100,7 @@ namespace darmok::editor
     {
         if (!_sceneDef)
         {
-            return unexpected{ "inspector view not initialized" };
+            return unexpected<std::string>{ "inspector view not initialized" };
         }
         bool changed = false;
         int i = 0;
@@ -133,7 +131,7 @@ namespace darmok::editor
     {
         if (!_sceneDef)
         {
-            return unexpected{ "inspector view not initialized" };
+            return unexpected<std::string>{ "inspector view not initialized" };
         }
         auto asset = _sceneDef->getAsset(std::move(path));
         if(!asset)
@@ -147,27 +145,30 @@ namespace darmok::editor
     {
         if (!_sceneDef)
         {
-            return unexpected{ "inspector view not initialized" };
+            return unexpected<std::string>{ "inspector view not initialized" };
         }
 		RenderResult result = false;
         if (ImGui::Begin(_windowName.c_str()))
         {
-            auto entity = getSelectedEntity();
-            if (entity != entt::null)
+            if (auto selectedPath = getSelectedAssetPath())
             {
-                result = renderEntity(entity);
+                result = renderAsset(*selectedPath);
             }
-            else if (auto selectedPath = getSelectedAssetPath())
+            else
             {
-				result = renderAsset(*selectedPath);
-			}
+                auto entity = getSelectedEntity();
+                if (entity != nullEntityId)
+                {
+                    result = renderEntity(entity);
+                }
+                else 
+                {
+                    result = _editors.render(_sceneDef->getDefinition(), true);
+                }
+            }
         }
         ImGui::End();
 
-        if (!result)
-        {
-            return unexpected{ std::move(result).error() };
-        }
-        return *result;
+        return result;
     }
 }

@@ -568,6 +568,16 @@ namespace darmok
         return StringUtils::joinExpectedErrors(errors);
     }
 
+    const App& SceneLoaderImpl::getApp() const noexcept
+    {
+        return *_app;
+    }
+
+    App& SceneLoaderImpl::getApp() noexcept
+    {
+        return *_app;
+    }
+
     const Scene& SceneLoaderImpl::getScene() const noexcept
     {
         return *_scene;

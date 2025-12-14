@@ -9,6 +9,7 @@
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
 #include <darmok/input.hpp>
+#include <darmok/protobuf/physics3d.pb.h>
 
 namespace darmok
 {
@@ -23,24 +24,11 @@ namespace darmok::physics3d
     class PhysicsDebugRendererImpl;
     class PhysicsSystem;
 
-    struct DARMOK_EXPORT PhysicsDebugRenderConfig final
-    {
-        size_t meshBatchSize = 32 * 1024;
-        std::shared_ptr<IFont> font;
-        float alpha = 0.3F;
-    };
-
-    struct DARMOK_EXPORT PhysicsDebugConfig final
-    {
-        InputEvents enableEvents = { KeyboardInputEvent{ KeyboardKey::F8 } };
-        PhysicsDebugRenderConfig render;
-    };
-
     class DARMOK_EXPORT PhysicsDebugRenderer : public ITypeCameraComponent<PhysicsDebugRenderer>
     {
     public:
-        using Config = PhysicsDebugConfig;
-        PhysicsDebugRenderer(const Config& = {}) noexcept;
+        using Definition = protobuf::PhysicsDebugRenderer;
+        PhysicsDebugRenderer(const Definition& def = {}) noexcept;
         ~PhysicsDebugRenderer() noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
@@ -48,6 +36,10 @@ namespace darmok::physics3d
 
         bool isEnabled() const noexcept;
         PhysicsDebugRenderer& setEnabled(bool enabled) noexcept;
+
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
+
     private:
         std::unique_ptr<PhysicsDebugRendererImpl> _impl;
     };

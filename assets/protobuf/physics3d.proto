@@ -4,6 +4,7 @@ package darmok.physics3d.protobuf;
 
 import "math.proto";
 import "shape.proto";
+import "input.proto";
 
 message PhysicsShape {
     oneof shape {
@@ -72,4 +73,11 @@ message CharacterController {
     float padding = 8;
     float penetration_recovery_speed = 9;
     float predictive_contact_distance = 10;
+}
+
+message PhysicsDebugRenderer {
+    repeated darmok.protobuf.InputEvent enable_events = 1;
+    uint32 mesh_batch_size = 2;
+    string font_path = 3;
+    float alpha = 4;
 }

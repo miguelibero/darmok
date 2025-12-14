@@ -72,22 +72,22 @@ namespace darmok::editor
             }
         }
 
-        /*
-        auto comps = CameraReflectionUtils::getCameraComponents(cam);
-        if (!comps.empty())
+
+        if (cam.components_size() > 0)
         {
             if (ImGui::CollapsingHeader("Components"))
             {
-                for (auto& comp : comps)
+                for (auto& [typeId, comp] : *cam.mutable_components())
                 {
-                    if (_editors->render(comp))
+                    if (renderChild(comp))
                     {
                         changed = true;
                     }
                 }
             }
         }
-        */
+
+
         return changed;
     }
 }

@@ -3,9 +3,9 @@
 #include <darmok/export.h>
 #include <darmok/utils.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/input_fwd.hpp>
 #include <darmok/glm.hpp>
 #include <darmok/expected.hpp>
+#include <darmok/protobuf/input.pb.h>
 
 #include <functional>
 #include <string>
@@ -20,6 +20,25 @@
 
 namespace darmok
 {
+	using KeyboardKey = protobuf::Keyboard::Key;
+	using KeyboardModifier = protobuf::Keyboard::Modifier;
+	using KeyboardInputEvent = protobuf::Keyboard_InputEvent;
+	using MouseButton = protobuf::Mouse::Button;
+	using MouseAnalog = protobuf::Mouse::Analog;
+	using MouseInputEvent = protobuf::Mouse_InputEvent;
+	using MouseInputDir = protobuf::Mouse::InputDir;
+	using GamepadButton = protobuf::Gamepad::Button;
+	using GamepadStick = protobuf::Gamepad::Stick;
+	using GamepadInputEvent = protobuf::Gamepad_InputEvent;
+	using GamepadStickInputEvent = protobuf::Gamepad_StickInputEvent;
+	using GamepadInputDir = protobuf::Gamepad::InputDir;
+	using InputDirType = protobuf::Input::DirType;
+	using InputEvent = protobuf::InputEvent;
+	using InputDir = protobuf::InputDir;
+	using InputEvents = std::vector<InputEvent>;
+	using InputDirs = std::vector<InputDir>;
+	using InputAxis = std::pair<InputDirs, InputDirs>;
+
 	using KeyboardKeys = std::unordered_set<KeyboardKey>;
 	using KeyboardModifiers = std::unordered_set<KeyboardModifier>;
 	class KeyboardImpl;
@@ -53,12 +72,15 @@ namespace darmok
 	class DARMOK_EXPORT Keyboard final
 	{
 	public:
+		using Definition = protobuf::Keyboard;
+
 		Keyboard() noexcept;
 		~Keyboard() noexcept;
 		Keyboard(const Keyboard& other) = delete;
 		Keyboard(Keyboard&& other) = delete;
 
 		[[nodiscard]] bool getKey(KeyboardKey key) const noexcept;
+		[[nodiscard]] bool getModifier(KeyboardModifier mod) const noexcept;
 		[[nodiscard]] const KeyboardKeys& getKeys() const noexcept;
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
 		[[nodiscard]] std::u32string_view getUpdateChars() const noexcept;
@@ -77,11 +99,14 @@ namespace darmok
 		[[nodiscard]] static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
 
+		[[nodiscard]] static InputEvent createInputEvent(KeyboardKey key) noexcept;
+		[[nodiscard]] static InputDir createInputDir(KeyboardKey key) noexcept;
+
 	private:
 		std::unique_ptr<KeyboardImpl> _impl;
 	};
 
-	using MouseButtons = std::array<bool, toUnderlying(MouseButton::Count)>;
+	using MouseButtons = std::unordered_map<MouseButton, bool>;
 
 	class MouseImpl;
 
@@ -116,6 +141,8 @@ namespace darmok
 	class DARMOK_EXPORT Mouse final
 	{
 	public:
+		using Definition = protobuf::Mouse;
+
 		Mouse() noexcept;
 		~Mouse() noexcept;
 		Mouse(const Mouse& other) = delete;
@@ -141,12 +168,15 @@ namespace darmok
 		[[nodiscard]] static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
 		[[nodiscard]] static std::string_view getAnalogName(MouseAnalog analog) noexcept;
 
+		[[nodiscard]] static InputEvent createInputEvent(MouseButton button) noexcept;
+		[[nodiscard]] static InputDir createInputDir(InputDirType dirType, MouseAnalog analog = Definition::PositionAnalog) noexcept;
+
 	private:
 		std::unique_ptr<MouseImpl> _impl;
 	};
 
-	using GamepadButtons = std::array<bool, toUnderlying(GamepadButton::Count)>;
-	using GamepadSticks = std::array<glm::vec3, toUnderlying(GamepadButton::Count)>;
+	using GamepadButtons = std::unordered_map<GamepadButton, bool>;
+	using GamepadSticks = std::unordered_map<GamepadStick, glm::vec3>;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IGamepadListener
 	{
@@ -178,13 +208,11 @@ namespace darmok
 
 	class GamepadImpl;
 
-#define DARMOK_GAMEPAD_MAX 4
-
 	class DARMOK_EXPORT Gamepad final
 	{
 	public:
-		static const uint8_t MaxAmount;
-		static const uint8_t Any;
+		using Definition = protobuf::Gamepad;
+		static constexpr uint32_t Any = -1;
 
 		Gamepad() noexcept;
 		~Gamepad() noexcept;
@@ -212,75 +240,13 @@ namespace darmok
 		[[nodiscard]] static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
 		[[nodiscard]] static std::string_view getStickName(GamepadStick stick) noexcept;
 
+		[[nodiscard]] static InputEvent createInputEvent(GamepadButton button, uint32_t gamepad = Any) noexcept;
+		[[nodiscard]] static InputEvent createInputEvent(InputDirType dirType, GamepadStick stick = Definition::LeftStick, uint32_t gamepad = Any) noexcept;
+		[[nodiscard]] static InputDir createInputDir(InputDirType dirType, GamepadStick stick = Definition::LeftStick, uint32_t gamepad = Any) noexcept;
+
 	private:
 		std::unique_ptr<GamepadImpl> _impl;
 	};
-
-	class Input;
-
-	struct DARMOK_EXPORT KeyboardInputEvent final
-	{
-		KeyboardKey key = KeyboardKey::Count;
-		KeyboardModifiers modifiers = {};
-
-		bool operator==(const KeyboardInputEvent& other) const noexcept;
-	};
-
-	struct DARMOK_EXPORT MouseInputEvent final
-	{
-		MouseButton button = MouseButton::Left;
-
-		bool operator==(const MouseInputEvent& other) const noexcept;
-	};
-
-	struct DARMOK_EXPORT GamepadInputEvent final
-	{
-		GamepadButton button = GamepadButton::A;
-		uint8_t gamepad = Gamepad::Any;
-
-		bool operator==(const GamepadInputEvent& other) const noexcept;
-	};
-
-	struct DARMOK_EXPORT GamepadStickInputEvent final
-	{
-		GamepadStick stick = GamepadStick::Left;
-		InputDirType dir = InputDirType::Left;
-		uint8_t gamepad = Gamepad::Any;
-
-		bool operator==(const GamepadStickInputEvent& other) const noexcept;
-	};
-
-	using InputEvent = std::variant<KeyboardInputEvent, MouseInputEvent, GamepadInputEvent, GamepadStickInputEvent>;
-	using InputEvents = std::vector<InputEvent>;
-
-	static bool operator==(const InputEvent& a, const InputEvent& b) noexcept;
-
-	struct DARMOK_EXPORT MouseInputDir final
-	{
-		MouseAnalog analog = MouseAnalog::Position;
-		InputDirType type = InputDirType::Count;
-
-		bool operator==(const MouseInputDir& other) const noexcept;
-	};
-
-	struct DARMOK_EXPORT GamepadInputDir final
-	{
-		GamepadStick stick = GamepadStick::Left;
-		InputDirType type = InputDirType::Count;
-		uint8_t gamepad = Gamepad::Any;
-
-		bool operator==(const GamepadInputDir& other) const noexcept;
-	};
-
-	using InputDir = std::variant<MouseInputDir, GamepadInputDir, InputEvent>;
-	using InputDirs = std::vector<InputDir>;
-	using InputAxis = std::pair<InputDirs, InputDirs>;
-
-	static bool operator==(const InputDir& a, const InputDir& b) noexcept;
-
-	using Gamepads = std::array<Gamepad, DARMOK_GAMEPAD_MAX>;
-
-	class InputImpl;
 
 	class DARMOK_EXPORT BX_NO_VTABLE IInputEventListener
 	{
@@ -314,9 +280,14 @@ namespace darmok
 		float event = 1.F;
 	};
 
+	using Gamepads = std::vector<Gamepad>;
+	class InputImpl;
+
 	class DARMOK_EXPORT Input final
 	{
 	public:
+		using Definition = protobuf::Input;
+
 		Input() noexcept;
 		~Input() noexcept;
 		Input(const Input&) = delete;
@@ -326,12 +297,12 @@ namespace darmok
 
 		[[nodiscard]] Keyboard& getKeyboard() noexcept;
 		[[nodiscard]] Mouse& getMouse() noexcept;
-		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint8_t num = Gamepad::Any) noexcept;
+		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint32_t num = Gamepad::Any) noexcept;
 		[[nodiscard]] Gamepads& getGamepads() noexcept;
 
 		[[nodiscard]] const Keyboard& getKeyboard() const noexcept;
 		[[nodiscard]] const Mouse& getMouse() const noexcept;
-		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint8_t num = Gamepad::Any) const noexcept;
+		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint32_t num = Gamepad::Any) const noexcept;
 		[[nodiscard]] const Gamepads& getGamepads() const noexcept;
 		
 		[[nodiscard]] const InputImpl& getImpl() const noexcept;
@@ -352,9 +323,15 @@ namespace darmok
 				v[i] = getAxis(axis[i], sensitivity);
 			}
 		}
+
+		float getAxis(const google::protobuf::RepeatedPtrField<InputDir>& negative, const google::protobuf::RepeatedPtrField<InputDir>& positive, const Sensitivity& sensitivity = {}) const noexcept;
+
 		
-		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;
+		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener> listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
+		void addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, std::unique_ptr<IInputEventListener> listener) noexcept;
+		void addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, IInputEventListener& listener) noexcept;
+
 		bool removeListener(const std::string& tag, const IInputEventListener& listener) noexcept;
 		bool removeListener(const IInputEventListener& listener) noexcept;
 		size_t removeListeners(const IInputEventListenerFilter& filter) noexcept;

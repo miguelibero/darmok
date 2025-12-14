@@ -14,6 +14,7 @@
 #include <darmok/text.hpp>
 #include <darmok/string.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/scene_serialize.hpp>
 #include "detail/physics3d_jolt.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -70,20 +71,27 @@ namespace darmok::physics3d
     std::unique_ptr<JoltPhysicsDebugRenderer> JoltPhysicsDebugRenderer::_instance;
     std::mutex JoltPhysicsDebugRenderer::_instanceLock;
 
-    expected<void, std::string> JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+
+    void JoltPhysicsDebugRenderer::init(const Definition& def, std::shared_ptr<IFont> font) noexcept
+    {
+        const std::lock_guard lock{ _instanceLock };
+        _instance = std::unique_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer());
+        _instance->_def = def;
+		_instance->_font = font;
+    }
+
+    expected<void, std::string> JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         const std::lock_guard lock{ _instanceLock };
         if (!_instance)
         {
-            _instance = std::unique_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer());
+			return unexpected<std::string>{ "JoltPhysicsDebugRenderer not initialized" };
         }
-        return _instance->doRender(joltSystem, config, viewId, encoder);
+        return _instance->doRender(joltSystem, viewId, encoder);
     }
 
-    expected<void, std::string> JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        _config = config;
-
         _encoder = encoder;
         _viewId = viewId;
 
@@ -120,7 +128,7 @@ namespace darmok::physics3d
 
     expected<void, std::string> JoltPhysicsDebugRenderer::renderMeshBatch(MeshData& meshData, EDrawMode mode) noexcept
     {
-        if (meshData.vertices.size() < _config.meshBatchSize)
+        if (meshData.vertices.size() < _def.mesh_batch_size())
         {
             return {};
         }
@@ -146,7 +154,7 @@ namespace darmok::physics3d
 
     expected<void, std::string> JoltPhysicsDebugRenderer::renderText() noexcept
     {
-        if (!_config.font)
+        if (!_font)
         {
             return {};
         }
@@ -155,7 +163,7 @@ namespace darmok::physics3d
         {
             chars.insert(textData.content.begin(), textData.content.end());
         }
-        auto updateResult = _config.font->update(chars);
+        auto updateResult = _font->update(chars);
         if (!updateResult)
         {
             return updateResult;
@@ -165,7 +173,7 @@ namespace darmok::physics3d
         meshData.type = Mesh::Definition::Transient;
         for (auto& textData : _textData)
         {
-            auto textMeshData = Text::createMeshData(textData.content, *_config.font);
+            auto textMeshData = Text::createMeshData(textData.content, *_font);
             textMeshData *= textData.color;
             textMeshData *= glm::translate(glm::mat4(textData.height), textData.position);
 
@@ -359,18 +367,51 @@ namespace darmok::physics3d
         }
     }
 
-    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Config& config) noexcept
-        : _config{ config }
+    PhysicsDebugRendererImpl::PhysicsDebugRendererImpl(const Definition& def) noexcept
+        : _def{ def }
         , _enabled{false}
     {
     }
+
+    expected<void, std::string> PhysicsDebugRendererImpl::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+		auto result = shutdown();
+        if (!result)
+        {
+            return result;
+        }
+		auto& scene = context.getScene();
+        if(!_cam)
+        { 
+			for (auto entity : scene.getComponents<Camera>())
+            {
+                _cam = scene.getComponent<Camera>(entity);
+                break;
+            }
+        }
+        if (!_cam)
+        {
+            return unexpected<std::string>{"missing camera for physics debug renderer"};
+		}
+		
+        _def = def;
+		return init(*_cam, scene, context.getApp());
+    }
+
 
     expected<void, std::string> PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         _input = app.getInput();
-        _input->addListener("enable", _config.enableEvents, *this);
+        _input->addListener("enable", _def.enable_events(), *this);
+
+        auto fontResult = app.getAssets().getFontLoader()(_def.font_path());
+        if (!fontResult)
+        {
+            return unexpected<std::string>{ fmt::format("failed to load font '{}': {}", _def.font_path(), fontResult.error()) };
+		}
+        JoltPhysicsDebugRenderer::init(_def, fontResult.value());
         return {};
     }
 
@@ -404,7 +445,7 @@ namespace darmok::physics3d
             return unexpected<std::string>{"uninitialized jolt system"};
         }
 
-        return JoltPhysicsDebugRenderer::render(joltSystem.value(), _config.render, viewId, encoder);
+        return JoltPhysicsDebugRenderer::render(joltSystem.value(), viewId, encoder);
     }
 
     expected<void, std::string> PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept
@@ -413,12 +454,32 @@ namespace darmok::physics3d
         return {};
     }
 
-    PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
-        : _impl{ std::make_unique<PhysicsDebugRendererImpl>(config) }
+    PhysicsDebugRenderer::PhysicsDebugRenderer(const Definition& def) noexcept
+        : _impl{ std::make_unique<PhysicsDebugRendererImpl>(def) }
     {
     }
 
     PhysicsDebugRenderer::~PhysicsDebugRenderer() noexcept = default;
+
+    PhysicsDebugRenderer::Definition PhysicsDebugRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        def.mutable_enable_events()->Add();
+
+        /*
+            repeated InputEvent enable_events = { KeyboardInputEvent{ KeyboardKey::F8 } };
+    uint32 mesh_batch_size = 32 * 1024;
+    std::shared_ptr<IFont> font;
+    float alpha = 0.3F;
+    */
+
+        return def;
+    }
+
+    expected<void, std::string> PhysicsDebugRenderer::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+		return _impl->load(def, context);
+    }
 
     expected<void, std::string> PhysicsDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
@@ -451,7 +512,7 @@ namespace darmok::physics3d
 
 namespace darmok::physics3d
 {
-    PhysicsDebugRenderer::PhysicsDebugRenderer(const Config& config) noexcept
+    PhysicsDebugRenderer::PhysicsDebugRenderer(const Definition& def) noexcept
         : _impl{ std::make_unique<PhysicsDebugRendererImpl>() }
     {
     }
@@ -479,6 +540,11 @@ namespace darmok::physics3d
     }
 
     expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        return {};
+    }
+    
+    expected<void, std::string> PhysicsDebugRenderer::load(const Definition& def) noexcept
     {
         return {};
     }

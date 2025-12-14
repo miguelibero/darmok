@@ -27,7 +27,7 @@ namespace darmok::editor
         expected<void, std::string> reloadScene() noexcept;
         expected<void, std::string> exportScene() noexcept;
         expected<void, std::string> resetScene() noexcept;
-        expected<void, std::string> updateScene() noexcept;
+        void requestSceneUpdate() noexcept;
 
         expected<void, std::string> render() noexcept;
         expected<EntityId, std::string> addEntity(EntityId parentEntity = 0) noexcept;

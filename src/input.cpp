@@ -10,8 +10,8 @@ namespace darmok
 
 	KeyboardImpl::KeyboardImpl() noexcept
 		: _keys{}
-		, _charsRead(0)
-		, _charsWrite(0)
+		, _charsRead{ 0 }
+		, _charsWrite{ 0 }
 	{
 	}
 
@@ -104,7 +104,7 @@ namespace darmok
 		return _modifiers;
 	}
 
-	bool KeyboardImpl::hasModifier(KeyboardModifier mod) const noexcept
+	bool KeyboardImpl::getModifier(KeyboardModifier mod) const noexcept
 	{
 		return _modifiers.contains(mod);
 	}
@@ -158,35 +158,43 @@ namespace darmok
 
 	char KeyboardImpl::keyToAscii(KeyboardKey key, bool upper) noexcept
 	{
-		const bool isAscii = (KeyboardKey::Key0 <= key && key <= KeyboardKey::KeyZ)
-			|| (KeyboardKey::Esc <= key && key <= KeyboardKey::Minus);
+		constexpr auto Key0 = KeyboardKey::Keyboard_Key_Key0;
+		constexpr auto Key9 = KeyboardKey::Keyboard_Key_Key9;
+		constexpr auto KeyA = KeyboardKey::Keyboard_Key_KeyA;
+		constexpr auto KeyZ = KeyboardKey::Keyboard_Key_KeyZ;
+		constexpr auto Esc = KeyboardKey::Keyboard_Key_Esc;
+		constexpr auto Minus = KeyboardKey::Keyboard_Key_Minus;
+
+		const bool isAscii = (Key0 <= key && key <= KeyZ)
+			|| (Esc <= key && key <= Minus);
 		if (!isAscii)
 		{
 			return '\0';
 		}
 
-		const bool isNumber = (KeyboardKey::Key0 <= key && key <= KeyboardKey::Key9);
+		const bool isNumber = (Key0 <= key && key <= Key9);
 		if (isNumber)
 		{
-			return '0' + char(toUnderlying(key) - toUnderlying(KeyboardKey::Key0));
+			return '0' + static_cast<char>(key - Key0);
 		}
 
-		const bool isChar = (KeyboardKey::KeyA <= key && key <= KeyboardKey::KeyZ);
+		const bool isChar = (KeyA <= key && key <= KeyZ);
 		if (isChar)
 		{
-			return (upper ? 'A' : 'a') + char(toUnderlying(key) - toUnderlying(KeyboardKey::KeyA));
+			return (upper ? 'A' : 'a') + static_cast<char>(key - KeyA);
 		}
 
 		switch (key)
 		{
-		case KeyboardKey::Esc:       return 0x1b;
-		case KeyboardKey::Return:    return '\n';
-		case KeyboardKey::Tab:       return '\t';
-		case KeyboardKey::Space:     return ' ';
-		case KeyboardKey::Backspace: return 0x08;
-		case KeyboardKey::Plus:      return '+';
-		case KeyboardKey::Minus:     return '-';
-		default:             break;
+		case KeyboardKey::Keyboard_Key_Esc:       return 0x1b;
+		case KeyboardKey::Keyboard_Key_Return:    return '\n';
+		case KeyboardKey::Keyboard_Key_Tab:       return '\t';
+		case KeyboardKey::Keyboard_Key_Space:     return ' ';
+		case KeyboardKey::Keyboard_Key_Backspace: return 0x08;
+		case KeyboardKey::Keyboard_Key_Plus:      return '+';
+		case KeyboardKey::Keyboard_Key_Minus:     return '-';
+		default:
+			break;
 		}
 
 		return '\0';
@@ -224,16 +232,28 @@ namespace darmok
 		{
 			return unexpected<std::string>{ "Invalid keyboard key name: " + parts[0] };
 		}
-		KeyboardModifiers mods;
+		KeyboardInputEvent ev;
+		ev.set_key(key.value());
 		for (size_t i = 1; i < parts.size(); i++)
 		{
 			auto mod = Keyboard::readModifier(parts[i]);
 			if (mod)
 			{
-				mods.insert(mod.value());
+				ev.mutable_modifiers()->Add(mod.value());
 			}
 		}
-		return KeyboardInputEvent{ key.value(), mods };
+		return ev;
+	}
+
+	KeyboardModifiers KeyboardImpl::convertModifiers(const google::protobuf::RepeatedField<int>& field) noexcept
+	{
+		KeyboardModifiers mods;
+		mods.reserve(field.size());
+		for (auto mod : field)
+		{
+			mods.emplace(static_cast<KeyboardModifier>(mod));
+		}
+		return mods;
 	}
 
 	Keyboard::Keyboard() noexcept
@@ -241,14 +261,16 @@ namespace darmok
 	{
 	}
 
-	Keyboard::~Keyboard() noexcept
-	{
-		// left empty to get the forward declaration of the impl working
-	}	
+	Keyboard::~Keyboard() noexcept = default;
 
 	bool Keyboard::getKey(KeyboardKey key) const noexcept
 	{
 		return _impl->getKey(key);
+	}
+
+	bool Keyboard::getModifier(KeyboardModifier mod) const noexcept
+	{
+		return _impl->getModifier(mod);
 	}
 
 	const KeyboardKeys& Keyboard::getKeys() const noexcept
@@ -321,19 +343,33 @@ namespace darmok
 		return KeyboardImpl::getModifierName(mod);
 	}
 
+	InputEvent Keyboard::createInputEvent(KeyboardKey key) noexcept
+	{
+		InputEvent ev;
+		ev.mutable_keyboard()->set_key(key);
+		return ev;
+	}
+
+	InputDir Keyboard::createInputDir(KeyboardKey key) noexcept
+	{
+		InputDir dir;
+		*dir.mutable_event() = createInputEvent(key);
+		return dir;
+	}
+
 #pragma endregion Keyboard
 
 #pragma region Mouse
 
 	MouseImpl::MouseImpl() noexcept
 		: _buttons{}
-		, _position(0)
-		, _lastPosition(0)
-		, _lastPositionTimePassed(0)
-		, _velocity(0)
-		, _scroll(0)
-		, _active(false)
-		, _hasBeenInactive(true)
+		, _position{ 0 }
+		, _lastPosition{ 0 }
+		, _lastPositionTimePassed{ 0 }
+		, _velocity{ 0 }
+		, _scroll{ 0 }
+		, _active{ false }
+		, _hasBeenInactive{ true }
 	{
 	}
 
@@ -411,16 +447,12 @@ namespace darmok
 
 	expected<void, std::string> MouseImpl::setButton(MouseButton button, bool down) noexcept
 	{
-		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size())
-		{
-			return unexpected<std::string>{"invalid button"};
-		}
-		if (_buttons.at(idx) == down)
+		auto old = getButton(button);
+		if (old == down)
 		{
 			return {};
 		}
-		_buttons.at(idx) = down;
+		_buttons[button] = down;
 		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
@@ -461,12 +493,12 @@ namespace darmok
 
 	bool MouseImpl::getButton(MouseButton button) const noexcept
 	{
-		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size())
+		auto itr = _buttons.find(button);
+		if (itr == _buttons.end())
 		{
 			return false;
 		}
-		return _buttons.at(idx);
+		return itr->second;
 	}
 
 	bool MouseImpl::getActive() const noexcept
@@ -539,13 +571,16 @@ namespace darmok
 		return StringUtils::getEnumName(analog);
 	}
 
-	std::optional<MouseInputEvent> MouseImpl::readEvent(std::string_view name) noexcept
+	expected<MouseInputEvent, std::string> MouseImpl::readEvent(std::string_view name) noexcept
 	{
-		if (auto button = readButton(name))
+		auto button = readButton(name);
+		if (!button)
 		{
-			return MouseInputEvent{ button.value() };
+			return unexpected<std::string>{"could not read button"};
 		}
-		return std::nullopt;
+		MouseInputEvent ev;
+		ev.set_button(button.value());
+		return ev;
 	}
 
 	expected<MouseInputDir, std::string> MouseImpl::readDir(std::string_view name) noexcept
@@ -566,7 +601,10 @@ namespace darmok
 		{
 			return unexpected<std::string>{"could not read second part"};
 		}
-		return MouseInputDir{ analog.value(), type.value() };
+		MouseInputDir dir;
+		dir.set_analog(analog.value());
+		dir.set_type(type.value());
+		return dir;
 	}
 
 	std::optional<MouseButton> Mouse::readButton(std::string_view name) noexcept
@@ -589,15 +627,28 @@ namespace darmok
 		return MouseImpl::getAnalogName(analog);
 	}
 
+	InputEvent Mouse::createInputEvent(MouseButton button) noexcept
+	{
+		InputEvent ev;
+		ev.mutable_mouse()->set_button(button);
+		return ev;
+	}
+
+	InputDir Mouse::createInputDir(InputDirType dirType, MouseAnalog analog) noexcept
+	{
+		InputDir dir;
+		auto& mouse = *dir.mutable_mouse();
+		mouse.set_analog(analog);
+		mouse.set_type(dirType);
+		return dir;
+	}
+
 	Mouse::Mouse() noexcept
 		: _impl(std::make_unique<MouseImpl>())
 	{
 	}
 
-	Mouse::~Mouse() noexcept
-	{
-		// left empty to get the forward declaration of the impl working
-	}
+	Mouse::~Mouse() noexcept = default;
 
 	bool Mouse::getButton(MouseButton button) const noexcept
 	{
@@ -664,8 +715,8 @@ namespace darmok
 #pragma region Gamepad
 
 	GamepadImpl::GamepadImpl() noexcept
-		: _num(Gamepad::MaxAmount)
-		, _connected(false)
+		: _num{ Gamepad::Any }
+		, _connected{ false }
 		, _sticks{}
 		, _buttons{}
 	{
@@ -676,7 +727,7 @@ namespace darmok
 		_listeners.clear();
 	}
 
-	bool GamepadImpl::setNumber(uint8_t num) noexcept
+	bool GamepadImpl::setNumber(uint32_t num) noexcept
 	{
 		if (_num == num)
 		{
@@ -708,26 +759,21 @@ namespace darmok
 
 	void GamepadImpl::clear() noexcept
 	{
-		_sticks.fill(glm::ivec3(0));
-		_buttons.fill(false);
+		_sticks.clear();
+		_buttons.clear();
 	}
 
 	const float GamepadImpl::_stickThreshold = 0.5F;
 
 	expected<void, std::string> GamepadImpl::setStick(GamepadStick stick, const glm::vec3& value) noexcept
 	{
-		auto idx = toUnderlying(stick);
-		if (idx >= _sticks.size())
-		{
-			return unexpected<std::string>{"invalid stick"};
-		}
-		auto& oldValue = _sticks.at(idx);
-		if (oldValue == value)
+		auto old = getStick(stick);
+		if (old == value)
 		{
 			return {};
 		}
-		_sticks.at(idx) = value;
-		auto delta = value - oldValue;
+		_sticks[stick] = value;
+		auto delta = value - old;
 		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
@@ -737,9 +783,8 @@ namespace darmok
 				errors.push_back(std::move(result).error());
 			}
 		}
-		for (int i = 0; i < toUnderlying(InputDirType::Count); ++i)
+		for (auto dir : magic_enum::enum_values<InputDirType>())
 		{
-			auto dir = InputDirType(i);
 			auto active = InputImpl::getDir(value, dir) >= _stickThreshold;
 			if (_stickDirs[stick][dir] != active)
 			{
@@ -759,16 +804,12 @@ namespace darmok
 
 	expected<void, std::string> GamepadImpl::setButton(GamepadButton button, bool down) noexcept
 	{
-		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size())
-		{
-			return unexpected<std::string>{"invalid button"};
-		}
-		if (_buttons.at(idx) == down)
+		auto old = getButton(button);
+		if (old == down)
 		{
 			return {};
 		}
-		_buttons.at(idx) = down;
+		_buttons[button] = down;
 		std::vector<std::string> errors;
 		for (auto& listener : _listeners)
 		{
@@ -783,13 +824,13 @@ namespace darmok
 
 	const glm::vec3& GamepadImpl::getStick(GamepadStick stick) const noexcept
 	{
-		auto idx = toUnderlying(stick);
-		if (idx >= _sticks.size())
+		auto itr = _sticks.find(stick);
+		if (itr == _sticks.end())
 		{
-			const static glm::vec3 zero(0);
+			const static glm::vec3 zero{ 0 };
 			return zero;
 		}
-		return _sticks.at(idx);
+		return itr->second;
 	}
 
 	bool GamepadImpl::getStickDir(GamepadStick stick, InputDirType dir) const noexcept
@@ -805,12 +846,12 @@ namespace darmok
 
 	bool GamepadImpl::getButton(GamepadButton button) const noexcept
 	{
-		auto idx = toUnderlying(button);
-		if (idx >= _buttons.size())
+		auto itr = _buttons.find(button);
+		if (itr == _buttons.end())
 		{
 			return false;
 		}
-		return _buttons[idx];
+		return itr->second;
 	}
 
 	const GamepadButtons& GamepadImpl::getButtons() const noexcept
@@ -825,7 +866,7 @@ namespace darmok
 
 	bool GamepadImpl::isConnected() const noexcept
 	{
-		return _num < Gamepad::MaxAmount;
+		return _num >= 0;
 	}
 
 	void GamepadImpl::addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept
@@ -872,67 +913,94 @@ namespace darmok
 		return StringUtils::getEnumName(stick);
 	}
 
-	std::optional<uint8_t> GamepadImpl::readNum(std::string_view name) noexcept
+	std::optional<uint32_t> GamepadImpl::readNum(std::string_view name) noexcept
 	{
 		auto val = std::stoul(std::string(name));
-		if (val > std::numeric_limits<uint8_t>::max())
+		if (val > std::numeric_limits<uint32_t>::max())
 		{
-			return Gamepad::Any;
+			return -1;
 		}
-		return static_cast<uint8_t>(val);
+		return static_cast<uint32_t>(val);
 	}
 
-	std::optional<GamepadInputEvent> GamepadImpl::readEvent(std::string_view name) noexcept
+	expected<GamepadInputEvent, std::string> GamepadImpl::readEvent(std::string_view name) noexcept
 	{
 		auto parts = StringUtils::split(":", name);
 		auto size = parts.size();
-		if (size == 0)
+		if (size != 2)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"missing parts"};
 		}
 		auto button = readButton(parts[0]);
 		if (!button)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"could not read button"};
 		}
-		auto gamepad = readNum(parts[1]).value_or(Gamepad::Any);
-		return GamepadInputEvent{ button.value(), gamepad };
+		auto num = readNum(parts[1]).value_or(-1);
+		GamepadInputEvent ev;
+		ev.set_button(button.value());
+		ev.set_gamepad(num);
+		return ev;
 	}
 
-	std::optional<GamepadInputDir> GamepadImpl::readDir(std::string_view name) noexcept
+	expected<GamepadStickInputEvent, std::string> GamepadImpl::readStickEvent(std::string_view name) noexcept
+	{
+		auto parts = StringUtils::split(":", name);
+		auto size = parts.size();
+		if (size != 3)
+		{
+			return unexpected<std::string>{"missing parts"};
+		}
+		auto stick = readStick(parts[0]);
+		if (!stick)
+		{
+			return unexpected<std::string>{"could not read stick"};
+		}
+		auto dir = InputImpl::readDirType(parts[1]);
+		if (!dir)
+		{
+			return unexpected<std::string>{"could not read dir"};
+		}
+		auto num = readNum(parts[2]).value_or(-1);
+		GamepadStickInputEvent ev;
+		ev.set_stick(stick.value());
+		ev.set_dir(dir.value());
+		ev.set_gamepad(num);
+		return ev;
+	}
+
+	expected<GamepadInputDir, std::string> GamepadImpl::readDir(std::string_view name) noexcept
 	{
 		auto parts = StringUtils::split(":", name);
 		auto size = parts.size();
 		if (size < 2)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"missing parts"};
 		}
 		auto stick = readStick(parts[0]);
 		if (!stick)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"could not read stick"};
 		}
 		auto type = InputImpl::readDirType(parts[1]);
 		if (!type)
 		{
-			return std::nullopt;
+			return unexpected<std::string>{"could not read dir type"};
 		}
-		auto gamepad = readNum(parts[1]).value_or(Gamepad::Any);
-		return GamepadInputDir{ stick.value(), type.value(), gamepad };
+		auto gamepad = readNum(parts[1]).value_or(-1);
+		GamepadInputDir dir;
+		dir.set_stick(stick.value());
+		dir.set_type(type.value());
+		dir.set_gamepad(gamepad);
+		return dir;
 	}
-
-	const uint8_t Gamepad::MaxAmount = DARMOK_GAMEPAD_MAX;
-	const uint8_t Gamepad::Any = 5;
 
 	Gamepad::Gamepad() noexcept
 		: _impl(std::make_unique<GamepadImpl>())
 	{
 	}
 
-	Gamepad::~Gamepad() noexcept
-	{
-		// left empty to get the forward declaration of the impl working
-	}
+	Gamepad::~Gamepad() noexcept = default;
 
 	std::optional<GamepadButton> Gamepad::readButton(std::string_view name) noexcept
 	{
@@ -1014,52 +1082,48 @@ namespace darmok
 		return _impl->removeListeners(filter);
 	}
 
+	InputEvent Gamepad::createInputEvent(GamepadButton button, uint32_t gamepad) noexcept
+	{
+		InputEvent ev;
+		auto& gp = *ev.mutable_gamepad();
+		gp.set_button(button);
+		gp.set_gamepad(gamepad);
+		return ev;
+	}
+
+	InputEvent Gamepad::createInputEvent(InputDirType dirType, GamepadStick stick, uint32_t gamepad) noexcept
+	{
+		InputEvent ev;
+		auto& gp = *ev.mutable_gamepad_stick();
+		gp.set_stick(stick);
+		gp.set_dir(dirType);
+		gp.set_gamepad(gamepad);
+		return ev;
+	}
+
+	InputDir Gamepad::createInputDir(InputDirType dirType, GamepadStick stick, uint32_t gamepad) noexcept
+	{
+		InputDir dir;
+		auto& gpDir = *dir.mutable_gamepad();
+		gpDir.set_stick(stick);
+		gpDir.set_type(dirType);
+		gpDir.set_gamepad(gamepad);
+		return dir;
+	}
+
 #pragma endregion Gamepad
-
-#pragma region Events
-
-	bool KeyboardInputEvent::operator==(const KeyboardInputEvent& other) const noexcept
-	{
-		return key == other.key && modifiers == other.modifiers;
-	}
-
-	bool MouseInputEvent::operator==(const MouseInputEvent& other) const noexcept
-	{
-		return button == other.button;
-	}
-
-	bool GamepadInputEvent::operator==(const GamepadInputEvent& other) const noexcept
-	{
-		return button == other.button && gamepad == other.gamepad;
-	}
-
-	bool GamepadStickInputEvent::operator==(const GamepadStickInputEvent& other) const noexcept
-	{
-		return stick == other.stick && dir == other.dir && gamepad == other.gamepad;
-	}
-
-	bool MouseInputDir::operator==(const MouseInputDir& other) const noexcept
-	{
-		return analog == other.analog && type == other.type;
-	}
-
-	bool GamepadInputDir::operator==(const GamepadInputDir& other) const noexcept
-	{
-		return stick == other.stick && type == other.type && gamepad == other.gamepad;
-	}
-
-#pragma endregion Events
 
 #pragma region Input
 
 	InputImpl::InputImpl(Input& input) noexcept
 		: _input(input)
 	{
-		uint8_t num = 0;
+		uint32_t num = 0;
 		for (auto& gamepad : _gamepads)
 		{
-			gamepad.getImpl().setNumber(num++);
+			gamepad.getImpl().setNumber(num);
 			gamepad.addListener(*this);
+			++num;
 		}
 		_keyboard.addListener(*this);
 		_mouse.addListener(*this);
@@ -1137,35 +1201,38 @@ namespace darmok
 
 	bool InputImpl::checkEvent(const InputEvent& ev) const noexcept
 	{
-		if (const auto* kbEv = std::get_if<KeyboardInputEvent>(&ev))
+		if (ev.has_keyboard())
 		{
-			if (!_keyboard.getKey(kbEv->key))
+			auto& kbEv = ev.keyboard();
+			if (!_keyboard.getKey(kbEv.key()))
 			{
 				return false;
 			}
-			return _keyboard.getModifiers() == kbEv->modifiers;
+			return _keyboard.getModifiers() == KeyboardImpl::convertModifiers(kbEv.modifiers());
 		}
-		if (const auto* mouseEv = std::get_if<MouseInputEvent>(&ev))
+		if (ev.has_mouse())
 		{
-			return _mouse.getButton(mouseEv->button);
+			return _mouse.getButton(ev.mouse().button());
 		}
-		if (const auto* gamepadEv = std::get_if<GamepadInputEvent>(&ev))
+		if (ev.has_gamepad())
 		{
-			auto gamepad = getGamepad(gamepadEv->gamepad);
+			auto& gpEv = ev.gamepad();
+			auto gamepad = getGamepad(gpEv.gamepad());
 			if(!gamepad)
 			{
 				return false;
 			}
-			return gamepad->getButton(gamepadEv->button);
+			return gamepad->getButton(gpEv.button());
 		}
-		if (const auto* gamepadStickEv = std::get_if<GamepadStickInputEvent>(&ev))
+		if (ev.has_gamepad_stick())
 		{
-			auto gamepad = getGamepad(gamepadStickEv->gamepad);
+			auto& gpEv = ev.gamepad_stick();
+			auto gamepad = getGamepad(gpEv.gamepad());
 			if (!gamepad)
 			{
 				return false;
 			}
-			return gamepad->getStickDir(gamepadStickEv->stick, gamepadStickEv->dir);
+			return gamepad->getStickDir(gpEv.stick(), gpEv.dir());
 		}
 		return false;
 	}
@@ -1175,16 +1242,16 @@ namespace darmok
 		float val = 0.F;
 		switch (dir)
 		{
-			case InputDirType::Up:
+			case Input::Definition::UpDir:
 				val = vec.y > 0.F ? vec.y : 0.F;
 				break;
-			case InputDirType::Down:
+			case Input::Definition::DownDir:
 				val = vec.y < 0.F ? -vec.y : 0.F;
 				break;
-			case InputDirType::Right:
+			case Input::Definition::RightDir:
 				val = vec.x > 0.F ? vec.x : 0.F;
 				break;
-			case InputDirType::Left:
+			case Input::Definition::LeftDir:
 				val = vec.x < 0.F ? -vec.x : 0.F;
 				break;
 			default:
@@ -1199,10 +1266,11 @@ namespace darmok
 
 	float InputImpl::getDir(const InputDir& dir, const Sensitivity& sensi) const noexcept
 	{
-		if (const auto* mouseDir = std::get_if<MouseInputDir>(&dir))
+		if (dir.has_mouse())
 		{
-			glm::vec2 vec(0);
-			if (mouseDir->analog == MouseAnalog::Scroll)
+			glm::vec2 vec{ 0 };
+			auto& mouseDir = dir.mouse();
+			if (mouseDir.analog() == Mouse::Definition::ScrollAnalog)
 			{
 				vec = _mouse.getScroll() * _mouseScrollDirFactor;
 			}
@@ -1210,21 +1278,22 @@ namespace darmok
 			{
 				vec = _mouse.getVelocity() * glm::vec2(_mouseVelocityDirFactor, -_mouseVelocityDirFactor);
 			}
-			return getDir(vec * sensi.mouse, mouseDir->type);
+			return getDir(vec * sensi.mouse, mouseDir.type());
 		}
-		if (const auto* gamepadDir = std::get_if<GamepadInputDir>(&dir))
+		if (dir.has_gamepad())
 		{
-			auto gamepad = getGamepad(gamepadDir->gamepad);
+			auto& gpDir = dir.gamepad();
+			auto gamepad = getGamepad(gpDir.gamepad());
 			if (!gamepad)
 			{
 				return 0.F;
 			}
-			const auto& vec = gamepad->getStick(gamepadDir->stick);
-			return getDir(vec * sensi.gamepad, gamepadDir->type);
+			const auto& vec = gamepad->getStick(gpDir.stick());
+			return getDir(vec * sensi.gamepad, gpDir.type());
 		}
-		if (const auto* event = std::get_if<InputEvent>(&dir))
+		if (dir.has_event())
 		{
-			return checkEvent(*event) ? sensi.event : 0.F;
+			return checkEvent(dir.event()) ? sensi.event : 0.F;
 		}
 		return 0.F;
 	}
@@ -1254,12 +1323,12 @@ namespace darmok
 		{
 			for (auto& event : data.events)
 			{
-				auto* keyEvent = std::get_if<KeyboardInputEvent>(&event);
-				if (!keyEvent)
+				if (!event.has_keyboard())
 				{
 					continue;
 				}
-				if (keyEvent->key != key || keyEvent->modifiers != modifiers)
+				auto& keyEvent = event.keyboard();
+				if (keyEvent.key() != key || modifiers != KeyboardImpl::convertModifiers(keyEvent.modifiers()))
 				{
 					continue;
 				}
@@ -1284,8 +1353,11 @@ namespace darmok
 		{
 			for (auto& event : data.events)
 			{
-				auto* mouseEvent = std::get_if<MouseInputEvent>(&event);
-				if (!mouseEvent || mouseEvent->button != button)
+				if (!event.has_mouse())
+				{
+					continue;
+				}
+				if (event.mouse().button() != button)
 				{
 					continue;
 				}
@@ -1310,16 +1382,16 @@ namespace darmok
 		{
 			for (auto& event : data.events)
 			{
-				const auto* gamepadEvent = std::get_if<GamepadInputEvent>(&event);
-				if (!gamepadEvent)
+				if (!event.has_gamepad())
 				{
 					continue;
 				}
-				if (gamepadEvent->gamepad != num && gamepadEvent->gamepad != Gamepad::Any)
+				auto& gpEvent = event.gamepad();
+				if (gpEvent.gamepad() != num && gpEvent.gamepad() != Gamepad::Any)
 				{
 					continue;
 				}
-				if (gamepadEvent->button != button)
+				if (gpEvent.button() != button)
 				{
 					continue;
 				}
@@ -1344,16 +1416,16 @@ namespace darmok
 		{
 			for (auto& event : data.events)
 			{
-				const auto* gamepadEvent = std::get_if<GamepadStickInputEvent>(&event);
-				if (!gamepadEvent)
+				if (!event.has_gamepad_stick())
 				{
 					continue;
 				}
-				if (gamepadEvent->gamepad != num && gamepadEvent->gamepad != Gamepad::Any)
+				auto& gpEvent = event.gamepad_stick();
+				if (gpEvent.gamepad() != num && gpEvent.gamepad() != Gamepad::Any)
 				{
 					continue;
 				}
-				if (gamepadEvent->stick != stick || gamepadEvent->dir != dir)
+				if (gpEvent.stick() != stick || gpEvent.dir() != dir)
 				{
 					continue;
 				}
@@ -1382,28 +1454,53 @@ namespace darmok
 	const std::string InputImpl::_keyboardPrefix = "keyboard:";
 	const std::string InputImpl::_mousePrefix = "mouse:";
 	const std::string InputImpl::_gamepadPrefix = "gamepad:";
+	const std::string InputImpl::_gamepadStickPrefix = "gamepad_stick:";
 
 	expected<InputEvent, std::string> InputImpl::readEvent(std::string_view name) noexcept
 	{
 		if (name.starts_with(_keyboardPrefix))
 		{
-			return KeyboardImpl::readEvent(name.substr(_keyboardPrefix.size()));
+			auto result = KeyboardImpl::readEvent(name.substr(_keyboardPrefix.size()));
+			if (!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
+			InputEvent ev;
+			*ev.mutable_keyboard() = std::move(result).value();
+			return ev;
 		}
 		if (name.starts_with(_mousePrefix))
 		{
-			if (auto result = MouseImpl::readEvent(name.substr(_mousePrefix.size())))
+			auto result = MouseImpl::readEvent(name.substr(_mousePrefix.size()));
+			if (!result)
 			{
-				return *result;
+				return unexpected{ std::move(result).error() };
 			}
-			return unexpected<std::string>{"could not read mouse event"};
+			InputEvent ev;
+			*ev.mutable_mouse() = std::move(result).value();
+			return ev;
 		}
 		if (name.starts_with(_gamepadPrefix))
 		{
-			if (auto result = GamepadImpl::readEvent(name.substr(_gamepadPrefix.size())))
+			auto result = GamepadImpl::readEvent(name.substr(_gamepadPrefix.size()));
+			if (!result)
 			{
-				return *result;
+				return unexpected{ std::move(result).error() };
 			}
-			return unexpected<std::string>{"could not read gamepad event"};
+			InputEvent ev;
+			*ev.mutable_gamepad() = std::move(result).value();
+			return ev;
+		}
+		if (name.starts_with(_gamepadStickPrefix))
+		{
+			auto result = GamepadImpl::readStickEvent(name.substr(_gamepadStickPrefix.size()));
+			if (!result)
+			{
+				return unexpected{ std::move(result).error() };
+			}
+			InputEvent ev;
+			*ev.mutable_gamepad_stick() = std::move(result).value();
+			return ev;
 		}
 		return unexpected<std::string>{"unexpected event type"};
 	}
@@ -1412,21 +1509,34 @@ namespace darmok
 	{
 		if (name.starts_with(_gamepadPrefix))
 		{
-			if (auto dir = GamepadImpl::readDir(name.substr(_gamepadPrefix.size())))
+			auto gpDir = GamepadImpl::readDir(name.substr(_gamepadPrefix.size()));
+			if (!gpDir)
 			{
-				return *dir;
+				return unexpected{ std::move(gpDir).error() };
 			}
-			return unexpected<std::string>{"could not read gamepad dir"};
+			InputDir dir;
+			*dir.mutable_gamepad() = std::move(gpDir).value();
+			return dir;
 		}
 		if (name.starts_with(_mousePrefix))
 		{
-			if (auto dir = MouseImpl::readDir(name.substr(_mousePrefix.size())))
+			auto mouseDir = MouseImpl::readDir(name.substr(_mousePrefix.size()));
+			if (!mouseDir)
 			{
-				return *dir;
+				return unexpected{ std::move(mouseDir).error() };
 			}
-			return unexpected<std::string>{"could not read mouse dir"};
+			InputDir dir;
+			*dir.mutable_mouse() = std::move(mouseDir).value();
+			return dir;
 		}
-		return readEvent(name);
+		auto ev = readEvent(name);
+		if (!ev)
+		{
+			return unexpected{ std::move(ev).error() };
+		}
+		InputDir dir;
+		*dir.mutable_event() = std::move(ev).value();
+		return dir;
 	}
 
 	Keyboard& InputImpl::getKeyboard() noexcept
@@ -1439,7 +1549,7 @@ namespace darmok
 		return _mouse;
 	}
 
-	OptionalRef<Gamepad> InputImpl::getGamepad(uint8_t num) noexcept
+	OptionalRef<Gamepad> InputImpl::getGamepad(uint32_t num) noexcept
 	{
 		if (num == Gamepad::Any)
 		{
@@ -1452,7 +1562,7 @@ namespace darmok
 			}
 			return nullptr;
 		}
-		if (num < Gamepad::MaxAmount)
+		if (num >= 0 && num < _gamepads.size())
 		{
 			return _gamepads[num];
 		}
@@ -1474,7 +1584,7 @@ namespace darmok
 		return _mouse;
 	}
 
-	OptionalRef<const Gamepad> InputImpl::getGamepad(uint8_t num) const noexcept
+	OptionalRef<const Gamepad> InputImpl::getGamepad(uint32_t num) const noexcept
 	{
 		if (num == Gamepad::Any)
 		{
@@ -1487,7 +1597,7 @@ namespace darmok
 			}
 			return nullptr;
 		}
-		if (num > 0 || num < Gamepad::MaxAmount)
+		if (num > 0 || num < _gamepads.size())
 		{
 			return _gamepads.at(num);
 		}
@@ -1510,10 +1620,7 @@ namespace darmok
 	{
 	}
 
-	Input::~Input() noexcept
-	{
-		// left empty to get the forward declaration of the impl working
-	}
+	Input::~Input() noexcept = default;
 
 	Keyboard& Input::getKeyboard() noexcept
 	{
@@ -1535,12 +1642,12 @@ namespace darmok
 		return _impl->getMouse();
 	}
 
-	OptionalRef<Gamepad> Input::getGamepad(uint8_t num) noexcept
+	OptionalRef<Gamepad> Input::getGamepad(uint32_t num) noexcept
 	{
 		return _impl->getGamepad(num);
 	}
 
-	OptionalRef<const Gamepad> Input::getGamepad(uint8_t num) const noexcept
+	OptionalRef<const Gamepad> Input::getGamepad(uint32_t num) const noexcept
 	{
 		return _impl->getGamepad(num);
 	}
@@ -1565,7 +1672,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Input::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept
+	void Input::addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener> listener) noexcept
 	{
 		_impl->addListener(tag, evs, std::move(listener));
 	}
@@ -1573,6 +1680,18 @@ namespace darmok
 	void Input::addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept
 	{
 		_impl->addListener(tag, evs, listener);
+	}
+
+	void Input::addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, std::unique_ptr<IInputEventListener> listener) noexcept
+	{
+		std::vector<InputEvent> events{ evs.begin(), evs.end() };
+		return addListener(tag, events, std::move(listener));
+	}
+
+	void Input::addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, IInputEventListener& listener) noexcept
+	{
+		std::vector<InputEvent> events{ evs.begin(), evs.end() };
+		return addListener(tag, events, listener);
 	}
 
 	bool Input::removeListener(const IInputEventListener& listener) noexcept
@@ -1628,6 +1747,13 @@ namespace darmok
 	float Input::getAxis(const InputAxis& axis, const Sensitivity& sensitivity) const noexcept
 	{
 		return _impl->getAxis(axis.first, axis.second, sensitivity);
+	}
+
+	float Input::getAxis(const google::protobuf::RepeatedPtrField<InputDir>& negative, const google::protobuf::RepeatedPtrField<InputDir>& positive, const Sensitivity& sensitivity) const noexcept
+	{
+		std::vector<InputDir> negVec{ negative.begin(), negative.end() };
+		std::vector<InputDir> posVec{ positive.begin(), positive.end() };
+		return getAxis(negVec, posVec, sensitivity);
 	}
 
 #pragma endregion Input

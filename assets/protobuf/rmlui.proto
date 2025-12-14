@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "input.proto";
+
+package darmok.protobuf;
+
+message RmluiSceneComponent {
+    
+}
+
+message RmluiDebuggerComponent {
+    repeated InputEvent enable_events = 1;
+}

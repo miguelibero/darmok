@@ -221,6 +221,7 @@ namespace darmok::physics3d
         using Shape = protobuf::PhysicsShape;
 
         PhysicsSystemImpl(PhysicsSystem& system, const Definition& def, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> init(Scene& scene, App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
         expected<void, std::string> update(float deltaTime) noexcept;
@@ -378,6 +379,9 @@ namespace darmok::physics3d
         expected<void, std::string> onCollisionExit(PhysicsBody& other) noexcept;
 
         static std::string_view getMotionTypeName(MotionType motion) noexcept;
+
+        expected<void, std::string> load(const Definition& def, Entity entity) noexcept;
+        expected<void, std::string> load(const CharacterDefinition& def, Entity entity) noexcept;
 
     private:
         OptionalRef<JPH::BodyInterface> getBodyInterface() const noexcept;

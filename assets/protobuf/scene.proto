@@ -32,6 +32,10 @@ message Camera {
     float near = 3;
     float far = 4;
     Vec4 viewport = 5;
+    map<uint32, google.protobuf.Any> components = 6;
+}
+
+message FrameAnimationUpdater {
 }
 
 message Scene {

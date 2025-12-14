@@ -269,6 +269,7 @@ namespace darmok
 
     class DARMOK_EXPORT BX_NO_VTABLE ISceneDefinitionLoader : public ILoader<protobuf::Scene>{};
 
+    class App;
     class Scene;
     class IAssetContext;
 
@@ -279,6 +280,8 @@ namespace darmok
         virtual IAssetContext& getAssets() noexcept = 0;
         virtual const Scene& getScene() const noexcept = 0;
         virtual Scene& getScene() noexcept = 0;
+        virtual const App& getApp() const noexcept = 0;
+        virtual App& getApp() noexcept = 0;
         virtual Entity getEntity(EntityId entityId) const noexcept = 0;
     };
 
@@ -380,7 +383,7 @@ namespace darmok
             }
             else
             {
-                return unexpected<std::string>{ "coult not load" };
+                return unexpected<std::string>{ "could not load" };
             }
         }
 

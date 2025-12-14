@@ -4,16 +4,18 @@
 
 namespace darmok::editor
 {
-    void BaseObjectEditor::init(EditorApp& app, ObjectEditorContainer& container)
+    expected<void, std::string> BaseObjectEditor::init(EditorApp& app, ObjectEditorContainer& container) noexcept
     {
         _app = app;
 		_container = container;
+        return {};
     }
 
-    void BaseObjectEditor::shutdown()
+    expected<void, std::string> BaseObjectEditor::shutdown() noexcept
     {
 		_app.reset();
 		_container.reset();
+        return {};
     }
 
     EditorProject& BaseObjectEditor::getProject() noexcept
@@ -134,27 +136,39 @@ namespace darmok::editor
         vec.push_back(std::move(editor));
     }
 
-    void ObjectEditorContainer::init(EditorApp& app)
+    expected<void, std::string> ObjectEditorContainer::init(EditorApp& app) noexcept
     {
+        std::vector<std::string> errors;
         for (auto& [type, editors] : _editors)
         {
             for (auto& editor : editors)
             {
-                editor->init(app, *this);
+                auto result = editor->init(app, *this);
+                if (!result)
+                {
+					errors.push_back(type + ": " + result.error());
+                }
             }
         }
         _app = app;
+		return StringUtils::joinExpectedErrors(errors);
     }
 
-    void ObjectEditorContainer::shutdown()
+    expected<void, std::string> ObjectEditorContainer::shutdown() noexcept
     {
+        std::vector<std::string> errors;
         for (auto& [type, editors] : _editors)
         {
             for (auto& editor : editors)
             {
-                editor->shutdown();
+                auto result = editor->shutdown();
+                if (!result)
+                {
+                    errors.push_back(type + ": " + result.error());
+                }
             }
         }
         _app.reset();
+        return StringUtils::joinExpectedErrors(errors);
     }
 }

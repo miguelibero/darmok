@@ -1,6 +1,7 @@
 #include "lua/input.hpp"
 #include "lua/window.hpp"
 #include "lua/utils.hpp"
+#include "lua/protobuf.hpp"
 #include <darmok/input.hpp>
 #include <darmok/string.hpp>
 
@@ -70,7 +71,9 @@ namespace darmok
 		}
 		if (auto key = readKey(val))
 		{
-			return KeyboardInputEvent{ key.value() };
+			KeyboardInputEvent ev;
+			ev.set_key(key.value());
+			return ev;
 		}
 		if (!val.is<sol::table>())
 		{
@@ -87,15 +90,16 @@ namespace darmok
 		{
 			return std::nullopt;
 		}
-		KeyboardModifiers mods;
+		KeyboardInputEvent ev;
+		ev.set_key(key.value());
 		for (size_t i = 2; i <= size; i++)
 		{
 			if (auto mod = readModifier(tab[i]))
 			{
-				mods.insert(mod.value());
+				ev.mutable_modifiers()->Add(mod.value());
 			}
 		}
-		return KeyboardInputEvent{ key.value(), mods };
+		return ev;
 	}
 
 	std::string LuaKeyboard::getUpdateChars(const Keyboard& kb) noexcept
@@ -118,10 +122,7 @@ namespace darmok
 		LuaUtils::newEnum<KeyboardKey>(lua, {}, true);
 		LuaUtils::newEnum<KeyboardModifier>(lua, {}, true);
 
-		lua.new_usertype<KeyboardInputEvent>("KeyboardInputEvent", sol::default_constructor,
-			"key", &KeyboardInputEvent::key,
-			"modifiers", &KeyboardInputEvent::modifiers
-		);
+		LuaProtobufBinding<KeyboardInputEvent>{ lua, "KeyboardInputEvent" };
 
 		lua.new_usertype<Keyboard>("Keyboard", sol::no_constructor,
 			"get_key", &Keyboard::getKey,
@@ -173,17 +174,17 @@ namespace darmok
 
 	bool LuaMouse::getLeftButton(const Mouse& mouse) noexcept
 	{
-		return mouse.getButton(MouseButton::Left);
+		return mouse.getButton(Mouse::Definition::LeftButton);
 	}
 
 	bool LuaMouse::getMiddleButton(const Mouse& mouse) noexcept
 	{
-		return mouse.getButton(MouseButton::Middle);
+		return mouse.getButton(Mouse::Definition::MiddleButton);
 	}
 
 	bool LuaMouse::getRightButton(const Mouse& mouse) noexcept
 	{
-		return mouse.getButton(MouseButton::Right);
+		return mouse.getButton(Mouse::Definition::RightButton);
 	}
 
 	bool LuaMouse::removeListener(Mouse& mouse, const sol::table& table) noexcept
@@ -214,7 +215,9 @@ namespace darmok
 		auto button = readButton(val);
 		if (button)
 		{
-			return MouseInputEvent{ button.value() };
+			MouseInputEvent ev;
+			ev.set_button(button.value());
+			return ev;
 		}
 		return std::nullopt;
 	}
@@ -245,7 +248,10 @@ namespace darmok
 		{
 			return std::nullopt;
 		}
-		return MouseInputDir{ analog.value(), dirType.value() };
+		MouseInputDir dir;
+		dir.set_analog(analog.value());
+		dir.set_type(dirType.value());
+		return dir;
 	}
 
 	std::optional<MouseAnalog> LuaMouse::readAnalog(const sol::object& val) noexcept
@@ -262,15 +268,9 @@ namespace darmok
 		LuaUtils::newEnum<MouseAnalog>(lua, {}, true);
 		LuaUtils::newEnum<MouseButton>(lua, {}, true);
 
-		lua.new_usertype<MouseInputEvent>("MouseInputEvent", sol::default_constructor,
-			"key", &MouseInputEvent::button
-		);
+		LuaProtobufBinding<MouseInputEvent>{ lua, "MouseInputEvent" };
+		LuaProtobufBinding<MouseInputDir>{ lua, "MouseInputDir" };
 
-		lua.new_usertype<MouseInputDir>("MouseInputDir", sol::default_constructor,
-			"analog", &MouseInputDir::analog,
-			"type", &MouseInputDir::type
-		);
-		
 		lua.new_usertype<Mouse>("Mouse", sol::no_constructor,
 			"active", sol::property(&Mouse::getActive),
 			"position", sol::property(&Mouse::getPosition),
@@ -337,12 +337,12 @@ namespace darmok
 
 	const glm::vec3& LuaGamepad::getLeftStick(const Gamepad& gamepad) noexcept
 	{
-		return gamepad.getStick(GamepadStick::Left);
+		return gamepad.getStick(GamepadStick::Gamepad_Stick_LeftStick);
 	}
 
 	const glm::vec3& LuaGamepad::getRightStick(const Gamepad& gamepad) noexcept
 	{
-		return gamepad.getStick(GamepadStick::Right);
+		return gamepad.getStick(GamepadStick::Gamepad_Stick_RightStick);
 	}
 
 	std::optional<GamepadButton> LuaGamepad::readButton(const sol::object& val) noexcept
@@ -362,7 +362,9 @@ namespace darmok
 		}
 		if (auto button = readButton(val))
 		{
-			return GamepadInputEvent{ button.value() };
+			GamepadInputEvent ev;
+			ev.set_button(button.value());
+			return ev;
 		}
 		if (!val.is<sol::table>())
 		{
@@ -384,7 +386,10 @@ namespace darmok
 		{
 			gamepad = tab[2];
 		}
-		return GamepadInputEvent{ button.value(), gamepad };
+		GamepadInputEvent ev;
+		ev.set_button(button.value());
+		ev.set_gamepad(gamepad);
+		return ev;
 	}
 
 	std::optional<GamepadStickInputEvent> LuaGamepad::readStickEvent(const sol::object& val) noexcept
@@ -418,7 +423,11 @@ namespace darmok
 		{
 			gamepad = tab[3];
 		}
-		return GamepadStickInputEvent{ stick.value(), dirType.value(), gamepad };
+		GamepadStickInputEvent ev;
+		ev.set_stick(stick.value());
+		ev.set_dir(dirType.value());
+		ev.set_gamepad(gamepad);
+		return ev;
 	}
 
 	std::optional<GamepadStick> LuaGamepad::readStick(const sol::object& val) noexcept
@@ -461,7 +470,11 @@ namespace darmok
 		{
 			gamepad = tab[3];
 		}
-		return GamepadInputDir{ stick.value(), dirType.value(), gamepad };
+		GamepadInputDir dir;
+		dir.set_stick(stick.value());
+		dir.set_type(dirType.value());
+		dir.set_gamepad(gamepad);
+		return dir;
 	}
 
 	void LuaGamepad::bind(sol::state_view& lua) noexcept
@@ -469,16 +482,9 @@ namespace darmok
 		LuaUtils::newEnum<GamepadButton>(lua, {}, true);
 		LuaUtils::newEnum<GamepadStick>(lua, {}, true);
 
-		lua.new_usertype<GamepadInputEvent>("GamepadInputEvent", sol::default_constructor,
-			"key", &GamepadInputEvent::button,
-			"gamepad", &GamepadInputEvent::gamepad
-		);
-
-		lua.new_usertype<GamepadInputDir>("GamepadInputDir", sol::default_constructor,
-			"stick", &GamepadInputDir::stick,
-			"type", &GamepadInputDir::type,
-			"gamepad", &GamepadInputDir::gamepad
-		);
+		LuaProtobufBinding<GamepadInputEvent>{ lua, "GamepadInputEvent" };
+		LuaProtobufBinding<GamepadStickInputEvent>{ lua, "GamepadStickInputEvent" };
+		LuaProtobufBinding<GamepadInputDir>{ lua, "GamepadInputDir" };
 
 		lua.new_usertype<Gamepad>("Gamepad", sol::no_constructor,
 			"get_button", &Gamepad::getButton,

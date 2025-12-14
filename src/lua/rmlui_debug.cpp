@@ -2,6 +2,7 @@
 
 #include "lua/rmlui.hpp"
 #include "lua/rmlui_debug.hpp"
+#include "lua/protobuf.hpp"
 
 #include <darmok/app.hpp>
 #include <darmok/rmlui.hpp>
@@ -10,14 +11,14 @@
 
 namespace darmok
 {
-    std::reference_wrapper<RmluiDebuggerComponent> LuaRmluiDebuggerComponent::addAppComponent1(App& app) noexcept
+    std::reference_wrapper<RmluiDebuggerComponent> LuaRmluiDebuggerComponent::addAppComponent1(App& app)
     {
         return LuaUtils::unwrapExpected(app.addComponent<RmluiDebuggerComponent>());
     }
 
-    std::reference_wrapper<RmluiDebuggerComponent> LuaRmluiDebuggerComponent::addAppComponent2(App& app, const Config& config) noexcept
+    std::reference_wrapper<RmluiDebuggerComponent> LuaRmluiDebuggerComponent::addAppComponent2(App& app, const Definition& def)
     {
-        return LuaUtils::unwrapExpected(app.addComponent<RmluiDebuggerComponent>(config));
+        return LuaUtils::unwrapExpected(app.addComponent<RmluiDebuggerComponent>(def));
     }
 
     OptionalRef<RmluiDebuggerComponent>::std_t LuaRmluiDebuggerComponent::getAppComponent(App& app) noexcept
@@ -27,10 +28,8 @@ namespace darmok
 
 	void LuaRmluiDebuggerComponent::bind(sol::state_view& lua) noexcept
 	{
-        lua.new_usertype<Config>("RmluiDebuggerComponentConfig",
-            sol::default_constructor,
-            "enable_events", &Config::enableEvents
-        );
+		LuaProtobufBinding<RmluiDebuggerComponent::Definition>(lua, "RmluiDebuggerComponentDefinition");
+
         lua.new_usertype<RmluiDebuggerComponent>("RmluiDebuggerComponent", sol::no_constructor,
             "toggle", &RmluiDebuggerComponent::toggle,
             "enabled", sol::property(&RmluiDebuggerComponent::isEnabled),

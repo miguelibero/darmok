@@ -287,33 +287,33 @@ namespace darmok
 	{
 		static KeyboardMap map
 		{
-			{ KeyboardKey::Esc, ImGuiKey_Escape},
-			{ KeyboardKey::Return, ImGuiKey_Enter},
-			{ KeyboardKey::Tab, ImGuiKey_Tab},
-			{ KeyboardKey::Space, ImGuiKey_Space},
-			{ KeyboardKey::Backspace, ImGuiKey_Backspace},
-			{ KeyboardKey::Up, ImGuiKey_UpArrow},
-			{ KeyboardKey::Down, ImGuiKey_DownArrow},
-			{ KeyboardKey::Left, ImGuiKey_LeftArrow},
-			{ KeyboardKey::Right, ImGuiKey_RightArrow},
-			{ KeyboardKey::Insert, ImGuiKey_Insert},
-			{ KeyboardKey::Delete, ImGuiKey_Delete},
-			{ KeyboardKey::Home, ImGuiKey_Home},
-			{ KeyboardKey::End, ImGuiKey_End},
-			{ KeyboardKey::PageUp, ImGuiKey_PageUp},
-			{ KeyboardKey::PageDown, ImGuiKey_PageDown},
-			{ KeyboardKey::Print, ImGuiKey_PrintScreen},
-			{ KeyboardKey::Plus, ImGuiKey_Equal},
-			{ KeyboardKey::Minus, ImGuiKey_Minus},
-			{ KeyboardKey::LeftBracket, ImGuiKey_LeftBracket},
-			{ KeyboardKey::RightBracket, ImGuiKey_RightBracket},
-			{ KeyboardKey::Semicolon, ImGuiKey_Semicolon},
-			{ KeyboardKey::Quote, ImGuiKey_Apostrophe},
-			{ KeyboardKey::Comma, ImGuiKey_Comma},
-			{ KeyboardKey::Period, ImGuiKey_Period},
-			{ KeyboardKey::Slash, ImGuiKey_Slash},
-			{ KeyboardKey::Backslash, ImGuiKey_Backslash},
-			{ KeyboardKey::GraveAccent, ImGuiKey_GraveAccent},
+			{ Keyboard::Definition::Esc, ImGuiKey_Escape},
+			{ Keyboard::Definition::Return, ImGuiKey_Enter},
+			{ Keyboard::Definition::Tab, ImGuiKey_Tab},
+			{ Keyboard::Definition::Space, ImGuiKey_Space},
+			{ Keyboard::Definition::Backspace, ImGuiKey_Backspace},
+			{ Keyboard::Definition::KeyUp, ImGuiKey_UpArrow},
+			{ Keyboard::Definition::KeyDown, ImGuiKey_DownArrow},
+			{ Keyboard::Definition::KeyLeft, ImGuiKey_LeftArrow},
+			{ Keyboard::Definition::KeyRight, ImGuiKey_RightArrow},
+			{ Keyboard::Definition::Insert, ImGuiKey_Insert},
+			{ Keyboard::Definition::Delete, ImGuiKey_Delete},
+			{ Keyboard::Definition::Home, ImGuiKey_Home},
+			{ Keyboard::Definition::End, ImGuiKey_End},
+			{ Keyboard::Definition::PageUp, ImGuiKey_PageUp},
+			{ Keyboard::Definition::PageDown, ImGuiKey_PageDown},
+			{ Keyboard::Definition::Print, ImGuiKey_PrintScreen},
+			{ Keyboard::Definition::Plus, ImGuiKey_Equal},
+			{ Keyboard::Definition::Minus, ImGuiKey_Minus},
+			{ Keyboard::Definition::LeftBracket, ImGuiKey_LeftBracket},
+			{ Keyboard::Definition::RightBracket, ImGuiKey_RightBracket},
+			{ Keyboard::Definition::Semicolon, ImGuiKey_Semicolon},
+			{ Keyboard::Definition::Quote, ImGuiKey_Apostrophe},
+			{ Keyboard::Definition::Comma, ImGuiKey_Comma},
+			{ Keyboard::Definition::Period, ImGuiKey_Period},
+			{ Keyboard::Definition::Slash, ImGuiKey_Slash},
+			{ Keyboard::Definition::Backslash, ImGuiKey_Backslash},
+			{ Keyboard::Definition::GraveAccent, ImGuiKey_GraveAccent},
 		};
 		static bool first = true;
 
@@ -327,10 +327,10 @@ namespace darmok
 
 		if (first)
 		{
-			addRange(KeyboardKey::F1, KeyboardKey::F12, ImGuiKey_F1);
-			addRange(KeyboardKey::NumPad0, KeyboardKey::NumPad9, ImGuiKey_Keypad9);
-			addRange(KeyboardKey::Key0, KeyboardKey::Key9, ImGuiKey_0);
-			addRange(KeyboardKey::KeyA, KeyboardKey::KeyZ, ImGuiKey_A);
+			addRange(Keyboard::Definition::F1, Keyboard::Definition::F12, ImGuiKey_F1);
+			addRange(Keyboard::Definition::NumPad0, Keyboard::Definition::NumPad9, ImGuiKey_Keypad9);
+			addRange(Keyboard::Definition::Key0, Keyboard::Definition::Key9, ImGuiKey_0);
+			addRange(Keyboard::Definition::KeyA, Keyboard::Definition::KeyZ, ImGuiKey_A);
 			first = false;
 		}
 		return map;
@@ -340,21 +340,21 @@ namespace darmok
 	{
 		static const GamepadMap map
 		{
-			{ GamepadButton::Start, ImGuiKey_GamepadStart },
-			{ GamepadButton::Select, ImGuiKey_GamepadBack },
-			{ GamepadButton::Y, ImGuiKey_GamepadFaceUp },
-			{ GamepadButton::A, ImGuiKey_GamepadFaceDown },
-			{ GamepadButton::X, ImGuiKey_GamepadFaceLeft },
-			{ GamepadButton::B, ImGuiKey_GamepadFaceRight },
-			{ GamepadButton::Up, ImGuiKey_GamepadDpadUp },
-			{ GamepadButton::Down, ImGuiKey_GamepadDpadDown },
-			{ GamepadButton::Left, ImGuiKey_GamepadDpadLeft },
-			{ GamepadButton::Right, ImGuiKey_GamepadDpadRight },
-			{ GamepadButton::LeftBumper, ImGuiKey_GamepadL1 },
-			{ GamepadButton::RightBumper, ImGuiKey_GamepadR1 },
-			{ GamepadButton::LeftThumb, ImGuiKey_GamepadL3 },
-			{ GamepadButton::RightThumb, ImGuiKey_GamepadR3 },
-			{ GamepadButton::Guide, ImGuiKey_None },
+			{ Gamepad::Definition::Start, ImGuiKey_GamepadStart },
+			{ Gamepad::Definition::Select, ImGuiKey_GamepadBack },
+			{ Gamepad::Definition::Y, ImGuiKey_GamepadFaceUp },
+			{ Gamepad::Definition::A, ImGuiKey_GamepadFaceDown },
+			{ Gamepad::Definition::X, ImGuiKey_GamepadFaceLeft },
+			{ Gamepad::Definition::B, ImGuiKey_GamepadFaceRight },
+			{ Gamepad::Definition::PadUp, ImGuiKey_GamepadDpadUp },
+			{ Gamepad::Definition::PadDown, ImGuiKey_GamepadDpadDown },
+			{ Gamepad::Definition::PadLeft, ImGuiKey_GamepadDpadLeft },
+			{ Gamepad::Definition::PadRight, ImGuiKey_GamepadDpadRight },
+			{ Gamepad::Definition::LeftBumper, ImGuiKey_GamepadL1 },
+			{ Gamepad::Definition::RightBumper, ImGuiKey_GamepadR1 },
+			{ Gamepad::Definition::LeftThumb, ImGuiKey_GamepadL3 },
+			{ Gamepad::Definition::RightThumb, ImGuiKey_GamepadR3 },
+			{ Gamepad::Definition::Guide, ImGuiKey_None },
 		};
 
 		return map;
@@ -523,23 +523,21 @@ namespace darmok
 		io.DisplayFramebufferScale = ImguiUtils::convert(win.getFramebufferScale());
 
 		auto& mouse = input.getMouse();
-		auto& buttons = mouse.getButtons();
 		auto pos = mouse.getPosition();
 		io.AddMousePosEvent(pos.x, pos.y);
 
-		io.AddMouseButtonEvent(ImGuiMouseButton_Left, buttons[toUnderlying(MouseButton::Left)]);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Right, buttons[toUnderlying(MouseButton::Right)]);
-		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, buttons[toUnderlying(MouseButton::Middle)]);
+		io.AddMouseButtonEvent(ImGuiMouseButton_Left, mouse.getButton(Mouse::Definition::LeftButton));
+		io.AddMouseButtonEvent(ImGuiMouseButton_Right, mouse.getButton(Mouse::Definition::RightButton));
+		io.AddMouseButtonEvent(ImGuiMouseButton_Middle, mouse.getButton(Mouse::Definition::MiddleButton));
 		
 		auto& scroll = mouse.getScroll();
 		io.AddMouseWheelEvent(scroll.x, scroll.y);
 
 		auto& keyb = input.getKeyboard();
-		auto& modifiers = keyb.getModifiers();
-		io.AddKeyEvent(ImGuiMod_Shift, modifiers.contains(KeyboardModifier::Shift));
-		io.AddKeyEvent(ImGuiMod_Ctrl, modifiers.contains(KeyboardModifier::Ctrl));
-		io.AddKeyEvent(ImGuiMod_Alt, modifiers.contains(KeyboardModifier::Alt));
-		io.AddKeyEvent(ImGuiMod_Super, modifiers.contains(KeyboardModifier::Meta));
+		io.AddKeyEvent(ImGuiMod_Shift, keyb.getModifier(Keyboard::Definition::Shift));
+		io.AddKeyEvent(ImGuiMod_Ctrl, keyb.getModifier(Keyboard::Definition::Ctrl));
+		io.AddKeyEvent(ImGuiMod_Alt, keyb.getModifier(Keyboard::Definition::Alt));
+		io.AddKeyEvent(ImGuiMod_Super, keyb.getModifier(Keyboard::Definition::Meta));
 		for (auto& elm : getKeyboardMap())
 		{
 			io.AddKeyEvent(elm.second, keyb.getKey(elm.first));

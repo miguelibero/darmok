@@ -42,10 +42,11 @@ namespace darmok::physics3d
     class JoltPhysicsDebugRenderer final : public JPH::DebugRenderer
     {
     public:
-        using Config = PhysicsDebugRenderConfig;
+        using Definition = protobuf::PhysicsDebugRenderer;
 
         ~JoltPhysicsDebugRenderer() noexcept;
-        static expected<void, std::string> render(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        static void init(const Definition& def, std::shared_ptr<IFont> font) noexcept;
+        static expected<void, std::string> render(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
         static void shutdown() noexcept;
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) noexcept override;
@@ -66,7 +67,8 @@ namespace darmok::physics3d
         static std::unique_ptr<JoltPhysicsDebugRenderer> _instance;
         static std::mutex _instanceLock;
 
-        Config _config;
+        Definition _def;
+        std::shared_ptr<IFont> _font;
         OptionalRef<bgfx::Encoder> _encoder;
         std::optional<bgfx::ViewId> _viewId;
         MeshData _solidMeshData;
@@ -76,7 +78,7 @@ namespace darmok::physics3d
         std::shared_ptr<Program> _program;
 
         JoltPhysicsDebugRenderer() noexcept;
-        expected<void, std::string> doRender(JPH::PhysicsSystem& joltSystem, const Config& config, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        expected<void, std::string> doRender(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
         expected<void, std::string> renderMesh(const Mesh& mesh, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white()) noexcept;
         expected<void, std::string> renderMesh(MeshData& meshData, EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white()) noexcept;
         expected<void, std::string> renderSubmit(EDrawMode mode = EDrawMode::Solid, const Color& color = Colors::white()) noexcept;
@@ -89,8 +91,9 @@ namespace darmok::physics3d
     class PhysicsDebugRendererImpl final : public IInputEventListener
     {
     public:
-        using Config = PhysicsDebugConfig;
-        PhysicsDebugRendererImpl(const Config& config = {}) noexcept;
+        using Definition = PhysicsDebugRenderer::Definition;
+        PhysicsDebugRendererImpl(const Definition& def = {}) noexcept;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
@@ -105,7 +108,7 @@ namespace darmok::physics3d
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<Input> _input;
-        Config _config;
+        Definition _def;
     };
 }
 

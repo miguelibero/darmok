@@ -31,6 +31,8 @@ namespace darmok
 
         // IComponentLoadContext
         IAssetContext& getAssets() noexcept override;
+        const App& getApp() const noexcept override;
+        App& getApp() noexcept override;
         const Scene& getScene() const noexcept override;
         Scene& getScene() noexcept override;
         Entity getEntity(EntityId entityId) const noexcept override;
@@ -59,7 +61,8 @@ namespace darmok
     private:
         static Scene _emptyScene;
         static const SceneDefinition _emptySceneDef;
-        OptionalRef<Scene> _scene;        
+        OptionalRef<App> _app;
+        OptionalRef<Scene> _scene;     
         OptionalRef<const SceneDefinition> _sceneDef;
         Entity _parentEntity;
         std::vector<ComponentListener> _compListeners;

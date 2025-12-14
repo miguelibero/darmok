@@ -132,20 +132,28 @@ namespace darmok
 				return ev.value();
 			}
 		}
-		if (auto ev = LuaKeyboard::readEvent(val))
+		if (auto kbEv = LuaKeyboard::readEvent(val))
 		{
+			InputEvent ev;
+			*ev.mutable_keyboard() = std::move(kbEv).value();
 			return ev;
 		}
-		if (auto ev = LuaMouse::readEvent(val))
+		if (auto mouseEv = LuaMouse::readEvent(val))
 		{
+			InputEvent ev;
+			*ev.mutable_mouse() = std::move(mouseEv).value();
 			return ev;
 		}
-		if (auto ev = LuaGamepad::readButtonEvent(val))
+		if (auto gpEv = LuaGamepad::readButtonEvent(val))
 		{
+			InputEvent ev;
+			*ev.mutable_gamepad() = std::move(gpEv).value();
 			return ev;
 		}
-		if (auto ev = LuaGamepad::readStickEvent(val))
+		if (auto stickEv = LuaGamepad::readStickEvent(val))
 		{
+			InputEvent ev;
+			*ev.mutable_gamepad_stick() = std::move(stickEv).value();
 			return ev;
 		}
 		return std::nullopt;
@@ -169,17 +177,23 @@ namespace darmok
 				return dir.value();
 			}
 		}
-		if (auto dir = LuaMouse::readDir(val))
+		if (auto mouseDir = LuaMouse::readDir(val))
 		{
+			InputDir dir;
+			*dir.mutable_mouse() = std::move(mouseDir).value();
 			return dir;
 		}
-		if (auto dir = LuaGamepad::readDir(val))
+		if (auto gpDir = LuaGamepad::readDir(val))
 		{
+			InputDir dir;
+			*dir.mutable_gamepad() = std::move(gpDir).value();
 			return dir;
 		}
 		if (auto ev = readEvent(val))
 		{
-			return ev;
+			InputDir dir;
+			*dir.mutable_event() = std::move(ev).value();
+			return dir;
 		}
 		return std::nullopt;
 	}
@@ -222,7 +236,7 @@ namespace darmok
 		lua.new_usertype<Input>("Input", sol::no_constructor,
 			"keyboard", sol::property(sol::resolve<Keyboard&()>(&Input::getKeyboard)),
 			"mouse", sol::property(sol::resolve<Mouse&()>(&Input::getMouse)),
-			"gamepads",	sol::property(sol::resolve<Gamepads&()>(&Input::getGamepads)),
+			// "gamepads",	sol::property(sol::resolve<Gamepads&()>(&Input::getGamepads)),
 			"get_gamepad", &LuaInput::getGamepad,
 			"get_axis", &LuaInput::getAxis,
 			"check_event", &LuaInput::checkEvent,

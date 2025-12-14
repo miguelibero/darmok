@@ -1,6 +1,6 @@
 #pragma once
 
-#include <darmok/input_fwd.hpp>
+#include <darmok/input.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 #include <imgui.h>

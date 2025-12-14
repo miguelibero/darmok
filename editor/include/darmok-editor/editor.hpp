@@ -20,8 +20,8 @@ namespace darmok::editor
         using Message = google::protobuf::Message;
         using RenderResult = expected<bool, std::string>;
         virtual ~IObjectEditor() = default;
-        virtual void init(EditorApp& app, ObjectEditorContainer& container) {}
-        virtual void shutdown() {}
+        virtual expected<void, std::string> init(EditorApp& app, ObjectEditorContainer& container) noexcept { return {}; }
+        virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual std::string getTitle() const noexcept = 0;
         virtual std::string getObjectTypeUrl() const noexcept = 0;
         virtual bool canRender(const Message& msg) const noexcept = 0;
@@ -35,8 +35,8 @@ namespace darmok::editor
     public:
         using Any = google::protobuf::Any;
 
-        void init(EditorApp& app, ObjectEditorContainer& container) override;
-		void shutdown() override;
+        expected<void, std::string> init(EditorApp& app, ObjectEditorContainer& container) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
     private:
         OptionalRef<EditorApp> _app;
         OptionalRef<ObjectEditorContainer> _container;
@@ -248,8 +248,8 @@ namespace darmok::editor
 
         RenderResult render(google::protobuf::Message& obj, bool withTitle = false) const noexcept;
         void add(std::unique_ptr<IObjectEditor>&& editor) noexcept;
-        void init(EditorApp& app);
-        void shutdown();
+        expected<void, std::string> init(EditorApp& app) noexcept;
+        expected<void, std::string> shutdown() noexcept;
 
     private:
         OptionalRef<EditorApp> _app;

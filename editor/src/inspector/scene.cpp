@@ -5,11 +5,6 @@
 
 namespace darmok::editor
 {
-    void SceneInspectorEditor::init(EditorApp& app, ObjectEditorContainer& editors) noexcept
-    {
-        _editors = editors;
-    }
-
     std::string SceneInspectorEditor::getTitle() const noexcept
     {
         return "Scene";
@@ -22,6 +17,20 @@ namespace darmok::editor
         if (ImguiUtils::drawProtobufInput("Name", "name", scene))
         {
             changed = true;
+        }
+
+        if (scene.scene_components_size() > 0)
+        {
+            if (ImGui::CollapsingHeader("Components"))
+            {
+                for (auto& [typeId, comp] : *scene.mutable_scene_components())
+                {
+                    if (renderChild(comp))
+                    {
+                        changed = true;
+                    }
+                }
+            }
         }
 
         return true;

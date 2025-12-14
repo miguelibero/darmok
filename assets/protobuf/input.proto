@@ -1,0 +1,207 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+message Input {
+    enum DirType {
+        NoDir = 0;
+        UpDir = 1;
+        DownDir = 2;
+        LeftDir = 3;
+        RightDir = 4;
+    }
+}
+
+message Keyboard {
+    enum Modifier {
+        NoModifier = 0;
+        Alt = 1;
+        Ctrl = 2;
+        Shift = 3;
+        Meta = 4;
+    }
+
+    enum Key {
+        NoKey = 0;
+        Esc = 1;
+        Return = 2;
+        Tab = 3;
+        Space = 4;
+        Backspace = 5;
+        KeyUp = 6;
+        KeyDown = 7;
+        KeyLeft = 8;
+        KeyRight = 9;
+        Insert = 10;
+        Delete = 11;
+        Home = 12;
+        End = 13;
+        PageUp = 14;
+        PageDown = 15;
+        Print = 16;
+        Plus = 17;
+        Minus = 18;
+        LeftBracket = 19;
+        RightBracket = 20;
+        Semicolon = 21;
+        Quote = 22;
+        Comma = 23;
+        Period = 24;
+        Slash = 25;
+        Backslash = 26;
+        GraveAccent = 27;
+        CapsLock = 28;
+        NumLock = 29;
+        ScrollLock = 30;
+        Pause = 31;
+        F1 = 32;
+        F2 = 33;
+        F3 = 34;
+        F4 = 35;
+        F5 = 36;
+        F6 = 37;
+        F7 = 38;
+        F8 = 39;
+        F9 = 40;
+        F10 = 41;
+        F11 = 42;
+        F12 = 43;
+        NumPad0 = 44;
+        NumPad1 = 45;
+        NumPad2 = 46;
+        NumPad3 = 47;
+        NumPad4 = 48;
+        NumPad5 = 49;
+        NumPad6 = 50;
+        NumPad7 = 51;
+        NumPad8 = 52;
+        NumPad9 = 53;
+        Key0 = 54;
+        Key1 = 55;
+        Key2 = 56;
+        Key3 = 57;
+        Key4 = 58;
+        Key5 = 59;
+        Key6 = 60;
+        Key7 = 61;
+        Key8 = 62;
+        Key9 = 63;
+        KeyA = 64;
+        KeyB = 65;
+        KeyC = 66;
+        KeyD = 67;
+        KeyE = 68;
+        KeyF = 69;
+        KeyG = 70;
+        KeyH = 71;
+        KeyI = 72;
+        KeyJ = 73;
+        KeyK = 74;
+        KeyL = 75;
+        KeyM = 76;
+        KeyN = 77;
+        KeyO = 78;
+        KeyP = 79;
+        KeyQ = 80;
+        KeyR = 81;
+        KeyS = 82;
+        KeyT = 83;
+        KeyU = 84;
+        KeyV = 85;
+        KeyW = 86;
+        KeyX = 87;
+        KeyY = 88;
+        KeyZ = 89;
+    }
+
+    message InputEvent {
+        Key key = 1;
+        repeated Modifier modifiers = 2;
+    }
+
+}
+
+message Mouse {
+    enum Analog {
+        NoAnalog = 0;
+        PositionAnalog = 1;
+        ScrollAnalog = 2;
+    }
+
+    enum Button {
+        NoButton = 0;
+        LeftButton = 1;
+        MiddleButton = 2;
+        RightButton = 3;
+    }
+
+    message InputEvent {
+        Button button = 1;
+    }
+
+    message InputDir {
+        Analog analog = 1;
+        Input.DirType type = 2;
+    }
+}
+
+message Gamepad {
+    enum Stick {
+        NoStick = 0;
+        LeftStick = 1;
+        RightStick = 2;
+    }
+
+    enum Button {
+        NoButton = 0;
+        A = 1;
+        B = 2;
+        X = 3;
+        Y = 4;
+        LeftBumper = 5;
+        RightBumper = 6;
+        Select = 7;
+        Start = 8;
+        LeftThumb = 9;
+        RightThumb = 10;
+        PadUp = 11;
+        PadRight = 12;
+        PadDown = 13;
+        PadLeft = 14;
+        Guide = 15;
+    }
+
+    message InputEvent {
+        Button button = 1;
+        uint32 gamepad = 2;
+    }
+
+    message StickInputEvent {
+        Stick stick = 1;
+        Input.DirType dir = 2;
+        uint32 gamepad = 3;
+    }
+
+    message InputDir {
+        Stick stick = 1;
+        Input.DirType type = 2;
+        uint32 gamepad = 3;
+    }
+}
+
+message InputEvent {
+	oneof event {
+		Keyboard.InputEvent keyboard = 1;
+		Mouse.InputEvent mouse = 2;
+		Gamepad.InputEvent gamepad = 3;
+        Gamepad.StickInputEvent gamepad_stick = 4;
+	}
+}
+
+message InputDir {
+    oneof dir {
+		Mouse.InputDir mouse = 1;
+		Gamepad.InputDir gamepad = 2;
+        InputEvent event = 3;
+	}
+}

@@ -7,6 +7,7 @@
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/stream.hpp>
 
@@ -539,6 +540,16 @@ namespace darmok::physics3d
         JPH::RegisterDefaultAllocator();
         JPH::Trace = joltTraceImpl;
         JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = joltAssertFailed;)
+    }
+
+    expected<void, std::string> PhysicsSystemImpl::load(const Definition& def) noexcept
+    {
+        _def = def;
+        _joltSystem->Init(_def.max_bodies(), _def.num_body_mutexes(),
+            _def.max_body_pairs(), _def.max_contact_constraints(),
+            _broadPhaseLayer, _objVsBroadPhaseLayerFilter, _objLayerPairFilter);
+        _joltSystem->SetGravity(JoltUtils::convert(darmok::convert<glm::vec3>(_def.gravity())));
+        return {};
     }
 
     expected<void, std::string> PhysicsSystemImpl::init(Scene& scene, App& app) noexcept
@@ -1267,6 +1278,28 @@ namespace darmok::physics3d
         shutdown();
     }
 
+    expected<void, std::string> PhysicsBodyImpl::load(const Definition& def, Entity entity) noexcept
+    {
+        shutdown();
+        _initDef = def;
+        if (entity != entt::null)
+        {
+            return update(entity, 0.F);
+        }
+        return {};
+    }
+
+    expected<void, std::string> PhysicsBodyImpl::load(const CharacterDefinition& def, Entity entity) noexcept
+    {
+        shutdown();
+        _initDef = def;
+        if (entity != entt::null)
+        {
+            return update(entity, 0.F);
+        }
+        return {};
+    }
+
     void PhysicsBodyImpl::init(PhysicsBody& body, PhysicsSystem& system) noexcept
     {
         if (_system)
@@ -1296,7 +1329,7 @@ namespace darmok::physics3d
         {
             iface.DestroyBody(_bodyId);
         }
-        _bodyId = JPH::BodyID();
+        _bodyId = JPH::BodyID{};
         _system.reset();
         _body.reset();
     }
@@ -2014,6 +2047,18 @@ namespace darmok::physics3d
     {
         _impl->movePosition(pos, deltaTime);
         return *this;
+    }
+
+    expected<void, std::string> PhysicsBody::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        auto entity = context.getScene().getEntity(*this);
+        return _impl->load(def, entity);
+    }
+
+    expected<void, std::string> PhysicsBody::load(const CharacterDefinition& def, IComponentLoadContext& context) noexcept
+    {
+        auto entity = context.getScene().getEntity(*this);
+        return _impl->load(def, entity);
     }
 
     PhysicsBodyImpl& PhysicsBody::getImpl() noexcept

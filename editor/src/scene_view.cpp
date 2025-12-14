@@ -183,16 +183,16 @@ namespace darmok::editor
     void EditorSceneView::updateInputEvents(float deltaTime) noexcept
     {
         static const InputEvents gizmoModeGrabEvents = {
-            KeyboardInputEvent{ KeyboardKey::KeyW }
+            Keyboard::createInputEvent(Keyboard::Definition::KeyW)
         };
         static const InputEvents gizmoModeTranslateEvents = {
-            KeyboardInputEvent{ KeyboardKey::KeyW }
+            Keyboard::createInputEvent(Keyboard::Definition::KeyW)
         };
         static const InputEvents gizmoModeRotateEvents = {
-            KeyboardInputEvent{ KeyboardKey::KeyE }
+            Keyboard::createInputEvent(Keyboard::Definition::KeyE)
         };
         static const InputEvents gizmoModeScaleEvents = {
-            KeyboardInputEvent{ KeyboardKey::KeyR }
+            Keyboard::createInputEvent(Keyboard::Definition::KeyR)
         };
 
         auto& input = _app.getInput();
@@ -227,22 +227,22 @@ namespace darmok::editor
         // TODO: could be configured
         static const std::array<InputAxis, 2> lookAxis = {
             InputAxis{
-                { MouseInputDir{ MouseAnalog::Position, InputDirType::Left } },
-                { MouseInputDir{ MouseAnalog::Position, InputDirType::Right } }
+                { Mouse::createInputDir(Input::Definition::LeftDir) },
+                { Mouse::createInputDir(Input::Definition::RightDir) },
             },
             InputAxis{
-                { MouseInputDir{ MouseAnalog::Position, InputDirType::Down } },
-                { MouseInputDir{ MouseAnalog::Position, InputDirType::Up } }
+                { Mouse::createInputDir(Input::Definition::DownDir) },
+                { Mouse::createInputDir(Input::Definition::UpDir) },
             }
         };
         static const std::array<InputAxis, 2> moveAxis = {
             InputAxis{
-                { KeyboardInputEvent{ KeyboardKey::Left } },
-                { KeyboardInputEvent{ KeyboardKey::Right } }
+                { Keyboard::createInputDir(Keyboard::Definition::KeyLeft) },
+                { Keyboard::createInputDir(Keyboard::Definition::KeyRight) },
             },
             InputAxis{
-                { KeyboardInputEvent{ KeyboardKey::Down }, MouseInputDir{ MouseAnalog::Scroll, InputDirType::Up } },
-                { KeyboardInputEvent{ KeyboardKey::Up }, MouseInputDir{ MouseAnalog::Scroll, InputDirType::Down } }
+                { Keyboard::createInputDir(Keyboard::Definition::KeyDown), Mouse::createInputDir(Input::Definition::UpDir, Mouse::Definition::ScrollAnalog) },
+                { Keyboard::createInputDir(Keyboard::Definition::KeyUp), Mouse::createInputDir(Input::Definition::DownDir, Mouse::Definition::ScrollAnalog) }
             }
         };
         static const float lookSensitivity = 2.F;

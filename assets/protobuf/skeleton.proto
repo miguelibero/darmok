@@ -55,3 +55,7 @@ message SkeletalAnimator {
     repeated SkeletalAnimatorState states = 3;
     repeated SkeletalAnimatorTransition transitions = 4;
 }
+
+message SkeletalAnimationSceneComponent {
+    
+}

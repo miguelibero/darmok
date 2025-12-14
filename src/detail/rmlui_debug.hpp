@@ -14,8 +14,8 @@ namespace darmok
 	class RmluiDebuggerComponentImpl final : ITypeInputEventListener<RmluiDebuggerComponentImpl>
 	{
 	public:
-		using Config = RmluiDebuggerComponentConfig;
-		RmluiDebuggerComponentImpl(const Config& config = {}) noexcept;
+		using Definition = RmluiDebuggerComponent::Definition;
+		RmluiDebuggerComponentImpl(const Definition& def = {}) noexcept;
 		~RmluiDebuggerComponentImpl() noexcept;
 
 		expected<void, std::string> init(App& app) noexcept;
@@ -27,7 +27,7 @@ namespace darmok
 	private:
 		OptionalRef<App> _app;
 		WindowCursorMode _originalCursorMode;
-		Config _config;
+		Definition _def;
 		OptionalRef<RmluiCanvas> _canvas;
 		std::vector<std::reference_wrapper<RmluiCanvas>> _canvases;
 		static const std::string _tag;

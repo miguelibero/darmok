@@ -27,8 +27,8 @@ namespace darmok::editor
     class MaterialInspectorEditor final : public AssetObjectEditor<Material::Definition>
     {
     public:
-        void init(EditorApp& app, ObjectEditorContainer& container) override;
-        void shutdown() override;
+        expected<void, std::string> init(EditorApp& app, ObjectEditorContainer& container) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
         std::string getTitle() const noexcept override;
         RenderResult renderType(Material::Definition& mat) noexcept override;
     private:

@@ -22,6 +22,7 @@ namespace darmok
 {
     class Camera;
     class Program;
+    class IComponentLoadContext;
 }
 
 namespace darmok::physics3d
@@ -151,6 +152,7 @@ namespace darmok::physics3d
         using Definition = protobuf::PhysicsSystem;
 
         static Definition createDefinition() noexcept;
+        expected<void, std::string> load(const Definition& def) noexcept;
 
         PhysicsSystem(const Definition& def = createDefinition()) noexcept;
         PhysicsSystem(const Definition& def, bx::AllocatorI& alloc) noexcept;
@@ -216,6 +218,9 @@ namespace darmok::physics3d
         static ShapeDefinition createCharacterShapeDefinition() noexcept;
 		static Plane::Definition createSupportingPlaneDefinition() noexcept;
         static CharacterDefinition createCharacterDefinition() noexcept;
+
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
+        expected<void, std::string> load(const CharacterDefinition& def, IComponentLoadContext& context) noexcept;
 
         PhysicsBodyImpl& getImpl() noexcept;
         const PhysicsBodyImpl& getImpl() const noexcept;

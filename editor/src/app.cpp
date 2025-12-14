@@ -303,6 +303,7 @@ namespace darmok::editor
                     if (ImGui::BeginMenu("Physics3d"))
                     {
                         drawEntityComponentMenu("Body", physics3d::PhysicsBody::createDefinition());
+                        drawEntityComponentMenu("Character", physics3d::PhysicsBody::createCharacterDefinition());
                         drawEntityComponentMenu("Character Controller", physics3d::CharacterController::createDefinition());
                         ImGui::EndMenu();
                     }
@@ -345,6 +346,7 @@ namespace darmok::editor
         if (ImGui::MenuItem(name))
         {
             scene.setComponent(entity, comp);
+            _proj.requestSceneUpdate();
         }
         ImGui::EndDisabled();
     }

@@ -21,9 +21,9 @@ namespace darmok
 		void afterUpdate() noexcept;
 
 		bool getKey(KeyboardKey key) const noexcept;
+		bool getModifier(KeyboardModifier mod) const noexcept;
 		const KeyboardKeys& getKeys() const noexcept;
 		const KeyboardModifiers& getModifiers() const noexcept;
-		bool hasModifier(KeyboardModifier mod) const noexcept;
 		std::u32string_view getUpdateChars() const noexcept;
 
 		void addListener(IKeyboardListener& listener) noexcept;
@@ -44,6 +44,8 @@ namespace darmok
 		static std::optional<KeyboardKey> readKey(std::string_view name) noexcept;
 		static std::optional<KeyboardModifier> readModifier(std::string_view name) noexcept;
 		static expected<KeyboardInputEvent, std::string> readEvent(std::string_view name) noexcept;
+
+		static KeyboardModifiers convertModifiers(const google::protobuf::RepeatedField<int>& field) noexcept;
 
 	private:
 		char32_t popChar() noexcept;
@@ -95,7 +97,7 @@ namespace darmok
 		static std::optional<MouseButton> readButton(std::string_view name) noexcept;
 		static std::string_view getAnalogName(MouseAnalog analog) noexcept;
 		static std::optional<MouseAnalog> readAnalog(std::string_view name) noexcept;
-		static std::optional<MouseInputEvent> readEvent(std::string_view name) noexcept;
+		static expected<MouseInputEvent, std::string> readEvent(std::string_view name) noexcept;
 		static expected<MouseInputDir, std::string> readDir(std::string_view name) noexcept;
 	private:
 		glm::vec2 _position;
@@ -138,7 +140,7 @@ namespace darmok
 		bool removeListener(const IGamepadListener& listener) noexcept;
 		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;
 
-		bool setNumber(uint8_t num) noexcept;
+		bool setNumber(uint32_t num) noexcept;
 		expected<void, std::string> setConnected(bool value) noexcept;
 		expected<void, std::string> setStick(GamepadStick stick, const glm::vec3& value) noexcept;
 		expected<void, std::string> setButton(GamepadButton button, bool down) noexcept;
@@ -148,11 +150,12 @@ namespace darmok
 		static std::optional<GamepadStick> readStick(std::string_view name) noexcept;
 		static std::string_view getStickName(GamepadStick stick) noexcept;
 
-		static std::optional<uint8_t> readNum(std::string_view name) noexcept;
-		static std::optional<GamepadInputEvent> readEvent(std::string_view name) noexcept;
-		static std::optional<GamepadInputDir> readDir(std::string_view name) noexcept;
+		static std::optional<uint32_t> readNum(std::string_view name) noexcept;
+		static expected<GamepadInputEvent, std::string> readEvent(std::string_view name) noexcept;
+		static expected<GamepadStickInputEvent, std::string> readStickEvent(std::string_view name) noexcept;
+		static expected<GamepadInputDir, std::string> readDir(std::string_view name) noexcept;
 	private:
-		uint8_t _num;
+		uint32_t _num;
 		bool _connected;
 		GamepadButtons _buttons;
 		GamepadSticks _sticks;
@@ -181,11 +184,11 @@ namespace darmok
 
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;
-		OptionalRef<Gamepad> getGamepad(uint8_t num) noexcept;
+		OptionalRef<Gamepad> getGamepad(uint32_t num) noexcept;
 		Gamepads& getGamepads() noexcept;
 		const Keyboard& getKeyboard() const noexcept;
 		const Mouse& getMouse() const noexcept;
-		OptionalRef<const Gamepad> getGamepad(uint8_t num) const noexcept;
+		OptionalRef<const Gamepad> getGamepad(uint32_t num) const noexcept;
 		const Gamepads& getGamepads() const noexcept;
 
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
@@ -223,6 +226,7 @@ namespace darmok
 		static const std::string _keyboardPrefix;
 		static const std::string _mousePrefix;
 		static const std::string _gamepadPrefix;
+		static const std::string _gamepadStickPrefix;
 		static const float _mouseVelocityDirFactor;
 		static const float _mouseScrollDirFactor;
 

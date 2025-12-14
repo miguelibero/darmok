@@ -11,6 +11,7 @@
 #include <darmok/varying.hpp>
 #include <darmok/window.hpp>
 #include <darmok/protobuf.hpp>
+#include <darmok/physics3d.hpp>
 
 // default scene
 #include <darmok/scene_serialize.hpp>
@@ -162,10 +163,9 @@ namespace darmok::editor
         return {};
     }
 
-    expected<void, std::string> EditorProject::updateScene() noexcept
+    void EditorProject::requestSceneUpdate() noexcept
     {
         _requestUpdateScene = true;
-        return {};
     }
 
     expected<EntityId, std::string> EditorProject::addEntity(EntityId parentEntity) noexcept
@@ -178,11 +178,7 @@ namespace darmok::editor
             trans.set_parent(entt::to_integral(parentEntity));
         }
         _sceneWrapper.setComponent(entity, trans);
-        auto result = updateScene();
-        if (!result)
-        {
-            return unexpected{ std::move(result).error() };
-        }
+        requestSceneUpdate();
         return entity;
     }
 
@@ -265,7 +261,8 @@ namespace darmok::editor
         {
             return result;
         }
-        return updateScene();
+        requestSceneUpdate();
+        return {};
     }
 
     expected<void, std::string> EditorProject::openScene() noexcept
@@ -341,14 +338,13 @@ namespace darmok::editor
 
     expected<void, std::string> EditorProject::configureEditorScene(Scene& scene) noexcept
     {
-        static const std::string name = "Editor Camera";
         auto camEntity = scene.createEntity();
         auto& cam = scene.addComponent<Camera>(camEntity);
 
         scene.addComponent<Transform>(camEntity)
             .setPosition(glm::vec3{ 2.f, 1.f, -2.f })
             .lookAt(glm::vec3{ 0 })
-            .setName(name);
+            .setName("Editor Camera");
         cam.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
         {
             auto texResult = _app.getAssets().getTextureLoader()("cubemap.ktx");
