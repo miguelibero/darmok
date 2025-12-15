@@ -542,8 +542,9 @@ namespace darmok
 		{
 			io.AddKeyEvent(elm.second, keyb.getKey(elm.first));
 		}
-		for (auto& gamepad : input.getGamepads())
+		for (auto& gamepadNum : input.getImpl().getGamepadNums())
 		{
+			auto& gamepad = input.getGamepad(gamepadNum);
 			for (auto& elm : getGamepadMap())
 			{
 				io.AddKeyEvent(elm.second, gamepad.getButton(elm.first));

@@ -59,9 +59,12 @@ namespace darmok::physics3d
         using Definition = protobuf::CharacterController;
         using Delegate = ICharacterDelegate;
 
-        CharacterController(const Definition& def = createDefinition()) noexcept;
+        CharacterController() noexcept;
+        CharacterController(const Definition& def) noexcept;
         CharacterController(const PhysicsShape& shape) noexcept;
         ~CharacterController() noexcept;
+        CharacterController(CharacterController&& other) noexcept;
+        CharacterController& operator=(CharacterController&& other) noexcept;
 
         CharacterControllerImpl& getImpl() noexcept;
         const CharacterControllerImpl& getImpl() const noexcept;

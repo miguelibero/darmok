@@ -5,7 +5,8 @@
 #include <darmok/loader.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/convert.hpp>
-#include <darmok/scene_fwd.hpp>
+#include <darmok/scene.hpp>
+#include <darmok/render_scene.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/protobuf/scene.pb.h>
 
@@ -29,6 +30,8 @@ namespace darmok
         ConstSceneDefinitionWrapper(const Definition& def) noexcept;
         const std::string& getName() const noexcept;
 		const Definition& getDefinition() const noexcept;
+        OptionalRef<const Any> getSceneComponent(IdType typeId) const noexcept;
+		bool hasSceneComponent(IdType typeId) const noexcept;
 
 		EntityId getRootEntity() const noexcept;
         std::vector<EntityId> getRootEntities() const noexcept;
@@ -38,12 +41,34 @@ namespace darmok
         std::vector<std::reference_wrapper<const Any>> getComponents(EntityId entity) const noexcept;
         OptionalRef<const Any> getComponent(EntityId entity, IdType typeId) const noexcept;
 		EntityId getEntity(const Any& anyComp) const noexcept;
+		bool hasComponent(EntityId entity, IdType typeId) const noexcept;
 
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
         std::vector<std::filesystem::path> getAssetPaths(IdType typeId) const noexcept;
         std::unordered_map<std::filesystem::path, OptionalRef<const Any>> getAssets(IdType typeId) const noexcept;
         std::unordered_map<std::filesystem::path, OptionalRef<const Any>> getAssets(const std::filesystem::path& parentPath) const noexcept;
         OptionalRef<const Any> getAsset(const std::filesystem::path& path) const noexcept;
+        bool hasAsset(const std::filesystem::path& path) const noexcept;
+
+        template<typename T>
+        std::optional<T> getSceneComponent() const noexcept
+        {
+            if (auto any = getSceneComponent(protobuf::getTypeId<T>()))
+            {
+                T comp;
+                if (any->UnpackTo(&comp))
+                {
+                    return comp;
+                }
+            }
+            return std::nullopt;
+        }
+
+        template<typename T>
+        bool hasSceneComponent() const noexcept
+        {
+            return hasSceneComponent(protobuf::getTypeId<T>());
+        }
 
         template<typename T>
         std::unordered_map<EntityId, T> getTypeComponents() const noexcept
@@ -53,10 +78,10 @@ namespace darmok
             {
                 for(auto& [entityId, any] : typeComps->components())
                 {
-                    T asset;
-                    if (any.UnpackTo(&asset))
+                    T comp;
+                    if (any.UnpackTo(&comp))
                     {
-                        comps[entityId] = std::move(asset);
+                        comps[entityId] = std::move(comp);
                     }
 				}
             }
@@ -68,13 +93,19 @@ namespace darmok
         {
             if (auto any = getComponent(entity, protobuf::getTypeId<T>()))
             {
-                T asset;
-                if (any->UnpackTo(&asset))
+                T comp;
+                if (any->UnpackTo(&comp))
                 {
-                    return asset;
+                    return comp;
                 }
             }
             return std::nullopt;
+        }
+
+        template<typename T>
+        bool hasComponent(EntityId entity) const noexcept
+        {
+			return hasComponent(entity, protobuf::getTypeId<T>());
         }
 
         template<typename T>
@@ -207,6 +238,8 @@ namespace darmok
         SceneDefinitionWrapper(Definition& def) noexcept;
         void setName(std::string_view name) noexcept;
         Definition& getDefinition() noexcept;
+        bool setSceneComponent(const Message& comp) noexcept;
+		bool removeSceneComponent(IdType typeId) noexcept;
 
         EntityId createEntity() noexcept;
         bool setAsset(const std::filesystem::path& path, const Message& asset) noexcept;
@@ -224,6 +257,12 @@ namespace darmok
         OptionalRef<Any> getAsset(const std::filesystem::path& path);
         bool removeAsset(const std::filesystem::path& path) noexcept;
         bool removeAsset(const Any& anyAsset) noexcept;
+
+        template<typename T>
+        bool removeSceneComponent() noexcept
+        {
+            return removeSceneComponent(protobuf::getTypeId<T>());
+        }
 
         template<typename T>
         std::optional<T> getComponent(EntityId entity) const noexcept
@@ -387,6 +426,31 @@ namespace darmok
             }
         }
 
+        template<typename T, typename Def = T::Definition>
+        expected<std::reference_wrapper<T>, std::string> loadSceneComponent(Def def) noexcept
+        {
+            auto compResult = getScene().getOrAddSceneComponent<T>();
+            if (!compResult)
+            {
+                return compResult;
+            }
+            auto loadResult = loadComponent<T, Def>(compResult.value().get(), def, getComponentLoadContext());
+            if (!loadResult)
+            {
+                return unexpected{ std::move(loadResult).error() };
+            }
+            return compResult;
+
+            /*
+            // we need to delay the load() calls to guarantee that
+            // all the components are present before
+            addPostLoad([this, &comp, def = std::move(def)]()
+            {
+                loadComponent(comp, def, getComponentLoadContext());
+            });
+            */
+        }
+
     private:
         SceneLoaderImpl& _impl;
 
@@ -441,19 +505,41 @@ namespace darmok
         using Any = google::protobuf::Any;
         using ComponentListener = std::function<expected<void, std::string>(const Any& compAny, Entity entity)>;
 
-        SceneLoader() noexcept;
+        SceneLoader(App& app) noexcept;
         ~SceneLoader() noexcept;
         SceneLoader(const SceneLoader& other) = delete;
         SceneLoader& operator=(const SceneLoader& other) = delete;
 
-        template<typename T>
+        template<typename T, typename Def = T::Definition>
         void registerComponent()
         {
             auto func = [this]() -> expected<void, std::string>
             {
-                return loadComponent<T>();
+                return loadComponent<T, Def>();
             };
             addLoad(std::move(func));
+        }
+
+        template<typename T, typename Def = T::Definition>
+            requires std::is_base_of_v<ISceneComponent, T>
+        void registerSceneComponent()
+        {
+            auto func = [this]() -> expected<void, std::string>
+            {
+                auto result = loadSceneComponent<T, Def>();
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
+                return {};
+            };
+            addLoad(std::move(func));
+        }
+
+        template<typename T>
+            requires std::is_base_of_v<ICameraComponent, T>
+        void registerCameraComponent()
+        {
         }
 
         EntityResult operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
@@ -486,10 +572,9 @@ namespace darmok
 		std::unique_ptr<SceneLoaderImpl> _impl;
         SceneArchive _archive;
 
-        template<typename T>
+        template<typename T, typename Def = typename T::Definition>
         Result loadComponent() noexcept
         {
-            using Def = typename T::Definition;
             auto typeId = protobuf::getTypeId<Def>();
             auto result = beforeLoadComponent(typeId);
             if (!result)
@@ -500,11 +585,28 @@ namespace darmok
             return afterLoadComponent(typeId);
         }
 
+        template<typename T, typename Def = typename T::Definition>
+        expected<OptionalRef<T>, std::string> loadSceneComponent() noexcept
+        {
+            ConstSceneDefinitionWrapper sceneDef{ getSceneDefinition() };
+            if(auto def = sceneDef.getSceneComponent<Def>())
+            {
+                auto result = getArchive().loadSceneComponent<T>(std::move(*def));
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
+                return result.value().get();
+            }
+            return OptionalRef<T>{};
+        }
+
         void addLoad(LoadFunction&& func);
         Result beforeLoadComponent(IdType typeId) noexcept;
         Result afterLoadComponent(IdType typeId) noexcept;
 		entt::continuous_loader& getLoader() noexcept;
         SceneArchive& getArchive() noexcept;
+        const SceneDefinition& getSceneDefinition() const noexcept;
     };
 
     struct DARMOK_EXPORT SceneDefinitionCompilerConfig final

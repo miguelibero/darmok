@@ -221,7 +221,7 @@ namespace darmok::physics3d
         using Shape = protobuf::PhysicsShape;
 
         PhysicsSystemImpl(PhysicsSystem& system, const Definition& def, OptionalRef<bx::AllocatorI> alloc = nullptr) noexcept;
-        expected<void, std::string> load(const Definition& def) noexcept;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
         expected<void, std::string> init(Scene& scene, App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
         expected<void, std::string> update(float deltaTime) noexcept;
@@ -279,7 +279,7 @@ namespace darmok::physics3d
         JoltObjectLayerPairFilter _objLayerPairFilter;
         JoltTempAllocator _alloc;
         std::unique_ptr<JPH::PhysicsSystem> _joltSystem;
-        JoltJobSystemTaskflow _jobSystem;
+        std::optional<JoltJobSystemTaskflow> _jobSystem;
         OwnRefCollection<IPhysicsUpdater> _updaters;
         OwnRefCollection<ICollisionListener> _listeners;
         bool _paused;
@@ -391,6 +391,8 @@ namespace darmok::physics3d
         expected<void, std::string> tryCreateBody(OptionalRef<Transform> transform) noexcept;
         PhysicsSystemImpl& getSystemImpl() noexcept;
         void updateJolt(const glm::mat4& worldMatrix) noexcept;
+        void doShutdown() noexcept;
+        expected<void, std::string> doLoad(Entity entity) noexcept;
 
         OptionalRef<PhysicsBody> _body;
         OptionalRef<PhysicsSystem> _system;

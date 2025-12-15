@@ -75,15 +75,16 @@ namespace darmok::editor
 
         if (cam.components_size() > 0)
         {
-            if (ImGui::CollapsingHeader("Components"))
+            if (ImguiUtils::beginFrame("Components"))
             {
                 for (auto& [typeId, comp] : *cam.mutable_components())
                 {
-                    if (renderChild(comp))
+                    if (renderChild(comp, true))
                     {
                         changed = true;
                     }
                 }
+				ImguiUtils::endFrame();
             }
         }
 

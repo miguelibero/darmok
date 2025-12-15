@@ -113,6 +113,7 @@ namespace darmok::editor
 
         EntityId getSelectedEntity() const noexcept;
 
+        void drawSceneComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
         void drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
         void drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept;
     };

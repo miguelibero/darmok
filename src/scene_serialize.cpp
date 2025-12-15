@@ -9,8 +9,19 @@
 #include <darmok/light.hpp>
 #include <darmok/string.hpp>
 #include <darmok/program_core.hpp>
+#include <darmok/physics3d.hpp>
+#include <darmok/physics3d_character.hpp>
+#include <darmok/physics3d_debug.hpp>
+#include <darmok/freelook.hpp>
+#include <darmok/rmlui.hpp>
+#include <darmok/anim.hpp>
 #include <darmok/mesh_core.hpp>
 #include <darmok/shape.hpp>
+#include <darmok/render_forward.hpp>
+#include <darmok/render_deferred.hpp>
+#include <darmok/culling.hpp>
+#include <darmok/environment.hpp>
+#include <darmok/shadow.hpp>
 
 #include <fmt/format.h>
 
@@ -29,6 +40,24 @@ namespace darmok
     const ConstSceneDefinitionWrapper::Definition& ConstSceneDefinitionWrapper::getDefinition() const noexcept
     {
         return _def.value();
+    }
+
+    OptionalRef<const ConstSceneDefinitionWrapper::Any> ConstSceneDefinitionWrapper::getSceneComponent(IdType typeId) const noexcept
+    {
+		auto& components = _def->scene_components();
+        auto itr = components.find(typeId);
+        if (itr == components.end())
+        {
+            return std::nullopt;
+        }
+        return itr->second;
+    }
+
+    bool ConstSceneDefinitionWrapper::hasSceneComponent(IdType typeId) const noexcept
+    {
+        auto& components = _def->scene_components();
+        auto itr = components.find(typeId);
+        return itr != components.end();
     }
 
     std::vector<EntityId> ConstSceneDefinitionWrapper::getEntities() const noexcept
@@ -121,6 +150,17 @@ namespace darmok
             return std::nullopt;
         }
         return itr->second;
+    }
+
+    bool ConstSceneDefinitionWrapper::hasComponent(EntityId entity, IdType typeId) const noexcept
+    {
+        auto typeComps = getTypeComponents(typeId);
+        if (!typeComps)
+        {
+            return false;
+        }
+        auto& components = typeComps->components();
+		return components.find(entity) != components.end();
     }
 
     EntityId ConstSceneDefinitionWrapper::getEntity(const Any& anyComp) const noexcept
@@ -234,6 +274,13 @@ namespace darmok
 		return itr->second;
     }
 
+    bool ConstSceneDefinitionWrapper::hasAsset(const std::filesystem::path& path) const noexcept
+    {
+        auto& assetPack = _def->assets();
+        auto itr = assetPack.assets().find(path.string());
+        return itr != assetPack.assets().end();
+    }
+
     std::optional<std::filesystem::path> ConstSceneDefinitionWrapper::getAssetPath(const Any& anyAsset) const noexcept
     {
         auto& assetPack = _def->assets();
@@ -263,6 +310,27 @@ namespace darmok
     SceneDefinitionWrapper::Definition& SceneDefinitionWrapper::getDefinition() noexcept
     {
         return _def.value();
+    }
+
+    bool SceneDefinitionWrapper::setSceneComponent(const Message& comp) noexcept
+    {
+        auto typeId = protobuf::getTypeId(comp);
+        auto result = _def->mutable_scene_components()->try_emplace(typeId);
+        auto& component = result.first->second;
+        if (protobuf::isAny(comp))
+        {
+            component = static_cast<const Any&>(comp);
+        }
+        else
+        {
+            component.PackFrom(comp);
+        }
+        return result.second;
+    }
+
+    bool SceneDefinitionWrapper::removeSceneComponent(IdType typeId) noexcept
+    {
+		return _def->mutable_scene_components()->erase(typeId) > 0;
     }
 
     EntityId SceneDefinitionWrapper::createEntity() noexcept
@@ -496,13 +564,15 @@ namespace darmok
 	Scene SceneLoaderImpl::_emptyScene{};
     const SceneLoaderImpl::SceneDefinition SceneLoaderImpl::_emptySceneDef;
 
-    SceneLoaderImpl::SceneLoaderImpl() noexcept
-        : _scene{ _emptyScene }
+    SceneLoaderImpl::SceneLoaderImpl(App& app) noexcept
+        : _app{ app }
+        , _scene{ _emptyScene }
         , _sceneDef{ _emptySceneDef }
         , _loader{ _scene->getRegistry() }
         , _count{ 0 }
         , _typeId{ 0 }
         , _parentEntity{ entt::null }
+        , _assetConfig{ .fallback = app.getAssets() }
     {
     }
 
@@ -570,12 +640,12 @@ namespace darmok
 
     const App& SceneLoaderImpl::getApp() const noexcept
     {
-        return *_app;
+        return _app;
     }
 
     App& SceneLoaderImpl::getApp() noexcept
     {
-        return *_app;
+        return _app;
     }
 
     const Scene& SceneLoaderImpl::getScene() const noexcept
@@ -586,6 +656,11 @@ namespace darmok
     Scene& SceneLoaderImpl::getScene() noexcept
     {
         return *_scene;
+    }
+
+    const SceneLoaderImpl::SceneDefinition& SceneLoaderImpl::getSceneDefinition() const noexcept
+    {
+		return _sceneDef ? *_sceneDef : _emptySceneDef;
     }
 
     Entity SceneLoaderImpl::getEntity(EntityId entityId) const noexcept
@@ -795,10 +870,16 @@ namespace darmok
         return _impl.callComponentListeners(compAny, entity);
     }
 
-    SceneLoader::SceneLoader() noexcept
-        : _impl{ std::make_unique<SceneLoaderImpl>() }
+    SceneLoader::SceneLoader(App& app) noexcept
+        : _impl{ std::make_unique<SceneLoaderImpl>(app) }
         , _archive{ *_impl }
     {
+        registerSceneComponent<FreelookController>();
+        registerSceneComponent<FrameAnimationUpdater>();
+        registerSceneComponent<RmluiSceneComponent>();
+        registerSceneComponent<SkeletalAnimationSceneComponent>();
+        registerSceneComponent<physics3d::PhysicsSystem>();
+
         registerComponent<Transform>();
         registerComponent<Renderable>();
         registerComponent<Camera>();
@@ -807,10 +888,33 @@ namespace darmok
         registerComponent<DirectionalLight>();
         registerComponent<SpotLight>();
         registerComponent<AmbientLight>();
-        // registerComponent<BoundingBox>();
+        registerComponent<physics3d::PhysicsBody>();
+        registerComponent<physics3d::CharacterController>();
+        registerComponent<BoundingBox>();
+
+
+        registerCameraComponent<ForwardRenderer>();
+        registerCameraComponent<DeferredRenderer>();
+        registerCameraComponent<RmluiRenderer>();
+        registerCameraComponent<SkeletalAnimationRenderComponent>();
+        registerCameraComponent<OcclusionCuller>();
+        registerCameraComponent<FrustumCuller>();
+        registerCameraComponent<CullingDebugRenderer>();
+        registerCameraComponent<SkyboxRenderer>();
+        registerCameraComponent<GridRenderer>();
+        registerCameraComponent<LightingRenderComponent>();
+        registerCameraComponent<physics3d::PhysicsDebugRenderer>();
+        registerCameraComponent<ShadowRenderer>();
+        registerCameraComponent<ShadowDebugRenderer>();
+        registerCameraComponent<TextRenderer>();
 	}
 
     SceneLoader::~SceneLoader() = default;
+
+    const SceneLoader::SceneDefinition& SceneLoader::getSceneDefinition() const noexcept
+    {
+		return _impl->getSceneDefinition();
+    }
 
     SceneLoader::EntityResult SceneLoader::operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept
     {

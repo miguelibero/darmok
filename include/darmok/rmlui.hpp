@@ -8,6 +8,7 @@
 #include <darmok/scene.hpp>
 #include <darmok/rmlui_fwd.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/protobuf/rmlui.pb.h>
 #include <bx/bx.h>
 #include <string>
 #include <optional>
@@ -55,9 +56,12 @@ namespace darmok
 	class DARMOK_EXPORT RmluiCanvas final
 	{
 	public:
+		using Definition = protobuf::RmluiCanvas;
+
 		using MousePositionMode = RmluiCanvasMousePositionMode;
 
 		RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt) noexcept;
+		RmluiCanvas(const Definition& def) noexcept;
 		~RmluiCanvas() noexcept;
 
 		const std::string& getName() const noexcept;
@@ -110,6 +114,9 @@ namespace darmok
 		uint64_t getTextureFlags(const std::string& source) const noexcept;
 		RmluiCanvas& setTextureFlags(const std::string& source, uint64_t flags) noexcept;
 
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
+
 	private:
 		std::unique_ptr<RmluiCanvasImpl> _impl;
 	};
@@ -119,8 +126,13 @@ namespace darmok
 	class DARMOK_EXPORT RmluiSceneComponent : public ITypeSceneComponent<RmluiSceneComponent>
 	{
 	public:
+		using Definition = protobuf::RmluiSceneComponent;
+
 		RmluiSceneComponent() noexcept;
 		~RmluiSceneComponent() noexcept;
+
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
 
 		expected<void, std::string> init(Scene& scene, App& app) noexcept override;
 		expected<void, std::string> shutdown() noexcept override;
@@ -135,8 +147,13 @@ namespace darmok
 	class DARMOK_EXPORT RmluiRenderer final : public ITypeCameraComponent<RmluiRenderer>
 	{
 	public:
+		using Definition = protobuf::RmluiRenderer;
+
 		RmluiRenderer() noexcept;
 		~RmluiRenderer() noexcept;
+
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
 
 		expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
 		expected<void, std::string> shutdown() noexcept override;

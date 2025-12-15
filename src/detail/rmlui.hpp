@@ -185,10 +185,12 @@ namespace darmok
 	{
 	public:
 		using MousePositionMode = RmluiCanvasMousePositionMode;
+		using Definition = RmluiCanvas::Definition;
 
-		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt);
+		RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt) noexcept;
 		~RmluiCanvasImpl() noexcept;
 
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
 		expected<void, std::string> init(App& app, RmluiSceneComponentImpl& comp) noexcept;
 		expected<void, std::string> shutdown() noexcept;
 		bool update(float deltaTime) noexcept;

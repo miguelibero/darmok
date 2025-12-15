@@ -37,6 +37,7 @@ namespace darmok::editor
         , _requestReset{ false }
         , _requestUpdateScene{ false }
         , _sceneWrapper{ _sceneDef }
+        , _sceneLoader{ app }
     {
     }
 

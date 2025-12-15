@@ -1,8 +1,18 @@
 syntax = "proto3";
 
 import "input.proto";
+import "math.proto";
 
 package darmok.protobuf;
+
+message RmluiCanvas {
+    string name = 1;
+    optional Uvec2 size = 2;
+}
+
+message RmluiRenderer {
+    
+}
 
 message RmluiSceneComponent {
     

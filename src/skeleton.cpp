@@ -183,6 +183,17 @@ namespace darmok
         return {};
     }
 
+    SkeletalAnimationSceneComponent::Definition SkeletalAnimationSceneComponent::createDefinition() noexcept
+    {
+        Definition def;
+		return def;
+    }
+
+    expected<void, std::string> SkeletalAnimationSceneComponent::load(const Definition& def) noexcept
+    {
+		return {};
+    }
+
     expected<void, std::string> SkeletalAnimationRenderComponent::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
@@ -240,6 +251,17 @@ namespace darmok
             }
         }
         encoder.setUniform(_skinningUniform, &_skinning.front(), uint16_t(_skinning.size()));
+        return {};
+    }
+
+    SkeletalAnimationRenderComponent::Definition SkeletalAnimationRenderComponent::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
+    expected<void, std::string> SkeletalAnimationRenderComponent::load(const Definition& def) noexcept
+    {
         return {};
     }
 

@@ -21,4 +21,11 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(physics3d::CharacterController::Definition& def) noexcept override;
     };
+
+    class Physics3dSystemInspectorEditor final : public SceneComponentObjectEditor<physics3d::PhysicsSystem>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(physics3d::PhysicsSystem::Definition& def) noexcept override;
+    };
 }

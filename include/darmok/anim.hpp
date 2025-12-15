@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
+#include <darmok/protobuf/scene.pb.h>
 #include <vector>
 #include <memory>
 
@@ -40,9 +41,14 @@ namespace darmok
     class DARMOK_EXPORT FrameAnimationUpdater final : public ITypeSceneComponent<FrameAnimationUpdater>
     {
     public:
+        using Definition = protobuf::FrameAnimationUpdater;
+
         FrameAnimationUpdater() = default;
         expected<void, std::string> init(Scene& scene, App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
+
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def) noexcept;
     private:
         OptionalRef<Scene> _scene;
     };

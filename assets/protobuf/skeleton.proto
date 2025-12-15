@@ -57,5 +57,7 @@ message SkeletalAnimator {
 }
 
 message SkeletalAnimationSceneComponent {
-    
+}
+
+message SkeletalAnimationRenderComponent {
 }

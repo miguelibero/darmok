@@ -153,6 +153,12 @@ namespace darmok
             return result ? &result.value().get() : nullptr;
         }
 
+        template<typename T>
+        bool removeSceneComponent() noexcept
+        {
+            return removeSceneComponent(entt::type_hash<T>::value());
+        }
+
         Entity createEntity() noexcept;            
         bool isValidEntity(Entity entity) const noexcept;
 
@@ -431,9 +437,15 @@ namespace darmok
         }
 
         template<typename T>
+        auto onUpdateComponent()
+        {
+            return getRegistry().on_update<T>();
+        }
+
+        template<typename T>
         auto onDestroyComponent()
         {
-            return getRegistry().on_construct<T>();
+            return getRegistry().on_destroy<T>();
         }
 
         Scene& setUpdateFilter(const EntityFilter& filter) noexcept;

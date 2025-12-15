@@ -11,10 +11,10 @@ namespace google::protobuf
 
 namespace darmok
 {
+	class App;
 	class Scene;
 	class SceneLoader;
 	class LuaEntity;
-	class AssetContext;
 	class AssetPack;
 
 	namespace protobuf
@@ -93,8 +93,7 @@ namespace darmok
 	class LuaSceneLoader final
 	{
 	public:
-		LuaSceneLoader();
-		LuaSceneLoader(AssetContext& assets);
+		LuaSceneLoader(App& app);
 		~LuaSceneLoader();
 
 		static void bind(sol::state_view& lua) noexcept;

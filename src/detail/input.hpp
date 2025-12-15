@@ -122,7 +122,7 @@ namespace darmok
 	class GamepadImpl final
 	{
 	public:
-		GamepadImpl() noexcept;
+		GamepadImpl(uint32_t num) noexcept;
 		GamepadImpl(const GamepadImpl& other) = delete;
 		GamepadImpl(GamepadImpl&& other) = delete;
 
@@ -140,7 +140,6 @@ namespace darmok
 		bool removeListener(const IGamepadListener& listener) noexcept;
 		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;
 
-		bool setNumber(uint32_t num) noexcept;
 		expected<void, std::string> setConnected(bool value) noexcept;
 		expected<void, std::string> setStick(GamepadStick stick, const glm::vec3& value) noexcept;
 		expected<void, std::string> setButton(GamepadButton button, bool down) noexcept;
@@ -184,12 +183,14 @@ namespace darmok
 
 		Keyboard& getKeyboard() noexcept;
 		Mouse& getMouse() noexcept;
-		OptionalRef<Gamepad> getGamepad(uint32_t num) noexcept;
-		Gamepads& getGamepads() noexcept;
 		const Keyboard& getKeyboard() const noexcept;
 		const Mouse& getMouse() const noexcept;
+
+		std::vector<uint32_t> getGamepadNums() const noexcept;
+		Gamepad& getGamepad(uint32_t num) noexcept;
+		OptionalRef<Gamepad> getConnectedGamepad() noexcept;
 		OptionalRef<const Gamepad> getGamepad(uint32_t num) const noexcept;
-		const Gamepads& getGamepads() const noexcept;
+		OptionalRef<const Gamepad> getConnectedGamepad() const noexcept;
 
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener>&& listener) noexcept;

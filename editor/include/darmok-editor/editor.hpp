@@ -54,7 +54,7 @@ namespace darmok::editor
 
         expected<void, std::string> reloadAsset(const std::filesystem::path& path) noexcept;
         expected<void, std::string> removeAsset(const std::filesystem::path& path) noexcept;
-        RenderResult renderChild(google::protobuf::Message& msg) noexcept;
+        RenderResult renderChild(google::protobuf::Message& msg, bool withTitle = false) noexcept;
         EntityId getEntityId(const Any& anyComp) const noexcept;
         Entity getEntity(EntityId entityId) const noexcept;
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
@@ -138,6 +138,50 @@ namespace darmok::editor
     };
 
     template<typename T>
+    class BX_NO_VTABLE SceneComponentObjectEditor : public ObjectEditor<typename T::Definition>
+    {
+    protected:
+        using Definition = typename T::Definition;
+        using RenderResult = ObjectEditor<Definition>::RenderResult;
+        using Message = ObjectEditor<Definition>::Message;
+        using Any = ObjectEditor<Definition>::Any;
+
+        RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
+        {
+            auto& scene = BaseObjectEditor::getScene();
+            auto& sceneDef = BaseObjectEditor::getSceneDefinition();
+
+            if (ImGui::Button("Remove Component"))
+            {
+                if (!sceneDef.template removeSceneComponent<Definition>())
+                {
+                    return unexpected{ "failed to remove scene definition component" };
+                }
+                if (!scene.template removeSceneComponent<T>())
+                {
+                    return unexpected{ "failed to remove scene component" };
+                }
+                changed = true;
+            }
+            else if (changed)
+            {
+                auto compResult = scene.template getOrAddSceneComponent<T>();
+                if (!compResult)
+                {
+					return unexpected{ std::move(compResult).error() };
+                }
+				auto& comp = compResult.value().get();
+                auto loadResult = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
+                if (!loadResult)
+                {
+                    return unexpected{ std::move(loadResult).error() };
+                }
+            }
+            return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
+        }
+    };
+
+    template<typename T>
     class BX_NO_VTABLE ComponentObjectEditor : public ObjectEditor<typename T::Definition>
     {
     protected:
@@ -155,35 +199,96 @@ namespace darmok::editor
 
         RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
         {
-            if (_entityId)
+            if (!_entityId)
             {
-                auto& scene = BaseObjectEditor::getScene();
-                auto& sceneDef = BaseObjectEditor::getSceneDefinition();
-                auto entityId = *_entityId;
-                auto entity = BaseObjectEditor::getEntity(entityId);
+                return unexpected{ "missing entity" };
+            }
+            auto& scene = BaseObjectEditor::getScene();
+            auto& sceneDef = BaseObjectEditor::getSceneDefinition();
+            auto entityId = *_entityId;
+            auto entity = BaseObjectEditor::getEntity(entityId);
 
-                if (ImGui::Button("Remove Component"))
+            if (ImGui::Button("Remove Component"))
+            {
+                if (!sceneDef.template removeComponent<Definition>(entityId))
                 {
-                    if (!sceneDef.template removeComponent<Definition>(entityId))
-                    {
-                        return unexpected{ "failed to remove scene definition component" };
-                    }
-                    if (!scene.template removeComponent<T>(entity))
-                    {
-                        return unexpected{ "failed to remove scene component" };
-                    }
-                    changed = true;
+                    return unexpected{ "failed to remove entity component definition" };
                 }
-                else if (changed)
+                if (!scene.template removeComponent<T>(entity))
                 {
-                    auto& comp = scene.template getOrAddComponent<T>(entity);
-                    auto result = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
-                    if (!result)
-                    {
-                        return unexpected{ std::move(result).error() };
-                    }
+                    return unexpected{ "failed to remove entity component" };
+                }
+                changed = true;
+            }
+            else if (changed)
+            {
+                auto& comp = scene.template getOrAddComponent<T>(entity);
+                auto result = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
                 }
             }
+            return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
+        }
+    };
+
+    template<typename T>
+    class BX_NO_VTABLE CameraComponentObjectEditor : public ObjectEditor<typename T::Definition>
+    {
+    protected:
+        std::optional<EntityId> _entityId;
+        using Definition = typename T::Definition;
+        using RenderResult = ObjectEditor<Definition>::RenderResult;
+        using Message = ObjectEditor<Definition>::Message;
+        using Any = ObjectEditor<Definition>::Any;
+
+        RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
+        {
+            _entityId = BaseObjectEditor::getEntityId(any);
+            return ObjectEditor<Definition>::beforeRenderAny(any, def);
+        }
+
+        RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
+        {
+            if (!_entityId)
+            {
+                return unexpected{ "missing entity" };
+            }
+            auto& scene = BaseObjectEditor::getScene();
+            auto entityId = *_entityId;
+            auto entity = BaseObjectEditor::getEntity(entityId);
+            auto optCam = scene.getComponent<Camera>(entity);
+            if (!optCam)
+            {
+                return unexpected{ "missing camera component on entity" };
+            }
+			auto& cam = *optCam;
+            auto& sceneDef = BaseObjectEditor::getSceneDefinition();
+
+            if (ImGui::Button("Remove Component"))
+            {
+                auto camDef = sceneDef.getComponent<Camera::Definition>(entityId);
+                if (camDef && !camDef->template removeComponent<Definition>())
+                {
+                    return unexpected{ "failed to remove camera component definition" };
+                }
+                if (!cam.template removeComponent<T>())
+                {
+                    return unexpected{ "failed to remove camera component" };
+                }
+                changed = true;
+            }
+            else if (changed)
+            {
+                auto& comp = cam.template getOrAddComponent<T>();
+                auto result = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
+            }
+
             return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
         }
     };
@@ -205,25 +310,26 @@ namespace darmok::editor
 
         RenderResult afterRenderAny(Any& any, T& def, bool changed) noexcept override
         {
-            if (_path)
+            if (!_path)
             {
-                auto& path = *_path;
-                if (ImGui::Button("Remove Asset"))
+                return unexpected{ "missing path" };
+            }
+            auto& path = *_path;
+            if (ImGui::Button("Remove Asset"))
+            {
+                auto& sceneDef = BaseObjectEditor::getSceneDefinition();
+                if (!sceneDef.removeAsset(path))
                 {
-                    auto& sceneDef = BaseObjectEditor::getSceneDefinition();
-                    if (!sceneDef.removeAsset(path))
-                    {
-                        return unexpected{ "failed to remove scene definition asset" };
-					}
-                    changed = true;
+                    return unexpected{ "failed to remove scene definition asset" };
                 }
-                else if (changed)
+                changed = true;
+            }
+            else if (changed)
+            {
+                auto result = BaseObjectEditor::reloadAsset(path);
+                if (!result)
                 {
-                    auto result = BaseObjectEditor::reloadAsset(path);
-                    if (!result)
-                    {
-                        return unexpected{ std::move(result).error() };
-                    }
+                    return unexpected{ std::move(result).error() };
                 }
             }
             return ObjectEditor<T>::afterRenderAny(any, def, changed);
@@ -236,18 +342,22 @@ namespace darmok::editor
         ObjectEditorContainer();
 
         template<typename T, typename... A>
-        T& add(A&&... args)
+        expected<std::reference_wrapper<T>, std::string> add(A&&... args)
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;
-            add(std::move(ptr));
-            return ref;
+            auto result = add(std::move(ptr));
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            return std::ref(ref);
         }
 
         using RenderResult = expected<bool, std::string>;
 
         RenderResult render(google::protobuf::Message& obj, bool withTitle = false) const noexcept;
-        void add(std::unique_ptr<IObjectEditor>&& editor) noexcept;
+        expected<void, std::string> add(std::unique_ptr<IObjectEditor>&& editor) noexcept;
         expected<void, std::string> init(EditorApp& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
 

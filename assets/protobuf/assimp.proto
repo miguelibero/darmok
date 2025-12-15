@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package darmok.protobuf;
 
-import "varying.proto";
 import "program.proto";
 import "material.proto";
 import "light.proto";

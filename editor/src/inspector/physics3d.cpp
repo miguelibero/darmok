@@ -56,4 +56,14 @@ namespace darmok::editor
     {
         return false;
     }
+
+    std::string Physics3dSystemInspectorEditor::getTitle() const noexcept
+    {
+        return "Physics3d System";
+    }
+    
+    Physics3dSystemInspectorEditor::RenderResult Physics3dSystemInspectorEditor::renderType(physics3d::PhysicsSystem::Definition& def) noexcept
+    {
+        return false;
+    }
 }

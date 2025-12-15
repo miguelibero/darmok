@@ -73,9 +73,9 @@ namespace darmok::editor
         return getProject().getAssets().removeAsset(path);
     }
 
-    BaseObjectEditor::RenderResult BaseObjectEditor::renderChild(google::protobuf::Message& msg) noexcept
+    BaseObjectEditor::RenderResult BaseObjectEditor::renderChild(google::protobuf::Message& msg, bool withTitle) noexcept
     {
-		return _container->render(msg, false);
+		return _container->render(msg, withTitle);
     }
 
     EntityId BaseObjectEditor::getEntityId(const Any& anyComp) const noexcept
@@ -125,15 +125,20 @@ namespace darmok::editor
         return unexpected<std::string>{"could not find an editor to render"};
     }
 
-    void ObjectEditorContainer::add(std::unique_ptr<IObjectEditor>&& editor) noexcept
+    expected<void, std::string> ObjectEditorContainer::add(std::unique_ptr<IObjectEditor>&& editor) noexcept
     {
         auto typeUrl = editor->getObjectTypeUrl();
         if (_app)
         {
-            editor->init(_app.value(), *this);
+            auto result = editor->init(_app.value(), *this);
+            if (!result)
+            {
+                return result;
+            }
         }
         auto& vec = _editors[typeUrl];
         vec.push_back(std::move(editor));
+        return {};
     }
 
     expected<void, std::string> ObjectEditorContainer::init(EditorApp& app) noexcept

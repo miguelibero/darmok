@@ -542,14 +542,15 @@ namespace darmok::physics3d
         JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = joltAssertFailed;)
     }
 
-    expected<void, std::string> PhysicsSystemImpl::load(const Definition& def) noexcept
+    expected<void, std::string> PhysicsSystemImpl::load(const Definition& def, IComponentLoadContext& context) noexcept
     {
+		auto result = shutdown();
+        if (!result)
+        {
+            return result;
+        }
         _def = def;
-        _joltSystem->Init(_def.max_bodies(), _def.num_body_mutexes(),
-            _def.max_body_pairs(), _def.max_contact_constraints(),
-            _broadPhaseLayer, _objVsBroadPhaseLayerFilter, _objLayerPairFilter);
-        _joltSystem->SetGravity(JoltUtils::convert(darmok::convert<glm::vec3>(_def.gravity())));
-        return {};
+        return init(context.getScene(), context.getApp());
     }
 
     expected<void, std::string> PhysicsSystemImpl::init(Scene& scene, App& app) noexcept
@@ -565,7 +566,8 @@ namespace darmok::physics3d
         _scene = scene;
         JPH::Factory::sInstance = new JPH::Factory();
         JPH::RegisterTypes();
-        _jobSystem.init(app.getTaskExecutor());
+        _jobSystem.emplace();
+        _jobSystem->init(app.getTaskExecutor());
         _joltSystem = std::make_unique<JPH::PhysicsSystem>();
         _joltSystem->Init(_def.max_bodies(), _def.num_body_mutexes(),
             _def.max_body_pairs(), _def.max_contact_constraints(),
@@ -610,7 +612,8 @@ namespace darmok::physics3d
 
         _listeners.clear();
         _joltSystem.reset();
-        _jobSystem.shutdown();
+        _jobSystem->shutdown();
+        _jobSystem.reset();
         JPH::UnregisterTypes();
         delete JPH::Factory::sInstance;
         JPH::Factory::sInstance = nullptr;
@@ -679,7 +682,8 @@ namespace darmok::physics3d
             // TODO: skeletal animations here? or maybe with an updater
             // probably important for ragdolls or inverse kinematics
 
-            auto err = _joltSystem->Update(fdt, _def.collision_steps(), &_alloc, &_jobSystem);
+            auto jobSystem = _jobSystem ? &*_jobSystem : nullptr;
+            auto err = _joltSystem->Update(fdt, _def.collision_steps(), &_alloc, jobSystem);
             _deltaTimeRest -= fdt;
             if (err != JPH::EPhysicsUpdateError::None)
             {
@@ -769,7 +773,7 @@ namespace darmok::physics3d
 
     const tf::Taskflow& PhysicsSystemImpl::getTaskflow() const noexcept
     {
-        return _jobSystem.getTaskflow();
+        return _jobSystem->getTaskflow();
     }
 
     const PhysicsSystemImpl::Definition& PhysicsSystemImpl::getDefinition() const noexcept
@@ -1129,6 +1133,11 @@ namespace darmok::physics3d
         return def;
     }
 
+    expected<void, std::string> PhysicsSystem::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+		return _impl->load(def, context);
+    }
+
     PhysicsSystemImpl& PhysicsSystem::getImpl() noexcept
     {
         return *_impl;
@@ -1280,19 +1289,22 @@ namespace darmok::physics3d
 
     expected<void, std::string> PhysicsBodyImpl::load(const Definition& def, Entity entity) noexcept
     {
-        shutdown();
         _initDef = def;
-        if (entity != entt::null)
-        {
-            return update(entity, 0.F);
-        }
-        return {};
+        return doLoad(entity);
     }
 
     expected<void, std::string> PhysicsBodyImpl::load(const CharacterDefinition& def, Entity entity) noexcept
     {
-        shutdown();
         _initDef = def;
+        return doLoad(entity);
+    }
+
+    expected<void, std::string> PhysicsBodyImpl::doLoad(Entity entity) noexcept
+    {
+        if (_system)
+        {
+            doShutdown();
+        }
         if (entity != entt::null)
         {
             return update(entity, 0.F);
@@ -1310,12 +1322,8 @@ namespace darmok::physics3d
         _system = system;
     }
 
-    void PhysicsBodyImpl::shutdown(bool systemShutdown) noexcept
+    void PhysicsBodyImpl::doShutdown() noexcept
     {
-        if (!_system)
-        {
-            return;
-        }
         auto& iface = getSystemImpl().getBodyInterface();
         if (!_bodyId.IsInvalid() && iface.IsAdded(_bodyId))
         {
@@ -1325,11 +1333,20 @@ namespace darmok::physics3d
         {
             _character = nullptr;
         }
-        else if(!_bodyId.IsInvalid())
+        else if (!_bodyId.IsInvalid())
         {
             iface.DestroyBody(_bodyId);
         }
         _bodyId = JPH::BodyID{};
+    }
+
+    void PhysicsBodyImpl::shutdown(bool systemShutdown) noexcept
+    {
+        if (!_system)
+        {
+            return;
+        }
+        doShutdown();
         _system.reset();
         _body.reset();
     }
@@ -1612,7 +1629,12 @@ namespace darmok::physics3d
 
     glm::vec3 PhysicsBodyImpl::getPosition() const noexcept
     {
-        return JoltUtils::convert(getBodyInterface()->GetPosition(_bodyId));
+        auto iface = getBodyInterface();
+        if (!iface)
+        {
+            return glm::vec3{ 0.F };
+        }
+        return JoltUtils::convert(iface->GetPosition(_bodyId));
     }
 
     void PhysicsBodyImpl::setRotation(const glm::quat& rot) noexcept
@@ -1622,7 +1644,12 @@ namespace darmok::physics3d
 
     glm::quat PhysicsBodyImpl::getRotation() const noexcept
     {
-        return JoltUtils::convert(getBodyInterface()->GetRotation(_bodyId));
+        auto iface = getBodyInterface();
+        if (!iface)
+        {
+            return glm::quat{ 0.F, 0.F, 0.F, 0.F };
+        }
+        return JoltUtils::convert(iface->GetRotation(_bodyId));
     }
 
     void PhysicsBodyImpl::setLinearVelocity(const glm::vec3& velocity) noexcept
@@ -1632,7 +1659,12 @@ namespace darmok::physics3d
 
     glm::vec3 PhysicsBodyImpl::getLinearVelocity() const noexcept
     {
-        return JoltUtils::convert(getBodyInterface()->GetLinearVelocity(_bodyId));
+        auto iface = getBodyInterface();
+        if (!iface)
+        {
+			return glm::vec3{ 0.F };
+        }
+        return JoltUtils::convert(iface->GetLinearVelocity(_bodyId));
     }
 
     void PhysicsBodyImpl::setAngularVelocity(const glm::vec3& velocity) noexcept
@@ -1642,12 +1674,22 @@ namespace darmok::physics3d
 
     glm::vec3 PhysicsBodyImpl::getAngularVelocity() const noexcept
     {
-        return JoltUtils::convert(getBodyInterface()->GetAngularVelocity(_bodyId));
+        auto iface = getBodyInterface();
+        if (!iface)
+        {
+            return glm::vec3{ 0.F };
+        }
+        return JoltUtils::convert(iface->GetAngularVelocity(_bodyId));
     }
 
     BoundingBox PhysicsBodyImpl::getLocalBounds() const noexcept
     {
-        auto shape = getBodyInterface()->GetShape(_bodyId);
+        auto iface = getBodyInterface();
+        if (!iface)
+        {
+            return {};
+        }
+        auto shape = iface->GetShape(_bodyId);
         if (!shape)
         {
             return {};
@@ -1657,12 +1699,17 @@ namespace darmok::physics3d
 
     BoundingBox PhysicsBodyImpl::getWorldBounds() const noexcept
     {
-        auto shape = getBodyInterface()->GetShape(_bodyId);
+        auto iface = getBodyInterface();
+        if(!iface)
+        {
+            return {};
+		}
+        auto shape = iface->GetShape(_bodyId);
         if (!shape)
         {
             return {};
         }
-        auto trans = getBodyInterface()->GetCenterOfMassTransform(_bodyId);
+        auto trans = iface->GetCenterOfMassTransform(_bodyId);
         static const JPH::Vec3 scale(1.F, 1.F, 1.F);
         return JoltUtils::convert(shape->GetWorldSpaceBounds(trans, scale));
     }
@@ -1845,6 +1892,11 @@ namespace darmok::physics3d
         return {};
     }
 
+    PhysicsBody::PhysicsBody() noexcept
+        : _impl{ std::make_unique<PhysicsBodyImpl>(createDefinition()) }
+    {
+    }
+
     PhysicsBody::PhysicsBody(const PhysicsShape& shape, MotionType motion) noexcept
     {
         auto def = createDefinition();
@@ -1864,6 +1916,8 @@ namespace darmok::physics3d
     }
 
     PhysicsBody::~PhysicsBody() noexcept = default;
+    PhysicsBody::PhysicsBody(PhysicsBody&& other) noexcept = default;
+    PhysicsBody& PhysicsBody::operator=(PhysicsBody&& other) noexcept = default;
 
     PhysicsBody::Definition PhysicsBody::createDefinition() noexcept
     {

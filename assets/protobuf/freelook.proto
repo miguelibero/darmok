@@ -18,4 +18,5 @@ message FreelookController {
     repeated InputDir look_right = 10;
     repeated InputDir look_up = 11;
     repeated InputDir look_down = 12;
+    optional uint32 camera = 13;
 }

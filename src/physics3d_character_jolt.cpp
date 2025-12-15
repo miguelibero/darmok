@@ -380,6 +380,11 @@ namespace darmok::physics3d
         return {};
     }
 
+    CharacterController::CharacterController() noexcept
+        : _impl{ std::make_unique<CharacterControllerImpl>(createDefinition()) }
+    {
+    }
+
     CharacterController::CharacterController(const Definition& def) noexcept
         : _impl{ std::make_unique<CharacterControllerImpl>(def) }
     {        
@@ -393,6 +398,8 @@ namespace darmok::physics3d
     }
 
     CharacterController::~CharacterController() = default;
+    CharacterController::CharacterController(CharacterController&& other) noexcept = default;
+    CharacterController& CharacterController::operator=(CharacterController&& other) noexcept = default;
 
     CharacterControllerImpl& CharacterController::getImpl() noexcept
     {

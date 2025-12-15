@@ -322,8 +322,13 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimationSceneComponent final : public ITypeSceneComponent<SkeletalAnimationSceneComponent>
     {
     public:
+        using Definition = protobuf::SkeletalAnimationSceneComponent;
+
         expected<void, std::string> init(Scene& scene, App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
+
+		static Definition createDefinition() noexcept;
+		expected<void, std::string> load(const Definition& def) noexcept;
     private:
         OptionalRef<Scene> _scene;
     };
@@ -331,9 +336,13 @@ namespace darmok
     class DARMOK_EXPORT SkeletalAnimationRenderComponent final : public ITypeCameraComponent<SkeletalAnimationRenderComponent>
     {
     public:
+		using Definition = protobuf::SkeletalAnimationRenderComponent;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
+
+        static Definition createDefinition() noexcept;
+        expected<void, std::string> load(const Definition& def) noexcept;
     private:
         bgfx::UniformHandle _skinningUniform;
         std::vector<glm::mat4> _skinning;

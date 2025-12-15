@@ -90,12 +90,8 @@ namespace darmok
 
 	expected<void, std::string> GamepadStickEvent::process(Input& input) noexcept
 	{
-		auto gamepad = input.getGamepad(_gamepad);
-		if (!gamepad)
-		{
-			return unexpected<std::string>{ "gamepad not found" };
-		}
-		return gamepad->getImpl().setStick(_stick, _value);
+		auto& gamepad = input.getGamepad(_gamepad);
+		return gamepad.getImpl().setStick(_stick, _value);
 	}
 
 	GamepadButtonEvent::GamepadButtonEvent(uint8_t gampad, GamepadButton button, bool down) noexcept
@@ -108,12 +104,8 @@ namespace darmok
 
 	expected<void, std::string> GamepadButtonEvent::process(Input& input) noexcept
 	{
-		auto gamepad = input.getGamepad(_gamepad);
-		if (!gamepad)
-		{
-			return unexpected<std::string>{ "gamepad not found" };
-		}
-		return gamepad->getImpl().setButton(_button, _down);
+		auto& gamepad = input.getGamepad(_gamepad);
+		return gamepad.getImpl().setButton(_button, _down);
 	}
 
 	GamepadConnectEvent::GamepadConnectEvent(uint8_t gamepad, bool connected) noexcept
@@ -125,12 +117,8 @@ namespace darmok
 
 	expected<void, std::string> GamepadConnectEvent::process(Input& input) noexcept
 	{
-		auto gamepad = input.getGamepad(_gamepad);
-		if (!gamepad)
-		{
-			return unexpected<std::string>{ "gamepad not found" };
-		}
-		return gamepad->getImpl().setConnected(_connected);
+		auto& gamepad = input.getGamepad(_gamepad);
+		return gamepad.getImpl().setConnected(_connected);
 	}
 
 	WindowSizeEvent::WindowSizeEvent(const glm::uvec2& size) noexcept

@@ -82,4 +82,15 @@ namespace darmok
         }
         return {};
     }
+
+    FrameAnimationUpdater::Definition FrameAnimationUpdater::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
+    expected<void, std::string> FrameAnimationUpdater::load(const Definition& def) noexcept
+    {
+        return {};
+    }
 }

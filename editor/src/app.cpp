@@ -11,6 +11,7 @@
 #include <darmok/scene_serialize.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/physics3d_character.hpp>
+#include <darmok/freelook.hpp>
 #include <darmok/stream.hpp>
 
 #include <imgui.h>
@@ -216,6 +217,7 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::renderMainMenu() noexcept
     {
+        auto& scene = _proj.getSceneDefinition();
         expected<void, std::string> result;
         if (ImGui::BeginMainMenuBar())
         {
@@ -280,33 +282,52 @@ namespace darmok::editor
             }
             if (ImGui::BeginMenu("Component"))
             {
-                auto disabled = getSelectedEntity() == entt::null;
-                ImGui::BeginDisabled(disabled);
-                if (ImGui::BeginMenu("Add"))
+                ImGui::BeginDisabled(getSelectedEntity() == entt::null);
+                if (ImGui::BeginMenu("Entity Component"))
                 {
-                    drawEntityComponentMenu("Renderable", Renderable::createDefinition());
-                    drawEntityComponentMenu("Camera", Camera::createDefinition());
-                    if (ImGui::BeginMenu("Light"))
+                    if (ImGui::BeginMenu("Add"))
                     {
-                        drawEntityComponentMenu("Point Light", PointLight::createDefinition());
-                        drawEntityComponentMenu("Directional Light", DirectionalLight::createDefinition());
-                        drawEntityComponentMenu("Spot Light", SpotLight::createDefinition());
-                        drawEntityComponentMenu("Ambient Light", AmbientLight::createDefinition());
+                        drawEntityComponentMenu("Renderable", Renderable::createDefinition());
+                        drawEntityComponentMenu("Camera", Camera::createDefinition());
+                        if (ImGui::BeginMenu("Light"))
+                        {
+                            drawEntityComponentMenu("Point Light", PointLight::createDefinition());
+                            drawEntityComponentMenu("Directional Light", DirectionalLight::createDefinition());
+                            drawEntityComponentMenu("Spot Light", SpotLight::createDefinition());
+                            drawEntityComponentMenu("Ambient Light", AmbientLight::createDefinition());
+                            ImGui::EndMenu();
+                        }
+                        if (ImGui::BeginMenu("Animation"))
+                        {
+                            drawEntityComponentMenu("Skinnable", Skinnable::createDefinition());
+                            drawEntityComponentMenu("Animator", SkeletalAnimator::createDefinition());
+                            ImGui::EndMenu();
+                        }
+                        if (ImGui::BeginMenu("Physics3d"))
+                        {
+                            drawEntityComponentMenu("Body", physics3d::PhysicsBody::createDefinition());
+                            drawEntityComponentMenu("Character", physics3d::PhysicsBody::createCharacterDefinition());
+                            drawEntityComponentMenu("Character Controller", physics3d::CharacterController::createDefinition());
+                            ImGui::EndMenu();
+                        }
                         ImGui::EndMenu();
                     }
-                    if (ImGui::BeginMenu("Animation"))
+                    ImGui::EndMenu();
+                }
+                ImGui::EndDisabled();
+                if (ImGui::BeginMenu("Scene Component"))
+                {
+                    if (ImGui::BeginMenu("Add"))
                     {
-                        drawEntityComponentMenu("Skinnable", Skinnable::createDefinition());
-                        drawEntityComponentMenu("Animator", SkeletalAnimator::createDefinition());
+                        drawSceneComponentMenu("Freelook Controller", FreelookController::createDefinition());
+                        drawSceneComponentMenu("Physics3d System", physics3d::PhysicsSystem::createDefinition());
                         ImGui::EndMenu();
                     }
-                    if (ImGui::BeginMenu("Physics3d"))
-                    {
-                        drawEntityComponentMenu("Body", physics3d::PhysicsBody::createDefinition());
-                        drawEntityComponentMenu("Character", physics3d::PhysicsBody::createCharacterDefinition());
-                        drawEntityComponentMenu("Character Controller", physics3d::CharacterController::createDefinition());
-                        ImGui::EndMenu();
-                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::BeginDisabled(!scene.hasComponent<Camera::Definition>(getSelectedEntity()));
+                if (ImGui::BeginMenu("Camera Component"))
+                {
                     ImGui::EndMenu();
                 }
                 ImGui::EndDisabled();
@@ -331,6 +352,23 @@ namespace darmok::editor
         {
             _assetsView.addAsset(asset);
         }
+    }
+
+    void EditorApp::drawSceneComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
+    {
+        auto& scene = _proj.getSceneDefinition();
+        auto disabled = true;
+        if (!scene.getSceneComponent(protobuf::getTypeId(comp)))
+        {
+            disabled = false;
+        }
+        ImGui::BeginDisabled(disabled);
+        if (ImGui::MenuItem(name))
+        {
+            scene.setSceneComponent(comp);
+            _proj.requestSceneUpdate();
+        }
+        ImGui::EndDisabled();
     }
 
     void EditorApp::drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept

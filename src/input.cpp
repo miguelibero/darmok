@@ -714,8 +714,8 @@ namespace darmok
 
 #pragma region Gamepad
 
-	GamepadImpl::GamepadImpl() noexcept
-		: _num{ Gamepad::Any }
+	GamepadImpl::GamepadImpl(uint32_t num) noexcept
+		: _num{ num }
 		, _connected{ false }
 		, _sticks{}
 		, _buttons{}
@@ -725,17 +725,6 @@ namespace darmok
 	void GamepadImpl::shutdown() noexcept
 	{
 		_listeners.clear();
-	}
-
-	bool GamepadImpl::setNumber(uint32_t num) noexcept
-	{
-		if (_num == num)
-		{
-			return false;
-		}
-		_num = num;
-		clear();
-		return true;
 	}
 
 	expected<void, std::string> GamepadImpl::setConnected(bool value) noexcept
@@ -995,8 +984,8 @@ namespace darmok
 		return dir;
 	}
 
-	Gamepad::Gamepad() noexcept
-		: _impl(std::make_unique<GamepadImpl>())
+	Gamepad::Gamepad(uint32_t num) noexcept
+		: _impl(std::make_unique<GamepadImpl>(num))
 	{
 	}
 
@@ -1118,13 +1107,6 @@ namespace darmok
 	InputImpl::InputImpl(Input& input) noexcept
 		: _input(input)
 	{
-		uint32_t num = 0;
-		for (auto& gamepad : _gamepads)
-		{
-			gamepad.getImpl().setNumber(num);
-			gamepad.addListener(*this);
-			++num;
-		}
 		_keyboard.addListener(*this);
 		_mouse.addListener(*this);
 	}
@@ -1133,7 +1115,7 @@ namespace darmok
 	{
 		_keyboard.getImpl().shutdown();
 		_mouse.getImpl().shutdown();
-		for (auto& gamepad : _gamepads)
+		for (auto& [num, gamepad] : _gamepads)
 		{
 			gamepad.getImpl().shutdown();
 		}
@@ -1549,31 +1531,6 @@ namespace darmok
 		return _mouse;
 	}
 
-	OptionalRef<Gamepad> InputImpl::getGamepad(uint32_t num) noexcept
-	{
-		if (num == Gamepad::Any)
-		{
-			for (auto& gamepad : _gamepads)
-			{
-				if (gamepad.isConnected())
-				{
-					return gamepad;
-				}
-			}
-			return nullptr;
-		}
-		if (num >= 0 && num < _gamepads.size())
-		{
-			return _gamepads[num];
-		}
-		return nullptr;
-	}
-
-	Gamepads& InputImpl::getGamepads() noexcept
-	{
-		return _gamepads;
-	}
-
 	const Keyboard& InputImpl::getKeyboard() const noexcept
 	{
 		return _keyboard;
@@ -1584,29 +1541,62 @@ namespace darmok
 		return _mouse;
 	}
 
-	OptionalRef<const Gamepad> InputImpl::getGamepad(uint32_t num) const noexcept
+	std::vector<uint32_t> InputImpl::getGamepadNums() const noexcept
 	{
-		if (num == Gamepad::Any)
+		std::vector<uint32_t> nums;
+		nums.reserve(_gamepads.size());
+		for (const auto& [num, gamepad] : _gamepads)
 		{
-			for (const auto& gamepad : _gamepads)
-			{
-				if (gamepad.isConnected())
-				{
-					return gamepad;
-				}
-			}
-			return nullptr;
+			nums.push_back(num);
 		}
-		if (num > 0 || num < _gamepads.size())
+		return nums;
+	}
+
+	Gamepad& InputImpl::getGamepad(uint32_t num) noexcept
+	{
+		auto itr = _gamepads.find(num);
+		if (itr != _gamepads.end())
 		{
-			return _gamepads.at(num);
+			return itr->second;
+		}
+
+		auto& gamepad = _gamepads.emplace(num, num).first->second;
+		gamepad.addListener(*this);
+		return gamepad;
+	}
+
+	OptionalRef<Gamepad> InputImpl::getConnectedGamepad() noexcept
+	{
+		for (auto& [num, gamepad] : _gamepads)
+		{
+			if (gamepad.isConnected())
+			{
+				return gamepad;
+			}
 		}
 		return nullptr;
 	}
 
-	const Gamepads& InputImpl::getGamepads() const noexcept
+	OptionalRef<const Gamepad> InputImpl::getGamepad(uint32_t num) const noexcept
 	{
-		return _gamepads;
+		auto itr = _gamepads.find(num);
+		if (itr != _gamepads.end())
+		{
+			return itr->second;
+		}
+		return nullptr;
+	}
+
+	OptionalRef<const Gamepad> InputImpl::getConnectedGamepad() const noexcept
+	{
+		for (auto& [num, gamepad] : _gamepads)
+		{
+			if (gamepad.isConnected())
+			{
+				return gamepad;
+			}
+		}
+		return nullptr;
 	}
 
 	void InputImpl::afterUpdate(float deltaTime) noexcept
@@ -1642,7 +1632,7 @@ namespace darmok
 		return _impl->getMouse();
 	}
 
-	OptionalRef<Gamepad> Input::getGamepad(uint32_t num) noexcept
+	Gamepad& Input::getGamepad(uint32_t num) noexcept
 	{
 		return _impl->getGamepad(num);
 	}
@@ -1652,14 +1642,14 @@ namespace darmok
 		return _impl->getGamepad(num);
 	}
 
-	Gamepads& Input::getGamepads() noexcept
+	OptionalRef<Gamepad> Input::getConnectedGamepad() noexcept
 	{
-		return _impl->getGamepads();
+		return _impl->getConnectedGamepad();
 	}
 
-	const Gamepads& Input::getGamepads() const noexcept
+	OptionalRef<const Gamepad> Input::getConnectedGamepad() const noexcept
 	{
-		return _impl->getGamepads();
+		return _impl->getConnectedGamepad();
 	}
 
 	const InputImpl& Input::getImpl() const noexcept

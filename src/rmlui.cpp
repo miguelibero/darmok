@@ -678,22 +678,27 @@ namespace darmok
         return true;
     }
 
-    RmluiCanvasImpl::RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size)
-        : _canvas(canvas)
-        , _inputEnabled(false)
-        , _mousePosition(0)
-        , _size(size)
-        , _visible(true)
-        , _name(name)
-        , _mousePositionMode(MousePositionMode::Relative)
-        , _offset(0)
-        , _defaultTextureFlags(defaultTextureLoadFlags)
+    RmluiCanvasImpl::RmluiCanvasImpl(RmluiCanvas& canvas, const std::string& name, const std::optional<glm::uvec2>& size) noexcept
+        : _canvas{ canvas }
+        , _inputEnabled{ false }
+        , _mousePosition{ 0 }
+        , _size{ size }
+        , _visible{ true }
+        , _name{ name }
+        , _mousePositionMode{ MousePositionMode::Relative }
+        , _offset{ 0 }
+        , _defaultTextureFlags{ defaultTextureLoadFlags }
     {
     }
 
     RmluiCanvasImpl::~RmluiCanvasImpl() noexcept
     {
         doShutdown();
+    }
+
+    expected<void, std::string> RmluiCanvasImpl::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        return {};
     }
 
     expected<void, std::string> RmluiCanvasImpl::init(App& app, RmluiSceneComponentImpl& comp) noexcept
@@ -1405,7 +1410,29 @@ namespace darmok
     {
     }
 
+    RmluiCanvas::RmluiCanvas(const Definition& def) noexcept
+    {
+        std::optional<glm::uvec2> size;
+        if (def.has_size())
+        {
+            size = convert<glm::uvec2>(def.size());
+        }
+        _impl = std::make_unique<RmluiCanvasImpl>(*this, def.name(), size);
+    }
+
     RmluiCanvas::~RmluiCanvas() noexcept = default;
+    
+
+    RmluiCanvas::Definition RmluiCanvas::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
+    expected<void, std::string> RmluiCanvas::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        return _impl->load(def, context);
+    }
 
     const std::string& RmluiCanvas::getName() const noexcept
     {
@@ -2187,6 +2214,22 @@ namespace darmok
     }
 
     RmluiSceneComponent::~RmluiSceneComponent() noexcept = default;
+
+    RmluiSceneComponent::Definition RmluiSceneComponent::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
+    expected<void, std::string> RmluiSceneComponent::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        auto result = shutdown();
+        if (!result)
+        {
+            return result;
+        }
+        return init(context.getScene(), context.getApp());
+    }
 
     expected<void, std::string> RmluiSceneComponent::init(Scene& scene, App& app) noexcept
     {

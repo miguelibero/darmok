@@ -10,7 +10,7 @@
 
 namespace darmok
 {
-    FreelookController::FreelookController(Camera& cam, const Definition& def) noexcept
+    FreelookController::FreelookController(OptionalRef<Camera> cam, const Definition& def) noexcept
         : _def{ def }
         , _enabled{ false }
         , _winCursorMode{ WindowCursorMode::Normal }
@@ -45,6 +45,16 @@ namespace darmok
 
     expected<void, std::string> FreelookController::init(Scene& scene, App& app) noexcept
     {
+        if (!_cam)
+        {
+            for (auto entity : scene.getComponents<Camera>())
+            {
+                if(_cam = scene.getComponent<Camera>(entity))
+                {
+                    break;
+                }
+            }
+        }
         _scene = scene;
         _input = app.getInput();
         _win = app.getWindow();
@@ -85,9 +95,9 @@ namespace darmok
             }
         }
 
-        if (enabled)
+        if (enabled && _cam)
         {
-            if (auto trans = _cam.getTransform())
+            if (auto trans = _cam->getTransform())
             {
                 Math::decompose(trans->getLocalMatrix(), _pos, _rot, _scale);
             }
@@ -107,7 +117,7 @@ namespace darmok
 
     expected<void, std::string> FreelookController::update(float deltaTime) noexcept
     {
-        if (!_enabled)
+        if (!_enabled || !_cam)
         {
             return {};
         }
@@ -133,7 +143,7 @@ namespace darmok
 
         auto mtx = Math::transform(_pos, _rot, _scale);
 
-        if (auto trans = _cam.getTransform())
+        if (auto trans = _cam->getTransform())
         {
             trans->setLocalMatrix(mtx);
         }
@@ -183,6 +193,13 @@ namespace darmok
             return result;
         }
         _def = def;
+
+        if (def.has_camera())
+        {
+            auto entity = context.getEntity(def.camera());
+            _cam = context.getScene().getComponent<Camera>(entity);
+        }
+
         return init(context.getScene(), context.getApp());
     }
 }

@@ -21,15 +21,16 @@ namespace darmok::editor
 
         if (scene.scene_components_size() > 0)
         {
-            if (ImGui::CollapsingHeader("Components"))
+            if (ImguiUtils::beginFrame("Components"))
             {
                 for (auto& [typeId, comp] : *scene.mutable_scene_components())
                 {
-                    if (renderChild(comp))
+                    if (renderChild(comp, true))
                     {
                         changed = true;
                     }
                 }
+				ImguiUtils::endFrame();
             }
         }
 

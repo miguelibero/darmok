@@ -46,7 +46,8 @@ namespace darmok
     {
     public:
         using Definition = protobuf::FreelookController;
-        FreelookController(Camera& cam, const Definition& def = {}) noexcept;
+        FreelookController(OptionalRef<Camera> cam = nullptr, const Definition& def = {}) noexcept;
+        
         expected<void, std::string> init(Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
@@ -64,7 +65,7 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<Input> _input;
         OptionalRef<Window> _win;
-        Camera& _cam;
+        OptionalRef<Camera> _cam;
         WindowCursorMode _winCursorMode;
         glm::quat _rot;
         glm::vec3 _pos;

@@ -224,17 +224,9 @@ namespace darmok
 		return SceneDefinitionWrapper{ *_scene }.getAsset(path).ptr();
 	}
 
-	LuaSceneLoader::LuaSceneLoader()
-		: _loader{ std::make_unique<SceneLoader>() }
+	LuaSceneLoader::LuaSceneLoader(App& app)
+		: _loader{ std::make_unique<SceneLoader>(app) }
 	{
-	}
-
-	LuaSceneLoader::LuaSceneLoader(AssetContext& assets)
-		: LuaSceneLoader()
-	{
-		_loader->setAssetPackConfig({
-			.fallback = assets
-		});
 	}
 
 	LuaSceneLoader::~LuaSceneLoader() = default;
@@ -242,8 +234,8 @@ namespace darmok
 	void LuaSceneLoader::bind(sol::state_view& lua) noexcept
 	{
 		LuaEntityDefinition::bind(lua);
-		lua.new_usertype<LuaSceneLoader>("SceneLoader", sol::constructors<
-			LuaSceneLoader(), LuaSceneLoader(AssetContext&)>(),
+		lua.new_usertype<LuaSceneLoader>("SceneLoader",
+			sol::constructors<LuaSceneLoader(App&)>(),
 			"parent", sol::property(&LuaSceneLoader::setParent),
 			"add_component_listener", &LuaSceneLoader::addComponentListener,
 			"clear_component_listeners", &LuaSceneLoader::clearComponentListeners,

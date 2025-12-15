@@ -152,7 +152,7 @@ namespace darmok::physics3d
         using Definition = protobuf::PhysicsSystem;
 
         static Definition createDefinition() noexcept;
-        expected<void, std::string> load(const Definition& def) noexcept;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
 
         PhysicsSystem(const Definition& def = createDefinition()) noexcept;
         PhysicsSystem(const Definition& def, bx::AllocatorI& alloc) noexcept;
@@ -208,10 +208,13 @@ namespace darmok::physics3d
         using MotionType = Definition::MotionType;
         using ShapeDefinition = protobuf::PhysicsShape;
 
+        PhysicsBody() noexcept;
         PhysicsBody(const PhysicsShape& shape, MotionType motion = Definition::Dynamic) noexcept;
-        PhysicsBody(const Definition& def = createDefinition()) noexcept;
+        PhysicsBody(const Definition& def) noexcept;
         PhysicsBody(const CharacterDefinition& def) noexcept;
         ~PhysicsBody() noexcept;
+        PhysicsBody(PhysicsBody&& other) noexcept;
+        PhysicsBody& operator=(PhysicsBody&& other) noexcept;
 
         static Definition createDefinition() noexcept;
         static ShapeDefinition createShapeDefinition() noexcept;

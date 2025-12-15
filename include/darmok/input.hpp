@@ -214,11 +214,10 @@ namespace darmok
 		using Definition = protobuf::Gamepad;
 		static constexpr uint32_t Any = -1;
 
-		Gamepad() noexcept;
+		Gamepad(uint32_t num) noexcept;
 		~Gamepad() noexcept;
 		Gamepad(const Gamepad& other) = delete;
 		Gamepad(Gamepad&& other) = delete;
-		
 		
 		[[nodiscard]] const glm::vec3& getStick(GamepadStick stick) const noexcept;
 		[[nodiscard]] const GamepadSticks& getSticks() const noexcept;
@@ -280,7 +279,7 @@ namespace darmok
 		float event = 1.F;
 	};
 
-	using Gamepads = std::vector<Gamepad>;
+	using Gamepads = std::unordered_map<uint32_t, Gamepad>;
 	class InputImpl;
 
 	class DARMOK_EXPORT Input final
@@ -297,13 +296,13 @@ namespace darmok
 
 		[[nodiscard]] Keyboard& getKeyboard() noexcept;
 		[[nodiscard]] Mouse& getMouse() noexcept;
-		[[nodiscard]] OptionalRef<Gamepad> getGamepad(uint32_t num = Gamepad::Any) noexcept;
-		[[nodiscard]] Gamepads& getGamepads() noexcept;
-
 		[[nodiscard]] const Keyboard& getKeyboard() const noexcept;
 		[[nodiscard]] const Mouse& getMouse() const noexcept;
-		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint32_t num = Gamepad::Any) const noexcept;
-		[[nodiscard]] const Gamepads& getGamepads() const noexcept;
+
+		[[nodiscard]] Gamepad& getGamepad(uint32_t num = 0) noexcept;
+		[[nodiscard]] OptionalRef<const Gamepad> getGamepad(uint32_t num = 0) const noexcept;
+		[[nodiscard]] OptionalRef<Gamepad> getConnectedGamepad() noexcept;
+		[[nodiscard]] OptionalRef<const Gamepad> getConnectedGamepad() const noexcept;
 		
 		[[nodiscard]] const InputImpl& getImpl() const noexcept;
 		[[nodiscard]] InputImpl& getImpl() noexcept;
