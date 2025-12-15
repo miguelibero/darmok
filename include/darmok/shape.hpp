@@ -6,6 +6,7 @@
 #include <darmok/utils.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/protobuf/shape.pb.h>
+#include <darmok/protobuf/mesh.pb.h>
 
 #include <array>
 #include <optional>
@@ -120,6 +121,7 @@ namespace darmok
 
         Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
 		Polygon(const Definition& def) noexcept;
+        Polygon(const protobuf::Mesh& meshDef) noexcept;
 		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
 

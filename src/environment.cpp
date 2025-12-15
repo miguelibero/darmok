@@ -14,7 +14,6 @@ namespace darmok
 {
     SkyboxRenderer::SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept
         : _texture{ texture }
-        , _texUniform{ bgfx::kInvalidHandle }
     {
     }
 
@@ -27,7 +26,7 @@ namespace darmok
             return unexpected{ std::move(progResult).error() };
         }
         _program = std::make_unique<Program>(std::move(progResult).value());
-        _texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+        _texUniform = { "s_texColor", bgfx::UniformType::Sampler };
 
         static const Cube screen{ glm::uvec3{ 2 } };
         auto meshResult = MeshData{ screen }.createMesh(_program->getVertexLayout());
@@ -41,11 +40,7 @@ namespace darmok
 
     expected<void, std::string> SkyboxRenderer::shutdown() noexcept
     {
-        if (isValid(_texUniform))
-        {
-            bgfx::destroy(_texUniform);
-            _texUniform.idx = bgfx::kInvalidHandle;
-        }
+        _texUniform.reset();
         _mesh.reset();
         _program.reset();
         _cam.reset();
@@ -81,9 +76,6 @@ namespace darmok
 
     GridRenderer::GridRenderer(const Config& config) noexcept
         : _config{ config }
-        , _color1Uniform{ bgfx::kInvalidHandle }
-        , _color2Uniform{ bgfx::kInvalidHandle }
-        , _dataUniform{ bgfx::kInvalidHandle }
     {
     }
 
@@ -96,9 +88,9 @@ namespace darmok
         }
         _program = std::make_unique<Program>(std::move(progResult).value());
 
-        _color1Uniform = bgfx::createUniform("u_gridColor1", bgfx::UniformType::Vec4);
-        _color2Uniform = bgfx::createUniform("u_gridColor2", bgfx::UniformType::Vec4);
-        _dataUniform = bgfx::createUniform("u_data", bgfx::UniformType::Vec4);
+        _color1Uniform = { "u_gridColor1", bgfx::UniformType::Vec4 };
+        _color2Uniform = { "u_gridColor2", bgfx::UniformType::Vec4 };
+        _dataUniform = { "u_data", bgfx::UniformType::Vec4 };
 
         static const Rectangle rect{ glm::vec2{2.0f} };
         MeshData meshData{ rect, Mesh::Definition::FullRectangle };
@@ -117,19 +109,9 @@ namespace darmok
         _program.reset();
         _mesh.reset();
         _cam.reset();
-
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms
-        {
-            _color1Uniform, _color2Uniform, _dataUniform
-        };
-        for (auto uniform : uniforms)
-        {
-            if (isValid(uniform.get()))
-            {
-                bgfx::destroy(uniform.get());
-                uniform.get().idx = bgfx::kInvalidHandle;
-            }
-        }
+        _color1Uniform.reset();
+        _color2Uniform.reset();
+        _dataUniform.reset();
         return {};
     }
 

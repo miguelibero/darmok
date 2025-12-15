@@ -46,7 +46,7 @@ namespace darmok
     {
     public:
         using Definition = protobuf::FreelookController;
-        FreelookController(OptionalRef<Camera> cam = nullptr, const Definition& def = {}) noexcept;
+        FreelookController(OptionalRef<Camera> cam = nullptr, const Definition& def = createDefinition()) noexcept;
         
         expected<void, std::string> init(Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
@@ -55,7 +55,7 @@ namespace darmok
         FreelookController& setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
         FreelookController& addListener(IFreelookListener& listener) noexcept;
-        FreelookController& addListener(std::unique_ptr<IFreelookListener>&& listener) noexcept;
+        FreelookController& addListener(std::unique_ptr<IFreelookListener> listener) noexcept;
         bool removeListener(const IFreelookListener& listener) noexcept;
         size_t removeListeners(const IFreelookListenerFilter& filter) noexcept;
 

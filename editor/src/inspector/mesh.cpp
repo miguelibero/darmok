@@ -88,7 +88,7 @@ namespace darmok::editor
         }
         if (!result)
         {
-            return unexpected{ std::move(result).error() };
+            return result;
         }
         changed |= *result;
         return changed;

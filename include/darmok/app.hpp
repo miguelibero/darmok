@@ -63,7 +63,7 @@ namespace darmok
 	class AssetContext;
 	class RenderChain;
 
-	DARMOK_EXPORT int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory>&& factory);
+	DARMOK_EXPORT int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory> factory);
 
 	struct DARMOK_EXPORT AppUpdateConfig final
 	{
@@ -146,7 +146,7 @@ namespace darmok
 	class DARMOK_EXPORT App final
 	{
 	public:
-		App(std::unique_ptr<IAppDelegateFactory>&& delegateFactory) noexcept;
+		App(std::unique_ptr<IAppDelegateFactory> delegateFactory) noexcept;
 		~App() noexcept;
 		App(const App&) = delete;
 		App(App&&) = delete;
@@ -199,7 +199,7 @@ namespace darmok
 		bool addAssetsRootPath(const std::filesystem::path& path) noexcept;
 		bool removeAssetsRootPath(const std::filesystem::path& path) noexcept;
 
-		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
+		void addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
@@ -213,7 +213,7 @@ namespace darmok
 			return ref;
 		}
 
-		expected<void, std::string> addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
+		expected<void, std::string> addComponent(std::unique_ptr<IAppComponent> component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
 		[[nodiscard]] OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;

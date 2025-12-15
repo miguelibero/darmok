@@ -3,6 +3,7 @@
 #include <darmok/input.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/uniform.hpp>
 #include <imgui.h>
 #include <unordered_map>
 #include <memory>
@@ -18,7 +19,6 @@ namespace darmok
 	{
 	public:
 		ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept;
-		~ImguiRenderPass() noexcept;
 		expected<void, std::string> init() noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		expected<void, std::string> render() noexcept;
@@ -29,8 +29,8 @@ namespace darmok
 		std::optional<bgfx::ViewId> _viewId;
 		std::unique_ptr<Texture> _fontsTexture;
 		std::unique_ptr<Program> _program;
-		bgfx::UniformHandle _lodEnabledUniform;
-		bgfx::UniformHandle _textureUniform;
+		UniformHandle _lodEnabledUniform;
+		UniformHandle _textureUniform;
 
 		void beginFrame() const noexcept;
 		expected<void, std::string> render(bgfx::Encoder& encoder, ImDrawData* drawData) const noexcept;

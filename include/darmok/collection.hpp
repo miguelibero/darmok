@@ -278,7 +278,7 @@ namespace darmok
     public:
 
         template<typename K>
-        OwnRefCollection& insert(std::unique_ptr<K>&& listener) noexcept
+        OwnRefCollection& insert(std::unique_ptr<K> listener) noexcept
         {
             return insert(std::move(listener), entt::type_hash<K>::value());
         }
@@ -289,7 +289,7 @@ namespace darmok
             return insert(listener, entt::type_hash<K>::value());
         }
 
-        OwnRefCollection& insert(std::unique_ptr<T>&& listener) noexcept
+        OwnRefCollection& insert(std::unique_ptr<T> listener) noexcept
         {
             _elms.emplace_back(*listener, std::move(listener));
             return *this;

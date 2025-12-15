@@ -40,6 +40,8 @@ namespace darmok::editor
         _editors.add<SphereInspectorEditor>();
         _editors.add<CapsuleInspectorEditor>();
         _editors.add<RectangleInspectorEditor>();
+        _editors.add<PolygonInspectorEditor>();
+        _editors.add<BoundingBoxInspectorEditor>();
         _editors.add<MaterialInspectorEditor>();
         _editors.add<ProgramSourceInspectorEditor>();
         _editors.add<ProgramRefInspectorEditor>();
@@ -48,6 +50,7 @@ namespace darmok::editor
         _editors.add<ArmatureInspectorEditor>();
         _editors.add<SkinnableInspectorEditor>();
         _editors.add<SkeletalAnimatorInspectorEditor>();
+        _editors.add<Physics3dShapeInspectorEditor>();
         _editors.add<Physics3dBodyInspectorEditor>();
         _editors.add<Physics3dCharacterControllerInspectorEditor>();
         _editors.add<Physics3dSystemInspectorEditor>();

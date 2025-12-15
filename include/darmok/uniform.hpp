@@ -13,6 +13,23 @@
 
 namespace darmok
 {
+    struct DARMOK_EXPORT UniformHandle final
+    {
+    public:
+        UniformHandle() noexcept;
+        UniformHandle(const std::string& name, bgfx::UniformType::Enum type, uint16_t num = 1) noexcept;
+        ~UniformHandle() noexcept;
+        UniformHandle(const UniformHandle& other) = delete;
+        UniformHandle& operator=(const UniformHandle& other) = delete;
+        UniformHandle(UniformHandle&& other) noexcept;
+        UniformHandle& operator=(UniformHandle&& other) noexcept;
+        operator bgfx::UniformHandle() const noexcept;
+        const bgfx::UniformHandle& get() const noexcept;
+        bool reset() noexcept;
+    private:
+        bgfx::UniformHandle _bgfx;
+    };
+
     struct DARMOK_EXPORT UniformValue final
     {
         using Variant = std::variant<glm::vec4, glm::mat4, glm::mat3>;
@@ -56,17 +73,20 @@ namespace darmok
     {
     public:
         BasicUniforms() noexcept;
-        ~BasicUniforms() noexcept;
-        void init() noexcept;
-        void shutdown() noexcept;
+        BasicUniforms(const BasicUniforms& other) = delete;
+        BasicUniforms& operator=(const BasicUniforms& other) = delete;
+        BasicUniforms(BasicUniforms&& other) = default;
+        BasicUniforms& operator=(BasicUniforms&& other) = default;
+
+        void clear() noexcept;
         void update(float deltaTime) noexcept;
         void configure(bgfx::Encoder& encoder) const noexcept;
     private:
         std::mt19937 _randomEngine;
         std::uniform_real_distribution<float> _randomDistFloat;
         std::uniform_int_distribution<int> _randomDistInt;
-        bgfx::UniformHandle _timeUniform;
-        bgfx::UniformHandle _randomUniform;
+        UniformHandle _timeUniform;
+        UniformHandle _randomUniform;
         glm::vec4 _timeValues;
         glm::vec4 _randomValues;
     };
@@ -80,12 +100,17 @@ namespace darmok
     class UniformHandleContainer final
     {
     public:
-        ~UniformHandleContainer() noexcept;
+        UniformHandleContainer() = default;
+        UniformHandleContainer(const UniformHandleContainer& other) = delete;
+        UniformHandleContainer& operator=(const UniformHandleContainer& other) = delete;
+        UniformHandleContainer(UniformHandleContainer&& other) = default;
+        UniformHandleContainer& operator=(UniformHandleContainer&& other) = default;
+
         void configure(bgfx::Encoder& encoder, const UniformValueMap& values) const;
         void configure(bgfx::Encoder& encoder, const UniformTextureMap& textures) const;
         void configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept;
         void configure(bgfx::Encoder& encoder, const std::string& name, const UniformValue& val) const noexcept;
-        void shutdown() noexcept;
+        void clear() noexcept;
     private:
 
         struct Key final
@@ -107,8 +132,8 @@ namespace darmok
             };
         };
 
-        bgfx::UniformHandle getHandle(const Key& key) const noexcept;
+        const UniformHandle& getHandle(const Key& key) const noexcept;
 
-        mutable std::unordered_map<Key, bgfx::UniformHandle, Key::Hash> _handles;
+        mutable std::unordered_map<Key, UniformHandle, Key::Hash> _handles;
     };
 }

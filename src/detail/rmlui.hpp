@@ -80,7 +80,6 @@ namespace darmok
 	{
 	public:
 		RmluiRenderInterface(App& app, RmluiCanvasImpl& canvas) noexcept;
-		~RmluiRenderInterface() noexcept;
 		Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept override;
 		void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept override;
 		void ReleaseGeometry(Rml::CompiledGeometryHandle geometry) noexcept override;
@@ -114,8 +113,8 @@ namespace darmok
 		App& _app;
 		RmluiCanvasImpl& _canvas;
 		std::unique_ptr<Program> _program;
-		bgfx::UniformHandle _textureUniform;
-		bgfx::UniformHandle _dataUniform;
+		UniformHandle _textureUniform;
+		UniformHandle _dataUniform;
 		std::unordered_map<Rml::String, std::reference_wrapper<Texture>> _textureSources;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _meshes;

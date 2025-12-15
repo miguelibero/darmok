@@ -612,6 +612,7 @@ namespace darmok
     struct DARMOK_EXPORT SceneDefinitionCompilerConfig final
     {
         ProgramCompilerConfig progCompiler;
+        OptionalRef<bx::AllocatorI> alloc;
     };
 
     class DARMOK_EXPORT SceneDefinitionCompiler final
@@ -624,6 +625,7 @@ namespace darmok
         expected<void, std::string> operator()(Definition& def);
     private:
         Config _config;
+        bx::DefaultAllocator _defAlloc;
         OptionalRef<IProgramSourceLoader> _progLoader;
     };
 }

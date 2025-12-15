@@ -32,4 +32,20 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Rectangle::Definition& rect) noexcept override;
     };
+
+    class PolygonInspectorEditor final : public ObjectEditor<Polygon::Definition>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(Polygon::Definition& poly) noexcept override;
+    private:
+        std::string _meshPath;
+    };
+
+    class BoundingBoxInspectorEditor final : public ObjectEditor<BoundingBox::Definition>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(BoundingBox::Definition& bbox) noexcept override;
+    };
 }

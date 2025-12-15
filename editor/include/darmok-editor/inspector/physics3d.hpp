@@ -8,6 +8,24 @@ struct aiScene;
 
 namespace darmok::editor
 {
+    enum class Physics3dShapeType
+    {
+        Cube,
+        Sphere,
+        Capsule,
+        Polygon,
+        BoundingBox,
+    };
+
+    class Physics3dShapeInspectorEditor final : public ObjectEditor<physics3d::PhysicsBody::ShapeDefinition>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(Object& shape) noexcept override;
+    public:
+        RenderResult renderPolygon(Object& src) noexcept;
+    };
+
     class Physics3dBodyInspectorEditor final : public ComponentObjectEditor<physics3d::PhysicsBody>
     {
     public:

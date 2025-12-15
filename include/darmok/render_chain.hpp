@@ -160,7 +160,7 @@ namespace darmok
         OptionalRef<RenderChain> _chain;
         std::shared_ptr<Program> _program;
         std::unique_ptr<Mesh> _mesh;
-        bgfx::UniformHandle _texUniform;
+        UniformHandle _texUniform;
         BasicUniforms _basicUniforms;
         std::optional<bgfx::ViewId> _viewId;
 

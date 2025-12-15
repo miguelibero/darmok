@@ -473,7 +473,6 @@ namespace darmok
 		: _program{ prog }
 		, _name{ name }
 		, _priority{ priority }
-		, _texUniform{ bgfx::kInvalidHandle }
 	{
 		if (_name.empty())
 		{
@@ -486,12 +485,7 @@ namespace darmok
 	expected<void, std::string> ScreenSpaceRenderPass::init(RenderChain& chain) noexcept
 	{
 		_chain = chain;
-		if (isValid(_texUniform))
-		{
-			bgfx::destroy(_texUniform);
-		}
-		_texUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-		_basicUniforms.init();
+		_texUniform = { "s_texColor", bgfx::UniformType::Sampler };
 
 		static const Rectangle screen{ glm::uvec2{2} };
 		auto meshResult = MeshData{ screen }.createMesh(_program->getVertexLayout());
@@ -505,12 +499,6 @@ namespace darmok
 
 	expected<void, std::string> ScreenSpaceRenderPass::shutdown() noexcept
 	{
-		if (isValid(_texUniform))
-		{
-			bgfx::destroy(_texUniform);
-			_texUniform.idx = bgfx::kInvalidHandle;
-		}
-		_basicUniforms.shutdown();
 		_viewId.reset();
 		_mesh.reset();
 		_chain.reset();

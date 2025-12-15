@@ -132,12 +132,12 @@ namespace darmok
 		bool addAssetsRootPath(const std::filesystem::path& path) noexcept;
 		bool removeAssetsRootPath(const std::filesystem::path& path) noexcept;
 
-		void addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept;
+		void addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;
 		bool removeUpdater(const IAppUpdater& updater) noexcept;
 		size_t removeUpdaters(const IAppUpdaterFilter& filter) noexcept;
 
-		expected<void, std::string> addComponent(std::unique_ptr<IAppComponent>&& component) noexcept;
+		expected<void, std::string> addComponent(std::unique_ptr<IAppComponent> component) noexcept;
 		bool removeComponent(entt::id_type type) noexcept;
 		[[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
 		[[nodiscard]] OptionalRef<IAppComponent> getComponent(entt::id_type type) noexcept;

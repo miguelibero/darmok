@@ -130,6 +130,119 @@ namespace darmok
 		return def;
 	}
 
+	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const RenderConfig& config) const noexcept
+	{
+		glm::vec4 hasTextures{ 0 };
+
+		for (const auto& [type, key] : config.textureUniformKeys)
+		{
+			auto itr = textures.find(type);
+			std::shared_ptr<Texture> tex;
+			if (itr != textures.end())
+			{
+				hasTextures.x += 1 << (int)type;
+				tex = itr->second;
+			}
+			else
+			{
+				tex = config.defaultTexture;
+			}
+			config.uniformHandles.configure(encoder, key, tex);
+		}
+
+		// pbr
+		if (config.defaultTexture)
+		{
+			encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, config.albedoLutSamplerUniform, config.defaultTexture->getHandle());
+		}
+		auto val = Colors::normalize(baseColor);
+		encoder.setUniform(config.baseColorUniform, glm::value_ptr(val));
+		val = glm::vec4{ metallicFactor, roughnessFactor, normalScale, occlusionStrength };
+		encoder.setUniform(config.metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
+		val = glm::vec4{ Colors::normalize(emissiveColor), 0 };
+		encoder.setUniform(config.emissiveColorUniform, glm::value_ptr(val));
+		val = glm::vec4{ multipleScattering ? 1.F : 0.F, whiteFurnanceFactor, 0, 0 };
+		encoder.setUniform(config.multipleScatteringUniform, glm::value_ptr(val));
+
+		// phong
+		val = glm::vec4{ Colors::normalize(specularColor), shininess };
+		encoder.setUniform(config.specularColorUniform, glm::value_ptr(val));
+
+		encoder.setUniform(config.hasTexturesUniform, glm::value_ptr(hasTextures));
+		config.basicUniforms.configure(encoder);
+		config.uniformHandles.configure(encoder, uniformValues);
+
+		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
+		state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | BGFX_STATE_DEPTH_TEST_LEQUAL;
+		if (!twoSided)
+		{
+			state |= BGFX_STATE_CULL_CCW;
+		}
+		if (primitiveType == Material::Definition::Line)
+		{
+			state &= ~BGFX_STATE_MSAA;
+			state |= BGFX_STATE_PT_LINES;
+			state |= BGFX_STATE_LINEAA;
+		}
+		auto opa = opacityType;
+		if (opa == Material::Definition::Transparent || opa == Material::Definition::Mask)
+		{
+			state |= BGFX_STATE_BLEND_ALPHA;
+		}
+		else
+		{
+			state &= ~BGFX_STATE_WRITE_A;
+		}
+
+		encoder.setState(state);
+		auto prog = program->getHandle(programDefines);
+		encoder.submit(viewId, prog);
+	}
+
+	const MaterialRenderConfig& MaterialRenderConfig::getDefault() noexcept
+	{
+		static const MaterialRenderConfig defConfig = createDefault();
+		return defConfig;
+	}
+
+	MaterialRenderConfig MaterialRenderConfig::createDefault() noexcept
+	{
+		MaterialRenderConfig config;
+		config.textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
+			{ Material::TextureDefinition::BaseColor, Texture::createUniformKey("s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO)},
+			{ Material::TextureDefinition::MetallicRoughness, Texture::createUniformKey("s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS) },
+			{ Material::TextureDefinition::Normal, Texture::createUniformKey("s_texNormal", RenderSamplers::MATERIAL_NORMAL) },
+			{ Material::TextureDefinition::Occlusion, Texture::createUniformKey("s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION) },
+			{ Material::TextureDefinition::Emissive, Texture::createUniformKey("s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE) },
+			{ Material::TextureDefinition::Specular, Texture::createUniformKey("s_texSpecular", RenderSamplers::MATERIAL_SPECULAR)},
+		};
+		config.albedoLutSamplerUniform = { "s_texAlbedoLUT", bgfx::UniformType::Sampler };
+		config.baseColorUniform = { "u_baseColorFactor", bgfx::UniformType::Vec4 };
+		config.specularColorUniform = { "u_specularFactorVec", bgfx::UniformType::Vec4 };
+		config.metallicRoughnessNormalOcclusionUniform = { "u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4 };
+		config.emissiveColorUniform = { "u_emissiveFactorVec", bgfx::UniformType::Vec4 };
+		config.hasTexturesUniform = { "u_hasTextures", bgfx::UniformType::Vec4 };
+		config.multipleScatteringUniform = { "u_multipleScatteringVec", bgfx::UniformType::Vec4 };
+
+		return config;
+	}
+
+
+	void MaterialRenderConfig::reset() noexcept
+	{
+		albedoLutSamplerUniform.reset();
+		baseColorUniform.reset();
+		specularColorUniform.reset();
+		metallicRoughnessNormalOcclusionUniform.reset();
+		emissiveColorUniform.reset();
+		hasTexturesUniform.reset();
+		multipleScatteringUniform.reset();
+		textureUniformKeys.clear();
+		defaultTexture.reset();
+		basicUniforms.clear();
+		uniformHandles.clear();
+	}
+
 	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
 		: FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>(defLoader)
 		, _progLoader{ progLoader }
@@ -195,142 +308,36 @@ namespace darmok
 		return mat;
 	}
 
-	MaterialAppComponent::MaterialAppComponent() noexcept
-		: _albedoLutSamplerUniform{ bgfx::kInvalidHandle }
-		, _baseColorUniform{ bgfx::kInvalidHandle }
-		, _specularColorUniform{ bgfx::kInvalidHandle }
-		, _metallicRoughnessNormalOcclusionUniform{ bgfx::kInvalidHandle }
-		, _emissiveColorUniform{ bgfx::kInvalidHandle }
-		, _hasTexturesUniform{ bgfx::kInvalidHandle }
-		, _multipleScatteringUniform{ bgfx::kInvalidHandle }
-	{
-	}
-
-	MaterialAppComponent::~MaterialAppComponent() noexcept = default;
-
 	expected<void, std::string> MaterialAppComponent::init(App& app) noexcept
 	{
-		_textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
-			{ Material::TextureDefinition::BaseColor, Texture::createUniformKey("s_texBaseColor" , RenderSamplers::MATERIAL_ALBEDO)},
-			{ Material::TextureDefinition::MetallicRoughness, Texture::createUniformKey("s_texMetallicRoughness", RenderSamplers::MATERIAL_METALLIC_ROUGHNESS) },
-			{ Material::TextureDefinition::Normal, Texture::createUniformKey("s_texNormal", RenderSamplers::MATERIAL_NORMAL) },
-			{ Material::TextureDefinition::Occlusion, Texture::createUniformKey("s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION) },
-			{ Material::TextureDefinition::Emissive, Texture::createUniformKey("s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE) },
-			{ Material::TextureDefinition::Specular, Texture::createUniformKey("s_texSpecular", RenderSamplers::MATERIAL_SPECULAR)},
-		};
-		_albedoLutSamplerUniform = bgfx::createUniform("s_texAlbedoLUT", bgfx::UniformType::Sampler);
-		_baseColorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
-		_specularColorUniform = bgfx::createUniform("u_specularFactorVec", bgfx::UniformType::Vec4);
-		_metallicRoughnessNormalOcclusionUniform = bgfx::createUniform("u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4);
-		_emissiveColorUniform = bgfx::createUniform("u_emissiveFactorVec", bgfx::UniformType::Vec4);
-		_hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
-		_multipleScatteringUniform = bgfx::createUniform("u_multipleScatteringVec", bgfx::UniformType::Vec4);
-		_basicUniforms.init();
-
-		const Image img{ Colors::white(), app.getAssets().getAllocator() };
-		auto texResult = Texture::load(img);
-		if(!texResult)
+		_renderConfig = RenderConfig::createDefault();
+		auto texResult = Texture::load(Image{ Colors::cyan(), app.getAssets().getAllocator() });
+		if (!texResult)
 		{
-			return unexpected<std::string>{ "failed to create default texture: " + texResult.error() };
+			return unexpected{ std::move(texResult).error() };
 		}
-		_defaultTexture = std::make_shared<Texture>(std::move(texResult).value());
+		_renderConfig->defaultTexture = std::make_shared<Texture>(std::move(texResult).value());
 		return {};
 	}
 
 	expected<void, std::string> MaterialAppComponent::update(float deltaTime) noexcept
 	{
-		if (!_defaultTexture)
+		if (_renderConfig)
 		{
-			return unexpected<std::string>{"not loaded"};
+			_renderConfig->basicUniforms.update(deltaTime);
 		}
-		_basicUniforms.update(deltaTime);
 		return {};
 	}
 
 	expected<void, std::string> MaterialAppComponent::shutdown() noexcept
 	{
-		const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
-			_albedoLutSamplerUniform, _baseColorUniform, _specularColorUniform,
-			_metallicRoughnessNormalOcclusionUniform, _emissiveColorUniform,
-			_hasTexturesUniform, _multipleScatteringUniform
-		};
-		for (const auto& uniform : uniforms)
-		{
-			if (isValid(uniform))
-			{
-				bgfx::destroy(uniform);
-				uniform.get().idx = bgfx::kInvalidHandle;
-			}
-		}
-		_basicUniforms.shutdown();
-		_defaultTexture.reset();
-		_uniformHandles.shutdown();
+		_renderConfig.reset();
 		return {};
 	}
 
-	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept
+	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept
 	{
-		glm::vec4 hasTextures{ 0 };
-
-		for (const auto& [type, key] : _textureUniformKeys)
-		{
-			auto itr = mat.textures.find(type);
-			std::shared_ptr<Texture> tex;
-			if (itr != mat.textures.end())
-			{
-				hasTextures.x += 1 << (int)type;
-				tex = itr->second;
-			}
-			else
-			{
-				tex = _defaultTexture;
-			}
-			_uniformHandles.configure(encoder, key, tex);
-		}
-
-		// pbr
-		encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, _albedoLutSamplerUniform, _defaultTexture->getHandle());
-		auto val = Colors::normalize(mat.baseColor);
-		encoder.setUniform(_baseColorUniform, glm::value_ptr(val));
-		val = glm::vec4{ mat.metallicFactor, mat.roughnessFactor, mat.normalScale, mat.occlusionStrength };
-		encoder.setUniform(_metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
-		val = glm::vec4{ Colors::normalize(mat.emissiveColor), 0 };
-		encoder.setUniform(_emissiveColorUniform, glm::value_ptr(val));
-		val = glm::vec4{ mat.multipleScattering ? 1.F : 0.F, mat.whiteFurnanceFactor, 0, 0 };
-		encoder.setUniform(_multipleScatteringUniform, glm::value_ptr(val));
-		
-		// phong
-		val = glm::vec4{ Colors::normalize(mat.specularColor), mat.shininess };
-		encoder.setUniform(_specularColorUniform, glm::value_ptr(val));
-
-		encoder.setUniform(_hasTexturesUniform, glm::value_ptr(hasTextures));
-		_basicUniforms.configure(encoder);
-		_uniformHandles.configure(encoder, mat.uniformValues);
-
-		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
-		state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | BGFX_STATE_DEPTH_TEST_LEQUAL;
-		if (!mat.twoSided)
-		{
-			state |= BGFX_STATE_CULL_CCW;
-		}
-		if (mat.primitiveType == Material::Definition::Line)
-		{
-			state &= ~BGFX_STATE_MSAA;
-			state |= BGFX_STATE_PT_LINES;
-			state |= BGFX_STATE_LINEAA;
-		}
-		auto opa = mat.opacityType;
-		if (opa == Material::Definition::Transparent || opa == Material::Definition::Mask)
-		{
-			state |= BGFX_STATE_BLEND_ALPHA;
-		}
-		else
-		{
-			state &= ~BGFX_STATE_WRITE_A;
-		}
-		
-		encoder.setState(state);
-		auto prog = mat.program->getHandle(mat.programDefines);
-		encoder.submit(viewId, prog);
+		auto& renderConfig = _renderConfig ? *_renderConfig : RenderConfig::getDefault();
+		material.renderSubmit(viewId, encoder, renderConfig);
 	}
 }

@@ -64,6 +64,7 @@ namespace darmok::editor
     class ObjectEditor : public BaseObjectEditor
     {
     public:
+        using Object = T;
 		using Any = BaseObjectEditor::Any;
     protected:
         virtual RenderResult renderType(T& obj) noexcept { return false; };
@@ -357,7 +358,7 @@ namespace darmok::editor
         using RenderResult = expected<bool, std::string>;
 
         RenderResult render(google::protobuf::Message& obj, bool withTitle = false) const noexcept;
-        expected<void, std::string> add(std::unique_ptr<IObjectEditor>&& editor) noexcept;
+        expected<void, std::string> add(std::unique_ptr<IObjectEditor> editor) noexcept;
         expected<void, std::string> init(EditorApp& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
 

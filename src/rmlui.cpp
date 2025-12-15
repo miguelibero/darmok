@@ -63,29 +63,12 @@ namespace darmok
         , _scissor(0)
         , _trans(1.F)
         , _viewId(0)
-        , _textureUniform{ bgfx::kInvalidHandle }
-        , _dataUniform{ bgfx::kInvalidHandle }
+        , _textureUniform{ "s_texColor", bgfx::UniformType::Sampler }
+        , _dataUniform{ "u_rmluiData", bgfx::UniformType::Vec4 }
     {
-        _textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
-        _dataUniform = bgfx::createUniform("u_rmluiData", bgfx::UniformType::Vec4);
-
         if (auto result = Program::loadStaticMem(rmlui_program))
         {
             _program = std::make_unique<Program>(std::move(result).value());
-        }
-    }
-
-    RmluiRenderInterface::~RmluiRenderInterface() noexcept
-    {
-        const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{ _textureUniform, _dataUniform };
-        for (auto ref : uniforms)
-        {
-            auto& uniform = ref.get();
-            if (isValid(uniform))
-            {
-                bgfx::destroy(uniform);
-                uniform.idx = bgfx::kInvalidHandle;
-            }
         }
     }
 

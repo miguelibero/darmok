@@ -322,7 +322,7 @@ namespace darmok
 		return newPoint;
 	}
 
-	void WindowImpl::addListener(std::unique_ptr<IWindowListener>&& listener) noexcept
+	void WindowImpl::addListener(std::unique_ptr<IWindowListener> listener) noexcept
 	{
 		_listeners.insert(std::move(listener));
 	}
@@ -463,7 +463,7 @@ namespace darmok
 		_impl->addListener(listener);
 	}
 
-	void Window::addListener(std::unique_ptr<IWindowListener>&& listener) noexcept
+	void Window::addListener(std::unique_ptr<IWindowListener> listener) noexcept
 	{
 		_impl->addListener(std::move(listener));
 	}

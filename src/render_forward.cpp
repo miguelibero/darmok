@@ -61,7 +61,7 @@ namespace darmok
 		}
 		if (!_cam->isEnabled())
 		{
-			return unexpected<std::string>{"camera disabled"};
+			return {};
 		}
 		auto viewId = _viewId.value();
 		auto& encoder = *bgfx::begin();

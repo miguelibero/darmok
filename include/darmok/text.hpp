@@ -106,8 +106,8 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
         std::shared_ptr<Program> _prog;
-        bgfx::UniformHandle _colorUniform;
-        bgfx::UniformHandle _textureUniform;
+        UniformHandle _colorUniform;
+        UniformHandle _textureUniform;
     };
 
     struct TextureAtlas;

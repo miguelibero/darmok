@@ -18,7 +18,6 @@ namespace darmok
     class DARMOK_EXPORT DebugRenderer final
     {
     public:
-        DebugRenderer() noexcept;
         expected<void, std::string> init(App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
         expected<void, std::string> renderMesh(MeshData& meshData, bgfx::ViewId viewId, bgfx::Encoder& encoder, uint8_t color, bool lines = true) noexcept;
@@ -27,8 +26,8 @@ namespace darmok
     private:
         std::unique_ptr<Texture> _tex;
         std::shared_ptr<Program> _prog;
-        bgfx::UniformHandle _textureUniform;
-        bgfx::UniformHandle _hasTexturesUniform;
-        bgfx::UniformHandle _colorUniform;
+        UniformHandle _textureUniform;
+        UniformHandle _hasTexturesUniform;
+        UniformHandle _colorUniform;
     };
 }

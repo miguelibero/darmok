@@ -276,8 +276,6 @@ namespace darmok
 
 	TextRenderer::TextRenderer(const std::shared_ptr<Program>& prog) noexcept
 		: _prog{ prog }
-		, _colorUniform{ bgfx::kInvalidHandle }
-		, _textureUniform{ bgfx::kInvalidHandle }
 	{
 	}
 
@@ -291,8 +289,8 @@ namespace darmok
 		_prog = progResult.value();
 		_scene = scene;
 		_cam = cam;
-		_colorUniform = bgfx::createUniform("u_color", bgfx::UniformType::Vec4);
-		_textureUniform = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
+		_colorUniform = { "u_color", bgfx::UniformType::Vec4 };
+		_textureUniform = { "s_texColor", bgfx::UniformType::Sampler };
 		return {};
 	}
 
@@ -300,16 +298,8 @@ namespace darmok
 	{
 		_scene.reset();
 		_cam.reset();
-
-		std::vector<bgfx::UniformHandle> uniforms{ _colorUniform, _textureUniform };
-		for (auto& uniform : uniforms)
-		{
-			if (isValid(uniform))
-			{
-				bgfx::destroy(uniform);
-				uniform.idx = bgfx::kInvalidHandle;
-			}
-		}
+		_colorUniform.reset();
+		_textureUniform.reset();
 		return {};
 	}
 

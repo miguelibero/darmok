@@ -53,13 +53,43 @@ namespace darmok
         bool setTexturePath(MaterialTextures& textures, MaterialTextures::iterator itr, const std::string& texturePath) noexcept;
     };
 
-    struct DARMOK_EXPORT Material
+    struct DARMOK_EXPORT MaterialRenderConfig final
+    {
+        using TextureType = protobuf::MaterialTexture::Type;
+
+        std::unordered_map<TextureType, TextureUniformKey> textureUniformKeys;
+        UniformHandleContainer uniformHandles;
+
+        UniformHandle albedoLutSamplerUniform;
+        UniformHandle baseColorUniform;
+        UniformHandle specularColorUniform;
+        UniformHandle metallicRoughnessNormalOcclusionUniform;
+        UniformHandle emissiveColorUniform;
+        UniformHandle hasTexturesUniform;
+        UniformHandle multipleScatteringUniform;
+        BasicUniforms basicUniforms;
+        std::shared_ptr<Texture> defaultTexture;
+
+        MaterialRenderConfig() = default;
+        MaterialRenderConfig(const MaterialRenderConfig& other) = delete;
+        MaterialRenderConfig& operator=(const MaterialRenderConfig& other) = delete;
+        MaterialRenderConfig(MaterialRenderConfig&& other) = default;
+        MaterialRenderConfig& operator=(MaterialRenderConfig&& other) = default;
+
+        static const MaterialRenderConfig& getDefault() noexcept;
+        static MaterialRenderConfig createDefault() noexcept;
+
+        void reset() noexcept;
+    };
+
+    struct DARMOK_EXPORT Material final
     {
         using TextureType = protobuf::MaterialTexture::Type;
         using PrimitiveType = protobuf::Material::PrimitiveType;
         using OpacityType = protobuf::Material::OpacityType;
         using Definition = protobuf::Material;
         using TextureDefinition = protobuf::MaterialTexture;
+        using RenderConfig = MaterialRenderConfig;
 
         std::shared_ptr<Program> program;
         ProgramDefines programDefines;
@@ -96,32 +126,20 @@ namespace darmok
         Material(std::shared_ptr<Program> prog, const Color& color) noexcept;
 
         [[nodiscard]] static Definition createDefinition() noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const RenderConfig& config = RenderConfig::getDefault()) const noexcept;
     };
 
     class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>
     {
     public:
-        MaterialAppComponent() noexcept;
-        ~MaterialAppComponent() noexcept;
+        using RenderConfig = MaterialRenderConfig;
+
         expected<void, std::string> init(App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& mat) const noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept;
     private:
-        using TextureType = Material::TextureType;
-
-        std::unordered_map<TextureType, TextureUniformKey> _textureUniformKeys;
-        UniformHandleContainer _uniformHandles;
-
-        bgfx::UniformHandle _albedoLutSamplerUniform;
-        bgfx::UniformHandle _baseColorUniform;
-        bgfx::UniformHandle _specularColorUniform;
-        bgfx::UniformHandle _metallicRoughnessNormalOcclusionUniform;
-        bgfx::UniformHandle _emissiveColorUniform;
-        bgfx::UniformHandle _hasTexturesUniform;
-        bgfx::UniformHandle _multipleScatteringUniform;
-        BasicUniforms _basicUniforms;
-        std::shared_ptr<Texture> _defaultTexture;
+        std::optional<RenderConfig> _renderConfig;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IMaterialDefinitionLoader : public ILoader<Material::Definition>{};

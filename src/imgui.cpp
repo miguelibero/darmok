@@ -47,8 +47,8 @@ namespace darmok
 	ImguiRenderPass::ImguiRenderPass(IImguiRenderer& renderer, ImGuiContext* imgui) noexcept
 		: _renderer{ renderer }
 		, _imgui{ imgui }
-		, _lodEnabledUniform{ bgfx::createUniform("u_imageLodEnabled", bgfx::UniformType::Vec4) }
-		, _textureUniform{ bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler) }
+		, _lodEnabledUniform{ "u_imageLodEnabled", bgfx::UniformType::Vec4 }
+		, _textureUniform{ "s_texColor", bgfx::UniformType::Sampler }
 	{
 	}
 
@@ -88,22 +88,6 @@ namespace darmok
 		}
 		_fontsTexture = std::make_unique<Texture>(std::move(texResult).value());
 		return {};
-	}
-
-	ImguiRenderPass::~ImguiRenderPass() noexcept
-	{
-		const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms
-		{
-			_textureUniform, _lodEnabledUniform
-		};
-		for (auto uniform : uniforms)
-		{
-			if (isValid(uniform.get()))
-			{
-				bgfx::destroy(uniform.get());
-				uniform.get().idx = bgfx::kInvalidHandle;
-			}
-		}
 	}
 
 	bgfx::ViewId ImguiRenderPass::renderReset(bgfx::ViewId viewId) noexcept

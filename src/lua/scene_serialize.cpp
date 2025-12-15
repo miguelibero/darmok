@@ -229,13 +229,23 @@ namespace darmok
 	{
 	}
 
+	LuaSceneLoader::LuaSceneLoader(sol::this_state ts)
+	{
+		sol::object luaApp = sol::state_view{ ts }["app"];
+		if (!luaApp.is<App>())
+		{
+			throw sol::error{ "missing app global" };
+		}
+		_loader = std::make_unique<SceneLoader>(luaApp.as<App>());
+	}
+
 	LuaSceneLoader::~LuaSceneLoader() = default;
 
 	void LuaSceneLoader::bind(sol::state_view& lua) noexcept
 	{
 		LuaEntityDefinition::bind(lua);
 		lua.new_usertype<LuaSceneLoader>("SceneLoader",
-			sol::constructors<LuaSceneLoader(App&)>(),
+			sol::constructors<LuaSceneLoader(App&), LuaSceneLoader(sol::this_state)>(),
 			"parent", sol::property(&LuaSceneLoader::setParent),
 			"add_component_listener", &LuaSceneLoader::addComponentListener,
 			"clear_component_listeners", &LuaSceneLoader::clearComponentListeners,

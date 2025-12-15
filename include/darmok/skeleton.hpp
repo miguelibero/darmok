@@ -344,7 +344,7 @@ namespace darmok
         static Definition createDefinition() noexcept;
         expected<void, std::string> load(const Definition& def) noexcept;
     private:
-        bgfx::UniformHandle _skinningUniform;
+        UniformHandle _skinningUniform;
         std::vector<glm::mat4> _skinning;
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;

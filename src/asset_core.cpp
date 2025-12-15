@@ -852,7 +852,7 @@ namespace darmok
         return outputs;
     }
 
-    void FileImporterImpl::addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept
+    void FileImporterImpl::addTypeImporter(std::unique_ptr<IFileTypeImporter> importer) noexcept
     {
         _importers[importer->getName()] = std::move(importer);
     }
@@ -1059,7 +1059,7 @@ namespace darmok
         return *this;
     }
 
-    FileImporter& FileImporter::addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept
+    FileImporter& FileImporter::addTypeImporter(std::unique_ptr<IFileTypeImporter> importer) noexcept
     {
         _impl->addTypeImporter(std::move(importer));
         return *this;

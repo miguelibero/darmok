@@ -74,7 +74,6 @@ namespace darmok::editor
         EditorSceneView _sceneView;
         EditorInspectorView _inspectorView;
         EditorAssetsView _assetsView;
-        bool _scenePlaying;
 
         ImGuiID _dockDownId;
         ImGuiID _dockRightId;
@@ -110,6 +109,7 @@ namespace darmok::editor
         void playScene() noexcept;
         void stopScene() noexcept;
         void pauseScene() noexcept;
+        bool isScenePlaying() const noexcept;
 
         EntityId getSelectedEntity() const noexcept;
 

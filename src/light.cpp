@@ -278,11 +278,9 @@ namespace darmok
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept
-        : _lightCountUniform{ bgfx::kInvalidHandle }
-        , _lightDataUniform{ bgfx::kInvalidHandle }
-        , _camPosUniform{ bgfx::kInvalidHandle }
-        , _pointLightBuffer{ bgfx::kInvalidHandle }
-        , _normalMatrixUniform{ bgfx::kInvalidHandle }
+        : _pointLightBuffer{ bgfx::kInvalidHandle }
+        , _dirLightBuffer{ bgfx::kInvalidHandle }
+        , _spotLightBuffer{ bgfx::kInvalidHandle }
         , _lightCount(0)
         , _lightData(0)
         , _camPos(0)
@@ -324,25 +322,18 @@ namespace darmok
         _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _dirLightBuffer = bgfx::createDynamicVertexBuffer(1, _dirLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _spotLightBuffer = bgfx::createDynamicVertexBuffer(1, _spotLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _lightCountUniform = bgfx::createUniform("u_lightCountVec", bgfx::UniformType::Vec4);
-        _lightDataUniform = bgfx::createUniform("u_ambientLightIrradiance", bgfx::UniformType::Vec4);
-        _camPosUniform = bgfx::createUniform("u_camPos", bgfx::UniformType::Vec4);
-        _normalMatrixUniform = bgfx::createUniform("u_normalMatrix", bgfx::UniformType::Mat3);
+        _lightCountUniform = { "u_lightCountVec", bgfx::UniformType::Vec4 };
+        _lightDataUniform = { "u_ambientLightIrradiance", bgfx::UniformType::Vec4 };
+        _camPosUniform = { "u_camPos", bgfx::UniformType::Vec4 };
+        _normalMatrixUniform = { "u_normalMatrix", bgfx::UniformType::Mat3 };
     }
 
     void LightingRenderComponent::destroyHandles() noexcept
     {
-        const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
-            _lightCountUniform, _lightDataUniform, _camPosUniform, _normalMatrixUniform
-        };
-        for (auto& uniform : uniforms)
-        {
-            if (isValid(uniform))
-            {
-                bgfx::destroy(uniform);
-                uniform.get().idx = bgfx::kInvalidHandle;
-            }
-        }
+        _lightCountUniform.reset();
+        _lightDataUniform.reset();
+        _camPosUniform.reset();
+        _normalMatrixUniform.reset();
         const std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers = {
             _pointLightBuffer, _dirLightBuffer, _spotLightBuffer
         };

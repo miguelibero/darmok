@@ -94,6 +94,7 @@ namespace darmok
 	{
 	public:
 		LuaSceneLoader(App& app);
+		LuaSceneLoader(sol::this_state ts);
 		~LuaSceneLoader();
 
 		static void bind(sol::state_view& lua) noexcept;

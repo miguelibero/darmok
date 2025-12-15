@@ -23,7 +23,7 @@ namespace darmok
     private:
         OptionalRef<Camera> _cam;
         std::unique_ptr<Mesh> _mesh;
-        bgfx::UniformHandle _texUniform;
+        UniformHandle _texUniform;
         std::shared_ptr<Texture> _texture;
         std::unique_ptr<Program> _program;
     };
@@ -61,9 +61,9 @@ namespace darmok
         OptionalRef<Camera> _cam;
         std::unique_ptr<Program> _program;
         std::unique_ptr<Mesh> _mesh;
-        bgfx::UniformHandle _color1Uniform;
-        bgfx::UniformHandle _color2Uniform;
-        bgfx::UniformHandle _dataUniform;
+        UniformHandle _color1Uniform;
+        UniformHandle _color2Uniform;
+        UniformHandle _dataUniform;
     };
 
     class DARMOK_EXPORT EnvironmentMap final

@@ -3,6 +3,70 @@
 
 namespace darmok::editor
 {
+    std::string Physics3dShapeInspectorEditor::getTitle() const noexcept
+    {
+        return "Physics3d Shape";
+    }
+    
+    Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderType(physics3d::PhysicsBody::ShapeDefinition& shape) noexcept
+    {
+        auto changed = false;
+
+        Physics3dShapeType type = Physics3dShapeType::Sphere;
+        if (shape.has_capsule())
+        {
+            type = Physics3dShapeType::Capsule;
+        }
+        else if (shape.has_cube())
+        {
+            type = Physics3dShapeType::Cube;
+        }
+        else if (shape.has_sphere())
+        {
+            type = Physics3dShapeType::Sphere;
+        }
+        else if (shape.has_polygon())
+        {
+            type = Physics3dShapeType::Polygon;
+        }
+        else if (shape.has_bounding_box())
+        {
+            type = Physics3dShapeType::BoundingBox;
+        }
+        if (ImguiUtils::drawEnumCombo("Type", type))
+        {
+            changed = true;
+        }
+
+        RenderResult result;
+        if (type == Physics3dShapeType::Sphere)
+        {
+            result = renderChild(*shape.mutable_sphere());
+        }
+        else if (type == Physics3dShapeType::Cube)
+        {
+            result = renderChild(*shape.mutable_cube());
+        }
+        else if (type == Physics3dShapeType::Capsule)
+        {
+            result = renderChild(*shape.mutable_capsule());
+        }
+        else if (type == Physics3dShapeType::Polygon)
+        {
+            result = renderChild(*shape.mutable_polygon());
+        }
+        else if (type == Physics3dShapeType::BoundingBox)
+        {
+            result = renderChild(*shape.mutable_bounding_box());
+        }
+        if (!result)
+        {
+            return result;
+        }
+        changed |= *result;
+        return changed;
+    }
+
     std::string Physics3dBodyInspectorEditor::getTitle() const noexcept
     {
         return "Physics3d Body";
@@ -11,10 +75,12 @@ namespace darmok::editor
     Physics3dBodyInspectorEditor::RenderResult Physics3dBodyInspectorEditor::renderType(physics3d::PhysicsBody::Definition& def) noexcept
     {
         auto changed = false;
-        if (ImguiUtils::drawProtobufInput("Shape", "shape", def))
+        auto result = renderChild(*def.mutable_shape(), true);
+        if (!result)
         {
-            changed = true;
+            return result;
         }
+        changed |= *result;
         if (ImguiUtils::drawProtobufInput("Motion", "motion", def))
         {
             changed = true;

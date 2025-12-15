@@ -415,7 +415,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<void, std::string> Camera::addComponent(std::unique_ptr<ICameraComponent>&& component) noexcept
+    expected<void, std::string> Camera::addComponent(std::unique_ptr<ICameraComponent> component) noexcept
     {
         if (auto type = component->getCameraComponentType())
         {

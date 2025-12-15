@@ -12,35 +12,143 @@
 #include <darmok/render_forward.hpp>
 #include <darmok/culling.hpp>
 #include <darmok/input.hpp>
+#include <darmok/shape.hpp>
+#include <darmok/mesh.hpp>
+#include <darmok/glm.hpp>
 
-#include <glm/glm.hpp>
 #include <imgui.h>
-#include <ImGuizmo.h>
 
 namespace darmok::editor
 {
+    expected<void, std::string> TransformGizmo::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _app = app;
+        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        if (!progResult)
+        {
+            return unexpected{ std::move(progResult).error() };
+        }
+        auto prog = progResult.value();
+        auto meshResult = MeshData{ Sphere{} }.createMesh(prog->getVertexLayout());
+        if (!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+        }
+        _transMesh = std::make_unique<Mesh>(std::move(meshResult).value());
+
+        return {};
+    }
+
+    expected<void, std::string> TransformGizmo::shutdown() noexcept
+    {
+        _transMesh.reset();
+        return {};
+    }
+
+    expected<void, std::string> TransformGizmo::update(float deltaTime) noexcept
+    {
+        if (!_app)
+        {
+            return unexpected<std::string>{"uninitialized app"};
+        }
+        static const InputEvents grabEvents = {
+            Keyboard::createInputEvent(Keyboard::Definition::KeyW)
+        };
+        static const InputEvents translateEvents = {
+            Keyboard::createInputEvent(Keyboard::Definition::KeyW)
+        };
+        static const InputEvents rotateEvents = {
+            Keyboard::createInputEvent(Keyboard::Definition::KeyE)
+        };
+        static const InputEvents scaleEvents = {
+            Keyboard::createInputEvent(Keyboard::Definition::KeyR)
+        };
+
+        auto& input = _app->getInput();
+        if (input.checkEvents(grabEvents))
+        {
+            _mode = Mode::Grab;
+        }
+        else if (input.checkEvents(translateEvents))
+        {
+            _mode = Mode::Translate;
+        }
+        else if (input.checkEvents(rotateEvents))
+        {
+            _mode = Mode::Rotate;
+        }
+        else if (input.checkEvents(scaleEvents))
+        {
+            _mode = Mode::Scale;
+        }
+    }
+
+    expected<void, std::string> TransformGizmo::render(bgfx::Encoder& encoder, Entity entity) noexcept
+    {
+        if (_transMesh)
+        {
+            auto result = _transMesh->render(encoder);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        return {};
+    }
+
+    TransformGizmo::Mode TransformGizmo::getMode() const noexcept
+    {
+        return _mode;
+    }
+
+    void TransformGizmo::setMode(Mode mode) noexcept
+    {
+        _mode = mode;
+    }
+
     const std::string EditorSceneView::_windowName = "Scene View";
 
     EditorSceneView::EditorSceneView(App& app) noexcept
-        : _app(app)
-        , _mouseMode(MouseSceneViewMode::None)
-        , _focused(false)
-        , _transGizmoMode(TransformGizmoMode::Grab)
-        , _selectedEntity(entt::null)
+        : _app{ app }
+        , _mouseMode{ MouseMode::None }
+        , _focused{ false }
+        , _selectedEntity{ entt::null }
     {
     }
 
-    expected<void, std::string> EditorSceneView::init(const std::shared_ptr<Scene>& scene, Camera& cam) noexcept
+    expected<void, std::string> EditorSceneView::init(std::shared_ptr<Scene> scene, Camera& cam) noexcept
     {
+        {
+            auto result = addGizmo<TransformGizmo>();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            _transformGizmo = result.value().get();
+        }
+
         _scene = scene;
         _cam = cam;
 
-        glm::uvec2 size(0);
+        glm::uvec2 size{ 0 };
         if (_sceneBuffer)
         {
             size = _sceneBuffer->getSize();
         }
-        return updateSize(size);
+        auto result = updateSize(size);
+        if (!result)
+        {
+            return result;
+        }
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->init(cam, *scene, _app);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        return {};
     }
     
     expected<void, std::string> EditorSceneView::shutdown() noexcept
@@ -49,20 +157,20 @@ namespace darmok::editor
         _sceneBuffer.reset();
         _cam.reset();
         _focused = false;
-        _mouseMode = MouseSceneViewMode::None;
-        _transGizmoMode = TransformGizmoMode::Grab;
+        _mouseMode = MouseMode::None;
+
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->shutdown();
+            if (!result)
+            {
+                return result;
+            }
+        }
+        _transformGizmo.reset();
+        _gizmos.clear();
+
         return {};
-    }
-
-    TransformGizmoMode EditorSceneView::getTransformGizmoMode() const noexcept
-    {
-        return _transGizmoMode;
-    }
-
-    EditorSceneView& EditorSceneView::setTransformGizmoMode(TransformGizmoMode mode) noexcept
-    {
-        _transGizmoMode = mode;
-        return *this;
     }
 
     EditorSceneView& EditorSceneView::selectEntity(Entity entity) noexcept
@@ -71,9 +179,27 @@ namespace darmok::editor
         return *this;
     }
 
-    MouseSceneViewMode EditorSceneView::getMouseMode() const noexcept
+    EditorSceneView::MouseMode EditorSceneView::getMouseMode() const noexcept
     {
         return _mouseMode;
+    }
+
+    EditorSceneView::TransformMode EditorSceneView::getTransformMode() const noexcept
+    {
+        if (_transformGizmo)
+        {
+            return _transformGizmo->getMode();
+        }
+        return TransformMode::Grab;
+    }
+
+    EditorSceneView& EditorSceneView::setTransformMode(TransformMode mode) noexcept
+    {
+        if (_transformGizmo)
+        {
+            _transformGizmo->setMode(mode);
+        }
+        return *this;
     }
 
     const std::string& EditorSceneView::getWindowName() noexcept
@@ -118,102 +244,20 @@ namespace darmok::editor
         return {};
     }
 
-    void EditorSceneView::renderGizmos() noexcept
+    expected<void, std::string> EditorSceneView::addGizmo(std::unique_ptr<ISceneGizmo> gizmo) noexcept
     {
-        if (!_cam || !_scene)
+        if (_cam && _scene)
         {
-            return;
+            auto result = gizmo->init(*_cam, *_scene, _app);
+            if (!result)
+            {
+                return result;
+            }
         }
-
-        ImVec2 min = ImGui::GetItemRectMin();
-        ImVec2 size = ImGui::GetItemRectSize();
-        ImGuizmo::SetRect(min.x, min.y, size.x, size.y);
-        ImGuizmo::SetGizmoSizeClipSpace(0.2F);
-        ImGuizmo::Enable(true);
-
-        auto view = _cam->getViewMatrix();
-        auto viewPos = min;
-        ImVec2 viewSize(100, 100);
-        viewPos.x += size.x - viewSize.x;
-        ImGuizmo::ViewManipulate(glm::value_ptr(view), 100.0F, viewPos, viewSize, 0x101010DD);
-
-        if (_selectedEntity == entt::null)
-        {
-            return;
-        }
-
-        auto trans = _scene->getComponent<Transform>(_selectedEntity);
-        if (!trans)
-        {
-            return;
-        }
-
-        auto worldPos = trans->getWorldPosition();
-        if (!_cam->isWorldPointVisible(worldPos))
-        {
-            return;
-        }
-
-        auto proj = _cam->getProjectionMatrix();
-        auto op = ImGuizmo::TRANSLATE;
-        switch (_transGizmoMode)
-        {
-        case TransformGizmoMode::Rotate:
-            op = ImGuizmo::ROTATE;
-            break;
-        case TransformGizmoMode::Scale:
-            op = ImGuizmo::SCALE;
-            break;
-        case TransformGizmoMode::Grab:
-            // TODO
-            break;
-        case TransformGizmoMode::Translate:
-            break;
-        }
-
-        auto mode = ImGuizmo::LOCAL;
-        auto mtx = trans->getLocalMatrix();
-
-        if (ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), op, mode, glm::value_ptr(mtx)))
-        {
-            trans->setLocalMatrix(mtx);
-        }
+        _gizmos.push_back(std::move(gizmo));
+        return {};
     }
 
-    void EditorSceneView::updateInputEvents(float deltaTime) noexcept
-    {
-        static const InputEvents gizmoModeGrabEvents = {
-            Keyboard::createInputEvent(Keyboard::Definition::KeyW)
-        };
-        static const InputEvents gizmoModeTranslateEvents = {
-            Keyboard::createInputEvent(Keyboard::Definition::KeyW)
-        };
-        static const InputEvents gizmoModeRotateEvents = {
-            Keyboard::createInputEvent(Keyboard::Definition::KeyE)
-        };
-        static const InputEvents gizmoModeScaleEvents = {
-            Keyboard::createInputEvent(Keyboard::Definition::KeyR)
-        };
-
-        auto& input = _app.getInput();
-        if (input.checkEvents(gizmoModeGrabEvents))
-        {
-            _transGizmoMode = TransformGizmoMode::Grab;
-        }
-        else if (input.checkEvents(gizmoModeTranslateEvents))
-        {
-            _transGizmoMode = TransformGizmoMode::Translate;
-        }
-        else if (input.checkEvents(gizmoModeRotateEvents))
-        {
-            _transGizmoMode = TransformGizmoMode::Rotate;
-        }
-        else if (input.checkEvents(gizmoModeScaleEvents))
-        {
-            _transGizmoMode = TransformGizmoMode::Scale;
-        }
-    }
-    
     void EditorSceneView::updateCamera(float deltaTime) noexcept
     {
         auto trans = _cam->getTransform();
@@ -256,12 +300,12 @@ namespace darmok::editor
         look.y = Math::clamp(look.y, -90.F, 90.F);
         look = glm::radians(look) * lookSensitivity;
 
-        if (_mouseMode == MouseSceneViewMode::Look)
+        if (_mouseMode == MouseMode::Look)
         {
             rot = glm::quat(glm::vec3(0, look.x, 0)) * rot * glm::quat(glm::vec3(look.y, 0, 0));
             trans->setRotation(rot);
         }
-        if (_mouseMode == MouseSceneViewMode::Drag)
+        if (_mouseMode == MouseMode::Drag)
         {
             glm::vec2 drag;
             input.getAxis(drag, lookAxis);
@@ -283,13 +327,12 @@ namespace darmok::editor
     expected<void, std::string> EditorSceneView::update(float deltaTime) noexcept
     {
         updateCamera(deltaTime);
-        updateInputEvents(deltaTime);
+        return updateGizmos(deltaTime);
         return {};
     }
 
     expected<void, std::string> EditorSceneView::beforeRender() noexcept
     {
-        ImGuizmo::BeginFrame();
         return {};
     }
 
@@ -298,7 +341,7 @@ namespace darmok::editor
         if (ImGui::Begin(_windowName.c_str()))
         {
             auto size = ImGui::GetContentRegionAvail();
-            auto sizeResult = updateSize(glm::uvec2(size.x, size.y));
+            auto sizeResult = updateSize(glm::uvec2{ size.x, size.y });
             if (!sizeResult)
             {
                 return sizeResult;
@@ -306,38 +349,65 @@ namespace darmok::editor
 
             if (_sceneBuffer)
             {
-                ImguiTextureData texData(_sceneBuffer->getTexture()->getHandle());
+                ImguiTextureData texData{ _sceneBuffer->getTexture()->getHandle() };
                 ImGui::Image(texData, size);
-                renderGizmos();
             }
 
             _focused = ImGui::IsWindowFocused();
             if (ImGui::IsWindowHovered())
             {
-                if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && _transGizmoMode == TransformGizmoMode::Grab)
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
                 {
-                    _mouseMode = MouseSceneViewMode::Drag;
+                    _mouseMode = MouseMode::Drag;
                 }
                 else if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
                 {
-                    _mouseMode = MouseSceneViewMode::Look;
+                    _mouseMode = MouseMode::Look;
                 }
                 else if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
                 {
-                    _mouseMode = MouseSceneViewMode::Drag;
+                    _mouseMode = MouseMode::Drag;
                 }
                 else
                 {
-                    _mouseMode = MouseSceneViewMode::None;
+                    _mouseMode = MouseMode::None;
                 }
             }
             else
             {
-                _mouseMode = MouseSceneViewMode::None;
+                _mouseMode = MouseMode::None;
             }
         }
         ImGui::End();
         return {};
+    }
+
+    expected<void, std::string> EditorSceneView::updateGizmos(float deltaTime) noexcept
+    {
+        std::vector<std::string> errors;
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->update(deltaTime);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> EditorSceneView::renderGizmos(bgfx::Encoder& encoder) noexcept
+    {
+        std::vector<std::string> errors;
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->render(encoder, _selectedEntity);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
 }

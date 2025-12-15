@@ -205,27 +205,25 @@ namespace darmok::editor
         _requestReset = false;
         clearPath();
 
-        auto result = _app.getOrAddComponent<SceneAppComponent>();
+        auto compResult = _app.getOrAddComponent<SceneAppComponent>();
+        if (!compResult)
+        {
+            return unexpected{ std::move(compResult).error() };
+        }
+        _scene = compResult.value().get().getScene();
+        _scene->setPaused(true);
+
+        auto result = configureDefaultScene(_sceneWrapper);
         if (!result)
         {
-            return unexpected{ std::move(result).error() };
+            return result;
         }
-        _scene = result.value().get().getScene();
-        {
-            auto result = configureDefaultScene(_sceneWrapper);
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
-        }
-        
+
         _scene->destroyEntitiesImmediate();
+        result = configureEditorScene(*_scene);
+        if (!result)
         {
-            auto result = configureEditorScene(*_scene);
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
+            return result;
         }
         return doUpdateScene();
     }

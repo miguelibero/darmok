@@ -7,13 +7,6 @@
 
 namespace darmok
 {
-    DebugRenderer::DebugRenderer() noexcept
-        : _hasTexturesUniform{ bgfx::kInvalidHandle }
-        , _colorUniform{ bgfx::kInvalidHandle }
-        , _textureUniform{ bgfx::kInvalidHandle }
-    {
-    }
-
     expected<void, std::string> DebugRenderer::init(App& app) noexcept 
     {
         auto result = StandardProgramLoader::load(Program::Standard::Unlit);
@@ -22,9 +15,9 @@ namespace darmok
             return unexpected{ std::move(result).error() };
         }
         _prog = result.value();
-        _textureUniform = bgfx::createUniform("s_texBaseColor", bgfx::UniformType::Sampler);
-        _hasTexturesUniform = bgfx::createUniform("u_hasTextures", bgfx::UniformType::Vec4);
-        _colorUniform = bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4);
+        _textureUniform = {"s_texBaseColor", bgfx::UniformType::Sampler };
+        _hasTexturesUniform = {"u_hasTextures", bgfx::UniformType::Vec4 };
+        _colorUniform = { "u_baseColorFactor", bgfx::UniformType::Vec4 };
 
         Image img{ Colors::white(), app.getAssets().getAllocator() };
 		auto texResult = Texture::load(img);
@@ -39,16 +32,9 @@ namespace darmok
     expected<void, std::string> DebugRenderer::shutdown() noexcept
     {
         _prog.reset();
-        std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms =
-        { _hasTexturesUniform, _colorUniform, _textureUniform };
-        for (auto& uniform : uniforms)
-        {
-            if (isValid(uniform.get()))
-            {
-                bgfx::destroy(uniform);
-                uniform.get().idx = bgfx::kInvalidHandle;
-            }
-        }
+        _hasTexturesUniform.reset();
+        _colorUniform.reset();
+        _textureUniform.reset();
         return {};
     }
 

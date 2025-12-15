@@ -1,5 +1,6 @@
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/utils.hpp>
+#include <darmok-editor/app.hpp>
 
 #include <imgui.h>
 
@@ -90,4 +91,49 @@ namespace darmok::editor
         }
         return changed;
     }
+
+    std::string PolygonInspectorEditor::getTitle() const noexcept
+    {
+        return "Polygon";
+    }
+
+    PolygonInspectorEditor::RenderResult PolygonInspectorEditor::renderType(Polygon::Definition& poly) noexcept
+    {
+        auto changed = false;
+
+        auto meshDragType = getApp().getAssetDragType<Mesh::Source>().value_or("");
+        auto result = ImguiUtils::drawAssetReferenceInput("Mesh", _meshPath, meshDragType.c_str());
+        if (result == ReferenceInputAction::Changed)
+        {
+            auto defResult = getApp().getAssets().getMeshLoader().loadDefinition(_meshPath);
+            if (!defResult)
+            {
+                return unexpected{ std::move(defResult).error() };
+            }
+            poly = Polygon{ *defResult.value() };
+            changed = true;
+        }
+
+        return changed;
+    }
+
+
+    std::string BoundingBoxInspectorEditor::getTitle() const noexcept
+    {
+        return "Bounding Box";
+    }
+
+    BoundingBoxInspectorEditor::RenderResult BoundingBoxInspectorEditor::renderType(BoundingBox::Definition& bbox) noexcept
+    {
+        auto changed = false;
+        if (ImguiUtils::drawProtobufInput("Min", "min", bbox))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Max", "max", bbox))
+        {
+            changed = true;
+        }
+        return changed;
+    };
 }

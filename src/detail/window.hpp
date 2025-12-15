@@ -48,7 +48,7 @@ namespace darmok
 		glm::vec2 screenToWindowDelta(const glm::vec2& delta) const noexcept;
 		glm::vec2 getFramebufferScale() const noexcept;
 
-		void addListener(std::unique_ptr<IWindowListener>&& listener) noexcept;
+		void addListener(std::unique_ptr<IWindowListener> listener) noexcept;
 		void addListener(IWindowListener& listener) noexcept;
 		bool removeListener(const IWindowListener& listener) noexcept;
 		size_t removeListeners(const IWindowListenerFilter& filter) noexcept;

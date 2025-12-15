@@ -1052,32 +1052,27 @@ namespace darmok
             _dataLoader.setBasePath({});
         };
 
-        try
-        {
-            AssimpSceneDefinitionConverter converter{ *_currentScene, def, *_currentConfig, _alloc, texLoader };
-            auto convertResult = converter();
-            if (!convertResult)
-            {
-                return unexpected{ "failed to convert scene: " + convertResult.error() };
-            }
-            if (_currentConfig->compile())
-            {
-                if (!_compilerConfig)
-                {
-                    return unexpected{ "compiler config missing" };
-                }
-                SceneDefinitionCompiler compiler{ *_compilerConfig, _progLoader };
-                auto compileResult = compiler(def);
-                if (!compileResult)
-                {
-                    return unexpected{ "failed to compile scene: " + compileResult.error() };
-                }
-            }
-        }
-        catch (const std::exception& ex)
+        AssimpSceneDefinitionConverter converter{ *_currentScene, def, *_currentConfig, _alloc, texLoader };
+        auto convertResult = converter();
+        if (!convertResult)
         {
             fixDataLoaderPaths();
-            return unexpected{ ex.what() };
+            return unexpected{ "failed to convert scene: " + convertResult.error() };
+        }
+        if (_currentConfig->compile())
+        {
+            if (!_compilerConfig)
+            {
+                fixDataLoaderPaths();
+                return unexpected{ "compiler config missing" };
+            }
+            SceneDefinitionCompiler compiler{ *_compilerConfig, _progLoader };
+            auto compileResult = compiler(def);
+            if (!compileResult)
+            {
+                fixDataLoaderPaths();
+                return unexpected{ "failed to compile scene: " + compileResult.error() };
+            }
         }
         fixDataLoaderPaths();
 

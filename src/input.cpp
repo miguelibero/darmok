@@ -136,7 +136,7 @@ namespace darmok
 		_charsWrite = 0;
 	}
 
-	void KeyboardImpl::addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept
+	void KeyboardImpl::addListener(std::unique_ptr<IKeyboardListener> listener) noexcept
 	{
 		_listeners.insert(std::move(listener));
 	}
@@ -298,7 +298,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Keyboard::addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept
+	void Keyboard::addListener(std::unique_ptr<IKeyboardListener> listener) noexcept
 	{
 		_impl->addListener(std::move(listener));
 	}
@@ -526,7 +526,7 @@ namespace darmok
 		return _buttons;
 	}
 
-	void MouseImpl::addListener(std::unique_ptr<IMouseListener>&& listener) noexcept
+	void MouseImpl::addListener(std::unique_ptr<IMouseListener> listener) noexcept
 	{
 		_listeners.insert(std::move(listener));
 	}
@@ -690,7 +690,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Mouse::addListener(std::unique_ptr<IMouseListener>&& listener) noexcept
+	void Mouse::addListener(std::unique_ptr<IMouseListener> listener) noexcept
 	{
 		_impl->addListener(std::move(listener));
 	}
@@ -858,7 +858,7 @@ namespace darmok
 		return _num >= 0;
 	}
 
-	void GamepadImpl::addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept
+	void GamepadImpl::addListener(std::unique_ptr<IGamepadListener> listener) noexcept
 	{
 		_listeners.insert(std::move(listener));
 	}
@@ -1051,7 +1051,7 @@ namespace darmok
 		return *_impl;
 	}
 
-	void Gamepad::addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept
+	void Gamepad::addListener(std::unique_ptr<IGamepadListener> listener) noexcept
 	{
 		_impl->addListener(std::move(listener));
 	}

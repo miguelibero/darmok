@@ -24,7 +24,7 @@
 
 namespace darmok
 {
-	int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory>&& factory)
+	int32_t main(int32_t argc, const char* argv[], std::unique_ptr<IAppDelegateFactory> factory)
 	{
 		auto app = std::make_unique<App>(std::move(factory));
 		const CmdArgs args(argv, argc);
@@ -293,7 +293,7 @@ namespace darmok
 		return _dataLoader.removeRootPath(path);
 	}
 
-	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept
+	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept
 	{
 		_updaters.insert(std::move(updater));
 	}
@@ -487,7 +487,8 @@ namespace darmok
 			break;
 		}
 		out << ": " << error;
-		StreamUtils::log(out.str());
+		bx::debugBreak();
+		StreamUtils::log(out.str(), true);
 	}
 
 	expected<void, std::string> AppImpl::update(float deltaTime) noexcept
@@ -889,7 +890,7 @@ namespace darmok
 		return _runResult;
 	}
 
-	expected<void, std::string> AppImpl::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
+	expected<void, std::string> AppImpl::addComponent(std::unique_ptr<IAppComponent> component) noexcept
 	{
 		if (auto type = component->getAppComponentType())
 		{
@@ -956,7 +957,7 @@ namespace darmok
 		return **itr;
 	}
 
-	App::App(std::unique_ptr<IAppDelegateFactory>&& factory) noexcept
+	App::App(std::unique_ptr<IAppDelegateFactory> factory) noexcept
 		: _impl{ std::make_unique<AppImpl>(*this, std::move(factory)) }
 	{
 	}
@@ -1111,7 +1112,7 @@ namespace darmok
 		return _impl->removeAssetsRootPath(path);
 	}
 
-	void App::addUpdater(std::unique_ptr<IAppUpdater>&& updater) noexcept
+	void App::addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept
 	{
 		_impl->addUpdater(std::move(updater));
 	}
@@ -1171,7 +1172,7 @@ namespace darmok
 		return _impl->setRendererType(renderer);
 	}
 
-	expected<void, std::string> App::addComponent(std::unique_ptr<IAppComponent>&& component) noexcept
+	expected<void, std::string> App::addComponent(std::unique_ptr<IAppComponent> component) noexcept
 	{
 		return _impl->addComponent(std::move(component));
 	}

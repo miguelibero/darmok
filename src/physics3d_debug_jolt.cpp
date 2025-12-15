@@ -42,7 +42,7 @@ namespace darmok::physics3d
     }
 
     JoltPhysicsDebugRenderer::JoltPhysicsDebugRenderer() noexcept
-        : _colorUniform{ bgfx::createUniform("u_baseColorFactor", bgfx::UniformType::Vec4) }
+        : _colorUniform{ "u_baseColorFactor", bgfx::UniformType::Vec4 }
         , _solidMeshData{Mesh::Definition::Transient}
         , _wireMeshData{Mesh::Definition::Transient}
     {
@@ -51,15 +51,6 @@ namespace darmok::physics3d
             _program = result.value();
         }
         Initialize();
-    }
-
-    JoltPhysicsDebugRenderer::~JoltPhysicsDebugRenderer() noexcept
-    {
-        if (isValid(_colorUniform))
-        {
-            bgfx::destroy(_colorUniform);
-            _colorUniform.idx = bgfx::kInvalidHandle;
-        }
     }
 
     void JoltPhysicsDebugRenderer::shutdown() noexcept

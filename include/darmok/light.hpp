@@ -140,10 +140,10 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
 
-        bgfx::UniformHandle _lightCountUniform;
-        bgfx::UniformHandle _lightDataUniform;
-        bgfx::UniformHandle _camPosUniform;
-        bgfx::UniformHandle _normalMatrixUniform;
+        UniformHandle _lightCountUniform;
+        UniformHandle _lightDataUniform;
+        UniformHandle _camPosUniform;
+        UniformHandle _normalMatrixUniform;
         bgfx::DynamicVertexBufferHandle _pointLightBuffer;
         bgfx::DynamicVertexBufferHandle _dirLightBuffer;
         bgfx::DynamicVertexBufferHandle _spotLightBuffer;

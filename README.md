@@ -17,7 +17,6 @@ currently using:
 * [nlohmann-json](https://github.com/nlohmann/json) for parsing json
 * [pugixml](https://pugixml.org/) for parsing xml
 * [imgui](https://github.com/ocornut/imgui) for editor UI
-    * [imGuizmo](https://github.com/CedricGuillemet/ImGuizmo) for editor controls
 * [RmlUI](https://github.com/mikke89/RmlUi) for ingame UI
 * [ozz](https://github.com/guillaumeblanc/ozz-animation/) for 3d skeletal animations
 * [protocol buffers](https://protobuf.dev/getting-started/cpptutorial/) for serialization

@@ -28,7 +28,7 @@ namespace darmok::physics3d
     {
     public:
         using Definition = protobuf::PhysicsDebugRenderer;
-        PhysicsDebugRenderer(const Definition& def = {}) noexcept;
+        PhysicsDebugRenderer(const Definition& def = createDefinition()) noexcept;
         ~PhysicsDebugRenderer() noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;

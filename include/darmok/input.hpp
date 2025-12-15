@@ -85,7 +85,7 @@ namespace darmok
 		[[nodiscard]] const KeyboardModifiers& getModifiers() const noexcept;
 		[[nodiscard]] std::u32string_view getUpdateChars() const noexcept;
 
-		void addListener(std::unique_ptr<IKeyboardListener>&& listener) noexcept;
+		void addListener(std::unique_ptr<IKeyboardListener> listener) noexcept;
 		void addListener(IKeyboardListener& listener) noexcept;
 		bool removeListener(const IKeyboardListener& listener) noexcept;
 		size_t removeListeners(const IKeyboardListenerFilter& filter) noexcept;
@@ -155,7 +155,7 @@ namespace darmok
 		[[nodiscard]] const MouseButtons& getButtons() const noexcept;
 		[[nodiscard]] bool getButton(MouseButton button) const noexcept;
 
-		void addListener(std::unique_ptr<IMouseListener>&& listener) noexcept;
+		void addListener(std::unique_ptr<IMouseListener> listener) noexcept;
 		void addListener(IMouseListener& listener) noexcept;
 		bool removeListener(const IMouseListener& listener) noexcept;
 		size_t removeListeners(const IMouseListenerFilter& filter) noexcept;
@@ -226,7 +226,7 @@ namespace darmok
 		[[nodiscard]] const GamepadButtons& getButtons() const noexcept;
 		[[nodiscard]] bool isConnected() const noexcept;
 
-		void addListener(std::unique_ptr<IGamepadListener>&& listener) noexcept;
+		void addListener(std::unique_ptr<IGamepadListener> listener) noexcept;
 		void addListener(IGamepadListener& listener) noexcept;
 		bool removeListener(const IGamepadListener& listener) noexcept;
 		size_t removeListeners(const IGamepadListenerFilter& filter) noexcept;

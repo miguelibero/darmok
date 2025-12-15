@@ -44,7 +44,6 @@ namespace darmok::physics3d
     public:
         using Definition = protobuf::PhysicsDebugRenderer;
 
-        ~JoltPhysicsDebugRenderer() noexcept;
         static void init(const Definition& def, std::shared_ptr<IFont> font) noexcept;
         static expected<void, std::string> render(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
         static void shutdown() noexcept;
@@ -74,7 +73,7 @@ namespace darmok::physics3d
         MeshData _solidMeshData;
         MeshData _wireMeshData;
         std::vector<TextData> _textData;
-        bgfx::UniformHandle _colorUniform;
+        UniformHandle _colorUniform;
         std::shared_ptr<Program> _program;
 
         JoltPhysicsDebugRenderer() noexcept;

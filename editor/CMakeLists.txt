@@ -82,9 +82,6 @@ set_target_properties(${EDITOR_NAME}
 )
 target_link_libraries(${EDITOR_NAME} PRIVATE darmok)
 
-find_package(imguizmo CONFIG REQUIRED)
-target_link_libraries(${EDITOR_NAME} PRIVATE imguizmo::imguizmo)
-
 target_compile_definitions(${EDITOR_NAME} PRIVATE "DARMOK_IMPLEMENT_MAIN=1")
 
 target_sources(${EDITOR_NAME} PUBLIC FILE_SET HEADERS

@@ -9,6 +9,57 @@
 
 namespace darmok
 {
+	UniformHandle::UniformHandle() noexcept
+		: _bgfx{ bgfx::kInvalidHandle }
+	{
+	}
+
+	UniformHandle::UniformHandle(const std::string& name, bgfx::UniformType::Enum type, uint16_t num) noexcept
+		: _bgfx{ bgfx::createUniform(name.c_str(), type, num) }
+	{
+	}
+
+	UniformHandle::~UniformHandle() noexcept
+	{
+		reset();
+	}
+
+	bool UniformHandle::reset() noexcept
+	{
+		if (isValid(_bgfx))
+		{
+			bgfx::destroy(_bgfx);
+			_bgfx.idx = bgfx::kInvalidHandle;
+			return true;
+		}
+		return false;
+	}
+
+	UniformHandle::UniformHandle(UniformHandle&& other) noexcept
+		: _bgfx{ other._bgfx }
+	{
+		other._bgfx.idx = bgfx::kInvalidHandle;
+	}
+
+	UniformHandle& UniformHandle::operator=(UniformHandle&& other) noexcept
+	{
+		reset();
+		_bgfx = other._bgfx;
+		other._bgfx.idx = bgfx::kInvalidHandle;
+		return *this;
+	}
+
+	UniformHandle::operator bgfx::UniformHandle() const noexcept
+	{
+		return get();
+	}
+
+	const bgfx::UniformHandle& UniformHandle::get() const noexcept
+	{
+		return _bgfx;
+	}
+
+
 	UniformValue::UniformValue(const Definition& def) noexcept
 	{
 		if (def.has_mat4())
@@ -74,49 +125,19 @@ namespace darmok
 	}
 	
 	BasicUniforms::BasicUniforms() noexcept
-		: _timeValues(0)
-		, _randomValues(0)
-		, _randomEngine(std::random_device()())
-		, _randomDistFloat(0, 1)
-		, _randomDistInt(std::numeric_limits<int>::min(), std::numeric_limits<int>::max())
-		, _timeUniform{ bgfx::kInvalidHandle }
-		, _randomUniform{ bgfx::kInvalidHandle }
+		: _timeValues{ 0 }
+		, _randomValues{ 0 }
+		, _randomEngine{ std::random_device()() }
+		, _randomDistFloat{ 0, 1 }
+		, _randomDistInt{ std::numeric_limits<int>::min(), std::numeric_limits<int>::max() }
+		, _timeUniform{ "u_timeVec", bgfx::UniformType::Vec4 }
+		, _randomUniform{ "u_randomVec", bgfx::UniformType::Vec4 }
 	{
 	}
 
-	BasicUniforms::~BasicUniforms() noexcept
+	void BasicUniforms::clear() noexcept
 	{
-		shutdown();
-	}
-
-	void BasicUniforms::init() noexcept
-	{
-		_timeValues = glm::vec4(0);
-		if (isValid(_timeUniform))
-		{
-			bgfx::destroy(_timeUniform);
-		}
-		_timeUniform = bgfx::createUniform("u_timeVec", bgfx::UniformType::Vec4);
-		if (isValid(_randomUniform))
-		{
-			bgfx::destroy(_randomUniform);
-		}
-		_randomUniform = bgfx::createUniform("u_randomVec", bgfx::UniformType::Vec4);
-	}
-
-	void BasicUniforms::shutdown() noexcept
-	{
-		std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms = {
-			_timeUniform, _randomUniform
-		};
-		for (auto& uniform : uniforms)
-		{
-			if (isValid(uniform))
-			{
-				bgfx::destroy(uniform);
-				uniform.get().idx = bgfx::kInvalidHandle;
-			}
-		}
+		_timeValues = glm::vec4{ 0 };
 	}
 
 	void BasicUniforms::update(float deltaTime) noexcept
@@ -124,12 +145,12 @@ namespace darmok
 		_timeValues.x += deltaTime;
 		++_timeValues.y;
 		// TODO: probably very slow
-		_randomValues = glm::vec4(
+		_randomValues = glm::vec4{
 			_randomDistFloat(_randomEngine),
 			_randomDistFloat(_randomEngine),
 			_randomDistFloat(_randomEngine),
 			_randomDistFloat(_randomEngine)
-		);
+		};
 	}
 
 	void BasicUniforms::configure(bgfx::Encoder& encoder) const noexcept
@@ -138,17 +159,8 @@ namespace darmok
 		encoder.setUniform(_randomUniform, glm::value_ptr(_randomValues));
 	}
 
-	UniformHandleContainer::~UniformHandleContainer() noexcept
+	void UniformHandleContainer::clear() noexcept
 	{
-		shutdown();
-	}
-
-	void UniformHandleContainer::shutdown() noexcept
-	{
-		for (auto& [key, handle] : _handles)
-		{
-			bgfx::destroy(handle);
-		}
 		_handles.clear();
 	}
 
@@ -187,23 +199,22 @@ namespace darmok
 
 	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept
 	{
-		auto handle = getHandle({ key.name(), bgfx::UniformType::Sampler});
+		auto& handle = getHandle({ key.name(), bgfx::UniformType::Sampler });
 		encoder.setTexture(key.stage(), handle, tex->getHandle());
 	}
 
 	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const std::string& name, const UniformValue& val) const noexcept
 	{
-		auto handle = getHandle({ name, val.getType() });
+		auto& handle = getHandle({ name, val.getType() });
 		encoder.setUniform(handle, val.ptr());
 	}
 
-	bgfx::UniformHandle UniformHandleContainer::getHandle(const Key& key) const noexcept
+	const UniformHandle& UniformHandleContainer::getHandle(const Key& key) const noexcept
 	{
 		auto itr = _handles.find(key);
 		if (itr == _handles.end())
 		{
-			auto handler = bgfx::createUniform(key.name.c_str(), bgfx::UniformType::Sampler);
-			itr = _handles.emplace(key.name, handler).first;
+			itr = _handles.emplace(key.name, UniformHandle{ key.name, key.type }).first;
 		}
 		return itr->second;
 	}

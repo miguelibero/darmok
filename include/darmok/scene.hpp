@@ -474,6 +474,8 @@ namespace darmok
         std::shared_ptr<Scene> addScene() noexcept;
         expected<void, std::string> addScene(const std::shared_ptr<Scene>& scene) noexcept;
         const Scenes& getScenes() const noexcept;
+        bool isPaused() const noexcept;
+        SceneAppComponent& setPaused(bool paused) noexcept;
 
         expected<void, std::string> init(App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
@@ -483,6 +485,7 @@ namespace darmok
 
     private:
         Scenes _scenes;
+        bool _paused;
         OptionalRef<App> _app;
     };
 }

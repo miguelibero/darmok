@@ -27,7 +27,7 @@ namespace darmok
         return *this;
     }
 
-    FreelookController& FreelookController::addListener(std::unique_ptr<IFreelookListener>&& listener) noexcept
+    FreelookController& FreelookController::addListener(std::unique_ptr<IFreelookListener> listener) noexcept
     {
         _listeners.insert(std::move(listener));
         return *this;

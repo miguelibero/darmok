@@ -29,7 +29,6 @@ namespace darmok::editor
         , _dockCenterId{0}
         , _dockDownId{0}
         , _symbolsFont{nullptr}
-        , _scenePlaying{false}
         , _mainToolbarHeight{0.f}
     {
     }
@@ -198,16 +197,23 @@ namespace darmok::editor
 
     void EditorApp::playScene() noexcept
     {
-        _scenePlaying = true;
+        _proj.getScene()->setPaused(false);
     }
 
     void EditorApp::stopScene() noexcept
     {
-        _scenePlaying = false;
+        pauseScene();
+        _proj.requestSceneUpdate();
     }
 
     void EditorApp::pauseScene() noexcept
     {
+        _proj.getScene()->setPaused(true);
+    }
+
+    bool EditorApp::isScenePlaying() const noexcept
+    {
+        return !_proj.getScene()->isPaused();
     }
 
     EntityId EditorApp::getSelectedEntity() const noexcept
@@ -395,6 +401,7 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::renderMainToolbar() noexcept
     {
+        ImGuiIO& io = ImGui::GetIO();
         expected<void, std::string> result;
              
         ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -431,21 +438,21 @@ namespace darmok::editor
             ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_SingleSelect;
             auto ms = ImGui::BeginMultiSelect(flags);
 
-            auto renderOption = [this](const char* label, TransformGizmoMode mode)
+            auto renderOption = [this](const char* label, EditorSceneView::TransformMode mode)
             {
-                auto selected = _sceneView.getTransformGizmoMode() == mode;
+                auto selected = _sceneView.getTransformMode() == mode;
                 auto size = ImGui::CalcTextSize(label);
                 if (ImGui::Selectable(label, selected, 0, size))
                 {
-                    _sceneView.setTransformGizmoMode(mode);
+                    _sceneView.setTransformMode(mode);
                 }
                 ImGui::SameLine();
             };
 
-            renderOption(ICON_MD_BACK_HAND, TransformGizmoMode::Grab);
-            renderOption(ICON_MD_OPEN_WITH, TransformGizmoMode::Translate);
-            renderOption(ICON_MD_3D_ROTATION, TransformGizmoMode::Rotate);
-            renderOption(ICON_MD_SCALE, TransformGizmoMode::Scale);
+            renderOption(ICON_MD_BACK_HAND, EditorSceneView::TransformMode::Grab);
+            renderOption(ICON_MD_OPEN_WITH, EditorSceneView::TransformMode::Translate);
+            renderOption(ICON_MD_3D_ROTATION, EditorSceneView::TransformMode::Rotate);
+            renderOption(ICON_MD_SCALE, EditorSceneView::TransformMode::Scale);
 
             ImGui::EndMultiSelect();
             ImGui::SameLine();
@@ -455,7 +462,7 @@ namespace darmok::editor
 
         {
             ImGui::BeginGroup();
-            if (_scenePlaying)
+            if (isScenePlaying())
             {
                 if (ImGui::Button(ICON_MD_STOP))
                 {
@@ -481,6 +488,27 @@ namespace darmok::editor
         ImGui::PopFont();
         _mainToolbarHeight = ImGui::GetWindowSize().y;
         ImGui::End();
+
+        bool ctrl = io.KeyCtrl || io.KeySuper;
+        bool shift = io.KeyShift;
+        if (ctrl && ImGui::IsKeyPressed(ImGuiKey_P, false))
+        {
+            if (isScenePlaying())
+            {
+                if (shift)
+                {
+                    pauseScene();
+                }
+                else
+                {
+                    stopScene();
+                }
+            }
+            else
+            {
+                playScene();
+            }
+        }
 
         return {};
     }

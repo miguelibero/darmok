@@ -182,9 +182,6 @@ namespace darmok
     ShadowRenderer::ShadowRenderer(const Config& config) noexcept
         : _config{ config }
         , _crop{ 1 }
-        , _shadowMapUniform{ bgfx::kInvalidHandle }
-        , _shadowData1Uniform{ bgfx::kInvalidHandle }
-        , _shadowData2Uniform{ bgfx::kInvalidHandle }
         , _shadowTransBuffer{ bgfx::kInvalidHandle }
         , _shadowLightDataBuffer{ bgfx::kInvalidHandle }
         , _dirAmount{ 0 }
@@ -253,9 +250,9 @@ namespace darmok
             pass.init(*this, index);
         }
 
-        _shadowMapUniform = bgfx::createUniform("s_shadowMap", bgfx::UniformType::Sampler);
-        _shadowData1Uniform = bgfx::createUniform("u_shadowData1", bgfx::UniformType::Vec4);
-        _shadowData2Uniform = bgfx::createUniform("u_shadowData2", bgfx::UniformType::Vec4);
+        _shadowMapUniform = { "s_shadowMap", bgfx::UniformType::Sampler };
+        _shadowData1Uniform = { "u_shadowData1", bgfx::UniformType::Vec4 };
+        _shadowData2Uniform = { "u_shadowData2", bgfx::UniformType::Vec4 };
         _shadowTransBuffer = bgfx::createDynamicVertexBuffer(1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
         _shadowLightDataBuffer = bgfx::createDynamicVertexBuffer(1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
     
@@ -269,18 +266,10 @@ namespace darmok
             pass.shutdown();
         }
         _passes.clear();
+        _shadowMapUniform.reset();
+        _shadowData1Uniform.reset();
+        _shadowData2Uniform.reset();
 
-        const std::vector<std::reference_wrapper<bgfx::UniformHandle>> uniforms{
-            _shadowMapUniform, _shadowData1Uniform, _shadowData2Uniform
-        };
-        for (auto& uniform : uniforms)
-        {
-            if (isValid(uniform))
-            {
-                bgfx::destroy(uniform);
-                uniform.get().idx = bgfx::kInvalidHandle;
-            }
-        }
         const std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers{
             _shadowTransBuffer, _shadowLightDataBuffer
         };

@@ -125,7 +125,7 @@ namespace darmok::editor
         return unexpected<std::string>{"could not find an editor to render"};
     }
 
-    expected<void, std::string> ObjectEditorContainer::add(std::unique_ptr<IObjectEditor>&& editor) noexcept
+    expected<void, std::string> ObjectEditorContainer::add(std::unique_ptr<IObjectEditor> editor) noexcept
     {
         auto typeUrl = editor->getObjectTypeUrl();
         if (_app)

@@ -467,17 +467,13 @@ namespace darmok
     expected<void, std::string> SceneImpl::update(float deltaTime) noexcept
     {
         destroyPendingEntities();
-        if (_paused)
-        {
-			return {};
-        }
-
-        std::vector<std::string> errors;
 
         for (auto entity : _scene.getUpdateEntities<Transform>())
         {
             _scene.getComponent<Transform>(entity)->update();
         }
+
+        std::vector<std::string> errors;
 
         for (auto entity : _scene.getUpdateEntities<Camera>())
         {
@@ -488,12 +484,15 @@ namespace darmok
             }
         }
 
-        for (auto& comp : copySceneComponents())
+        if (!_paused)
         {
-            auto result = comp->update(deltaTime);
-            if (!result)
+            for (auto& comp : copySceneComponents())
             {
-                errors.push_back(std::move(result).error());
+                auto result = comp->update(deltaTime);
+                if (!result)
+                {
+                    errors.push_back(std::move(result).error());
+                }
             }
         }
 
@@ -831,6 +830,7 @@ namespace darmok
     }
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept
+        : _paused{ false }
     {
         _scenes.push_back(scene ? scene : std::make_shared<Scene>());
     }
@@ -912,6 +912,17 @@ namespace darmok
         return _scenes;
     }
 
+    bool SceneAppComponent::isPaused() const noexcept
+    {
+        return _paused;
+    }
+
+    SceneAppComponent& SceneAppComponent::setPaused(bool paused) noexcept
+    {
+        _paused = paused;
+        return *this;
+    }
+
     expected<void, std::string> SceneAppComponent::init(App& app) noexcept
     {
         if (_app)
@@ -980,6 +991,10 @@ namespace darmok
 
     expected<void, std::string> SceneAppComponent::update(float deltaTime) noexcept
     {
+        if (_paused)
+        {
+            return {};
+        }
         std::vector<std::string> errors;
         for (auto& scene : _scenes)
         {

@@ -26,7 +26,7 @@ namespace darmok
         FileImporterImpl(const std::filesystem::path& inputPath) noexcept;
         void setCachePath(const std::filesystem::path& cachePath) noexcept;
         void setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        void addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept;
+        void addTypeImporter(std::unique_ptr<IFileTypeImporter> importer) noexcept;
         expected<Paths, std::string> getOutputPaths() const noexcept;
         bool operator()(std::ostream& log) const noexcept;
 	private:

@@ -139,14 +139,14 @@ namespace darmok
     }
 
     LuaRmluiVariableDefinition::LuaRmluiVariableDefinition(const sol::table& table, Rml::DataVariableType type) noexcept
-        : Rml::VariableDefinition(type)
-        , _table(table)
+        : Rml::VariableDefinition{ type }
+        , _table{ table }
     {
     }
 
     sol::object LuaRmluiVariableDefinition::nilObject() const noexcept
     {
-        return sol::object(_table.lua_state(), sol::nil);
+        return sol::object{ _table.lua_state(), sol::nil };
     }
 
     sol::object LuaRmluiVariableDefinition::getTableValue(const AbsTableKey& key) const noexcept
@@ -246,7 +246,7 @@ namespace darmok
             childKey.push_back(address.index + 1);
         }
         auto childPtr = getKeyPointer(childKey);
-        return Rml::DataVariable(this, childPtr);
+        return Rml::DataVariable{ this, childPtr };
     }
 
     glm::vec2 LuaRmluiEvent::getUnprojectedMouseScreenPosition(const Rml::Event& ev) noexcept
@@ -257,7 +257,7 @@ namespace darmok
     sol::table LuaRmluiEvent::getParameters(const Rml::Event& ev, sol::this_state ts) noexcept
     {
         auto& params = ev.GetParameters();
-        auto tab = sol::state_view(ts).create_table();
+        auto tab = sol::state_view{ ts }.create_table();
         for (auto& elm : params)
         {
             std::string key = elm.first;
@@ -276,7 +276,7 @@ namespace darmok
             return sol::nil;
         }
 
-        sol::object obj(ts.lua_state());
+        sol::object obj{ ts.lua_state() };
         LuaRmluiUtils::getVariant(obj, itr->second);
         return obj;
     }

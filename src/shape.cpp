@@ -254,6 +254,11 @@ namespace darmok
     {
     }
 
+    Polygon::Polygon(const protobuf::Mesh& meshDef) noexcept
+    {
+
+    }
+
     Polygon::operator Definition() const noexcept
     {
         Definition def;

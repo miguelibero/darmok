@@ -128,7 +128,7 @@ namespace darmok
 		~FileImporter() noexcept;
         FileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
         FileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        FileImporter& addTypeImporter(std::unique_ptr<IFileTypeImporter>&& importer) noexcept;
+        FileImporter& addTypeImporter(std::unique_ptr<IFileTypeImporter> importer) noexcept;
 
         template<typename T, typename... A>
         T& addTypeImporter(A&&... args) noexcept
