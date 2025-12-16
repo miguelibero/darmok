@@ -97,7 +97,13 @@ namespace
 			auto lightEntity = scene.createEntity();
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, glm::vec3{ 0, 1, 0 });
 			lightTrans.setParent(lightRootTrans);
-			auto lightMesh = std::make_shared<Mesh>(MeshData{ Sphere{0.01} }.createMesh(unlitProg->getVertexLayout()));
+
+			auto lightMeshResult = MeshData{ Sphere{0.01} }.createMesh(unlitProg->getVertexLayout());
+			if (!lightMeshResult)
+			{
+				return unexpected{ std::move(lightMeshResult).error() };
+			}
+			auto lightMesh = std::make_shared<Mesh>(std::move(lightMeshResult).value());
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.tryAddSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
@@ -121,7 +127,13 @@ namespace
 			
 			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
 
-			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMat);
+			auto boneMeshResult = RenderableSkeleton::createBoneMesh(prog->getVertexLayout());
+			if (!boneMeshResult)
+			{
+				return unexpected{ std::move(boneMeshResult).error() };
+			}
+			auto boneMesh = std::make_shared<Mesh>(std::move(boneMeshResult).value());
+			auto& renderSkel = scene.addComponent<RenderableSkeleton>(skelEntity, boneMesh, boneMat);
 #ifdef DARMOK_FREETYPE
 			renderSkel.setFont(_app.getAssets().getFontLoader()("../../assets/noto.ttf").value());
 			cam.tryAddComponent<TextRenderer>();
@@ -147,7 +159,7 @@ namespace
 			{
 				return unexpected{ std::move(sceneDefResult).error() };
 			}
-			auto loadResult = SceneLoader{}(*sceneDefResult.value(), scene);
+			auto loadResult = SceneLoader{_app}(*sceneDefResult.value(), scene);
 			if(!loadResult)
 			{
 				return unexpected{ std::move(loadResult).error() };
@@ -172,9 +184,10 @@ namespace
 			return {};
 		}
 
-		void onInputEvent(const std::string& tag) noexcept override
+		expected<void, std::string> onInputEvent(const std::string& tag) noexcept override
 		{
 			_animator->play(tag);
+			return {};
 		}
 
 		expected<void, std::string> render() const noexcept override
@@ -193,11 +206,7 @@ namespace
 				return {};
 			}
 
-			glm::vec2 dir{
-				_app.getInput().getAxis(_moveRight, _moveLeft),
-				_app.getInput().getAxis(_moveForward, _moveBackward)
-			};
-
+			auto dir = _app.getInput().getMoveDir(_move);
 			_animator->setBlendPosition(dir);
 			if (glm::length(dir) > 0.1F)
 			{
@@ -213,29 +222,11 @@ namespace
 		OptionalRef<FreelookController> _freeLook;
 
 		const InputEvents _talkInputs = {
-			KeyboardInputEvent{ KeyboardKey::Return },
-			GamepadInputEvent{ GamepadButton::A },
+			Keyboard::createInputEvent(Keyboard::Definition::Return),
+			Gamepad::createInputEvent(Gamepad::Definition::A),
 		};
-		const InputDirs _moveForward = {
-			KeyboardInputEvent{ KeyboardKey::Up },
-			KeyboardInputEvent{ KeyboardKey::KeyW },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
-		};
-		const InputDirs _moveBackward = {
-			KeyboardInputEvent{ KeyboardKey::Down },
-			KeyboardInputEvent{ KeyboardKey::KeyS },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
-		};
-		const InputDirs _moveLeft = {
-			KeyboardInputEvent{ KeyboardKey::Left },
-			KeyboardInputEvent{ KeyboardKey::KeyA },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
-		};
-		const InputDirs _moveRight = {
-			KeyboardInputEvent{ KeyboardKey::Right },
-			KeyboardInputEvent{ KeyboardKey::KeyD },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
-		};
+
+		const Input::MoveDirsDefinition _move = Input::createMoveDirsDefinition();
 	};
 }
 

@@ -22,7 +22,7 @@ namespace darmok
     public:
         virtual ~IFreelookListener() = default;
         virtual entt::id_type getFreelookListenerType() const noexcept { return 0; };
-        virtual void onFreelookEnable(bool enabled) = 0;
+        virtual expected<void, std::string> onFreelookEnable(bool enabled) noexcept = 0;
     };
 
     template<typename T>
@@ -52,7 +52,7 @@ namespace darmok
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> onInputEvent(const std::string& tag) noexcept override;
-        FreelookController& setEnabled(bool enabled) noexcept;
+        expected<void, std::string> setEnabled(bool enabled) noexcept;
         bool isEnabled() const noexcept;
         FreelookController& addListener(IFreelookListener& listener) noexcept;
         FreelookController& addListener(std::unique_ptr<IFreelookListener> listener) noexcept;

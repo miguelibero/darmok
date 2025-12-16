@@ -10,13 +10,7 @@ message FreelookController {
     float move_sensitivity = 2;
     Vec2 max_look_angle = 3;
     repeated InputEvent enable_events = 4;
-    repeated InputDir move_left = 5;
-    repeated InputDir move_right = 6;
-    repeated InputDir move_forward = 7;
-    repeated InputDir move_backward = 8;
-    repeated InputDir look_left = 9;
-    repeated InputDir look_right = 10;
-    repeated InputDir look_up = 11;
-    repeated InputDir look_down = 12;
-    optional uint32 camera = 13;
+    MoveInputDirs move = 5;
+    LookInputDirs look = 6;
+    optional uint32 camera = 7;
 }

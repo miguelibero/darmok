@@ -57,7 +57,7 @@ namespace
 			}
 
 			auto sceneDef = defResult.value();
-			auto result = SceneLoader{}(*sceneDef, *scene);
+			auto result = SceneLoader{_app}(*sceneDef, *scene);
 			if (!result)
 			{
 				return unexpected{ std::string{ "error loading scene: "} + result.error() };

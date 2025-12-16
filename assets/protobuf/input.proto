@@ -205,3 +205,17 @@ message InputDir {
         InputEvent event = 3;
 	}
 }
+
+message MoveInputDirs {
+    repeated InputDir left = 1;
+    repeated InputDir right = 2;
+    repeated InputDir forward = 3;
+    repeated InputDir backward = 4;
+}
+
+message LookInputDirs {
+    repeated InputDir left = 1;
+    repeated InputDir right = 2;
+    repeated InputDir up = 3;
+    repeated InputDir down = 4;
+}

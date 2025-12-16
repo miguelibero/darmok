@@ -325,7 +325,6 @@ namespace darmok
 
 		float getAxis(const google::protobuf::RepeatedPtrField<InputDir>& negative, const google::protobuf::RepeatedPtrField<InputDir>& positive, const Sensitivity& sensitivity = {}) const noexcept;
 
-		
 		void addListener(const std::string& tag, const InputEvents& evs, std::unique_ptr<IInputEventListener> listener) noexcept;
 		void addListener(const std::string& tag, const InputEvents& evs, IInputEventListener& listener) noexcept;
 		void addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, std::unique_ptr<IInputEventListener> listener) noexcept;
@@ -340,6 +339,14 @@ namespace darmok
 		[[nodiscard]] static expected<InputDir, std::string> readDir(std::string_view name) noexcept;
 		[[nodiscard]] static std::optional<InputDirType> readDirType(std::string_view name) noexcept;
 		[[nodiscard]] static std::string_view getDirTypeName(InputDirType type) noexcept;
+
+		using MoveDirsDefinition = protobuf::MoveInputDirs;
+		using LookDirsDefinition = protobuf::LookInputDirs;
+		[[nodiscard]] static MoveDirsDefinition createMoveDirsDefinition() noexcept;
+		[[nodiscard]] static LookDirsDefinition createLookDirsDefinition() noexcept;
+
+		glm::vec2 getMoveDir(const MoveDirsDefinition& def) const noexcept;
+		glm::vec2 getLookDir(const LookDirsDefinition& def) const noexcept;
 
 	private:
 		std::unique_ptr<InputImpl> _impl;

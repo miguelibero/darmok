@@ -1554,6 +1554,19 @@ namespace darmok
 
 	Gamepad& InputImpl::getGamepad(uint32_t num) noexcept
 	{
+		if (num == Gamepad::Any)
+		{
+			auto gp = getConnectedGamepad();
+			if (gp)
+			{
+				return *gp;
+			}
+			if (_gamepads.empty())
+			{
+				_gamepads.emplace(0, 0);
+			}
+			return _gamepads.begin()->second;
+		}
 		auto itr = _gamepads.find(num);
 		if (itr != _gamepads.end())
 		{
@@ -1579,6 +1592,10 @@ namespace darmok
 
 	OptionalRef<const Gamepad> InputImpl::getGamepad(uint32_t num) const noexcept
 	{
+		if (num == Gamepad::Any)
+		{
+			return getConnectedGamepad();
+		}
 		auto itr = _gamepads.find(num);
 		if (itr != _gamepads.end())
 		{
@@ -1717,6 +1734,53 @@ namespace darmok
 	std::string_view Input::getDirTypeName(InputDirType type) noexcept
 	{
 		return InputImpl::getDirTypeName(type);
+	}
+
+	Input::MoveDirsDefinition Input::createMoveDirsDefinition() noexcept
+	{
+		MoveDirsDefinition def;
+		auto add = [](auto field, KeyboardKey key1, KeyboardKey key2, InputDirType gamepadDir)
+		{
+			field->Add(Keyboard::createInputDir(key1));
+			field->Add(Keyboard::createInputDir(key2));
+			field->Add(Gamepad::createInputDir(gamepadDir));
+		};
+		add(def.mutable_left(), Keyboard::Definition::KeyLeft, Keyboard::Definition::KeyA, Definition::LeftDir);
+		add(def.mutable_right(), Keyboard::Definition::KeyRight, Keyboard::Definition::KeyD, Definition::RightDir);
+		add(def.mutable_forward(), Keyboard::Definition::KeyUp, Keyboard::Definition::KeyW, Definition::UpDir);
+		add(def.mutable_backward(), Keyboard::Definition::KeyDown, Keyboard::Definition::KeyS, Definition::DownDir);
+		return def;
+	}
+
+	Input::LookDirsDefinition Input::createLookDirsDefinition() noexcept
+	{
+		LookDirsDefinition def;
+		auto add = [](auto field, InputDirType dir)
+		{
+			field->Add(Mouse::createInputDir(dir));
+			field->Add(Gamepad::createInputDir(dir));
+		};
+		add(def.mutable_left(), Definition::LeftDir);
+		add(def.mutable_right(), Definition::RightDir);
+		add(def.mutable_up(), Definition::UpDir);
+		add(def.mutable_down(), Definition::DownDir);
+		return def;
+	}
+
+	glm::vec2 Input::getMoveDir(const MoveDirsDefinition& def) const noexcept
+	{
+		return {
+			getAxis(def.left(), def.right()),
+			getAxis(def.backward(), def.forward())
+		};
+	}
+
+	glm::vec2 Input::getLookDir(const LookDirsDefinition& def) const noexcept
+	{
+		return {
+			getAxis(def.left(), def.right()),
+			getAxis(def.down(), def.up())
+		};
 	}
 
 	bool Input::checkEvent(const InputEvent& ev) const noexcept

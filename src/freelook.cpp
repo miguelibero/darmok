@@ -75,11 +75,10 @@ namespace darmok
 
     expected<void, std::string> FreelookController::onInputEvent(const std::string& tag) noexcept
     {
-        setEnabled(!_enabled);
-		return {};
+        return setEnabled(!_enabled);
     }
 
-    FreelookController& FreelookController::setEnabled(bool enabled) noexcept
+    expected<void, std::string> FreelookController::setEnabled(bool enabled) noexcept
     {
         _enabled = enabled;
         if (_win)
@@ -102,12 +101,17 @@ namespace darmok
                 Math::decompose(trans->getLocalMatrix(), _pos, _rot, _scale);
             }
         }
+        std::vector<std::string> errors;
         for (auto& listener : _listeners)
         {
-            listener.onFreelookEnable(enabled);
+            auto result = listener.onFreelookEnable(enabled);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
         }
 
-        return *this;
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     bool FreelookController::isEnabled() const noexcept
@@ -121,21 +125,23 @@ namespace darmok
         {
             return {};
         }
+        auto& lookDirs = _def.look();
         glm::vec2 lookRot{
-            _input->getAxis(_def.look_left(), _def.look_right()),
-            _input->getAxis(_def.look_down(), _def.look_up())
+            _input->getAxis(lookDirs.left(), lookDirs.right()),
+            _input->getAxis(lookDirs.down(), lookDirs.up())
         };
         lookRot *= _def.look_sensitivity() * deltaTime;
         auto lookAngle = convert<glm::vec2>(_def.max_look_angle());
         lookRot = glm::clamp(lookRot, -lookAngle, lookAngle);
         lookRot = glm::radians(lookRot);
         
-        _rot = glm::quat(glm::vec3(0, lookRot.x, 0)) * _rot * glm::quat(glm::vec3(-lookRot.y, 0, 0));
+        _rot = glm::quat{ glm::vec3{ 0, lookRot.x, 0 } } * _rot * glm::quat{ glm::vec3{-lookRot.y, 0, 0} };
 
+        auto& moveDirs = _def.move();
         glm::vec3 dir(
-            _input->getAxis(_def.move_left(), _def.move_right()),
+            _input->getAxis(moveDirs.left(), moveDirs.right()),
             0,
-            _input->getAxis(_def.move_backward(), _def.move_forward())
+            _input->getAxis(moveDirs.backward(), moveDirs.forward())
         );
 
         dir = _rot * dir;
@@ -160,28 +166,8 @@ namespace darmok
         def.mutable_max_look_angle()->set_y(30.F);
 
 		def.mutable_enable_events()->Add(Keyboard::createInputEvent(Keyboard::Definition::F7));
-
-        auto addMove = [](auto field, KeyboardKey key1, KeyboardKey key2, InputDirType gamepadDir)
-        {
-            field->Add(Keyboard::createInputDir(key1));
-            field->Add(Keyboard::createInputDir(key2));
-            field->Add(Gamepad::createInputDir(gamepadDir));
-        };
-        addMove(def.mutable_move_left(), Keyboard::Definition::KeyLeft, Keyboard::Definition::KeyA, Input::Definition::LeftDir);
-        addMove(def.mutable_move_right(), Keyboard::Definition::KeyRight, Keyboard::Definition::KeyD, Input::Definition::RightDir);
-        addMove(def.mutable_move_forward(), Keyboard::Definition::KeyUp, Keyboard::Definition::KeyW, Input::Definition::UpDir);
-        addMove(def.mutable_move_backward(), Keyboard::Definition::KeyDown, Keyboard::Definition::KeyS, Input::Definition::DownDir);
-
-        auto addLook = [](auto field, InputDirType dir)
-        {
-            field->Add(Mouse::createInputDir(dir));
-            field->Add(Gamepad::createInputDir(dir));
-        };
-		addLook(def.mutable_look_left(), Input::Definition::LeftDir);
-        addLook(def.mutable_look_right(), Input::Definition::LeftDir);
-        addLook(def.mutable_look_up(), Input::Definition::UpDir);
-        addLook(def.mutable_look_down(), Input::Definition::DownDir);
-
+        *def.mutable_move() = Input::createMoveDirsDefinition();
+        *def.mutable_look() = Input::createLookDirsDefinition();
         return def;
     }
 

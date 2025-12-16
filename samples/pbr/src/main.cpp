@@ -234,9 +234,8 @@ namespace
 			{
 				return {};
 			}
-			glm::vec3 dir{ 0.f };
-			dir.x = _app.getInput().getAxis(_moveLeft, _moveRight);
-			dir.z = _app.getInput().getAxis(_moveBackward, _moveForward);
+			auto dir2 = _app.getInput().getMoveDir(_move);
+			glm::vec3 dir{ dir2.x, 0, dir2.y };
 
 			auto pos = _trans->getPosition();
 			_trans->setPosition(pos + (dir * deltaTime));
@@ -251,30 +250,10 @@ namespace
 		OptionalRef<Transform> _trans;
 		std::vector<std::reference_wrapper<RotateUpdater>> _rotateUpdaters;
 
-		const InputEvent _pauseEvent = KeyboardInputEvent{ KeyboardKey::KeyP };
+		const InputEvent _pauseEvent = Keyboard::createInputEvent(Keyboard::Definition::KeyP);
+		const Input::MoveDirsDefinition _move = Input::createMoveDirsDefinition();
 
-		const InputDirs _moveForward = {
-			KeyboardInputEvent{ KeyboardKey::Up },
-			KeyboardInputEvent{ KeyboardKey::KeyW },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
-		};
-		const InputDirs _moveBackward = {
-			KeyboardInputEvent{ KeyboardKey::Down },
-			KeyboardInputEvent{ KeyboardKey::KeyS },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
-		};
-		const InputDirs _moveLeft = {
-			KeyboardInputEvent{ KeyboardKey::Left },
-			KeyboardInputEvent{ KeyboardKey::KeyA },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
-		};
-		const InputDirs _moveRight = {
-			KeyboardInputEvent{ KeyboardKey::Right },
-			KeyboardInputEvent{ KeyboardKey::KeyD },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
-		};
-
-		void onFreelookEnable(bool enabled) noexcept override
+		expected<void, std::string> onFreelookEnable(bool enabled) noexcept override
 		{
 			if (_freeCam)
 			{
@@ -284,9 +263,10 @@ namespace
 			{
 				_cam->setEnabled(!enabled);
 			}
+			return {};
 		}
 
-		void onInputEvent(const std::string& tag) noexcept
+		expected<void, std::string> onInputEvent(const std::string& tag) noexcept
 		{
 			if (tag == "pause")
 			{
@@ -295,6 +275,7 @@ namespace
 					updater.get().togglePaused();
 				}
 			}
+			return {};
 		}
 
 		Camera& createCamera(Scene& scene, OptionalRef<Camera> mainCamera = nullptr)

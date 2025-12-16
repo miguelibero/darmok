@@ -71,11 +71,9 @@ namespace
 
 				_freeLook = _scene->tryAddSceneComponent<FreelookController>(*_cam);
 #ifdef PHYSICS_DEBUG_RENDER
-				PhysicsDebugConfig physicsDebugconfig;
-#ifdef DARMOK_FREETYPE
-				physicsDebugconfig.render.font = _app.getAssets().getFontLoader()("../../assets/noto.ttf").value();
-#endif
-				_physicsDebugRender = _cam->tryAddComponent<PhysicsDebugRenderer>(physicsDebugconfig);
+				auto physicsDebugDef = PhysicsDebugRenderer::createDefinition();
+				physicsDebugDef.set_font_path("../../assets/noto.ttf");
+				_physicsDebugRender = _cam->tryAddComponent<PhysicsDebugRenderer>(physicsDebugDef);
 				_physicsDebugRender->setEnabled(false);
 #endif
 			}
@@ -239,26 +237,7 @@ namespace
 
 	protected:
 
-		const InputDirs _moveForward = {
-			KeyboardInputEvent{ KeyboardKey::Up },
-			KeyboardInputEvent{ KeyboardKey::KeyW },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Up }
-		};
-		const InputDirs _moveBackward = {
-			KeyboardInputEvent{ KeyboardKey::Down },
-			KeyboardInputEvent{ KeyboardKey::KeyS },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Down }
-		};
-		const InputDirs _moveLeft = {
-			KeyboardInputEvent{ KeyboardKey::Left },
-			KeyboardInputEvent{ KeyboardKey::KeyA },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Left }
-		};
-		const InputDirs _moveRight = {
-			KeyboardInputEvent{ KeyboardKey::Right },
-			KeyboardInputEvent{ KeyboardKey::KeyD },
-			GamepadInputDir{ GamepadStick::Left, InputDirType::Right }
-		};
+		Input::MoveDirsDefinition _move = Input::createMoveDirsDefinition();
 
 		expected<void, std::string> update(float dt) noexcept override
 		{
@@ -273,7 +252,7 @@ namespace
 				return {};
 			}
 			auto& mouse = _app.getInput().getMouse();
-			if (mouse.getButton(MouseButton::Left))
+			if (mouse.getButton(Mouse::Definition::LeftButton))
 			{
 				glm::vec2 pos = mouse.getPosition();
 				pos = _app.getWindow().windowToScreenPoint(pos);
@@ -291,8 +270,8 @@ namespace
 			glm::vec3 dir{ 0 };
 			if (_characterCtrl->isGrounded())
 			{
-				dir.x = _app.getInput().getAxis(_moveLeft, _moveRight);
-				dir.z = _app.getInput().getAxis(_moveBackward, _moveForward);
+				dir.x = _app.getInput().getAxis(_move.left(), _move.right());
+				dir.z = _app.getInput().getAxis(_move.backward(), _move.forward());
 
 				if (_camTrans)
 				{
