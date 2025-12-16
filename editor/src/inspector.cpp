@@ -79,7 +79,7 @@ namespace darmok::editor
     EntityId EditorInspectorView::getSelectedEntity() const noexcept
     {
         auto ptr = std::get_if<EntityId>(&_selected);
-        return ptr == nullptr ? entt::null : *ptr;
+        return ptr == nullptr ? nullEntityId : *ptr;
     }
 
     bool EditorInspectorView::isSceneSelected() const noexcept

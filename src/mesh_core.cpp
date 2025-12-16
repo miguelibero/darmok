@@ -930,13 +930,10 @@ namespace darmok
 			glm::vec2 uv{ static_cast<float>(i) / lod, 0.0f };
 
 			vertices.push_back({ pos, uv, normal });
-		}
 
-		for (int i = 0; i < lod; ++i)
-		{
 			indices.push_back(apexIndex);
-			indices.push_back(startIndex + i);
 			indices.push_back(startIndex + i + 1);
+			indices.push_back(startIndex + i);
 		}
 
 		startIndex += (lod + 1);
@@ -954,13 +951,10 @@ namespace darmok
 				(pos.z / (2.0f * cone.radius)) + 0.5f
 			};
 			vertices.push_back({ pos, uv, baseNormal });
-		}
 
-		for (int i = 0; i < lod; ++i)
-		{
 			indices.push_back(baseCenterIndex);
-			indices.push_back(startIndex + (i + 1) % lod);
 			indices.push_back(startIndex + i);
+			indices.push_back(startIndex + (i + 1) % lod);
 		}
 		calcTangents();
 	}
@@ -1005,12 +999,13 @@ namespace darmok
 			Index i3 = i0 + 3;
 
 			indices.push_back(i0);
-			indices.push_back(i2);
 			indices.push_back(i1);
+			indices.push_back(i2);
 
 			indices.push_back(i1);
-			indices.push_back(i2);
 			indices.push_back(i3);
+			indices.push_back(i2);
+
 		}
 
 		Index bottomCenterIndex = vertices.size();
@@ -1031,8 +1026,8 @@ namespace darmok
 			Index current = i * 2;
 			Index next = ((i + 1) % lod) * 2;
 			indices.push_back(bottomCenterIndex);
-			indices.push_back(next);
 			indices.push_back(current);
+			indices.push_back(next);
 		}
 
 		for (int i = 0; i < lod; ++i)
@@ -1040,8 +1035,8 @@ namespace darmok
 			Index current = i * 2 + 1;
 			Index next = ((i + 1) % lod) * 2 + 1;
 			indices.push_back(topCenterIndex);
-			indices.push_back(current);
 			indices.push_back(next);
+			indices.push_back(current);
 		}
 		calcTangents();
 	}

@@ -184,17 +184,22 @@ namespace darmok
 			return {};
 		}
 		_output = fb;
-		if (_running)
+		if (!_running)
 		{
-			auto size = _steps.size();
-			if (size > 0)
+			return {};
+		}
+		auto size = _steps.size();
+		if (size > 0)
+		{
+			auto result = updateStep(size - 1);
+			if (!result)
 			{
-				auto result = updateStep(size - 1);
-				if (!result)
-				{
-					return result;
-				}
+				return result;
 			}
+		}
+		else if (_output && _viewId)
+		{
+			_output->configureView(*_viewId);
 		}
 		return {};
 	}
@@ -254,10 +259,21 @@ namespace darmok
 		{
 			input->configureView(viewId);
 		}
-		auto vp = _delegate.getRenderChainViewport();
-		vp.configureView(viewId);
+
 		_viewId = viewId;
+		updateViewport();
 		return ++viewId;
+	}
+
+	bool RenderChain::updateViewport() noexcept
+	{
+		if (!_viewId)
+		{
+			return false;
+		}
+		auto vp = _delegate.getRenderChainViewport();
+		vp.configureView(*_viewId);
+		return true;
 	}
 
 	OptionalRef<FrameBuffer> RenderChain::getReadBuffer(size_t i) const noexcept

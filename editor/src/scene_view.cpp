@@ -20,9 +20,12 @@
 
 namespace darmok::editor
 {
-    expected<void, std::string> TransformGizmo::init(Camera& cam, Scene& scene, App& app) noexcept
+    expected<void, std::string> TransformGizmo::init(Camera& cam, Scene& scene, EditorApp& app) noexcept
     {
+        _cam = cam;
+        _scene = scene;
         _app = app;
+
         auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
         if (!progResult)
         {
@@ -40,6 +43,7 @@ namespace darmok::editor
             auto mat = std::make_unique<Material>(prog, c);
             mat->depthTest = Material::Definition::DepthNoTest;
             mat->writeDepth = false;
+            // mat->twoSided = true;
             return mat;
         };
 
@@ -54,6 +58,10 @@ namespace darmok::editor
     expected<void, std::string> TransformGizmo::shutdown() noexcept
     {
         _arrowMesh.reset();
+        _cam.reset();
+        _scene.reset();
+        _app.reset();
+
         return {};
     }
 
@@ -97,30 +105,64 @@ namespace darmok::editor
         return {};
     }
 
+    expected<void, std::string> TransformGizmo::render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder, const std::unique_ptr<Mesh>& mesh, const std::unique_ptr<Material>& material, std::optional<glm::mat4> transform) noexcept
+    {
+        if (!_cam)
+        {
+            return unexpected<std::string>{"missing camera"};
+        }
+        if (!mesh)
+        {
+            return unexpected<std::string>{"missing mesh"};
+        }
+        if (!material)
+        {
+            return unexpected<std::string>{"missing material"};
+        }
+
+        _cam->setEntityTransform(entity, encoder, transform);
+        auto result = mesh->render(encoder);
+        if (!result)
+        {
+            return result;
+        }
+        material->renderSubmit(viewId, encoder);
+        return {};
+    }
+
     expected<void, std::string> TransformGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        if (_arrowMesh)
+        if (!_scene || !_app || !_cam)
         {
-            if (_greenMat)
-            {
-                auto result = _arrowMesh->render(encoder);
-                if (!result)
-                {
-                    return result;
-                }
-                _greenMat->renderSubmit(viewId, encoder);
-            }
-
-            if (_redMat)
-            {
-                auto result = _arrowMesh->render(encoder);
-                if (!result)
-                {
-                    return result;
-                }
-                _redMat->renderSubmit(viewId, encoder);
-            }
+            return {};
         }
+        auto entityId = _app->getSelectedEntity();
+        auto entity = _app->getProject().getComponentLoadContext().getEntity(entityId);
+        if (entity == entt::null)
+        {
+            return {};
+        }
+
+        _cam->setViewTransform(viewId);
+
+        auto result = render(entity, viewId, encoder, _arrowMesh, _greenMat);
+        if (!result)
+        {
+            return result;
+        }
+        glm::quat rot{ glm::radians(glm::vec3{-90, 0, -90}) };
+        result = render(entity, viewId, encoder, _arrowMesh, _redMat, glm::mat4_cast(rot));
+        if (!result)
+        {
+            return result;
+        }
+        rot = glm::quat{ glm::radians(glm::vec3{90, 90, 0}) };
+        result = render(entity, viewId, encoder, _arrowMesh, _blueMat, glm::mat4_cast(rot));
+        if (!result)
+        {
+            return result;
+        }
+        
         return {};
     }
 
@@ -134,15 +176,19 @@ namespace darmok::editor
         _mode = mode;
     }
 
+    EditorSceneGizmosRenderer::EditorSceneGizmosRenderer(EditorApp& app) noexcept
+        : _app{ app }
+    {
+    }
+
     expected<void, std::string> EditorSceneGizmosRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
-        _app = app;
         std::vector<std::string> errors;
         for (auto& gizmo : _gizmos)
         {
-            auto result = gizmo->init(cam, scene, app);
+            auto result = gizmo->init(cam, scene, _app);
             if (!result)
             {
                 errors.push_back(std::move(result).error());
@@ -178,7 +224,6 @@ namespace darmok::editor
         }
         _cam.reset();
         _scene.reset();
-        _app.reset();
         return StringUtils::joinExpectedErrors(errors);
     }
 
@@ -213,9 +258,9 @@ namespace darmok::editor
 
     expected<void, std::string> EditorSceneGizmosRenderer::add(std::unique_ptr<ISceneGizmo> gizmo) noexcept
     {
-        if (_cam && _scene && _app)
+        if (_cam && _scene)
         {
-            auto result = gizmo->init(*_cam, *_scene, *_app);
+            auto result = gizmo->init(*_cam, *_scene, _app);
             if (!result)
             {
                 return result;
@@ -227,7 +272,7 @@ namespace darmok::editor
 
     const std::string EditorSceneView::_windowName = "Scene View";
 
-    EditorSceneView::EditorSceneView(App& app) noexcept
+    EditorSceneView::EditorSceneView(EditorApp& app) noexcept
         : _app{ app }
         , _mouseMode{ MouseMode::None }
         , _focused{ false }
@@ -238,7 +283,7 @@ namespace darmok::editor
     expected<void, std::string> EditorSceneView::init(std::shared_ptr<Scene> scene, Camera& cam) noexcept
     {
         {
-            auto gizmosResult = cam.addComponent<EditorSceneGizmosRenderer>();
+            auto gizmosResult = cam.addComponent<EditorSceneGizmosRenderer>(_app);
             if (!gizmosResult)
             {
                 return unexpected{ std::move(gizmosResult).error() };
@@ -344,7 +389,6 @@ namespace darmok::editor
             _cam->setEnabled(true);
             _cam->setBaseViewport(Viewport{ size });
         }
-
         // TODO: maybe a bit harsh
         _app.requestRenderReset();
         return {};

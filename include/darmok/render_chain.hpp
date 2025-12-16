@@ -84,6 +84,8 @@ namespace darmok
         expected<void, std::string> render() noexcept;
         expected<void, std::string> shutdown() noexcept;
 
+        bool updateViewport() noexcept;
+
         std::string getViewName(const std::string& baseName) const noexcept;
         OptionalRef<FrameBuffer> getInput() noexcept;
         OptionalRef<const FrameBuffer> getInput() const noexcept;

@@ -357,19 +357,23 @@ namespace darmok
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(_proj));
     }
 
-    void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept
+    void Camera::setEntityTransform(Entity entity, bgfx::Encoder& encoder, std::optional<glm::mat4> additionalTransform) const noexcept
     {
-        const void* transMtx = nullptr;
+        std::optional<glm::mat4> mat;
         if (_scene)
         {
             if (auto trans = _scene->getComponentInParent<const Transform>(entity))
             {
-                transMtx = glm::value_ptr(trans->getWorldMatrix());
+                mat = trans->getWorldMatrix();
             }
         }
-        if (transMtx)
+        if (additionalTransform)
         {
-            encoder.setTransform(transMtx);
+            mat = mat ? *mat * *additionalTransform: additionalTransform;
+        }
+        if (mat)
+        {
+            encoder.setTransform(glm::value_ptr(*mat));
         }
     }
 
@@ -544,6 +548,7 @@ namespace darmok
         {
             _baseViewport = viewport;
             updateProjection();
+            _renderChain.updateViewport();
         }
         return *this;
     }

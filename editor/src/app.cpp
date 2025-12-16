@@ -22,7 +22,7 @@ namespace darmok::editor
 {
     EditorApp::EditorApp(App& app) noexcept
         : _app{ app }
-        , _sceneView{ app }
+        , _sceneView{ *this }
         , _proj{app}
         , _dockLeftId{0}
         , _dockRightId{0}
@@ -33,10 +33,7 @@ namespace darmok::editor
     {
     }
 
-    EditorApp::~EditorApp() noexcept
-    {
-        // empty on purpose
-    }    
+    EditorApp::~EditorApp() noexcept = default;
 
     expected<int32_t, std::string> EditorApp::setup(const CmdArgs& args) noexcept
     {
@@ -749,6 +746,21 @@ namespace darmok::editor
     Window& EditorApp::getWindow() noexcept
     {
         return _app.getWindow();
+    }
+
+    const Input& EditorApp::getInput() const noexcept
+    {
+        return _app.getInput();
+    }
+
+    Input& EditorApp::getInput() noexcept
+    {
+        return _app.getInput();
+    }
+
+    void EditorApp::requestRenderReset() noexcept
+    {
+        _app.requestRenderReset();
     }
 
     bool EditorApp::drawFileInput(const char* label, std::filesystem::path& path, FileDialogOptions options) noexcept

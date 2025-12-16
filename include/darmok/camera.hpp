@@ -195,7 +195,7 @@ namespace darmok
         
         void configureView(bgfx::ViewId viewId, const std::string& name) const;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
-        void setEntityTransform(Entity entity, bgfx::Encoder& encoder) const noexcept;
+        void setEntityTransform(Entity entity, bgfx::Encoder& encoder, std::optional<glm::mat4> additionalTransform = std::nullopt) const noexcept;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
@@ -234,6 +234,7 @@ namespace darmok
         Components::const_iterator findComponent(entt::id_type type) const noexcept;
         Components copyComponents() const noexcept;
 
+        // IRenderChainDelegate
         Viewport getRenderChainViewport() const noexcept override;
         OptionalRef<RenderChain> getRenderChainParent() const noexcept override;
         void onRenderChainChanged() noexcept override;

@@ -55,6 +55,10 @@ namespace darmok::editor
         const AssetContext& getAssets() const noexcept;
 		const Window& getWindow() const noexcept;   
         Window& getWindow() noexcept;
+        const Input& getInput() const noexcept;
+        Input& getInput() noexcept;
+
+        void requestRenderReset() noexcept;
 
         template<typename T>
         std::optional<std::string> getAssetDragType() const noexcept
@@ -63,6 +67,7 @@ namespace darmok::editor
         }
 
         bool drawFileInput(const char* label, std::filesystem::path& path, FileDialogOptions options) noexcept;
+        EntityId getSelectedEntity() const noexcept;
 
     private:
         App& _app;
@@ -110,8 +115,6 @@ namespace darmok::editor
         void stopScene() noexcept;
         void pauseScene() noexcept;
         bool isScenePlaying() const noexcept;
-
-        EntityId getSelectedEntity() const noexcept;
 
         void drawSceneComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
         void drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
