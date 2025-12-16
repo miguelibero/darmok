@@ -34,7 +34,7 @@ namespace darmok
             {
                 *v.mutable_tangent() = convert<protobuf::Vec3>(AssimpUtils::convert(_assimpMesh.mTangents[i]));
             }
-            for (size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; j++)
+            for (size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; ++j)
             {
                 if (_assimpMesh.mColors[j])
                 {
@@ -42,7 +42,7 @@ namespace darmok
 					*v.mutable_color() = convert<protobuf::Color>(AssimpUtils::convert(_assimpMesh.mColors[j][i]));
                 }
             }
-            for (size_t j = 0; j < AI_MAX_NUMBER_OF_TEXTURECOORDS; j++)
+            for (size_t j = 0; j < AI_MAX_NUMBER_OF_TEXTURECOORDS; ++j)
             {
                 if (_assimpMesh.mTextureCoords[j])
                 {
@@ -64,7 +64,7 @@ namespace darmok
         for (size_t i = 0; i < _assimpMesh.mNumFaces; ++i)
         {
             auto& face = _assimpMesh.mFaces[i];
-            for (size_t j = 0; j < face.mNumIndices; j++)
+            for (size_t j = 0; j < face.mNumIndices; ++j)
             {
                 indices.Add(face.mIndices[j]);
             }

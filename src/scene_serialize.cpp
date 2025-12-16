@@ -564,15 +564,13 @@ namespace darmok
 	Scene SceneLoaderImpl::_emptyScene{};
     const SceneLoaderImpl::SceneDefinition SceneLoaderImpl::_emptySceneDef;
 
-    SceneLoaderImpl::SceneLoaderImpl(App& app) noexcept
-        : _app{ app }
-        , _scene{ _emptyScene }
+    SceneLoaderImpl::SceneLoaderImpl() noexcept
+        : _scene{ _emptyScene }
         , _sceneDef{ _emptySceneDef }
         , _loader{ _scene->getRegistry() }
         , _count{ 0 }
         , _typeId{ 0 }
         , _parentEntity{ entt::null }
-        , _assetConfig{ .fallback = app.getAssets() }
     {
     }
 
@@ -636,16 +634,6 @@ namespace darmok
             }
         }
         return StringUtils::joinExpectedErrors(errors);
-    }
-
-    const App& SceneLoaderImpl::getApp() const noexcept
-    {
-        return _app;
-    }
-
-    App& SceneLoaderImpl::getApp() noexcept
-    {
-        return _app;
     }
 
     const Scene& SceneLoaderImpl::getScene() const noexcept
@@ -870,8 +858,8 @@ namespace darmok
         return _impl.callComponentListeners(compAny, entity);
     }
 
-    SceneLoader::SceneLoader(App& app) noexcept
-        : _impl{ std::make_unique<SceneLoaderImpl>(app) }
+    SceneLoader::SceneLoader() noexcept
+        : _impl{ std::make_unique<SceneLoaderImpl>() }
         , _archive{ *_impl }
     {
         registerSceneComponent<FreelookController>();

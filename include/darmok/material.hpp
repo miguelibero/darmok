@@ -85,6 +85,7 @@ namespace darmok
     {
         using TextureType = protobuf::MaterialTexture::Type;
         using PrimitiveType = protobuf::Material::PrimitiveType;
+        using DepthTest = protobuf::Material::DepthTest;
         using OpacityType = protobuf::Material::OpacityType;
         using Definition = protobuf::Material;
         using TextureDefinition = protobuf::MaterialTexture;
@@ -114,9 +115,11 @@ namespace darmok
 
         std::unordered_map<TextureType, std::shared_ptr<Texture>> textures;
 
-        OpacityType opacityType = protobuf::Material::Opaque;
+        DepthTest depthTest = Definition::DepthLess;
+        OpacityType opacityType = Definition::Opaque;
         bool twoSided = false;
-        PrimitiveType primitiveType = protobuf::Material::Triangle;
+        PrimitiveType primitiveType = Definition::Triangle;
+        bool writeDepth = true;
 
         bool valid() const noexcept;
 
@@ -124,8 +127,11 @@ namespace darmok
         Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept;
         Material(std::shared_ptr<Program> prog, const Color& color) noexcept;
 
+        expected<void, std::string> load(const Definition& def, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
+
         [[nodiscard]] static Definition createDefinition() noexcept;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
+        static uint16_t getDepthTestFlag(Definition::DepthTest) noexcept;
     };
 
     class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>

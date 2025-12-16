@@ -157,14 +157,14 @@ TEST_CASE("scene can be loaded", "[scene-serialize]")
     loadFromData(data, sceneDef);
 
     Scene scene;
-    SceneConverter convert;
-    convert.registerComponent<TestComponent>();
-    auto result = convert(sceneDef, scene);
+    SceneLoader sceneLoader;
+    sceneLoader.registerComponent<TestComponent>();
+    auto result = sceneLoader(sceneDef, scene);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities{ view.begin(), view.end() };
 
-    Entity entity = convert.getComponentLoadContext().getEntity(2);
+    Entity entity = sceneLoader.getComponentLoadContext().getEntity(2);
     REQUIRE(result);
 
     REQUIRE(entities.size() == 2);
@@ -190,16 +190,16 @@ TEST_CASE("component structs are serialized", "[scene-serialize]")
     }
 
     Scene scene;
-    SceneConverter convert;
-    convert.registerComponent<TestStructComponent>();
-    auto result = convert(sceneDef, scene);
+    SceneLoader sceneLoader;
+    sceneLoader.registerComponent<TestStructComponent>();
+    auto result = sceneLoader(sceneDef, scene);
     REQUIRE(result);
 
     auto view = scene.getEntities();
     std::vector<Entity> entities(view.begin(), view.end());
 
     REQUIRE(entities.size() == 2);
-    auto entity = convert.getComponentLoadContext().getEntity(entityId);
+    auto entity = sceneLoader.getComponentLoadContext().getEntity(entityId);
     auto comp = scene.getComponent<TestStructComponent>(entity);
     REQUIRE(comp->value.value == 666);
     REQUIRE(comp->value.str == "lolo");
@@ -221,13 +221,13 @@ TEST_CASE("component references are serialized", "[scene-serialize]")
     }
 
     Scene scene;
-    SceneConverter convert;
-    convert.registerComponent<TestComponent>();
-    convert.registerComponent<TestRefComponent>();
-    auto result = convert(sceneDef, scene);
+    SceneLoader sceneLoader;
+    sceneLoader.registerComponent<TestComponent>();
+    sceneLoader.registerComponent<TestRefComponent>();
+    auto result = sceneLoader(sceneDef, scene);
     REQUIRE(result);
 
-    auto entity = convert.getComponentLoadContext().getEntity(entityId);
+    auto entity = sceneLoader.getComponentLoadContext().getEntity(entityId);
     auto refComp = scene.getComponent<TestRefComponent>(entity);
     REQUIRE(refComp->comp->value == 42);
 }
@@ -250,17 +250,17 @@ TEST_CASE("transform hierarchy is serialized", "[scene-serialize]")
         child2EntityId = sceneWrap.createEntity();
         auto child2 = Transform::createDefinition();
         child2.set_parent(parentEntityId);
-        *child2.mutable_position() = convert(glm::vec3(42, 0, 666));
+        *child2.mutable_position() = convert<protobuf::Vec3>(glm::vec3{ 42, 0, 666 });
         sceneWrap.setComponent(child2EntityId, child2);
     }
 
     Scene scene;
-    SceneConverter convert;
-    auto result = convert(sceneDef, scene);
+    SceneLoader sceneLoader;
+    auto result = sceneLoader(sceneDef, scene);
     REQUIRE(result);
 
-    auto child2Entity = convert.getComponentLoadContext().getEntity(child2EntityId);
-    auto parentEntity = convert.getComponentLoadContext().getEntity(parentEntityId);
+    auto child2Entity = sceneLoader.getComponentLoadContext().getEntity(child2EntityId);
+    auto parentEntity = sceneLoader.getComponentLoadContext().getEntity(parentEntityId);
     auto child2 = scene.getComponent<Transform>(child2Entity);
     REQUIRE(child2->getPosition() == glm::vec3(42, 0, 666));
 

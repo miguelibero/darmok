@@ -225,18 +225,16 @@ namespace darmok
 	}
 
 	LuaSceneLoader::LuaSceneLoader(App& app)
-		: _loader{ std::make_unique<SceneLoader>(app) }
+		: _loader{ std::make_unique<SceneLoader>() }
 	{
+		_loader->setAssetPackConfig({
+			.fallback = app.getAssets()
+		});
 	}
 
 	LuaSceneLoader::LuaSceneLoader(sol::this_state ts)
+		: LuaSceneLoader(LuaUtils::getApp(ts))
 	{
-		sol::object luaApp = sol::state_view{ ts }["app"];
-		if (!luaApp.is<App>())
-		{
-			throw sol::error{ "missing app global" };
-		}
-		_loader = std::make_unique<SceneLoader>(luaApp.as<App>());
 	}
 
 	LuaSceneLoader::~LuaSceneLoader() = default;

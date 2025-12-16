@@ -14,9 +14,12 @@
 
 namespace darmok
 {
+    class App;
+
     namespace LuaUtils
     {
-        bool isArray(const sol::table& table)  noexcept;
+        App& getApp(const sol::state_view& state);
+        bool isArray(const sol::table& table) noexcept;
         void logError(std::string_view desc, const sol::error& err) noexcept;
         void setupErrorHandler(sol::state_view lua, sol::function& func) noexcept;
         std::optional<entt::id_type> getTypeId(const sol::object& type) noexcept;

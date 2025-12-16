@@ -29,22 +29,31 @@ namespace darmok::editor
             return unexpected{ std::move(progResult).error() };
         }
         auto prog = progResult.value();
-        auto meshResult = MeshData{ Sphere{} }.createMesh(prog->getVertexLayout());
+        auto meshResult = MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout());
         if (!meshResult)
         {
             return unexpected{ std::move(meshResult).error() };
         }
-        _transMesh = std::make_unique<Mesh>(std::move(meshResult).value());
-        _redMat = std::make_unique<Material>(prog, Colors::red());
-        _greenMat = std::make_unique<Material>(prog, Colors::green());
-        _blueMat = std::make_unique<Material>(prog, Colors::blue());
+
+        auto createMaterial = [prog](const Color& c)
+        {
+            auto mat = std::make_unique<Material>(prog, c);
+            mat->depthTest = Material::Definition::DepthNoTest;
+            mat->writeDepth = false;
+            return mat;
+        };
+
+        _arrowMesh = std::make_unique<Mesh>(std::move(meshResult).value());
+        _redMat = createMaterial(Colors::red());
+        _greenMat = createMaterial(Colors::green());
+        _blueMat = createMaterial(Colors::blue());
 
         return {};
     }
 
     expected<void, std::string> TransformGizmo::shutdown() noexcept
     {
-        _transMesh.reset();
+        _arrowMesh.reset();
         return {};
     }
 
@@ -88,16 +97,29 @@ namespace darmok::editor
         return {};
     }
 
-    expected<void, std::string> TransformGizmo::render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> TransformGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        if (_transMesh && _redMat)
+        if (_arrowMesh)
         {
-            auto result = _transMesh->render(encoder);
-            if (!result)
+            if (_greenMat)
             {
-                return result;
+                auto result = _arrowMesh->render(encoder);
+                if (!result)
+                {
+                    return result;
+                }
+                _greenMat->renderSubmit(viewId, encoder);
             }
-            // _redMat->renderSubmit(viewId, encoder);
+
+            if (_redMat)
+            {
+                auto result = _arrowMesh->render(encoder);
+                if (!result)
+                {
+                    return result;
+                }
+                _redMat->renderSubmit(viewId, encoder);
+            }
         }
         return {};
     }
@@ -160,17 +182,31 @@ namespace darmok::editor
         return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<void, std::string> EditorSceneGizmosRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<bgfx::ViewId, std::string> EditorSceneGizmosRenderer::renderReset(bgfx::ViewId viewId) noexcept
     {
+        _viewId = viewId;
+        _cam->configureView(viewId, "Editor Gizmos");
+        // bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+        return ++viewId;
+    }
+
+    expected<void, std::string> EditorSceneGizmosRenderer::render() noexcept
+    {
+        if (!_viewId)
+        {
+            return unexpected<std::string>{"view not configured"};
+        }
         std::vector<std::string> errors;
+        auto encoder = bgfx::begin();
         for (auto& gizmo : _gizmos)
         {
-            auto result = gizmo->render(entity, viewId, encoder);
+            auto result = gizmo->render(*_viewId, *encoder);
             if (!result)
             {
                 errors.push_back(std::move(result).error());
             }
         }
+        bgfx::end(encoder);
         return StringUtils::joinExpectedErrors(errors);
     }
 

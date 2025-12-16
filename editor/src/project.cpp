@@ -37,8 +37,11 @@ namespace darmok::editor
         , _requestReset{ false }
         , _requestUpdateScene{ false }
         , _sceneWrapper{ _sceneDef }
-        , _sceneLoader{ app }
+        , _sceneLoader{ }
     {
+        _sceneLoader.setAssetPackConfig({
+            .fallback = app.getAssets()
+        });
     }
 
     expected<void, std::string> EditorProject::init(const ProgramCompilerConfig& progCompilerConfig) noexcept

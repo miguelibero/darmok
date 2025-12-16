@@ -1819,6 +1819,17 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
     }
 
+    expected<void, std::string> RmluiSceneComponentImpl::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        auto app = _app;
+        auto result = shutdown();
+        if (!result)
+        {
+            return result;
+        }
+        return init(context.getScene(), *app);
+    }
+
     expected<void, std::string> RmluiSceneComponentImpl::update(float deltaTime) noexcept
     {
         getRmluiSystem().update(deltaTime);
@@ -2206,12 +2217,7 @@ namespace darmok
 
     expected<void, std::string> RmluiSceneComponent::load(const Definition& def, IComponentLoadContext& context) noexcept
     {
-        auto result = shutdown();
-        if (!result)
-        {
-            return result;
-        }
-        return init(context.getScene(), context.getApp());
+        return _impl->load(def, context);
     }
 
     expected<void, std::string> RmluiSceneComponent::init(Scene& scene, App& app) noexcept

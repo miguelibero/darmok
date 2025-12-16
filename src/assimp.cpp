@@ -102,6 +102,7 @@ namespace darmok
             aiProcess_GenSmoothNormals |
             aiProcess_GenBoundingBoxes |
             aiProcess_LimitBoneWeights |
+            aiProcess_FlipUVs |
             // apply UnitScaleFactor to everything
             aiProcess_GlobalScale;
 
@@ -109,7 +110,7 @@ namespace darmok
         {
             // assimp (and opengl) is right handed (+Z points towards the camera)
             // while bgfx (and darmok and directx) is left handed (+Z points away from the camera)
-            flags |= aiProcess_ConvertToLeftHanded;
+            flags |= aiProcess_MakeLeftHanded;
         }
         if (config.populateArmature)
         {

@@ -159,7 +159,7 @@ namespace
 			{
 				return unexpected{ std::move(sceneDefResult).error() };
 			}
-			auto loadResult = SceneLoader{_app}(*sceneDefResult.value(), scene);
+			auto loadResult = SceneLoader{}(*sceneDefResult.value(), scene);
 			if(!loadResult)
 			{
 				return unexpected{ std::move(loadResult).error() };

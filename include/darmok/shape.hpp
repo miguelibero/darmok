@@ -323,12 +323,13 @@ namespace darmok
         using Points = std::array<glm::vec3, 2>;
         Points points;
 
-        Line(const glm::vec3& point1 = glm::vec3(0), const glm::vec3& point2 = glm::vec3(0, 0, 1)) noexcept;
+        Line(const glm::vec3& point1 = glm::vec3{ 0 }, const glm::vec3& point2 = glm::vec3{ 0, 1, 0 }) noexcept;
         explicit Line(const Points& points) noexcept;
         explicit Line(const Ray& ray) noexcept;
 
         [[nodiscard]] std::string toString() const noexcept;
         [[nodiscard]] Ray toRay() const noexcept;
+        [[nodiscard]] float getLength() const noexcept;
 
         [[nodiscard]] glm::vec3 operator*(float dist) const noexcept;
 

@@ -27,12 +27,10 @@ namespace darmok
         using SceneDefinition = protobuf::Scene;
         using ComponentListener = SceneLoader::ComponentListener;
 
-        SceneLoaderImpl(App& app) noexcept;
+        SceneLoaderImpl() noexcept;
 
         // IComponentLoadContext
         IAssetContext& getAssets() noexcept override;
-        const App& getApp() const noexcept override;
-        App& getApp() noexcept override;
         const Scene& getScene() const noexcept override;
         Scene& getScene() noexcept override;
         Entity getEntity(EntityId entityId) const noexcept override;
@@ -63,7 +61,6 @@ namespace darmok
     private:
         static Scene _emptyScene;
         static const SceneDefinition _emptySceneDef;
-        App& _app;
         OptionalRef<Scene> _scene;     
         OptionalRef<const SceneDefinition> _sceneDef;
         Entity _parentEntity;

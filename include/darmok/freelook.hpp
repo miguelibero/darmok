@@ -73,5 +73,7 @@ namespace darmok
         bool _enabled;
         Definition _def;
         OwnRefCollection<IFreelookListener> _listeners;
+
+        expected<void, std::string> doInit() noexcept;
     };
 }

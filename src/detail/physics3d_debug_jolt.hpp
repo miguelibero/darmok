@@ -102,12 +102,15 @@ namespace darmok::physics3d
         bool isEnabled() const noexcept;
         void setEnabled(bool enabled) noexcept;
 
-       private:
+    private:
         bool _enabled;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<Input> _input;
+        std::shared_ptr<IFont> _font;
         Definition _def;
+
+        expected<void, std::string> doInit() noexcept;
     };
 }
 

@@ -366,10 +366,9 @@ namespace darmok::physics3d
 
     expected<void, std::string> PhysicsDebugRendererImpl::load(const Definition& def, IComponentLoadContext& context) noexcept
     {
-		auto result = shutdown();
-        if (!result)
+        if (_input)
         {
-            return result;
+            _input->removeListener(*this);
         }
 		auto& scene = context.getScene();
         if(!_cam)
@@ -384,26 +383,38 @@ namespace darmok::physics3d
         {
             return unexpected<std::string>{"missing camera for physics debug renderer"};
 		}
-		
         _def = def;
-		return init(*_cam, scene, context.getApp());
+        return doInit();
     }
 
+    expected<void, std::string> PhysicsDebugRendererImpl::doInit() noexcept
+    {
+        if (!_input)
+        {
+            return unexpected<std::string>{"missing input ref"};
+        }
+        if (!_font)
+        {
+            return unexpected<std::string>{"missing font"};
+        }
+        _input->addListener("enable", _def.enable_events(), *this);
+        JoltPhysicsDebugRenderer::init(_def, _font);
+        return {};
+    }
 
     expected<void, std::string> PhysicsDebugRendererImpl::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         _input = app.getInput();
-        _input->addListener("enable", _def.enable_events(), *this);
 
         auto fontResult = app.getAssets().getFontLoader()(_def.font_path());
         if (!fontResult)
         {
             return unexpected<std::string>{ fmt::format("failed to load font '{}': {}", _def.font_path(), fontResult.error()) };
 		}
-        JoltPhysicsDebugRenderer::init(_def, fontResult.value());
-        return {};
+        _font = fontResult.value();
+        return doInit();
     }
 
     expected<void, std::string> PhysicsDebugRendererImpl::shutdown() noexcept
@@ -415,6 +426,7 @@ namespace darmok::physics3d
         _cam.reset();
         _scene.reset();
         _input.reset();
+        _font.reset();
         JoltPhysicsDebugRenderer::shutdown();
         return {};
     }

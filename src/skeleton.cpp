@@ -44,7 +44,7 @@ namespace darmok
     {
         bgfx::VertexLayout flayout = layout ? *layout : MeshData::getDefaultVertexLayout();
         const Line line{ glm::vec3{0}, glm::vec3{1, 0, 0} };
-        return MeshData{ line, Mesh::Definition::Arrow }.createMesh(flayout);
+        return MeshData{ line, Mesh::Definition::Bone }.createMesh(flayout);
     }
     
     RenderableSkeleton::RenderableSkeleton(const std::shared_ptr<Mesh>& boneMesh, const std::shared_ptr<Material>& mat) noexcept

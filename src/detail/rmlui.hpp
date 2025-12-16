@@ -362,9 +362,11 @@ namespace darmok
 	class RmluiSceneComponentImpl final : ITypeKeyboardListener<RmluiSceneComponentImpl>, ITypeMouseListener<RmluiSceneComponentImpl>
 	{
 	public:
+		using Definition = RmluiSceneComponent::Definition;
 		~RmluiSceneComponentImpl();
 
 		expected<void, std::string> init(Scene& scene, App& app) noexcept;
+		expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
 		expected<void, std::string> shutdown() noexcept;
 		expected<void, std::string> update(float deltaTime) noexcept;
 		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;

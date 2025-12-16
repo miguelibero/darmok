@@ -590,6 +590,11 @@ namespace darmok
         return Ray(*this);
     }
 
+    float Line::getLength() const noexcept
+    {
+        return glm::distance(points[1], points[0]);
+    }
+
     glm::vec3 Line::operator*(float dist) const noexcept
     {
         return points[0] + ( points[1] * dist );
@@ -635,7 +640,7 @@ namespace darmok
     {
         auto diff = points[1] - points[0];
         auto len = glm::length(diff);
-        auto mtx = glm::mat4(len);
+        auto mtx = glm::mat4{ len };
         mtx = glm::translate(mtx, points[0]);
         mtx *= glm::mat4_cast(Math::quatLookAt(diff / len, up));
         return mtx;

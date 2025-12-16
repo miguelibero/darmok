@@ -319,8 +319,6 @@ namespace darmok
         virtual IAssetContext& getAssets() noexcept = 0;
         virtual const Scene& getScene() const noexcept = 0;
         virtual Scene& getScene() noexcept = 0;
-        virtual const App& getApp() const noexcept = 0;
-        virtual App& getApp() noexcept = 0;
         virtual Entity getEntity(EntityId entityId) const noexcept = 0;
     };
 
@@ -440,15 +438,6 @@ namespace darmok
                 return unexpected{ std::move(loadResult).error() };
             }
             return compResult;
-
-            /*
-            // we need to delay the load() calls to guarantee that
-            // all the components are present before
-            addPostLoad([this, &comp, def = std::move(def)]()
-            {
-                loadComponent(comp, def, getComponentLoadContext());
-            });
-            */
         }
 
     private:
@@ -505,7 +494,7 @@ namespace darmok
         using Any = google::protobuf::Any;
         using ComponentListener = std::function<expected<void, std::string>(const Any& compAny, Entity entity)>;
 
-        SceneLoader(App& app) noexcept;
+        SceneLoader() noexcept;
         ~SceneLoader() noexcept;
         SceneLoader(const SceneLoader& other) = delete;
         SceneLoader& operator=(const SceneLoader& other) = delete;

@@ -271,6 +271,7 @@ namespace darmok::physics3d
     private:
         PhysicsSystem& _system;
         OptionalRef<Scene> _scene;
+        OptionalRef<tf::Executor> _taskExecutor;
         float _deltaTimeRest;
         Definition _def;
         OptionalRef<Transform> _root;
@@ -315,6 +316,7 @@ namespace darmok::physics3d
         expected<void, std::string> onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) noexcept;
 
         JoltBroadPhaseLayerMaskFilter createBroadPhaseLayerFilter(LayerMask layer) const noexcept;
+        expected<void, std::string> doInit() noexcept;
     };
 
     class PhysicsBodyImpl final

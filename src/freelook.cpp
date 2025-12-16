@@ -45,22 +45,42 @@ namespace darmok
 
     expected<void, std::string> FreelookController::init(Scene& scene, App& app) noexcept
     {
-        if (!_cam)
+        _scene = scene;
+        _input = app.getInput();
+        _win = app.getWindow();        
+        return doInit();
+    };
+
+    expected<void, std::string> FreelookController::doInit() noexcept
+    {
+        if (!_cam && _scene)
         {
-            for (auto entity : scene.getComponents<Camera>())
+            for (auto entity : _scene->getComponents<Camera>())
             {
-                if(_cam = scene.getComponent<Camera>(entity))
+                if (_cam = _scene->getComponent<Camera>(entity))
                 {
                     break;
                 }
             }
         }
-        _scene = scene;
-        _input = app.getInput();
-        _win = app.getWindow();
         _input->addListener("freelook", _def.enable_events(), *this);
         return {};
-    };
+    }
+
+    expected<void, std::string> FreelookController::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        if (_input)
+        {
+            _input->removeListener(*this);
+        }
+        _def = def;
+        if (_def.has_camera())
+        {
+            auto entity = context.getEntity(_def.camera());
+            _cam = context.getScene().getComponent<Camera>(entity);
+        }
+        return doInit();
+    }
 
     expected<void, std::string> FreelookController::shutdown() noexcept
     {
@@ -169,23 +189,5 @@ namespace darmok
         *def.mutable_move() = Input::createMoveDirsDefinition();
         *def.mutable_look() = Input::createLookDirsDefinition();
         return def;
-    }
-
-    expected<void, std::string> FreelookController::load(const Definition& def, IComponentLoadContext& context) noexcept
-    {
-        auto result = shutdown();
-        if (!result)
-        {
-            return result;
-        }
-        _def = def;
-
-        if (def.has_camera())
-        {
-            auto entity = context.getEntity(def.camera());
-            _cam = context.getScene().getComponent<Camera>(entity);
-        }
-
-        return init(context.getScene(), context.getApp());
     }
 }

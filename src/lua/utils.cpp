@@ -6,11 +6,22 @@
 #include <bx/string.h>
 #include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
+#include <darmok/app.hpp>
 
 namespace darmok
 {
 	namespace LuaUtils
 	{
+		App& getApp(const sol::state_view& state)
+		{
+			sol::object luaApp = state["app"] ;
+			if (!luaApp.is<App>())
+			{
+				throw sol::error{ "missing app global" };
+			}
+			return luaApp.as<App>();
+		}
+
 		bool isArray(const sol::table& table)  noexcept
 		{
 			if (table.empty())

@@ -124,7 +124,7 @@ namespace
 			{
 				return unexpected{ std::move(sceneDefResult).error() };
 			}
-			auto result = SceneLoader{_app}(*sceneDefResult.value(), *scene);
+			auto result = SceneLoader{}(*sceneDefResult.value(), *scene);
 			if(!result)
 			{
 				return unexpected{ std::move(result).error() };
@@ -167,7 +167,7 @@ namespace
 
 		static const std::vector<PointLightConfig> _pointLights;
 
-		void onFreelookEnable(bool enabled) noexcept override
+		expected<void, std::string> onFreelookEnable(bool enabled) noexcept override
 		{
 			if (_freeCam)
 			{
@@ -177,6 +177,7 @@ namespace
 			{
 				_cam->setEnabled(!enabled);
 			}
+			return {};
 		}
 
 		Camera& createCamera(Scene& scene, OptionalRef<Camera> mainCamera = nullptr)

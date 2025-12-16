@@ -120,6 +120,62 @@ namespace darmok
 	{
 	}
 
+	expected<void, std::string> Material::load(const Definition& def, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
+	{
+		auto progResult = Program::loadRef(def.program(), progLoader);
+		if (!progResult)
+		{
+			return unexpected{ "failed to load program: " + progResult.error() };
+		}
+		program = progResult.value();
+		textures.clear();
+		textures.reserve(def.textures_size());
+		uniformTextures.clear();
+		uniformTextures.reserve(def.textures_size());
+		for (auto& defTex : def.textures())
+		{
+			auto loadResult = texLoader(defTex.texture_path());
+			if (!loadResult)
+			{
+				return unexpected{ "failed to load texture: " + loadResult.error() };
+			}
+			auto tex = loadResult.value();
+			if (defTex.has_type())
+			{
+				textures[defTex.type()] = tex;
+			}
+			else if (defTex.has_uniform())
+			{
+				uniformTextures[defTex.uniform()] = tex;
+			}
+		}
+
+		programDefines = ProgramDefines(def.program_defines().begin(), def.program_defines().end());
+		baseColor = convert<Color>(def.base_color());
+		emissiveColor = convert<Color3>(def.emissive_color());
+		metallicFactor = def.metallic_factor();
+		roughnessFactor = def.roughness_factor();
+		normalScale = def.normal_scale();
+		occlusionStrength = def.occlusion_strength();
+		multipleScattering = def.multiple_scattering();
+		whiteFurnanceFactor = def.white_furnance_factor();
+		specularColor = convert<Color3>(def.specular_color());
+		shininess = def.shininess();
+		depthTest = def.depth_test();
+		opacityType = def.opacity_type();
+		twoSided = def.twosided();
+		primitiveType = def.primitive_type();
+
+		uniformValues.clear();
+		uniformValues.reserve(def.uniform_values_size());
+		for (auto& [key, defVal] : def.uniform_values())
+		{
+			uniformValues.emplace(key, defVal);
+		}
+
+		return {};
+	}
+
 	Material::Definition Material::createDefinition() noexcept
 	{
 		Definition def;
@@ -127,7 +183,34 @@ namespace darmok
 		*def.mutable_base_color() = convert<protobuf::Color>(Colors::white());
 		def.set_opacity_type(Material::Definition::Opaque);
 		def.set_shininess(32.0f);
+		def.set_depth_test(Material::Definition::DepthLess);
 		return def;
+	}
+
+	uint16_t Material::getDepthTestFlag(Definition::DepthTest depthTest) noexcept
+	{
+		switch (depthTest)
+		{
+		case Definition::DepthNoTest:
+			return 0;
+		case Definition::DepthLess:
+				return BGFX_STATE_DEPTH_TEST_LESS;
+		case Definition::DepthLessEqual:
+				return BGFX_STATE_DEPTH_TEST_LEQUAL;
+		case Definition::DepthEqual:
+			return BGFX_STATE_DEPTH_TEST_EQUAL;
+		case Definition::DepthGreaterEqual:
+			return BGFX_STATE_DEPTH_TEST_GEQUAL;
+		case Definition::DepthGreater:
+			return BGFX_STATE_DEPTH_TEST_GREATER;
+		case Definition::DepthNotEqual:
+			return BGFX_STATE_DEPTH_TEST_NOTEQUAL;
+		case Definition::DepthNever:
+			return BGFX_STATE_DEPTH_TEST_NEVER;
+		case Definition::DepthAlways:
+			return BGFX_STATE_DEPTH_TEST_ALWAYS;
+		}
+		return 0;
 	}
 
 	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
@@ -178,11 +261,11 @@ namespace darmok
 		config.basicUniforms.configure(encoder);
 		config.uniformHandles.configure(encoder, uniformValues);
 
-		uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_CULL_MASK;
-		state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | BGFX_STATE_DEPTH_TEST_LEQUAL;
-		if (!twoSided)
+		uint64_t state = BGFX_STATE_DEFAULT;
+		state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | getDepthTestFlag(depthTest);
+		if (twoSided)
 		{
-			state |= BGFX_STATE_CULL_CCW;
+			state &= ~BGFX_STATE_CULL_MASK;
 		}
 		if (primitiveType == Material::Definition::Line)
 		{
@@ -198,6 +281,10 @@ namespace darmok
 		else
 		{
 			state &= ~BGFX_STATE_WRITE_A;
+		}
+		if (!writeDepth)
+		{
+			state &= ~BGFX_STATE_WRITE_Z;
 		}
 
 		encoder.setState(state);
@@ -257,52 +344,10 @@ namespace darmok
 			return unexpected{ "null definition pointer" };
 		}
 		auto mat = std::make_shared<Material>();
-	
-		mat->programDefines = ProgramDefines(def->program_defines().begin(), def->program_defines().end());
-		mat->baseColor = convert<Color>(def->base_color());
-		mat->emissiveColor = convert<Color3>(def->emissive_color());
-		mat->metallicFactor = def->metallic_factor();
-		mat->roughnessFactor = def->roughness_factor();
-		mat->normalScale = def->normal_scale();
-		mat->occlusionStrength = def->occlusion_strength();
-		mat->multipleScattering = def->multiple_scattering();
-		mat->whiteFurnanceFactor = def->white_furnance_factor();
-		mat->specularColor = convert<Color3>(def->specular_color());
-		mat->shininess = def->shininess();
-		mat->opacityType = def->opacity_type();
-		mat->twoSided = def->twosided();
-		mat->primitiveType = def->primitive_type();
-
-		auto progResult = Program::loadRef(def->program(), _progLoader);
-		if (!progResult)
+		auto result = mat->load(*def, _progLoader, _texLoader);
+		if (!result)
 		{
-			return unexpected{ "failed to load program: " + progResult.error() };
-		}
-		mat->program = progResult.value();
-
-		for (auto& defTex : def->textures())
-		{
-			auto loadResult = _texLoader(defTex.texture_path());
-			if (!loadResult)
-			{
-				return unexpected{ "failed to load texture: " + loadResult.error() };
-			}
-			auto tex = loadResult.value();
-			if (defTex.has_type())
-			{
-				mat->textures[defTex.type()] = tex;
-			}
-			else if (defTex.has_uniform())
-			{
-				mat->uniformTextures[defTex.uniform()] = tex;
-			}
-		}
-
-		auto& uniformValues = mat->uniformValues;
-		uniformValues.reserve(def->uniform_values_size());
-		for (auto& [key, defVal] : def->uniform_values())
-		{
-			uniformValues.emplace(key, defVal);			
+			return unexpected{ std::move(result).error() };
 		}
 
 		return mat;

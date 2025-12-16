@@ -404,12 +404,12 @@ namespace darmok
 
 	const std::vector<MeshData::Index> MeshData::_cuboidTriangleIndices
 	{
-		0,  1,  2,  2,  3,  0,
-		4,  5,  6,  6,  7,  4,
-		8,  9, 10, 10, 11,  8,
-		12, 13, 14, 14, 15, 12,
-		16, 17, 18, 18, 19, 16,
-		20, 21, 22, 22, 23, 20,
+		0,   2,  1,  2,  0,  3,
+		4,   6,  5,  6,  4,  7,
+		8,  10,  9, 10,  8, 11,
+		12, 14, 13, 14, 12, 15,
+		16, 18, 17, 18, 16, 19,
+		20, 22, 21, 22, 20, 23,
 	};
 
 	MeshData::MeshData(const Cube& cube, RectangleType type) noexcept
@@ -471,7 +471,7 @@ namespace darmok
 			{ { -0.5F, -0.5F, 0 }, { 0, 1 }, { 0, 0, 1 }, { 1, 0, 0} },
 			{ { -0.5F,  0.5F, 0 }, { 0, 0 }, { 0, 0, 1 }, { 1, 0, 0} }
 		};
-		static const std::vector<Index> basicIndices = { 0, 1, 2, 2, 3, 0 };
+		static const std::vector<Index> basicIndices = { 0, 2, 1, 2, 0, 3 };
 		vertices = basicVertices;
 		indices = basicIndices;
 	}
@@ -674,7 +674,7 @@ namespace darmok
 	}
 
 	MeshData::MeshData(const Sphere& sphere, unsigned int lod) noexcept
-		: MeshData(Capsule(0, sphere.radius, sphere.origin), lod)
+		: MeshData(Capsule{ 0.f, sphere.radius, sphere.origin }, lod)
 	{
 	}
 
@@ -725,12 +725,12 @@ namespace darmok
 						int next = current + radialSegments + 1;
 
 						indices.push_back(current);
-						indices.push_back(next);
 						indices.push_back(current + 1);
+						indices.push_back(next);
 
 						indices.push_back(current + 1);
-						indices.push_back(next);
 						indices.push_back(next + 1);
+						indices.push_back(next);
 					}
 				}
 			}
@@ -766,17 +766,17 @@ namespace darmok
 					int next = current + radialSegments + 1;
 
 					indices.push_back(current);
-					indices.push_back(next);
 					indices.push_back(current + 1);
+					indices.push_back(next);
 
 					indices.push_back(current + 1);
-					indices.push_back(next);
 					indices.push_back(next + 1);
+					indices.push_back(next);
 				}
 			}
 		}
 
-		auto trans = glm::translate(glm::mat4(capsule.radius), capsule.origin / capsule.radius);
+		auto trans = glm::translate(glm::mat4{ capsule.radius }, capsule.origin / capsule.radius);
 		*this *= trans;
     }
 
@@ -796,6 +796,14 @@ namespace darmok
 
 		if (type == Mesh::Definition::Arrow)
 		{
+			*this = MeshData{ Cone{ 0.2f, 0.05f } };
+			translatePositions(glm::vec3{0.f, 0.5f, 0.f});
+			*this += MeshData{ Cylinder{ 1.f, 0.01f } };
+			glm::mat4 trans{ 1 };
+			trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3{ 1, 0, 0 });
+			trans = glm::translate(trans, glm::vec3{ 0.f, 0.5f, 0.f });
+			trans = line.getTransform() * trans;
+			*this *= trans;
 			return;
 		}
 
@@ -816,27 +824,21 @@ namespace darmok
 			};
 			vertices = {
 				{
-					{ pos[0], tex[0] }, { pos[2], tex[1] }, { pos[1], tex[1] },
-					{ pos[5], tex[0] }, { pos[1], tex[2] }, { pos[2], tex[2] },
-					{ pos[0], tex[0] }, { pos[3], tex[3] }, { pos[2], tex[3] },
-					{ pos[5], tex[0] }, { pos[2], tex[4] }, { pos[3], tex[4] },
-					{ pos[0], tex[2] }, { pos[4], tex[5] }, { pos[3], tex[2] },
-					{ pos[5], tex[3] }, { pos[3], tex[5] }, { pos[4], tex[3] },
-					{ pos[0], tex[4] }, { pos[1], tex[5] }, { pos[4], tex[4] },
-					{ pos[5], tex[1] }, { pos[4], tex[5] }, { pos[1], tex[1] }
+					{ pos[0], tex[0] }, { pos[1], tex[1] }, { pos[2], tex[1] }, 
+					{ pos[5], tex[0] }, { pos[2], tex[2] }, { pos[1], tex[2] }, 
+					{ pos[0], tex[0] }, { pos[2], tex[3] }, { pos[3], tex[3] }, 
+					{ pos[5], tex[0] }, { pos[3], tex[4] }, { pos[2], tex[4] }, 
+					{ pos[0], tex[2] }, { pos[3], tex[2] }, { pos[4], tex[5] }, 
+					{ pos[5], tex[3] }, { pos[4], tex[3] }, { pos[3], tex[5] }, 
+					{ pos[0], tex[4] }, { pos[4], tex[4] }, { pos[1], tex[5] }, 
+					{ pos[5], tex[1] }, { pos[1], tex[1] }, { pos[4], tex[5] }, 
 				}
 			};
 
-			auto trans = line.getTransform();
-
-			for (auto& vertex : vertices)
-			{
-				vertex.position = trans * glm::vec4(vertex.position, 1.0);
-			}
+			*this *= line.getTransform();
 			calcNormals();
+			calcTangents();
 		}
-
-		calcTangents();
 	}
 
 	MeshData::MeshData(const Triangle& tri) noexcept
@@ -933,8 +935,8 @@ namespace darmok
 		for (int i = 0; i < lod; ++i)
 		{
 			indices.push_back(apexIndex);
-			indices.push_back(startIndex + i + 1);
 			indices.push_back(startIndex + i);
+			indices.push_back(startIndex + i + 1);
 		}
 
 		startIndex += (lod + 1);
@@ -957,8 +959,8 @@ namespace darmok
 		for (int i = 0; i < lod; ++i)
 		{
 			indices.push_back(baseCenterIndex);
-			indices.push_back(startIndex + i);
 			indices.push_back(startIndex + (i + 1) % lod);
+			indices.push_back(startIndex + i);
 		}
 		calcTangents();
 	}
@@ -1003,12 +1005,12 @@ namespace darmok
 			Index i3 = i0 + 3;
 
 			indices.push_back(i0);
-			indices.push_back(i1);
 			indices.push_back(i2);
+			indices.push_back(i1);
 
 			indices.push_back(i1);
-			indices.push_back(i3);
 			indices.push_back(i2);
+			indices.push_back(i3);
 		}
 
 		Index bottomCenterIndex = vertices.size();
@@ -1029,8 +1031,8 @@ namespace darmok
 			Index current = i * 2;
 			Index next = ((i + 1) % lod) * 2;
 			indices.push_back(bottomCenterIndex);
-			indices.push_back(current);
 			indices.push_back(next);
+			indices.push_back(current);
 		}
 
 		for (int i = 0; i < lod; ++i)
@@ -1038,8 +1040,8 @@ namespace darmok
 			Index current = i * 2 + 1;
 			Index next = ((i + 1) % lod) * 2 + 1;
 			indices.push_back(topCenterIndex);
-			indices.push_back(next);
 			indices.push_back(current);
+			indices.push_back(next);
 		}
 		calcTangents();
 	}

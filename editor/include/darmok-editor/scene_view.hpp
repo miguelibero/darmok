@@ -41,7 +41,7 @@ namespace darmok::editor
         virtual expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept { return {}; }
         virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
-        virtual expected<void, std::string> render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
+        virtual expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
     };
 
     class TransformGizmo final : public ISceneGizmo
@@ -52,7 +52,7 @@ namespace darmok::editor
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
-        expected<void, std::string> render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
         Mode getMode() const noexcept;
         void setMode(Mode mode) noexcept;
@@ -60,7 +60,7 @@ namespace darmok::editor
     private:
         Mode _mode;
         OptionalRef<App> _app;
-        std::unique_ptr<Mesh> _transMesh;
+        std::unique_ptr<Mesh> _arrowMesh;
         std::unique_ptr<Mesh> _rotMesh;
         std::unique_ptr<Mesh> _scaleMesh;
         std::unique_ptr<Material> _redMat;
@@ -74,7 +74,8 @@ namespace darmok::editor
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
+        expected<void, std::string> render() noexcept override;
 
         expected<void, std::string> add(std::unique_ptr<ISceneGizmo> gizmo) noexcept;
 
@@ -94,6 +95,7 @@ namespace darmok::editor
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
+        std::optional<bgfx::ViewId> _viewId;
         std::vector<std::unique_ptr<ISceneGizmo>> _gizmos;
     };
         

@@ -550,7 +550,8 @@ namespace darmok::physics3d
             return result;
         }
         _def = def;
-        return init(context.getScene(), context.getApp());
+        _scene = context.getScene();
+        return doInit();
     }
 
     expected<void, std::string> PhysicsSystemImpl::init(Scene& scene, App& app) noexcept
@@ -564,10 +565,23 @@ namespace darmok::physics3d
 			}
         }
         _scene = scene;
+        _taskExecutor = app.getTaskExecutor();
+        return doInit();
+    }
+
+    expected<void, std::string> PhysicsSystemImpl::doInit() noexcept
+    {
+        if (!_scene)
+        {
+            return unexpected<std::string>{"missing scene"};
+        }
         JPH::Factory::sInstance = new JPH::Factory();
         JPH::RegisterTypes();
-        _jobSystem.emplace();
-        _jobSystem->init(app.getTaskExecutor());
+        if (_taskExecutor)
+        {
+            _jobSystem.emplace();
+            _jobSystem->init(*_taskExecutor);
+        }
         _joltSystem = std::make_unique<JPH::PhysicsSystem>();
         _joltSystem->Init(_def.max_bodies(), _def.num_body_mutexes(),
             _def.max_body_pairs(), _def.max_contact_constraints(),
@@ -576,22 +590,22 @@ namespace darmok::physics3d
         _joltSystem->SetGravity(JoltUtils::convert(darmok::convert<glm::vec3>(_def.gravity())));
         _joltSystem->SetContactListener(this);
 
-        scene.onConstructComponent<PhysicsBody>().connect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
-        scene.onDestroyComponent<PhysicsBody>().connect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
-        scene.onConstructComponent<CharacterController>().connect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
-        scene.onDestroyComponent<CharacterController>().connect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
+        _scene->onConstructComponent<PhysicsBody>().connect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
+        _scene->onDestroyComponent<PhysicsBody>().connect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
+        _scene->onConstructComponent<CharacterController>().connect<&PhysicsSystemImpl::onCharacterConstructed>(*this);
+        _scene->onDestroyComponent<CharacterController>().connect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
 
-        auto rigidBodies = scene.getComponents<PhysicsBody>();
+        auto rigidBodies = _scene->getComponents<PhysicsBody>();
         for (auto [entity, body] : rigidBodies.each())
         {
             body.getImpl().init(body, _system);
         }
-        auto charCtrls = scene.getComponents<CharacterController>();
+        auto charCtrls = _scene->getComponents<CharacterController>();
         for (auto [entity, charCtrl] : charCtrls.each())
         {
             charCtrl.getImpl().init(charCtrl, _system);
         }
-		return {};
+        return {};
     }
 
     expected<void, std::string> PhysicsSystemImpl::shutdown() noexcept
@@ -609,7 +623,6 @@ namespace darmok::physics3d
             _scene->onDestroyComponent<CharacterController>().disconnect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
             _scene.reset();
         }
-
         _listeners.clear();
         _joltSystem.reset();
         _jobSystem->shutdown();
