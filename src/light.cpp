@@ -278,10 +278,7 @@ namespace darmok
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept
-        : _pointLightBuffer{ bgfx::kInvalidHandle }
-        , _dirLightBuffer{ bgfx::kInvalidHandle }
-        , _spotLightBuffer{ bgfx::kInvalidHandle }
-        , _lightCount(0)
+        : _lightCount(0)
         , _lightData(0)
         , _camPos(0)
     {
@@ -319,9 +316,9 @@ namespace darmok
 
     void LightingRenderComponent::createHandles() noexcept
     {
-        _pointLightBuffer = bgfx::createDynamicVertexBuffer(1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _dirLightBuffer = bgfx::createDynamicVertexBuffer(1, _dirLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _spotLightBuffer = bgfx::createDynamicVertexBuffer(1, _spotLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+        _pointLightBuffer = { 1, _pointLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
+        _dirLightBuffer = { 1, _dirLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
+        _spotLightBuffer = { 1, _spotLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
         _lightCountUniform = { "u_lightCountVec", bgfx::UniformType::Vec4 };
         _lightDataUniform = { "u_ambientLightIrradiance", bgfx::UniformType::Vec4 };
         _camPosUniform = { "u_camPos", bgfx::UniformType::Vec4 };
@@ -334,17 +331,9 @@ namespace darmok
         _lightDataUniform.reset();
         _camPosUniform.reset();
         _normalMatrixUniform.reset();
-        const std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers = {
-            _pointLightBuffer, _dirLightBuffer, _spotLightBuffer
-        };
-        for (auto& buffer : buffers)
-        {
-            if (isValid(buffer))
-            {
-                bgfx::destroy(buffer);
-                buffer.get().idx = bgfx::kInvalidHandle;
-            }
-        }
+        _pointLightBuffer.reset();
+        _dirLightBuffer.reset();
+        _spotLightBuffer.reset();
     }
 
     expected<void, std::string> LightingRenderComponent::shutdown() noexcept
@@ -369,7 +358,7 @@ namespace darmok
             if (trans)
             {
                 // elm.dir = -glm::normalize(trans->getWorldPosition());
-                elm.dir = glm::vec4(trans->getWorldDirection(), 0.f);
+                elm.dir = glm::vec4{ trans->getWorldDirection(), 0.f };
             }
             elm.dir.w = float(entity);
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
@@ -377,7 +366,7 @@ namespace darmok
             elm.color = Colors::normalize(light.getColor()) * intensity;
         }
 
-        VertexDataWriter writer(_dirLightsLayout, uint32_t(elms.size()));
+        VertexDataWriter writer{ _dirLightsLayout, uint32_t(elms.size()) };
         uint32_t index = 0;
 
         for (auto& elm : elms)

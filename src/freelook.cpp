@@ -159,7 +159,7 @@ namespace darmok
 		def.mutable_max_look_angle()->set_x(30.F);
         def.mutable_max_look_angle()->set_y(30.F);
 
-		def.mutable_enable_events()->Add()->mutable_keyboard()->set_key(Keyboard::Definition::F7);
+		def.mutable_enable_events()->Add(Keyboard::createInputEvent(Keyboard::Definition::F7));
 
         auto addMove = [](auto field, KeyboardKey key1, KeyboardKey key2, InputDirType gamepadDir)
         {

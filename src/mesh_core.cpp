@@ -45,58 +45,22 @@ namespace darmok
 			return unexpected<std::string>{"empty vertex data"};
 		}
 		StaticMode mode;
-		mode.vertexBuffer = bgfx::createVertexBuffer(vertices.copyMem(), layout, flags);
-		bgfx::IndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
+		mode.vertexBuffer = { vertices.copyMem(), layout, flags };
 		if (!indices.empty())
 		{
-			mode.indexBuffer = bgfx::createIndexBuffer(indices.copyMem(), flags);
+			mode.indexBuffer = { indices.copyMem(), flags };
 		}
 		return mode;
 	}
 
-	Mesh::StaticMode::~StaticMode() noexcept
-	{
-		clear();
-	}
-
-	void Mesh::StaticMode::clear() noexcept
-	{
-		if (isValid(vertexBuffer))
-		{
-			bgfx::destroy(vertexBuffer);
-		}
-		if (isValid(indexBuffer))
-		{
-			bgfx::destroy(indexBuffer);
-		}
-	}
-
-	Mesh::StaticMode::StaticMode(StaticMode&& other) noexcept
-		: vertexBuffer{ other.vertexBuffer }
-		, indexBuffer{ other.indexBuffer }
-	{
-		other.vertexBuffer.idx = bgfx::kInvalidHandle;
-		other.indexBuffer.idx = bgfx::kInvalidHandle;
-	}
-
-	Mesh::StaticMode& Mesh::StaticMode::operator=(StaticMode&& other) noexcept
-	{
-		clear();
-		vertexBuffer = other.vertexBuffer;
-		indexBuffer = other.indexBuffer;
-		other.vertexBuffer.idx = bgfx::kInvalidHandle;
-		other.indexBuffer.idx = bgfx::kInvalidHandle;
-		return *this;
-	}
-
 	expected<void, std::string> Mesh::StaticMode::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
-		if (!isValid(vertexBuffer))
+		if (!vertexBuffer)
 		{
 			return unexpected<std::string>{"invalid vertex buffer"};
 		}
 		encoder.setVertexBuffer(config.vertexStream, vertexBuffer, config.startVertex, config.numVertices);
-		if (isValid(indexBuffer))
+		if (indexBuffer)
 		{
 			encoder.setIndexBuffer(indexBuffer, config.startIndex, config.numIndices);
 		}
@@ -105,63 +69,28 @@ namespace darmok
 
 	expected<Mesh::DynamicMode, std::string> Mesh::DynamicMode::create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
-		auto flags = config.getFlags() | BGFX_BUFFER_ALLOW_RESIZE;
+		uint16_t flags = config.getFlags() | BGFX_BUFFER_ALLOW_RESIZE;
 		if (vertices.empty())
 		{
 			return unexpected<std::string>{"empty vertex data"};
 		}
 		DynamicMode mode;
-		mode.vertexBuffer = bgfx::createDynamicVertexBuffer(vertices.copyMem(), layout, flags);
+		mode.vertexBuffer = { vertices.copyMem(), layout, flags };
 		if (!indices.empty())
 		{
-			mode.indexBuffer = bgfx::createDynamicIndexBuffer(indices.copyMem(), flags);
+			mode.indexBuffer = { indices.copyMem(), flags };
 		}
 		return mode;
 	}
 
-	Mesh::DynamicMode::~DynamicMode() noexcept
-	{
-		clear();
-	}
-
-	void Mesh::DynamicMode::clear() noexcept
-	{
-		if (isValid(vertexBuffer))
-		{
-			bgfx::destroy(vertexBuffer);
-		}
-		if (isValid(indexBuffer))
-		{
-			bgfx::destroy(indexBuffer);
-		}
-	}
-
-	Mesh::DynamicMode::DynamicMode(DynamicMode&& other) noexcept
-		: vertexBuffer{ other.vertexBuffer }
-		, indexBuffer{ other.indexBuffer }
-	{
-		other.vertexBuffer.idx = bgfx::kInvalidHandle;
-		other.indexBuffer.idx = bgfx::kInvalidHandle;
-	}
-
-	Mesh::DynamicMode& Mesh::DynamicMode::operator=(DynamicMode&& other) noexcept
-	{
-		clear();
-		vertexBuffer = other.vertexBuffer;
-		indexBuffer = other.indexBuffer;
-		other.vertexBuffer.idx = bgfx::kInvalidHandle;
-		other.indexBuffer.idx = bgfx::kInvalidHandle;
-		return *this;
-	}
-
 	expected<void, std::string> Mesh::DynamicMode::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
-		if (!isValid(vertexBuffer))
+		if (!vertexBuffer)
 		{
 			return unexpected<std::string>{"invalid vertex buffer"};
 		}
 		encoder.setVertexBuffer(config.vertexStream, vertexBuffer, config.startVertex, config.numVertices);
-		if (isValid(indexBuffer))
+		if (indexBuffer)
 		{
 			encoder.setIndexBuffer(indexBuffer, config.startIndex, config.numIndices);
 		}
@@ -171,48 +100,31 @@ namespace darmok
 	expected<Mesh::TransientMode, std::string> Mesh::TransientMode::create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
 		TransientMode mode;
-		if (!vertices.empty())
+		auto vertexResult = TransientVertexBuffer::create(vertices, layout);
+		if (!vertexResult)
 		{
-			auto vertNum = static_cast<uint32_t>(vertices.size()) / layout.getStride();
-			if (vertNum > 0 && !bgfx::getAvailTransientVertexBuffer(vertNum, layout))
-			{
-				return unexpected<std::string>{ "not enought transient vertex buffer space" };
-			}
-			bgfx::allocTransientVertexBuffer(&mode.vertexBuffer, vertNum, layout);
-			bx::memCopy(mode.vertexBuffer.data, vertices.ptr(), vertices.size());
+			return unexpected{ std::move(vertexResult).error() };
 		}
-		else
-		{
-			mode.vertexBuffer.data = nullptr;
-			mode.vertexBuffer.size = 0;
-			mode.vertexBuffer.handle.idx = bgfx::kInvalidHandle;
-		}
+		mode.vertexBuffer = std::move(vertexResult).value();
+		
 		if (!indices.empty())
 		{
-			auto idxNum = static_cast<uint32_t>(indices.size() / config.getIndexSize());
-			auto index32 = config.index32;
-			if (!bgfx::getAvailTransientIndexBuffer(idxNum, index32))
+			auto indexResult = TransientIndexBuffer::create(indices, config.index32);
+			if (!indexResult)
 			{
-				return unexpected<std::string>{ "not enought transient index buffer space" };
+				return unexpected{ std::move(indexResult).error() };
 			}
-			bgfx::allocTransientIndexBuffer(&mode.indexBuffer, idxNum, index32);
-			bx::memCopy(mode.indexBuffer.data, indices.ptr(), indices.size());
-		}
-		else
-		{
-			mode.indexBuffer.data = nullptr;
-			mode.indexBuffer.size = 0;
-			mode.indexBuffer.handle.idx = bgfx::kInvalidHandle;
+			mode.indexBuffer = std::move(indexResult).value();
 		}
 		return mode;
 	}
 
 	expected<void, std::string> Mesh::TransientMode::render(bgfx::Encoder& encoder, RenderConfig config) const noexcept
 	{
-		encoder.setVertexBuffer(config.vertexStream, &vertexBuffer, config.startVertex, config.numVertices);
+		encoder.setVertexBuffer(config.vertexStream, &vertexBuffer.get(), config.startVertex, config.numVertices);
 		if (config.numIndices > 0)
 		{
-			encoder.setIndexBuffer(&indexBuffer, config.startIndex, config.numIndices);
+			encoder.setIndexBuffer(&indexBuffer.get(), config.startIndex, config.numIndices);
 		}
 		return {};
 	}
@@ -331,15 +243,15 @@ namespace darmok
 		return std::visit([](const auto& data) {
 			if constexpr (std::is_same_v<std::decay_t<decltype(data)>, StaticMode>)
 			{
-				return data.vertexBuffer.idx;
+				return data.vertexBuffer.idx();
 			}
 			else if constexpr (std::is_same_v<std::decay_t<decltype(data)>, DynamicMode>)
 			{
-				return data.vertexBuffer.idx;
+				return data.vertexBuffer.idx();
 			}
 			else
 			{
-				return data.vertexBuffer.handle.idx;
+				return data.vertexBuffer.idx();
 			}
 		}, _mode);
 	}

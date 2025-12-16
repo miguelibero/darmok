@@ -8,6 +8,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/varying.hpp>
 #include <darmok/loader.hpp>
+#include <darmok/vertex.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/mesh.pb.h>
 
@@ -89,44 +90,38 @@ namespace darmok
     private:
         struct StaticMode final
         {
-            bgfx::VertexBufferHandle vertexBuffer{ bgfx::kInvalidHandle };
-            bgfx::IndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
+            VertexBufferHandle vertexBuffer;
+            IndexBufferHandle indexBuffer;
 
             StaticMode() = default;
-            ~StaticMode() noexcept;
             StaticMode(const StaticMode& other) = delete;
             StaticMode& operator=(const StaticMode& other) = delete;
-            StaticMode(StaticMode&& other) noexcept;
-            StaticMode& operator=(StaticMode&& other) noexcept;
+            StaticMode(StaticMode&& other) = default;
+            StaticMode& operator=(StaticMode&& other) = default;
 
             static expected<StaticMode, std::string> create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
             expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
-        private:
-			void clear() noexcept;
         };
 
         struct DynamicMode final
         {
-            bgfx::DynamicVertexBufferHandle vertexBuffer{ bgfx::kInvalidHandle };
-            bgfx::DynamicIndexBufferHandle indexBuffer{ bgfx::kInvalidHandle };
+            DynamicVertexBufferHandle vertexBuffer;
+            DynamicIndexBufferHandle indexBuffer;
 
             DynamicMode() = default;
-            ~DynamicMode() noexcept;
             DynamicMode(const DynamicMode& other) = delete;
             DynamicMode& operator=(const DynamicMode& other) = delete;
-            DynamicMode(DynamicMode&& other) noexcept;
-            DynamicMode& operator=(DynamicMode&& other) noexcept;
+            DynamicMode(DynamicMode&& other) = default;
+            DynamicMode& operator=(DynamicMode&& other) = default;
 
             static expected<DynamicMode, std::string> create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept;
             expected<void, std::string> render(bgfx::Encoder& encoder, RenderConfig config = {}) const noexcept;
-        private:
-            void clear() noexcept;
         };
 
         struct TransientMode final
         {
-            bgfx::TransientVertexBuffer vertexBuffer;
-            bgfx::TransientIndexBuffer indexBuffer;
+            TransientVertexBuffer vertexBuffer;
+            TransientIndexBuffer indexBuffer;
 
             TransientMode() = default;
             TransientMode(const TransientMode& other) = delete;

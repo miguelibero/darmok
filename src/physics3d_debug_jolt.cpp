@@ -455,15 +455,9 @@ namespace darmok::physics3d
     PhysicsDebugRenderer::Definition PhysicsDebugRenderer::createDefinition() noexcept
     {
         Definition def;
-        def.mutable_enable_events()->Add();
-
-        /*
-            repeated InputEvent enable_events = { KeyboardInputEvent{ KeyboardKey::F8 } };
-    uint32 mesh_batch_size = 32 * 1024;
-    std::shared_ptr<IFont> font;
-    float alpha = 0.3F;
-    */
-
+        def.mutable_enable_events()->Add(Keyboard::createInputEvent(Keyboard::Definition::F8));
+        def.set_mesh_batch_size(32 * 1024);
+        def.set_alpha(0.3F);
         return def;
     }
 

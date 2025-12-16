@@ -23,6 +23,141 @@ namespace bx
 
 namespace darmok
 {
+
+    template<typename T>
+    struct DARMOK_EXPORT BaseBgfxHandle
+    {
+    public:
+        BaseBgfxHandle() noexcept
+            : _bgfx{ bgfx::kInvalidHandle }
+        {
+        }
+
+        BaseBgfxHandle(T handle) noexcept
+            : _bgfx{ handle }
+        {
+        }
+
+        ~BaseBgfxHandle() noexcept
+        {
+            reset();
+        }
+
+        BaseBgfxHandle(const BaseBgfxHandle& other) = delete;
+        BaseBgfxHandle& operator=(const BaseBgfxHandle& other) = delete;
+        
+        BaseBgfxHandle(BaseBgfxHandle&& other) noexcept
+            : _bgfx{ other._bgfx }
+        {
+            other._bgfx.idx = bgfx::kInvalidHandle;
+        }
+
+        BaseBgfxHandle& operator=(BaseBgfxHandle&& other) noexcept
+        {
+            reset();
+            _bgfx = other._bgfx;
+            other._bgfx.idx = bgfx::kInvalidHandle;
+            return *this;
+        }
+
+        operator T() const noexcept
+        {
+            return get();
+        }
+
+        const T& get() const noexcept
+        {
+            return _bgfx;
+        }
+
+        bool reset() noexcept
+        {
+            if (isValid(_bgfx))
+            {
+                bgfx::destroy(_bgfx);
+                _bgfx.idx = bgfx::kInvalidHandle;
+                return true;
+            }
+            return false;
+        }
+
+        operator bool() const noexcept
+        {
+            return valid();
+        }
+
+        bool valid() const noexcept
+        {
+            return isValid(_bgfx);
+        }
+
+        uint16_t idx() const noexcept
+        {
+            return _bgfx.idx;
+        }
+
+    private:
+        T _bgfx;
+    };
+
+    struct DARMOK_EXPORT VertexBufferHandle final : BaseBgfxHandle<bgfx::VertexBufferHandle>
+    {
+    public:
+        VertexBufferHandle() = default;
+        VertexBufferHandle(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags = BGFX_BUFFER_NONE) noexcept;
+    };
+
+    struct DARMOK_EXPORT IndexBufferHandle final : BaseBgfxHandle<bgfx::IndexBufferHandle>
+    {
+    public:
+        IndexBufferHandle() = default;
+        IndexBufferHandle(const bgfx::Memory* mem, uint16_t flags = BGFX_BUFFER_NONE) noexcept;
+    };
+
+    struct DARMOK_EXPORT DynamicVertexBufferHandle final : BaseBgfxHandle<bgfx::DynamicVertexBufferHandle>
+    {
+    public:
+        DynamicVertexBufferHandle() = default;
+        DynamicVertexBufferHandle(uint32_t num, const bgfx::VertexLayout& layout, uint16_t flags = BGFX_BUFFER_NONE) noexcept;
+        DynamicVertexBufferHandle(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags = BGFX_BUFFER_NONE) noexcept;
+    };
+
+    struct DARMOK_EXPORT DynamicIndexBufferHandle final : BaseBgfxHandle<bgfx::DynamicIndexBufferHandle>
+    {
+    public:
+        DynamicIndexBufferHandle() = default;
+        DynamicIndexBufferHandle(uint32_t num, uint16_t flags = BGFX_BUFFER_NONE) noexcept;
+        DynamicIndexBufferHandle(const bgfx::Memory* mem, uint16_t flags = BGFX_BUFFER_NONE) noexcept;
+    };
+
+    struct DARMOK_EXPORT TransientVertexBuffer final
+    {
+        TransientVertexBuffer() noexcept;
+        static expected<TransientVertexBuffer, std::string> create(uint32_t vertNum, const bgfx::VertexLayout& layout) noexcept;
+        static expected<TransientVertexBuffer, std::string> create(DataView data, const bgfx::VertexLayout& layout) noexcept;
+        const bgfx::TransientVertexBuffer& get() const noexcept;
+        uint16_t idx() const noexcept;
+        DataView data() noexcept;
+        const DataView data() const noexcept;
+    private:
+        TransientVertexBuffer(bgfx::TransientVertexBuffer bgfx) noexcept;
+        bgfx::TransientVertexBuffer _bgfx;
+    };
+
+    struct DARMOK_EXPORT TransientIndexBuffer final
+    {
+        TransientIndexBuffer() noexcept;
+        static expected<TransientIndexBuffer, std::string> create(uint32_t idxNum, bool index32) noexcept;
+        static expected<TransientIndexBuffer, std::string> create(DataView data, bool index32) noexcept;
+        const bgfx::TransientIndexBuffer& get() const noexcept;
+        uint16_t idx() const noexcept;
+        DataView data() noexcept;
+        const DataView data() const noexcept;
+    private:
+        TransientIndexBuffer(bgfx::TransientIndexBuffer bgfx) noexcept;
+        bgfx::TransientIndexBuffer _bgfx;
+    };
+
     class DARMOK_EXPORT VertexDataWriter final
     {
     public:

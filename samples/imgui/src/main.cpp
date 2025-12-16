@@ -216,9 +216,10 @@ namespace
 			return {};
 		}
 
-		void onWindowVideoMode(const VideoMode& mode) override
+		expected<void, std::string> onWindowVideoMode(const VideoMode& mode) noexcept override
 		{
 			_videoModeState.onWindowVideoMode(mode);
+			return {};
 		}
 
 		expected<void, std::string> render() const noexcept override
@@ -251,8 +252,8 @@ namespace
 				, glm::to_string(_mouseScrollMax).c_str()
 			);
 			bgfx::dbgTextPrintf(0, 6, 0x0f, "Gamepad Sticks: %s %s"
-				, glm::to_string(_app.getInput().getGamepad()->getStick(GamepadStick::Left)).c_str()
-				, glm::to_string(_app.getInput().getGamepad()->getStick(GamepadStick::Right)).c_str()
+				, glm::to_string(_app.getInput().getGamepad().getStick(Gamepad::Definition::LeftStick)).c_str()
+				, glm::to_string(_app.getInput().getGamepad().getStick(Gamepad::Definition::RightStick)).c_str()
 			);
 
 			return {};

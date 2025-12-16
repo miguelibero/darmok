@@ -4,6 +4,159 @@
 
 namespace darmok
 {
+
+    VertexBufferHandle::VertexBufferHandle(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
+        : BaseBgfxHandle(bgfx::createVertexBuffer(mem, layout, flags))
+    {
+    }
+
+    IndexBufferHandle::IndexBufferHandle(const bgfx::Memory* mem, uint16_t flags) noexcept
+        : BaseBgfxHandle(bgfx::createIndexBuffer(mem, flags))
+    {
+    }
+
+    DynamicVertexBufferHandle::DynamicVertexBufferHandle(uint32_t num, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
+        : BaseBgfxHandle(bgfx::createDynamicVertexBuffer(num, layout, flags))
+    {
+    }
+
+    DynamicVertexBufferHandle::DynamicVertexBufferHandle(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
+        : BaseBgfxHandle(bgfx::createDynamicVertexBuffer(mem, layout, flags))
+    {
+    }
+
+    DynamicIndexBufferHandle::DynamicIndexBufferHandle(uint32_t num, uint16_t flags) noexcept
+        : BaseBgfxHandle(bgfx::createDynamicIndexBuffer(num, flags))
+    {
+    }
+
+    DynamicIndexBufferHandle::DynamicIndexBufferHandle(const bgfx::Memory* mem, uint16_t flags) noexcept
+        : BaseBgfxHandle(bgfx::createDynamicIndexBuffer(mem, flags))
+    {
+    }
+
+    TransientVertexBuffer::TransientVertexBuffer() noexcept
+    {
+        _bgfx.data = nullptr;
+        _bgfx.size = 0;
+        _bgfx.handle.idx = bgfx::kInvalidHandle;
+    }
+
+    TransientVertexBuffer::TransientVertexBuffer(bgfx::TransientVertexBuffer bgfx) noexcept
+        : _bgfx{ std::move(bgfx) }
+    {
+    }
+
+    const bgfx::TransientVertexBuffer& TransientVertexBuffer::get() const noexcept
+    {
+        return _bgfx;
+    }
+
+    uint16_t TransientVertexBuffer::idx() const noexcept
+    {
+        return _bgfx.handle.idx;
+    }
+
+    DataView TransientVertexBuffer::data() noexcept
+    {
+        return { _bgfx.data, _bgfx.size };
+    }
+
+    const DataView TransientVertexBuffer::data() const noexcept
+    {
+        return { _bgfx.data, _bgfx.size };
+    }
+
+    expected<TransientVertexBuffer, std::string> TransientVertexBuffer::create(uint32_t vertNum, const bgfx::VertexLayout& layout) noexcept
+    {
+        if (vertNum == 0)
+        {
+            return unexpected<std::string>{ "empty" };
+        }
+        if (!bgfx::getAvailTransientVertexBuffer(vertNum, layout))
+        {
+            return unexpected<std::string>{ "not enought transient vertex buffer space" };
+        }
+        bgfx::TransientVertexBuffer buffer;
+        bgfx::allocTransientVertexBuffer(&buffer, vertNum, layout);
+        return TransientVertexBuffer{ buffer };
+    }
+
+    expected<TransientVertexBuffer, std::string> TransientVertexBuffer::create(DataView data, const bgfx::VertexLayout& layout) noexcept
+    {
+        auto stride = layout.getStride();
+        if (stride == 0)
+        {
+            return unexpected<std::string>{ "empty vertex layout" };
+        }
+        auto vertNum = static_cast<uint32_t>(data.size()) / stride;
+        auto result = create(vertNum, layout);
+        if (result)
+        {
+            result.value().data().fill(data);
+        }
+        return result;
+    }
+
+    TransientIndexBuffer::TransientIndexBuffer(bgfx::TransientIndexBuffer bgfx) noexcept
+        : _bgfx{ std::move(bgfx) }
+    {
+    }
+
+    TransientIndexBuffer::TransientIndexBuffer() noexcept
+    {
+        _bgfx.data = nullptr;
+        _bgfx.size = 0;
+        _bgfx.handle.idx = bgfx::kInvalidHandle;
+    }
+
+    expected<TransientIndexBuffer, std::string> TransientIndexBuffer::create(uint32_t idxNum, bool index32) noexcept
+    {
+        if (idxNum == 0)
+        {
+            return unexpected<std::string>{ "empty" };
+        }
+        if (!bgfx::getAvailTransientIndexBuffer(idxNum, index32))
+        {
+            return unexpected<std::string>{ "not enought transient index buffer space" };
+        }
+        bgfx::TransientIndexBuffer buffer;
+        bgfx::allocTransientIndexBuffer(&buffer, idxNum, index32);
+        return TransientIndexBuffer{ buffer };
+    }
+
+    expected<TransientIndexBuffer, std::string> TransientIndexBuffer::create(DataView data, bool index32) noexcept
+    {
+        auto idxSize = index32 ? 4 : sizeof(VertexIndex);
+        auto idxNum = static_cast<uint32_t>(data.size() / idxSize);
+        auto result = create(idxNum, index32);
+        if (result)
+        {
+            result.value().data().fill(data);
+        }
+        return result;
+    }
+
+    const bgfx::TransientIndexBuffer& TransientIndexBuffer::get() const noexcept
+    {
+        return _bgfx;
+    }
+
+    uint16_t TransientIndexBuffer::idx() const noexcept
+    {
+        return _bgfx.handle.idx;
+    }
+
+    DataView TransientIndexBuffer::data() noexcept
+    {
+        return { _bgfx.data, _bgfx.size };
+    }
+
+    const DataView TransientIndexBuffer::data() const noexcept
+    {
+        return { _bgfx.data, _bgfx.size };
+    }    
+
     VertexDataWriter::VertexDataWriter(const bgfx::VertexLayout& layout, uint32_t size, OptionalRef<bx::AllocatorI> alloc) noexcept
         : _layout(layout)
         , _size(size)

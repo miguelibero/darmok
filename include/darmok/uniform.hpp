@@ -26,6 +26,8 @@ namespace darmok
         operator bgfx::UniformHandle() const noexcept;
         const bgfx::UniformHandle& get() const noexcept;
         bool reset() noexcept;
+        operator bool() const noexcept;
+        bool valid() const noexcept;
     private:
         bgfx::UniformHandle _bgfx;
     };

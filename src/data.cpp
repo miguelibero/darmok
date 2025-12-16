@@ -213,6 +213,25 @@ namespace darmok
         return size;
     }
 
+    void DataView::fill(const DataView& data) noexcept
+    {
+        if (data.empty())
+        {
+            return;
+        }
+        auto ptr = const_cast<uint8_t*>(static_cast<const uint8_t*>(_ptr));
+        auto endPtr = static_cast<const uint8_t*>(end());
+        for (; ptr < endPtr; ptr += data.size())
+        {
+            auto ptrSize = data.size();
+            if (ptr + ptrSize > endPtr)
+            {
+                ptrSize = endPtr - ptr;
+            }
+            std::memcpy(ptr, data.ptr(), ptrSize);
+        }
+    }
+
     void* Data::malloc(size_t size, const OptionalRef<bx::AllocatorI>& alloc) noexcept
     {
         if (size == 0)
@@ -359,21 +378,7 @@ namespace darmok
 
     void Data::fill(const DataView& data) noexcept
     {
-        if (data.empty())
-        {
-            return;
-        }
-        auto ptr = static_cast<uint8_t*>(_ptr);
-        auto endPtr = static_cast<uint8_t*>(end());
-        for (; ptr < endPtr; ptr += data.size())
-        {
-            auto ptrSize = data.size();
-            if (ptr + ptrSize > endPtr)
-            {
-                ptrSize = endPtr - ptr;
-            }
-            std::memcpy(ptr, data.ptr(), ptrSize);
-        }
+        view().fill(data);
     }
 
     std::string Data::toString() const noexcept

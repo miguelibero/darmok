@@ -182,11 +182,9 @@ namespace darmok
     ShadowRenderer::ShadowRenderer(const Config& config) noexcept
         : _config{ config }
         , _crop{ 1 }
-        , _shadowTransBuffer{ bgfx::kInvalidHandle }
-        , _shadowLightDataBuffer{ bgfx::kInvalidHandle }
         , _dirAmount{ 0 }
-        , _spotAmount{0}
-        , _pointAmount{0}
+        , _spotAmount{ 0 }
+        , _pointAmount{ 0 }
     {
         _shadowTransLayout.begin()
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
@@ -253,8 +251,8 @@ namespace darmok
         _shadowMapUniform = { "s_shadowMap", bgfx::UniformType::Sampler };
         _shadowData1Uniform = { "u_shadowData1", bgfx::UniformType::Vec4 };
         _shadowData2Uniform = { "u_shadowData2", bgfx::UniformType::Vec4 };
-        _shadowTransBuffer = bgfx::createDynamicVertexBuffer(1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
-        _shadowLightDataBuffer = bgfx::createDynamicVertexBuffer(1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE);
+        _shadowTransBuffer = { 1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
+        _shadowLightDataBuffer = { 1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
     
         return {};
     }
@@ -269,19 +267,8 @@ namespace darmok
         _shadowMapUniform.reset();
         _shadowData1Uniform.reset();
         _shadowData2Uniform.reset();
-
-        const std::vector<std::reference_wrapper<bgfx::DynamicVertexBufferHandle>> buffers{
-            _shadowTransBuffer, _shadowLightDataBuffer
-        };
-        for (auto& buffer : buffers)
-        {
-            if (isValid(buffer))
-            {
-                bgfx::destroy(buffer);
-                buffer.get().idx = bgfx::kInvalidHandle;
-            }
-        }
-
+        _shadowTransBuffer.reset();
+        _shadowLightDataBuffer.reset();
         _program.reset();
         _cam.reset();
         _scene.reset();

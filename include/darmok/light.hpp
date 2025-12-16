@@ -5,6 +5,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
+#include <darmok/vertex.hpp>
 #include <darmok/shadow_fwd.hpp>
 #include <darmok/protobuf/light.pb.h>
 
@@ -144,9 +145,9 @@ namespace darmok
         UniformHandle _lightDataUniform;
         UniformHandle _camPosUniform;
         UniformHandle _normalMatrixUniform;
-        bgfx::DynamicVertexBufferHandle _pointLightBuffer;
-        bgfx::DynamicVertexBufferHandle _dirLightBuffer;
-        bgfx::DynamicVertexBufferHandle _spotLightBuffer;
+        DynamicVertexBufferHandle _pointLightBuffer;
+        DynamicVertexBufferHandle _dirLightBuffer;
+        DynamicVertexBufferHandle _spotLightBuffer;
 
         bgfx::VertexLayout _pointLightsLayout;
         bgfx::VertexLayout _dirLightsLayout;

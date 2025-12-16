@@ -35,6 +35,16 @@ namespace darmok
 		return false;
 	}
 
+	UniformHandle::operator bool() const noexcept
+	{
+		return valid();
+	}
+
+	bool UniformHandle::valid() const noexcept
+	{
+		return isValid(_bgfx);
+	}
+
 	UniformHandle::UniformHandle(UniformHandle&& other) noexcept
 		: _bgfx{ other._bgfx }
 	{
