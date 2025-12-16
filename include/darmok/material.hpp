@@ -76,7 +76,6 @@ namespace darmok
         MaterialRenderConfig(MaterialRenderConfig&& other) = default;
         MaterialRenderConfig& operator=(MaterialRenderConfig&& other) = default;
 
-        static const MaterialRenderConfig& getDefault() noexcept;
         static MaterialRenderConfig createDefault() noexcept;
 
         void reset() noexcept;
@@ -126,7 +125,7 @@ namespace darmok
         Material(std::shared_ptr<Program> prog, const Color& color) noexcept;
 
         [[nodiscard]] static Definition createDefinition() noexcept;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const RenderConfig& config = RenderConfig::getDefault()) const noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
     };
 
     class DARMOK_EXPORT MaterialAppComponent : public ITypeAppComponent<MaterialAppComponent>

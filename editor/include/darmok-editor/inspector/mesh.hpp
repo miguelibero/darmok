@@ -28,5 +28,7 @@ namespace darmok::editor
         RenderResult renderCube(Mesh::Source& srce) noexcept;
         RenderResult renderCapsule(Mesh::Source& src) noexcept;
         RenderResult renderRectangle(Mesh::Source& src) noexcept;
+        RenderResult renderCone(Mesh::Source& src) noexcept;
+        RenderResult renderCylinder(Mesh::Source& src) noexcept;
     };
 }

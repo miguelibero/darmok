@@ -697,35 +697,10 @@ namespace darmok
                 res = def;
                 return expected<void, Error>{};
             }
-            else if constexpr (std::is_move_assignable_v<Resource>)
+            else
             {
-                auto result = tryCreate(def);
-                if (!result)
-                {
-                    return std::nullopt;
-                }
-                if (!*result)
-                {
-                    return unexpected<Error>{ std::move(*result).error() };
-                }
-                res = std::move(*result->value());
-                return expected<void, Error>{};
+                return std::nullopt;
             }
-            else if constexpr (std::is_copy_assignable_v<Resource>)
-            {
-                auto result = tryCreate(def);
-                if (!result)
-                {
-                    return std::nullopt;
-                }
-                if (!*result)
-                {
-                    return unexpected<Error>{ std::move(*result).error() };
-                }
-                res = result->value();
-                return expected<void, Error>{};
-            }
-            return std::nullopt;
         }
 
     protected:
@@ -751,15 +726,39 @@ namespace darmok
 
         virtual expected<void, Error> load(Resource& res, std::shared_ptr<Definition> def) noexcept
         {
-            auto resultPtr = tryLoad(res, def);
-            if (resultPtr)
             {
-                return resultPtr.value();
+                auto result = tryLoad(res, def);
+                if (result)
+                {
+                    return {};
+                }
             }
-            auto result = tryLoad(res, *def);
-            if (result)
             {
-                return result.value();
+                auto result = tryLoad(res, *def);
+                if (result)
+                {
+                    return {};
+                }
+            }
+            if constexpr (std::is_move_assignable_v<Resource>)
+            {
+                auto result = create(def);
+                if (!result)
+                {
+                    return unexpected<Error>{ std::move(result).error() };
+                }
+                res = std::move(*result.value());
+                return {};
+            }
+            else if constexpr (std::is_copy_assignable_v<Resource>)
+            {
+                auto result = create(def);
+                if (!result)
+                {
+                    return unexpected<Error>{ std::move(result).error() };
+                }
+                res = *result.value();
+                return {};
             }
             return unexpected<Error>{"could not load resource"};
         }

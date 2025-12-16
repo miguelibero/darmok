@@ -174,8 +174,8 @@ namespace darmok
     struct Frustum;
     struct BoundingBox;
     struct Grid;
-    struct MeshSource;
-
+    struct Cone;
+    struct Cylinder;
 
     struct DARMOK_EXPORT MeshData final
     {
@@ -191,6 +191,8 @@ namespace darmok
         using SphereDefinition = protobuf::SphereMeshSource;
         using CapsuleDefinition = protobuf::CapsuleMeshSource;
         using RectangleDefinition = protobuf::RectangleMeshSource;
+        using ConeDefinition = protobuf::ConeMeshSource;
+        using CylinderDefinition = protobuf::CylinderMeshSource;
 
         std::vector<Vertex> vertices;
         std::vector<Index> indices;
@@ -208,6 +210,8 @@ namespace darmok
         MeshData(const Polygon& poly) noexcept;
         MeshData(const Frustum& frust, RectangleType type = Mesh::Definition::OutlineRectangle) noexcept;
         MeshData(const Grid& grid) noexcept;
+        MeshData(const Cone& cone, unsigned int lod = 32) noexcept;
+        MeshData(const Cylinder& cylinder, unsigned int lod = 32) noexcept;
 
         MeshData(const Definition& def) noexcept;
         MeshData(const DataDefinition& def) noexcept;
@@ -215,6 +219,8 @@ namespace darmok
         MeshData(const SphereDefinition& def) noexcept;
         MeshData(const CapsuleDefinition& def) noexcept;
         MeshData(const RectangleDefinition& def) noexcept;
+        MeshData(const ConeDefinition& def) noexcept;
+        MeshData(const CylinderDefinition& def) noexcept;
 
         MeshData& operator+=(const MeshData& other) noexcept;
         MeshData operator+(const MeshData& other) const noexcept;

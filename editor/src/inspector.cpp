@@ -42,6 +42,8 @@ namespace darmok::editor
         _editors.add<RectangleInspectorEditor>();
         _editors.add<PolygonInspectorEditor>();
         _editors.add<BoundingBoxInspectorEditor>();
+        _editors.add<ConeInspectorEditor>();
+        _editors.add<CylinderInspectorEditor>();
         _editors.add<MaterialInspectorEditor>();
         _editors.add<ProgramSourceInspectorEditor>();
         _editors.add<ProgramRefInspectorEditor>();

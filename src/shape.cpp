@@ -299,7 +299,7 @@ namespace darmok
 
     Sphere::Definition Sphere::createDefinition() noexcept
     {
-        return {};
+        return standard();
     }
 
     Sphere::Sphere(const glm::vec3& origin, float radius) noexcept
@@ -714,7 +714,107 @@ namespace darmok
 
     Capsule Capsule::operator*(float scale) const noexcept
     {
-        Capsule copy(*this);
+        Capsule copy{ *this };
+        copy *= scale;
+        return copy;
+    }
+
+    Cylinder::Definition Cylinder::createDefinition()
+    {
+        return standard();
+    }
+
+    Cylinder::Cylinder(float height, float radius) noexcept
+        : height{ height }
+        , radius{ radius }
+    {
+    }
+
+    Cylinder::Cylinder(const Definition& def) noexcept
+        : height(def.height())
+        , radius(def.radius())
+    {
+    }
+
+    Cylinder::operator Definition() const noexcept
+    {
+        Definition def;
+        def.set_height(height);
+        def.set_radius(radius);
+        return def;
+    }
+
+    std::string Cylinder::toString() const noexcept
+    {
+        return fmt::format("Cylinder(height={}, radius={})", height, radius);
+    }
+
+    const Cylinder& Cylinder::standard() noexcept
+    {
+        static const Cylinder v;
+        return v;
+    }
+
+    Cylinder& Cylinder::operator*=(float scale) noexcept
+    {
+        height *= scale;
+        radius *= scale;
+        return *this;
+    }
+
+    Cylinder Cylinder::operator*(float scale) const noexcept
+    {
+        Cylinder copy{ *this };
+        copy *= scale;
+        return copy;
+    }
+
+    Cone::Definition Cone::createDefinition() noexcept
+    {
+        return standard();
+    }
+
+    Cone::Cone(float height, float radius) noexcept
+        : height{ height }
+        , radius{ radius }
+    {
+    }
+
+    Cone::Cone(const Definition& def) noexcept
+        : height(def.height())
+        , radius(def.radius())
+    {
+    }
+
+    Cone::operator Definition() const noexcept
+    {
+        Definition def;
+        def.set_height(height);
+        def.set_radius(radius);
+        return def;
+    }
+
+    std::string Cone::toString() const noexcept
+    {
+        return fmt::format("Cone(height={}, radius={})", height, radius);
+    }
+
+    const Cone& Cone::standard() noexcept
+    {
+        static const Cone v;
+        return v;
+    }
+
+    Cone& Cone::operator*=(float scale) noexcept
+    {
+        height *= scale;
+        radius *= scale;
+        return *this;
+    }
+
+    Cone Cone::operator*(float scale) const noexcept
+    {
+        Cone copy{ *this };
         copy *= scale;
         return copy;
     }

@@ -229,6 +229,42 @@ namespace darmok
         [[nodiscard]] bool operator==(const Capsule& other) const = default;
     };
 
+    struct DARMOK_EXPORT Cylinder final
+    {
+        float height;
+        float radius;
+
+        using Definition = protobuf::Cylinder;
+        static Definition createDefinition();
+
+        Cylinder(float height = 1.F, float radius = 0.5F) noexcept;
+        Cylinder(const Definition& def) noexcept;
+        operator Definition() const noexcept;
+        [[nodiscard]] std::string toString() const noexcept;
+        [[nodiscard]] static const Cylinder& standard() noexcept;
+
+        Cylinder& operator*=(float scale) noexcept;
+        [[nodiscard]] Cylinder operator*(float scale) const noexcept;
+    };
+
+    struct DARMOK_EXPORT Cone final
+    {
+        float height;
+        float radius;
+
+        using Definition = protobuf::Cone;
+        static Definition createDefinition() noexcept;
+
+        Cone(float height = 1.F, float radius = 0.5F) noexcept;
+        Cone(const Definition& def) noexcept;
+        operator Definition() const noexcept;
+        [[nodiscard]] std::string toString() const noexcept;
+        [[nodiscard]] static const Cone& standard() noexcept;
+
+        Cone& operator*=(float scale) noexcept;
+        [[nodiscard]] Cone operator*(float scale) const noexcept;
+    };
+
     struct DARMOK_EXPORT NormalIntersection final
     {
         glm::vec3 position = glm::vec3(0);

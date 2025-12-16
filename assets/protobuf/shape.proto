@@ -25,6 +25,16 @@ message Capsule {
     Vec3 origin = 3;
 }
 
+message Cone {
+    float height = 1;
+    float radius = 2;
+}
+
+message Cylinder {
+    float height = 1;
+    float radius = 2;
+}
+
 message Rectangle {
     Vec2 size = 1;
     Vec2 origin = 2;

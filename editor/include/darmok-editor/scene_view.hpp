@@ -2,6 +2,7 @@
 
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/render_scene.hpp>
 
 #include <memory>
 #include <string>
@@ -40,7 +41,7 @@ namespace darmok::editor
         virtual expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept { return {}; }
         virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
-        virtual expected<void, std::string> render(bgfx::Encoder& encoder, Entity entity) noexcept { return {}; }
+        virtual expected<void, std::string> render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
     };
 
     class TransformGizmo final : public ISceneGizmo
@@ -51,7 +52,7 @@ namespace darmok::editor
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
-        expected<void, std::string> render(bgfx::Encoder& encoder, Entity entity) noexcept override;
+        expected<void, std::string> render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
         Mode getMode() const noexcept;
         void setMode(Mode mode) noexcept;
@@ -62,7 +63,40 @@ namespace darmok::editor
         std::unique_ptr<Mesh> _transMesh;
         std::unique_ptr<Mesh> _rotMesh;
         std::unique_ptr<Mesh> _scaleMesh;
+        std::unique_ptr<Material> _redMat;
+        std::unique_ptr<Material> _greenMat;
+        std::unique_ptr<Material> _blueMat;
     };
+
+    class EditorSceneGizmosRenderer final : public ITypeCameraComponent<EditorSceneGizmosRenderer>
+    {
+    public:
+        expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+
+        expected<void, std::string> add(std::unique_ptr<ISceneGizmo> gizmo) noexcept;
+
+        template<typename T, typename... A>
+        expected<std::reference_wrapper<T>, std::string> add(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            auto result = add(std::move(ptr));
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            return std::ref(ref);
+        }
+    private:
+        OptionalRef<Camera> _cam;
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
+        std::vector<std::unique_ptr<ISceneGizmo>> _gizmos;
+    };
+        
 
     class EditorSceneView final
     {
@@ -94,26 +128,10 @@ namespace darmok::editor
         bool _focused;
         std::shared_ptr<FrameBuffer> _sceneBuffer;
         Entity _selectedEntity;
-        std::vector<std::unique_ptr<ISceneGizmo>> _gizmos;
         OptionalRef<TransformGizmo> _transformGizmo;
 
         expected<void, std::string> updateSize(const glm::uvec2& size) noexcept;
-        expected<void, std::string> updateGizmos(float deltaTime) noexcept;
-        expected<void, std::string> renderGizmos(bgfx::Encoder& encoder) noexcept;
         void updateCamera(float deltaTime) noexcept;
-        expected<void, std::string> addGizmo(std::unique_ptr<ISceneGizmo> gizmo) noexcept;
-
-        template<typename T, typename... A>
-        expected<std::reference_wrapper<T>, std::string> addGizmo(A&&... args)
-        {
-            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
-            auto& ref = *ptr;
-            auto result = addGizmo(std::move(ptr));
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
-            return std::ref(ref);
-        }
+       
     };
 }

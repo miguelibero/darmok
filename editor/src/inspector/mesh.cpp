@@ -16,6 +16,8 @@ namespace darmok::editor
         Sphere,
         Capsule,
         Rectangle,
+        Cone,
+        Cylinder,
         Data,
     };
 
@@ -57,6 +59,14 @@ namespace darmok::editor
         {
             type = MeshSourceValueType::Rectangle;
         }
+        else if (src.has_cone())
+        {
+            type = MeshSourceValueType::Cone;
+        }
+        else if (src.has_cylinder())
+        {
+            type = MeshSourceValueType::Cylinder;
+        }
         else if (src.has_data())
         {
             type = MeshSourceValueType::Data;
@@ -81,6 +91,14 @@ namespace darmok::editor
         else if (type == MeshSourceValueType::Rectangle)
         {
             result = renderRectangle(src);
+        }
+        else if (type == MeshSourceValueType::Cone)
+        {
+            result = renderCone(src);
+        }
+        else if (type == MeshSourceValueType::Cylinder)
+        {
+            result = renderCylinder(src);
         }
         else if (type == MeshSourceValueType::Data)
         {
@@ -200,7 +218,7 @@ namespace darmok::editor
         if (create)
         {
             sphereSrc.set_lod(32);
-            sphere = convert<protobuf::Sphere>(Sphere{});
+            sphere = Sphere::createDefinition();
         }
         if (ImguiUtils::beginFrame("Sphere"))
         {
@@ -311,6 +329,70 @@ namespace darmok::editor
             }
             ImguiUtils::endFrame();
         }
+        return changed;
+    }
+
+    MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderCone(Mesh::Source& src) noexcept
+    {
+        auto create = !src.has_cone();
+        auto& coneSrc = *src.mutable_cone();
+        auto& cone = *coneSrc.mutable_shape();
+        auto changed = false;
+        if (create)
+        {
+            coneSrc.set_lod(32);
+            cone = Cone::createDefinition();
+        }
+        if (ImguiUtils::beginFrame("Cone"))
+        {
+            auto result = renderChild(cone);
+            if (!result)
+            {
+                return result;
+            }
+            if (*result)
+            {
+                changed = true;
+            }
+            if (ImguiUtils::drawProtobufInput("Level of Detail", "lod", coneSrc))
+            {
+                changed = true;
+            }
+            ImguiUtils::endFrame();
+        }
+
+        return changed;
+    }
+
+    MeshSourceInspectorEditor::RenderResult MeshSourceInspectorEditor::renderCylinder(Mesh::Source& src) noexcept
+    {
+        auto create = !src.has_cylinder();
+        auto& cylinderSrc = *src.mutable_cylinder();
+        auto& cylinder = *cylinderSrc.mutable_shape();
+        auto changed = false;
+        if (create)
+        {
+            cylinderSrc.set_lod(32);
+            cylinder = Cylinder::createDefinition();
+        }
+        if (ImguiUtils::beginFrame("Cylinder"))
+        {
+            auto result = renderChild(cylinder);
+            if (!result)
+            {
+                return result;
+            }
+            if (*result)
+            {
+                changed = true;
+            }
+            if (ImguiUtils::drawProtobufInput("Level of Detail", "lod", cylinderSrc))
+            {
+                changed = true;
+            }
+            ImguiUtils::endFrame();
+        }
+
         return changed;
     }
 }

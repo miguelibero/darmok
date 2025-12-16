@@ -209,6 +209,10 @@ namespace darmok
 
 	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept
 	{
+		if (!tex)
+		{
+			return;
+		}
 		auto& handle = getHandle({ key.name(), bgfx::UniformType::Sampler });
 		encoder.setTexture(key.stage(), handle, tex->getHandle());
 	}

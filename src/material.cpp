@@ -130,8 +130,14 @@ namespace darmok
 		return def;
 	}
 
-	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const RenderConfig& config) const noexcept
+	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
 	{
+		std::optional<RenderConfig> defConfig;
+		if (!optConfig)
+		{
+			defConfig = RenderConfig::createDefault();
+		}
+		auto& config = optConfig ? *optConfig : *defConfig;
 		glm::vec4 hasTextures{ 0 };
 
 		for (const auto& [type, key] : config.textureUniformKeys)
@@ -197,12 +203,6 @@ namespace darmok
 		encoder.setState(state);
 		auto prog = program->getHandle(programDefines);
 		encoder.submit(viewId, prog);
-	}
-
-	const MaterialRenderConfig& MaterialRenderConfig::getDefault() noexcept
-	{
-		static const MaterialRenderConfig defConfig = createDefault();
-		return defConfig;
 	}
 
 	MaterialRenderConfig MaterialRenderConfig::createDefault() noexcept
@@ -337,7 +337,9 @@ namespace darmok
 
 	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept
 	{
-		auto& renderConfig = _renderConfig ? *_renderConfig : RenderConfig::getDefault();
-		material.renderSubmit(viewId, encoder, renderConfig);
+		if (_renderConfig)
+		{
+			material.renderSubmit(viewId, encoder, *_renderConfig);
+		}
 	}
 }

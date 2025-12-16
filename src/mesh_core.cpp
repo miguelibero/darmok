@@ -793,40 +793,49 @@ namespace darmok
 			vertices.emplace_back(line.points[1], glm::vec2{ 1, 1 });
 			return;
 		}
-		static const float kInter = .2f;
-		
-		static const std::vector<glm::vec3> pos = {
-			{  0.f,  0.f, 1.f    }, {  .1f,  .1f, kInter },
-			{ -.1f,  .1f, kInter }, { -.1f, -.1f, kInter },
-			{  .1f, -.1f, kInter }, {  0.f,  0.f, 0.f }
-		};
 
-		static const std::vector<glm::vec2> tex = {
-			{ 0.f, 0.f	}, { .1f, .1f },
-			{ .1f, -.1f }, { -.1f, -.1f },
-			{ -.1f, .1f }, { 0.f, 0.f }
-		};
-		vertices = {
-			{
-				{ pos[0], tex[0] }, { pos[2], tex[1] }, { pos[1], tex[1] },
-				{ pos[5], tex[0] }, { pos[1], tex[2] }, { pos[2], tex[2] },
-				{ pos[0], tex[0] }, { pos[3], tex[3] }, { pos[2], tex[3] },
-				{ pos[5], tex[0] }, { pos[2], tex[4] }, { pos[3], tex[4] },
-				{ pos[0], tex[2] }, { pos[4], tex[5] }, { pos[3], tex[2] },
-				{ pos[5], tex[3] }, { pos[3], tex[5] }, { pos[4], tex[3] },
-				{ pos[0], tex[4] }, { pos[1], tex[5] }, { pos[4], tex[4] },
-				{ pos[5], tex[1] }, { pos[4], tex[5] }, { pos[1], tex[1] }
-			}
-		};
-
-		auto trans = line.getTransform();
-
-		for (auto& vertex : vertices)
+		if (type == Mesh::Definition::Arrow)
 		{
-			vertex.position = trans * glm::vec4(vertex.position, 1.0);
+			return;
 		}
 
-		calcNormals();
+		if (type == Mesh::Definition::Bone)
+		{
+			static const float kInter = .2f;
+
+			static const std::vector<glm::vec3> pos = {
+				{  0.f,  0.f, 1.f    }, {  .1f,  .1f, kInter },
+				{ -.1f,  .1f, kInter }, { -.1f, -.1f, kInter },
+				{  .1f, -.1f, kInter }, {  0.f,  0.f, 0.f }
+			};
+
+			static const std::vector<glm::vec2> tex = {
+				{ 0.f, 0.f	}, { .1f, .1f },
+				{ .1f, -.1f }, { -.1f, -.1f },
+				{ -.1f, .1f }, { 0.f, 0.f }
+			};
+			vertices = {
+				{
+					{ pos[0], tex[0] }, { pos[2], tex[1] }, { pos[1], tex[1] },
+					{ pos[5], tex[0] }, { pos[1], tex[2] }, { pos[2], tex[2] },
+					{ pos[0], tex[0] }, { pos[3], tex[3] }, { pos[2], tex[3] },
+					{ pos[5], tex[0] }, { pos[2], tex[4] }, { pos[3], tex[4] },
+					{ pos[0], tex[2] }, { pos[4], tex[5] }, { pos[3], tex[2] },
+					{ pos[5], tex[3] }, { pos[3], tex[5] }, { pos[4], tex[3] },
+					{ pos[0], tex[4] }, { pos[1], tex[5] }, { pos[4], tex[4] },
+					{ pos[5], tex[1] }, { pos[4], tex[5] }, { pos[1], tex[1] }
+				}
+			};
+
+			auto trans = line.getTransform();
+
+			for (auto& vertex : vertices)
+			{
+				vertex.position = trans * glm::vec4(vertex.position, 1.0);
+			}
+			calcNormals();
+		}
+
 		calcTangents();
 	}
 
@@ -858,13 +867,13 @@ namespace darmok
 		auto dy = glm::cross(dx, grid.normal);
 		dx *= grid.separation.x;
 		dy *= grid.separation.y;
-		auto amount = glm::vec2(grid.amount) * 0.5F;
+		auto amount = glm::vec2{ grid.amount } * 0.5F;
 		vertices.reserve(2 * (size_t(grid.amount.x) + grid.amount.y));
 
 		auto addVertex = [&](float x, float y)
 		{
 			auto p = grid.origin + (dx * x) + (dy * y);
-			vertices.emplace_back(p, glm::vec2(x, y), grid.normal);
+			vertices.emplace_back(p, glm::vec2{ x, y }, grid.normal);
 		};
 
 		for (float x = -amount.x; x <= amount.x; ++x)
@@ -885,6 +894,156 @@ namespace darmok
 		}
 	}
 
+	MeshData::MeshData(const Cone& cone, unsigned int lod) noexcept
+	{
+		const uint32_t apexIndex = 0;
+		const uint32_t baseCenterIndex = 1;
+		float coneRatio = cone.radius / cone.height;
+		float angleFactor = 2.0f * glm::pi<float>() / lod;
+
+		vertices.reserve((lod * 2) + 3);
+		indices.reserve(lod * 6);
+
+		vertices.push_back({
+			glm::vec3{0.0f, cone.height * 0.5f, 0.0f},
+			glm::vec2{0.5f, 1.0f},
+			glm::vec3{0.0f, 1.0f, 0.0f}
+		});
+
+		vertices.push_back({
+			glm::vec3{0.0f, -cone.height * 0.5f, 0.0f},
+			glm::vec2{0.5f, 0.5f},
+			glm::vec3{0.0f, -1.0f, 0.0f}
+		});
+
+		uint32_t startIndex = 2;
+
+		for (int i = 0; i <= lod; ++i)
+		{
+			float angle = angleFactor * i;
+			float x = cone.radius * std::cos(angle);
+			float z = cone.radius * std::sin(angle);
+			glm::vec3 pos{ x, -cone.height * 0.5f, z };
+			glm::vec3 normal = glm::normalize(glm::vec3{ pos.x, coneRatio, pos.z });
+			glm::vec2 uv{ static_cast<float>(i) / lod, 0.0f };
+
+			vertices.push_back({ pos, uv, normal });
+		}
+
+		for (int i = 0; i < lod; ++i)
+		{
+			indices.push_back(apexIndex);
+			indices.push_back(startIndex + i + 1);
+			indices.push_back(startIndex + i);
+		}
+
+		startIndex += (lod + 1);
+
+		glm::vec3 baseNormal{ 0.0f, -1.0f, 0.0f };
+
+		const float epsilon = 0.0001f;
+
+		for (int i = 0; i < lod; ++i)
+		{
+			glm::vec3 pos = vertices[2 + i].position;
+			pos.y -= epsilon;
+			glm::vec2 uv{
+				(pos.x / (2.0f * cone.radius)) + 0.5f,
+				(pos.z / (2.0f * cone.radius)) + 0.5f
+			};
+			vertices.push_back({ pos, uv, baseNormal });
+		}
+
+		for (int i = 0; i < lod; ++i)
+		{
+			indices.push_back(baseCenterIndex);
+			indices.push_back(startIndex + i);
+			indices.push_back(startIndex + (i + 1) % lod);
+		}
+		calcTangents();
+	}
+
+	MeshData::MeshData(const Cylinder& cylinder, unsigned int lod) noexcept
+	{
+		float halfH = cylinder.height * 0.5f;
+
+		vertices.reserve((lod * 2) + 2);
+		indices.reserve(lod * 12);
+
+		for (int i = 0; i <= lod; ++i)
+		{
+			float u = static_cast<float>(i) / lod;
+			float angle = u * 2.0f * glm::pi<float>();
+
+			float x = cylinder.radius * std::cos(angle);
+			float z = cylinder.radius * std::sin(angle);
+
+			float nx = std::cos(angle);
+			float nz = std::sin(angle);
+
+			vertices.emplace_back(
+				glm::vec3{ x, -halfH, z },
+				glm::vec2{ u, 0.0f },
+				glm::vec3{ nx, 0.0f, nz }
+			);
+
+			vertices.emplace_back(
+				glm::vec3{ x, halfH, z },
+				glm::vec2{ u, 1.0f },
+				glm::vec3{ nx, 0.0f, nz }
+			);
+			if (i == lod)
+			{
+				break;
+			}
+
+			Index i0 = i * 2;
+			Index i1 = i0 + 1;
+			Index i2 = i0 + 2;
+			Index i3 = i0 + 3;
+
+			indices.push_back(i0);
+			indices.push_back(i1);
+			indices.push_back(i2);
+
+			indices.push_back(i1);
+			indices.push_back(i3);
+			indices.push_back(i2);
+		}
+
+		Index bottomCenterIndex = vertices.size();
+		vertices.emplace_back(
+			glm::vec3{ 0.0f, -halfH, 0.0f },
+			glm::vec2{ 0.0f, -1.0f },
+			glm::vec3{ 0.0f, 0.5f, 0.5f }
+		);
+		Index topCenterIndex = vertices.size();
+		vertices.emplace_back(
+			glm::vec3{ 0.0f, halfH, 0.0f },
+			glm::vec2{ 0.0f, 1.0f },
+			glm::vec3{ 0.0f, 0.5f, 0.5f }
+		);
+
+		for (int i = 0; i < lod; ++i)
+		{
+			Index current = i * 2;
+			Index next = ((i + 1) % lod) * 2;
+			indices.push_back(bottomCenterIndex);
+			indices.push_back(current);
+			indices.push_back(next);
+		}
+
+		for (int i = 0; i < lod; ++i)
+		{
+			Index current = i * 2 + 1;
+			Index next = ((i + 1) % lod) * 2 + 1;
+			indices.push_back(topCenterIndex);
+			indices.push_back(next);
+			indices.push_back(current);
+		}
+		calcTangents();
+	}
+
 	MeshData::MeshData(const Definition& def) noexcept
 	{
 		if (def.has_sphere())
@@ -902,6 +1061,14 @@ namespace darmok
 		else if (def.has_rectangle())
 		{
 			*this = { def.rectangle() };
+		}
+		else if (def.has_cone())
+		{
+			*this = { def.cone() };
+		}
+		else if (def.has_cylinder())
+		{
+			*this = { def.cylinder() };
 		}
 		else if (def.has_data())
 		{
@@ -977,6 +1144,16 @@ namespace darmok
 
 	MeshData::MeshData(const RectangleDefinition& def) noexcept
 		: MeshData(convert<Rectangle>(def.shape()), def.type())
+	{
+	}
+
+	MeshData::MeshData(const ConeDefinition& def) noexcept
+		: MeshData(convert<Cone>(def.shape()), def.lod())
+	{
+	}
+
+	MeshData::MeshData(const CylinderDefinition& def) noexcept
+		: MeshData(convert<Cylinder>(def.shape()), def.lod())
 	{
 	}
 

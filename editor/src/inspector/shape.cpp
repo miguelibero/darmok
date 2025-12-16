@@ -136,4 +136,42 @@ namespace darmok::editor
         }
         return changed;
     };
+
+    std::string ConeInspectorEditor::getTitle() const noexcept
+    {
+        return "Cone";
+    }
+
+    ConeInspectorEditor::RenderResult ConeInspectorEditor::renderType(Cone::Definition& cone) noexcept
+    {
+        auto changed = false;
+        if (ImguiUtils::drawProtobufInput("Height", "height", cone))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Radius", "radius", cone))
+        {
+            changed = true;
+        }
+        return changed;
+    }
+
+    std::string CylinderInspectorEditor::getTitle() const noexcept
+    {
+        return "Cylinder";
+    }
+
+    CylinderInspectorEditor::RenderResult CylinderInspectorEditor::renderType(Cylinder::Definition& cylinder) noexcept
+    {
+        auto changed = false;
+        if (ImguiUtils::drawProtobufInput("Height", "height", cylinder))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::drawProtobufInput("Radius", "radius", cylinder))
+        {
+            changed = true;
+        }
+        return changed;
+    }
 }

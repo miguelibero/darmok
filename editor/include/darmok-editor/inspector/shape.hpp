@@ -48,4 +48,18 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(BoundingBox::Definition& bbox) noexcept override;
     };
+
+    class ConeInspectorEditor final : public ObjectEditor<Cone::Definition>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(Cone::Definition& cone) noexcept override;
+    };
+
+    class CylinderInspectorEditor final : public ObjectEditor<Cylinder::Definition>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(Cylinder::Definition& cylinder) noexcept override;
+    };
 }

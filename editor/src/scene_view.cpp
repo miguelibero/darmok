@@ -35,6 +35,9 @@ namespace darmok::editor
             return unexpected{ std::move(meshResult).error() };
         }
         _transMesh = std::make_unique<Mesh>(std::move(meshResult).value());
+        _redMat = std::make_unique<Material>(prog, Colors::red());
+        _greenMat = std::make_unique<Material>(prog, Colors::green());
+        _blueMat = std::make_unique<Material>(prog, Colors::blue());
 
         return {};
     }
@@ -81,17 +84,20 @@ namespace darmok::editor
         {
             _mode = Mode::Scale;
         }
+
+        return {};
     }
 
-    expected<void, std::string> TransformGizmo::render(bgfx::Encoder& encoder, Entity entity) noexcept
+    expected<void, std::string> TransformGizmo::render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        if (_transMesh)
+        if (_transMesh && _redMat)
         {
             auto result = _transMesh->render(encoder);
             if (!result)
             {
                 return result;
             }
+            // _redMat->renderSubmit(viewId, encoder);
         }
         return {};
     }
@@ -104,6 +110,83 @@ namespace darmok::editor
     void TransformGizmo::setMode(Mode mode) noexcept
     {
         _mode = mode;
+    }
+
+    expected<void, std::string> EditorSceneGizmosRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
+    {
+        _cam = cam;
+        _scene = scene;
+        _app = app;
+        std::vector<std::string> errors;
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->init(cam, scene, app);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> EditorSceneGizmosRenderer::update(float deltaTime) noexcept
+    {
+        std::vector<std::string> errors;
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->update(deltaTime);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
+    }
+    
+    expected<void, std::string> EditorSceneGizmosRenderer::shutdown() noexcept
+    {
+        std::vector<std::string> errors;
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->shutdown();
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        _cam.reset();
+        _scene.reset();
+        _app.reset();
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> EditorSceneGizmosRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        std::vector<std::string> errors;
+        for (auto& gizmo : _gizmos)
+        {
+            auto result = gizmo->render(entity, viewId, encoder);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+
+    expected<void, std::string> EditorSceneGizmosRenderer::add(std::unique_ptr<ISceneGizmo> gizmo) noexcept
+    {
+        if (_cam && _scene && _app)
+        {
+            auto result = gizmo->init(*_cam, *_scene, *_app);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        _gizmos.push_back(std::move(gizmo));
+        return {};
     }
 
     const std::string EditorSceneView::_windowName = "Scene View";
@@ -119,7 +202,12 @@ namespace darmok::editor
     expected<void, std::string> EditorSceneView::init(std::shared_ptr<Scene> scene, Camera& cam) noexcept
     {
         {
-            auto result = addGizmo<TransformGizmo>();
+            auto gizmosResult = cam.addComponent<EditorSceneGizmosRenderer>();
+            if (!gizmosResult)
+            {
+                return unexpected{ std::move(gizmosResult).error() };
+            }
+            auto result = gizmosResult.value().get().add<TransformGizmo>();
             if (!result)
             {
                 return unexpected{ std::move(result).error() };
@@ -140,14 +228,7 @@ namespace darmok::editor
         {
             return result;
         }
-        for (auto& gizmo : _gizmos)
-        {
-            auto result = gizmo->init(cam, *scene, _app);
-            if (!result)
-            {
-                return result;
-            }
-        }
+        
         return {};
     }
     
@@ -158,18 +239,7 @@ namespace darmok::editor
         _cam.reset();
         _focused = false;
         _mouseMode = MouseMode::None;
-
-        for (auto& gizmo : _gizmos)
-        {
-            auto result = gizmo->shutdown();
-            if (!result)
-            {
-                return result;
-            }
-        }
         _transformGizmo.reset();
-        _gizmos.clear();
-
         return {};
     }
 
@@ -244,20 +314,6 @@ namespace darmok::editor
         return {};
     }
 
-    expected<void, std::string> EditorSceneView::addGizmo(std::unique_ptr<ISceneGizmo> gizmo) noexcept
-    {
-        if (_cam && _scene)
-        {
-            auto result = gizmo->init(*_cam, *_scene, _app);
-            if (!result)
-            {
-                return result;
-            }
-        }
-        _gizmos.push_back(std::move(gizmo));
-        return {};
-    }
-
     void EditorSceneView::updateCamera(float deltaTime) noexcept
     {
         auto trans = _cam->getTransform();
@@ -327,7 +383,6 @@ namespace darmok::editor
     expected<void, std::string> EditorSceneView::update(float deltaTime) noexcept
     {
         updateCamera(deltaTime);
-        return updateGizmos(deltaTime);
         return {};
     }
 
@@ -381,33 +436,4 @@ namespace darmok::editor
         ImGui::End();
         return {};
     }
-
-    expected<void, std::string> EditorSceneView::updateGizmos(float deltaTime) noexcept
-    {
-        std::vector<std::string> errors;
-        for (auto& gizmo : _gizmos)
-        {
-            auto result = gizmo->update(deltaTime);
-            if (!result)
-            {
-                errors.push_back(std::move(result).error());
-            }
-        }
-        return StringUtils::joinExpectedErrors(errors);
-    }
-
-    expected<void, std::string> EditorSceneView::renderGizmos(bgfx::Encoder& encoder) noexcept
-    {
-        std::vector<std::string> errors;
-        for (auto& gizmo : _gizmos)
-        {
-            auto result = gizmo->render(encoder, _selectedEntity);
-            if (!result)
-            {
-                errors.push_back(std::move(result).error());
-            }
-        }
-        return StringUtils::joinExpectedErrors(errors);
-    }
-
 }
