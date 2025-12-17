@@ -93,7 +93,7 @@ namespace darmok
         _dataUniform = { "u_data", bgfx::UniformType::Vec4 };
 
         static const Rectangle rect{ glm::vec2{2.0f} };
-        MeshData meshData{ rect, Mesh::Definition::FullRectangle };
+        MeshData meshData{ rect };
         auto meshResult = meshData.createMesh(_program->getVertexLayout());
         if (!meshResult)
         {

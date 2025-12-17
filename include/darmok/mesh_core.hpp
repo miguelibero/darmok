@@ -165,6 +165,7 @@ namespace darmok
     struct Cube;
     struct Sphere;
     struct Rectangle;
+    struct Circle;
     struct Capsule;
     struct Ray;
     struct Line;
@@ -183,7 +184,7 @@ namespace darmok
         using Index = VertexIndex;
         using Weight = MeshDataWeight;
         using MeshType = protobuf::Mesh::Type;
-        using RectangleType = protobuf::Mesh::RectangleType;
+        using FillType = protobuf::Mesh::FillType;
         using LineType = protobuf::Mesh::LineType;
         using Definition = protobuf::MeshSource;
 		using DataDefinition = protobuf::DataMeshSource;
@@ -199,16 +200,17 @@ namespace darmok
         MeshType type = protobuf::Mesh::Static;
 
         MeshData(MeshType type = protobuf::Mesh::Static) noexcept;
-        MeshData(const Cube& Cube, RectangleType type = Mesh::Definition::FullRectangle) noexcept;
+        MeshData(const Cube& Cube, FillType type = Mesh::Definition::FillTriangles) noexcept;
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
-        MeshData(const Rectangle& rect, RectangleType type = Mesh::Definition::FullRectangle) noexcept;
-        MeshData(const Plane& plane, RectangleType type = Mesh::Definition::FullRectangle, float scale = 100.F) noexcept;
+        MeshData(const Rectangle& rect, FillType type = Mesh::Definition::FillTriangles) noexcept;
+        MeshData(const Circle& circle, FillType type = Mesh::Definition::FillTriangles, unsigned int lod = 32) noexcept;
+        MeshData(const Plane& plane, FillType type = Mesh::Definition::FillTriangles, float scale = 100.F) noexcept;
         MeshData(const Ray& ray) noexcept;
         MeshData(const Line& line, LineType type = Mesh::Definition::Line) noexcept;
         MeshData(const Triangle& tri) noexcept;
         MeshData(const Polygon& poly) noexcept;
-        MeshData(const Frustum& frust, RectangleType type = Mesh::Definition::OutlineRectangle) noexcept;
+        MeshData(const Frustum& frust, FillType type = Mesh::Definition::FillTriangles) noexcept;
         MeshData(const Grid& grid) noexcept;
         MeshData(const Cone& cone, unsigned int lod = 32) noexcept;
         MeshData(const Cylinder& cylinder, unsigned int lod = 32) noexcept;

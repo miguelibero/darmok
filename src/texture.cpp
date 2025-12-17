@@ -399,17 +399,19 @@ namespace darmok
 
 	expected<bgfx::TextureHandle, std::string> Texture::createTextureHandle(const Config& cfg, uint64_t flags, const bgfx::Memory* mem) noexcept
 	{
+		auto x = cfg.size().x();
+		auto y = cfg.size().y();
 		auto format = static_cast<bgfx::TextureFormat::Enum>(cfg.format());
 		switch (cfg.type())
 		{
 		case Definition::CubeMap:
-			return bgfx::createTextureCube(cfg.size().x(), cfg.mips(), cfg.layers(), format, flags, mem);
+			return bgfx::createTextureCube(x, cfg.mips(), cfg.layers(), format, flags, mem);
 			break;
 		case Definition::Texture2D:
-			return bgfx::createTexture2D(cfg.size().x(), cfg.size().y(), cfg.mips(), cfg.layers(), format, flags, mem);
+			return bgfx::createTexture2D(x, y, cfg.mips(), cfg.layers(), format, flags, mem);
 			break;
 		case Definition::Texture3D:
-			return bgfx::createTexture3D(cfg.size().x(), cfg.size().y(), cfg.depth(), cfg.mips(), format, flags, mem);
+			return bgfx::createTexture3D(x, y, cfg.depth(), cfg.mips(), format, flags, mem);
 			break;
 		default:
 			return unexpected<std::string>{ "invalid texture type" };

@@ -685,7 +685,7 @@ namespace darmok
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
         {
             auto cascProjView = _renderer.getCameraProjMatrix(casc);
-            meshData += MeshData{ Frustum{cascProjView}, Mesh::Definition::OutlineRectangle };
+            meshData += MeshData{ Frustum{cascProjView}, Mesh::Definition::FillOutline };
         }
         auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
         if (!renderResult)
@@ -702,7 +702,7 @@ namespace darmok
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
                 auto mtx = _renderer.getDirLightMatrix(lightTrans, casc);
-                meshData += MeshData{ Frustum{mtx}, Mesh::Definition::OutlineRectangle };
+                meshData += MeshData{ Frustum{mtx}, Mesh::Definition::FillOutline };
             }
 
             glm::vec3 lightPos;

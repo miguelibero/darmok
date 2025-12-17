@@ -26,7 +26,7 @@ namespace darmok
         using Definition = protobuf::Rectangle;
         static Definition createDefinition();
 
-        Rectangle(const glm::vec2& size = glm::vec2(1), const glm::vec2& origin = glm::vec2(0)) noexcept;
+        Rectangle(const glm::vec2& size = glm::vec2{ 1 }, const glm::vec2& origin = glm::vec2{ 0 }) noexcept;
 		Rectangle(const Definition& def) noexcept;
 
 		operator Definition() const noexcept;
@@ -42,6 +42,28 @@ namespace darmok
         [[nodiscard]] bool operator==(const Rectangle& other) const = default;
     };
 
+    struct DARMOK_EXPORT Circle final
+    {
+        float radius;
+        glm::vec2 origin;
+
+        using Definition = protobuf::Circle;
+        [[nodiscard]] static Definition createDefinition() noexcept;
+
+        Circle(const glm::vec2& origin, float radius = 0.5f) noexcept;
+        Circle(float radius = 0.5f, const glm::vec2& origin = glm::vec2{ 0 }) noexcept;
+        Circle(const Definition& def) noexcept;
+        operator Definition() const noexcept;
+        [[nodiscard]] std::string toString() const noexcept;
+
+        [[nodiscard]] static const Circle& standard() noexcept;
+
+        Circle& operator*=(float scale) noexcept;
+        [[nodiscard]] Circle operator*(float scale) const noexcept;
+
+        [[nodiscard]] bool operator==(const Circle& other) const = default;
+    };
+
     struct BoundingBox;
 
     struct DARMOK_EXPORT Cube final
@@ -52,7 +74,7 @@ namespace darmok
         using Definition = protobuf::Cube;
         static Definition createDefinition();
 
-        Cube(const glm::vec3& size = glm::vec3(1), const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Cube(const glm::vec3& size = glm::vec3{ 1 }, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
         explicit Cube(const BoundingBox& bbox) noexcept;
 		Cube(const Definition& def) noexcept;
 
@@ -119,7 +141,7 @@ namespace darmok
 
         using Definition = protobuf::Polygon;
 
-        Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
 		Polygon(const Definition& def) noexcept;
         Polygon(const protobuf::Mesh& meshDef) noexcept;
 		operator Definition() const noexcept;
@@ -140,7 +162,7 @@ namespace darmok
         [[nodiscard]] static Definition createDefinition() noexcept;
 
         Sphere(const glm::vec3& origin, float radius = 0.5f) noexcept;
-        Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Sphere(float radius = 0.5f, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
 		Sphere(const Definition& def) noexcept;
 		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
@@ -162,7 +184,7 @@ namespace darmok
 
         using Definition = protobuf::Plane;
 
-        Plane(const glm::vec3& normal = glm::vec3(0, 1, 0), float distance = 0.F) noexcept;
+        Plane(const glm::vec3& normal = glm::vec3{ 0, 1, 0 }, float distance = 0.F) noexcept;
 		Plane(const Definition& def) noexcept;
         explicit Plane(const Triangle& tri) noexcept;
 		operator Definition() const noexcept;
@@ -172,7 +194,7 @@ namespace darmok
         [[nodiscard]] glm::vec2 getLocalCoordinates(const glm::vec3& pos) const noexcept;
 
         [[nodiscard]] glm::vec3 getOrigin() const noexcept;
-        [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
+        [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3{ 0, 1, 0 }) const noexcept;
         [[nodiscard]] glm::vec3 getAlong() const noexcept;
 
         [[nodiscard]] Plane operator*(const glm::mat4& transform) const noexcept;
@@ -196,10 +218,10 @@ namespace darmok
         glm::vec2 separation;
         glm::uvec2 amount;
 
-        explicit Grid(const glm::vec2& separation = glm::vec2(1.F)
-            , const glm::uvec2& amount = glm::uvec2(10)
-            , const glm::vec3& normal = glm::vec3(0, 1, 0)
-            , const glm::vec3& origin = glm::vec3(0)
+        explicit Grid(const glm::vec2& separation = glm::vec2{ 1 }
+            , const glm::uvec2& amount = glm::uvec2{ 10 }
+            , const glm::vec3& normal = glm::vec3{ 0, 1, 0 }
+            , const glm::vec3& origin = glm::vec3{ 0 }
         ) noexcept;
 
         [[nodiscard]] glm::vec3 getAlong() const noexcept;
@@ -215,9 +237,9 @@ namespace darmok
         glm::vec3 origin;
 
         using Definition = protobuf::Capsule;
-        static Definition createDefinition();
+        static Definition createDefinition() noexcept;
 
-        Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3(0)) noexcept;
+        Capsule(float cylinderHeight = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
 		Capsule(const Definition& def) noexcept;
 		operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
@@ -233,11 +255,12 @@ namespace darmok
     {
         float height;
         float radius;
+        glm::vec3 origin;
 
         using Definition = protobuf::Cylinder;
-        static Definition createDefinition();
+        static Definition createDefinition() noexcept;
 
-        Cylinder(float height = 1.F, float radius = 0.5F) noexcept;
+        Cylinder(float height = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
         Cylinder(const Definition& def) noexcept;
         operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
@@ -251,11 +274,12 @@ namespace darmok
     {
         float height;
         float radius;
+        glm::vec3 origin;
 
         using Definition = protobuf::Cone;
         static Definition createDefinition() noexcept;
 
-        Cone(float height = 1.F, float radius = 0.5F) noexcept;
+        Cone(float height = 1.F, float radius = 0.5F, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
         Cone(const Definition& def) noexcept;
         operator Definition() const noexcept;
         [[nodiscard]] std::string toString() const noexcept;
@@ -267,8 +291,8 @@ namespace darmok
 
     struct DARMOK_EXPORT NormalIntersection final
     {
-        glm::vec3 position = glm::vec3(0);
-        glm::vec3 normal = glm::vec3(0, 1, 0);
+        glm::vec3 position = glm::vec3{ 0 };
+        glm::vec3 normal = glm::vec3{ 0, 1, 0 };
 
         [[nodiscard]] std::string toString() const noexcept;
 
@@ -277,7 +301,7 @@ namespace darmok
 
     struct DARMOK_EXPORT DistanceIntersection final
     {
-        glm::vec2 position = glm::vec3(0);
+        glm::vec2 position = glm::vec3{ 0 };
         float distance = 0.F;
 
         [[nodiscard]] std::string toString() const noexcept;
@@ -292,7 +316,7 @@ namespace darmok
         glm::vec3 origin;
         glm::vec3 direction;
 
-        Ray(const glm::vec3& origin = glm::vec3(0), const glm::vec3& dir = glm::vec3(0, 0, 1)) noexcept;
+        Ray(const glm::vec3& origin = glm::vec3{ 0 }, const glm::vec3& dir = glm::vec3{ 0, 0, 1 }) noexcept;
         explicit Ray(const Line& line) noexcept;
 
         [[nodiscard]] Ray operator*(const glm::mat4& transform) const noexcept;
@@ -315,7 +339,7 @@ namespace darmok
         [[nodiscard]] std::optional<NormalIntersection> intersectNormal(const Sphere& sphere) const noexcept;
         [[nodiscard]] std::optional<DistanceIntersection> intersect(const Triangle& tri) const noexcept;
 
-        [[nodiscard]] static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const Viewport& viewport = Viewport()) noexcept;
+        [[nodiscard]] static Ray unproject(const glm::vec2& screenPosition, const glm::mat4& model, const glm::mat4& proj, const Viewport& viewport = {}) noexcept;
     };
 
     struct DARMOK_EXPORT Line final
@@ -339,7 +363,7 @@ namespace darmok
         [[nodiscard]] std::optional<glm::vec3> intersect(const Triangle& tri) const noexcept;
         [[nodiscard]] glm::vec3 closestPoint(const glm::vec3& p);
 
-        [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3(0, 1, 0)) const noexcept;
+        [[nodiscard]] glm::mat4 getTransform(const glm::vec3& up = glm::vec3{ 0, 1, 0 }) const noexcept;
     };
 
     struct DARMOK_EXPORT Frustum final
@@ -370,7 +394,7 @@ namespace darmok
 
         std::array<glm::vec3, toUnderlying(CornerType::Count)> corners;
 
-        explicit Frustum(const glm::mat4& mtx = glm::mat4(1), bool inverse = false) noexcept;
+        explicit Frustum(const glm::mat4& mtx = { 1 }, bool inverse = false) noexcept;
 
         [[nodiscard]] const glm::vec3& getCorner(Frustum::CornerType type) const noexcept;
         [[nodiscard]] glm::vec3& getCorner(Frustum::CornerType type) noexcept;
@@ -458,6 +482,11 @@ namespace std
         return v.toString();
     }
 
+    inline string to_string(const darmok::Circle& v)
+    {
+        return v.toString();
+    }
+
     inline string to_string(const darmok::Cube& v)
     {
         return v.toString();
@@ -489,6 +518,16 @@ namespace std
     }
 
     inline string to_string(const darmok::Capsule& v)
+    {
+        return v.toString();
+    }
+
+    inline string to_string(const darmok::Cone& v)
+    {
+        return v.toString();
+    }
+
+    inline string to_string(const darmok::Cylinder& v)
     {
         return v.toString();
     }
@@ -528,6 +567,11 @@ namespace std
 		return out << v.toString();
     }
 
+    inline ostream& operator<<(ostream& out, const darmok::Circle& v)
+    {
+        return out << v.toString();
+    }
+
     inline ostream& operator<<(ostream& out, const darmok::Cube& v)
     {
         return out << v.toString();
@@ -559,6 +603,16 @@ namespace std
     }
 
     inline ostream& operator<<(ostream& out, const darmok::Capsule& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Cone& v)
+    {
+        return out << v.toString();
+    }
+
+    inline ostream& operator<<(ostream& out, const darmok::Cylinder& v)
     {
         return out << v.toString();
     }

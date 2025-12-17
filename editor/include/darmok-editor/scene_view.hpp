@@ -3,6 +3,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/material.hpp>
 
 #include <memory>
 #include <string>
@@ -33,11 +34,13 @@ namespace darmok::editor
         Scale
     };
 
+    class SceneGizmosRenderer;
+
     class BX_NO_VTABLE ISceneGizmo
     {
     public:
         virtual ~ISceneGizmo() = default;
-        virtual expected<void, std::string> init(Camera& cam, Scene& scene, EditorApp& app) noexcept { return {}; }
+        virtual expected<void, std::string> init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept { return {}; }
         virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
         virtual expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
@@ -48,7 +51,7 @@ namespace darmok::editor
     public:
         using Mode = SceneViewTransformMode;
 
-        expected<void, std::string> init(Camera& cam, Scene& scene, EditorApp& app) noexcept override;
+        expected<void, std::string> init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
@@ -58,28 +61,26 @@ namespace darmok::editor
 
     private:
         Mode _mode;
-        OptionalRef<EditorApp> _app;
+        OptionalRef<SceneGizmosRenderer> _renderer;
         OptionalRef<Scene> _scene;
         OptionalRef<Camera> _cam;
-        std::unique_ptr<Mesh> _arrowMesh;
+        std::unique_ptr<Mesh> _transMesh;
         std::unique_ptr<Mesh> _rotMesh;
         std::unique_ptr<Mesh> _scaleMesh;
-        std::unique_ptr<Material> _redMat;
-        std::unique_ptr<Material> _greenMat;
-        std::unique_ptr<Material> _blueMat;
-
-        expected<void, std::string> render(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder, const std::unique_ptr<Mesh>& mesh, const std::unique_ptr<Material>& material, std::optional<glm::mat4> transform = std::nullopt) noexcept;
     };
 
-    class EditorSceneGizmosRenderer final : public ITypeCameraComponent<EditorSceneGizmosRenderer>
+    class SceneGizmosRenderer final : public ITypeCameraComponent<SceneGizmosRenderer>
     {
     public:
-        EditorSceneGizmosRenderer(EditorApp& app) noexcept;
+        SceneGizmosRenderer(EditorApp& app) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> render() noexcept override;
+
+        EditorApp& getEditorApp() noexcept;
+        const EditorApp& getEditorApp() const noexcept;
 
         expected<void, std::string> add(std::unique_ptr<ISceneGizmo> gizmo) noexcept;
 
@@ -95,11 +96,17 @@ namespace darmok::editor
             }
             return std::ref(ref);
         }
+
+        expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform = std::nullopt) noexcept;
+        expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, std::optional<glm::mat4> transform = std::nullopt) noexcept;
+        expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, Material::PrimitiveType prim, std::optional<glm::mat4> transform = std::nullopt) noexcept;
+
     private:
         EditorApp& _app;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         std::optional<bgfx::ViewId> _viewId;
+        OptionalRef<bgfx::Encoder> _encoder;
         std::vector<std::unique_ptr<ISceneGizmo>> _gizmos;
     };
         

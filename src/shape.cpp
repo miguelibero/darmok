@@ -56,11 +56,74 @@ namespace darmok
 
     std::vector<Line> Rectangle::toLines() const noexcept
     {
-        glm::vec3 v0(origin, 0);
-        glm::vec3 v1 = v0 + glm::vec3(size.x, 0, 0);
-        glm::vec3 v2 = v0 + glm::vec3(size, 0);
-        glm::vec3 v3 = v0 + glm::vec3(0, size.y, 0);
-        return { Line{ v0, v1 }, Line{v1, v2}, Line{ v2, v3 }, Line{ v3, v0 } };
+        glm::vec3 v0{ origin, 0 };
+        auto v1 = v0 + glm::vec3{ size.x, 0, 0 };
+        auto v2 = v0 + glm::vec3{ size.x, size.y, 0 };
+        auto v3 = v0 + glm::vec3{ 0, size.y, 0 };
+        return { Line{ v0, v1 }, Line{ v1, v2 }, Line{ v2, v3 }, Line{ v3, v0 } };
+    }
+
+    Rectangle& Rectangle::operator*=(float scale) noexcept
+    {
+        size *= scale;
+        origin *= scale;
+        return *this;
+    }
+
+    Rectangle Rectangle::operator*(float scale) const noexcept
+    {
+        Rectangle copy{ *this };
+        copy *= scale;
+        return copy;
+    }
+
+    Circle::Circle(const glm::vec2& origin, float radius) noexcept
+        : radius{ radius }
+        , origin{ origin }
+    {
+    }
+
+    Circle::Circle(float radius, const glm::vec2& origin) noexcept
+        : radius{ radius }
+        , origin{ origin }
+    {
+    }
+
+    Circle::Circle(const Definition& def) noexcept
+        : radius{ def.radius() }
+        , origin{ convert<glm::vec2>(def.origin()) }
+    {
+    }
+
+    Circle::operator Definition() const noexcept
+    {
+        Definition def;
+        def.set_radius(radius);
+        *def.mutable_origin() = convert<protobuf::Vec2>(origin);
+        return def;
+    }
+
+    std::string Circle::toString() const noexcept
+    {
+        return fmt::format("Circle(radius={}, origin={})", radius, origin);
+    }
+
+    const Circle& Circle::standard() noexcept
+    {
+        static const Circle v;
+        return v;
+    }
+
+    Circle& Circle::operator*=(float scale) noexcept
+    {
+        return *this;
+    }
+
+    Circle Circle::operator*(float scale) const noexcept
+    {
+        Circle copy{ *this };
+        copy *= scale;
+        return copy;
     }
 
     Cube::Cube(const glm::vec3& size, const glm::vec3& origin) noexcept
@@ -86,7 +149,7 @@ namespace darmok
         Definition def;
         *def.mutable_size() = convert<protobuf::Vec3>(size);
         *def.mutable_origin() = convert<protobuf::Vec3>(origin);
-		return def;
+        return def;
     }
 
     const Cube& Cube::standard() noexcept
@@ -119,7 +182,7 @@ namespace darmok
 
     Cube Cube::operator*(float scale) const noexcept
     {
-        Cube cube(*this);
+        Cube cube{ *this };
         cube *= scale;
         return cube;
     }
@@ -139,7 +202,7 @@ namespace darmok
             convert<glm::vec3>(def.vertex1()),
             convert<glm::vec3>(def.vertex2()),
             convert<glm::vec3>(def.vertex3())
-		}
+        }
     {
     }
 
@@ -149,12 +212,12 @@ namespace darmok
         *def.mutable_vertex1() = convert<protobuf::Vec3>(vertices[0]);
         *def.mutable_vertex2() = convert<protobuf::Vec3>(vertices[1]);
         *def.mutable_vertex3() = convert<protobuf::Vec3>(vertices[2]);
-		return def;
+        return def;
     }
 
     std::string Triangle::toString() const noexcept
     {
-		return fmt::format("Triangle({}, {}, {})", vertices[0], vertices[1], vertices[2]);
+        return fmt::format("Triangle({}, {}, {})", vertices[0], vertices[1], vertices[2]);
     }
 
     glm::vec3 Triangle::getNormal() const
@@ -223,7 +286,7 @@ namespace darmok
 
     std::string TextureTriangle::toString() const noexcept
     {
-		return fmt::format("TextureTriangle({}, {}, {})", coordinates[0], coordinates[1], coordinates[2]);
+        return fmt::format("TextureTriangle({}, {}, {})", coordinates[0], coordinates[1], coordinates[2]);
     }
 
     TextureTriangle& TextureTriangle::operator*=(float scale) noexcept
@@ -249,14 +312,13 @@ namespace darmok
     }
 
     Polygon::Polygon(const Definition& def) noexcept
-		: triangles{ def.triangles().begin(), def.triangles().end() }
-		, origin{ convert<glm::vec3>(def.origin()) }
+        : triangles{ def.triangles().begin(), def.triangles().end() }
+        , origin{ convert<glm::vec3>(def.origin()) }
     {
     }
 
     Polygon::Polygon(const protobuf::Mesh& meshDef) noexcept
     {
-
     }
 
     Polygon::operator Definition() const noexcept
@@ -266,13 +328,13 @@ namespace darmok
         {
             *def.add_triangles() = static_cast<protobuf::Triangle>(tri);
         }
-		*def.mutable_origin() = convert<protobuf::Vec3>(origin);
+        *def.mutable_origin() = convert<protobuf::Vec3>(origin);
         return def;
     }
 
     std::string Polygon::toString() const noexcept
     {
-		return fmt::format("Polygon({}, origin={})", StringUtils::join(", ", triangles), origin);
+        return fmt::format("Polygon({}, origin={})", StringUtils::join(", ", triangles), origin);
     }
 
     Polygon& Polygon::operator*=(float scale) noexcept
@@ -318,7 +380,7 @@ namespace darmok
         : radius{ def.radius() }
         , origin{ convert<glm::vec3>(def.origin()) }
     {
-	}
+    }
 
     Sphere::operator Definition() const noexcept
     {
@@ -330,7 +392,7 @@ namespace darmok
 
     std::string Sphere::toString() const noexcept
     {
-		return fmt::format("Sphere(radius={}, origin={})", radius, origin);
+        return fmt::format("Sphere(radius={}, origin={})", radius, origin);
     }
 
     Sphere& Sphere::operator*=(float scale) noexcept
@@ -360,10 +422,10 @@ namespace darmok
     }
 
     Plane::Plane(const Definition& def) noexcept
-		: normal{ convert<glm::vec3>(def.normal()) }
+        : normal{ convert<glm::vec3>(def.normal()) }
         , distance{ def.distance() }
     {
-	}
+    }
 
     Plane::operator Definition() const noexcept
     {
@@ -371,7 +433,7 @@ namespace darmok
         *def.mutable_normal() = convert<protobuf::Vec3>(normal);
         def.set_distance(distance);
         return def;
-	}
+    }
 
     bool Plane::contains(const glm::vec3& point) const noexcept
     {
@@ -433,7 +495,7 @@ namespace darmok
 
     std::string Plane::toString() const noexcept
     {
-		return fmt::format("Plane(normal={}, distance={})", normal, distance);  
+        return fmt::format("Plane(normal={}, distance={})", normal, distance);
     }
 
     Line Plane::getNormalLine() const noexcept
@@ -497,7 +559,7 @@ namespace darmok
 
     std::string Ray::toString() const noexcept
     {
-		return fmt::format("Ray(origin={}, direction={})", origin, direction);
+        return fmt::format("Ray(origin={}, direction={})", origin, direction);
     }
 
     Line Ray::toLine() const noexcept
@@ -566,7 +628,7 @@ namespace darmok
     }
 
     Line::Line(const glm::vec3& point1, const glm::vec3& point2) noexcept
-    : points{ point1, point2 }
+        : points{ point1, point2 }
     {
     }
 
@@ -582,7 +644,7 @@ namespace darmok
 
     std::string Line::toString() const noexcept
     {
-		return fmt::format("Line({}, {})", points[0], points[1]);        
+        return fmt::format("Line({}, {})", points[0], points[1]);
     }
 
     Ray Line::toRay() const noexcept
@@ -597,7 +659,7 @@ namespace darmok
 
     glm::vec3 Line::operator*(float dist) const noexcept
     {
-        return points[0] + ( points[1] * dist );
+        return points[0] + (points[1] * dist);
     }
 
     std::optional<std::array<NormalIntersection, 2>> Line::intersect(const Sphere& sphere) const noexcept
@@ -613,12 +675,12 @@ namespace darmok
 
     std::string NormalIntersection::toString() const noexcept
     {
-		return fmt::format("NormalIntersection(position={}, normal={})", position, normal);
+        return fmt::format("NormalIntersection(position={}, normal={})", position, normal);
     }
 
     std::string DistanceIntersection::toString() const noexcept
     {
-        return fmt::format("DistanceIntersection(position={}, distance={})", position, distance);        
+        return fmt::format("DistanceIntersection(position={}, distance={})", position, distance);
     }
 
     std::optional<glm::vec3> Line::intersect(const Triangle& tri) const noexcept
@@ -660,8 +722,8 @@ namespace darmok
 
     std::string Grid::toString() const noexcept
     {
-		return fmt::format("Grid(separation={}, amount={}, normal={}, origin={})",
-			separation, amount, normal, origin);
+        return fmt::format("Grid(separation={}, amount={}, normal={}, origin={})",
+            separation, amount, normal, origin);
     }
 
     glm::vec3 Grid::getAlong() const noexcept
@@ -677,7 +739,7 @@ namespace darmok
     }
 
     Capsule::Capsule(const Definition& def) noexcept
-		: cylinderHeight{ def.cylinder_height() }
+        : cylinderHeight{ def.cylinder_height() }
         , radius{ def.radius() }
         , origin{ convert<glm::vec3>(def.origin()) }
     {
@@ -690,15 +752,15 @@ namespace darmok
         def.set_radius(radius);
         *def.mutable_origin() = convert<protobuf::Vec3>(origin);
         return def;
-	}
+    }
 
     std::string Capsule::toString() const noexcept
     {
-		return fmt::format("Capsule(cylinderHeight={}, radius={}, origin={})",
-			cylinderHeight, radius, origin);
+        return fmt::format("Capsule(cylinderHeight={}, radius={}, origin={})",
+            cylinderHeight, radius, origin);
     }
 
-    Capsule::Definition Capsule::createDefinition()
+    Capsule::Definition Capsule::createDefinition() noexcept
     {
         return standard();
     }
@@ -724,20 +786,22 @@ namespace darmok
         return copy;
     }
 
-    Cylinder::Definition Cylinder::createDefinition()
+    Cylinder::Definition Cylinder::createDefinition() noexcept
     {
         return standard();
     }
 
-    Cylinder::Cylinder(float height, float radius) noexcept
+    Cylinder::Cylinder(float height, float radius, const glm::vec3& origin) noexcept
         : height{ height }
         , radius{ radius }
+        , origin{ origin }
     {
     }
 
     Cylinder::Cylinder(const Definition& def) noexcept
-        : height(def.height())
-        , radius(def.radius())
+        : height{ def.height() }
+        , radius{ def.radius() }
+        , origin{ convert<glm::vec3>(def.origin()) }
     {
     }
 
@@ -746,12 +810,13 @@ namespace darmok
         Definition def;
         def.set_height(height);
         def.set_radius(radius);
+        *def.mutable_origin() = convert<protobuf::Vec3>(origin);
         return def;
     }
 
     std::string Cylinder::toString() const noexcept
     {
-        return fmt::format("Cylinder(height={}, radius={})", height, radius);
+        return fmt::format("Cylinder(height={}, radius={}, origin={})", height, radius, origin);
     }
 
     const Cylinder& Cylinder::standard() noexcept
@@ -764,6 +829,7 @@ namespace darmok
     {
         height *= scale;
         radius *= scale;
+        origin *= scale;
         return *this;
     }
 
@@ -779,15 +845,17 @@ namespace darmok
         return standard();
     }
 
-    Cone::Cone(float height, float radius) noexcept
+    Cone::Cone(float height, float radius, const glm::vec3& origin) noexcept
         : height{ height }
         , radius{ radius }
+        , origin{ origin }
     {
     }
 
     Cone::Cone(const Definition& def) noexcept
-        : height(def.height())
-        , radius(def.radius())
+        : height{ def.height() }
+        , radius{ def.radius() }
+        , origin{ convert<glm::vec3>(def.origin()) }
     {
     }
 
@@ -796,12 +864,13 @@ namespace darmok
         Definition def;
         def.set_height(height);
         def.set_radius(radius);
+        *def.mutable_origin() = convert<protobuf::Vec3>(origin);
         return def;
     }
 
     std::string Cone::toString() const noexcept
     {
-        return fmt::format("Cone(height={}, radius={})", height, radius);
+        return fmt::format("Cone(height={}, radius={}, origin={})", height, radius, origin);
     }
 
     const Cone& Cone::standard() noexcept
@@ -814,6 +883,7 @@ namespace darmok
     {
         height *= scale;
         radius *= scale;
+        origin *= scale;
         return *this;
     }
 

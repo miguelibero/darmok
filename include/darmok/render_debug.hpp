@@ -21,7 +21,7 @@ namespace darmok
         expected<void, std::string> init(App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
         expected<void, std::string> renderMesh(MeshData& meshData, bgfx::ViewId viewId, bgfx::Encoder& encoder, uint8_t color, bool lines = true) noexcept;
-        expected<void, std::string> renderMesh(const Mesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color = Color(255), bool lines = true) noexcept;
+        expected<void, std::string> renderMesh(const Mesh& mesh, bgfx::ViewId viewId, bgfx::Encoder& encoder, const Color& color = Colors::red(), bool lines = true) noexcept;
         const std::shared_ptr<Program>& getProgram() noexcept;
     private:
         std::unique_ptr<Texture> _tex;

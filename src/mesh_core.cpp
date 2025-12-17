@@ -412,7 +412,7 @@ namespace darmok
 		20, 22, 21, 22, 20, 23,
 	};
 
-	MeshData::MeshData(const Cube& cube, RectangleType type) noexcept
+	MeshData::MeshData(const Cube& cube, FillType type) noexcept
 	{
 		const static std::vector<Vertex> basicVertices = {
 			{ { 1,  1,  1 }, { 0, 0 }, {  0,  0,  1 }, {  1,  0,  0 } },
@@ -444,7 +444,7 @@ namespace darmok
 		vertices = basicVertices;
 		indices = _cuboidTriangleIndices;
 
-		if (type == Mesh::Definition::OutlineRectangle)
+		if (type == Mesh::Definition::FillOutline)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -476,11 +476,11 @@ namespace darmok
 		indices = basicIndices;
 	}
 
-	MeshData::MeshData(const Rectangle& rect, RectangleType type) noexcept
+	MeshData::MeshData(const Rectangle& rect, FillType type) noexcept
 	{
 		setupBasicRectangle();
 
-		if (type == Mesh::Definition::OutlineRectangle)
+		if (type == Mesh::Definition::FillOutline)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -494,16 +494,53 @@ namespace darmok
 			return;
 		}
 
-		auto trans = glm::scale(glm::mat4(1), glm::vec3(rect.size, 1.F));
-		trans = glm::translate(trans, glm::vec3(rect.origin / rect.size, 0));
+		auto trans = glm::scale(glm::mat4{ 1 }, glm::vec3{ rect.size, 1.F });
+		trans = glm::translate(trans, glm::vec3{ rect.origin / rect.size, 0 });
 		*this *= trans;
 	}
 
-	MeshData::MeshData(const Plane& plane, RectangleType type, float scale) noexcept
+	MeshData::MeshData(const Circle& circle, FillType type, unsigned int lod) noexcept
+	{
+		if (type == Mesh::Definition::FillTriangles)
+		{
+			vertices.emplace_back(
+				glm::vec3{ 0.0f, 0.0f, 0.0f },
+				glm::vec2{ 0.5f, 0.5f },
+				glm::vec3{ 0.0f, 0.0f, 1.0f }
+			);
+		}
+
+		for (int i = 0; i < lod; ++i)
+		{
+			float angle = 2.0f * glm::pi<float>() * i / lod;
+			float x = std::cos(angle) * circle.radius;
+			float y = std::sin(angle) * circle.radius;
+
+			vertices.emplace_back(
+				glm::vec3{ x, y, 0.0f },
+				glm::vec2{
+					(x / circle.radius + 1.0f) * 0.5f,
+					(y / circle.radius + 1.0f) * 0.5f
+				},
+				glm::vec3{ 0.0f, 0.0f, 1.0f }
+			);
+
+			if (type == Mesh::Definition::FillTriangles)
+			{
+				indices.push_back(0);
+			}
+			indices.push_back(i);
+			indices.push_back((i + 1) % lod);
+		}
+
+		translatePositions(glm::vec3{ circle.origin / circle.radius, 0 });
+	}
+
+	MeshData::MeshData(const Plane& plane, FillType type, float scale) noexcept
 	{
 		setupBasicRectangle();
 
-		if (type == Mesh::Definition::OutlineRectangle)
+		if (type == Mesh::Definition::FillOutline)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -513,7 +550,7 @@ namespace darmok
 		*this *= plane.getTransform();
 	}
 
-	MeshData::MeshData(const Frustum& frust, RectangleType type) noexcept
+	MeshData::MeshData(const Frustum& frust, FillType type) noexcept
 	{
 		vertices = {
 			{ frust.getCorner(Frustum::CornerType::FarTopRight),		{ 0, 0 } },
@@ -544,7 +581,7 @@ namespace darmok
 
 		indices = _cuboidTriangleIndices;
 
-		if (type == Mesh::Definition::OutlineRectangle)
+		if (type == Mesh::Definition::FillOutline)
 		{
 			convertQuadIndicesToLine();
 		}
@@ -796,12 +833,10 @@ namespace darmok
 
 		if (type == Mesh::Definition::Arrow)
 		{
-			*this = MeshData{ Cone{ 0.2f, 0.05f } };
-			translatePositions(glm::vec3{0.f, 0.5f, 0.f});
-			*this += MeshData{ Cylinder{ 1.f, 0.01f } };
+			*this = MeshData{ Cone{ 0.2f, 0.05f, glm::vec3{0.f, 0.2f, 0.f} } };
+			*this += MeshData{ Cylinder{ 1.f, 0.01f, glm::vec3{ 0.f, 0.5f, 0.f } } };
 			glm::mat4 trans{ 1 };
 			trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3{ 1, 0, 0 });
-			trans = glm::translate(trans, glm::vec3{ 0.f, 0.5f, 0.f });
 			trans = line.getTransform() * trans;
 			*this *= trans;
 			return;
@@ -932,8 +967,8 @@ namespace darmok
 			vertices.push_back({ pos, uv, normal });
 
 			indices.push_back(apexIndex);
-			indices.push_back(startIndex + i + 1);
 			indices.push_back(startIndex + i);
+			indices.push_back(startIndex + i + 1);
 		}
 
 		startIndex += (lod + 1);
@@ -953,9 +988,11 @@ namespace darmok
 			vertices.push_back({ pos, uv, baseNormal });
 
 			indices.push_back(baseCenterIndex);
-			indices.push_back(startIndex + i);
 			indices.push_back(startIndex + (i + 1) % lod);
+			indices.push_back(startIndex + i);
 		}
+
+		translatePositions(cone.origin / cone.height);
 		calcTangents();
 	}
 
@@ -999,13 +1036,12 @@ namespace darmok
 			Index i3 = i0 + 3;
 
 			indices.push_back(i0);
-			indices.push_back(i1);
 			indices.push_back(i2);
+			indices.push_back(i1);
 
 			indices.push_back(i1);
+			indices.push_back(i2);
 			indices.push_back(i3);
-			indices.push_back(i2);
-
 		}
 
 		Index bottomCenterIndex = vertices.size();
@@ -1026,8 +1062,8 @@ namespace darmok
 			Index current = i * 2;
 			Index next = ((i + 1) % lod) * 2;
 			indices.push_back(bottomCenterIndex);
-			indices.push_back(current);
 			indices.push_back(next);
+			indices.push_back(current);
 		}
 
 		for (int i = 0; i < lod; ++i)
@@ -1035,9 +1071,11 @@ namespace darmok
 			Index current = i * 2 + 1;
 			Index next = ((i + 1) % lod) * 2 + 1;
 			indices.push_back(topCenterIndex);
-			indices.push_back(next);
 			indices.push_back(current);
+			indices.push_back(next);
 		}
+
+		translatePositions(cylinder.origin / cylinder.height);
 		calcTangents();
 	}
 

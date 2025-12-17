@@ -9,7 +9,7 @@ import "math.proto";
 
 message CubeMeshSource {
     Cube shape = 1;
-    Mesh.RectangleType type = 2;
+    Mesh.FillType type = 2;
 }
 
 message SphereMeshSource {
@@ -24,7 +24,7 @@ message CapsuleMeshSource {
 
 message RectangleMeshSource {
     Rectangle shape = 1;
-    Mesh.RectangleType type = 2;
+    Mesh.FillType type = 2;
 }
 
 message ConeMeshSource {
@@ -84,9 +84,9 @@ message Mesh {
         Transient = 2;
     }
 
-    enum RectangleType {
-        FullRectangle = 0;
-        OutlineRectangle = 1;
+    enum FillType {
+        FillTriangles = 0;
+        FillOutline = 1;
     }
 
     enum LineType {

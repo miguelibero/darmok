@@ -28,7 +28,7 @@ namespace darmok
 		);
 
 		LuaUtils::newEnum<Mesh::Type>(lua, "MeshType");
-		LuaUtils::newEnum<MeshData::RectangleType>(lua, "RectangleMeshType");
+		LuaUtils::newEnum<MeshData::FillType>(lua, "MeshFillType");
 		LuaUtils::newEnum<MeshData::LineType>(lua, "LineMeshType");
 
 		auto src = lua.new_usertype<Mesh::Source>("MeshSource",
@@ -72,7 +72,7 @@ namespace darmok
 				MeshData(const Capsule&),
 				MeshData(const Capsule&, int),
 				MeshData(const Rectangle&),
-				MeshData(const Rectangle&, MeshData::RectangleType),
+				MeshData(const Rectangle&, MeshData::FillType),
 				MeshData(const Ray&),
 				MeshData(const Line&),
 				MeshData(const Line&, MeshData::LineType),
@@ -93,7 +93,7 @@ namespace darmok
 				{
 					return MeshData{ Rectangle{size} };
 				},
-				[](const glm::uvec2& size, MeshData::RectangleType type)
+				[](const glm::uvec2& size, MeshData::FillType type)
 				{
 					return MeshData{ Rectangle{size}, type };
 				},
@@ -101,11 +101,11 @@ namespace darmok
 				{
 					return MeshData{ Rectangle{LuaGlm::tableGet(size)} };
 				},
-				[](const VarLuaTable<glm::vec2>& size, MeshData::RectangleType type)
+				[](const VarLuaTable<glm::vec2>& size, MeshData::FillType type)
 				{
 					return MeshData{ Rectangle{LuaGlm::tableGet(size)}, type };
 				},
-				[](MeshData::RectangleType type)
+				[](MeshData::FillType type)
 				{
 					return MeshData{ Rectangle{}, type };
 				}

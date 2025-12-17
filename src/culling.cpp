@@ -294,7 +294,7 @@ namespace darmok
             const Frustum frust{ mainCam->getViewProjectionMatrix() };
             for (auto& plane : frust.getPlanes())
             {
-                meshData += MeshData{plane, Mesh::Definition::OutlineRectangle};
+                meshData += MeshData{plane, Mesh::Definition::FillOutline};
                 auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
                 if (!renderResult)
                 {
@@ -312,7 +312,7 @@ namespace darmok
             {
                 if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
                 {
-                    meshData += MeshData{ Cube{ *bbox }, Mesh::Definition::OutlineRectangle };
+                    meshData += MeshData{ Cube{ *bbox }, Mesh::Definition::FillOutline };
                     _cam->setEntityTransform(entity, encoder);
                     auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
                     if (!renderResult)
