@@ -51,13 +51,14 @@ namespace darmok::StringUtils
 		std::stringstream ss;
 		ss << sv;
 		std::string word;
-		while (ss >> word) {
+		while (ss >> word)
+		{
 			words.push_back(word);
 		}
 		return words;
 	}
 
-	std::vector<std::string> split(std::string_view sv, char sep) noexcept
+	std::vector<std::string> split(char sep, std::string_view sv) noexcept
 	{
 		std::vector<std::string> parts;
 		size_t start = 0, end = 0;
@@ -73,7 +74,7 @@ namespace darmok::StringUtils
 		return parts;
 	}
 
-	std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept
+	std::vector<std::string> split(std::string_view sep, std::string_view sv) noexcept
 	{
 		std::vector<std::string> parts;
 		size_t start = 0, end = 0;

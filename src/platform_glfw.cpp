@@ -254,7 +254,7 @@ namespace darmok
 		FileDialogResult result;
 		if (tfdResult)
 		{
-			for (auto& part : StringUtils::split(tfdResult, '|'))
+			for (auto& part : StringUtils::split('|', tfdResult))
 			{
 				result.push_back(part);
 			}
@@ -394,22 +394,22 @@ namespace darmok
 
 		if (static_cast<bool>(glfw & GLFW_MOD_ALT))
 		{
-			modifiers.insert(Keyboard::Definition::Alt);
+			modifiers.insert(Keyboard::Definition::ModifierAlt);
 		}
 
 		if (static_cast<bool>(glfw & GLFW_MOD_CONTROL))
 		{
-			modifiers.insert(Keyboard::Definition::Ctrl);
+			modifiers.insert(Keyboard::Definition::ModifierCtrl);
 		}
 
 		if (static_cast<bool>(glfw & GLFW_MOD_SUPER))
 		{
-			modifiers.insert(Keyboard::Definition::Meta);
+			modifiers.insert(Keyboard::Definition::ModifierMeta);
 		}
 
 		if (static_cast<bool>(glfw & GLFW_MOD_SHIFT))
 		{
-			modifiers.insert(Keyboard::Definition::Shift);
+			modifiers.insert(Keyboard::Definition::ModifierShift);
 		}
 
 		return modifiers;
@@ -418,57 +418,57 @@ namespace darmok
 	PlatformImpl::KeyMap PlatformImpl::createKeyMap() noexcept
 	{
 		KeyMap v{};
-		v[GLFW_KEY_ESCAPE] = Keyboard::Definition::Esc;
-		v[GLFW_KEY_ENTER] = Keyboard::Definition::Return;
-		v[GLFW_KEY_TAB] = Keyboard::Definition::Tab;
-		v[GLFW_KEY_BACKSPACE] = Keyboard::Definition::Backspace;
-		v[GLFW_KEY_SPACE] = Keyboard::Definition::Space;
+		v[GLFW_KEY_ESCAPE] = Keyboard::Definition::KeyEsc;
+		v[GLFW_KEY_ENTER] = Keyboard::Definition::KeyReturn;
+		v[GLFW_KEY_TAB] = Keyboard::Definition::KeyTab;
+		v[GLFW_KEY_BACKSPACE] = Keyboard::Definition::KeyBackspace;
+		v[GLFW_KEY_SPACE] = Keyboard::Definition::KeySpace;
 		v[GLFW_KEY_UP] = Keyboard::Definition::KeyUp;
 		v[GLFW_KEY_DOWN] = Keyboard::Definition::KeyDown;
 		v[GLFW_KEY_LEFT] = Keyboard::Definition::KeyLeft;
 		v[GLFW_KEY_RIGHT] = Keyboard::Definition::KeyRight;
-		v[GLFW_KEY_INSERT] = Keyboard::Definition::Insert;
-		v[GLFW_KEY_DELETE] = Keyboard::Definition::Delete;
-		v[GLFW_KEY_PAGE_UP] = Keyboard::Definition::PageUp;
-		v[GLFW_KEY_PAGE_DOWN] = Keyboard::Definition::PageDown;
-		v[GLFW_KEY_HOME] = Keyboard::Definition::Home;
-		v[GLFW_KEY_END] = Keyboard::Definition::End;
-		v[GLFW_KEY_PRINT_SCREEN] = Keyboard::Definition::Print;
-		v[GLFW_KEY_PAUSE] = Keyboard::Definition::Pause;
-		v[GLFW_KEY_KP_ADD] = Keyboard::Definition::Plus;
-		v[GLFW_KEY_EQUAL] = Keyboard::Definition::Plus;
-		v[GLFW_KEY_KP_SUBTRACT] = Keyboard::Definition::Minus;
-		v[GLFW_KEY_MINUS] = Keyboard::Definition::Minus;
-		v[GLFW_KEY_COMMA] = Keyboard::Definition::Comma;
-		v[GLFW_KEY_PERIOD] = Keyboard::Definition::Period;
-		v[GLFW_KEY_SLASH] = Keyboard::Definition::Slash;
-		v[GLFW_KEY_BACKSLASH] = Keyboard::Definition::Backslash;
-		v[GLFW_KEY_GRAVE_ACCENT] = Keyboard::Definition::GraveAccent;
-		v[GLFW_KEY_CAPS_LOCK] = Keyboard::Definition::CapsLock;
-		v[GLFW_KEY_NUM_LOCK] = Keyboard::Definition::NumLock;
-		v[GLFW_KEY_SCROLL_LOCK] = Keyboard::Definition::ScrollLock;
-		v[GLFW_KEY_F1] = Keyboard::Definition::F1;
-		v[GLFW_KEY_F2] = Keyboard::Definition::F2;
-		v[GLFW_KEY_F3] = Keyboard::Definition::F3;
-		v[GLFW_KEY_F4] = Keyboard::Definition::F4;
-		v[GLFW_KEY_F5] = Keyboard::Definition::F5;
-		v[GLFW_KEY_F6] = Keyboard::Definition::F6;
-		v[GLFW_KEY_F7] = Keyboard::Definition::F7;
-		v[GLFW_KEY_F8] = Keyboard::Definition::F8;
-		v[GLFW_KEY_F9] = Keyboard::Definition::F9;
-		v[GLFW_KEY_F10] = Keyboard::Definition::F10;
-		v[GLFW_KEY_F11] = Keyboard::Definition::F11;
-		v[GLFW_KEY_F12] = Keyboard::Definition::F12;
-		v[GLFW_KEY_KP_0] = Keyboard::Definition::NumPad0;
-		v[GLFW_KEY_KP_1] = Keyboard::Definition::NumPad1;
-		v[GLFW_KEY_KP_2] = Keyboard::Definition::NumPad2;
-		v[GLFW_KEY_KP_3] = Keyboard::Definition::NumPad3;
-		v[GLFW_KEY_KP_4] = Keyboard::Definition::NumPad4;
-		v[GLFW_KEY_KP_5] = Keyboard::Definition::NumPad5;
-		v[GLFW_KEY_KP_6] = Keyboard::Definition::NumPad6;
-		v[GLFW_KEY_KP_7] = Keyboard::Definition::NumPad7;
-		v[GLFW_KEY_KP_8] = Keyboard::Definition::NumPad8;
-		v[GLFW_KEY_KP_9] = Keyboard::Definition::NumPad9;
+		v[GLFW_KEY_INSERT] = Keyboard::Definition::KeyInsert;
+		v[GLFW_KEY_DELETE] = Keyboard::Definition::KeyDelete;
+		v[GLFW_KEY_PAGE_UP] = Keyboard::Definition::KeyPageUp;
+		v[GLFW_KEY_PAGE_DOWN] = Keyboard::Definition::KeyPageDown;
+		v[GLFW_KEY_HOME] = Keyboard::Definition::KeyHome;
+		v[GLFW_KEY_END] = Keyboard::Definition::KeyEnd;
+		v[GLFW_KEY_PRINT_SCREEN] = Keyboard::Definition::KeyPrint;
+		v[GLFW_KEY_PAUSE] = Keyboard::Definition::KeyPause;
+		v[GLFW_KEY_KP_ADD] = Keyboard::Definition::KeyPlus;
+		v[GLFW_KEY_EQUAL] = Keyboard::Definition::KeyPlus;
+		v[GLFW_KEY_KP_SUBTRACT] = Keyboard::Definition::KeyMinus;
+		v[GLFW_KEY_MINUS] = Keyboard::Definition::KeyMinus;
+		v[GLFW_KEY_COMMA] = Keyboard::Definition::KeyComma;
+		v[GLFW_KEY_PERIOD] = Keyboard::Definition::KeyPeriod;
+		v[GLFW_KEY_SLASH] = Keyboard::Definition::KeySlash;
+		v[GLFW_KEY_BACKSLASH] = Keyboard::Definition::KeyBackslash;
+		v[GLFW_KEY_GRAVE_ACCENT] = Keyboard::Definition::KeyGraveAccent;
+		v[GLFW_KEY_CAPS_LOCK] = Keyboard::Definition::KeyCapsLock;
+		v[GLFW_KEY_NUM_LOCK] = Keyboard::Definition::KeyNumLock;
+		v[GLFW_KEY_SCROLL_LOCK] = Keyboard::Definition::KeyScrollLock;
+		v[GLFW_KEY_F1] = Keyboard::Definition::KeyF1;
+		v[GLFW_KEY_F2] = Keyboard::Definition::KeyF2;
+		v[GLFW_KEY_F3] = Keyboard::Definition::KeyF3;
+		v[GLFW_KEY_F4] = Keyboard::Definition::KeyF4;
+		v[GLFW_KEY_F5] = Keyboard::Definition::KeyF5;
+		v[GLFW_KEY_F6] = Keyboard::Definition::KeyF6;
+		v[GLFW_KEY_F7] = Keyboard::Definition::KeyF7;
+		v[GLFW_KEY_F8] = Keyboard::Definition::KeyF8;
+		v[GLFW_KEY_F9] = Keyboard::Definition::KeyF9;
+		v[GLFW_KEY_F10] = Keyboard::Definition::KeyF10;
+		v[GLFW_KEY_F11] = Keyboard::Definition::KeyF11;
+		v[GLFW_KEY_F12] = Keyboard::Definition::KeyF12;
+		v[GLFW_KEY_KP_0] = Keyboard::Definition::KeyNumPad0;
+		v[GLFW_KEY_KP_1] = Keyboard::Definition::KeyNumPad1;
+		v[GLFW_KEY_KP_2] = Keyboard::Definition::KeyNumPad2;
+		v[GLFW_KEY_KP_3] = Keyboard::Definition::KeyNumPad3;
+		v[GLFW_KEY_KP_4] = Keyboard::Definition::KeyNumPad4;
+		v[GLFW_KEY_KP_5] = Keyboard::Definition::KeyNumPad5;
+		v[GLFW_KEY_KP_6] = Keyboard::Definition::KeyNumPad6;
+		v[GLFW_KEY_KP_7] = Keyboard::Definition::KeyNumPad7;
+		v[GLFW_KEY_KP_8] = Keyboard::Definition::KeyNumPad8;
+		v[GLFW_KEY_KP_9] = Keyboard::Definition::KeyNumPad9;
 		v[GLFW_KEY_0] = Keyboard::Definition::Key0;
 		v[GLFW_KEY_1] = Keyboard::Definition::Key1;
 		v[GLFW_KEY_2] = Keyboard::Definition::Key2;
@@ -513,7 +513,7 @@ namespace darmok
 		static auto keyMap = createKeyMap();
 		if (key < 0 || key >= keyMap.size())
 		{
-			return Keyboard::Definition::NoKey;
+			return Keyboard::Definition::KeyNone;
 		}
 		return keyMap[key];
 	}
@@ -522,14 +522,14 @@ namespace darmok
 	{
 		if (button == GLFW_MOUSE_BUTTON_LEFT)
 		{
-			return Mouse::Definition::LeftButton;
+			return Mouse::Definition::ButtonLeft;
 		}
 		if (button == GLFW_MOUSE_BUTTON_RIGHT)
 		{
-			return Mouse::Definition::RightButton;
+			return Mouse::Definition::ButtonRight;
 		}
 
-		return Mouse::Definition::MiddleButton;
+		return Mouse::Definition::ButtonMiddle;
 	}
 
 	GamepadButton PlatformImpl::translateGamepadButton(int button) noexcept
@@ -537,37 +537,37 @@ namespace darmok
 		switch (button)
 		{
 		case GLFW_GAMEPAD_BUTTON_A:
-			return Gamepad::Definition::A;
+			return Gamepad::Definition::ButtonA;
 		case GLFW_GAMEPAD_BUTTON_B:
-			return Gamepad::Definition::B;
+			return Gamepad::Definition::ButtonB;
 		case GLFW_GAMEPAD_BUTTON_X:
-			return Gamepad::Definition::X;
+			return Gamepad::Definition::ButtonX;
 		case GLFW_GAMEPAD_BUTTON_Y:
-			return Gamepad::Definition::Y;
+			return Gamepad::Definition::ButtonY;
 		case GLFW_GAMEPAD_BUTTON_LEFT_BUMPER:
-			return Gamepad::Definition::LeftBumper;
+			return Gamepad::Definition::ButtonLeftBumper;
 		case GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER:
-			return Gamepad::Definition::RightBumper;
+			return Gamepad::Definition::ButtonRightBumper;
 		case GLFW_GAMEPAD_BUTTON_BACK:
-			return Gamepad::Definition::Select;
+			return Gamepad::Definition::ButtonSelect;
 		case GLFW_GAMEPAD_BUTTON_START:
-			return Gamepad::Definition::Start;
+			return Gamepad::Definition::ButtonStart;
 		case GLFW_GAMEPAD_BUTTON_GUIDE:
-			return Gamepad::Definition::Guide;
+			return Gamepad::Definition::ButtonGuide;
 		case GLFW_GAMEPAD_BUTTON_LEFT_THUMB:
-			return Gamepad::Definition::LeftThumb;
+			return Gamepad::Definition::ButtonLeftThumb;
 		case GLFW_GAMEPAD_BUTTON_RIGHT_THUMB:
-			return Gamepad::Definition::RightThumb;
+			return Gamepad::Definition::ButtonRightThumb;
 		case GLFW_GAMEPAD_BUTTON_DPAD_UP:
-			return Gamepad::Definition::PadUp;
+			return Gamepad::Definition::ButtonPadUp;
 		case GLFW_GAMEPAD_BUTTON_DPAD_RIGHT:
-			return Gamepad::Definition::PadRight;
+			return Gamepad::Definition::ButtonPadRight;
 		case GLFW_GAMEPAD_BUTTON_DPAD_DOWN:
-			return Gamepad::Definition::PadDown;
+			return Gamepad::Definition::ButtonPadDown;
 		case GLFW_GAMEPAD_BUTTON_DPAD_LEFT:
-			return Gamepad::Definition::PadLeft;
+			return Gamepad::Definition::ButtonPadLeft;
 		default:
-			return Gamepad::Definition::NoButton;
+			return Gamepad::Definition::ButtonNone;
 		};
 	}
 
@@ -576,17 +576,17 @@ namespace darmok
 		switch (axis)
 		{
 		case GLFW_GAMEPAD_AXIS_LEFT_X:
-			return GamepadAxisConfig{ Gamepad::Definition::LeftStick, 0 };
+			return GamepadAxisConfig{ Gamepad::Definition::StickLeft, 0 };
 		case GLFW_GAMEPAD_AXIS_LEFT_Y:
-			return GamepadAxisConfig{ Gamepad::Definition::LeftStick, 1, true };
+			return GamepadAxisConfig{ Gamepad::Definition::StickLeft, 1, true };
 		case GLFW_GAMEPAD_AXIS_LEFT_TRIGGER:
-			return GamepadAxisConfig{ Gamepad::Definition::LeftStick, 2 };
+			return GamepadAxisConfig{ Gamepad::Definition::StickLeft, 2 };
 		case GLFW_GAMEPAD_AXIS_RIGHT_X:
-			return GamepadAxisConfig{ Gamepad::Definition::RightStick, 0 };
+			return GamepadAxisConfig{ Gamepad::Definition::StickRight, 0 };
 		case GLFW_GAMEPAD_AXIS_RIGHT_Y:
-			return GamepadAxisConfig{ Gamepad::Definition::RightStick, 1, true };
+			return GamepadAxisConfig{ Gamepad::Definition::StickRight, 1, true };
 		case GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER:
-			return GamepadAxisConfig{ Gamepad::Definition::RightStick, 2 };
+			return GamepadAxisConfig{ Gamepad::Definition::StickRight, 2 };
 		default:
 			return std::nullopt;
 		}
@@ -753,7 +753,7 @@ namespace darmok
 		}
 		auto mods2 = translateKeyModifiers(mods);
 		auto key2 = translateKey(key);
-		if (key2 == Keyboard::Definition::NoKey)
+		if (key2 == Keyboard::Definition::KeyNone)
 		{
 			return;
 		}

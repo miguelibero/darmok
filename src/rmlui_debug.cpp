@@ -156,7 +156,7 @@ namespace darmok
     RmluiDebuggerComponent::Definition RmluiDebuggerComponent::createDefinition() noexcept
     {
         Definition def;
-		def.mutable_enable_events()->Add()->mutable_keyboard()->set_key(Keyboard::Definition::F9);
+		def.mutable_enable_events()->Add()->mutable_keyboard()->set_key(Keyboard::Definition::KeyF9);
         return def;
     }
 

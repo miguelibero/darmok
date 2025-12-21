@@ -231,7 +231,7 @@ namespace darmok
 		LuaMouse::bind(lua);
 		LuaGamepad::bind(lua);
 
-		LuaUtils::newEnum<InputDirType>(lua, {}, true);
+		LuaUtils::newEnum<InputDirType>(lua, "InputDirType", true, "Dir");
 
 		lua.new_usertype<Input>("Input", sol::no_constructor,
 			"keyboard", sol::property(sol::resolve<Keyboard&()>(&Input::getKeyboard)),

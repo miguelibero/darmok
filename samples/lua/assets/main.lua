@@ -62,19 +62,19 @@ function init()
     end
 
     app.input:add_listener("left", {
-        KeyboardKey.Left, KeyboardKey.KeyA,
+        KeyboardKey.Left, KeyboardKey.A,
         { GamepadStick.Left, InputDirType.Left }
     }, move_mesh)
     app.input:add_listener("right", {
-        KeyboardKey.Right, KeyboardKey.KeyD,
+        KeyboardKey.Right, KeyboardKey.D,
         { GamepadStick.Left, InputDirType.Right }
     }, move_mesh)
     app.input:add_listener("forward", {
-        KeyboardKey.Up, KeyboardKey.KeyW,
+        KeyboardKey.Up, KeyboardKey.W,
         { GamepadStick.Left, InputDirType.Up }
     }, move_mesh)
     app.input:add_listener("back", {
-        KeyboardKey.Down, KeyboardKey.KeyS,
+        KeyboardKey.Down, KeyboardKey.S,
         { GamepadStick.Left, InputDirType.Down }
     }, move_mesh)
     app.input:add_listener("mouse", MouseButton.Left, move_mouse)

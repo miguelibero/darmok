@@ -84,6 +84,7 @@ namespace darmok::physics3d
         glm::vec3 getGroundNormal() const noexcept;
         glm::vec3 getGroundPosition() const noexcept;
         glm::vec3 getGroundVelocity() const noexcept;
+        PhysicsShape getShape() const noexcept;
 
         CharacterController& setDelegate(Delegate& dlg) noexcept;
         CharacterController& setDelegate(std::unique_ptr<Delegate>&& dlg) noexcept;

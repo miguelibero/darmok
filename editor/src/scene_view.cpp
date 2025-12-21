@@ -15,6 +15,8 @@
 #include <darmok/shape.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
+#include <darmok/physics3d.hpp>
+#include <darmok/physics3d_character.hpp>
 
 #include <imgui.h>
 
@@ -22,6 +24,7 @@ namespace darmok::editor
 {
     expected<void, std::string> TransformGizmo::init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept
     {
+        _lastMousePosition.reset();
         _cam = cam;
         _scene = scene;
         _renderer = renderer;
@@ -73,7 +76,6 @@ namespace darmok::editor
         _cam.reset();
         _scene.reset();
         _renderer.reset();
-
         return {};
     }
 
@@ -83,6 +85,17 @@ namespace darmok::editor
         {
             return unexpected<std::string>{"uninitialized renderer"};
         }
+        if (!_scene)
+        {
+            return unexpected<std::string>{"uninitialized scene"};
+        }
+        auto trans = _scene->getComponent<Transform>(getSelectedEntity());
+        if (!trans)
+        {
+            _mode = Mode::Grab;
+            return {};
+        }
+
         static const InputEvents grabEvents = {
             Keyboard::createInputEvent(Keyboard::Definition::KeyW)
         };
@@ -114,6 +127,14 @@ namespace darmok::editor
             _mode = Mode::Scale;
         }
 
+        auto inProgress = input.getMouse().getButton(Mouse::Definition::LeftButton);
+        if (inProgress)
+        {
+            auto pos = input.getMouse().getPosition();
+            auto diff = *_lastMousePosition - pos;
+            _lastMousePosition = pos;
+        }
+
         return {};
     }
 
@@ -123,16 +144,13 @@ namespace darmok::editor
         {
             return {};
         }
-        auto& app = _renderer->getEditorApp();
-        auto entityId = app.getSelectedEntity();
-        auto entity = app.getProject().getComponentLoadContext().getEntity(entityId);
+        auto entity = _renderer->getSelectedEntity();
         if (entity == entt::null)
         {
             return {};
         }
 
         _cam->setViewTransform(viewId);
-
         auto renderAxes = [this, entity](const std::unique_ptr<Mesh>& mesh) -> expected<void, std::string>
         {
             if (!mesh)
@@ -175,7 +193,6 @@ namespace darmok::editor
             return _renderer->renderMesh(entity, *mesh, Colors::green(), Material::Definition::Line, glm::mat4_cast(rot));
         };
 
-
         switch (_mode)
         {
         case Mode::Translate:
@@ -197,6 +214,50 @@ namespace darmok::editor
     void TransformGizmo::setMode(Mode mode) noexcept
     {
         _mode = mode;
+    }
+
+    expected<void, std::string> Physics3dShapeGizmo::init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept
+    {
+        _scene = scene;
+        _renderer = renderer;
+        return {};
+    }
+
+    expected<void, std::string> Physics3dShapeGizmo::shutdown() noexcept
+    {
+        _scene.reset();
+        _renderer.reset();
+        return {};
+    }
+
+    expected<void, std::string> Physics3dShapeGizmo::update(float deltaTime) noexcept
+    {
+        return {};
+    }
+
+    expected<void, std::string> Physics3dShapeGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        using namespace physics3d;
+        auto entity = _renderer->getSelectedEntity();
+        std::optional<PhysicsShape> shape;
+        if (auto body = _scene->getComponent<PhysicsBody>(entity))
+        {
+            shape = body->getShape();
+        }
+        if (auto ctrl = _scene->getComponent<CharacterController>(entity))
+        {
+            shape = ctrl->getShape();
+        }
+        if (!shape)
+        {
+            return {};
+        }
+
+        auto meshData = std::visit([](auto& shape) { return MeshData{ shape }; }, *shape);
+
+        auto ,esh = meshData.createMesh(_layout, {.type = Mesh::Definition::Transient })
+        
+        return {};
     }
 
     SceneGizmosRenderer::SceneGizmosRenderer(EditorApp& app) noexcept
@@ -288,6 +349,12 @@ namespace darmok::editor
         return _app;
     }
 
+    Entity SceneGizmosRenderer::getSelectedEntity() const noexcept
+    {
+        auto entityId = _app.getSelectedEntity();
+        return _app.getProject().getComponentLoadContext().getEntity(entityId);
+    }
+
     expected<void, std::string> SceneGizmosRenderer::renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform) noexcept
     {
         _cam->setEntityTransform(entity, *_encoder, transform);
@@ -359,6 +426,11 @@ namespace darmok::editor
                 return unexpected{ std::move(result).error() };
             }
             _transformGizmo = result.value().get();
+            auto result = gizmosResult.value().get().add<Physics3dShapeGizmo>();
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
         }
 
         _scene = scene;

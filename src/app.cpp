@@ -714,22 +714,22 @@ namespace darmok
 
 	expected<void, std::string> AppImpl::handleDebugShortcuts(KeyboardKey key, const KeyboardModifiers& modifiers) noexcept
 	{
-		static const KeyboardModifiers ctrl{ Keyboard::Definition::Ctrl };
-		static const KeyboardModifiers alt{ Keyboard::Definition::Alt };
-		static const KeyboardModifiers shift{ Keyboard::Definition::Shift };
+		static const KeyboardModifiers ctrl{ Keyboard::Definition::ModifierCtrl };
+		static const KeyboardModifiers alt{ Keyboard::Definition::ModifierAlt };
+		static const KeyboardModifiers shift{ Keyboard::Definition::ModifierShift };
 
 		if (key == Keyboard::Definition::KeyQ && modifiers == ctrl)
 		{
 			quit();
 			return {};
 		}
-		if ((key == Keyboard::Definition::Return && modifiers == alt)
+		if ((key == Keyboard::Definition::KeyReturn && modifiers == alt)
 			|| (key == Keyboard::Definition::KeyF && modifiers == ctrl))
 		{
 			requestNextVideoMode();
 			return {};
 		}
-		if (key == Keyboard::Definition::F1)
+		if (key == Keyboard::Definition::KeyF1)
 		{
 			if (modifiers == ctrl)
 			{
@@ -746,44 +746,44 @@ namespace darmok
 			}
 			return {};
 		}
-		if (key == Keyboard::Definition::F2 && modifiers.empty())
+		if (key == Keyboard::Definition::KeyF2 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_TEXT);
 			return {};
 		}
-		if (key == Keyboard::Definition::F3 && modifiers.empty())
+		if (key == Keyboard::Definition::KeyF3 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_WIREFRAME);
 			return {};
 		}
-		if (key == Keyboard::Definition::F4 && modifiers.empty())
+		if (key == Keyboard::Definition::KeyF4 && modifiers.empty())
 		{
 			toggleDebugFlag(BGFX_DEBUG_PROFILER);
 			return {};
 		}
-		if ((key == Keyboard::Definition::F5 && modifiers.empty())
+		if ((key == Keyboard::Definition::KeyF5 && modifiers.empty())
 			|| (key == Keyboard::Definition::KeyR && modifiers == ctrl))
 		{
 			_runResult = AppRunResult::Restart;
 			return {};
 		}
-		if ((key == Keyboard::Definition::F5 && modifiers == ctrl))
+		if ((key == Keyboard::Definition::KeyF5 && modifiers == ctrl))
 		{
 			return setNextRenderer();
 		}
-		if ((key == Keyboard::Definition::Print && modifiers.empty())
+		if ((key == Keyboard::Definition::KeyPrint && modifiers.empty())
 			|| (key == Keyboard::Definition::KeyP && modifiers == ctrl))
 		{
 			auto filePath = "temp/screenshot-" + getTimeSuffix();
 			bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filePath.c_str());
 			return {};
 		}
-		if (key == Keyboard::Definition::Print && modifiers == ctrl)
+		if (key == Keyboard::Definition::KeyPrint && modifiers == ctrl)
 		{
 			toggleTaskflowProfile();
 			return {};
 		}
-		if (key == Keyboard::Definition::Pause)
+		if (key == Keyboard::Definition::KeyPause)
 		{
 			_paused = !_paused;
 			return {};

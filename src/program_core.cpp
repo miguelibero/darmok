@@ -295,7 +295,7 @@ namespace darmok
 
     ShaderType ShaderParser::getType(const fs::path& path) noexcept
     {
-        auto exts = StringUtils::split(path.extension().string(), ".");
+        auto exts = StringUtils::split('.', path.extension().string());
         for (auto& ext : exts)
         {
             auto type = getType(ext);

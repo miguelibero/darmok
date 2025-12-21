@@ -4,78 +4,78 @@ package darmok.protobuf;
 
 message Input {
     enum DirType {
-        NoDir = 0;
-        UpDir = 1;
-        DownDir = 2;
-        LeftDir = 3;
-        RightDir = 4;
+        DirNone = 0;
+        DirUp = 1;
+        DirDown = 2;
+        DirLeft = 3;
+        DirRight = 4;
     }
 }
 
 message Keyboard {
     enum Modifier {
-        NoModifier = 0;
-        Alt = 1;
-        Ctrl = 2;
-        Shift = 3;
-        Meta = 4;
+        ModifierNone = 0;
+        ModifierAlt = 1;
+        ModifierCtrl = 2;
+        ModifierShift = 3;
+        ModifierMeta = 4;
     }
 
     enum Key {
-        NoKey = 0;
-        Esc = 1;
-        Return = 2;
-        Tab = 3;
-        Space = 4;
-        Backspace = 5;
+        KeyNone = 0;
+        KeyEsc = 1;
+        KeyReturn = 2;
+        KeyTab = 3;
+        KeySpace = 4;
+        KeyBackspace = 5;
         KeyUp = 6;
         KeyDown = 7;
         KeyLeft = 8;
         KeyRight = 9;
-        Insert = 10;
-        Delete = 11;
-        Home = 12;
-        End = 13;
-        PageUp = 14;
-        PageDown = 15;
-        Print = 16;
-        Plus = 17;
-        Minus = 18;
-        LeftBracket = 19;
-        RightBracket = 20;
-        Semicolon = 21;
-        Quote = 22;
-        Comma = 23;
-        Period = 24;
-        Slash = 25;
-        Backslash = 26;
-        GraveAccent = 27;
-        CapsLock = 28;
-        NumLock = 29;
-        ScrollLock = 30;
-        Pause = 31;
-        F1 = 32;
-        F2 = 33;
-        F3 = 34;
-        F4 = 35;
-        F5 = 36;
-        F6 = 37;
-        F7 = 38;
-        F8 = 39;
-        F9 = 40;
-        F10 = 41;
-        F11 = 42;
-        F12 = 43;
-        NumPad0 = 44;
-        NumPad1 = 45;
-        NumPad2 = 46;
-        NumPad3 = 47;
-        NumPad4 = 48;
-        NumPad5 = 49;
-        NumPad6 = 50;
-        NumPad7 = 51;
-        NumPad8 = 52;
-        NumPad9 = 53;
+        KeyInsert = 10;
+        KeyDelete = 11;
+        KeyHome = 12;
+        KeyEnd = 13;
+        KeyPageUp = 14;
+        KeyPageDown = 15;
+        KeyPrint = 16;
+        KeyPlus = 17;
+        KeyMinus = 18;
+        KeyLeftBracket = 19;
+        KeyRightBracket = 20;
+        KeySemicolon = 21;
+        KeyQuote = 22;
+        KeyComma = 23;
+        KeyPeriod = 24;
+        KeySlash = 25;
+        KeyBackslash = 26;
+        KeyGraveAccent = 27;
+        KeyCapsLock = 28;
+        KeyNumLock = 29;
+        KeyScrollLock = 30;
+        KeyPause = 31;
+        KeyF1 = 32;
+        KeyF2 = 33;
+        KeyF3 = 34;
+        KeyF4 = 35;
+        KeyF5 = 36;
+        KeyF6 = 37;
+        KeyF7 = 38;
+        KeyF8 = 39;
+        KeyF9 = 40;
+        KeyF10 = 41;
+        KeyF11 = 42;
+        KeyF12 = 43;
+        KeyNumPad0 = 44;
+        KeyNumPad1 = 45;
+        KeyNumPad2 = 46;
+        KeyNumPad3 = 47;
+        KeyNumPad4 = 48;
+        KeyNumPad5 = 49;
+        KeyNumPad6 = 50;
+        KeyNumPad7 = 51;
+        KeyNumPad8 = 52;
+        KeyNumPad9 = 53;
         Key0 = 54;
         Key1 = 55;
         Key2 = 56;
@@ -118,21 +118,20 @@ message Keyboard {
         Key key = 1;
         repeated Modifier modifiers = 2;
     }
-
 }
 
 message Mouse {
     enum Analog {
-        NoAnalog = 0;
-        PositionAnalog = 1;
-        ScrollAnalog = 2;
+        AnalogNone = 0;
+        AnalogPosition = 1;
+        AnalogScroll = 2;
     }
 
     enum Button {
-        NoButton = 0;
-        LeftButton = 1;
-        MiddleButton = 2;
-        RightButton = 3;
+        ButtonNone = 0;
+        ButtonLeft = 1;
+        ButtonMiddle = 2;
+        ButtonRight = 3;
     }
 
     message InputEvent {
@@ -147,28 +146,28 @@ message Mouse {
 
 message Gamepad {
     enum Stick {
-        NoStick = 0;
-        LeftStick = 1;
-        RightStick = 2;
+        StickNone = 0;
+        StickLeft = 1;
+        StickRight = 2;
     }
 
     enum Button {
-        NoButton = 0;
-        A = 1;
-        B = 2;
-        X = 3;
-        Y = 4;
-        LeftBumper = 5;
-        RightBumper = 6;
-        Select = 7;
-        Start = 8;
-        LeftThumb = 9;
-        RightThumb = 10;
-        PadUp = 11;
-        PadRight = 12;
-        PadDown = 13;
-        PadLeft = 14;
-        Guide = 15;
+        ButtonNone = 0;
+        ButtonA = 1;
+        ButtonB = 2;
+        ButtonX = 3;
+        ButtonY = 4;
+        ButtonLeftBumper = 5;
+        ButtonRightBumper = 6;
+        ButtonSelect = 7;
+        ButtonStart = 8;
+        ButtonLeftThumb = 9;
+        ButtonRightThumb = 10;
+        ButtonPadUp = 11;
+        ButtonPadRight = 12;
+        ButtonPadDown = 13;
+        ButtonPadLeft = 14;
+        ButtonGuide = 15;
     }
 
     message InputEvent {

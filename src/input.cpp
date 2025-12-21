@@ -158,12 +158,12 @@ namespace darmok
 
 	char KeyboardImpl::keyToAscii(KeyboardKey key, bool upper) noexcept
 	{
-		constexpr auto Key0 = KeyboardKey::Keyboard_Key_Key0;
-		constexpr auto Key9 = KeyboardKey::Keyboard_Key_Key9;
-		constexpr auto KeyA = KeyboardKey::Keyboard_Key_KeyA;
-		constexpr auto KeyZ = KeyboardKey::Keyboard_Key_KeyZ;
-		constexpr auto Esc = KeyboardKey::Keyboard_Key_Esc;
-		constexpr auto Minus = KeyboardKey::Keyboard_Key_Minus;
+		constexpr auto Key0 = Keyboard::Definition::Key0;
+		constexpr auto Key9 = Keyboard::Definition::Key9;
+		constexpr auto KeyA = Keyboard::Definition::KeyA;
+		constexpr auto KeyZ = Keyboard::Definition::KeyZ;
+		constexpr auto Esc = Keyboard::Definition::KeyEsc;
+		constexpr auto Minus = Keyboard::Definition::KeyMinus;
 
 		const bool isAscii = (Key0 <= key && key <= KeyZ)
 			|| (Esc <= key && key <= Minus);
@@ -186,13 +186,13 @@ namespace darmok
 
 		switch (key)
 		{
-		case KeyboardKey::Keyboard_Key_Esc:       return 0x1b;
-		case KeyboardKey::Keyboard_Key_Return:    return '\n';
-		case KeyboardKey::Keyboard_Key_Tab:       return '\t';
-		case KeyboardKey::Keyboard_Key_Space:     return ' ';
-		case KeyboardKey::Keyboard_Key_Backspace: return 0x08;
-		case KeyboardKey::Keyboard_Key_Plus:      return '+';
-		case KeyboardKey::Keyboard_Key_Minus:     return '-';
+		case Keyboard::Definition::KeyEsc:       return 0x1b;
+		case Keyboard::Definition::KeyReturn:    return '\n';
+		case Keyboard::Definition::KeyTab:       return '\t';
+		case Keyboard::Definition::KeySpace:     return ' ';
+		case Keyboard::Definition::KeyBackspace: return 0x08;
+		case Keyboard::Definition::KeyPlus:      return '+';
+		case Keyboard::Definition::KeyMinus:     return '-';
 		default:
 			break;
 		}
@@ -209,7 +209,7 @@ namespace darmok
 
 	std::optional<KeyboardKey> KeyboardImpl::readKey(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<KeyboardKey>(name, _keyPrefix);
+		return StringUtils::readEnum<KeyboardKey>(name, _keyPrefix, "Keyboard_Key_Key");
 	}
 
 	const std::string KeyboardImpl::_modPrefix = "KeyboardModifier.";
@@ -221,12 +221,12 @@ namespace darmok
 
 	std::optional<KeyboardModifier> KeyboardImpl::readModifier(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<KeyboardModifier>(name, _modPrefix);
+		return StringUtils::readEnum<KeyboardModifier>(name, _modPrefix, "Keyboard_Modifier_Modifier");
 	}
 
 	expected<KeyboardInputEvent, std::string> KeyboardImpl::readEvent(std::string_view name) noexcept
 	{
-		auto parts = StringUtils::split("+", name);
+		auto parts = StringUtils::split('+', name);
 		auto key = Keyboard::readKey(parts[0]);
 		if (!key)
 		{
@@ -548,10 +548,9 @@ namespace darmok
 
 	const std::string MouseImpl::_buttonPrefix = "MouseButton.";
 
-
 	std::optional<MouseButton> MouseImpl::readButton(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<MouseButton>(name, _buttonPrefix);
+		return StringUtils::readEnum<MouseButton>(name, _buttonPrefix, "Mouse_Button_Button");
 	}
 
 	std::string_view MouseImpl::getButtonName(MouseButton button) noexcept
@@ -563,7 +562,7 @@ namespace darmok
 
 	std::optional<MouseAnalog> MouseImpl::readAnalog(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<MouseAnalog>(name, _analogPrefix);
+		return StringUtils::readEnum<MouseAnalog>(name, _analogPrefix, "Mouse_Analog_Analog");
 	}
 
 	std::string_view MouseImpl::getAnalogName(MouseAnalog analog) noexcept
@@ -585,7 +584,7 @@ namespace darmok
 
 	expected<MouseInputDir, std::string> MouseImpl::readDir(std::string_view name) noexcept
 	{
-		auto parts = StringUtils::split(":", name);
+		auto parts = StringUtils::split(':', name);
 		auto size = parts.size();
 		if (size < 2)
 		{
@@ -882,7 +881,7 @@ namespace darmok
 
 	std::optional<GamepadButton> GamepadImpl::readButton(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<GamepadButton>(name, _buttonPrefix);
+		return StringUtils::readEnum<GamepadButton>(name, _buttonPrefix, "Gamepad_Button_Button");
 	}
 
 	std::string_view GamepadImpl::getButtonName(GamepadButton button) noexcept
@@ -894,7 +893,7 @@ namespace darmok
 
 	std::optional<GamepadStick> GamepadImpl::readStick(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<GamepadStick>(name, _stickPrefix);
+		return StringUtils::readEnum<GamepadStick>(name, _stickPrefix, "Gamepad_Stick_Stick");
 	}
 
 	std::string_view GamepadImpl::getStickName(GamepadStick stick) noexcept
@@ -914,7 +913,7 @@ namespace darmok
 
 	expected<GamepadInputEvent, std::string> GamepadImpl::readEvent(std::string_view name) noexcept
 	{
-		auto parts = StringUtils::split(":", name);
+		auto parts = StringUtils::split(':', name);
 		auto size = parts.size();
 		if (size != 2)
 		{
@@ -934,7 +933,7 @@ namespace darmok
 
 	expected<GamepadStickInputEvent, std::string> GamepadImpl::readStickEvent(std::string_view name) noexcept
 	{
-		auto parts = StringUtils::split(":", name);
+		auto parts = StringUtils::split(':', name);
 		auto size = parts.size();
 		if (size != 3)
 		{
@@ -960,7 +959,7 @@ namespace darmok
 
 	expected<GamepadInputDir, std::string> GamepadImpl::readDir(std::string_view name) noexcept
 	{
-		auto parts = StringUtils::split(":", name);
+		auto parts = StringUtils::split(':', name);
 		auto size = parts.size();
 		if (size < 2)
 		{
@@ -1224,16 +1223,16 @@ namespace darmok
 		float val = 0.F;
 		switch (dir)
 		{
-			case Input::Definition::UpDir:
+			case Input::Definition::DirUp:
 				val = vec.y > 0.F ? vec.y : 0.F;
 				break;
-			case Input::Definition::DownDir:
+			case Input::Definition::DirDown:
 				val = vec.y < 0.F ? -vec.y : 0.F;
 				break;
-			case Input::Definition::RightDir:
+			case Input::Definition::DirRight:
 				val = vec.x > 0.F ? vec.x : 0.F;
 				break;
-			case Input::Definition::LeftDir:
+			case Input::Definition::DirLeft:
 				val = vec.x < 0.F ? -vec.x : 0.F;
 				break;
 			default:
@@ -1252,13 +1251,13 @@ namespace darmok
 		{
 			glm::vec2 vec{ 0 };
 			auto& mouseDir = dir.mouse();
-			if (mouseDir.analog() == Mouse::Definition::ScrollAnalog)
+			if (mouseDir.analog() == Mouse::Definition::AnalogScroll)
 			{
 				vec = _mouse.getScroll() * _mouseScrollDirFactor;
 			}
 			else
 			{
-				vec = _mouse.getVelocity() * glm::vec2(_mouseVelocityDirFactor, -_mouseVelocityDirFactor);
+				vec = _mouse.getVelocity() * glm::vec2{ _mouseVelocityDirFactor, -_mouseVelocityDirFactor };
 			}
 			return getDir(vec * sensi.mouse, mouseDir.type());
 		}
@@ -1745,10 +1744,10 @@ namespace darmok
 			field->Add(Keyboard::createInputDir(key2));
 			field->Add(Gamepad::createInputDir(gamepadDir));
 		};
-		add(def.mutable_left(), Keyboard::Definition::KeyLeft, Keyboard::Definition::KeyA, Definition::LeftDir);
-		add(def.mutable_right(), Keyboard::Definition::KeyRight, Keyboard::Definition::KeyD, Definition::RightDir);
-		add(def.mutable_forward(), Keyboard::Definition::KeyUp, Keyboard::Definition::KeyW, Definition::UpDir);
-		add(def.mutable_backward(), Keyboard::Definition::KeyDown, Keyboard::Definition::KeyS, Definition::DownDir);
+		add(def.mutable_left(), Keyboard::Definition::KeyLeft, Keyboard::Definition::KeyA, Definition::DirLeft);
+		add(def.mutable_right(), Keyboard::Definition::KeyRight, Keyboard::Definition::KeyD, Definition::DirRight);
+		add(def.mutable_forward(), Keyboard::Definition::KeyUp, Keyboard::Definition::KeyW, Definition::DirUp);
+		add(def.mutable_backward(), Keyboard::Definition::KeyDown, Keyboard::Definition::KeyS, Definition::DirDown);
 		return def;
 	}
 
@@ -1760,10 +1759,10 @@ namespace darmok
 			field->Add(Mouse::createInputDir(dir));
 			field->Add(Gamepad::createInputDir(dir));
 		};
-		add(def.mutable_left(), Definition::LeftDir);
-		add(def.mutable_right(), Definition::RightDir);
-		add(def.mutable_up(), Definition::UpDir);
-		add(def.mutable_down(), Definition::DownDir);
+		add(def.mutable_left(), Definition::DirLeft);
+		add(def.mutable_right(), Definition::DirRight);
+		add(def.mutable_up(), Definition::DirUp);
+		add(def.mutable_down(), Definition::DirDown);
 		return def;
 	}
 

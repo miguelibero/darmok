@@ -222,8 +222,8 @@ namespace
 		OptionalRef<FreelookController> _freeLook;
 
 		const InputEvents _talkInputs = {
-			Keyboard::createInputEvent(Keyboard::Definition::Return),
-			Gamepad::createInputEvent(Gamepad::Definition::A),
+			Keyboard::createInputEvent(Keyboard::Definition::KeyReturn),
+			Gamepad::createInputEvent(Gamepad::Definition::ButtonA),
 		};
 
 		const Input::MoveDirsDefinition _move = Input::createMoveDirsDefinition();

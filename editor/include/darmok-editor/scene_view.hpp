@@ -67,6 +67,20 @@ namespace darmok::editor
         std::unique_ptr<Mesh> _transMesh;
         std::unique_ptr<Mesh> _rotMesh;
         std::unique_ptr<Mesh> _scaleMesh;
+        std::optional<glm::vec2> _lastMousePosition;
+    };
+
+    class Physics3dShapeGizmo final : public ISceneGizmo
+    {
+    public:
+        expected<void, std::string> init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> update(float deltaTime) noexcept override;
+        expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+    private:
+        OptionalRef<SceneGizmosRenderer> _renderer;
+        OptionalRef<Scene> _scene;
+        bgfx::VertexLayout _layout;
     };
 
     class SceneGizmosRenderer final : public ITypeCameraComponent<SceneGizmosRenderer>
@@ -100,6 +114,7 @@ namespace darmok::editor
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform = std::nullopt) noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, std::optional<glm::mat4> transform = std::nullopt) noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, Material::PrimitiveType prim, std::optional<glm::mat4> transform = std::nullopt) noexcept;
+        Entity getSelectedEntity() const noexcept;
 
     private:
         EditorApp& _app;

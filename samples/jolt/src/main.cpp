@@ -252,7 +252,7 @@ namespace
 				return {};
 			}
 			auto& mouse = _app.getInput().getMouse();
-			if (mouse.getButton(Mouse::Definition::LeftButton))
+			if (mouse.getButton(Mouse::Definition::ButtonLeft))
 			{
 				glm::vec2 pos = mouse.getPosition();
 				pos = _app.getWindow().windowToScreenPoint(pos);

@@ -1976,35 +1976,35 @@ namespace darmok
     {
         static KeyboardMap map
         {
-            { Keyboard::Definition::Esc, Rml::Input::KI_ESCAPE },
-            { Keyboard::Definition::Return, Rml::Input::KI_RETURN },
-            { Keyboard::Definition::Tab, Rml::Input::KI_TAB },
-            { Keyboard::Definition::Space, Rml::Input::KI_SPACE },
-            { Keyboard::Definition::Backspace, Rml::Input::KI_BACK },
+            { Keyboard::Definition::KeyEsc, Rml::Input::KI_ESCAPE },
+            { Keyboard::Definition::KeyReturn, Rml::Input::KI_RETURN },
+            { Keyboard::Definition::KeyTab, Rml::Input::KI_TAB },
+            { Keyboard::Definition::KeySpace, Rml::Input::KI_SPACE },
+            { Keyboard::Definition::KeyBackspace, Rml::Input::KI_BACK },
             { Keyboard::Definition::KeyUp, Rml::Input::KI_UP },
             { Keyboard::Definition::KeyDown, Rml::Input::KI_DOWN },
             { Keyboard::Definition::KeyLeft, Rml::Input::KI_LEFT },
             { Keyboard::Definition::KeyRight, Rml::Input::KI_RIGHT },
-            { Keyboard::Definition::Insert, Rml::Input::KI_INSERT },
-            { Keyboard::Definition::Delete, Rml::Input::KI_DELETE },
-            { Keyboard::Definition::Home, Rml::Input::KI_HOME },
-            { Keyboard::Definition::End, Rml::Input::KI_END },
-            { Keyboard::Definition::PageUp, Rml::Input::KI_PRIOR },
-            { Keyboard::Definition::PageDown, Rml::Input::KI_NEXT },
-            { Keyboard::Definition::Print, Rml::Input::KI_PRINT },
-            { Keyboard::Definition::Plus, Rml::Input::KI_ADD },
-            { Keyboard::Definition::Minus, Rml::Input::KI_SUBTRACT },
-            { Keyboard::Definition::LeftBracket, Rml::Input::KI_OEM_4 },
-            { Keyboard::Definition::RightBracket, Rml::Input::KI_OEM_6 },
-            { Keyboard::Definition::Semicolon, Rml::Input::KI_OEM_1 },
-            { Keyboard::Definition::Quote, Rml::Input::KI_OEM_7 },
-            { Keyboard::Definition::Comma, Rml::Input::KI_OEM_COMMA },
-            { Keyboard::Definition::Period, Rml::Input::KI_OEM_PERIOD },
-            { Keyboard::Definition::Slash, Rml::Input::KI_OEM_2 },
-            { Keyboard::Definition::Backslash, Rml::Input::KI_OEM_5 },
-            { Keyboard::Definition::GraveAccent, Rml::Input::KI_OEM_3 },
-            { Keyboard::Definition::Pause, Rml::Input::KI_PAUSE },
-            { Keyboard::Definition::NoKey, Rml::Input::KI_UNKNOWN },
+            { Keyboard::Definition::KeyInsert, Rml::Input::KI_INSERT },
+            { Keyboard::Definition::KeyDelete, Rml::Input::KI_DELETE },
+            { Keyboard::Definition::KeyHome, Rml::Input::KI_HOME },
+            { Keyboard::Definition::KeyEnd, Rml::Input::KI_END },
+            { Keyboard::Definition::KeyPageUp, Rml::Input::KI_PRIOR },
+            { Keyboard::Definition::KeyPageDown, Rml::Input::KI_NEXT },
+            { Keyboard::Definition::KeyPrint, Rml::Input::KI_PRINT },
+            { Keyboard::Definition::KeyPlus, Rml::Input::KI_ADD },
+            { Keyboard::Definition::KeyMinus, Rml::Input::KI_SUBTRACT },
+            { Keyboard::Definition::KeyLeftBracket, Rml::Input::KI_OEM_4 },
+            { Keyboard::Definition::KeyRightBracket, Rml::Input::KI_OEM_6 },
+            { Keyboard::Definition::KeySemicolon, Rml::Input::KI_OEM_1 },
+            { Keyboard::Definition::KeyQuote, Rml::Input::KI_OEM_7 },
+            { Keyboard::Definition::KeyComma, Rml::Input::KI_OEM_COMMA },
+            { Keyboard::Definition::KeyPeriod, Rml::Input::KI_OEM_PERIOD },
+            { Keyboard::Definition::KeySlash, Rml::Input::KI_OEM_2 },
+            { Keyboard::Definition::KeyBackslash, Rml::Input::KI_OEM_5 },
+            { Keyboard::Definition::KeyGraveAccent, Rml::Input::KI_OEM_3 },
+            { Keyboard::Definition::KeyPause, Rml::Input::KI_PAUSE },
+            { Keyboard::Definition::KeyNone, Rml::Input::KI_UNKNOWN },
         };
         static bool first = true;
 
@@ -2012,14 +2012,14 @@ namespace darmok
             auto j = toUnderlying(rmluiStart);
             for (auto i = toUnderlying(start); i < toUnderlying(end); i++)
             {
-                map[(KeyboardKey)i] = (Rml::Input::KeyIdentifier)j++;
+                map[(KeyboardKey)i] = static_cast<Rml::Input::KeyIdentifier>(j++);
             }
             };
 
         if (first)
         {
-            addRange(Keyboard::Definition::F1, Keyboard::Definition::F12, Rml::Input::KI_F1);
-            addRange(Keyboard::Definition::NumPad0, Keyboard::Definition::NumPad9, Rml::Input::KI_NUMPAD0);
+            addRange(Keyboard::Definition::KeyF1, Keyboard::Definition::KeyF12, Rml::Input::KI_F1);
+            addRange(Keyboard::Definition::KeyNumPad0, Keyboard::Definition::KeyNumPad9, Rml::Input::KI_NUMPAD0);
             addRange(Keyboard::Definition::Key0, Keyboard::Definition::Key9, Rml::Input::KI_0);
             addRange(Keyboard::Definition::KeyA, Keyboard::Definition::KeyZ, Rml::Input::KI_A);
             first = false;
@@ -2031,13 +2031,13 @@ namespace darmok
     {
         static const KeyboardModifierMap map
         {
-            { Keyboard::Definition::Ctrl, Rml::Input::KM_CTRL },
-            { Keyboard::Definition::Shift, Rml::Input::KM_SHIFT },
-            { Keyboard::Definition::Alt, Rml::Input::KM_ALT },
-            { Keyboard::Definition::Meta, Rml::Input::KM_META },
-            { Keyboard::Definition::CapsLock, Rml::Input::KM_CAPSLOCK },
-            { Keyboard::Definition::NumLock, Rml::Input::KM_NUMLOCK },
-            { Keyboard::Definition::ScrollLock, Rml::Input::KM_SCROLLLOCK },
+            { Keyboard::Definition::ModifierCtrl, Rml::Input::KM_CTRL },
+            { Keyboard::Definition::ModifierShift, Rml::Input::KM_SHIFT },
+            { Keyboard::Definition::ModifierAlt, Rml::Input::KM_ALT },
+            { Keyboard::Definition::ModifierMeta, Rml::Input::KM_META },
+            { Keyboard::Definition::KeyCapsLock, Rml::Input::KM_CAPSLOCK },
+            { Keyboard::Definition::KeyNumLock, Rml::Input::KM_NUMLOCK },
+            { Keyboard::Definition::KeyScrollLock, Rml::Input::KM_SCROLLLOCK },
         };
         return map;
     }
@@ -2182,13 +2182,13 @@ namespace darmok
         int i = -1;
         switch (button)
         {
-        case Mouse::Definition::LeftButton:
+        case Mouse::Definition::ButtonLeft:
             i = 0;
             break;
-        case Mouse::Definition::RightButton:
+        case Mouse::Definition::ButtonRight:
             i = 1;
             break;
-        case Mouse::Definition::MiddleButton:
+        case Mouse::Definition::ButtonMiddle:
             i = 2;
             break;
         default:

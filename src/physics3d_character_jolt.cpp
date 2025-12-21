@@ -149,6 +149,11 @@ namespace darmok::physics3d
         return JoltUtils::convert(_jolt->GetGroundPosition());
     }
 
+    PhysicsShape CharacterControllerImpl::getShape() const noexcept
+    {
+        return darmok::convert<PhysicsShape>(_def.shape());
+    }
+
     void CharacterControllerImpl::setDelegate(Delegate& dlg) noexcept
     {
         _delegate = dlg;
@@ -488,6 +493,11 @@ namespace darmok::physics3d
     glm::vec3 CharacterController::getGroundVelocity() const noexcept
     {
         return _impl->getGroundVelocity();
+    }
+
+    PhysicsShape CharacterController::getShape() const noexcept
+    {
+        return _impl->getShape();
     }
 
     CharacterController& CharacterController::setDelegate(Delegate& dlg) noexcept

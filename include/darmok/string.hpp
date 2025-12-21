@@ -26,8 +26,8 @@ namespace darmok
         size_t replace(std::string& str, char src, char dst) noexcept;
 
         [[nodiscard]] std::vector<std::string> splitWords(std::string_view sv) noexcept;
-        [[nodiscard]] std::vector<std::string> split(std::string_view sv, char sep) noexcept;
-        [[nodiscard]] std::vector<std::string> split(std::string_view sv, std::string_view sep) noexcept;
+        [[nodiscard]] std::vector<std::string> split(char sep, std::string_view sv) noexcept;
+        [[nodiscard]] std::vector<std::string> split(std::string_view sep, std::string_view sv) noexcept;
         void camelCaseToHumanReadable(std::string& str) noexcept;
 
         template<typename Iter, typename Callback>
@@ -114,13 +114,18 @@ namespace darmok
         }
 
         template<typename T>
-        [[nodiscard]] std::optional<T> readEnum(std::string_view name, std::string_view prefix = {}) noexcept
+        [[nodiscard]] std::optional<T> readEnum(std::string_view name, std::string_view removePrefix = {}, std::string_view addPrefix = {}) noexcept
         {
-            if (startsWith(name, prefix))
+            std::string fname{ name };
+            if (!removePrefix.empty() && startsWith(fname, removePrefix))
             {
-                name = name.substr(prefix.size());
+                fname = fname.substr(removePrefix.size());
             }
-            return magic_enum::enum_cast<T>(name, magic_enum::case_insensitive);
+            if (!addPrefix.empty() && !endsWith(fname, addPrefix))
+            {
+                fname = std::string{ addPrefix } + fname;
+            }
+            return magic_enum::enum_cast<T>(fname, magic_enum::case_insensitive);
         }
 
         template<typename T>

@@ -302,7 +302,7 @@ namespace darmok
 			}
 			_mainLuaPath = mainPath.value();
 			auto result = loadLua(_mainLuaPath);
-			if (result)
+			if (!result)
 			{
 				unloadLua();
 			}
@@ -446,7 +446,7 @@ namespace darmok
 		auto key = binary ? "cpath" : "path";
 		std::string current = lua["package"][key];
 
-		for (auto& sub : StringUtils::split(fpath, sep))
+		for (auto& sub : StringUtils::split(sep, fpath))
 		{
 			std::filesystem::path spath(sub);
 			if (!StringUtils::contains(spath.filename().string(), '?') && spath.extension().empty())

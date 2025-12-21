@@ -169,7 +169,7 @@ namespace darmok
 		[[nodiscard]] static std::string_view getAnalogName(MouseAnalog analog) noexcept;
 
 		[[nodiscard]] static InputEvent createInputEvent(MouseButton button) noexcept;
-		[[nodiscard]] static InputDir createInputDir(InputDirType dirType, MouseAnalog analog = Definition::PositionAnalog) noexcept;
+		[[nodiscard]] static InputDir createInputDir(InputDirType dirType, MouseAnalog analog = Definition::AnalogPosition) noexcept;
 
 	private:
 		std::unique_ptr<MouseImpl> _impl;
@@ -240,8 +240,8 @@ namespace darmok
 		[[nodiscard]] static std::string_view getStickName(GamepadStick stick) noexcept;
 
 		[[nodiscard]] static InputEvent createInputEvent(GamepadButton button, uint32_t gamepad = Any) noexcept;
-		[[nodiscard]] static InputEvent createInputEvent(InputDirType dirType, GamepadStick stick = Definition::LeftStick, uint32_t gamepad = Any) noexcept;
-		[[nodiscard]] static InputDir createInputDir(InputDirType dirType, GamepadStick stick = Definition::LeftStick, uint32_t gamepad = Any) noexcept;
+		[[nodiscard]] static InputEvent createInputEvent(InputDirType dirType, GamepadStick stick = Definition::StickLeft, uint32_t gamepad = Any) noexcept;
+		[[nodiscard]] static InputDir createInputDir(InputDirType dirType, GamepadStick stick = Definition::StickLeft, uint32_t gamepad = Any) noexcept;
 
 	private:
 		std::unique_ptr<GamepadImpl> _impl;

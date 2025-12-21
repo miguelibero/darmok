@@ -83,7 +83,7 @@ namespace darmok
         }
 
         template<typename T>
-        void newEnum(sol::state_view lua, std::string_view name = {}, bool stringValues = false)
+        void newEnum(sol::state_view lua, std::string_view name = {}, bool stringValues = false, std::string_view replaceKeyPart = {})
         {
             if (name.empty())
             {
@@ -93,13 +93,15 @@ namespace darmok
             auto prefix = std::string{ name } + ".";
             for (auto& [val, valueName] : StringUtils::getEnumValues<T>())
             {
+                auto key = valueName;
+                StringUtils::replace(key, replaceKeyPart, {});
                 if (stringValues)
                 {
-                    metatable.set(valueName, prefix + std::string{ valueName });
+                    metatable.set(key, prefix + key);
                 }
                 else
                 {
-                    metatable.set(valueName, val);
+                    metatable.set(key, val);
                 }
             }
             auto table = lua.create_named_table(name);

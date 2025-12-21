@@ -66,7 +66,7 @@ namespace darmok
 
         std::vector<std::string> splitExtensions(const std::string& exts) const noexcept
         {
-            auto vec = StringUtils::split(exts, ";");
+            auto vec = StringUtils::split(";", exts);
             std::erase_if(vec, [](const std::string& ext) {
                 return ext.empty();
             });

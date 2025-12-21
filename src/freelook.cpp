@@ -185,7 +185,7 @@ namespace darmok
 		def.mutable_max_look_angle()->set_x(30.F);
         def.mutable_max_look_angle()->set_y(30.F);
 
-		def.mutable_enable_events()->Add(Keyboard::createInputEvent(Keyboard::Definition::F7));
+		def.mutable_enable_events()->Add(Keyboard::createInputEvent(Keyboard::Definition::KeyF7));
         *def.mutable_move() = Input::createMoveDirsDefinition();
         *def.mutable_look() = Input::createLookDirsDefinition();
         return def;

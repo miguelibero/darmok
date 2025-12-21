@@ -161,15 +161,13 @@ I'm still learning CMake, so if you see something that should be fixed please le
 ```lua
 function init()
     local program = StandardProgramLoader.load(StandardProgramType.Forward)
-
-    local scenes = app:add_component(SceneAppComponent)
-    local scene = scenes.scene
+    local scene = app:add_component(SceneAppComponent).scene
 
     local camEntity = scene:create_entity()
     local camTrans = camEntity:add_component(Transform, { 0, 1, -1 })
     camTrans:look_at({ 0, 0, 0 })
     local cam = camEntity:add_component(Camera)
-    cam:set_perspective(60, 0.3, 1000)
+    cam:set_perspective(Math.radians(60), 0.3, 1000)
     cam:add_component(ForwardRenderer)
     cam:add_component(LightingRenderComponent)
 
