@@ -321,6 +321,11 @@ namespace darmok
     {
     }
 
+    Polygon::Definition Polygon::createDefinition() noexcept
+    {
+        return {};
+    }
+
     Polygon::operator Definition() const noexcept
     {
         Definition def;

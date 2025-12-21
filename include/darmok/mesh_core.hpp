@@ -200,7 +200,8 @@ namespace darmok
         MeshType type = protobuf::Mesh::Static;
 
         MeshData(MeshType type = protobuf::Mesh::Static) noexcept;
-        MeshData(const Cube& Cube, FillType type = Mesh::Definition::FillTriangles) noexcept;
+        MeshData(const Cube& cube, FillType type = Mesh::Definition::FillTriangles) noexcept;
+        MeshData(const BoundingBox& bbox, FillType type = Mesh::Definition::FillTriangles) noexcept;
         MeshData(const Sphere& sphere, unsigned int lod = 32) noexcept;
         MeshData(const Capsule& capsule, unsigned int lod = 32) noexcept;
         MeshData(const Rectangle& rect, FillType type = Mesh::Definition::FillTriangles) noexcept;

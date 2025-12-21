@@ -23,7 +23,11 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Object& shape) noexcept override;
     public:
-        RenderResult renderPolygon(Object& src) noexcept;
+        RenderResult renderCube(Object& shape) noexcept;
+        RenderResult renderSphere(Object& shape) noexcept;
+        RenderResult renderCapsule(Object& shape) noexcept;
+        RenderResult renderPolygon(Object& shape) noexcept;
+        RenderResult renderBoundingBox(Object& shape) noexcept;
     };
 
     class Physics3dBodyInspectorEditor final : public ComponentObjectEditor<physics3d::PhysicsBody>

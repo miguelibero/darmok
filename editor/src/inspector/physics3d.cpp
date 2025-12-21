@@ -41,23 +41,23 @@ namespace darmok::editor
         RenderResult result;
         if (type == Physics3dShapeType::Sphere)
         {
-            result = renderChild(*shape.mutable_sphere());
+            result = renderSphere(shape);
         }
         else if (type == Physics3dShapeType::Cube)
         {
-            result = renderChild(*shape.mutable_cube());
+            result = renderCube(shape);
         }
         else if (type == Physics3dShapeType::Capsule)
         {
-            result = renderChild(*shape.mutable_capsule());
+            result = renderCapsule(shape);
         }
         else if (type == Physics3dShapeType::Polygon)
         {
-            result = renderChild(*shape.mutable_polygon());
+            result = renderPolygon(shape);
         }
         else if (type == Physics3dShapeType::BoundingBox)
         {
-            result = renderChild(*shape.mutable_bounding_box());
+            result = renderBoundingBox(shape);
         }
         if (!result)
         {
@@ -65,6 +65,66 @@ namespace darmok::editor
         }
         changed |= *result;
         return changed;
+    }
+
+    Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderCube(Object& shape) noexcept
+    {
+        auto create = !shape.has_cube();
+        auto& cube = *shape.mutable_cube();
+        auto changed = false;
+        if (create)
+        {
+            cube = Cube::createDefinition();
+        }
+        return renderChild(cube);
+    }
+
+    Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderSphere(Object& shape) noexcept
+    {
+        auto create = !shape.has_sphere();
+        auto& sphere = *shape.mutable_sphere();
+        auto changed = false;
+        if (create)
+        {
+            sphere = Sphere::createDefinition();
+        }
+        return renderChild(sphere);
+    }
+
+    Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderCapsule(Object& shape) noexcept
+    {
+        auto create = !shape.has_sphere();
+        auto& capsule = *shape.mutable_capsule();
+        auto changed = false;
+        if (create)
+        {
+            capsule = Capsule::createDefinition();
+        }
+        return renderChild(capsule);
+    }
+
+    Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderPolygon(Object& shape) noexcept
+    {
+        auto create = !shape.has_sphere();
+        auto& polygon = *shape.mutable_polygon();
+        auto changed = false;
+        if (create)
+        {
+            polygon = Polygon::createDefinition();
+        }
+        return renderChild(polygon);
+    }
+
+    Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderBoundingBox(Object& shape) noexcept
+    {
+        auto create = !shape.has_sphere();
+        auto& bbox = *shape.mutable_bounding_box();
+        auto changed = false;
+        if (create)
+        {
+            bbox = BoundingBox::createDefinition();
+        }
+        return renderChild(bbox);
     }
 
     std::string Physics3dBodyInspectorEditor::getTitle() const noexcept

@@ -463,6 +463,11 @@ namespace darmok
 		*this *= trans;
 	}
 
+	MeshData::MeshData(const BoundingBox& bbox, FillType type) noexcept
+		: MeshData(Cube{ bbox }, type)
+	{
+	}
+
 	void MeshData::setupBasicRectangle() noexcept
 	{
 		static const std::vector<MeshData::Vertex> basicVertices = {

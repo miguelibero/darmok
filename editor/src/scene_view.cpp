@@ -89,7 +89,7 @@ namespace darmok::editor
         {
             return unexpected<std::string>{"uninitialized scene"};
         }
-        auto trans = _scene->getComponent<Transform>(getSelectedEntity());
+        auto trans = _scene->getComponent<Transform>(_renderer->getSelectedEntity());
         if (!trans)
         {
             _mode = Mode::Grab;
@@ -127,11 +127,14 @@ namespace darmok::editor
             _mode = Mode::Scale;
         }
 
-        auto inProgress = input.getMouse().getButton(Mouse::Definition::LeftButton);
+        auto inProgress = input.getMouse().getButton(Mouse::Definition::ButtonLeft);
         if (inProgress)
         {
             auto pos = input.getMouse().getPosition();
-            auto diff = *_lastMousePosition - pos;
+            if (_lastMousePosition)
+            {
+                auto diff = *_lastMousePosition - pos;
+            }
             _lastMousePosition = pos;
         }
 
@@ -150,7 +153,6 @@ namespace darmok::editor
             return {};
         }
 
-        _cam->setViewTransform(viewId);
         auto renderAxes = [this, entity](const std::unique_ptr<Mesh>& mesh) -> expected<void, std::string>
         {
             if (!mesh)
@@ -220,6 +222,13 @@ namespace darmok::editor
     {
         _scene = scene;
         _renderer = renderer;
+        
+        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        if (!progResult)
+        {
+            return unexpected{ std::move(progResult).error() };
+        }
+        _layout = progResult.value()->getVertexLayout();
         return {};
     }
 
@@ -237,6 +246,10 @@ namespace darmok::editor
 
     expected<void, std::string> Physics3dShapeGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
+        if (_layout.getStride() == 0)
+        {
+            return unexpected<std::string>{"empty vertex layout"};
+        }
         using namespace physics3d;
         auto entity = _renderer->getSelectedEntity();
         std::optional<PhysicsShape> shape;
@@ -252,12 +265,35 @@ namespace darmok::editor
         {
             return {};
         }
+        MeshData meshData;
+        static constexpr unsigned int lod = 8;
+        if (auto cube = std::get_if<Cube>(&*shape))
+        {
+            meshData = MeshData{ *cube, Mesh::Definition::FillOutline };
+        }
+        else if (auto sphere = std::get_if<Sphere>(&*shape))
+        {
+            meshData = MeshData{ *sphere, lod };
+        }
+        else if (auto capsule = std::get_if<Capsule>(&*shape))
+        {
+            meshData = MeshData{ *capsule, lod };
+        }
+        else if (auto polygon = std::get_if<Polygon>(&*shape))
+        {
+            meshData = MeshData{ *polygon };
+        }
+        else if (auto bbox = std::get_if<BoundingBox>(&*shape))
+        {
+            meshData = MeshData{ *bbox, Mesh::Definition::FillOutline };
+        }
 
-        auto meshData = std::visit([](auto& shape) { return MeshData{ shape }; }, *shape);
-
-        auto ,esh = meshData.createMesh(_layout, {.type = Mesh::Definition::Transient })
-        
-        return {};
+        auto meshResult = meshData.createMesh(_layout, { .type = Mesh::Definition::Transient });
+        if (!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+        }
+        return _renderer->renderMesh(entity, meshResult.value(), Colors::red(), Material::Definition::Line);
     }
 
     SceneGizmosRenderer::SceneGizmosRenderer(EditorApp& app) noexcept
@@ -327,6 +363,10 @@ namespace darmok::editor
         }
         std::vector<std::string> errors;
         _encoder = bgfx::begin();
+        if (_cam)
+        {
+            _cam->setViewTransform(*_viewId);
+        }
         for (auto& gizmo : _gizmos)
         {
             auto result = gizmo->render(*_viewId, *_encoder);
@@ -420,16 +460,20 @@ namespace darmok::editor
             {
                 return unexpected{ std::move(gizmosResult).error() };
             }
-            auto result = gizmosResult.value().get().add<TransformGizmo>();
-            if (!result)
             {
-                return unexpected{ std::move(result).error() };
+                auto result = gizmosResult.value().get().add<TransformGizmo>();
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
+                _transformGizmo = result.value().get();
             }
-            _transformGizmo = result.value().get();
-            auto result = gizmosResult.value().get().add<Physics3dShapeGizmo>();
-            if (!result)
             {
-                return unexpected{ std::move(result).error() };
+                auto result = gizmosResult.value().get().add<Physics3dShapeGizmo>();
+                if (!result)
+                {
+                    return unexpected{ std::move(result).error() };
+                }
             }
         }
 
@@ -544,12 +588,12 @@ namespace darmok::editor
         // TODO: could be configured
         static const std::array<InputAxis, 2> lookAxis = {
             InputAxis{
-                { Mouse::createInputDir(Input::Definition::LeftDir) },
-                { Mouse::createInputDir(Input::Definition::RightDir) },
+                { Mouse::createInputDir(Input::Definition::DirLeft) },
+                { Mouse::createInputDir(Input::Definition::DirRight) },
             },
             InputAxis{
-                { Mouse::createInputDir(Input::Definition::DownDir) },
-                { Mouse::createInputDir(Input::Definition::UpDir) },
+                { Mouse::createInputDir(Input::Definition::DirDown) },
+                { Mouse::createInputDir(Input::Definition::DirUp) },
             }
         };
         static const std::array<InputAxis, 2> moveAxis = {
@@ -558,8 +602,8 @@ namespace darmok::editor
                 { Keyboard::createInputDir(Keyboard::Definition::KeyRight) },
             },
             InputAxis{
-                { Keyboard::createInputDir(Keyboard::Definition::KeyDown), Mouse::createInputDir(Input::Definition::UpDir, Mouse::Definition::ScrollAnalog) },
-                { Keyboard::createInputDir(Keyboard::Definition::KeyUp), Mouse::createInputDir(Input::Definition::DownDir, Mouse::Definition::ScrollAnalog) }
+                { Keyboard::createInputDir(Keyboard::Definition::KeyDown), Mouse::createInputDir(Input::Definition::DirUp, Mouse::Definition::AnalogScroll) },
+                { Keyboard::createInputDir(Keyboard::Definition::KeyUp), Mouse::createInputDir(Input::Definition::DirDown, Mouse::Definition::AnalogScroll) }
             }
         };
         static const float lookSensitivity = 2.F;

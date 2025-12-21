@@ -140,6 +140,7 @@ namespace darmok
         glm::vec3 origin;
 
         using Definition = protobuf::Polygon;
+        [[nodiscard]] static Definition createDefinition() noexcept;
 
         Polygon(const Triangles& tris = {}, const glm::vec3& origin = glm::vec3{ 0 }) noexcept;
 		Polygon(const Definition& def) noexcept;

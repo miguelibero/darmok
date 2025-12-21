@@ -1940,6 +1940,7 @@ namespace darmok::physics3d
 		def.set_friction(0.2F);
 		def.set_gravity_factor(1.0F);
         def.set_trigger(false);
+        *def.mutable_shape() = createShapeDefinition();
 		return def;
     }
 
