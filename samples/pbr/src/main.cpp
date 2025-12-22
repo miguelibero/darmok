@@ -295,9 +295,9 @@ namespace
 			cam.tryAddComponent<GridRenderer>();
 			cam.tryAddComponent<LightingRenderComponent>();
 
-			ShadowRendererConfig shadowConfig;
-			shadowConfig.cascadeAmount = 3;
-			cam.tryAddComponent<ShadowRenderer>(shadowConfig);
+			auto shadowDef = ShadowRenderer::createDefinition();
+			shadowDef.set_cascade_amount(3);
+			cam.tryAddComponent<ShadowRenderer>(shadowDef);
 			cam.tryAddComponent<ForwardRenderer>();
 			cam.tryAddComponent<FrustumCuller>();
 			// cam.tryAddComponent<OcclusionCuller>();

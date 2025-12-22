@@ -277,6 +277,12 @@ namespace darmok
         return def;
     }
 
+    LightingRenderComponent::Definition LightingRenderComponent::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
     LightingRenderComponent::LightingRenderComponent() noexcept
         : _lightCount(0)
         , _lightData(0)

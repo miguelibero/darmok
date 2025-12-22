@@ -6,6 +6,7 @@
 #include <darmok/program.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/color.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include "generated/shaders/skybox.program.h"
 #include "generated/shaders/grid.program.h"
@@ -74,9 +75,35 @@ namespace darmok
         return {};
     }
 
-    GridRenderer::GridRenderer(const Config& config) noexcept
-        : _config{ config }
+    GridRenderer::GridRenderer(const Definition& def) noexcept
+        : _def{ def }
     {
+    }
+
+    GridRenderer::Definition GridRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        *def.mutable_x_color() = convert<protobuf::Color>(Colors::red());
+        *def.mutable_y_color() = convert<protobuf::Color>(Colors::green());
+        *def.mutable_z_color() = convert<protobuf::Color>(Colors::blue());
+
+        auto& smallGrid = *def.mutable_grid1();
+        smallGrid.set_separation(1.0F);
+        smallGrid.set_width(0.01F);
+        *smallGrid.mutable_color() = convert<protobuf::Color>(Colors::fromNumber(0x505050FF));
+
+        auto& bigGrid = *def.mutable_grid2();
+        bigGrid.set_separation(10.0F);
+        bigGrid.set_width(0.01F);
+        *bigGrid.mutable_color() = convert<protobuf::Color>(Colors::fromNumber(0x707070FF));
+
+        return def;
+    }
+
+    expected<void, std::string> GridRenderer::load(const Definition& def) noexcept
+    {
+        _def = def;
+        return {};
     }
 
     expected<void, std::string> GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -129,10 +156,12 @@ namespace darmok
         }
         auto& proj = _cam->getProjectionMatrix();
         auto depthRange = Math::projDepthRange(proj);
-        glm::vec4 data{ depthRange, _config.grids[0].separation, _config.grids[1].separation };
+        glm::vec4 data{ depthRange, _def.grid1().separation(), _def.grid2().separation()};
 
-        encoder.setUniform(_color1Uniform, glm::value_ptr(Colors::normalize(_config.grids[0].color)));
-        encoder.setUniform(_color2Uniform, glm::value_ptr(Colors::normalize(_config.grids[1].color)));
+        auto color1 = Colors::normalize(convert<Color>(_def.grid1().color()));
+        auto color2 = Colors::normalize(convert<Color>(_def.grid2().color()));
+        encoder.setUniform(_color1Uniform, glm::value_ptr(color1));
+        encoder.setUniform(_color2Uniform, glm::value_ptr(color2));
         encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
         static const uint64_t state = 0

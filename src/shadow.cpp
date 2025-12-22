@@ -95,7 +95,7 @@ namespace darmok
         }
         bgfx::setViewName(viewId, name.c_str());
 
-        auto size = _renderer->getConfig().mapSize;
+        auto size = _renderer->getDefinition().map_size();
         bgfx::setViewRect(viewId, 0, 0, size, size);
         bgfx::setViewFrameBuffer(viewId, _fb);
         bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
@@ -179,8 +179,22 @@ namespace darmok
         }
     }
 
-    ShadowRenderer::ShadowRenderer(const Config& config) noexcept
-        : _config{ config }
+    ShadowRenderer::Definition ShadowRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        def.set_map_size(512);
+        def.set_cascade_margin(0.02F);
+        def.set_cascade_easing(Easing::Definition::QuadraticIn);
+        def.set_max_pass_amount(20);
+        def.set_cascade_amount(3);
+        def.set_bias(0.005F);
+        def.set_normal_bias(0.02F);
+        def.set_near_plane(0.1F);
+        return def;
+    }
+
+    ShadowRenderer::ShadowRenderer(const Definition& def) noexcept
+        : _def{ def }
         , _crop{ 1 }
         , _dirAmount{ 0 }
         , _spotAmount{ 0 }
@@ -195,6 +209,12 @@ namespace darmok
         _shadowLightDataLayout.begin()
             .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
         .end();
+    }
+
+    expected<void, std::string> ShadowRenderer::load(const Definition& def) noexcept
+    {
+        _def = def;
+        return doLoad();
     }
 
     expected<void, std::string> ShadowRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
@@ -221,31 +241,10 @@ namespace darmok
         }
         _program = std::make_unique<Program>(std::move(progResult).value());
         
-        Texture::Config texConfig;
-        *texConfig.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ _config.mapSize });
-        texConfig.set_layers(_config.maxPassAmount);
-        texConfig.set_format(Texture::Definition::D16);
-        texConfig.set_type(Texture::Definition::Texture2D);
-
-		auto texResult = Texture::load(texConfig,
-            BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
-            BGFX_SAMPLER_MAG_POINT |
-            // BGFX_SAMPLER_MAG_ANISOTROPIC |
-            BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
-            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
-        );
-		if (!texResult) 
+        auto defResult = doLoad();
+        if (!defResult)
         {
-            return unexpected{ std::move(texResult).error() };
-        }
-        _tex = std::make_unique<Texture>(std::move(texResult).value());
-
-        _passes.clear();
-        _passes.reserve(_config.maxPassAmount);
-        for(uint16_t index = 0; index < _config.maxPassAmount; ++index)
-        {
-            auto& pass = _passes.emplace_back();
-            pass.init(*this, index);
+            return defResult;
         }
 
         _shadowMapUniform = { "s_shadowMap", bgfx::UniformType::Sampler };
@@ -254,6 +253,42 @@ namespace darmok
         _shadowTransBuffer = { 1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
         _shadowLightDataBuffer = { 1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
     
+        return {};
+    }
+
+    expected<void, std::string> ShadowRenderer::doLoad() noexcept
+    {
+        Texture::Config texConfig;
+        *texConfig.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ _def.map_size() });
+        texConfig.set_layers(_def.max_pass_amount());
+        texConfig.set_format(Texture::Definition::D16);
+        texConfig.set_type(Texture::Definition::Texture2D);
+
+        auto texResult = Texture::load(texConfig,
+            BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
+            BGFX_SAMPLER_MAG_POINT |
+            // BGFX_SAMPLER_MAG_ANISOTROPIC |
+            BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
+            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
+        );
+        if (!texResult)
+        {
+            return unexpected{ std::move(texResult).error() };
+        }
+        _tex = std::make_unique<Texture>(std::move(texResult).value());
+
+        for (auto& pass : _passes)
+        {
+            pass.shutdown();
+        }
+        _passes.clear();
+        _passes.reserve(_def.max_pass_amount());
+        for (uint16_t index = 0; index < _def.max_pass_amount(); ++index)
+        {
+            auto& pass = _passes.emplace_back();
+            pass.init(*this, index);
+        }
+
         return {};
     }
 
@@ -326,7 +361,7 @@ namespace darmok
             {
                 continue;
             }
-            if (!configurePasses(entity, _config.cascadeAmount))
+            if (!configurePasses(entity, _def.cascade_amount()))
             {
                 break;
             }
@@ -374,8 +409,8 @@ namespace darmok
         auto view = _cam->getViewMatrix();
         Frustum frust(_cam->getProjectionInverse(), true);
 
-        auto step = 1.F / float(_config.cascadeAmount);
-        auto easing = _config.cascadeEasing;
+        auto step = 1.F / float(_def.cascade_amount());
+        auto easing = _def.cascade_easing();
         auto cascSliceDistri = [step, easing](int casc)
         {
             float v = step * casc;
@@ -383,8 +418,8 @@ namespace darmok
         };
 
         _camProjs.clear();
-        auto margin = _config.cascadeMargin;
-        for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
+        auto margin = _def.cascade_margin();
+        for (auto casc = 0; casc < _def.cascade_amount(); ++casc)
         {
             auto nearFactor = cascSliceDistri(casc);
             auto farFactor = cascSliceDistri(casc + 1);
@@ -400,7 +435,7 @@ namespace darmok
 
     size_t ShadowRenderer::getShadowMapAmount() const noexcept
     {
-        return (_dirAmount * _config.cascadeAmount) + _spotAmount + (_pointAmount * _pointLightFaceAmount);
+        return (_dirAmount * _def.cascade_amount()) + _spotAmount + (_pointAmount * _pointLightFaceAmount);
     }
 
     enum class ShadowLightType
@@ -444,7 +479,7 @@ namespace darmok
                 continue;
             }
             auto lightTrans = _scene->getComponent<const Transform>(entity);
-            for (auto casc = 0; casc < _config.cascadeAmount; ++casc)
+            for (auto casc = 0; casc < _def.cascade_amount(); ++casc)
             {
                 auto mtx = getDirLightMapMatrix(lightTrans, casc);
                 addElement(entity, mtx, ShadowLightType::Dir, shadowType);
@@ -493,9 +528,9 @@ namespace darmok
     }
 
 
-    const ShadowRenderer::Config& ShadowRenderer::getConfig() const noexcept
+    const ShadowRenderer::Definition& ShadowRenderer::getDefinition() const noexcept
     {
-        return _config;
+        return _def;
     }
 
     bgfx::ProgramHandle ShadowRenderer::getProgramHandle() const noexcept
@@ -547,7 +582,7 @@ namespace darmok
             mtx *= lightTrans->getWorldMatrix();
         }
         auto bb = Frustum{ mtx }.getBoundingBox();
-        bb.snap(_config.mapSize);
+        bb.snap(_def.map_size());
         return bb.getOrtho();
     }
 
@@ -572,7 +607,7 @@ namespace darmok
 
     glm::mat4 ShadowRenderer::getSpotLightProjMatrix(const SpotLight& light) const noexcept
     {
-        return Math::perspective(light.getConeAngle() * 2.f, 1.f, _config.nearPlane, light.getRange());
+        return Math::perspective(light.getConeAngle() * 2.f, 1.f, _def.near_plane(), light.getRange());
     }
 
     glm::mat4 ShadowRenderer::getSpotLightMapMatrix(const SpotLight& light, const OptionalRef<const Transform>& lightTrans) const noexcept
@@ -598,7 +633,7 @@ namespace darmok
             glm::vec3{glm::half_pi<float>(), 0.f, 0.f},
             glm::vec3{-glm::half_pi<float>(), 0.f, 0.f},
         };
-        auto proj = Math::perspective(glm::half_pi<float>(), 1.f, _config.nearPlane, light.getRange());
+        auto proj = Math::perspective(glm::half_pi<float>(), 1.f, _def.near_plane(), light.getRange());
         proj *= glm::mat4_cast(rots[face]);
         return proj;
     }
@@ -641,8 +676,8 @@ namespace darmok
         encoder.setBuffer(RenderSamplers::SHADOW_LIGHT_DATA, _shadowLightDataBuffer, bgfx::Access::Read);
         encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, getTextureHandle());
 
-        auto texelSize = 1.f / _config.mapSize;
-        auto shadowData = glm::vec4{ texelSize, _config.cascadeAmount, _config.bias, _config.normalBias };
+        auto texelSize = 1.f / _def.map_size();
+        auto shadowData = glm::vec4{ texelSize, _def.cascade_amount(), _def.bias(), _def.normal_bias()};
         encoder.setUniform(_shadowData1Uniform, glm::value_ptr(shadowData));
         shadowData = glm::vec4{ _dirAmount, _spotAmount, _pointAmount, getShadowMapAmount()};
         encoder.setUniform(_shadowData2Uniform, glm::value_ptr(shadowData));
@@ -680,7 +715,7 @@ namespace darmok
         meshData.type = Mesh::Definition::Transient;
         uint8_t debugColor = 0;
 
-        auto cascadeAmount = _renderer.getConfig().cascadeAmount;
+        auto cascadeAmount = _renderer.getDefinition().cascade_amount();
 
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
         {

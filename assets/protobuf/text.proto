@@ -3,8 +3,13 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "math.proto";
+import "program.proto";
 
 message FreetypeFont {
     bytes data = 1;
     Uvec2 font_size = 2;
+}
+
+message TextRenderer {
+    ProgramRef program = 1;
 }

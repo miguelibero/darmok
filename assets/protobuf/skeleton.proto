@@ -3,6 +3,7 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "math.proto";
+import "easing.proto";
 
 message ArmatureJoint {
     string name = 1;

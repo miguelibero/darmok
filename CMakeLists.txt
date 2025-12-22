@@ -183,7 +183,6 @@ set(CORE_HEADERS
   program_core.hpp
   asset_core.hpp
   loader.hpp
-  easing_fwd.hpp
   easing.hpp
   protobuf.hpp
   expected.hpp
@@ -628,6 +627,7 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC tl::expected)
 find_package(Protobuf CONFIG REQUIRED)
 set(PROTO_FILES
   math.proto
+  easing.proto
   shape.proto
   varying.proto
   program.proto
@@ -637,6 +637,7 @@ set(PROTO_FILES
   mesh.proto
   registry.proto
   scene.proto
+  camera.proto
   asset.proto
   light.proto
   skeleton.proto

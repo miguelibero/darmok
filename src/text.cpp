@@ -294,6 +294,11 @@ namespace darmok
 		return {};
 	}
 
+	expected<void, std::string> TextRenderer::load(const Definition& def) noexcept
+	{
+		return {};
+	}
+
 	expected<void, std::string> TextRenderer::shutdown() noexcept
 	{
 		_scene.reset();

@@ -24,20 +24,6 @@ message Transform {
     optional uint32 parent = 5;
 }
 
-message Camera {
-    oneof program {
-        float perspective_fovy = 1;
-        Vec2 ortho_center = 2;
-    }
-    float near = 3;
-    float far = 4;
-    Vec4 viewport = 5;
-    map<uint32, google.protobuf.Any> components = 6;
-}
-
-message FrameAnimationUpdater {
-}
-
 message Scene {
     string name = 1;
     map<uint32, google.protobuf.Any> scene_components = 2;

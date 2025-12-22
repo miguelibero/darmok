@@ -2,43 +2,6 @@ syntax = "proto3";
 
 package darmok.protobuf;
 
-message Easing {
-    enum Type {
-        Linear = 0;
-        Stepped = 1;
-        QuadraticIn = 2;
-        QuadraticOut = 3;
-        QuadraticInOut = 4;
-        CubicIn = 5;
-        CubicOut = 6;
-        CubicInOut = 7;
-        QuarticIn = 8;
-        QuarticOut = 9;
-        QuarticInOut = 10;
-        QuinticIn = 11;
-        QuinticOut = 12;
-        QuinticInOut = 13;
-        SinusoidalIn = 14;
-        SinusoidalOut = 15;
-        SinusoidalInOut = 16;
-        ExponentialIn = 17;
-        ExponentialOut = 18;
-        ExponentialInOut = 19;
-        CircularIn = 20;
-        CircularOut = 21;
-        CircularInOut = 22;
-        BounceIn = 23;
-        BounceOut = 24;
-        BounceInOut = 25;
-        ElasticIn = 26;
-        ElasticOut = 27;
-        ElasticInOut = 28;
-        BackIn = 29;
-        BackOut = 30;
-        BackInOut = 31;
-    }
-}
-
 message Uvec2 {
     uint32 x = 1;
     uint32 y = 2;

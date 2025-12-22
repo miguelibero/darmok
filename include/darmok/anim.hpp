@@ -3,7 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/scene.hpp>
 #include <darmok/optional_ref.hpp>
-#include <darmok/protobuf/scene.pb.h>
+#include <darmok/protobuf/camera.pb.h>
 #include <vector>
 #include <memory>
 

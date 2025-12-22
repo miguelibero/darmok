@@ -4,6 +4,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/render_debug.hpp>
+#include <darmok/protobuf/camera.pb.h>
 
 #include <unordered_set>
 #include <unordered_map>
@@ -22,6 +23,8 @@ namespace darmok
     class DARMOK_EXPORT OcclusionCuller final : public ITypeCameraComponent<OcclusionCuller>
     {
     public:
+        using Definition = protobuf::OcclusionCuller;
+
         OcclusionCuller() noexcept;
         ~OcclusionCuller() noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
@@ -47,6 +50,8 @@ namespace darmok
     class DARMOK_EXPORT FrustumCuller final : public ITypeCameraComponent<FrustumCuller>
     {
     public:
+        using Definition = protobuf::FrustumCuller;
+
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
@@ -62,6 +67,8 @@ namespace darmok
     class DARMOK_EXPORT CullingDebugRenderer final : public ITypeCameraComponent<CullingDebugRenderer>
     {
     public:
+        using Definition = protobuf::CullingDebugRenderer;
+
         CullingDebugRenderer(const OptionalRef<const Camera>& mainCam = nullptr) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;

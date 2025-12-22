@@ -10,6 +10,7 @@
 #include <darmok/glm_serialize.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/texture_atlas.pb.h>
+#include <darmok/protobuf/text.pb.h>
 
 #include <memory>
 #include <string>
@@ -97,8 +98,10 @@ namespace darmok
     class DARMOK_EXPORT TextRenderer final : public ITypeCameraComponent<TextRenderer>
     {
     public:
+        using Definition = protobuf::TextRenderer;
         TextRenderer(const std::shared_ptr<Program>& prog = nullptr) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;

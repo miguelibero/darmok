@@ -4,6 +4,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/color.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/protobuf/camera.pb.h>
 
 #include <memory>
 #include <vector>
@@ -16,6 +17,8 @@ namespace darmok
     class DARMOK_EXPORT SkyboxRenderer final : public ITypeCameraComponent<SkyboxRenderer>
     {
     public:
+        using Definition = protobuf::SkyboxRenderer;
+
         SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
@@ -29,35 +32,20 @@ namespace darmok
     };
 
 
-    struct GridConfig final
-    {
-        float separation = 1.0F;
-        Color color = Colors::white();
-        float width = 0.01;
-    };
-
-    struct GridRendererConfig final
-    {
-        Color xAxisColor = Colors::red();
-        Color yAxisColor = Colors::green();
-        Color zAxisColor = Colors::blue();
-        std::array<GridConfig, 2> grids = {
-            GridConfig{ 1.F, Colors::fromNumber(0x505050FF) },
-            GridConfig{ 10.F, Colors::fromNumber(0x707070FF) }
-        };
-    };
-
     class GridRenderer final : public ITypeCameraComponent<GridRenderer>
     {
     public:
-        using Config = GridRendererConfig;
+        using Definition = protobuf::GridRenderer;
 
-        GridRenderer(const Config& config = {}) noexcept;
+        static Definition createDefinition() noexcept;
+
+        GridRenderer(const Definition& def = createDefinition()) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
-        Config _config;
+        Definition _def;
         OptionalRef<Camera> _cam;
         std::unique_ptr<Program> _program;
         std::unique_ptr<Mesh> _mesh;

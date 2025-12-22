@@ -59,10 +59,33 @@ namespace darmok
 
 	FrameBuffer::~FrameBuffer() noexcept
 	{
+		reset();
+	}
+
+	bool FrameBuffer::reset() noexcept
+	{
 		if (isValid(_handle))
 		{
 			bgfx::destroy(_handle);
+			_handle.idx = bgfx::kInvalidHandle;
+			return true;
 		}
+		return false;
+	}
+
+	FrameBuffer::operator bool() const noexcept
+	{
+		return valid();
+	}
+
+	bool FrameBuffer::valid() const noexcept
+	{
+		return isValid(_handle);
+	}
+
+	uint16_t FrameBuffer::idx() const noexcept
+	{
+		return _handle.idx;
 	}
 
 	FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <darmok/easing_fwd.hpp>
+#include <darmok/protobuf/easing.pb.h>
 #include <glm/gtc/constants.hpp>
 #include <cmath>
 #include <unordered_map>
@@ -9,8 +9,12 @@
 
 namespace darmok
 {
+   using EasingDefinition = protobuf::Easing;
+   using EasingType = EasingDefinition::Type;
+
    struct Easing final
     {
+        using Definition = EasingDefinition;
         using Type = EasingType;
 
         template<typename T>
@@ -344,69 +348,69 @@ namespace darmok
         {
             switch (type)
             {
-                case Type::Linear:
+                case Definition::Linear:
                     return linear(position, start, end);
-                case Type::Stepped:
+                case Definition::Stepped:
                     return stepped(position, start, end);
-                case Type::QuadraticIn:
+                case Definition::QuadraticIn:
                     return quadraticIn(position, start, end);
-                case Type::QuadraticOut:
+                case Definition::QuadraticOut:
                     return quadraticOut(position, start, end);
-                case Type::QuadraticInOut:
+                case Definition::QuadraticInOut:
                     return quadraticInOut(position, start, end);
-                case Type::CubicIn:
+                case Definition::CubicIn:
                     return cubicIn(position, start, end);
-                case Type::CubicOut:
+                case Definition::CubicOut:
                     return cubicOut(position, start, end);
-                case Type::CubicInOut:
+                case Definition::CubicInOut:
                     return cubicInOut(position, start, end);
-                case Type::QuarticIn:
+                case Definition::QuarticIn:
                     return quarticIn(position, start, end);
-                case Type::QuarticOut:
+                case Definition::QuarticOut:
                     return quarticOut(position, start, end);
-                case Type::QuarticInOut:
+                case Definition::QuarticInOut:
                     return quarticInOut(position, start, end);
-                case Type::QuinticIn:
+                case Definition::QuinticIn:
                     return quinticIn(position, start, end);
-                case Type::QuinticOut:
+                case Definition::QuinticOut:
                     return quinticOut(position, start, end);
-                case Type::QuinticInOut:
+                case Definition::QuinticInOut:
                     return quinticInOut(position, start, end);
-                case Type::SinusoidalIn:
+                case Definition::SinusoidalIn:
                     return sinusoidalIn(position, start, end);
-                case Type::SinusoidalOut:
+                case Definition::SinusoidalOut:
                     return sinusoidalOut(position, start, end);
-                case Type::SinusoidalInOut:
+                case Definition::SinusoidalInOut:
                     return sinusoidalInOut(position, start, end);
-                case Type::ExponentialIn:
+                case Definition::ExponentialIn:
                     return exponentialIn(position, start, end);
-                case Type::ExponentialOut:
+                case Definition::ExponentialOut:
                     return exponentialOut(position, start, end);
-                case Type::ExponentialInOut:
+                case Definition::ExponentialInOut:
                     return exponentialInOut(position, start, end);
-                case Type::CircularIn:
+                case Definition::CircularIn:
                     return circularIn(position, start, end);
-                case Type::CircularOut:
+                case Definition::CircularOut:
                     return circularOut(position, start, end);
-                case Type::CircularInOut:
+                case Definition::CircularInOut:
                     return circularInOut(position, start, end);
-                case Type::BounceIn:
+                case Definition::BounceIn:
                     return bounceIn(position, start, end);
-                case Type::BounceOut:
+                case Definition::BounceOut:
                     return bounceOut(position, start, end);
-                case Type::BounceInOut:
+                case Definition::BounceInOut:
                     return bounceInOut(position, start, end);
-                case Type::ElasticIn:
+                case Definition::ElasticIn:
                     return elasticIn(position, start, end);
-                case Type::ElasticOut:
+                case Definition::ElasticOut:
                     return elasticOut(position, start, end);
-                case Type::ElasticInOut:
+                case Definition::ElasticInOut:
                     return elasticInOut(position, start, end);
-                case Type::BackIn:
+                case Definition::BackIn:
                     return backIn(position, start, end);
-                case Type::BackOut:
+                case Definition::BackOut:
                     return backOut(position, start, end);
-                case Type::BackInOut:
+                case Definition::BackInOut:
                     return backInOut(position, start, end);
                 default:
                     return linear(position, start, end);

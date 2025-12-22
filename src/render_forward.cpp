@@ -13,6 +13,12 @@
 
 namespace darmok
 {
+	ForwardRenderer::Definition ForwardRenderer::createDefinition() noexcept
+	{
+		Definition def;
+		return def;
+	}
+
 	ForwardRenderer::ForwardRenderer() noexcept
 	{
 	}
@@ -30,6 +36,11 @@ namespace darmok
 			return unexpected{std::move(result).error()};
 		}
 		_materials = result.value().get();
+		return {};
+	}
+
+	expected<void, std::string> ForwardRenderer::load(const Definition& def) noexcept
+	{
 		return {};
 	}
 

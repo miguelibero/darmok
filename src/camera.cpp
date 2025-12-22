@@ -21,6 +21,33 @@ using namespace entt::literals;
 
 namespace darmok
 {
+    ConstCameraDefinitionWrapper::ConstCameraDefinitionWrapper(const Definition& def) noexcept
+        : _def{ def }
+    {
+    }
+
+    CameraDefinitionWrapper::CameraDefinitionWrapper(Definition& def) noexcept
+        : ConstCameraDefinitionWrapper(def)
+        , _def{ def }
+    {
+    }
+
+    bool CameraDefinitionWrapper::setComponent(const Message& comp) noexcept
+    {
+        auto typeId = protobuf::getTypeId(comp);
+        auto result = _def->mutable_components()->try_emplace(typeId);
+        auto& component = result.first->second;
+        if (protobuf::isAny(comp))
+        {
+            component = static_cast<const Any&>(comp);
+        }
+        else
+        {
+            component.PackFrom(comp);
+        }
+        return result.second;
+    }
+
     Camera::Camera(const glm::mat4& projMatrix) noexcept
         : _view{ 1.F }
         , _proj{ projMatrix }

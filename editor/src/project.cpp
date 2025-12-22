@@ -375,9 +375,7 @@ namespace darmok::editor
             }
         }
         {
-            ShadowRendererConfig shadowConfig;
-            shadowConfig.cascadeAmount = 3;
-            auto result = cam.addComponent<ShadowRenderer>(shadowConfig);
+            auto result = cam.addComponent<ShadowRenderer>();
             if (!result)
             {
                 return unexpected{ std::move(result).error() };
@@ -404,14 +402,33 @@ namespace darmok::editor
     expected<void, std::string> EditorProject::configureDefaultScene(SceneDefinitionWrapper& scene) noexcept
     {
         scene.setName("Scene");
-
-        ShadowRendererConfig shadowConfig;
-        shadowConfig.cascadeAmount = 3;
+        {
+            auto def = SkeletalAnimationSceneComponent::createDefinition();
+            scene.setSceneComponent(def);
+        }
 
         auto camEntity = scene.createEntity();
 
         auto cam = Camera::createDefinition();
         scene.setComponent(camEntity, cam);
+        CameraDefinitionWrapper camWrapper{ cam };
+
+        {
+            auto def = LightingRenderComponent::createDefinition();
+            camWrapper.setComponent(def);
+        }
+        {
+            auto def = ShadowRenderer::createDefinition();
+            camWrapper.setComponent(def);
+        }
+        {
+            auto def = ForwardRenderer::createDefinition();
+            camWrapper.setComponent(def);
+        }
+        {
+            auto def = SkeletalAnimationRenderComponent::createDefinition();
+        }
+
 
         auto camTrans = Transform::createDefinition();
         camTrans.set_name("Main Camera");

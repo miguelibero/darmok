@@ -33,6 +33,10 @@ namespace darmok
         const bgfx::FrameBufferHandle& getHandle() const noexcept;
         void configureView(bgfx::ViewId viewId) const noexcept;
         glm::uvec2 getSize() const noexcept;
+        bool reset() noexcept;
+        operator bool() const noexcept;
+        bool valid() const noexcept;
+        uint16_t idx() const noexcept;
     private:
         bgfx::FrameBufferHandle _handle;
         std::shared_ptr<Texture> _colorTex;

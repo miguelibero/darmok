@@ -38,3 +38,6 @@ message AmbientLight {
     float intensity = 1;
     Color3 color = 2;
 }
+
+message LightingRenderComponent {
+}

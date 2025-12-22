@@ -80,7 +80,6 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-
 		if (ImguiUtils::drawProtobufSliderInput("Metallic factor", "metallic_factor", mat, 0.f, 1.f))
 		{
 			changed = true;
@@ -93,7 +92,6 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-
 		if (ImguiUtils::drawProtobufInput("Emissive color", "emissive_color", mat))
 		{
 			changed = true;
@@ -102,7 +100,6 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-
 		if (ImguiUtils::drawProtobufSliderInput("Normal scale", "normal_scale", mat, 0.f, 1.f))
 		{
 			changed = true;
@@ -111,7 +108,6 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-
 		if (ImguiUtils::drawProtobufSliderInput("Occlusion Strength", "occlusion_strength", mat, 0.f, 1.f))
 		{
 			changed = true;
@@ -124,7 +120,6 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-
 		if (ImguiUtils::drawProtobufInput("Specular", "specular_color", mat))
 		{
 			changed = true;
@@ -133,7 +128,6 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-
 		if (ImguiUtils::drawProtobufSliderInput("Shininess", "shininess", mat, 2, 500))
 		{
 			changed = true;

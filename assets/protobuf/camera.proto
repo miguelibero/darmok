@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package darmok.protobuf;
+
+import "google/protobuf/any.proto";
+import "math.proto";
+import "easing.proto";
+
+message Camera {
+    oneof program {
+        float perspective_fovy = 1;
+        Vec2 ortho_center = 2;
+    }
+    float near = 3;
+    float far = 4;
+    Vec4 viewport = 5;
+    map<uint32, google.protobuf.Any> components = 6;
+}
+
+message FrameAnimationUpdater {
+}
+
+message ForwardRenderer {
+}
+
+message DeferredRenderer {
+}
+
+message OcclusionCuller {   
+}
+
+message FrustumCuller {
+}
+
+message CullingDebugRenderer {
+}
+
+message SkyboxRenderer {
+}
+
+message GridRenderer {
+    Color x_color = 1;
+    Color y_color = 2;
+    Color z_color = 3;
+
+    message Config {
+        float separation = 1;
+        Color color = 2;
+        float width = 3;
+    }
+
+    Config grid1 = 4;
+    Config grid2 = 5;
+}
+
+message ShadowRenderer {
+    uint32 map_size = 1;
+    float cascade_margin = 2;
+    Easing.Type cascade_easing = 3;
+    uint32 max_pass_amount = 4;
+    uint32 cascade_amount = 5;
+    float bias = 6;
+    float normal_bias = 7;
+    float near_plane = 8;
+}
+
+message ShadowDebugRenderer {
+}

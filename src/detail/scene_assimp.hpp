@@ -19,6 +19,7 @@
 #include <darmok/protobuf/assimp.pb.h>
 #include <darmok/protobuf/skeleton.pb.h>
 #include <darmok/protobuf/varying.pb.h>
+#include <darmok/protobuf/camera.pb.h>
 
 #include <string_view>
 #include <memory>

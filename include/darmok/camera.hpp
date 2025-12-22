@@ -8,7 +8,7 @@
 #include <darmok/utils.hpp>
 #include <darmok/expected.hpp>
 #include <darmok/render_chain.hpp>
-#include <darmok/protobuf/scene.pb.h>
+#include <darmok/protobuf/camera.pb.h>
 
 #include <bgfx/bgfx.h>
 
@@ -45,6 +45,27 @@ namespace darmok
         glm::vec2 center = glm::vec2(0.5f);
         float near = Math::defaultOrthoNear;
         float far = Math::defaultOrthoFar;
+    };
+
+    class DARMOK_EXPORT ConstCameraDefinitionWrapper
+    {
+    public:
+        using Definition = protobuf::Camera;
+        using Message = google::protobuf::Message;
+        using Any = google::protobuf::Any;
+
+        ConstCameraDefinitionWrapper(const Definition& def) noexcept;
+    private:
+        OptionalRef<const Definition> _def;
+    };
+
+    class DARMOK_EXPORT CameraDefinitionWrapper final : public ConstCameraDefinitionWrapper
+    {
+    public:
+        CameraDefinitionWrapper(Definition& def) noexcept;
+        bool setComponent(const Message& comp) noexcept;
+    private:
+        OptionalRef<Definition> _def;
     };
 
     using CameraProjectionData = std::variant<CameraPerspectiveData, CameraOrthoData>;

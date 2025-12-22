@@ -6,8 +6,8 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/render_debug.hpp>
 #include <darmok/scene_filter.hpp>
-#include <darmok/easing_fwd.hpp>
 #include <darmok/program.hpp>
+#include <darmok/protobuf/camera.pb.h>
 
 namespace darmok
 {
@@ -38,24 +38,16 @@ namespace darmok
         void configureView() noexcept;
     };
 
-    struct DARMOK_EXPORT ShadowRendererConfig final
-    {
-        unsigned int mapSize = 512;
-        float cascadeMargin = 0.02F;
-        EasingType cascadeEasing = EasingType::QuadraticIn;
-        uint16_t maxPassAmount = 20;
-        uint8_t cascadeAmount = 3;
-        float bias = 0.005F;
-        float normalBias = 0.02F;
-        float nearPlane = 0.1F;
-    };
-
     class DARMOK_EXPORT ShadowRenderer final : public ITypeCameraComponent<ShadowRenderer>
     {
     public:
-        using Config = ShadowRendererConfig;
-        ShadowRenderer(const Config& config = {}) noexcept;
+        using Definition = protobuf::ShadowRenderer;
+
+        static Definition createDefinition() noexcept;
+
+        ShadowRenderer(const Definition& def = createDefinition()) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> render() noexcept override;
@@ -80,14 +72,14 @@ namespace darmok
 
         glm::mat4 getLightViewMatrix(const OptionalRef<const Transform>& lightTrans) const noexcept;
 
-        const Config& getConfig() const noexcept;
+        const Definition& getDefinition() const noexcept;
         bgfx::ProgramHandle getProgramHandle() const noexcept;
         bgfx::TextureHandle getTextureHandle() const noexcept;
         OptionalRef<Camera> getCamera() noexcept;
         OptionalRef<Scene> getScene() noexcept;
 
     private:
-        Config _config;
+        Definition _def;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
@@ -117,6 +109,7 @@ namespace darmok
 
         void configureUniforms(bgfx::Encoder& encoder) const noexcept;
         void drawDebug() noexcept;
+        expected<void, std::string> doLoad() noexcept;
     };
 
     struct MeshData;

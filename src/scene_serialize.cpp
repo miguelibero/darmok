@@ -880,7 +880,6 @@ namespace darmok
         registerComponent<physics3d::CharacterController>();
         registerComponent<BoundingBox>();
 
-
         registerCameraComponent<ForwardRenderer>();
         registerCameraComponent<DeferredRenderer>();
         registerCameraComponent<RmluiRenderer>();

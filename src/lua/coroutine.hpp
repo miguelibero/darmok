@@ -2,7 +2,7 @@
 
 #include "lua/lua.hpp"
 
-#include <darmok/easing_fwd.hpp>
+#include <darmok/easing.hpp>
 #include <darmok/skeleton.hpp>
 
 #include <vector>
@@ -78,7 +78,7 @@ namespace darmok
 	class LuaEasePosition final : public ILuaYieldInstruction
 	{
 	public:
-		LuaEasePosition(Transform& trans, const glm::vec3& position, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		LuaEasePosition(Transform& trans, const glm::vec3& position, float duration = 1.F, EasingType easing = EasingDefinition::Linear) noexcept;
 		void update(float deltaTime) noexcept override;
 		bool finished() const noexcept override;
 
@@ -95,8 +95,8 @@ namespace darmok
 	class LuaEaseRotation final : public ILuaYieldInstruction
 	{
 	public:
-		LuaEaseRotation(Transform& trans, const glm::quat& rotation, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
-		LuaEaseRotation(Transform& trans, float angle, const glm::vec3& axis, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		LuaEaseRotation(Transform& trans, const glm::quat& rotation, float duration = 1.F, EasingType easing = EasingDefinition::Linear) noexcept;
+		LuaEaseRotation(Transform& trans, float angle, const glm::vec3& axis, float duration = 1.F, EasingType easing = EasingDefinition::Linear) noexcept;
 		
 		void update(float deltaTime) noexcept override;
 		bool finished() const noexcept override;
@@ -118,7 +118,7 @@ namespace darmok
 	class LuaEaseScale final : public ILuaYieldInstruction
 	{
 	public:
-		LuaEaseScale(Transform& trans, const glm::vec3& scale, float duration = 1.F, EasingType easing = EasingType::Linear) noexcept;
+		LuaEaseScale(Transform& trans, const glm::vec3& scale, float duration = 1.F, EasingType easing = EasingDefinition::Linear) noexcept;
 		void update(float deltaTime) noexcept override;
 		bool finished() const noexcept override;
 
