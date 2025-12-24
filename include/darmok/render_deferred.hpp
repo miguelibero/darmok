@@ -15,8 +15,11 @@ namespace darmok
         using Definition = protobuf::DeferredRenderer;
 
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
+
+        static Definition createDefinition() noexcept;
     private:
         OptionalRef<Camera> _cam;
     };

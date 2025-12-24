@@ -70,17 +70,26 @@ namespace darmok::editor
         std::optional<glm::vec2> _lastMousePosition;
     };
 
+    class CameraGizmo final : public ISceneGizmo
+    {
+    public:
+        expected<void, std::string> init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept override;
+        expected<void, std::string> shutdown() noexcept override;
+        expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+    private:
+        OptionalRef<SceneGizmosRenderer> _renderer;
+        OptionalRef<Scene> _scene;
+    };
+
     class Physics3dShapeGizmo final : public ISceneGizmo
     {
     public:
         expected<void, std::string> init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
         OptionalRef<SceneGizmosRenderer> _renderer;
         OptionalRef<Scene> _scene;
-        bgfx::VertexLayout _layout;
     };
 
     class SceneGizmosRenderer final : public ITypeCameraComponent<SceneGizmosRenderer>
@@ -111,6 +120,7 @@ namespace darmok::editor
             return std::ref(ref);
         }
 
+        const bgfx::VertexLayout& getVertexLayout() const noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform = std::nullopt) noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, std::optional<glm::mat4> transform = std::nullopt) noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, Material::PrimitiveType prim, std::optional<glm::mat4> transform = std::nullopt) noexcept;
@@ -120,6 +130,7 @@ namespace darmok::editor
         EditorApp& _app;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
+        std::shared_ptr<Program> _program;
         std::optional<bgfx::ViewId> _viewId;
         OptionalRef<bgfx::Encoder> _encoder;
         std::vector<std::unique_ptr<ISceneGizmo>> _gizmos;
@@ -140,6 +151,7 @@ namespace darmok::editor
         expected<void, std::string> update(float deltaTime) noexcept;
 
         EditorSceneView& selectEntity(Entity entity) noexcept;
+        bool focusEntity(Entity entity = entt::null) noexcept;
 
         MouseMode getMouseMode() const noexcept;
         static const std::string& getWindowName() noexcept;

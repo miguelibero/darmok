@@ -7,6 +7,7 @@
 #include <darmok/program_core.hpp>
 #include <darmok/color.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/scene_serialize.hpp>
 
 #include "generated/shaders/skybox.program.h"
 #include "generated/shaders/grid.program.h"
@@ -36,6 +37,17 @@ namespace darmok
             return unexpected{ std::move(meshResult).error() };
 		}
         _mesh = std::make_unique<Mesh>(std::move(meshResult).value());
+        return {};
+    }
+
+    expected<void, std::string> SkyboxRenderer::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        auto texResult = context.getAssets().getTextureLoader()(def.texture_path());
+        if (!texResult)
+        {
+            return unexpected{ std::move(texResult).error() };
+        }
+        _texture = texResult.value();
         return {};
     }
 
@@ -73,6 +85,12 @@ namespace darmok
         encoder.submit(viewId, _program->getHandle());
 
         return {};
+    }
+
+    SkyboxRenderer::Definition SkyboxRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
     }
 
     GridRenderer::GridRenderer(const Definition& def) noexcept

@@ -6,6 +6,7 @@
 #include <darmok/protobuf.hpp>
 #include <darmok/convert.hpp>
 #include <darmok/scene.hpp>
+#include <darmok/camera.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/program_core.hpp>
 #include <darmok/protobuf/scene.pb.h>
@@ -395,7 +396,6 @@ namespace darmok
         template<typename T, typename Def = T::Definition>
         static expected<void, std::string> loadComponent(T& comp, const Def& def, OptionalRef<IComponentLoadContext> ctxt = nullptr) noexcept
         {
-            expected<void, std::string> result;
             if constexpr (HasContextSceneComponentLoad<T, Def>)
             {
                 if (!ctxt)
@@ -420,7 +420,8 @@ namespace darmok
             }
             else
             {
-                return unexpected<std::string>{ "could not load" };
+                static_assert(false, "missing component class load implementation");
+                // return unexpected<std::string>{ "could not load component" };
             }
         }
 
@@ -428,6 +429,27 @@ namespace darmok
         expected<std::reference_wrapper<T>, std::string> loadSceneComponent(Def def) noexcept
         {
             auto compResult = getScene().getOrAddSceneComponent<T>();
+            if (!compResult)
+            {
+                return compResult;
+            }
+            auto loadResult = loadComponent<T, Def>(compResult.value().get(), def, getComponentLoadContext());
+            if (!loadResult)
+            {
+                return unexpected{ std::move(loadResult).error() };
+            }
+            return compResult;
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<std::reference_wrapper<T>, std::string> loadCameraComponent(Entity entity, Def def) noexcept
+        {
+            auto cam = getScene().getComponent<Camera>(entity);
+            if (!cam)
+            {
+                return unexpected<std::string>{"missing camera for entity " + std::to_string(entity)};
+            }
+            auto compResult = cam->getOrAddComponent<T>();
             if (!compResult)
             {
                 return compResult;
@@ -525,10 +547,15 @@ namespace darmok
             addLoad(std::move(func));
         }
 
-        template<typename T>
+        template<typename T, typename Def = T::Definition>
             requires std::is_base_of_v<ICameraComponent, T>
         void registerCameraComponent()
         {
+            auto func = [this]() -> expected<void, std::string>
+            {
+                return loadCameraComponent<T, Def>();
+            };
+            addLoad(std::move(func));
         }
 
         EntityResult operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
@@ -588,6 +615,26 @@ namespace darmok
                 return result.value().get();
             }
             return OptionalRef<T>{};
+        }
+
+        template<typename T, typename Def = typename T::Definition>
+        Result loadCameraComponent() noexcept
+        {
+            ConstSceneDefinitionWrapper sceneDef{ getSceneDefinition() };
+            auto& context = getComponentLoadContext();
+            for(auto& [entityId, camDef] : sceneDef.getTypeComponents<typename Camera::Definition>())
+            {
+                auto entity = context.getEntity(entityId);
+                if (auto compDef = ConstCameraDefinitionWrapper{ camDef }.getComponent<Def>())
+                {
+                    auto result = getArchive().loadCameraComponent<T>(entity, std::move(*compDef));
+                    if (!result)
+                    {
+                        return unexpected{ std::move(result).error() };
+                    }
+                }
+            }
+            return {};
         }
 
         void addLoad(LoadFunction&& func);

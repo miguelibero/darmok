@@ -3,9 +3,20 @@
 
 namespace darmok
 {
+    DeferredRenderer::Definition DeferredRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
     expected<void, std::string> DeferredRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
+        return {};
+    }
+
+    expected<void, std::string> DeferredRenderer::load(const Definition& def) noexcept
+    {
         return {};
     }
 

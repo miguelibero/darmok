@@ -249,6 +249,18 @@ namespace darmok::editor
         {
             return unexpected{ std::move(compResult).error() };
         }
+
+        for (auto& entity : _scene->getComponents<Camera>())
+        {
+            if (auto cam = _scene->getComponent<Camera>(entity))
+            {
+                if (cam != _cam)
+                {
+                    cam->setEnabled(false);
+                }
+            }
+        }
+
         return compResult.value().get().update(0.f);
     }
 
@@ -402,33 +414,17 @@ namespace darmok::editor
     expected<void, std::string> EditorProject::configureDefaultScene(SceneDefinitionWrapper& scene) noexcept
     {
         scene.setName("Scene");
-        {
-            auto def = SkeletalAnimationSceneComponent::createDefinition();
-            scene.setSceneComponent(def);
-        }
+        scene.setSceneComponent(SkeletalAnimationSceneComponent::createDefinition());
 
         auto camEntity = scene.createEntity();
 
         auto cam = Camera::createDefinition();
-        scene.setComponent(camEntity, cam);
         CameraDefinitionWrapper camWrapper{ cam };
-
-        {
-            auto def = LightingRenderComponent::createDefinition();
-            camWrapper.setComponent(def);
-        }
-        {
-            auto def = ShadowRenderer::createDefinition();
-            camWrapper.setComponent(def);
-        }
-        {
-            auto def = ForwardRenderer::createDefinition();
-            camWrapper.setComponent(def);
-        }
-        {
-            auto def = SkeletalAnimationRenderComponent::createDefinition();
-        }
-
+        camWrapper.setComponent(LightingRenderComponent::createDefinition());
+        camWrapper.setComponent(ShadowRenderer::createDefinition());
+        camWrapper.setComponent(ForwardRenderer::createDefinition());
+        camWrapper.setComponent(SkeletalAnimationRenderComponent::createDefinition());
+        scene.setComponent(camEntity, cam);
 
         auto camTrans = Transform::createDefinition();
         camTrans.set_name("Main Camera");

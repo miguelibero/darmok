@@ -1143,14 +1143,14 @@ namespace darmok
         auto nd = Math::getNormalizedNearDepth();
 
         corners = {
-            glm::vec3(-1, -1, nd),
-            glm::vec3( 1, -1, nd),
-            glm::vec3(-1,  1, nd),
-            glm::vec3( 1,  1, nd),
-            glm::vec3(-1, -1, 1),
-            glm::vec3( 1, -1, 1), 
-            glm::vec3(-1,  1, 1),
-            glm::vec3( 1,  1, 1)
+            glm::vec3{-1, -1, nd},
+            glm::vec3{ 1, -1, nd},
+            glm::vec3{-1,  1, nd},
+            glm::vec3{ 1,  1, nd},
+            glm::vec3{-1, -1, 1},
+            glm::vec3{ 1, -1, 1}, 
+            glm::vec3{-1,  1, 1},
+            glm::vec3{ 1,  1, 1}
         };
 
         auto invProj = inverse ? mtx : glm::inverse(mtx);

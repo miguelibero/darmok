@@ -77,6 +77,8 @@ namespace darmok
         bgfx::TextureHandle getTextureHandle() const noexcept;
         OptionalRef<Camera> getCamera() noexcept;
         OptionalRef<Scene> getScene() noexcept;
+        OptionalRef<const Camera> getCamera() const noexcept;
+        OptionalRef<const Scene> getScene() const noexcept;
 
     private:
         Definition _def;
@@ -117,12 +119,18 @@ namespace darmok
     class DARMOK_EXPORT ShadowDebugRenderer final : public ITypeCameraComponent<ShadowDebugRenderer>
     {
     public:
-        ShadowDebugRenderer(ShadowRenderer& renderer) noexcept;
+        using Definition = protobuf::ShadowDebugRenderer;
+
+        static Definition createDefinition() noexcept;
+
+        ShadowDebugRenderer(const OptionalRef<const Camera>& mainCam = nullptr) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:
-        ShadowRenderer& _renderer;
+        OptionalRef<const Camera> _mainCam;
+        OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         DebugRenderer _debugRender;
     };

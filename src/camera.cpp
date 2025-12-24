@@ -26,6 +26,24 @@ namespace darmok
     {
     }
 
+    OptionalRef<const ConstCameraDefinitionWrapper::Any> ConstCameraDefinitionWrapper::getComponent(IdType typeId) const noexcept
+    {
+        auto& components = _def->components();
+        auto itr = components.find(typeId);
+        if (itr == components.end())
+        {
+            return std::nullopt;
+        }
+        return itr->second;
+    }
+
+    bool ConstCameraDefinitionWrapper::hasComponent(IdType typeId) const noexcept
+    {
+        auto& components = _def->components();
+        auto itr = components.find(typeId);
+        return itr != components.end();
+    }
+
     CameraDefinitionWrapper::CameraDefinitionWrapper(Definition& def) noexcept
         : ConstCameraDefinitionWrapper(def)
         , _def{ def }

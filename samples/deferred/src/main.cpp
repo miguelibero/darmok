@@ -192,24 +192,20 @@ namespace
 				.setPosition(glm::vec3{ 0, 1, 0 })
 				.lookAt(glm::vec3{ -7, 2, 0 });
 
-			ShadowRendererConfig shadowConfig;
-			// shadowConfig.mapMargin = glm::vec3(0.1);
-			shadowConfig.cascadeAmount = 2;
+			auto shadowDef = ShadowRenderer::createDefinition();
+			shadowDef.set_cascade_amount(2);
 
 			cam.tryAddComponent<ForwardRenderer>();
 			// cam.tryAddComponent<OcclusionCuller>();
 			cam.tryAddComponent<FrustumCuller>();
 			cam.tryAddComponent<LightingRenderComponent>();
-			cam.tryAddComponent<ShadowRenderer>(shadowConfig);
+			cam.tryAddComponent<ShadowRenderer>(shadowDef);
 
 			if (mainCamera)
 			{
 				cam.tryAddComponent<CullingDebugRenderer>(mainCamera);
+				cam.tryAddComponent<ShadowDebugRenderer>(mainCamera);
 				cam.setEnabled(false);
-				if (auto shadow = mainCamera->getComponent<ShadowRenderer>())
-				{
-					cam.tryAddComponent<ShadowDebugRenderer>(shadow.value());
-				}
 			}
 
 			return cam;

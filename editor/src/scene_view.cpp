@@ -17,6 +17,7 @@
 #include <darmok/glm.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/physics3d_character.hpp>
+#include <darmok/math.hpp>
 
 #include <imgui.h>
 
@@ -218,17 +219,54 @@ namespace darmok::editor
         _mode = mode;
     }
 
+    expected<void, std::string> CameraGizmo::init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept
+    {
+        _scene = scene;
+        _renderer = renderer;
+        return {};
+    }
+
+    expected<void, std::string> CameraGizmo::shutdown() noexcept
+    {
+        _scene.reset();
+        _renderer.reset();
+        return {};
+    }
+
+    expected<void, std::string> CameraGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        if (!_renderer)
+        {
+            return unexpected<std::string>{"renderer not initialized"};
+        }
+        if (!_scene)
+        {
+            return unexpected<std::string>{"scene not initialized"};
+        }
+        auto& layout = _renderer->getVertexLayout();
+        if (layout.getStride() == 0)
+        {
+            return unexpected<std::string>{"empty vertex layout"};
+        }
+        auto entity = _renderer->getSelectedEntity();
+        auto cam = _scene->getComponent<Camera>(entity);
+        if (!cam)
+        {
+            return {};
+        }
+        MeshData meshData{ Frustum{ cam->getProjectionMatrix() }, Mesh::Definition::FillOutline };
+        auto meshResult = meshData.createMesh(layout, { .type = Mesh::Definition::Transient });
+        if (!meshResult)
+        {
+            return unexpected{ std::move(meshResult).error() };
+        }
+        return _renderer->renderMesh(entity, meshResult.value(), Colors::red(), Material::Definition::Line);
+    }
+
     expected<void, std::string> Physics3dShapeGizmo::init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept
     {
         _scene = scene;
         _renderer = renderer;
-        
-        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
-        if (!progResult)
-        {
-            return unexpected{ std::move(progResult).error() };
-        }
-        _layout = progResult.value()->getVertexLayout();
         return {};
     }
 
@@ -239,14 +277,14 @@ namespace darmok::editor
         return {};
     }
 
-    expected<void, std::string> Physics3dShapeGizmo::update(float deltaTime) noexcept
-    {
-        return {};
-    }
-
     expected<void, std::string> Physics3dShapeGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        if (_layout.getStride() == 0)
+        if (!_renderer)
+        {
+            return unexpected<std::string>{"renderer not initialized"};
+        }
+        auto& layout = _renderer->getVertexLayout();
+        if (layout.getStride() == 0)
         {
             return unexpected<std::string>{"empty vertex layout"};
         }
@@ -288,7 +326,7 @@ namespace darmok::editor
             meshData = MeshData{ *bbox, Mesh::Definition::FillOutline };
         }
 
-        auto meshResult = meshData.createMesh(_layout, { .type = Mesh::Definition::Transient });
+        auto meshResult = meshData.createMesh(layout, { .type = Mesh::Definition::Transient });
         if (!meshResult)
         {
             return unexpected{ std::move(meshResult).error() };
@@ -305,6 +343,14 @@ namespace darmok::editor
     {
         _cam = cam;
         _scene = scene;
+
+        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        if (!progResult)
+        {
+            return unexpected{ std::move(progResult).error() };
+        }
+        _program = progResult.value();
+
         std::vector<std::string> errors;
         for (auto& gizmo : _gizmos)
         {
@@ -395,6 +441,16 @@ namespace darmok::editor
         return _app.getProject().getComponentLoadContext().getEntity(entityId);
     }
 
+    const bgfx::VertexLayout& SceneGizmosRenderer::getVertexLayout() const noexcept
+    {
+        if (!_program)
+        {
+            static const bgfx::VertexLayout layout;
+            return layout;
+        }
+        return _program->getVertexLayout();
+    }
+
     expected<void, std::string> SceneGizmosRenderer::renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform) noexcept
     {
         _cam->setEntityTransform(entity, *_encoder, transform);
@@ -414,13 +470,11 @@ namespace darmok::editor
 
     expected<void, std::string> SceneGizmosRenderer::renderMesh(Entity entity, const Mesh& mesh, const Color& color, Material::PrimitiveType prim, std::optional<glm::mat4> transform) noexcept
     {
-        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
-        if (!progResult)
+        if (!_program)
         {
-            return unexpected{ std::move(progResult).error() };
+            unexpected<std::string>{"program not loaded"};
         }
-        auto prog = progResult.value();
-        Material material{ prog, color };
+        Material material{ _program, color };
         material.depthTest = Material::Definition::DepthNoTest;
         material.writeDepth = false;
         material.primitiveType = prim;
@@ -454,26 +508,32 @@ namespace darmok::editor
 
     expected<void, std::string> EditorSceneView::init(std::shared_ptr<Scene> scene, Camera& cam) noexcept
     {
+
+        auto gizmosResult = cam.addComponent<SceneGizmosRenderer>(_app);
+        if (!gizmosResult)
         {
-            auto gizmosResult = cam.addComponent<SceneGizmosRenderer>(_app);
-            if (!gizmosResult)
+            return unexpected{ std::move(gizmosResult).error() };
+        }
+        {
+            auto result = gizmosResult.value().get().add<TransformGizmo>();
+            if (!result)
             {
-                return unexpected{ std::move(gizmosResult).error() };
+                return unexpected{ std::move(result).error() };
             }
+            _transformGizmo = result.value().get();
+        }
+        {
+            auto result = gizmosResult.value().get().add<CameraGizmo>();
+            if (!result)
             {
-                auto result = gizmosResult.value().get().add<TransformGizmo>();
-                if (!result)
-                {
-                    return unexpected{ std::move(result).error() };
-                }
-                _transformGizmo = result.value().get();
+                return unexpected{ std::move(result).error() };
             }
+        }
+        {
+            auto result = gizmosResult.value().get().add<Physics3dShapeGizmo>();
+            if (!result)
             {
-                auto result = gizmosResult.value().get().add<Physics3dShapeGizmo>();
-                if (!result)
-                {
-                    return unexpected{ std::move(result).error() };
-                }
+                return unexpected{ std::move(result).error() };
             }
         }
 
@@ -509,6 +569,35 @@ namespace darmok::editor
     {
         _selectedEntity = entity;
         return *this;
+    }
+
+    bool EditorSceneView::focusEntity(Entity entity) noexcept
+    {
+        if (!_scene || !_cam)
+        {
+            return false;
+        }
+        entity = entity == entt::null ? _selectedEntity : entity;
+        auto trans = _scene->getComponent<Transform>(entity);
+        if (!trans)
+        {
+            return false;
+        }
+        auto camEntity = _scene->getEntity(*_cam);
+        auto camTrans = _scene->getComponent<Transform>(camEntity);
+        if (!camTrans)
+        {
+            return false;
+        }
+
+        static constexpr float distance = 3.0f;
+        static constexpr float height = 0.5f;
+        
+        auto pos = trans->getWorldPosition();
+
+        glm::vec3 camPos{ pos - camTrans->getForward() * distance + glm::vec3{ 0, height, 0 } };
+        camTrans->setPosition(camPos);
+        return true;
     }
 
     EditorSceneView::MouseMode EditorSceneView::getMouseMode() const noexcept

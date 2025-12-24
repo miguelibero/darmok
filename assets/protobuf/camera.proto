@@ -36,6 +36,7 @@ message CullingDebugRenderer {
 }
 
 message SkyboxRenderer {
+    string texture_path = 1;
 }
 
 message GridRenderer {

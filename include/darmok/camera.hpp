@@ -55,6 +55,28 @@ namespace darmok
         using Any = google::protobuf::Any;
 
         ConstCameraDefinitionWrapper(const Definition& def) noexcept;
+        OptionalRef<const Any> getComponent(IdType typeId) const noexcept;
+        bool hasComponent(IdType typeId) const noexcept;
+
+        template<typename T>
+        std::optional<T> getComponent() const noexcept
+        {
+            if (auto any = getComponent(protobuf::getTypeId<T>()))
+            {
+                T comp;
+                if (any->UnpackTo(&comp))
+                {
+                    return comp;
+                }
+            }
+            return std::nullopt;
+        }
+
+        template<typename T>
+        bool hasComponent() const noexcept
+        {
+            return hasComponent(protobuf::getTypeId<T>());
+        }
     private:
         OptionalRef<const Definition> _def;
     };

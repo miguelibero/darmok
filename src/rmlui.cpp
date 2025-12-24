@@ -2303,6 +2303,17 @@ namespace darmok
 
     RmluiRenderer::~RmluiRenderer() noexcept = default;
 
+    RmluiRenderer::Definition RmluiRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
+    expected<void, std::string> RmluiRenderer::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        return {};
+    }
+
     expected<void, std::string> RmluiRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         return _impl->init(cam, scene, app);

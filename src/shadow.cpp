@@ -407,7 +407,7 @@ namespace darmok
         }
 
         auto view = _cam->getViewMatrix();
-        Frustum frust(_cam->getProjectionInverse(), true);
+        Frustum frust{ _cam->getProjectionInverse(), true };
 
         auto step = 1.F / float(_def.cascade_amount());
         auto easing = _def.cascade_easing();
@@ -553,6 +553,16 @@ namespace darmok
         return _scene;
     }
 
+    OptionalRef<const Camera> ShadowRenderer::getCamera() const noexcept
+    {
+        return _cam;
+    }
+
+    OptionalRef<const Scene> ShadowRenderer::getScene() const noexcept
+    {
+        return _scene;
+    }
+
     glm::mat4 ShadowRenderer::getLightViewMatrix(const OptionalRef<const Transform>& lightTrans) const noexcept
     {
         if (lightTrans)
@@ -683,15 +693,27 @@ namespace darmok
         encoder.setUniform(_shadowData2Uniform, glm::value_ptr(shadowData));
     }
 
-    ShadowDebugRenderer::ShadowDebugRenderer(ShadowRenderer& renderer) noexcept
-        : _renderer(renderer)
+    ShadowDebugRenderer::Definition ShadowDebugRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
+    ShadowDebugRenderer::ShadowDebugRenderer(const OptionalRef<const Camera>& mainCam) noexcept
+        : _mainCam{ mainCam }
     {
     }
 
     expected<void, std::string> ShadowDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _scene = scene;
+        _cam = cam;
         return _debugRender.init(app);
+    }
+
+    expected<void, std::string> ShadowDebugRenderer::load(const Definition& def) noexcept
+    {
+        return {};
     }
 
     expected<void, std::string> ShadowDebugRenderer::shutdown() noexcept
@@ -702,24 +724,25 @@ namespace darmok
 
     expected<void, std::string> ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        if (!_scene)
+        if (!_scene || !_cam)
         {
             return unexpected<std::string>{"renderer not initialized"};
         }
-        auto cam = _renderer.getCamera();
-        if (!cam)
+        auto mainCam = _mainCam ? _mainCam : _cam;
+        auto renderer = mainCam->getComponent<ShadowRenderer>();
+        if (!renderer)
         {
-            return unexpected<std::string>{"camera not found"};
+            return {};
         }
         MeshData meshData;
         meshData.type = Mesh::Definition::Transient;
         uint8_t debugColor = 0;
 
-        auto cascadeAmount = _renderer.getDefinition().cascade_amount();
+        auto cascadeAmount = renderer->getDefinition().cascade_amount();
 
         for (uint8_t casc = 0; casc < cascadeAmount; ++casc)
         {
-            auto cascProjView = _renderer.getCameraProjMatrix(casc);
+            auto cascProjView = renderer->getCameraProjMatrix(casc);
             meshData += MeshData{ Frustum{cascProjView}, Mesh::Definition::FillOutline };
         }
         auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
@@ -729,14 +752,14 @@ namespace darmok
         }
         ++debugColor;
 
-        auto entities = cam->getEntities<DirectionalLight>();
+        auto entities = mainCam->getEntities<DirectionalLight>();
         for (auto entity : entities)
         {
             meshData.clear();
             auto lightTrans = _scene->getComponent<const Transform>(entity);
             for (auto casc = 0; casc < cascadeAmount; ++casc)
             {
-                auto mtx = _renderer.getDirLightMatrix(lightTrans, casc);
+                auto mtx = renderer->getDirLightMatrix(lightTrans, casc);
                 meshData += MeshData{ Frustum{mtx}, Mesh::Definition::FillOutline };
             }
 

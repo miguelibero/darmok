@@ -44,12 +44,16 @@ namespace darmok
         }
     };
 
-
-    OcclusionCuller::OcclusionCuller() noexcept
+    OcclusionCuller::Definition OcclusionCuller::createDefinition() noexcept
     {
+        Definition def;
+        return def;
     }
 
-    OcclusionCuller::~OcclusionCuller() noexcept = default;
+    OcclusionCuller::~OcclusionCuller() noexcept
+    {
+        clearQueries();
+    }
 
     expected<void, std::string> OcclusionCuller::init(Camera& cam, Scene& scene, App& app) noexcept
     {
@@ -62,6 +66,11 @@ namespace darmok
         }
         _prog = progResult.value();
         scene.onDestroyComponent<Renderable>().connect<&OcclusionCuller::onRenderableDestroyed>(*this);
+        return {};
+    }
+
+    expected<void, std::string> OcclusionCuller::load(const Definition& def) noexcept
+    {
         return {};
     }
 
@@ -112,6 +121,12 @@ namespace darmok
         _cam.reset();
         _viewId.reset();
         _prog.reset();
+        clearQueries();
+        return {};
+    }
+
+    void OcclusionCuller::clearQueries() noexcept
+    {
         for (auto& [entity, query] : _queries)
         {
             bgfx::destroy(query);
@@ -124,7 +139,6 @@ namespace darmok
 
         }
         _freeQueries.clear();
-        return {};
     }
 
     expected<void, std::string> OcclusionCuller::render() noexcept
@@ -216,10 +230,21 @@ namespace darmok
         return {};
     }
 
+    FrustumCuller::Definition FrustumCuller::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
     expected<void, std::string> FrustumCuller::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
+        return {};
+    }
+
+    expected<void, std::string> FrustumCuller::load(const Definition& def) noexcept
+    {
         return {};
     }
 
@@ -269,11 +294,22 @@ namespace darmok
     {
     }
 
+    CullingDebugRenderer::Definition CullingDebugRenderer::createDefinition() noexcept
+    {
+        Definition def;
+        return def;
+    }
+
     expected<void, std::string> CullingDebugRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
         _scene = scene;
         return _debugRender.init(app);
+    }
+
+    expected<void, std::string> CullingDebugRenderer::load(const Definition& def) noexcept
+    {
+        return {};
     }
 
     expected<void, std::string> CullingDebugRenderer::shutdown() noexcept

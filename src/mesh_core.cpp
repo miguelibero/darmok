@@ -605,14 +605,16 @@ namespace darmok
 		for (size_t i = 0; i < v.size() - 5; i += 6)
 		{
 			indices.push_back(v[i]);
+			indices.push_back(v[i + 5]);
+			indices.push_back(v[i + 5]);
 			indices.push_back(v[i + 1]);
 			indices.push_back(v[i + 1]);
 			indices.push_back(v[i + 2]);
 			indices.push_back(v[i + 2]);
-			indices.push_back(v[i + 4]);
-			indices.push_back(v[i + 4]);
 			indices.push_back(v[i]);
 		}
+
+		//0, 2, 1, 2, 0, 3,
 
 		return *this;
 	}

@@ -8,9 +8,16 @@
 #include <darmok/camera.hpp>
 #include <darmok/light.hpp>
 #include <darmok/render_scene.hpp>
+#include <darmok/render_forward.hpp>
+#include <darmok/render_deferred.hpp>
+#include <darmok/rmlui.hpp>
+#include <darmok/environment.hpp>
+#include <darmok/shadow.hpp>
+#include <darmok/culling.hpp>
 #include <darmok/scene_serialize.hpp>
 #include <darmok/physics3d.hpp>
 #include <darmok/physics3d_character.hpp>
+#include <darmok/physics3d_debug.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/stream.hpp>
 
@@ -285,7 +292,7 @@ namespace darmok::editor
             }
             if (ImGui::BeginMenu("Component"))
             {
-                ImGui::BeginDisabled(getSelectedEntity() == entt::null);
+                ImGui::BeginDisabled(getSelectedEntity() == nullEntityId);
                 if (ImGui::BeginMenu("Entity Component"))
                 {
                     if (ImGui::BeginMenu("Add"))
@@ -331,6 +338,36 @@ namespace darmok::editor
                 ImGui::BeginDisabled(!scene.hasComponent<Camera::Definition>(getSelectedEntity()));
                 if (ImGui::BeginMenu("Camera Component"))
                 {
+                    if (ImGui::BeginMenu("Add"))
+                    {
+                        if (ImGui::BeginMenu("Renderer"))
+                        {
+                            drawCameraComponentMenu("Forward", ForwardRenderer::createDefinition());
+                            drawCameraComponentMenu("Deferred", DeferredRenderer::createDefinition());
+                            drawCameraComponentMenu("Rmlui", RmluiRenderer::createDefinition());
+                            drawCameraComponentMenu("Skybox", SkyboxRenderer::createDefinition());
+                            drawCameraComponentMenu("Shadow", ShadowRenderer::createDefinition());
+                            drawCameraComponentMenu("Text", TextRenderer::createDefinition());
+                            ImGui::EndMenu();
+                        }
+                        if (ImGui::BeginMenu("Culling"))
+                        {
+                            drawCameraComponentMenu("Frustum Culler", FrustumCuller::createDefinition());
+                            drawCameraComponentMenu("Occlusion Culler", OcclusionCuller::createDefinition());
+                            drawCameraComponentMenu("Culling Debug Renderer", CullingDebugRenderer::createDefinition());
+                            ImGui::EndMenu();
+                        }
+                        if (ImGui::BeginMenu("Debug"))
+                        {
+                            drawCameraComponentMenu("Physics3d Debug Renderer", physics3d::PhysicsDebugRenderer::createDefinition());
+                            drawCameraComponentMenu("Shadow Debug Renderer", ShadowDebugRenderer::createDefinition());
+                            ImGui::EndMenu();
+                        }
+                        drawCameraComponentMenu("Skeletal Animation Render Component", SkeletalAnimationRenderComponent::createDefinition());
+                        drawCameraComponentMenu("Lighting Render Component", LightingRenderComponent::createDefinition());
+                        ImGui::EndMenu();
+                    }
+  
                     ImGui::EndMenu();
                 }
                 ImGui::EndDisabled();
@@ -360,11 +397,7 @@ namespace darmok::editor
     void EditorApp::drawSceneComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
     {
         auto& scene = _proj.getSceneDefinition();
-        auto disabled = true;
-        if (!scene.getSceneComponent(protobuf::getTypeId(comp)))
-        {
-            disabled = false;
-        }
+        auto disabled = scene.hasSceneComponent(protobuf::getTypeId(comp));
         ImGui::BeginDisabled(disabled);
         if (ImGui::MenuItem(name))
         {
@@ -377,12 +410,8 @@ namespace darmok::editor
     void EditorApp::drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
     {
         auto& scene = _proj.getSceneDefinition();
-        auto disabled = true;
         auto entity = _inspectorView.getSelectedEntity();
-        if (entity != entt::null && !scene.getComponent(entity, protobuf::getTypeId(comp)))
-        {
-            disabled = false;
-        }
+        auto disabled = entity == nullEntityId || scene.hasComponent(entity, protobuf::getTypeId(comp));
         ImGui::BeginDisabled(disabled);
         if (ImGui::MenuItem(name))
         {
@@ -390,6 +419,27 @@ namespace darmok::editor
             _proj.requestSceneUpdate();
         }
         ImGui::EndDisabled();
+    }
+
+    void EditorApp::drawCameraComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
+    {
+        auto& scene = _proj.getSceneDefinition();
+        auto entity = _inspectorView.getSelectedEntity();
+        auto cam = scene.getComponent<Camera::Definition>(entity);
+        if (!cam)
+        {
+            return;
+        }
+        CameraDefinitionWrapper camWrapper{ *cam };
+        auto disabled = camWrapper.hasComponent(protobuf::getTypeId(comp));
+        ImGui::BeginDisabled(disabled);
+        if (ImGui::MenuItem(name))
+        {
+            camWrapper.setComponent(comp);
+            _proj.requestSceneUpdate();
+        }
+        ImGui::EndDisabled();
+
     }
 
     void EditorApp::renderAboutDialog() noexcept
@@ -523,9 +573,15 @@ namespace darmok::editor
         _sceneView.selectEntity(entity);
     }
 
-    void EditorApp::onSceneTreeTransformClicked(EntityId entity) noexcept
+    void EditorApp::onSceneTreeEntityClicked(EntityId entityId) noexcept
     {
-        onObjectSelected(entity);
+        onObjectSelected(entityId);
+    }
+
+    void EditorApp::onSceneTreeEntityFocused(EntityId entityId) noexcept
+    {
+        auto entity = _proj.getComponentLoadContext().getEntity(entityId);
+        _sceneView.focusEntity(entity);
     }
 
     const char* EditorApp::_sceneTreeWindowName = "Scene Tree";
@@ -579,11 +635,11 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorApp::renderSceneTreeBranch(EntityId entity) noexcept
+    bool EditorApp::renderSceneTreeBranch(EntityId entityId) noexcept
     {
         auto& scene = _proj.getSceneDefinition();
         std::string name;
-        if (auto trans = scene.getComponent<Transform::Definition>(entity))
+        if (auto trans = scene.getComponent<Transform::Definition>(entityId))
         {
             name = trans->name();
         }
@@ -593,12 +649,12 @@ namespace darmok::editor
         }
         
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-        auto children = scene.getChildren(entity);
+        auto children = scene.getChildren(entityId);
         if (children.empty())
         {
             flags |= ImGuiTreeNodeFlags_Leaf;
         }
-        if (_inspectorView.getSelectedEntity() == entity)
+        if (_inspectorView.getSelectedEntity() == entityId)
         {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
@@ -609,12 +665,12 @@ namespace darmok::editor
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
         {
             ImGui::TextUnformatted(name.c_str());
-            ImGui::SetDragDropPayload(entityDragType, &entity, sizeof(Entity));
+            ImGui::SetDragDropPayload(entityDragType, &entityId, sizeof(Entity));
             ImGui::EndDragDropSource();
         }
         else
         {
-            if (renderEntityDragDropTarget(entity))
+            if (renderEntityDragDropTarget(entityId))
             {
                 changed = true;
             }
@@ -623,7 +679,11 @@ namespace darmok::editor
         {
             if (ImGui::IsItemClicked())
             {
-                onSceneTreeTransformClicked(entity);
+                onSceneTreeEntityClicked(entityId);
+            }
+            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                onSceneTreeEntityFocused(entityId);
             }
             for (auto& child : children)
             {
@@ -638,7 +698,7 @@ namespace darmok::editor
         return changed;
     }
 
-    bool EditorApp::renderEntityDragDropTarget(EntityId entity) noexcept
+    bool EditorApp::renderEntityDragDropTarget(EntityId entityId) noexcept
     {
         if (!ImGui::BeginDragDropTarget())
         {
@@ -650,12 +710,11 @@ namespace darmok::editor
         {
             IM_ASSERT(payload->DataSize == sizeof(EntityId));
             auto droppedEntity = *static_cast<EntityId*>(payload->Data);
-            if (droppedEntity != entity)
+            if (droppedEntity != entityId)
             {
                 auto& scene = _proj.getSceneDefinition();
                 if (auto trans = scene.getComponent<Transform::Definition>(droppedEntity))
                 {
-                    auto entityId = entt::to_integral(entity);
                     if (trans->parent() != entityId)
                     {
                         trans->set_parent(entityId);

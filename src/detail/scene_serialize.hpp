@@ -39,7 +39,6 @@ namespace darmok
         EntityResult load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
-        
 
 		const SceneDefinition& getSceneDefinition() const noexcept;
         void addError(std::string_view error) noexcept;

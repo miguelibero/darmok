@@ -25,9 +25,11 @@ namespace darmok
     public:
         using Definition = protobuf::OcclusionCuller;
 
-        OcclusionCuller() noexcept;
+        static Definition createDefinition() noexcept;
+
         ~OcclusionCuller() noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> render() noexcept override;
         expected<void, std::string> shutdown() noexcept override;
@@ -45,6 +47,7 @@ namespace darmok
         bgfx::OcclusionQueryHandle getQuery(Entity entity) noexcept;
         void onRenderableDestroyed(EntityRegistry& registry, Entity entity) noexcept;
         std::optional<bgfx::OcclusionQueryResult::Enum> getQueryResult(Entity entity) const noexcept;
+        void clearQueries() noexcept;
     };
 
     class DARMOK_EXPORT FrustumCuller final : public ITypeCameraComponent<FrustumCuller>
@@ -52,7 +55,10 @@ namespace darmok
     public:
         using Definition = protobuf::FrustumCuller;
 
+        static Definition createDefinition() noexcept;
+
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         bool shouldEntityBeCulled(Entity entity) noexcept override;
@@ -69,8 +75,11 @@ namespace darmok
     public:
         using Definition = protobuf::CullingDebugRenderer;
 
+        static Definition createDefinition() noexcept;
+
         CullingDebugRenderer(const OptionalRef<const Camera>& mainCam = nullptr) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
     private:

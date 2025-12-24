@@ -110,7 +110,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 #### Upcoming
 * finish editor
     * create lua script component
-    * fix scene view gizmos
 * slang support
 * move main thread to taskflow
 * frame limiting
@@ -132,6 +131,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * switch from exceptions to std::expected
 * more unit tests
 * performance profiling
+* prefabs
 * 2d physics
 * instancing
 * 3d physics materials

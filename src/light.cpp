@@ -284,9 +284,9 @@ namespace darmok
     }
 
     LightingRenderComponent::LightingRenderComponent() noexcept
-        : _lightCount(0)
-        , _lightData(0)
-        , _camPos(0)
+        : _lightCount{ 0 }
+        , _lightData{ 0 }
+        , _camPos{ 0 }
     {
         _pointLightsLayout.begin()
             .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
@@ -317,6 +317,11 @@ namespace darmok
     {
         _scene = scene;
         _cam = cam;
+        return {};
+    }
+
+    expected<void, std::string> LightingRenderComponent::load(const Definition& def) noexcept
+    {
         return {};
     }
 

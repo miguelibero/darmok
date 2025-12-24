@@ -19,10 +19,13 @@ namespace darmok
     public:
         using Definition = protobuf::SkyboxRenderer;
 
-        SkyboxRenderer(const std::shared_ptr<Texture>& texture) noexcept;
+        SkyboxRenderer(const std::shared_ptr<Texture>& texture = nullptr) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+
+        static Definition createDefinition() noexcept;
     private:
         OptionalRef<Camera> _cam;
         std::unique_ptr<Mesh> _mesh;

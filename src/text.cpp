@@ -274,6 +274,13 @@ namespace darmok
 		return meshData;
 	}
 
+	TextRenderer::Definition TextRenderer::createDefinition() noexcept
+	{
+		Definition def;
+		def.mutable_program()->set_standard(Program::Standard::Unlit);
+		return def;
+	}
+
 	TextRenderer::TextRenderer(const std::shared_ptr<Program>& prog) noexcept
 		: _prog{ prog }
 	{
