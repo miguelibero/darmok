@@ -60,6 +60,17 @@ namespace darmok
         return itr != components.end();
     }
 
+    std::vector<std::reference_wrapper<const ConstSceneDefinitionWrapper::Any>> ConstSceneDefinitionWrapper::getSceneComponents() noexcept
+    {
+        std::vector<std::reference_wrapper<const Any>> comps;
+        comps.reserve(_def->scene_components_size());
+        for (auto& [typeId, comp] : _def->scene_components())
+        {
+            comps.push_back(comp);
+        }
+        return comps;
+    }
+
     std::vector<EntityId> ConstSceneDefinitionWrapper::getEntities() const noexcept
     {
         std::vector<EntityId> entities;
@@ -331,6 +342,17 @@ namespace darmok
     bool SceneDefinitionWrapper::removeSceneComponent(IdType typeId) noexcept
     {
 		return _def->mutable_scene_components()->erase(typeId) > 0;
+    }
+
+    std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getSceneComponents() noexcept
+    {
+        std::vector<std::reference_wrapper<Any>> comps;
+        comps.reserve(_def->scene_components_size());
+        for (auto& [typeId, comp] : *_def->mutable_scene_components())
+        {
+            comps.push_back(comp);
+        }
+        return comps;
     }
 
     EntityId SceneDefinitionWrapper::createEntity() noexcept

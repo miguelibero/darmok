@@ -172,4 +172,25 @@ namespace darmok::editor
 		}
         return changed;
     }
+
+    std::string SkeletalAnimationSceneComponentInspectorEditor::getTitle() const noexcept
+    {
+        return "Skeletal Animation";
+    }
+
+    SkeletalAnimationSceneComponentInspectorEditor::RenderResult SkeletalAnimationSceneComponentInspectorEditor::renderType(SkeletalAnimationSceneComponent::Definition& def) noexcept
+    {
+        return {};
+    }
+
+
+    std::string SkeletalAnimationRenderComponentInspectorEditor::getTitle() const noexcept
+    {
+        return "Skeletal Animation";
+    }
+
+    SkeletalAnimationRenderComponentInspectorEditor::RenderResult SkeletalAnimationRenderComponentInspectorEditor::renderType(SkeletalAnimationRenderComponent::Definition& def) noexcept
+    {
+        return {};
+    }
 }

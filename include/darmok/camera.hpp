@@ -86,6 +86,13 @@ namespace darmok
     public:
         CameraDefinitionWrapper(Definition& def) noexcept;
         bool setComponent(const Message& comp) noexcept;
+        bool removeComponent(IdType typeId) noexcept;
+
+        template<typename T>
+        bool removeComponent() noexcept
+        {
+            return removeComponent(protobuf::getTypeId<T>());
+        }
     private:
         OptionalRef<Definition> _def;
     };
@@ -183,6 +190,18 @@ namespace darmok
                 return (const T*)ref.ptr();
             }
             return nullptr;
+        }
+
+        template<typename T>
+        [[nodiscard]] bool hasComponent() const noexcept
+        {
+            return hasComponent(entt::type_hash<T>::value());
+        }
+
+        template<typename T>
+        [[nodiscard]] bool removeComponent() noexcept
+        {
+            return removeComponent(entt::type_hash<T>::value());
         }
 
         template<typename T, typename... A>

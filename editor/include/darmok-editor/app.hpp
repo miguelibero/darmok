@@ -113,13 +113,77 @@ namespace darmok::editor
         void onObjectSelected(const SelectableObject& obj) noexcept;
 
         void playScene() noexcept;
-        void stopScene() noexcept;
+        expected<void, std::string> stopScene() noexcept;
         void pauseScene() noexcept;
         bool isScenePlaying() const noexcept;
 
-        void drawSceneComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
-        void drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
-        void drawCameraComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept;
-        void drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept;
+        expected<bool, std::string> drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept;
+
+        bool canAddSceneComponent(IdType typeId) const noexcept;
+        bool canAddEntityComponent(IdType typeId) const noexcept;
+        bool canAddCameraComponent(IdType typeId) const noexcept;
+
+        template<typename T, typename Def = T::Definition>
+        expected<bool, std::string> drawSceneComponentMenu(const char* name, const Def& def = T::createDefinition()) noexcept
+        {
+            ImGui::BeginDisabled(!canAddSceneComponent(protobuf::getTypeId<Def>()));
+            expected<bool, std::string> result{ false };
+            if (ImGui::MenuItem(name))
+            {
+                if (auto addResult = _proj.addSceneComponent<T, Def>(def))
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = unexpected{ std::move(result).error() };
+                }
+            }
+            ImGui::EndDisabled();
+            return result;
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<bool, std::string> drawEntityComponentMenu(const char* name, const Def& def = T::createDefinition()) noexcept
+        {
+            ImGui::BeginDisabled(!canAddEntityComponent(protobuf::getTypeId<Def>()));
+            expected<bool, std::string> result{ false };
+            if (ImGui::MenuItem(name))
+            {
+                auto entity = _inspectorView.getSelectedEntity();
+                if (auto addResult = _proj.addEntityComponent<T, Def>(entity, def))
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = unexpected{ std::move(addResult).error() };
+                }
+            }
+            ImGui::EndDisabled();
+            return result;
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<bool, std::string> drawCameraComponentMenu(const char* name, const Def& def = T::createDefinition()) noexcept
+        {
+            ImGui::BeginDisabled(!canAddCameraComponent(protobuf::getTypeId<Def>()));
+            expected<bool, std::string> result{ false };
+            if (ImGui::MenuItem(name))
+            {
+                auto entity = _inspectorView.getSelectedEntity();
+                if (auto addResult = _proj.addCameraComponent<T, Def>(entity, def))
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = unexpected{ std::move(addResult).error() };
+                }
+            }
+            ImGui::EndDisabled();
+            return result;
+        }
+
     };
 }

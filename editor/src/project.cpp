@@ -35,8 +35,7 @@ namespace darmok::editor
     EditorProject::EditorProject(App& app) noexcept
         : _app{ app }
         , _requestReset{ false }
-        , _requestUpdateScene{ false }
-        , _sceneWrapper{ _sceneDef }
+        , _sceneDefWrapper{ _sceneDef }
         , _sceneLoader{ }
     {
         _sceneLoader.setAssetPackConfig({
@@ -57,7 +56,6 @@ namespace darmok::editor
         });
 
         _requestReset = false;
-        _requestUpdateScene = false;
         return {};
     }
 
@@ -65,7 +63,6 @@ namespace darmok::editor
     {
         clearPath();
         _requestReset = false;
-        _requestUpdateScene = false;
         return {};
     }
 
@@ -156,42 +153,31 @@ namespace darmok::editor
                 return unexpected{ result.error() };
 			}
         }
-        if (_requestUpdateScene)
-        {
-            auto result = doUpdateScene();
-            if (!result)
-            {
-                return unexpected{ result.error() };
-            }
-        }
         return {};
     }
 
-    void EditorProject::requestSceneUpdate() noexcept
+    expected<EntityId, std::string> EditorProject::addEntity(EntityId parentEntityId) noexcept
     {
-        _requestUpdateScene = true;
-    }
-
-    expected<EntityId, std::string> EditorProject::addEntity(EntityId parentEntity) noexcept
-    {
-        auto entity = _sceneWrapper.createEntity();
-        auto trans = Transform::createDefinition();
-        trans.set_name("New Entity");
-        if (parentEntity != entt::null)
+        auto entityId = _sceneDefWrapper.createEntity();
+        auto transDef = Transform::createDefinition();
+        transDef.set_name("New Entity");
+        transDef.set_parent(parentEntityId);
+        _sceneDefWrapper.setComponent(entityId, transDef);
+        auto entity = _scene->createEntity();
+        auto& trans = _scene->addComponent<Transform>(entity);
+        auto loadResult = SceneArchive::loadComponent(trans, transDef, getComponentLoadContext());
+        if (!loadResult)
         {
-            trans.set_parent(entt::to_integral(parentEntity));
+            return unexpected{ std::move(loadResult).error() };
         }
-        _sceneWrapper.setComponent(entity, trans);
-        requestSceneUpdate();
-        return entity;
+        return entityId;
     }
 
     const char* EditorProject::_confirmNewPopup = "Confirm New Project";
 
-    expected<void, std::string> EditorProject::resetScene() noexcept
+    void EditorProject::requestResetScene() noexcept
     {
         _requestReset = true;
-        return {};
     }
 
     void EditorProject::clearPath() noexcept
@@ -216,7 +202,7 @@ namespace darmok::editor
         _scene = compResult.value().get().getScene();
         _scene->setPaused(true);
 
-        auto result = configureDefaultScene(_sceneWrapper);
+        auto result = configureDefaultScene(_sceneDefWrapper);
         if (!result)
         {
             return result;
@@ -228,13 +214,11 @@ namespace darmok::editor
         {
             return result;
         }
-        return doUpdateScene();
+        return updateScene();
     }
 
-    expected<void, std::string> EditorProject::doUpdateScene() noexcept
+    expected<void, std::string> EditorProject::updateScene() noexcept
     {
-        _requestUpdateScene = false;
-
         if (_path.has_parent_path())
         {
             _app.addAssetsRootPath(_path.parent_path());
@@ -275,8 +259,7 @@ namespace darmok::editor
         {
             return result;
         }
-        requestSceneUpdate();
-        return {};
+        return updateScene();
     }
 
     expected<void, std::string> EditorProject::openScene() noexcept
@@ -317,12 +300,12 @@ namespace darmok::editor
 
     SceneDefinitionWrapper& EditorProject::getSceneDefinition() noexcept
     {
-        return _sceneWrapper;
+        return _sceneDefWrapper;
     }
 
     const SceneDefinitionWrapper& EditorProject::getSceneDefinition() const noexcept
     {
-		return _sceneWrapper;
+		return _sceneDefWrapper;
     }
 
     OptionalRef<Camera> EditorProject::getCamera() noexcept

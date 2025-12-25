@@ -66,6 +66,11 @@ namespace darmok
         return result.second;
     }
 
+    bool CameraDefinitionWrapper::removeComponent(IdType typeId) noexcept
+    {
+        return _def->mutable_components()->erase(typeId) > 0;
+    }
+
     Camera::Camera(const glm::mat4& projMatrix) noexcept
         : _view{ 1.F }
         , _proj{ projMatrix }

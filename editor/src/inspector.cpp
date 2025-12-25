@@ -52,6 +52,8 @@ namespace darmok::editor
         _editors.add<ArmatureInspectorEditor>();
         _editors.add<SkinnableInspectorEditor>();
         _editors.add<SkeletalAnimatorInspectorEditor>();
+        _editors.add<SkeletalAnimationSceneComponentInspectorEditor>();
+        _editors.add<SkeletalAnimationRenderComponentInspectorEditor>();
         _editors.add<Physics3dShapeInspectorEditor>();
         _editors.add<Physics3dBodyInspectorEditor>();
         _editors.add<Physics3dCharacterControllerInspectorEditor>();

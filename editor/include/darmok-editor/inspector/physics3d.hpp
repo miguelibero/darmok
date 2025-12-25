@@ -30,14 +30,14 @@ namespace darmok::editor
         RenderResult renderBoundingBox(Object& shape) noexcept;
     };
 
-    class Physics3dBodyInspectorEditor final : public ComponentObjectEditor<physics3d::PhysicsBody>
+    class Physics3dBodyInspectorEditor final : public EntityComponentObjectEditor<physics3d::PhysicsBody>
     {
     public:
         std::string getTitle() const noexcept override;
         RenderResult renderType(physics3d::PhysicsBody::Definition& def) noexcept override;
     };
 
-    class Physics3dCharacterControllerInspectorEditor final : public ComponentObjectEditor<physics3d::CharacterController>
+    class Physics3dCharacterControllerInspectorEditor final : public EntityComponentObjectEditor<physics3d::CharacterController>
     {
     public:
         std::string getTitle() const noexcept override;

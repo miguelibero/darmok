@@ -23,9 +23,9 @@ namespace darmok::editor
         {
             if (ImguiUtils::beginFrame("Components"))
             {
-                for (auto& [typeId, comp] : *scene.mutable_scene_components())
+                for (auto comp : SceneDefinitionWrapper{ scene }.getSceneComponents())
                 {
-                    if (renderChild(comp, true))
+                    if (renderChild(comp.get(), true))
                     {
                         changed = true;
                     }

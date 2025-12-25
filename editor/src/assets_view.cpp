@@ -182,7 +182,6 @@ namespace darmok::editor
             path = path / *name;
         }
         return _scene->addAsset(path.lexically_normal(), msg);
-
     }
 
     std::optional<std::string> EditorAssetsView::getAssetDragType(uint32_t assetType) const noexcept

@@ -5,7 +5,7 @@
 
 namespace darmok::editor
 {
-    class TransformInspectorEditor final : public ComponentObjectEditor<Transform>
+    class TransformInspectorEditor final : public EntityComponentObjectEditor<Transform>
     {
     public:
         std::string getTitle() const noexcept override;

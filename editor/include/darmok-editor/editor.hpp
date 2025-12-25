@@ -138,14 +138,16 @@ namespace darmok::editor
         }
     };
 
-    template<typename T>
-    class BX_NO_VTABLE SceneComponentObjectEditor : public ObjectEditor<typename T::Definition>
+    template<typename T, typename Def = T::Definition>
+        requires std::is_base_of_v<ISceneComponent, T>
+    class BX_NO_VTABLE SceneComponentObjectEditor : public ObjectEditor<Def>
     {
-    protected:
-        using Definition = typename T::Definition;
+    public:
+        using Definition = Def;
         using RenderResult = ObjectEditor<Definition>::RenderResult;
         using Message = ObjectEditor<Definition>::Message;
         using Any = ObjectEditor<Definition>::Any;
+    protected:
 
         RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
         {
@@ -182,15 +184,17 @@ namespace darmok::editor
         }
     };
 
-    template<typename T>
-    class BX_NO_VTABLE ComponentObjectEditor : public ObjectEditor<typename T::Definition>
+    template<typename T, typename Def = T::Definition>
+    class BX_NO_VTABLE EntityComponentObjectEditor : public ObjectEditor<Def>
     {
-    protected:
-        std::optional<EntityId> _entityId;
-		using Definition = typename T::Definition;
-		using RenderResult = ObjectEditor<Definition>::RenderResult;
+    public:
+        using Definition = Def;
+        using RenderResult = ObjectEditor<Definition>::RenderResult;
         using Message = ObjectEditor<Definition>::Message;
         using Any = ObjectEditor<Definition>::Any;
+    protected:
+        std::optional<EntityId> _entityId;
+
 
         RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
         {
@@ -234,15 +238,18 @@ namespace darmok::editor
         }
     };
 
-    template<typename T>
-    class BX_NO_VTABLE CameraComponentObjectEditor : public ObjectEditor<typename T::Definition>
+    template<typename T, typename Def = T::Definition>
+        requires std::is_base_of_v<ICameraComponent, T>
+    class BX_NO_VTABLE CameraComponentObjectEditor : public ObjectEditor<Def>
     {
-    protected:
-        std::optional<EntityId> _entityId;
-        using Definition = typename T::Definition;
+    public:
+        using Definition = Def;
         using RenderResult = ObjectEditor<Definition>::RenderResult;
         using Message = ObjectEditor<Definition>::Message;
         using Any = ObjectEditor<Definition>::Any;
+
+    protected:
+        std::optional<EntityId> _entityId;
 
         RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
         {
@@ -269,12 +276,15 @@ namespace darmok::editor
 
             if (ImGui::Button("Remove Component"))
             {
-                auto camDef = sceneDef.getComponent<Camera::Definition>(entityId);
-                if (camDef && !camDef->template removeComponent<Definition>())
+                if (auto camDef = sceneDef.getComponent<Camera::Definition>(entityId))
                 {
-                    return unexpected{ "failed to remove camera component definition" };
+                    CameraDefinitionWrapper camWrap{ *camDef };
+                    if (!camWrap.removeComponent<Definition>())
+                    {
+                        return unexpected{ "failed to remove camera component definition" };
+                    }
                 }
-                if (!cam.template removeComponent<T>())
+                if (!cam.removeComponent<T>())
                 {
                     return unexpected{ "failed to remove camera component" };
                 }
@@ -282,11 +292,15 @@ namespace darmok::editor
             }
             else if (changed)
             {
-                auto& comp = cam.template getOrAddComponent<T>();
-                auto result = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
-                if (!result)
+                auto compResult = cam.getOrAddComponent<T>();
+                if (!compResult)
                 {
-                    return unexpected{ std::move(result).error() };
+                    return unexpected{ std::move(compResult).error() };
+                }
+                auto loadResult = SceneArchive::loadComponent(compResult.value().get(), def, BaseObjectEditor::getComponentLoadContext());
+                if (!loadResult)
+                {
+                    return unexpected{ std::move(loadResult).error() };
                 }
             }
 

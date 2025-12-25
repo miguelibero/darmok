@@ -20,17 +20,31 @@ namespace darmok::editor
         expected<void, std::string> loadSceneMesh(Armature::Definition& armature) noexcept;
     };
 
-    class SkinnableInspectorEditor final : public ComponentObjectEditor<Skinnable>
+    class SkinnableInspectorEditor final : public EntityComponentObjectEditor<Skinnable>
     {
     public:
         std::string getTitle() const noexcept override;
         RenderResult renderType(Skinnable::Definition& skinnable) noexcept override;
     };
 
-    class SkeletalAnimatorInspectorEditor final : public ComponentObjectEditor<SkeletalAnimator>
+    class SkeletalAnimatorInspectorEditor final : public EntityComponentObjectEditor<SkeletalAnimator>
     {
     public:
         std::string getTitle() const noexcept override;
         RenderResult renderType(SkeletalAnimator::Definition& animator) noexcept override;
+    };
+
+    class SkeletalAnimationSceneComponentInspectorEditor final : public SceneComponentObjectEditor<SkeletalAnimationSceneComponent>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(SkeletalAnimationSceneComponent::Definition& def) noexcept override;
+    };
+
+    class SkeletalAnimationRenderComponentInspectorEditor final : public CameraComponentObjectEditor<SkeletalAnimationRenderComponent>
+    {
+    public:
+        std::string getTitle() const noexcept override;
+        RenderResult renderType(SkeletalAnimationRenderComponent::Definition& def) noexcept override;
     };
 }

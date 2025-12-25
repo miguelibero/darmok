@@ -33,6 +33,7 @@ namespace darmok
 		const Definition& getDefinition() const noexcept;
         OptionalRef<const Any> getSceneComponent(IdType typeId) const noexcept;
 		bool hasSceneComponent(IdType typeId) const noexcept;
+        std::vector<std::reference_wrapper<const Any>> getSceneComponents() noexcept;
 
 		EntityId getRootEntity() const noexcept;
         std::vector<EntityId> getRootEntities() const noexcept;
@@ -241,6 +242,7 @@ namespace darmok
         Definition& getDefinition() noexcept;
         bool setSceneComponent(const Message& comp) noexcept;
 		bool removeSceneComponent(IdType typeId) noexcept;
+        std::vector<std::reference_wrapper<Any>> getSceneComponents() noexcept;
 
         EntityId createEntity() noexcept;
         bool setAsset(const std::filesystem::path& path, const Message& asset) noexcept;
@@ -266,17 +268,47 @@ namespace darmok
         }
 
         template<typename T>
+        T getOrAddSceneComponent() noexcept
+        {
+            T comp;
+            if (auto any = ConstSceneDefinitionWrapper::getSceneComponent(protobuf::getTypeId<T>()))
+            {
+                if (any->UnpackTo(&comp))
+                {
+                    return comp;
+                }
+            }
+            setSceneComponent(comp);
+            return comp;
+        }
+
+        template<typename T>
         std::optional<T> getComponent(EntityId entity) const noexcept
         {
             if (auto any = ConstSceneDefinitionWrapper::getComponent(entity, protobuf::getTypeId<T>()))
             {
-                T asset;
-                if (any->UnpackTo(&asset))
+                T comp;
+                if (any->UnpackTo(&comp))
                 {
-                    return asset;
+                    return comp;
                 }
             }
             return std::nullopt;
+        }
+
+        template<typename T>
+        T getOrAddComponent(EntityId entity) noexcept
+        {
+            T comp;
+            if (auto any = ConstSceneDefinitionWrapper::getComponent(entity, protobuf::getTypeId<T>()))
+            {
+                if (any->UnpackTo(&comp))
+                {
+                    return comp;
+                }
+            }
+            setComponent(entity, comp);
+            return comp;
         }
 
         template<typename T>

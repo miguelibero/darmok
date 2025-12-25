@@ -107,8 +107,12 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::shutdown() noexcept
     {
-        stopScene();
-        auto result = _inspectorView.shutdown();
+        auto result = stopScene();
+        if (!result)
+        {
+            return result;
+        }
+        result = _inspectorView.shutdown();
         if (!result)
         {
             return result;
@@ -204,10 +208,10 @@ namespace darmok::editor
         _proj.getScene()->setPaused(false);
     }
 
-    void EditorApp::stopScene() noexcept
+    expected<void, std::string> EditorApp::stopScene() noexcept
     {
         pauseScene();
-        _proj.requestSceneUpdate();
+        return _proj.updateScene();
     }
 
     void EditorApp::pauseScene() noexcept
@@ -235,7 +239,7 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("New", "Ctrl+N"))
                 {
-                    result = _proj.resetScene();
+                    _proj.requestResetScene();
                 }
                 if (ImGui::MenuItem("Open...", "Ctrl+O"))
                 {
@@ -297,27 +301,27 @@ namespace darmok::editor
                 {
                     if (ImGui::BeginMenu("Add"))
                     {
-                        drawEntityComponentMenu("Renderable", Renderable::createDefinition());
-                        drawEntityComponentMenu("Camera", Camera::createDefinition());
+                        drawEntityComponentMenu<Renderable>("Renderable");
+                        drawEntityComponentMenu<Camera>("Camera");
                         if (ImGui::BeginMenu("Light"))
                         {
-                            drawEntityComponentMenu("Point Light", PointLight::createDefinition());
-                            drawEntityComponentMenu("Directional Light", DirectionalLight::createDefinition());
-                            drawEntityComponentMenu("Spot Light", SpotLight::createDefinition());
-                            drawEntityComponentMenu("Ambient Light", AmbientLight::createDefinition());
+                            drawEntityComponentMenu<PointLight>("Point Light");
+                            drawEntityComponentMenu<DirectionalLight>("Directional Light");
+                            drawEntityComponentMenu<SpotLight>("Spot Light");
+                            drawEntityComponentMenu<AmbientLight>("Ambient Light");
                             ImGui::EndMenu();
                         }
-                        if (ImGui::BeginMenu("Animation"))
+                        if (ImGui::BeginMenu("Skeletal Animation"))
                         {
-                            drawEntityComponentMenu("Skinnable", Skinnable::createDefinition());
-                            drawEntityComponentMenu("Animator", SkeletalAnimator::createDefinition());
+                            drawEntityComponentMenu<Skinnable>("Skinnable");
+                            drawEntityComponentMenu<SkeletalAnimator>("Animator");
                             ImGui::EndMenu();
                         }
                         if (ImGui::BeginMenu("Physics3d"))
                         {
-                            drawEntityComponentMenu("Body", physics3d::PhysicsBody::createDefinition());
-                            drawEntityComponentMenu("Character", physics3d::PhysicsBody::createCharacterDefinition());
-                            drawEntityComponentMenu("Character Controller", physics3d::CharacterController::createDefinition());
+                            drawEntityComponentMenu<physics3d::PhysicsBody>("Body");
+                            drawEntityComponentMenu<physics3d::PhysicsBody>("Character", physics3d::PhysicsBody::createCharacterDefinition());
+                            drawEntityComponentMenu<physics3d::CharacterController>("Character Controller");
                             ImGui::EndMenu();
                         }
                         ImGui::EndMenu();
@@ -329,8 +333,9 @@ namespace darmok::editor
                 {
                     if (ImGui::BeginMenu("Add"))
                     {
-                        drawSceneComponentMenu("Freelook Controller", FreelookController::createDefinition());
-                        drawSceneComponentMenu("Physics3d System", physics3d::PhysicsSystem::createDefinition());
+                        drawSceneComponentMenu<FreelookController>("Freelook Controller");
+                        drawSceneComponentMenu<SkeletalAnimationSceneComponent>("Skeletal Animation");
+                        drawSceneComponentMenu<physics3d::PhysicsSystem>("Physics3d System");
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
@@ -342,29 +347,29 @@ namespace darmok::editor
                     {
                         if (ImGui::BeginMenu("Renderer"))
                         {
-                            drawCameraComponentMenu("Forward", ForwardRenderer::createDefinition());
-                            drawCameraComponentMenu("Deferred", DeferredRenderer::createDefinition());
-                            drawCameraComponentMenu("Rmlui", RmluiRenderer::createDefinition());
-                            drawCameraComponentMenu("Skybox", SkyboxRenderer::createDefinition());
-                            drawCameraComponentMenu("Shadow", ShadowRenderer::createDefinition());
-                            drawCameraComponentMenu("Text", TextRenderer::createDefinition());
+                            drawCameraComponentMenu<ForwardRenderer>("Forward");
+                            drawCameraComponentMenu<DeferredRenderer>("Deferred");
+                            drawCameraComponentMenu<RmluiRenderer>("Rmlui");
+                            drawCameraComponentMenu<SkyboxRenderer>("Skybox");
+                            drawCameraComponentMenu<ShadowRenderer>("Shadow");
+                            drawCameraComponentMenu<TextRenderer>("Text");
                             ImGui::EndMenu();
                         }
                         if (ImGui::BeginMenu("Culling"))
                         {
-                            drawCameraComponentMenu("Frustum Culler", FrustumCuller::createDefinition());
-                            drawCameraComponentMenu("Occlusion Culler", OcclusionCuller::createDefinition());
-                            drawCameraComponentMenu("Culling Debug Renderer", CullingDebugRenderer::createDefinition());
+                            drawCameraComponentMenu<FrustumCuller>("Frustum Culler");
+                            drawCameraComponentMenu<OcclusionCuller>("Occlusion Culler");
                             ImGui::EndMenu();
                         }
                         if (ImGui::BeginMenu("Debug"))
                         {
-                            drawCameraComponentMenu("Physics3d Debug Renderer", physics3d::PhysicsDebugRenderer::createDefinition());
-                            drawCameraComponentMenu("Shadow Debug Renderer", ShadowDebugRenderer::createDefinition());
+                            drawCameraComponentMenu<CullingDebugRenderer>("Culling Debug");
+                            drawCameraComponentMenu<physics3d::PhysicsDebugRenderer>("Physics3d Debug");
+                            drawCameraComponentMenu<ShadowDebugRenderer>("Shadow Debug");
                             ImGui::EndMenu();
                         }
-                        drawCameraComponentMenu("Skeletal Animation Render Component", SkeletalAnimationRenderComponent::createDefinition());
-                        drawCameraComponentMenu("Lighting Render Component", LightingRenderComponent::createDefinition());
+                        drawCameraComponentMenu<SkeletalAnimationRenderComponent>("Skeletal Animation");
+                        drawCameraComponentMenu<LightingRenderComponent>("Lighting");
                         ImGui::EndMenu();
                     }
   
@@ -386,64 +391,43 @@ namespace darmok::editor
         return result;
     }
 
-    void EditorApp::drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept
+    expected<bool, std::string> EditorApp::drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept
     {
         if (ImGui::MenuItem(name))
         {
             _assetsView.addAsset(asset);
+            return true;
         }
+        return false;
     }
 
-    void EditorApp::drawSceneComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
+    bool EditorApp::canAddSceneComponent(IdType typeId) const noexcept
     {
-        auto& scene = _proj.getSceneDefinition();
-        auto disabled = scene.hasSceneComponent(protobuf::getTypeId(comp));
-        ImGui::BeginDisabled(disabled);
-        if (ImGui::MenuItem(name))
-        {
-            scene.setSceneComponent(comp);
-            _proj.requestSceneUpdate();
-        }
-        ImGui::EndDisabled();
+        return !_proj.getSceneDefinition().hasSceneComponent(typeId);
     }
 
-    void EditorApp::drawEntityComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
+    bool EditorApp::canAddEntityComponent(IdType typeId) const noexcept
     {
         auto& scene = _proj.getSceneDefinition();
         auto entity = _inspectorView.getSelectedEntity();
-        auto disabled = entity == nullEntityId || scene.hasComponent(entity, protobuf::getTypeId(comp));
-        ImGui::BeginDisabled(disabled);
-        if (ImGui::MenuItem(name))
-        {
-            scene.setComponent(entity, comp);
-            _proj.requestSceneUpdate();
-        }
-        ImGui::EndDisabled();
+        return entity != nullEntityId && !scene.hasComponent(entity, typeId);
     }
 
-    void EditorApp::drawCameraComponentMenu(const char* name, const google::protobuf::Message& comp) noexcept
+    bool EditorApp::canAddCameraComponent(IdType typeId) const noexcept
     {
         auto& scene = _proj.getSceneDefinition();
         auto entity = _inspectorView.getSelectedEntity();
         auto cam = scene.getComponent<Camera::Definition>(entity);
         if (!cam)
         {
-            return;
+            return false;
         }
-        CameraDefinitionWrapper camWrapper{ *cam };
-        auto disabled = camWrapper.hasComponent(protobuf::getTypeId(comp));
-        ImGui::BeginDisabled(disabled);
-        if (ImGui::MenuItem(name))
-        {
-            camWrapper.setComponent(comp);
-            _proj.requestSceneUpdate();
-        }
-        ImGui::EndDisabled();
-
+        return !CameraDefinitionWrapper{ *cam }.hasComponent(typeId);
     }
 
     void EditorApp::renderAboutDialog() noexcept
     {
+        // TODO
     }
 
     expected<void, std::string> EditorApp::renderMainToolbar() noexcept
@@ -513,7 +497,11 @@ namespace darmok::editor
             {
                 if (ImGui::Button(ICON_MD_STOP))
                 {
-                    stopScene();
+                    auto result = stopScene();
+                    if (!result)
+                    {
+                        return result;
+                    }
                 }
             }
             else

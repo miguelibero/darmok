@@ -625,8 +625,11 @@ namespace darmok::physics3d
         }
         _listeners.clear();
         _joltSystem.reset();
-        _jobSystem->shutdown();
-        _jobSystem.reset();
+        if (_jobSystem)
+        {
+            _jobSystem->shutdown();
+            _jobSystem.reset();
+        }
         JPH::UnregisterTypes();
         delete JPH::Factory::sInstance;
         JPH::Factory::sInstance = nullptr;
