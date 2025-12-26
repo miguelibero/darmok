@@ -19,6 +19,7 @@
 #include <darmok/physics3d_character.hpp>
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/freelook.hpp>
+#include <darmok/text.hpp>
 #include <darmok/stream.hpp>
 
 #include <imgui.h>
@@ -303,6 +304,7 @@ namespace darmok::editor
                     {
                         drawEntityComponentMenu<Renderable>("Renderable");
                         drawEntityComponentMenu<Camera>("Camera");
+                        drawEntityComponentMenu<Text>("Text");
                         if (ImGui::BeginMenu("Light"))
                         {
                             drawEntityComponentMenu<PointLight>("Point Light");

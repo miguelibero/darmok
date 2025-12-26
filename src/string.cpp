@@ -162,35 +162,63 @@ namespace darmok::StringUtils
 		return count;
 	}
 
-	std::u32string toUtf32(std::string_view str) noexcept
+	expected<std::u32string, std::string> toUtf32(std::string_view str) noexcept
 	{
-		std::u32string result;
-		utf8::utf8to32(str.begin(), str.end(), std::back_inserter(result));
-		return result;
+		try
+		{
+			std::u32string result;
+			utf8::utf8to32(str.begin(), str.end(), std::back_inserter(result));
+			return result;
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected<std::string>{ ex.what() };
+		}
 	}
 
-	std::string toUtf8(std::u32string_view str) noexcept
+	expected<std::string, std::string> toUtf8(std::u32string_view str) noexcept
 	{
-		std::string result;
-		utf8::utf32to8(str.begin(), str.end(), std::back_inserter(result));
-		return result;
+		try
+		{
+			std::string result;
+			utf8::utf32to8(str.begin(), str.end(), std::back_inserter(result));
+			return result;
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected<std::string>{ ex.what() };
+		}
 	}
 
-	std::string toUtf8(char32_t chr) noexcept
+	expected < std::string, std::string> toUtf8(char32_t chr) noexcept
 	{
-		std::string str;
-		utf8::utf32to8(&chr, &chr + 1, std::back_inserter(str));
-		return str;
+		try
+		{
+			std::string str;
+			utf8::utf32to8(&chr, &chr + 1, std::back_inserter(str));
+			return str;
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected<std::string>{ ex.what() };
+		}
 	}
 
-	char32_t toUtf32Char(std::string_view str) noexcept
+	expected<char32_t, std::string> toUtf32Char(std::string_view str) noexcept
 	{
 		if (str.empty())
 		{
 			return 0;
 		}
-		auto itr = str.begin();
-		return utf8::next(itr, str.end());
+		try
+		{
+			auto itr = str.begin();
+			return utf8::next(itr, str.end());
+		}
+		catch (const std::exception& ex)
+		{
+			return unexpected<std::string>{ ex.what() };
+		}
 	}
 
 	void camelCaseToHumanReadable(std::string& str) noexcept

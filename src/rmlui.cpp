@@ -2096,7 +2096,12 @@ namespace darmok
         {
             return {};
         }
-        Rml::String str = StringUtils::toUtf8(chr);
+        auto result = StringUtils::toUtf8(chr);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        auto str = std::move(result).value();
         for (auto [entity, canvas] : _scene->getComponents<RmluiCanvas>().each())
         {
             canvas.getImpl().processTextInput(str);

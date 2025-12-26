@@ -108,7 +108,7 @@ namespace darmok
             // TODO: add border
             scene.addComponent<Text>(textEntity, _font, name)
                 .setColor(Colors::black())
-                .setOrientation(TextOrientation::Center);
+                .setOrientation(Text::Definition::OrientationCenter);
         }
     }
 

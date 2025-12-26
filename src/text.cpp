@@ -8,12 +8,27 @@
 #include <darmok/camera.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/convert.hpp>
+#include <darmok/glm_serialize.hpp>
+#include <darmok/scene_serialize.hpp>
 
 namespace darmok
 {
+	Text::Definition Text::createDefinition() noexcept
+	{
+		Definition def;
+		def.set_axis(Definition::AxisHorizontal);
+		def.set_direction(Definition::DirectionPositive);
+		def.set_line_direction(Definition::DirectionNegative);
+		def.set_orientation(Definition::OrientationLeft);
+		*def.mutable_color() = convert<protobuf::Color>(Colors::black());
+
+		return def;
+	}
+
 	Text::Text(const std::shared_ptr<IFont>& font, const std::string& content) noexcept
 		: _font{ font }
-		, _color{ Colors::black() }
+		, _def{ createDefinition() }
 		, _changed{ false }
 		, _vertexNum{ 0 }
 		, _indexNum{ 0 }
@@ -21,56 +36,61 @@ namespace darmok
 		setContent(content);
 	}
 
-	const Color& Text::getColor() const noexcept
+	Color Text::getColor() const noexcept
 	{
-		return _color;
+		return convert<Color>(_def.color());
 	}
 
 	Text& Text::setColor(const Color& color) noexcept
 	{
-		if (_color != color)
+		if (convert<Color>(_def.color()) != color)
 		{
-			_color = color;
+			*_def.mutable_color() = convert<protobuf::Color>(color);
 			_changed = true;
 		}
 		return *this;
 	}
 
-	const Text::RenderConfig& Text::getRenderConfig() const noexcept
+	const Text::Definition& Text::getDefinition() const noexcept
 	{
-		return _renderConfig;
+		return _def;
 	}
 
-	Text::RenderConfig& Text::getRenderConfig() noexcept
+	Text::Definition& Text::getDefinition() noexcept
 	{
-		return _renderConfig;
+		return _def;
 	}
 
-	Text& Text::setRenderConfig(const RenderConfig& config) noexcept
+	Text& Text::setDefinition(const Definition& def) noexcept
 	{
-		_renderConfig = config;
+		_def = def;
+		_changed = true;
 		return *this;
 	}
 
-	const glm::uvec2& Text::getContentSize() const noexcept
+	glm::uvec2 Text::getContentSize() const noexcept
 	{
-		return _renderConfig.contentSize;
+		return convert< glm::uvec2>(_def.content_size());
 	}
 
 	Text& Text::setContentSize(const glm::uvec2& size) noexcept
 	{
-		_renderConfig.contentSize = size;
+		if (convert<glm::uvec2>(_def.content_size()) != size)
+		{
+			*_def.mutable_content_size() = convert<protobuf::Uvec2>(size);
+			_changed = true;
+		}
 		return *this;
 	}
 
-	Text::Orientation Text::getOrientation() const noexcept
+	Text::Definition::Orientation Text::getOrientation() const noexcept
 	{
-		return _renderConfig.orientation;
+		return _def.orientation();
 	}
 
-	Text& Text::setOrientation(Orientation ori) noexcept
+	Text& Text::setOrientation(Definition::Orientation ori) noexcept
 	{
-		_renderConfig.orientation = ori;
+		_def.set_orientation(ori);
 		return *this;
 	}
 
@@ -90,29 +110,35 @@ namespace darmok
 		return *this;
 	}
 
-	std::string Text::getContentString() const
+	const std::string& Text::getContentString() const noexcept
 	{
-		return StringUtils::toUtf8(_content);
+		return _def.content();
 	}
 
-	const std::u32string& Text::getContent() const noexcept
+	expected<std::u32string, std::string> Text::getContent() const noexcept
 	{
-		return _content;
+		return StringUtils::toUtf32(_def.content());
 	}
 
-	Text& Text::setContent(const std::string& str)
+	Text& Text::setContent(const std::string& str) noexcept
 	{
-		return setContent(StringUtils::toUtf32(str));
-	}
-
-	Text& Text::setContent(const std::u32string& str)
-	{
-		if (_content != str)
+		if (_def.content() != str)
 		{
-			_content = str;
+			_def.set_content(str);
 			_changed = true;
 		}
 		return *this;
+	}
+
+	expected<void, std::string> Text::setContent(const std::u32string& str) noexcept
+	{
+		auto result = StringUtils::toUtf8(str);
+		if (!result)
+		{
+			return unexpected{ std::move(result).error() };
+		}
+		setContent(result.value());
+		return {};
 	}
 
 	expected<void, std::string> Text::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
@@ -138,7 +164,12 @@ namespace darmok
 			return {};
 		}
 
-		auto data = createMeshData(_content, *_font, _renderConfig);
+		auto dataResult = createMeshData(*_font, _def);
+		if (!dataResult)
+		{
+			return unexpected{ std::move(dataResult).error() };
+		}
+		auto& data = dataResult.value();
 		if (data.empty())
 		{
 			_vertexNum = 0;
@@ -146,7 +177,7 @@ namespace darmok
 			return {};
 		}
 
-		data *= _color;
+		data *= getColor();
 
 		Data vertexData;
 		Data indexData;
@@ -180,29 +211,28 @@ namespace darmok
 		return {};
 	}
 
-	glm::vec2 TextRenderConfig::getGlyphAdvanceFactor() const noexcept
+	glm::vec2 Text::getGlyphAdvanceFactor(const Definition& def) noexcept
 	{
-		auto factor = direction == Direction::Negative ? -1 : 1;
-		if (axis == Axis::Vertical)
+		auto factor = def.direction() == Definition::DirectionNegative ? -1 : 1;
+		if (def.axis() == Definition::AxisVertical)
 		{
 			return { 0, factor };
-
 		}
 		return { factor, 0 };
 	}
 
-	bool TextRenderConfig::fixEndOfLine(glm::vec2& pos, float lineStep) const
+	bool Text::fixEndOfLine(glm::vec2& pos, float lineStep, const Definition& def) noexcept
 	{
 		glm::uint lineSize = 0;
 		float linePos = 0;
-		switch (axis)
+		switch (def.axis())
 		{
-		case Axis::Horizontal:
-			lineSize = contentSize.x;
+		case Definition::AxisHorizontal:
+			lineSize = def.content_size().x();
 			linePos = pos.x;
 			break;
-		case Axis::Vertical:
-			lineSize = contentSize.y;
+		case Definition::AxisVertical:
+			lineSize = def.content_size().y();
 			linePos = pos.y;
 			break;
 		}
@@ -211,28 +241,40 @@ namespace darmok
 			return false;
 		}
 
-		auto f = lineDirection == Direction::Negative ? -lineStep : lineStep;
-		switch (axis)
+		auto f = def.line_direction() == Definition::DirectionNegative ? -lineStep : lineStep;
+		switch (def.axis())
 		{
-		case Axis::Horizontal:
+		case Definition::AxisHorizontal:
 			pos.x = 0;
 			pos.y += f;
 			break;
-		case Axis::Vertical:
+		case Definition::AxisVertical:
 			pos.y = 0;
 			pos.y += f;
 			break;
 		}
 		return true;
-
 	}
 
-	MeshData Text::createMeshData(std::u32string_view content, const IFont& font, const RenderConfig& config)
+	expected<void, std::string> Text::load(const Definition& def, IComponentLoadContext& context) noexcept
+	{
+		auto fontResult = context.getAssets().getFontLoader()(def.font_path());
+		if (!fontResult)
+		{
+			return unexpected{ "error loading font: " + fontResult.error() };
+		}
+		_def = def;
+		_font = fontResult.value();
+		_changed = true;
+		return {};
+	}
+
+	MeshData Text::createMeshData(const std::u32string& content, const IFont& font, const Definition& def) noexcept
 	{
 		glm::vec2 pos{ 0 };
 		MeshData meshData;
 		auto lineSize = font.getLineSize();
-		auto glyphAdv = config.getGlyphAdvanceFactor();
+		auto glyphAdv = getGlyphAdvanceFactor(def);
 		for (auto& chr : content)
 		{
 			auto glyph = font.getGlyph(chr);
@@ -241,7 +283,7 @@ namespace darmok
 				continue;
 			}
 
-			config.fixEndOfLine(pos, lineSize);
+			fixEndOfLine(pos, lineSize, def);
 
 			auto glyphSize = convert<glm::uvec2>(glyph->size());
 			auto glyphTexPos = convert<glm::uvec2>(glyph->texture_position());
@@ -249,7 +291,7 @@ namespace darmok
 			auto glyphOriginalSize = convert<glm::uvec2>(glyph->original_size());
 			glyphOffset += pos;
 
-			MeshData glyphMesh{ Rectangle{glyphSize, glm::vec2{glyphSize} *0.5F} };
+			MeshData glyphMesh{ Rectangle{glyphSize, glm::vec2{glyphSize} * 0.5F} };
 
 			glyphMesh.scaleTexCoords(glyphSize);
 			glyphMesh.translateTexCoords(glyphTexPos);
@@ -272,6 +314,16 @@ namespace darmok
 		meshData.scaleTexCoords(texScale);
 
 		return meshData;
+	}
+
+	expected<MeshData, std::string> Text::createMeshData(const IFont& font, const Definition& def) noexcept
+	{
+		auto contentResult = StringUtils::toUtf32(def.content());
+		if (!contentResult)
+		{
+			return unexpected{ std::move(contentResult).error() };
+		}
+		return createMeshData(contentResult.value(), font, def);
 	}
 
 	TextRenderer::Definition TextRenderer::createDefinition() noexcept
@@ -328,7 +380,12 @@ namespace darmok
 			auto& text = _scene->getComponent<Text>(entity).value();
 			if (auto font = text.getFont())
 			{
-				auto& content = text.getContent();
+				auto contentResult = text.getContent();
+				if (!contentResult)
+				{
+					return unexpected{ std::move(contentResult).error() };
+				}
+				auto& content = contentResult.value();
 				fontChars[font].insert(content.begin(), content.end());
 			}
 		}
@@ -404,8 +461,12 @@ namespace darmok
 		{
 			return std::nullopt;
 		}
-		auto key = StringUtils::toUtf8(chr);
-		auto elm = _atlas->getElement(key);
+		auto keyResult = StringUtils::toUtf8(chr);
+		if (!keyResult)
+		{
+			return std::nullopt;
+		}
+		auto elm = _atlas->getElement(keyResult.value());
 		if (!elm)
 		{
 			return std::nullopt;

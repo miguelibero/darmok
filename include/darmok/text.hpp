@@ -6,7 +6,6 @@
 #include <darmok/mesh.hpp>
 #include <darmok/color.hpp>
 #include <darmok/material.hpp>
-#include <darmok/text_fwd.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/texture_atlas.pb.h>
@@ -41,58 +40,48 @@ namespace darmok
 
     class DARMOK_EXPORT BX_NO_VTABLE IFontLoader : public ILoader<IFont>{};
 
-    struct DARMOK_EXPORT TextRenderConfig
-    {
-        using Axis = TextLayoutAxis;
-        using Direction = TextLayoutDirection;
-        using Orientation = TextOrientation;
-        Axis axis = Axis::Horizontal;
-        Direction direction = Direction::Positive;
-        Direction lineDirection = Direction::Negative;
-        Orientation orientation = Orientation::Left;
-        glm::uvec2 contentSize = glm::uvec2(0);
-
-        glm::vec2 getGlyphAdvanceFactor() const noexcept;
-        bool fixEndOfLine(glm::vec2& pos, float lineStep) const;
-    };
-
     class DARMOK_EXPORT Text final
     {
     public:
-        using Orientation = TextOrientation;
-        using RenderConfig = TextRenderConfig;
+        using Definition = protobuf::Text;
 
-        Text(const std::shared_ptr<IFont>& font, const std::string& content = "") noexcept;
+        static Definition createDefinition() noexcept;
+
+        Text(const std::shared_ptr<IFont>& font = nullptr, const std::string& content = "") noexcept;
         std::shared_ptr<IFont> getFont() noexcept;
         Text& setFont(const std::shared_ptr<IFont>& font) noexcept;
-        std::string getContentString() const;
-        const std::u32string& getContent() const noexcept;
-        Text& setContent(const std::string& str);
-        Text& setContent(const std::u32string& str);
-        const Color& getColor() const noexcept;
+        const std::string& getContentString() const noexcept;
+        expected<std::u32string, std::string> getContent() const noexcept;
+        Text& setContent(const std::string& str) noexcept;
+        expected<void, std::string> setContent(const std::u32string& str) noexcept;
+        Color getColor() const noexcept;
         Text& setColor(const Color& color) noexcept;
 
-        const RenderConfig& getRenderConfig() const noexcept;
-        RenderConfig& getRenderConfig() noexcept;
-        Text& setRenderConfig(const RenderConfig& config) noexcept;
-        const glm::uvec2& getContentSize() const noexcept;
+        const Definition& getDefinition() const noexcept;
+        Definition& getDefinition() noexcept;
+        Text& setDefinition(const Definition& def) noexcept;
+        glm::uvec2 getContentSize() const noexcept;
         Text& setContentSize(const glm::uvec2& size) noexcept;
-        Orientation getOrientation() const noexcept;
-        Text& setOrientation(Orientation ori) noexcept;
+        Definition::Orientation getOrientation() const noexcept;
+        Text& setOrientation(Definition::Orientation ori) noexcept;
 
         expected<void, std::string> update(const bgfx::VertexLayout& layout) noexcept;
         expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
+        static MeshData createMeshData(const std::u32string& content, const IFont& font, const Definition& def = {}) noexcept;
 
-        static MeshData createMeshData(std::u32string_view content, const IFont& font, const RenderConfig& config = {});
     private:
         std::shared_ptr<IFont> _font;
-        std::u32string _content;
         std::optional<Mesh> _mesh;
-        Color _color;
         bool _changed;
         uint32_t _vertexNum;
         uint32_t _indexNum;
-        RenderConfig _renderConfig;
+        Definition _def;
+
+        static glm::vec2 getGlyphAdvanceFactor(const Definition& def) noexcept;
+        static bool fixEndOfLine(glm::vec2& pos, float lineStep, const Definition& def) noexcept;
+
+        static expected<MeshData, std::string> createMeshData(const IFont& font, const Definition& def = {}) noexcept;
     };
 
     class DARMOK_EXPORT TextRenderer final : public ITypeCameraComponent<TextRenderer>

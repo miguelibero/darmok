@@ -267,7 +267,12 @@ namespace darmok::physics3d
 
     void JoltPhysicsDebugRenderer::DrawText3D(JPH::RVec3Arg pos, const std::string_view& str, JPH::ColorArg color, float height) noexcept
     {
-		auto content = StringUtils::toUtf32(str);
+		auto contentResult = StringUtils::toUtf32(str);
+        if (!contentResult)
+        {
+            return;
+        }
+        auto& content = contentResult.value();
         if (content.empty())
         {
             return;

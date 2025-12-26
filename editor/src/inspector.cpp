@@ -13,6 +13,7 @@
 #include <darmok-editor/inspector/texture.hpp>
 #include <darmok-editor/inspector/skeleton.hpp>
 #include <darmok-editor/inspector/physics3d.hpp>
+#include <darmok-editor/inspector/text.hpp>
 #include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
@@ -58,6 +59,8 @@ namespace darmok::editor
         _editors.add<Physics3dBodyInspectorEditor>();
         _editors.add<Physics3dCharacterControllerInspectorEditor>();
         _editors.add<Physics3dSystemInspectorEditor>();
+        _editors.add<TextInspectorEditor>();
+        _editors.add<TextRendererInspectorEditor>();
         return {};
     }
 

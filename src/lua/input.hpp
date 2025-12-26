@@ -51,7 +51,7 @@ namespace darmok
 		static void addListener(Keyboard& kb, const sol::table& table) noexcept;
 		static bool removeListener(Keyboard& kb, const sol::table& table) noexcept;
 
-		static std::string getUpdateChars(const Keyboard& kb) noexcept;
+		static std::string getUpdateChars(const Keyboard& kb);
 	};
 
 	class LuaMouseListener final : public ITypeMouseListener<LuaMouseListener>

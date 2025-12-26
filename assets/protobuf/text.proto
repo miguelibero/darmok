@@ -13,3 +13,33 @@ message FreetypeFont {
 message TextRenderer {
     ProgramRef program = 1;
 }
+
+message Text {
+    enum LayoutAxis {
+        AxisHorizontal = 0;
+        AxisVertical = 1;
+    }
+
+    enum LayoutDirection {
+        DirectionPositive = 0;
+        DirectionNegative = 1;
+    };
+
+    enum Orientation {
+        OrientationLeft = 0;
+        OrientationRight = 1;
+        OrientationTop = 2;
+        OrientationBottom = 3;
+        OrientationCenter = 4;
+    };
+
+    string content = 1;
+    string font_path = 2;
+    Color color = 3;
+
+    LayoutAxis axis = 4;
+    LayoutDirection direction = 5;
+    LayoutDirection line_direction = 6;
+    Orientation orientation = 7;
+    Uvec2 content_size = 8;
+}

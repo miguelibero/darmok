@@ -251,7 +251,6 @@ set(HEADERS
   shadow_fwd.hpp
   shadow.hpp
   freelook.hpp
-  text_fwd.hpp
   text.hpp
   environment.hpp
 )

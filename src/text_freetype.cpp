@@ -297,8 +297,12 @@ namespace darmok
 		_glyphs.clear();
 		for (auto& glyph : result->atlas.elements())
 		{
-			auto chr = StringUtils::toUtf32Char(glyph.name());			
-			_glyphs.emplace(chr, glyph);
+			auto chrResult = StringUtils::toUtf32Char(glyph.name());
+			if (!chrResult)
+			{
+				return unexpected{ std::move(chrResult).error() };
+			}
+			_glyphs.emplace(chrResult.value(), glyph);
 		}
 		_renderedChars = chars;
 		return {};
@@ -412,6 +416,11 @@ namespace darmok
 		auto bytesPerPixel = data.image.getTextureInfo().bitsPerPixel / 8;
 		for(auto& [chr, idx] : indices)
 		{
+			auto chrResult = StringUtils::toUtf8(chr);
+			if (!chrResult)
+			{
+				return unexpected{ std::move(chrResult).error() };
+			}
 			auto bitmapResult = renderBitmap(idx);
 			if (!bitmapResult)
 			{
@@ -447,7 +456,7 @@ namespace darmok
 			}
 
 			auto& glyph = *data.atlas.add_elements();
-			glyph.set_name(StringUtils::toUtf8(chr));
+			glyph.set_name(chrResult.value());
 			*glyph.mutable_size() = convert<protobuf::Uvec2>(glyphSize);
 			*glyph.mutable_texture_position() = convert<protobuf::Uvec2>(pos);
 			*glyph.mutable_offset() = convert<protobuf::Vec2>(glpyhOffset);
@@ -460,7 +469,12 @@ namespace darmok
 
 	FreetypeFontAtlasGenerator::Result FreetypeFontAtlasGenerator::operator()(std::string_view str) noexcept
 	{
-		return (*this)(StringUtils::toUtf32(str));
+		auto result = StringUtils::toUtf32(str);
+		if (!result)
+		{
+			return unexpected{ std::move(result).error() };
+		}
+		return (*this)(result.value());
 	}
 
 	FreetypeFontFileImporterImpl::FreetypeFontFileImporterImpl() noexcept

@@ -30,6 +30,7 @@ set(EDITOR_HEADERS
   inspector/texture.hpp
   inspector/skeleton.hpp
   inspector/physics3d.hpp
+  inspector/text.hpp
 )
 
 set(EDITOR_SOURCES
@@ -53,6 +54,7 @@ set(EDITOR_SOURCES
   inspector/texture.cpp
   inspector/skeleton.cpp
   inspector/physics3d.cpp
+  inspector/text.cpp
 )
 
 set(EDITOR_ASSETS

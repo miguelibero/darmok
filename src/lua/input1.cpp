@@ -102,9 +102,9 @@ namespace darmok
 		return ev;
 	}
 
-	std::string LuaKeyboard::getUpdateChars(const Keyboard& kb) noexcept
+	std::string LuaKeyboard::getUpdateChars(const Keyboard& kb)
 	{
-		return StringUtils::toUtf8(kb.getUpdateChars());
+		return LuaUtils::unwrapExpected(StringUtils::toUtf8(kb.getUpdateChars()));
 	}
 
 	void LuaKeyboard::addListener(Keyboard& kb, const sol::table& table) noexcept
