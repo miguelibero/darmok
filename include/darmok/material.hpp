@@ -115,7 +115,7 @@ namespace darmok
 
         std::unordered_map<TextureType, std::shared_ptr<Texture>> textures;
 
-        DepthTest depthTest = Definition::DepthLess;
+        DepthTest depthTest = Definition::DepthLessEqual;
         OpacityType opacityType = Definition::Opaque;
         bool twoSided = false;
         PrimitiveType primitiveType = Definition::Triangle;

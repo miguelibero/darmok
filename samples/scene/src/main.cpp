@@ -168,7 +168,7 @@ namespace
 
 			auto spriteBorder = scene.createEntity();
 			auto size = scale * glm::vec2{ tex->getSize() } *fbScale;
-			meshData = MeshData{ Rectangle::standard(), Mesh::Definition::OutlineRectangle };
+			meshData = MeshData{ Rectangle::standard(), Mesh::Definition::FillOutline };
 			meshData.scalePositions(glm::vec3{ size, 0.f });
 			meshResult = meshData.createMesh(_prog->getVertexLayout());
 			auto debugMesh = std::make_shared<Mesh>(std::move(meshResult).value());

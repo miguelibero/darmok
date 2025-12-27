@@ -16,7 +16,6 @@ namespace darmok
     class App;
     class Camera;
     class Program;
-    class Input;
     class IFont;
 }
 
@@ -44,9 +43,8 @@ namespace darmok::physics3d
     public:
         using Definition = protobuf::PhysicsDebugRenderer;
 
-        static void init(const Definition& def, std::shared_ptr<IFont> font) noexcept;
-        static expected<void, std::string> render(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
-        static void shutdown() noexcept;
+        static std::shared_ptr<JoltPhysicsDebugRenderer> get() noexcept;
+        expected<void, std::string> render(const Definition& def, std::shared_ptr<IFont> font, JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
 
         void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) noexcept override;
         void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, JPH::DebugRenderer::ECastShadow inCastShadow = ECastShadow::Off) noexcept override;
@@ -63,7 +61,7 @@ namespace darmok::physics3d
             float height;
         };
 
-        static std::unique_ptr<JoltPhysicsDebugRenderer> _instance;
+        static std::weak_ptr<JoltPhysicsDebugRenderer> _instance;
         static std::mutex _instanceLock;
 
         Definition _def;
@@ -106,9 +104,10 @@ namespace darmok::physics3d
         bool _enabled;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
-        OptionalRef<Input> _input;
+        OptionalRef<App> _app;
         std::shared_ptr<IFont> _font;
         Definition _def;
+        std::shared_ptr<JoltPhysicsDebugRenderer> _jolt;
 
         expected<void, std::string> doInit() noexcept;
     };

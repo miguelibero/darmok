@@ -194,9 +194,9 @@ namespace darmok
 		case Definition::DepthNoTest:
 			return 0;
 		case Definition::DepthLess:
-				return BGFX_STATE_DEPTH_TEST_LESS;
+			return BGFX_STATE_DEPTH_TEST_LESS;
 		case Definition::DepthLessEqual:
-				return BGFX_STATE_DEPTH_TEST_LEQUAL;
+			return BGFX_STATE_DEPTH_TEST_LEQUAL;
 		case Definition::DepthEqual:
 			return BGFX_STATE_DEPTH_TEST_EQUAL;
 		case Definition::DepthGreaterEqual:

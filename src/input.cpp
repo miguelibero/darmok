@@ -1429,7 +1429,7 @@ namespace darmok
 
 	std::optional<InputDirType> InputImpl::readDirType(std::string_view name) noexcept
 	{
-		return StringUtils::readEnum<InputDirType>(name, _dirTypePrefix);
+		return StringUtils::readEnum<InputDirType>(name, _dirTypePrefix, "Input_DirType_Dir");
 	}
 
 	const std::string InputImpl::_keyboardPrefix = "keyboard:";

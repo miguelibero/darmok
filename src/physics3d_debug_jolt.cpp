@@ -53,32 +53,27 @@ namespace darmok::physics3d
         Initialize();
     }
 
-    void JoltPhysicsDebugRenderer::shutdown() noexcept
-    {
-        const std::lock_guard lock{ _instanceLock };
-        _instance.reset();
-    }
-
-    std::unique_ptr<JoltPhysicsDebugRenderer> JoltPhysicsDebugRenderer::_instance;
+    std::weak_ptr<JoltPhysicsDebugRenderer> JoltPhysicsDebugRenderer::_instance;
     std::mutex JoltPhysicsDebugRenderer::_instanceLock;
 
-
-    void JoltPhysicsDebugRenderer::init(const Definition& def, std::shared_ptr<IFont> font) noexcept
+    std::shared_ptr<JoltPhysicsDebugRenderer> JoltPhysicsDebugRenderer::get() noexcept
     {
         const std::lock_guard lock{ _instanceLock };
-        _instance = std::unique_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer());
-        _instance->_def = def;
-		_instance->_font = font;
+        if (auto ptr = _instance.lock())
+        {
+            return ptr;
+        }
+        auto ptr = std::shared_ptr<JoltPhysicsDebugRenderer>(new JoltPhysicsDebugRenderer);
+        _instance = ptr;
+        return ptr;
     }
 
-    expected<void, std::string> JoltPhysicsDebugRenderer::render(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> JoltPhysicsDebugRenderer::render(const Definition& def, std::shared_ptr<IFont> font, JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         const std::lock_guard lock{ _instanceLock };
-        if (!_instance)
-        {
-			return unexpected<std::string>{ "JoltPhysicsDebugRenderer not initialized" };
-        }
-        return _instance->doRender(joltSystem, viewId, encoder);
+        _def = def;
+        _font = font;
+        return doRender(joltSystem, viewId, encoder);
     }
 
     expected<void, std::string> JoltPhysicsDebugRenderer::doRender(JPH::PhysicsSystem& joltSystem, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
@@ -371,9 +366,9 @@ namespace darmok::physics3d
 
     expected<void, std::string> PhysicsDebugRendererImpl::load(const Definition& def, IComponentLoadContext& context) noexcept
     {
-        if (_input)
+        if (_app)
         {
-            _input->removeListener(*this);
+            _app->getInput().removeListener(*this);
         }
 		auto& scene = context.getScene();
         if(!_cam)
@@ -394,16 +389,21 @@ namespace darmok::physics3d
 
     expected<void, std::string> PhysicsDebugRendererImpl::doInit() noexcept
     {
-        if (!_input)
+        if (!_app)
         {
-            return unexpected<std::string>{"missing input ref"};
+            return unexpected<std::string>{"missing app ref"};
         }
-        if (!_font)
+        _app->getInput().addListener("enable", _def.enable_events(), *this);
+        auto& fontPath = _def.font_path();
+        if (!fontPath.empty())
         {
-            return unexpected<std::string>{"missing font"};
+            auto fontResult = _app->getAssets().getFontLoader()(fontPath);
+            if (!fontResult)
+            {
+                return unexpected<std::string>{ fmt::format("failed to load font '{}': {}", fontPath, fontResult.error()) };
+            }
+            _font = fontResult.value();
         }
-        _input->addListener("enable", _def.enable_events(), *this);
-        JoltPhysicsDebugRenderer::init(_def, _font);
         return {};
     }
 
@@ -411,28 +411,22 @@ namespace darmok::physics3d
     {
         _cam = cam;
         _scene = scene;
-        _input = app.getInput();
-
-        auto fontResult = app.getAssets().getFontLoader()(_def.font_path());
-        if (!fontResult)
-        {
-            return unexpected<std::string>{ fmt::format("failed to load font '{}': {}", _def.font_path(), fontResult.error()) };
-		}
-        _font = fontResult.value();
+        _app = app;
+        _jolt = JoltPhysicsDebugRenderer::get();
         return doInit();
     }
 
     expected<void, std::string> PhysicsDebugRendererImpl::shutdown() noexcept
     {
-        if (_input)
+        if (_app)
         {
-            _input->removeListener(*this);
+            _app->getInput().removeListener(*this);
         }
         _cam.reset();
         _scene.reset();
-        _input.reset();
+        _app.reset();
         _font.reset();
-        JoltPhysicsDebugRenderer::shutdown();
+        _jolt.reset();
         return {};
     }
 
@@ -441,6 +435,10 @@ namespace darmok::physics3d
         if (!_enabled)
         {
             return {};
+        }
+        if (!_jolt)
+        {
+            return unexpected<std::string>{"missing jolt debug renderer"};
         }
         auto system = _scene->getSceneComponent<PhysicsSystem>();
         if (!system)
@@ -453,7 +451,7 @@ namespace darmok::physics3d
             return unexpected<std::string>{"uninitialized jolt system"};
         }
 
-        return JoltPhysicsDebugRenderer::render(joltSystem.value(), viewId, encoder);
+        return _jolt->render(_def, _font, joltSystem.value(), viewId, encoder);
     }
 
     expected<void, std::string> PhysicsDebugRendererImpl::onInputEvent(const std::string& tag) noexcept

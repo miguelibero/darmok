@@ -35,6 +35,31 @@ namespace darmok
 			return { val, pos + 1 };
 		}
 
+		void convertIndicesToCounterClockWise(std::vector<int>& indices, const std::vector<glm::uvec2>& positions)
+		{
+			assert(indices.size() % 3 == 0);
+
+			for (std::size_t i = 0; i < indices.size(); i += 3)
+			{
+				const auto i0 = indices[i];
+				const auto i1 = indices[i + 1];
+				const auto i2 = indices[i + 2];
+
+				const auto& a = positions[i0];
+				const auto& b = positions[i1];
+				const auto& c = positions[i2];
+
+				const int area2 = 
+					static_cast<int>(b.x - a.x) * static_cast<int>(c.y - a.y)
+					- static_cast<int>(b.y - a.y) * static_cast<int>(c.x - a.x);
+
+				if (area2 > 0)
+				{
+					std::swap(indices[i + 1], indices[i + 2]);
+				}
+			}
+		}
+
 		std::vector<int> readIndexList(std::string_view str) noexcept
 		{
 			std::vector<int> list;
@@ -124,19 +149,21 @@ namespace darmok
 
 		Element createElement(const Bounds& bounds) noexcept
 		{
-			static const std::vector<glm::uvec2> positions = { { 1, 0 }, { 1, 1 }, { 0, 1 }, { 0, 0 } };
-			static const std::vector<VertexIndex> indices = { 0, 1, 2, 2, 3, 0 };
 			Element elm;
+			MeshData mesh{ Rectangle{} };
+			elm.mutable_positions()->Reserve(mesh.vertices.size());
+			elm.mutable_indices()->Reserve(mesh.indices.size());
 			
-			for (auto& pos : positions)
+			for (auto& vert : mesh.vertices)
 			{
+				glm::uvec2 pos = vert.position;
 				*elm.add_positions() = convert<protobuf::Uvec2>(pos * bounds.size);
 				auto texCoord = pos;
 				texCoord.y = texCoord.y ? 0 : 1;
 				texCoord = bounds.offset + texCoord * bounds.size;
 				*elm.add_texture_coords() = convert<protobuf::Uvec2>(texCoord);
 			}
-			for (auto& idx : indices)
+			for (auto& idx : mesh.indices)
 			{
 				elm.add_indices(idx);
 			}
@@ -148,7 +175,7 @@ namespace darmok
 			return elm;
 		}
 
-		expected < std::unique_ptr<Mesh>, std::string> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
+		expected<std::unique_ptr<Mesh>, std::string> createSprite(const Element& elm, const bgfx::VertexLayout& layout, const glm::uvec2& textureSize, const MeshConfig& config) noexcept
 		{
 			auto vertexAmount = static_cast<uint32_t>(getVertexAmount(elm));
 			VertexDataWriter writer(layout, vertexAmount * config.amount.x * config.amount.y);
@@ -266,19 +293,24 @@ namespace darmok
 			elm.set_rotated(std::string(xml.attribute("r").value()) == "y");
 
 			auto xmlVertices = xml.child("vertices");
+			std::vector<glm::uvec2> positions;
 			if (xmlVertices)
 			{
-				for (const auto& pos : TextureAtlasDetail::readUvec2List(xmlVertices.text().get()))
-				{
-					*elm.add_positions() = convert<protobuf::Uvec2>(pos);
-				}
+				positions = TextureAtlasDetail::readUvec2List(xmlVertices.text().get());
 			}
 			else
 			{
-				*elm.add_positions() = convert<protobuf::Uvec2>(glm::uvec2{ size.x(), 0 });
-				*elm.add_positions() = size;
-				*elm.add_positions() = convert<protobuf::Uvec2>(glm::uvec2{ 0, size.y() });
-				*elm.add_positions() = convert<protobuf::Uvec2>(glm::uvec2{ 0 });
+				positions = {
+					glm::uvec2{ size.x(), 0 },
+					convert<glm::uvec2>(size),
+					glm::uvec2{ 0, size.y() },
+					glm::uvec2{ 0 }
+				};
+			}
+
+			for (auto& pos : positions)
+			{
+				*elm.add_positions() = convert<protobuf::Uvec2>(pos);
 			}
 
 			auto xmlVerticesUV = xml.child("verticesUV");
@@ -306,6 +338,8 @@ namespace darmok
 			{
 				indices = TextureAtlasDetail::readIndexList(xmlTriangles.text().get());
 			}
+			// change indices from CW to CCW
+			TextureAtlasDetail::convertIndicesToCounterClockWise(indices, positions);
 			for (auto idx : indices)
 			{
 				elm.mutable_indices()->Add(idx);
