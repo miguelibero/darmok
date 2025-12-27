@@ -7,9 +7,12 @@
 #include <darmok/stream.hpp>
 #include <darmok/window.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/assimp.hpp>
+#include <darmok/mesh_assimp.hpp>
 
 #include <imgui_stdlib.h>
 #include <fmt/format.h>
+#include <assimp/scene.h>
 
 namespace darmok::editor
 {
@@ -83,11 +86,15 @@ namespace darmok::editor
 			}
             if (ImGui::BeginDragDropTarget())
             {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragType))
+                for (auto dragTypePart : StringUtils::split(',', dragType))
                 {
-                    std::string::size_type len = payload->DataSize / sizeof(std::string::value_type);
-                    assetPath = std::string{ static_cast<const char*>(payload->Data), len };
-                    action = ReferenceInputAction::Changed;
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragTypePart.c_str()))
+                    {
+                        std::string::size_type len = payload->DataSize / sizeof(std::string::value_type);
+                        assetPath = std::string{ static_cast<const char*>(payload->Data), len };
+                        action = ReferenceInputAction::Changed;
+                        break;
+                    }
                 }
                 ImGui::EndDragDropTarget();
             }
@@ -623,5 +630,72 @@ namespace darmok::editor
     void ImguiUtils::endFrame() noexcept
     {
         ImGui::Unindent(ImguiUtils::frameIndent);
+    }
+
+    MeshFileInput::MeshFileInput(const std::string& label) noexcept
+        : _label{ label }
+        , _meshIndex{ 0 }
+    {
+    }
+
+    expected<bool, std::string> MeshFileInput::draw(EditorApp& app) noexcept
+    {
+        FileDialogOptions dialogOptions;
+        dialogOptions.filters = { "*.fbx", "*.glb" };
+        dialogOptions.filterDesc = "3D Model Files";
+        auto changed = false;
+        if (app.drawFileInput(_label.c_str(), path, dialogOptions))
+        {
+            auto& assets = app.getAssets();
+            auto dataResult = assets.getDataLoader()(path);
+            if (!dataResult)
+            {
+                return unexpected{ std::move(dataResult).error() };
+            }
+            AssimpLoader loader;
+            AssimpLoader::Config config;
+            config.setPath(path);
+            auto sceneResult = loader.loadFromMemory(dataResult.value(), config);
+            if (!sceneResult)
+            {
+                return unexpected{ std::move(sceneResult).error() };
+            }
+            scene = std::move(*sceneResult);
+            changed = true;
+        }
+        if (!scene)
+        {
+            return changed;
+        }
+
+        std::vector<std::string> meshNames;
+        meshNames.reserve(scene->mNumMeshes);
+
+        for (size_t i = 0; i < scene->mNumMeshes; i++)
+        {
+            auto& name = scene->mMeshes[i]->mName;
+            meshNames.push_back(convert<std::string>(name));
+        }
+
+        if (ImguiUtils::drawListCombo("Mesh Name", _meshIndex, meshNames))
+        {
+            changed = true;
+        }
+        if (_meshIndex < 0 || _meshIndex >= meshNames.size())
+        {
+            return unexpected{ "invalid mesh index" };
+        }
+        auto& meshName = meshNames[_meshIndex];
+
+        for (size_t i = 0; i < scene->mNumMeshes; i++)
+        {
+            auto& m = scene->mMeshes[i];
+            if (convert<std::string_view>(m->mName) == meshName)
+            {
+                mesh = m;
+                return true;
+            }
+        }
+        return unexpected{ "selected mesh not found in scene" };
     }
 }

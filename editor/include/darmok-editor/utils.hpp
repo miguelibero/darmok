@@ -8,6 +8,9 @@
 
 #include <imgui.h>
 
+struct aiScene;
+struct aiMesh;
+
 namespace darmok
 {
 	class Window;
@@ -118,5 +121,19 @@ namespace darmok::editor
         void endFrame() noexcept;
 
         ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
+    };
+
+    struct MeshFileInput final
+    {
+        std::filesystem::path path;
+        std::shared_ptr<aiScene> scene;
+        OptionalRef<aiMesh> mesh;
+
+        MeshFileInput(const std::string& label = "Load Mesh from file") noexcept;
+        expected<bool, std::string> draw(EditorApp& app) noexcept;
+
+    private:
+        std::string _label;
+        size_t _meshIndex = -1;
     };
 }

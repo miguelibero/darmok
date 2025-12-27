@@ -1,6 +1,7 @@
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/utils.hpp>
 #include <darmok-editor/app.hpp>
+#include <darmok/assimp.hpp>
 
 #include <imgui.h>
 
@@ -99,21 +100,20 @@ namespace darmok::editor
 
     PolygonInspectorEditor::RenderResult PolygonInspectorEditor::renderType(Polygon::Definition& poly) noexcept
     {
-        auto changed = false;
-
-        auto meshDragType = getApp().getAssetDragType<Mesh::Source>().value_or("");
-        auto result = ImguiUtils::drawAssetReferenceInput("Mesh", _meshPath, meshDragType.c_str());
-        if (result == ReferenceInputAction::Changed)
+        auto meshResult = _meshInput.draw(getApp());
+        if (!meshResult)
         {
-            auto defResult = getApp().getAssets().getMeshLoader().loadDefinition(_meshPath);
-            if (!defResult)
-            {
-                return unexpected{ std::move(defResult).error() };
-            }
-            poly = Polygon{ *defResult.value() };
-            changed = true;
+            return unexpected{ std::move(meshResult).error() };
         }
-
+        auto changed = meshResult.value();
+        if (_meshInput.mesh && changed)
+        {
+            poly = convert<Polygon::Definition>(*_meshInput.mesh);
+        }
+        if (poly.triangles_size() > 0)
+        {
+            ImGui::Text("%d triangles", poly.triangles_size());
+        }
         return changed;
     }
 

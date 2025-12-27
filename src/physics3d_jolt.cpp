@@ -1450,7 +1450,7 @@ namespace darmok::physics3d
         settings.mInertiaMultiplier = def.inertia_factor();
         if (def.mass())
         {
-            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateMassAndInertia;
+            settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
             settings.mMassPropertiesOverride.mMass = def.mass();
         }
         _shape = darmok::convert<PhysicsShape>(def.shape());
@@ -1938,6 +1938,7 @@ namespace darmok::physics3d
     PhysicsBody::Definition PhysicsBody::createDefinition() noexcept
     {
         Definition def;
+        def.set_mass(1.0F);
 		def.set_motion(Definition::Dynamic);
 		def.set_inertia_factor(1.0F);
 		def.set_friction(0.2F);

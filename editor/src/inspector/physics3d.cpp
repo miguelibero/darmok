@@ -93,7 +93,7 @@ namespace darmok::editor
 
     Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderCapsule(Object& shape) noexcept
     {
-        auto create = !shape.has_sphere();
+        auto create = !shape.has_capsule();
         auto& capsule = *shape.mutable_capsule();
         auto changed = false;
         if (create)
@@ -105,7 +105,7 @@ namespace darmok::editor
 
     Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderPolygon(Object& shape) noexcept
     {
-        auto create = !shape.has_sphere();
+        auto create = !shape.has_polygon();
         auto& polygon = *shape.mutable_polygon();
         auto changed = false;
         if (create)
@@ -117,7 +117,7 @@ namespace darmok::editor
 
     Physics3dShapeInspectorEditor::RenderResult Physics3dShapeInspectorEditor::renderBoundingBox(Object& shape) noexcept
     {
-        auto create = !shape.has_sphere();
+        auto create = !shape.has_bounding_box();
         auto& bbox = *shape.mutable_bounding_box();
         auto changed = false;
         if (create)

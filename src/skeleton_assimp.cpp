@@ -1131,7 +1131,7 @@ namespace darmok
         for (size_t i = 0; i < _assimpMesh.mNumBones; ++i)
         {
             auto bone = _assimpMesh.mBones[i];
-            auto boneName = AssimpUtils::getString(bone->mName);
+            auto boneName = convert<std::string_view>(bone->mName);
             if (!_boneNames.empty())
             {
                 auto itr = std::find_if(_boneNames.begin(), _boneNames.end(),
@@ -1144,7 +1144,7 @@ namespace darmok
             }
             auto& joint = *_def.add_joints();
             joint.set_name(boneName);
-            *joint.mutable_inverse_bind_pose() = convert<protobuf::Mat4>(AssimpUtils::convert(bone->mOffsetMatrix));
+            *joint.mutable_inverse_bind_pose() = convert<protobuf::Mat4>(convert<glm::mat4>(bone->mOffsetMatrix));
         }
         return {};
     }

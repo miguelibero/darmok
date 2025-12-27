@@ -293,6 +293,11 @@ namespace darmok
 		return _dataLoader.removeRootPath(path);
 	}
 
+	void AppImpl::setAssetAbsolutePathsAllowed(bool allowed) noexcept
+	{
+		_dataLoader.setAbsolutePathsAllowed(allowed);
+	}
+
 	void AppImpl::addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept
 	{
 		_updaters.insert(std::move(updater));
@@ -1110,6 +1115,11 @@ namespace darmok
 	bool App::removeAssetsRootPath(const std::filesystem::path& path) noexcept
 	{
 		return _impl->removeAssetsRootPath(path);
+	}
+
+	void App::setAssetAbsolutePathsAllowed(bool allowed) noexcept
+	{
+		_impl->setAssetAbsolutePathsAllowed(allowed);
 	}
 
 	void App::addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept

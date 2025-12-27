@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok-editor/editor.hpp>
+#include <darmok-editor/utils.hpp>
 #include <darmok/shape.hpp>
 
 namespace darmok::editor
@@ -39,7 +40,7 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Polygon::Definition& poly) noexcept override;
     private:
-        std::string _meshPath;
+        MeshFileInput _meshInput;
     };
 
     class BoundingBoxInspectorEditor final : public ObjectEditor<BoundingBox::Definition>

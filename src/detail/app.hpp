@@ -131,6 +131,7 @@ namespace darmok
 		bool setAssetsBasePath(const std::filesystem::path& path) noexcept;
 		bool addAssetsRootPath(const std::filesystem::path& path) noexcept;
 		bool removeAssetsRootPath(const std::filesystem::path& path) noexcept;
+		void setAssetAbsolutePathsAllowed(bool allowed) noexcept;
 
 		void addUpdater(std::unique_ptr<IAppUpdater> updater) noexcept;
 		void addUpdater(IAppUpdater& updater) noexcept;

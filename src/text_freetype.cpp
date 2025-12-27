@@ -222,9 +222,21 @@ namespace darmok
 		return _impl->shutdown();
 	}
 
+	protobuf::FreetypeFont FreetypeFontLoader::createDefinition() noexcept
+	{
+		return FreetypeFont::createDefinition();
+	}
+
 	FreetypeFontLoader::Result FreetypeFontLoader::create(std::shared_ptr<Definition> def) noexcept
 	{
 		return _impl->create(def);
+	}
+
+	FreetypeFont::Definition FreetypeFont::createDefinition() noexcept
+	{
+		Definition def;
+		*def.mutable_font_size() = convert<protobuf::Uvec2>(glm::uvec2{ 12 });
+		return def;
 	}
 
 	FreetypeFont::FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept

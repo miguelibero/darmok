@@ -1,8 +1,8 @@
 #pragma once
 
 #include <darmok-editor/editor.hpp>
+#include <darmok-editor/utils.hpp>
 #include <darmok/mesh.hpp>
-#include <darmok/protobuf/scene.pb.h>
 
 #include <filesystem>
 #include <vector>
@@ -18,11 +18,8 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Mesh::Source& src) noexcept override;
     private:
-		std::shared_ptr<aiScene> _externalScene;
-        std::vector<std::string> _externalMeshes;
-		size_t _externalMeshIndex = 0;
+        MeshFileInput _meshInput;
 
-        expected<void, std::string> loadSceneMesh(protobuf::DataMeshSource& src) noexcept;
         RenderResult renderData(Mesh::Source& src) noexcept;
         RenderResult renderSphere(Mesh::Source& src) noexcept;
         RenderResult renderCube(Mesh::Source& srce) noexcept;

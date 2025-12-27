@@ -1,9 +1,20 @@
 #include <darmok-editor/inspector/text.hpp>
 #include <darmok-editor/utils.hpp>
 #include <darmok-editor/app.hpp>
+#include <darmok/text_freetype.hpp>
 
 namespace darmok::editor
 {
+    std::string FreetypeFontInspectorEditor::getTitle() const noexcept
+    {
+        return "Freetype Font";
+    }
+
+    FreetypeFontInspectorEditor::RenderResult FreetypeFontInspectorEditor::renderType(protobuf::FreetypeFont& font) noexcept
+    {
+        return {};
+    }
+
     std::string TextInspectorEditor::getTitle() const noexcept
     {
         return "Text";
@@ -17,7 +28,7 @@ namespace darmok::editor
             changed = true;
         }
 
-        auto fontDragType = getApp().getAssetDragType<IFont>().value_or("");
+        auto fontDragType = getApp().getAssetDragType<protobuf::FreetypeFont>().value_or("");
         auto result = ImguiUtils::drawProtobufAssetReferenceInput("Font", "font_path", text, fontDragType.c_str());
         if (result == ReferenceInputAction::Changed)
         {

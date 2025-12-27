@@ -44,6 +44,8 @@ namespace darmok
     public:
         using Definition = protobuf::FreetypeFont;
 
+        static Definition createDefinition() noexcept;
+
         FreetypeFont(const std::shared_ptr<Definition>& def, FT_Face face, FT_Library library, bx::AllocatorI& alloc) noexcept;
         ~FreetypeFont() noexcept;
 

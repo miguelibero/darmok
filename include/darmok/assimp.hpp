@@ -4,6 +4,7 @@
 #include <darmok/expected.hpp>
 #include <darmok/data.hpp>
 #include <darmok/color.hpp>
+#include <darmok/convert.hpp>
 
 #include <string>
 #include <filesystem>
@@ -12,6 +13,7 @@
 #include <glm/glm.hpp>
 
 struct aiScene;
+struct aiMesh;
 struct aiString;
 using ai_real = float;
 template <typename TReal> class aiVector2t;
@@ -29,15 +31,61 @@ namespace darmok
 {
     namespace AssimpUtils
     {
-        std::string_view getStringView(const aiString& str) noexcept;
-        std::string getString(const aiString& str) noexcept;
-        glm::mat4 convert(const aiMatrix4x4& from) noexcept;
-        glm::vec3 convert(const aiVector3D& vec) noexcept;
-        glm::vec2 convert(const aiVector2D& vec) noexcept;
-        Color convert(const aiColor4D& c) noexcept;
-        Color3 convert(aiColor3D c) noexcept;
         float getIntensity(const aiColor3D& c) noexcept;
     }
+
+    namespace protobuf
+    {
+        class Polygon;
+    }
+
+    template<>
+    struct Converter<std::string_view, aiString>
+    {
+        static std::string_view run(const aiString& v) noexcept;
+    };
+
+    template<>
+    struct Converter<std::string, aiString>
+    {
+        static std::string run(const aiString& v) noexcept;
+    };
+
+    template<>
+    struct Converter<glm::mat4, aiMatrix4x4>
+    {
+        static glm::mat4 run(const aiMatrix4x4& v) noexcept;
+    };
+
+    template<>
+    struct Converter<glm::vec3, aiVector3D>
+    {
+        static glm::vec3 run(const aiVector3D& v) noexcept;
+    };
+
+    template<>
+    struct Converter<glm::vec2, aiVector2D>
+    {
+        static glm::vec2 run(const aiVector2D& v) noexcept;
+    };
+
+    template<>
+    struct Converter<Color, aiColor4D>
+    {
+        static Color run(const aiColor4D& v) noexcept;
+    };
+
+    template<>
+    struct Converter<Color3, aiColor3D>
+    {
+        static Color3 run(const aiColor3D& v) noexcept;
+    };
+
+    template<>
+    struct Converter<protobuf::Polygon, aiMesh>
+    {
+        static protobuf::Polygon run(const aiMesh& v) noexcept;
+    };
 
     class AssimpLoaderImpl;
 

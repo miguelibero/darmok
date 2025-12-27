@@ -423,7 +423,7 @@ namespace darmok
 #endif
         if (err)
         {
-            return unexpected(strerror(err));
+            return unexpected{ strerror(err) };
         }
         fseek(fh, 0, SEEK_END);
         long size = ftell(fh);
@@ -505,6 +505,7 @@ namespace darmok
 
     FileDataLoader::FileDataLoader(const OptionalRef<bx::AllocatorI>& alloc)
         : _alloc{ alloc }
+        , _absolutePathsAllowed{ false }
     {
     }
 
@@ -532,10 +533,27 @@ namespace darmok
         return _rootPaths.erase(path);
     }
 
+    bool FileDataLoader::getAbsolutePathsAllowed() const noexcept
+    {
+        return _absolutePathsAllowed;
+    }
+
+    void FileDataLoader::setAbsolutePathsAllowed(bool allowed) noexcept
+    {
+        _absolutePathsAllowed = allowed;
+    }
+
     expected<Data, std::string> FileDataLoader::operator()(const std::filesystem::path& path) noexcept
     {
+        if (path.is_absolute())
+        {
+            if (!_absolutePathsAllowed)
+            {
+                return unexpected{ "absolute paths not allowed"};
+            }
+            return Data::fromFile(path, _alloc);
+        }
         auto fpath = (_basePath / path).relative_path();
-
         for (auto& rootPath : _rootPaths)
         {
             auto combPath = rootPath / fpath;

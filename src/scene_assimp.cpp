@@ -163,7 +163,7 @@ namespace darmok
         {
             auto childEntity = _scene.createEntity();
             TransformDefinition trans;
-            trans.set_name(AssimpUtils::getString(assimpMesh->mName));
+            trans.set_name(convert<std::string>(assimpMesh->mName));
             trans.set_parent(entt::to_integral(entity));
             *trans.mutable_scale() = convert<protobuf::Vec3>(glm::vec3{ 1.f });
             _scene.setComponent(childEntity, trans);
@@ -172,8 +172,8 @@ namespace darmok
 
         BoundingBox::Definition bounds;
         auto& assimpAabb = assimpMesh->mAABB;
-        *bounds.mutable_min() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMin));
-        *bounds.mutable_max() = convert<protobuf::Vec3>(AssimpUtils::convert(assimpAabb.mMax));
+        *bounds.mutable_min() = convert<protobuf::Vec3>(convert<glm::vec3>(assimpAabb.mMin));
+        *bounds.mutable_max() = convert<protobuf::Vec3>(convert<glm::vec3>(assimpAabb.mMax));
         _scene.setComponent(entity, bounds);
 
         if (!meshPath.empty())
@@ -197,7 +197,7 @@ namespace darmok
     
     expected<void, std::string> AssimpSceneDefinitionConverter::operator()() noexcept
     {
-        _scene.setName(AssimpUtils::getString(_assimpScene.mName));
+        _scene.setName(convert<std::string>(_assimpScene.mName));
         if (!_config.root_mesh_regex().empty())
         {
             auto entity = _scene.createEntity();
@@ -218,7 +218,7 @@ namespace darmok
 
     expected<EntityId, std::string> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, EntityId parentEntity) noexcept
     {
-        auto name = AssimpUtils::getString(assimpNode.mName);
+        auto name = convert<std::string>(assimpNode.mName);
         if(AssimpUtils::match(name, _config.skip_nodes_regex()))
         {
             return 0;
@@ -228,7 +228,7 @@ namespace darmok
         TransformDefinitionWrapper{ trans }
             .setName(name)
             .setParent(parentEntity)
-            .setLocalMatrix(AssimpUtils::convert(assimpNode.mTransformation));
+            .setLocalMatrix(convert<glm::mat4>(assimpNode.mTransformation));
 
         _scene.setComponent(entity, trans);
 
@@ -283,8 +283,8 @@ namespace darmok
             TransformDefinition trans;
             TransformDefinitionWrapper{ trans }
                 .setParent(entity)
-                .setName(AssimpUtils::getString(assimpCam.mName))
-                .setLocalMatrix(AssimpUtils::convert(mat));
+                .setName(convert<std::string>(assimpCam.mName))
+                .setLocalMatrix(convert<glm::mat4>(mat));
             entity = _scene.createEntity();
             _scene.setComponent(entity, trans);
         }
@@ -356,11 +356,11 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateLight(EntityId entity, const aiLight& assimpLight) noexcept
     {
-        auto pos = AssimpUtils::convert(assimpLight.mPosition);
+        auto pos = convert<glm::vec3>(assimpLight.mPosition);
         auto mat = glm::translate(glm::mat4{ 1.f }, pos);
 
         auto intensity = AssimpUtils::getIntensity(assimpLight.mColorDiffuse);
-        auto color = AssimpUtils::convert(assimpLight.mColorDiffuse * (1.F / intensity));
+        auto color = convert<Color3>(assimpLight.mColorDiffuse * (1.F / intensity));
 		auto pbColor = convert<protobuf::Color3>(color);
 
         if (assimpLight.mType == aiLightSource_POINT)
@@ -384,7 +384,7 @@ namespace darmok
             *light.mutable_color() = pbColor;
             _scene.setComponent(entity, light);
 
-            auto dir = AssimpUtils::convert(assimpLight.mDirection);
+            auto dir = convert<glm::vec3>(assimpLight.mDirection);
             glm::mat4 view = glm::lookAt(pos, pos + dir, glm::vec3{0, 1, 0});
             mat *= glm::inverse(view);
         }
@@ -401,7 +401,7 @@ namespace darmok
         {
 			protobuf::AmbientLight light;
             intensity = AssimpUtils::getIntensity(assimpLight.mColorAmbient);
-            color = AssimpUtils::convert(assimpLight.mColorAmbient * (1.F / intensity));
+            color = convert<Color3>(assimpLight.mColorAmbient * (1.F / intensity));
             pbColor = convert<protobuf::Color3>(color);
             light.set_intensity(intensity);
             *light.mutable_color() = pbColor;
@@ -411,7 +411,7 @@ namespace darmok
         TransformDefinition trans;
         TransformDefinitionWrapper{ trans }
             .setParent(entity)
-            .setName(AssimpUtils::getString(assimpLight.mName))
+            .setName(convert<std::string>(assimpLight.mName))
             .setLocalMatrix(mat);
 
         entity = _scene.createEntity();
@@ -457,7 +457,7 @@ namespace darmok
                 encoding = Image::getEncodingForPath(path);
             }
             DataView data{ assimpTex->pcData, size };
-            auto name = AssimpUtils::getString(assimpTex->mFilename);
+            auto name = convert<std::string>(assimpTex->mFilename);
             if (name.empty())
             {
                 name = path;
@@ -503,7 +503,7 @@ namespace darmok
 
     void AssimpSceneDefinitionConverter::updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
     {
-        matDef.set_name(AssimpUtils::getString(assimpMat.GetName()));
+        matDef.set_name(convert<std::string>(assimpMat.GetName()));
 
         *matDef.mutable_program() = _config.program();
         for (auto& define : _config.program_defines())
@@ -555,16 +555,16 @@ namespace darmok
         aiColor4D baseColor;
         if (assimpMat.Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
         {
-            *matDef.mutable_base_color() = convert<protobuf::Color>(AssimpUtils::convert(baseColor));
+            *matDef.mutable_base_color() = convert<protobuf::Color>(convert<Color>(baseColor));
         }
         else if (assimpMat.Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
         {
-            *matDef.mutable_base_color() = convert<protobuf::Color>(AssimpUtils::convert(baseColor));
+            *matDef.mutable_base_color() = convert<protobuf::Color>(convert<Color>(baseColor));
         }
         aiColor3D specularColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_SPECULAR, specularColor) == AI_SUCCESS)
         {
-            *matDef.mutable_specular_color() = convert<protobuf::Color3>(AssimpUtils::convert(specularColor));
+            *matDef.mutable_specular_color() = convert<protobuf::Color3>(convert<Color3>(specularColor));
         }
         ai_real v = 0;
         if (assimpMat.Get(AI_MATKEY_METALLIC_FACTOR, v) == AI_SUCCESS)
@@ -590,7 +590,7 @@ namespace darmok
         aiColor3D emissiveColor;
         if (assimpMat.Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
         {
-            *matDef.mutable_emissive_color() = convert<protobuf::Color3>(AssimpUtils::convert(emissiveColor));
+            *matDef.mutable_emissive_color() = convert<protobuf::Color3>(convert<Color3>(emissiveColor));
         }
 
         if (_config.has_opacity())
@@ -637,7 +637,7 @@ namespace darmok
 
     expected<bool, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
     {
-        const std::string name = AssimpUtils::getString(assimpMesh.mName);
+        const std::string name = convert<std::string>(assimpMesh.mName);
         if (AssimpUtils::match(name, _config.skip_meshes_regex()))
         {
             return false;
@@ -686,7 +686,7 @@ namespace darmok
         auto path = "mesh_" + std::to_string(index);
         if (meshSrc.name().empty())
         {
-            meshSrc.set_name(AssimpUtils::getString(assimpMesh->mName));
+            meshSrc.set_name(convert<std::string>(assimpMesh->mName));
         }
         _meshPaths.emplace(assimpMesh, path);
 		_scene.addAsset(path, meshSrc);

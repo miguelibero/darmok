@@ -33,7 +33,7 @@ namespace darmok::editor
         for (size_t i = 0; i < _scene->mNumMeshes; i++)
         {
             auto& m = _scene->mMeshes[i];
-            if (AssimpUtils::getStringView(m->mName) == meshName)
+            if (convert<std::string_view>(m->mName) == meshName)
             {
                 assimpMesh = m;
                 break;
@@ -87,7 +87,7 @@ namespace darmok::editor
                 {
                     continue;
 				}
-                _meshes.push_back(AssimpUtils::getString(mesh->mName));
+                _meshes.push_back(convert<std::string>(mesh->mName));
             }
             auto result = loadSceneMesh(armature);
             if (!result)

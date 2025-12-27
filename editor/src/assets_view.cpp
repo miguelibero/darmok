@@ -8,6 +8,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/material.hpp>
 #include <darmok/skeleton.hpp>
+#include <darmok/text_freetype.hpp>
 
 #include <imgui.h>
 #include <fmt/format.h>
@@ -24,6 +25,7 @@ namespace darmok::editor
         addAssetName<Mesh::Source>("mesh");
         addAssetName<Material::Definition>("material");
         addAssetName<Armature::Definition>("armature");
+        addAssetName<protobuf::FreetypeFont>("freetype_font");
         return {};
     }
 

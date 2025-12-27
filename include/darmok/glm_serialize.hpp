@@ -17,109 +17,109 @@ namespace darmok
 	template<>
 	struct Converter<protobuf::Uvec2, glm::uvec2>
 	{
-		static protobuf::Uvec2 run(const glm::uvec2& v);
+		static protobuf::Uvec2 run(const glm::uvec2& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Vec2, glm::vec2>
 	{
-		static protobuf::Vec2 run(const glm::vec2& v);
+		static protobuf::Vec2 run(const glm::vec2& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Vec3, glm::vec3>
 	{
-		static protobuf::Vec3 run(const glm::vec3& v);
+		static protobuf::Vec3 run(const glm::vec3& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Vec4, glm::vec4>
 	{
-		static protobuf::Vec4 run(const glm::vec4& v);
+		static protobuf::Vec4 run(const glm::vec4& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Quat, glm::quat>
 	{
-		static protobuf::Quat run(const glm::quat& v);
+		static protobuf::Quat run(const glm::quat& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Mat3, glm::mat3>
 	{
-		static protobuf::Mat3 run(const glm::mat3& v);
+		static protobuf::Mat3 run(const glm::mat3& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Mat4, glm::mat4>
 	{
-		static protobuf::Mat4 run(const glm::mat4& v);
+		static protobuf::Mat4 run(const glm::mat4& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Color, Color>
 	{
-		static protobuf::Color run(const Color& v);
+		static protobuf::Color run(const Color& v) noexcept;
 	};
 
 	template<>
 	struct Converter<protobuf::Color3, Color3>
 	{
-		static protobuf::Color3 run(const Color3& v);
+		static protobuf::Color3 run(const Color3& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::uvec2, protobuf::Uvec2>
 	{
-		static glm::uvec2 run(const protobuf::Uvec2& v);
+		static glm::uvec2 run(const protobuf::Uvec2& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::vec2, protobuf::Vec2>
 	{
-		static glm::vec2 run(const protobuf::Vec2& v);
+		static glm::vec2 run(const protobuf::Vec2& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::vec3, protobuf::Vec3>
 	{
-		static glm::vec3 run(const protobuf::Vec3& v);
+		static glm::vec3 run(const protobuf::Vec3& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::vec4, protobuf::Vec4>
 	{
-		static glm::vec4 run(const protobuf::Vec4& v);
+		static glm::vec4 run(const protobuf::Vec4& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::quat, protobuf::Quat>
 	{
-		static glm::quat run(const protobuf::Quat& v);
+		static glm::quat run(const protobuf::Quat& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::mat3, protobuf::Mat3>
 	{
-		static glm::mat3 run(const protobuf::Mat3& v);
+		static glm::mat3 run(const protobuf::Mat3& v) noexcept;
 	};
 
 	template<>
 	struct Converter<glm::mat4, protobuf::Mat4>
 	{
-		static glm::mat4 run(const protobuf::Mat4& v);
+		static glm::mat4 run(const protobuf::Mat4& v) noexcept;
 	};
 
 	template<>
 	struct Converter<Color, protobuf::Color>
 	{
-		static Color run(const protobuf::Color& v);
+		static Color run(const protobuf::Color& v) noexcept;
 	};
 
 	template<>
 	struct Converter<Color3, protobuf::Color3>
 	{
-		static Color3 run(const protobuf::Color3& v);
+		static Color3 run(const protobuf::Color3& v) noexcept;
 	};
 }
 

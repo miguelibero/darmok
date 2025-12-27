@@ -165,12 +165,15 @@ namespace darmok
         bool setBasePath(const std::filesystem::path& path) noexcept;
         bool addRootPath(const std::filesystem::path& path) noexcept;
         bool removeRootPath(const std::filesystem::path& path) noexcept;
+        bool getAbsolutePathsAllowed() const noexcept;
+        void setAbsolutePathsAllowed(bool allowed) noexcept;
 
         [[nodiscard]] expected<Data, std::string> operator()(const std::filesystem::path& path) noexcept override;
 	private:
         std::filesystem::path _basePath;
         std::unordered_set<std::filesystem::path> _rootPaths;
 		OptionalRef<bx::AllocatorI> _alloc;
+        bool _absolutePathsAllowed;
 	};
 }
 

@@ -20,6 +20,7 @@
 #include <darmok/physics3d_debug.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/text.hpp>
+#include <darmok/text_freetype.hpp>
 #include <darmok/stream.hpp>
 
 #include <imgui.h>
@@ -39,6 +40,7 @@ namespace darmok::editor
         , _symbolsFont{nullptr}
         , _mainToolbarHeight{0.f}
     {
+        _app.setAssetAbsolutePathsAllowed(true);
     }
 
     EditorApp::~EditorApp() noexcept = default;
@@ -291,6 +293,7 @@ namespace darmok::editor
                         drawAssetComponentMenu("Animator", SkeletalAnimator::createDefinition());
                         ImGui::EndMenu();
                     }
+                    drawAssetComponentMenu("Freetype Font", FreetypeFontLoader::createDefinition());
 					ImGui::EndMenu();
                 }
                 ImGui::EndMenu();

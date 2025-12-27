@@ -59,6 +59,7 @@ namespace darmok::editor
         _editors.add<Physics3dBodyInspectorEditor>();
         _editors.add<Physics3dCharacterControllerInspectorEditor>();
         _editors.add<Physics3dSystemInspectorEditor>();
+        _editors.add<FreetypeFontInspectorEditor>();
         _editors.add<TextInspectorEditor>();
         _editors.add<TextRendererInspectorEditor>();
         return {};

@@ -1,4 +1,6 @@
 #include <darmok/assimp.hpp>
+#include <darmok/shape.hpp>
+#include <darmok/glm_serialize.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/BaseImporter.h>
@@ -11,67 +13,90 @@ namespace darmok
 {
     namespace AssimpUtils
     {
-        std::string_view getStringView(const aiString& str) noexcept
-        {
-            return std::string_view{ str.data, str.length };
-        }
-
-        std::string getString(const aiString& str) noexcept
-        {
-            return std::string{ str.data, str.length };
-        }
-
-        glm::mat4 convert(const aiMatrix4x4& from) noexcept
-        {
-            // the a,b,c,d in assimp is the row; the 1,2,3,4 is the column
-            return glm::mat4{
-                from.a1, from.b1, from.c1, from.d1,
-                from.a2, from.b2, from.c2, from.d2,
-                from.a3, from.b3, from.c3, from.d3,
-                from.a4, from.b4, from.c4, from.d4
-            };
-        }
-
-        glm::vec3 convert(const aiVector3D& vec) noexcept
-        {
-            return glm::vec3{ vec.x, vec.y, vec.z };
-        }
-
-        glm::vec2 convert(const aiVector2D& vec) noexcept
-        {
-            return glm::vec2{ vec.x, vec.y };
-        }
-
         uint8_t convertColorComp(ai_real v) noexcept
         {
             return 255 * v;
-        }
-
-        Color convert(const aiColor4D& c) noexcept
-        {
-            return Color
-            {
-                convertColorComp(c.r),
-                convertColorComp(c.g),
-                convertColorComp(c.b),
-                convertColorComp(c.a),
-            };
-        }
-
-        Color3 convert(aiColor3D c) noexcept
-        {
-            return Color3
-            {
-                convertColorComp(c.r),
-                convertColorComp(c.g),
-                convertColorComp(c.b)
-            };
         }
 
         float getIntensity(const aiColor3D& c) noexcept
         {
             return glm::compMax(glm::vec3{ c.r, c.g, c.b });
         }
+    };
+
+    std::string_view Converter<std::string_view, aiString>::run(const aiString& v) noexcept
+    {
+        return std::string_view{ v.data, v.length };
+    }
+
+    std::string Converter<std::string, aiString>::run(const aiString& v) noexcept
+    {
+        return std::string{ v.data, v.length };
+    }
+
+    glm::mat4 Converter<glm::mat4, aiMatrix4x4>::run(const aiMatrix4x4& v) noexcept
+    {
+        // the a,b,c,d in assimp is the row; the 1,2,3,4 is the column
+        return glm::mat4{
+            v.a1, v.b1, v.c1, v.d1,
+            v.a2, v.b2, v.c2, v.d2,
+            v.a3, v.b3, v.c3, v.d3,
+            v.a4, v.b4, v.c4, v.d4
+        };
+    }
+
+    glm::vec3 Converter<glm::vec3, aiVector3D>::run(const aiVector3D& v) noexcept
+    {
+        return glm::vec3{ v.x, v.y, v.z };
+    }
+
+    glm::vec2 Converter<glm::vec2, aiVector2D>::run(const aiVector2D& v) noexcept
+    {
+        return glm::vec2{ v.x, v.y };
+    }
+
+    Color Converter<Color, aiColor4D>::run(const aiColor4D& v) noexcept
+    {
+        return {
+            AssimpUtils::convertColorComp(v.r),
+            AssimpUtils::convertColorComp(v.g),
+            AssimpUtils::convertColorComp(v.b),
+            AssimpUtils::convertColorComp(v.a),
+        };
+    }
+
+    Color3 Converter<Color3, aiColor3D>::run(const aiColor3D& v) noexcept
+    {
+        return {
+            AssimpUtils::convertColorComp(v.r),
+            AssimpUtils::convertColorComp(v.g),
+            AssimpUtils::convertColorComp(v.b)
+        };
+    }
+
+    protobuf::Polygon Converter<protobuf::Polygon, aiMesh>::run(const aiMesh& v) noexcept
+    {
+        auto getVertex = [&v](size_t i)
+        {
+            return convert<protobuf::Vec3>(convert<glm::vec3>(v.mVertices[i]));
+        };
+
+        protobuf::Polygon polygon;
+        auto& tris = *polygon.mutable_triangles();
+        tris.Reserve(v.mNumFaces);
+        for (size_t i = 0; i < v.mNumFaces; ++i)
+        {
+            auto& face = v.mFaces[i];
+            if (face.mNumIndices != 3)
+            {
+                continue;
+            }
+            auto& tri = *tris.Add();
+            *tri.mutable_vertex1() = getVertex(face.mIndices[0]);
+            *tri.mutable_vertex2() = getVertex(face.mIndices[1]);
+            *tri.mutable_vertex3() = getVertex(face.mIndices[2]);
+        }
+        return polygon;
     };
 
     class AssimpLoaderImpl final

@@ -73,12 +73,14 @@ namespace darmok
         [[nodiscard]] std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc) noexcept;
 
         template<class T>
+            requires std::is_base_of_v<google::protobuf::Message, T>
         [[nodiscard]] IdType getTypeId() noexcept
         {
             return getTypeId(*T::descriptor());
         }
 
         template<class T>
+            requires std::is_base_of_v<google::protobuf::Message, T>
         [[nodiscard]] std::string getTypeUrl() noexcept
         {
             return getTypeUrl(*T::descriptor());

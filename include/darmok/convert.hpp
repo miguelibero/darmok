@@ -7,7 +7,7 @@ namespace darmok
     template<typename Dst, typename Src, typename = void>
     struct Converter
     {
-        static Dst run(const Src& src)
+        static Dst run(const Src& src) noexcept
         {
             if constexpr (std::is_convertible_v<Src, Dst>)
             {
@@ -25,7 +25,7 @@ namespace darmok
     };
 
     template<typename Dst, typename Src>
-    Dst convert(const Src& src)
+    Dst convert(const Src& src) noexcept
     {
         return Converter<Dst, Src>::run(src);
     }

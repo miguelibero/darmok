@@ -43,6 +43,8 @@ namespace darmok
         ~FreetypeFontLoader() noexcept;
         expected<void, std::string> init(App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
+
+        static protobuf::FreetypeFont createDefinition() noexcept;
     protected:
         Result create(std::shared_ptr<Definition> def) noexcept override;
     private:

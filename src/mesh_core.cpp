@@ -39,12 +39,12 @@ namespace darmok
 
 	expected<Mesh::StaticMode, std::string> Mesh::StaticMode::create(const bgfx::VertexLayout& layout, DataView vertices, DataView indices, Config config) noexcept
 	{
-		auto flags = config.getFlags();
+		StaticMode mode;
 		if (vertices.empty())
 		{
-			return unexpected<std::string>{"empty vertex data"};
+			return mode;
 		}
-		StaticMode mode;
+		auto flags = config.getFlags();
 		mode.vertexBuffer = { vertices.copyMem(), layout, flags };
 		if (!indices.empty())
 		{

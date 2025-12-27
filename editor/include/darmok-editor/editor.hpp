@@ -309,6 +309,7 @@ namespace darmok::editor
     };
 
     template<typename T>
+        requires std::is_base_of_v<google::protobuf::Message, T>
     class BX_NO_VTABLE AssetObjectEditor : public ObjectEditor<T>
     {
     protected:
