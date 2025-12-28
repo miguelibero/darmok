@@ -9,8 +9,8 @@
 namespace darmok
 {
 	LuaCoroutine::LuaCoroutine(const LuaCoroutineRunner& runner, const void* coroutinePtr) noexcept
-		: _runner(runner)
-		, _coroutinePtr(coroutinePtr)
+		: _runner{ runner }
+		, _coroutinePtr{ coroutinePtr }
 	{
 	}
 
@@ -25,7 +25,7 @@ namespace darmok
 	}
 
 	LuaCombinedYieldInstruction::LuaCombinedYieldInstruction(const std::vector<std::shared_ptr<ILuaYieldInstruction>>& instructions) noexcept
-		: _instructions(instructions)
+		: _instructions{ instructions }
 	{
 	}
 
@@ -50,7 +50,7 @@ namespace darmok
 	}
 
 	LuaWaitForSeconds::LuaWaitForSeconds(float secs) noexcept
-		: _secs(secs)
+		: _secs{ secs }
 	{
 	}
 
@@ -74,9 +74,9 @@ namespace darmok
 	}
 
 	LuaMoveTowards::LuaMoveTowards(Transform& trans, const glm::vec3& position, float speed) noexcept
-		: _trans(trans)
-		, _position(position)
-		, _speed(speed)
+		: _trans{ trans }
+		, _position{ position }
+		, _speed{ speed }
 	{
 	}
 
@@ -105,9 +105,9 @@ namespace darmok
 	}
 
 	LuaRotateTowards::LuaRotateTowards(Transform& trans, const glm::quat& rotation, float speed) noexcept
-		: _trans(trans)
-		, _rotation(rotation)
-		, _speed(speed)
+		: _trans{ trans }
+		, _rotation{ rotation }
+		, _speed{ speed }
 	{
 	}
 
@@ -135,12 +135,12 @@ namespace darmok
 	}
 
 	LuaEasePosition::LuaEasePosition(Transform& trans, const glm::vec3& position, float duration, EasingType easing) noexcept
-		: _trans(trans)
-		, _startPosition(trans.getPosition())
-		, _endPosition(position)
-		, _duration(duration)
-		, _normalizedTime(0.F)
-		, _easing(easing)
+		: _trans{ trans }
+		, _startPosition{ trans.getPosition() }
+		, _endPosition{ position }
+		, _duration{ duration }
+		, _normalizedTime{ 0.F }
+		, _easing{ easing }
 	{
 	}
 
@@ -178,26 +178,26 @@ namespace darmok
 	}
 
 	LuaEaseRotation::LuaEaseRotation(Transform& trans, const glm::quat& rotation, float duration, EasingType easing) noexcept
-		: _trans(trans)
-		, _startRotation(trans.getRotation())
-		, _endRotation(rotation)
-		, _angle(0.F)
-		, _axis(0)
-		, _duration(duration)
-		, _normalizedTime(0.F)
-		, _easing(easing)
+		: _trans{ trans }
+		, _startRotation{ trans.getRotation() }
+		, _endRotation{ rotation }
+		, _angle{ 0.F }
+		, _axis{ 0 }
+		, _duration{ duration }
+		, _normalizedTime{ 0.F }
+		, _easing{ easing }
 	{
 	}
 
 	LuaEaseRotation::LuaEaseRotation(Transform& trans, float angle, const glm::vec3& axis, float duration, EasingType easing) noexcept
-		: _trans(trans)
-		, _startRotation(trans.getRotation())
-		, _endRotation(_startRotation * glm::angleAxis(angle, axis))
-		, _angle(angle)
-		, _axis(axis)
-		, _duration(duration)
-		, _normalizedTime(0.F)
-		, _easing(easing)
+		: _trans{ trans }
+		, _startRotation{ trans.getRotation() }
+		, _endRotation{ _startRotation * glm::angleAxis(angle, axis) }
+		, _angle{ angle }
+		, _axis{ axis }
+		, _duration{ duration }
+		, _normalizedTime{ 0.F }
+		, _easing{ easing }
 	{
 	}
 
@@ -251,12 +251,12 @@ namespace darmok
 	}
 
 	LuaEaseScale::LuaEaseScale(Transform& trans, const glm::vec3& scale, float duration, EasingType easing) noexcept
-		: _trans(trans)
-		, _startScale(trans.getScale())
-		, _endScale(scale)
-		, _duration(duration)
-		, _normalizedTime(0.F)
-		, _easing(easing)
+		: _trans{ trans }
+		, _startScale{ trans.getScale() }
+		, _endScale{ scale }
+		, _duration{ duration }
+		, _normalizedTime{ 0.F }
+		, _easing{ easing }
 	{
 	}
 
@@ -294,9 +294,9 @@ namespace darmok
 	}
 
 	LuaPlayAnimation::LuaPlayAnimation(SkeletalAnimator& animator, const std::string& name) noexcept
-		: _animator(animator)
-		, _name(name)
-		, _finished(false)
+		: _animator{ animator }
+		, _name{ name }
+		, _finished{ false }
 	{
 		_animator->addListener(*this);
 		auto state = _animator->getCurrentState();
@@ -366,7 +366,7 @@ namespace darmok
 
 	// https://github.com/ThePhD/sol2/issues/296
 	LuaBundledCoroutine::LuaBundledCoroutine(const sol::main_function& func) noexcept
-		: thread(sol::thread::create(func.lua_state()))
+		: thread{ sol::thread::create(func.lua_state()) }
 	{
 		// thread needs to be defined after coroutine
 		// to guarantee that it's destroyed afterwards
@@ -405,8 +405,7 @@ namespace darmok
 	expected<void, std::string> LuaCoroutineRunner::update(float deltaTime) noexcept
 	{
 		std::vector<const void*> finishedCoroutines;
-		Coroutines coroutines(_coroutines);
-		for (auto& bundle : coroutines)
+		for (auto& bundle : Coroutines{ _coroutines })
 		{
 			auto& coroutine = bundle->coroutine;
 			auto coroutinePtr = coroutine.pointer();
@@ -424,7 +423,12 @@ namespace darmok
 					continue;
 				}
 			}
-			if (!resumeCoroutine(coroutine))
+			auto resumeResult = resumeCoroutine(coroutine);
+			if (!resumeResult)
+			{
+				return unexpected{ std::move(resumeResult).error() };
+			}
+			if (!resumeResult.value())
 			{
 				finishedCoroutines.push_back(coroutinePtr);
 			}
@@ -439,12 +443,11 @@ namespace darmok
 
 	expected<bool, std::string> LuaCoroutineRunner::resumeCoroutine(sol::coroutine& coroutine) noexcept
 	{
-		static const std::string logDesc = "running coroutine";
 		if (!coroutine.runnable())
 		{
 			return false;
 		}
-		auto result = LuaUtils::wrapResult(coroutine());
+		auto result = LuaUtils::wrapResult(coroutine(), "running coroutine");
 		if(!result)
 		{
 			return unexpected{ std::move(result).error() };
@@ -455,7 +458,7 @@ namespace darmok
 			_awaits.emplace(coroutine.pointer(), std::move(instr));
 			return true;
 		}
-		return coroutine.runnable();
+		return false;
 	}
 
 	std::shared_ptr<ILuaYieldInstruction> LuaCoroutineRunner::readYieldInstruction(const sol::object& obj) noexcept

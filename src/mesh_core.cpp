@@ -494,7 +494,7 @@ namespace darmok
 		{
 			for (auto& vertex : vertices)
 			{
-				vertex.position = glm::vec3(rect.origin, 0);
+				vertex.position = glm::vec3{ rect.origin, 0 };
 			}
 			return;
 		}

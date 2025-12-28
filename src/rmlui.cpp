@@ -1165,11 +1165,6 @@ namespace darmok
 
     expected<void, std::string> RmluiCanvasImpl::render(bgfx::Encoder& encoder) noexcept
     {
-        if (!_visible)
-        {
-            return {};
-        }
-
         if (!_viewId)
         {
             return unexpected<std::string>{"missing view id"};
@@ -1177,6 +1172,11 @@ namespace darmok
 
         auto viewId = _viewId.value();
         encoder.touch(viewId);
+
+        if (!_visible)
+        {
+            return {};
+        }
 
         if (!_render)
         {

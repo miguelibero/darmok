@@ -150,17 +150,18 @@ namespace darmok
 		Element createElement(const Bounds& bounds) noexcept
 		{
 			Element elm;
-			MeshData mesh{ Rectangle{} };
+			MeshData mesh{ Rectangle{ bounds.size, glm::vec2{ bounds.size } * 0.5f } };
+			mesh.scaleTexCoords(bounds.size);
+			mesh.translateTexCoords(bounds.offset);
+
 			elm.mutable_positions()->Reserve(mesh.vertices.size());
 			elm.mutable_indices()->Reserve(mesh.indices.size());
 			
 			for (auto& vert : mesh.vertices)
 			{
 				glm::uvec2 pos = vert.position;
-				*elm.add_positions() = convert<protobuf::Uvec2>(pos * bounds.size);
-				auto texCoord = pos;
-				texCoord.y = texCoord.y ? 0 : 1;
-				texCoord = bounds.offset + texCoord * bounds.size;
+				*elm.add_positions() = convert<protobuf::Uvec2>(pos);
+				glm::uvec2 texCoord = vert.texCoord;
 				*elm.add_texture_coords() = convert<protobuf::Uvec2>(texCoord);
 			}
 			for (auto& idx : mesh.indices)
