@@ -456,9 +456,8 @@ namespace darmok
 		if (auto instr = readYieldInstruction(robj))
 		{
 			_awaits.emplace(coroutine.pointer(), std::move(instr));
-			return true;
 		}
-		return false;
+		return true;
 	}
 
 	std::shared_ptr<ILuaYieldInstruction> LuaCoroutineRunner::readYieldInstruction(const sol::object& obj) noexcept
