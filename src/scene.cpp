@@ -298,7 +298,7 @@ namespace darmok
         }
     }
 
-    expected<void, std::string>  SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity) noexcept
+    expected<void, std::string> SceneImpl::onCameraConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         if (_app)
         {
@@ -308,7 +308,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string>  SceneImpl::onCameraDestroyed(EntityRegistry& registry, Entity entity) noexcept
+    expected<void, std::string> SceneImpl::onCameraDestroyed(EntityRegistry& registry, Entity entity) noexcept
     {
         if (_app)
         {

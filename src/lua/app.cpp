@@ -41,6 +41,104 @@
 
 namespace darmok
 {	
+	void luaPrint(sol::variadic_args args) noexcept
+	{
+		std::vector<std::string> strArgs;
+		strArgs.reserve(args.size());
+		std::transform(args.begin(), args.end(), std::back_inserter(strArgs),
+			[](const auto& arg) { return arg.as<std::string>(); });
+		StreamUtils::log(StringUtils::join(", ", strArgs) + "\n");
+	}
+
+	void addLuaPackagePath(sol::state_view lua, const std::string& path, bool binary = false) noexcept
+	{
+		static const char sep = ';';
+		std::string fpath{ path };
+		std::replace(fpath.begin(), fpath.end(), ',', sep);
+		auto key = binary ? "cpath" : "path";
+		std::string current = lua["package"][key];
+
+		for (auto& sub : StringUtils::split(sep, fpath))
+		{
+			std::filesystem::path spath(sub);
+			if (!StringUtils::contains(spath.filename().string(), '?') && spath.extension().empty())
+			{
+				if (binary)
+				{
+#if BX_PLATFORM_WINDOWS
+					spath /= "?.dll";
+#else
+					spath /= "?.so";
+#endif
+				}
+				else
+				{
+					spath /= "?.lua";
+				}
+			}
+			current += (!current.empty() ? ";" : "") + std::filesystem::absolute(spath).string();
+		}
+		lua["package"][key] = current;
+	}
+
+	sol::state createLuaState(App& app) noexcept
+	{
+		sol::state lua;
+
+		lua.open_libraries(
+			sol::lib::base, sol::lib::package, sol::lib::io,
+			sol::lib::table, sol::lib::string, sol::lib::coroutine,
+			sol::lib::math, sol::lib::os
+
+#ifdef DARMOK_LUAJIT
+			, sol::lib::ffi, sol::lib::jit, sol::lib::bit32
+#endif
+#ifndef _NDEBUG
+			, sol::lib::debug
+#endif
+		);
+
+		auto addStaticLib = [&lua](auto& lib, const std::string& name, bool create_global = false)
+		{
+			auto content = DataView::fromStatic(lib).stringView();
+			lua.require_script(name, content, create_global);
+		};
+
+		LuaMath::bind(lua);
+		LuaShape::bind(lua);
+		LuaScene::bind(lua);
+		LuaApp::bind(lua);
+
+#ifdef DARMOK_RMLUI
+		LuaRmluiRenderer::bind(lua);
+#ifdef RMLUI_DEBUGGER
+		LuaRmluiDebuggerComponent::bind(lua);
+#endif
+#endif
+
+		addStaticLib(lua_darmok_lib_table, "darmok/table");
+		addStaticLib(lua_darmok_lib_string, "darmok/string");
+		addStaticLib(lua_darmok_lib_middleclass, "darmok/middleclass", true);
+		addStaticLib(lua_darmok_lib_class, "darmok/class");
+		addStaticLib(lua_darmok_lib_base, "darmok/base");
+		addStaticLib(lua_darmok_lib_bit, "darmok/bit", true);
+
+		lua.set_function("print", luaPrint);
+		lua["app"] = std::ref(app);
+
+#define XSTR(V) #V
+#define STR(V) XSTR(V)
+#ifdef LUA_PATH
+		addLuaPackagePath(lua, STR(LUA_PATH));
+#endif
+
+#ifdef LUA_CPATH
+		addLuaPackagePath(lua, STR(LUA_CPATH), true);
+#endif
+
+		return lua;
+	}
+
 	LuaAppUpdater::LuaAppUpdater(const sol::object& obj) noexcept
 		: _delegate{ obj, "update" }
 	{
@@ -263,15 +361,6 @@ namespace darmok
 	{
 	}
 
-	static void luaPrint(sol::variadic_args args) noexcept
-	{
-		std::vector<std::string> strArgs;
-		strArgs.reserve(args.size());
-		std::transform(args.begin(), args.end(), std::back_inserter(strArgs),
-			[](const auto& arg) { return arg.as<std::string>(); });
-		StreamUtils::log(StringUtils::join(", ", strArgs) + "\n");
-	}
-
 	void LuaAppDelegateImpl::luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept
 	{
 		_dbgTexts.emplace_back(pos, msg);
@@ -318,67 +407,17 @@ namespace darmok
 	{
 		auto mainDir = mainPath.parent_path().string();
 
-		_lua = std::make_unique<sol::state>();
+		_lua = std::make_unique<sol::state>(createLuaState(_app));
 		auto& lua = *_lua;
 
-		lua.open_libraries(
-			sol::lib::base, sol::lib::package, sol::lib::io,
-			sol::lib::table, sol::lib::string, sol::lib::coroutine,
-			sol::lib::math, sol::lib::os
-
-#ifdef DARMOK_LUAJIT
-			, sol::lib::ffi, sol::lib::jit, sol::lib::bit32
-#endif
-#ifndef _NDEBUG
-			, sol::lib::debug
-#endif
-			);
-
-		auto addStaticLib = [&lua](auto& lib, const std::string& name, bool create_global = false)
-		{
-			auto content = DataView::fromStatic(lib).stringView();
-			lua.require_script(name, content, create_global);
-		};
-
-		LuaMath::bind(lua);
-		LuaShape::bind(lua);
-		LuaScene::bind(lua);
-		LuaApp::bind(lua);
-
-#ifdef DARMOK_RMLUI
-		LuaRmluiRenderer::bind(lua);
-#ifdef RMLUI_DEBUGGER
-		LuaRmluiDebuggerComponent::bind(lua);
-#endif
-#endif
-
-		addStaticLib(lua_darmok_lib_table, "darmok/table");
-		addStaticLib(lua_darmok_lib_string, "darmok/string");
-		addStaticLib(lua_darmok_lib_middleclass, "darmok/middleclass", true);
-		addStaticLib(lua_darmok_lib_class, "darmok/class");
-		addStaticLib(lua_darmok_lib_base, "darmok/base");
-		addStaticLib(lua_darmok_lib_bit, "darmok/bit", true);
-
-		lua["app"] = std::ref(_app);
-		lua.set_function("print", luaPrint);
 		lua.set_function("debug_screen_text", [this](const VarLuaTable<glm::uvec2>& pos, const std::string& msg) {
 			luaDebugScreenText(LuaGlm::tableGet(pos), msg);
 		});
 
 		if (!mainDir.empty())
 		{
-			addPackagePath(mainDir);
+			addLuaPackagePath(lua, mainDir);
 		}
-
-#define XSTR(V) #V
-#define STR(V) XSTR(V)
-#ifdef LUA_PATH
-		addPackagePath(STR(LUA_PATH));
-#endif
-
-#ifdef LUA_CPATH
-		addPackagePath(STR(LUA_CPATH), true);
-#endif
 
 		auto result = lua.safe_script_file(mainPath.string(), sol::script_pass_on_error);		
 		if (!result.valid())
@@ -435,38 +474,6 @@ namespace darmok
 		}
 		throw CLI::ValidationError("could not find main lua script");
 		return std::nullopt;
-	}
-
-	void LuaAppDelegateImpl::addPackagePath(const std::string& path, bool binary) noexcept
-	{
-		static const char sep = ';';
-		std::string fpath{ path };
-		std::replace(fpath.begin(), fpath.end(), ',', sep);
-		auto& lua = *_lua;
-		auto key = binary ? "cpath" : "path";
-		std::string current = lua["package"][key];
-
-		for (auto& sub : StringUtils::split(sep, fpath))
-		{
-			std::filesystem::path spath(sub);
-			if (!StringUtils::contains(spath.filename().string(), '?') && spath.extension().empty())
-			{
-				if (binary)
-				{
-#if BX_PLATFORM_WINDOWS
-					spath /= "?.dll";
-#else
-					spath /= "?.so";
-#endif
-				}
-				else
-				{
-					spath /= "?.lua";
-				}
-			}
-			current += (!current.empty() ? ";" : "") + std::filesystem::absolute(spath).string();
-		}
-		lua["package"][key] = current;
 	}
 
 	expected<void, std::string> LuaAppDelegateImpl::init() noexcept

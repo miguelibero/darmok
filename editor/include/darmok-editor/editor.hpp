@@ -195,7 +195,6 @@ namespace darmok::editor
     protected:
         std::optional<EntityId> _entityId;
 
-
         RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
         {
             _entityId = BaseObjectEditor::getEntityId(any);

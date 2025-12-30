@@ -38,7 +38,7 @@ namespace darmok
         virtual expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
         virtual expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
         virtual void onCameraTransformChanged() noexcept {}
-        virtual expected<void, std::string> afterLoad() noexcept { return {}; }
+        // virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };
 
     template<typename T>

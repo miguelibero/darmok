@@ -22,6 +22,7 @@
 #include <darmok/text.hpp>
 #include <darmok/text_freetype.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/lua_script.hpp>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -307,6 +308,7 @@ namespace darmok::editor
                     {
                         drawEntityComponentMenu<Renderable>("Renderable");
                         drawEntityComponentMenu<Camera>("Camera");
+                        drawEntityComponentMenu<LuaScript>("Lua Script");
                         drawEntityComponentMenu<Text>("Text");
                         if (ImGui::BeginMenu("Light"))
                         {
@@ -341,6 +343,7 @@ namespace darmok::editor
                         drawSceneComponentMenu<FreelookController>("Freelook Controller");
                         drawSceneComponentMenu<SkeletalAnimationSceneComponent>("Skeletal Animation");
                         drawSceneComponentMenu<physics3d::PhysicsSystem>("Physics3d System");
+                        drawSceneComponentMenu<LuaScriptRunner>("Lua Script Runner");
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();

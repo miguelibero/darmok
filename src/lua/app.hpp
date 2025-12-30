@@ -21,6 +21,8 @@ namespace bx
 
 namespace darmok
 {
+	sol::state createLuaState(App& app) noexcept;
+
 	class LuaAppUpdater final : public ITypeAppUpdater<LuaAppUpdater>
 	{
 	public:
@@ -111,7 +113,6 @@ namespace darmok
 		expected<int32_t, std::string> loadLua(const std::filesystem::path& mainPath) noexcept;
 		void unloadLua() noexcept;
 
-		void addPackagePath(const std::string& path, bool binary = false) noexcept;
 		void luaDebugScreenText(const glm::uvec2& pos, const std::string& msg) noexcept;
     };
 

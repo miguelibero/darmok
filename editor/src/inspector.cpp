@@ -14,6 +14,7 @@
 #include <darmok-editor/inspector/skeleton.hpp>
 #include <darmok-editor/inspector/physics3d.hpp>
 #include <darmok-editor/inspector/text.hpp>
+#include <darmok-editor/inspector/script.hpp>
 #include <darmok/scene_serialize.hpp>
 
 #include <imgui.h>
@@ -62,6 +63,8 @@ namespace darmok::editor
         _editors.add<FreetypeFontInspectorEditor>();
         _editors.add<TextInspectorEditor>();
         _editors.add<TextRendererInspectorEditor>();
+        _editors.add<LuaScriptInspectorEditor>();
+        _editors.add<LuaScriptRunnerInspectorEditor>();
         return {};
     }
 

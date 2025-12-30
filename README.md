@@ -91,6 +91,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * free look
 * lua scripting
     * coroutines with API similar to unity
+    * lua script entity component (similar to Unity MonoBehavior)
 * multiple UI options
     * imgui for tooling
     * RmlUI for ingame (support for multiple canvases)
@@ -108,8 +109,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * editor using imgui
 
 #### Upcoming
-* finish editor
-    * create lua script component
 * slang support
 * move main thread to taskflow
 * frame limiting

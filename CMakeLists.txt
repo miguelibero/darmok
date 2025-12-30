@@ -277,6 +277,7 @@ set(LUA_SOURCES
   math_uvec.cpp
   math_vec.cpp
   math_protobuf.cpp
+  script.cpp
   shape1.cpp
   shape2.cpp
   scene.cpp
@@ -438,7 +439,7 @@ list(TRANSFORM LUA_SOURCES PREPEND "${SRC_DIR}/lua/")
 list(TRANSFORM SOURCES PREPEND "${SRC_DIR}/")
 
 if(DARMOK_BUILD_LUA)
-  list(APPEND HEADERS lua.hpp)
+  list(APPEND HEADERS lua.hpp lua_script.hpp)
 
   set(LUA_ASSETS_TARGET darmok-lua-assets)
   darmok_process_assets(

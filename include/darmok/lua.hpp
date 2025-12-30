@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/app.hpp>
 #include <memory>
+#include <sol/sol.hpp>
 
 namespace darmok
 {

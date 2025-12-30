@@ -32,7 +32,7 @@ namespace darmok
         virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; }
         virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
-        virtual expected<void, std::string> afterLoad() noexcept { return {}; }
+        // virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };
 
     template<typename T>
