@@ -588,4 +588,55 @@ namespace darmok
 	{
 		return _impl->updateFonts();
 	}
+
+	ImVec2 Converter<ImVec2, glm::vec2>::run(const glm::vec2& v) noexcept
+	{
+		return { v.x, v.y };
+	}
+
+	ImVec2 Converter<ImVec2, glm::uvec2>::run(const glm::uvec2& v) noexcept
+	{
+		return { static_cast<float>(v.x), static_cast<float>(v.y) };
+	}
+	
+	glm::uvec2 Converter<glm::uvec2, ImVec2>::run(const ImVec2& v) noexcept
+	{
+		return { v.x > 0 ? v.x : 0, v.y > 0 ? v.y : 0 };
+	}
+
+	glm::vec2 Converter<glm::vec2, ImVec2>::run(const ImVec2& v) noexcept
+	{
+		return { v.x, v.y };
+	}
+
+	ImVec4 Converter<ImVec4, glm::vec4>::run(const glm::vec4& v) noexcept
+	{
+		return { v.x, v.y, v.z, v.w };
+	}
+
+	ImVec4 Converter<ImVec4, glm::uvec4>::run(const glm::uvec4& v) noexcept
+	{
+		return {
+			static_cast<float>(v.x),
+			static_cast<float>(v.y),
+			static_cast<float>(v.z),
+			static_cast<float>(v.w)
+		};
+	}
+
+	glm::uvec4 Converter<glm::uvec4, ImVec4>::run(const ImVec4& v) noexcept
+	{
+		return {
+			v.x > 0 ? v.x : 0,
+			v.y > 0 ? v.y : 0,
+			v.z > 0 ? v.z : 0,
+			v.w > 0 ? v.w : 0
+		};
+	}
+
+	glm::vec4 Converter<glm::vec4, ImVec4>::run(const ImVec4& v) noexcept
+	{
+		return { v.x, v.y, v.z, v.w };
+	}
+	
 }

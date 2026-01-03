@@ -33,6 +33,7 @@ namespace darmok::editor
     EditorApp::EditorApp(App& app) noexcept
         : _app{ app }
         , _sceneView{ *this }
+        , _playerView{ *this }
         , _proj{app}
         , _dockLeftId{0}
         , _dockRightId{0}
@@ -91,20 +92,25 @@ namespace darmok::editor
         {
             return unexpected{"failed to initialize project: " + projResult.error()};
 		}
-        auto sceneResult = _sceneView.init(_proj.getScene(), _proj.getCamera().value());
-        if (!sceneResult)
+        auto result = _sceneView.init(_proj.getScene(), _proj.getCamera().value());
+        if (!result)
         {
-            return sceneResult;
+            return result;
         }
-        auto inspectorResult = _inspectorView.init(*this);
-        if (!inspectorResult)
+        result = _playerView.init(_proj.getScene());
+        if (!result)
         {
-            return inspectorResult;
+            return result;
         }
-        auto assetsResult = _assetsView.init(_proj.getSceneDefinition(), *this);
-        if (!assetsResult)
+        result = _inspectorView.init(*this);
+        if (!result)
         {
-            return assetsResult;
+            return result;
+        }
+        result = _assetsView.init(_proj.getSceneDefinition(), *this);
+        if (!result)
+        {
+            return result;
         }
         return {};
     }
@@ -127,6 +133,11 @@ namespace darmok::editor
             return result;
         }
         result = _sceneView.shutdown();
+        if (!result)
+        {
+            return result;
+        }
+        result = _playerView.shutdown();
         if (!result)
         {
             return result;
@@ -203,24 +214,46 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_sceneTreeWindowName, _dockLeftId);
             ImGui::DockBuilderDockWindow(_inspectorView.getWindowName().c_str(), _dockRightId);
             ImGui::DockBuilderDockWindow(_sceneView.getWindowName().c_str(), _dockCenterId);
+            ImGui::DockBuilderDockWindow(_playerView.getWindowName().c_str(), _dockCenterId);
             ImGui::DockBuilderDockWindow(_assetsView.getWindowName().c_str(), _dockDownId);
         }
     }   
 
-    void EditorApp::playScene() noexcept
+    expected<void, std::string> EditorApp::playScene() noexcept
     {
-        _proj.getScene()->setPaused(false);
+        auto& scene = *_proj.getScene();
+        for (auto comp : scene.getSceneComponents())
+        {
+            auto result = comp.get().shutdown();
+            if (!result)
+            {
+                return result;
+            }
+        }
+        for (auto comp : scene.getSceneComponents())
+        {
+            auto result = comp.get().init(scene, _app);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        scene.setPaused(false);
+        _pendingPlaybackChange = true;
+        return {};
     }
 
     expected<void, std::string> EditorApp::stopScene() noexcept
     {
-        pauseScene();
+        _proj.getScene()->setPaused(true);
+        _pendingPlaybackChange = false;
         return _proj.updateScene();
     }
 
     void EditorApp::pauseScene() noexcept
     {
-        _proj.getScene()->setPaused(true);
+        auto& scene = *_proj.getScene();
+        scene.setPaused(!scene.isPaused());
     }
 
     bool EditorApp::isScenePlaying() const noexcept
@@ -724,6 +757,21 @@ namespace darmok::editor
         return changed;
     }
 
+    void EditorApp::focusNextWindowOnPlaybackChange(bool played) noexcept
+    {
+        if (!_pendingPlaybackChange)
+        {
+            return;
+        }
+        auto v = *_pendingPlaybackChange;
+        if (v == played)
+        {
+            _pendingPlaybackChange.reset();
+            ImGui::SetNextWindowFocus();
+            ImGui::SetNextWindowCollapsed(false);
+        }
+    }
+
     expected<void, std::string> EditorApp::imguiRender() noexcept
     {
         auto changed = false;
@@ -755,10 +803,17 @@ namespace darmok::editor
         {
             return unexpected<std::string>{ "failed to render project: " + result.error() };
         }
+        focusNextWindowOnPlaybackChange(false);
         result = _sceneView.render();
         if (!result)
         {
             return unexpected<std::string>{ "failed to render scene: " + result.error() };
+        }
+        focusNextWindowOnPlaybackChange(true);
+        result = _playerView.render();
+        if (!result)
+        {
+            return unexpected<std::string>{ "failed to render player: " + result.error() };
         }
         boolResult = _assetsView.render();
         if (!boolResult)
@@ -770,7 +825,12 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::update(float deltaTime) noexcept
     {
-        return _sceneView.update(deltaTime);
+        auto result = _sceneView.update(deltaTime);
+        if (!result)
+        {
+            return result;
+        }
+        return {};
     }
 
     EditorProject& EditorApp::getProject() noexcept

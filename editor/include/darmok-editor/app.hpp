@@ -6,6 +6,7 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok-editor/project.hpp>
 #include <darmok-editor/scene_view.hpp>
+#include <darmok-editor/player_view.hpp>
 #include <darmok-editor/inspector.hpp>
 #include <darmok-editor/assets_view.hpp>
 #include <darmok-editor/asset_fwd.hpp>
@@ -73,10 +74,11 @@ namespace darmok::editor
         App& _app;
         ProgramCompilerConfig _progCompConfig;
         std::unordered_map<void*, std::optional<FileDialogResult>> _fileInputResults;
-
+        std::optional<bool> _pendingPlaybackChange;
         OptionalRef<ImguiAppComponent> _imgui;
         EditorProject _proj;
         EditorSceneView _sceneView;
+        EditorPlayerView _playerView;
         EditorInspectorView _inspectorView;
         EditorAssetsView _assetsView;
 
@@ -112,7 +114,7 @@ namespace darmok::editor
 
         void onObjectSelected(const SelectableObject& obj) noexcept;
 
-        void playScene() noexcept;
+        expected<void, std::string> playScene() noexcept;
         expected<void, std::string> stopScene() noexcept;
         void pauseScene() noexcept;
         bool isScenePlaying() const noexcept;
@@ -122,6 +124,7 @@ namespace darmok::editor
         bool canAddSceneComponent(IdType typeId) const noexcept;
         bool canAddEntityComponent(IdType typeId) const noexcept;
         bool canAddCameraComponent(IdType typeId) const noexcept;
+        void focusNextWindowOnPlaybackChange(bool played) noexcept;
 
         template<typename T, typename Def = T::Definition>
         expected<bool, std::string> drawSceneComponentMenu(const char* name, const Def& def = T::createDefinition()) noexcept

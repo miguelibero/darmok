@@ -400,7 +400,7 @@ namespace darmok::physics3d
         OptionalRef<PhysicsSystem> _system;
         JPH::BodyID _bodyId;        
         OwnRefCollection<ICollisionListener> _listeners;
-        std::optional<std::variant<Definition, CharacterDefinition>> _initDef;
+        std::optional<std::variant<Definition, CharacterDefinition>> _def;
         JPH::Ref<JPH::Character> _character;
         float _maxSepDistance;
         std::optional<PhysicsShape> _shape;

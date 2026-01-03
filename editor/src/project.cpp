@@ -244,8 +244,9 @@ namespace darmok::editor
                 }
             }
         }
-
-        return compResult.value().get().update(0.f);
+        _app.requestRenderReset();
+        // return compResult.value().get().update(0.f);
+        return {};
     }
 
     expected<void, std::string> EditorProject::reloadScene() noexcept

@@ -82,7 +82,7 @@ namespace darmok
 		RenderChain& operator=(RenderChain&& other) = delete;
 
         expected<void, std::string> init() noexcept;
-        expected<void, std::string> beforeRenderReset() noexcept;
+        expected<bgfx::ViewId, std::string> beforeRenderReset(bgfx::ViewId viewId) noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
         expected<void, std::string> update(float deltaTime) noexcept;
         expected<void, std::string> render() noexcept;

@@ -3,10 +3,13 @@
 #include <darmok/export.h>
 #include <darmok/app.hpp>
 #include <darmok/texture.hpp>
+#include <darmok/convert.hpp>
 #include <memory>
 #include <bx/bx.h>
 
 struct ImGuiContext;
+struct ImVec2;
+struct ImVec4;
 typedef unsigned long long ImTextureID;
 
 namespace darmok
@@ -55,4 +58,52 @@ namespace darmok
 	private:
 		std::unique_ptr<ImguiAppComponentImpl> _impl;
     };
+
+	template<>
+	struct Converter<ImVec2, glm::vec2>
+	{
+		static ImVec2 run(const glm::vec2& v) noexcept;
+	};
+
+	template<>
+	struct Converter<ImVec2, glm::uvec2>
+	{
+		static ImVec2 run(const glm::uvec2& v) noexcept;
+	};
+
+	template<>
+	struct Converter<glm::vec2, ImVec2>
+	{
+		static glm::vec2 run(const ImVec2& v) noexcept;
+	};
+
+	template<>
+	struct Converter<glm::uvec2, ImVec2>
+	{
+		static glm::uvec2 run(const ImVec2& v) noexcept;
+	};
+
+	template<>
+	struct Converter<ImVec4, glm::vec4>
+	{
+		static ImVec4 run(const glm::vec4& v) noexcept;
+	};
+
+	template<>
+	struct Converter<ImVec4, glm::uvec4>
+	{
+		static ImVec4 run(const glm::uvec4& v) noexcept;
+	};
+
+	template<>
+	struct Converter<glm::vec4, ImVec4>
+	{
+		static glm::vec4 run(const ImVec4& v) noexcept;
+	};
+
+	template<>
+	struct Converter<glm::uvec4, ImVec4>
+	{
+		static glm::uvec4 run(const ImVec4& v) noexcept;
+	};
 }

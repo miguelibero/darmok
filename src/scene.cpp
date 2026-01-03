@@ -366,11 +366,13 @@ namespace darmok
 
     expected<bgfx::ViewId, std::string> SceneImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
-        auto beforeResult = _renderChain.beforeRenderReset();
+        auto beforeResult = _renderChain.beforeRenderReset(viewId);
         if(!beforeResult)
         {
             return unexpected{ std::move(beforeResult).error() };
 		}
+
+        viewId = beforeResult.value();
 
         auto components = copySceneComponents();
         for (auto itr = components.rbegin(); itr != components.rend(); ++itr)

@@ -136,7 +136,6 @@ namespace darmok::editor
         std::vector<std::unique_ptr<ISceneGizmo>> _gizmos;
     };
         
-
     class EditorSceneView final
     {
     public:

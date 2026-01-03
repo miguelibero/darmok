@@ -17,6 +17,7 @@ namespace darmok
     class ConstSceneDefinitionWrapper;
     class Texture;
     class ITextureLoader;
+    class FrameBuffer;
 
     namespace protobuf
     {
@@ -116,11 +117,14 @@ namespace darmok::editor
         bool drawProtobufSliderInput(const char* label, const char* field, Message& msg, double min, double max) noexcept;
         bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
+        void drawBuffer(FrameBuffer& buffer) noexcept;
+
 
         bool beginFrame(const char* name) noexcept;
         void endFrame() noexcept;
 
         ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
+        glm::uvec2 getAvailableContentRegion() noexcept;
     };
 
     struct MeshFileInput final

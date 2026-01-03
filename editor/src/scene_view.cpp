@@ -1,5 +1,6 @@
 #include <darmok-editor/scene_view.hpp>
 #include <darmok-editor/app.hpp>
+#include <darmok-editor/utils.hpp>
 #include <darmok/app.hpp>
 #include <darmok/imgui.hpp>
 #include <darmok/scene.hpp>
@@ -659,7 +660,6 @@ namespace darmok::editor
             _cam->setEnabled(true);
             _cam->setBaseViewport(Viewport{ size });
         }
-        // TODO: maybe a bit harsh
         _app.requestRenderReset();
         return {};
     }
@@ -745,8 +745,8 @@ namespace darmok::editor
     {
         if (ImGui::Begin(_windowName.c_str()))
         {
-            auto size = ImGui::GetContentRegionAvail();
-            auto sizeResult = updateSize(glm::uvec2{ size.x, size.y });
+            auto size = ImguiUtils::getAvailableContentRegion();
+            auto sizeResult = updateSize(size);
             if (!sizeResult)
             {
                 return sizeResult;
@@ -754,8 +754,7 @@ namespace darmok::editor
 
             if (_sceneBuffer)
             {
-                ImguiTextureData texData{ _sceneBuffer->getTexture()->getHandle() };
-                ImGui::Image(texData, size);
+                ImguiUtils::drawBuffer(*_sceneBuffer);
             }
 
             _focused = ImGui::IsWindowFocused();

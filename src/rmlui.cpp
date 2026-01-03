@@ -792,8 +792,8 @@ namespace darmok
         _viewId = viewId;
         updateViewName();
 
-        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 0);
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
         bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
         configureViewSize(viewId);
 

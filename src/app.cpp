@@ -492,8 +492,8 @@ namespace darmok
 			break;
 		}
 		out << ": " << error;
-		bx::debugBreak();
 		StreamUtils::log(out.str(), true);
+		bx::debugBreak();
 	}
 
 	expected<void, std::string> AppImpl::update(float deltaTime) noexcept

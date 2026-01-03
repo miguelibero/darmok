@@ -9,6 +9,7 @@
 #include <darmok/glm_serialize.hpp>
 #include <darmok/assimp.hpp>
 #include <darmok/mesh_assimp.hpp>
+#include <darmok/render_chain.hpp>
 
 #include <imgui_stdlib.h>
 #include <fmt/format.h>
@@ -584,6 +585,20 @@ namespace darmok::editor
         return false;
     }
 
+    glm::uvec2 ImguiUtils::getAvailableContentRegion() noexcept
+    {
+        return convert<glm::uvec2>(ImGui::GetContentRegionAvail());
+    }
+
+    void ImguiUtils::drawBuffer(FrameBuffer& buffer) noexcept
+    {
+        if (auto tex = buffer.getTexture())
+        {
+            ImguiTextureData texData{ tex->getHandle() };
+            ImGui::Image(texData, convert<ImVec2>(buffer.getSize()));
+        }
+    }
+
     ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* name, const char* text) noexcept
     {
         auto action = ConfirmPopupAction::None;
@@ -619,6 +634,7 @@ namespace darmok::editor
 
     bool ImguiUtils::beginFrame(const char* name) noexcept
     {
+        ImGui::PushID(name);
 		auto result = ImGui::CollapsingHeader(name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth);
         if (result)
         {
@@ -630,6 +646,7 @@ namespace darmok::editor
     void ImguiUtils::endFrame() noexcept
     {
         ImGui::Unindent(ImguiUtils::frameIndent);
+        ImGui::PopID();
     }
 
     MeshFileInput::MeshFileInput(const std::string& label) noexcept

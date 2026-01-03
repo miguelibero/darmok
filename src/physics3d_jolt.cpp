@@ -612,10 +612,16 @@ namespace darmok::physics3d
     {
         if (_scene)
         {
-            auto bodies = _scene->getComponents<PhysicsBody>();
-            _scene->removeComponents<PhysicsBody>(bodies.begin(), bodies.end());
+            auto rigidBodies = _scene->getComponents<PhysicsBody>();
+            for (auto [entity, body] : rigidBodies.each())
+            {
+                body.getImpl().shutdown();
+            }
             auto charCtrls = _scene->getComponents<CharacterController>();
-            _scene->removeComponents<PhysicsBody>(charCtrls.begin(), charCtrls.end());
+            for (auto [entity, charCtrl] : charCtrls.each())
+            {
+                charCtrl.getImpl().shutdown();
+            }
 
             _scene->onConstructComponent<PhysicsBody>().disconnect<&PhysicsSystemImpl::onRigidbodyConstructed>(*this);
             _scene->onDestroyComponent<PhysicsBody>().disconnect< &PhysicsSystemImpl::onRigidbodyDestroyed>(*this);
@@ -1287,13 +1293,13 @@ namespace darmok::physics3d
     }
 
     PhysicsBodyImpl::PhysicsBodyImpl(const Definition& def) noexcept
-        : _initDef{def}
+        : _def{def}
         , _maxSepDistance{ 0.F }
     {
     }
 
     PhysicsBodyImpl::PhysicsBodyImpl(const CharacterDefinition& def) noexcept
-        : _initDef{ def }
+        : _def{ def }
         , _maxSepDistance(0.F)
     {
     }
@@ -1305,13 +1311,13 @@ namespace darmok::physics3d
 
     expected<void, std::string> PhysicsBodyImpl::load(const Definition& def, Entity entity) noexcept
     {
-        _initDef = def;
+        _def = def;
         return doLoad(entity);
     }
 
     expected<void, std::string> PhysicsBodyImpl::load(const CharacterDefinition& def, Entity entity) noexcept
     {
-        _initDef = def;
+        _def = def;
         return doLoad(entity);
     }
 
@@ -1467,7 +1473,7 @@ namespace darmok::physics3d
         {
             return unexpected<std::string>{"missing system ref"};
         }
-        if (!_initDef)
+        if (!_def)
         {
             return unexpected<std::string>{"missing definition"};
         }
@@ -1482,7 +1488,7 @@ namespace darmok::physics3d
             }
             joltTrans = transResult.value();
         }
-        auto defPtr = &_initDef.value();
+        auto defPtr = &_def.value();
         if (auto charDef = std::get_if<CharacterDefinition>(defPtr))
         {
             auto result = createCharacter(*charDef, joltTrans);
@@ -1505,7 +1511,6 @@ namespace darmok::physics3d
         {
             return unexpected<std::string>{"unknown definition"};
         }
-        _initDef.reset();
         return {};
     }
 

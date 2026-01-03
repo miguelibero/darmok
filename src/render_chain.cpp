@@ -232,20 +232,45 @@ namespace darmok
 		return _output;
 	}
 
-	expected<void, std::string> RenderChain::beforeRenderReset() noexcept
+	expected<bgfx::ViewId, std::string> RenderChain::beforeRenderReset(bgfx::ViewId viewId) noexcept
 	{
+		if (_output)
+		{
+			bgfx::setViewName(viewId, getViewName("clear").c_str());
+
+			static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
+			static const uint8_t clearColor = 1;
+			bgfx::setViewClear(viewId, clearFlags, 1.F, 0U,
+				clearColor, clearColor, clearColor, clearColor,
+				clearColor, clearColor, clearColor, clearColor);
+
+			if (auto input = getInput())
+			{
+				input->configureView(viewId);
+			}
+
+			_viewId = viewId;
+			updateViewport();
+
+			++viewId;
+		}
+		else
+		{
+			_viewId.reset();
+		}
+
 		auto amount = _buffers.size();
 		_buffers.clear();
-		std::vector<std::string> errors;
 		for (size_t i = 0; i < amount; ++i)
 		{
 			auto result = addBuffer();
 			if(!result)
 			{
-				errors.push_back(std::move(result).error());
+				return unexpected{ std::move(result).error() };
 			}
 		}
-		return StringUtils::joinExpectedErrors(errors);
+
+		return viewId;
 	}
 
 	std::string RenderChain::getViewName(const std::string& baseName) const noexcept
@@ -273,19 +298,8 @@ namespace darmok
 				viewId = result.value();
 			}
 		}
-		bgfx::setViewName(viewId, getViewName("clear").c_str());
 
-		static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL | BGFX_CLEAR_COLOR;
-		bgfx::setViewClear(viewId, clearFlags, 1.F, 0U, 1);
-
-		if (auto input = getInput())
-		{
-			input->configureView(viewId);
-		}
-
-		_viewId = viewId;
-		updateViewport();
-		return ++viewId;
+		return viewId;
 	}
 
 	bool RenderChain::updateViewport() noexcept
@@ -484,17 +498,14 @@ namespace darmok
 
 	expected<void, std::string> RenderChain::render() noexcept
 	{
-		if (empty())
+		auto encoder = bgfx::begin();
+
+		if (_viewId)
 		{
-			return {};
-		}
-		if (!_viewId)
-		{
-			return unexpected<std::string>{"empty viewId"};
+			encoder->touch(_viewId.value());
 		}
 
 		std::vector<std::string> errors;
-		auto encoder = bgfx::begin();
 		for (auto& step : _steps)
 		{
 			auto result = step->render(*encoder);
@@ -503,7 +514,7 @@ namespace darmok
 				errors.push_back(std::move(result).error());
 			}
 		}
-		encoder->touch(_viewId.value());
+
 		bgfx::end(encoder);
 		return StringUtils::joinExpectedErrors(errors);
 	}

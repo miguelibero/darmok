@@ -262,8 +262,13 @@ namespace darmok
         _scene = scene;
         _app = app;
 
-        std::vector<std::string> errors;
+        auto result = _renderChain.init();
+        if (!result)
+        {
+            return result;
+        }
 
+        std::vector<std::string> errors;
         for(auto& comp : copyComponents())
         {
             auto result = comp->init(*this, scene, app);
@@ -278,11 +283,12 @@ namespace darmok
     expected<bgfx::ViewId, std::string> Camera::renderReset(bgfx::ViewId viewId) noexcept
     {
         updateProjection();
-        auto beforeResult = _renderChain.beforeRenderReset();
+        auto beforeResult = _renderChain.beforeRenderReset(viewId);
         if (!beforeResult)
         {
 			return unexpected{ std::move(beforeResult).error() };
         }
+        viewId = beforeResult.value();
         for (auto& comp : copyComponents())
         {
             auto result = comp->renderReset(viewId);
@@ -316,6 +322,12 @@ namespace darmok
 				errors.push_back(std::move(result).error());
             }
         }
+        auto result = _renderChain.render();
+        if (!result)
+        {
+            errors.push_back(std::move(result).error());
+        }
+
 		return StringUtils::joinExpectedErrors(errors);
     }
 

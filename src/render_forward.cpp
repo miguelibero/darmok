@@ -66,7 +66,15 @@ namespace darmok
 
 	expected<void, std::string> ForwardRenderer::render() noexcept
 	{
-		if (!_scene || !_viewId || !_cam)
+		if (!_viewId)
+		{
+			return {};
+		}
+		if (!_scene)
+		{
+			return unexpected<std::string>{"scene not loaded"};
+		}
+		if (!_cam)
 		{
 			return unexpected<std::string>{"camera not loaded"};
 		}

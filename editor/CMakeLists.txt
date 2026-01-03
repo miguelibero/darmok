@@ -18,6 +18,7 @@ set(EDITOR_HEADERS
   editor.hpp
   inspector.hpp
   assets_view.hpp
+  player_view.hpp
   inspector/transform.hpp
   inspector/camera.hpp
   inspector/scene.hpp
@@ -43,6 +44,7 @@ set(EDITOR_SOURCES
   editor.cpp
   inspector.cpp
   assets_view.cpp
+  player_view.cpp
   inspector/transform.cpp
   inspector/camera.cpp
   inspector/scene.cpp
