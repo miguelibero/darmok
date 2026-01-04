@@ -27,7 +27,7 @@ namespace darmok::editor
         expected<void, std::string> update(float deltaTime) noexcept;
 
         static const std::string& getWindowName() noexcept;
-
+        std::optional<bool> getPlaybackChange() const noexcept;
         expected<void, std::string> play() noexcept;
         expected<void, std::string> stop() noexcept;
         void pause() noexcept;
@@ -41,6 +41,7 @@ namespace darmok::editor
         std::shared_ptr<Scene> _scene;
         OptionalRef<Camera> _cam;
         bool _playing;
+        std::optional<bool> _playbackChange;
 
         static const std::string _windowName;
 

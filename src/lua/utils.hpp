@@ -123,6 +123,22 @@ namespace darmok
 			return LuaUtils::unwrapExpected(std::move(result));
         }
 
+        bool valid(const sol::table& table) const noexcept
+        {
+            auto elm = table[_key];
+            return elm.get_type() == sol::type::function;
+        }
+
+        template<typename... Args>
+        expected<void, std::string> tryRun(const sol::table& table, Args&&... args) const noexcept
+        {
+            if (!valid(table))
+            {
+                return {};
+            }
+            return tryGet<void>(table, std::forward<Args>(args)...);
+        }
+
         template<typename T, typename... Args>
         expected<T, std::string> tryGet(const sol::table& table, Args&&... args) const noexcept
         {
@@ -165,6 +181,34 @@ namespace darmok
         {
             auto result = tryGet<sol::object>(std::forward<Args>(args)...);
             return LuaUtils::unwrapExpected(std::move(result));
+        }
+
+        bool valid() const noexcept
+        {
+            auto type = _obj.get_type();
+            if (type == sol::type::function)
+            {
+                return true;
+            }
+            if (type == sol::type::table)
+            {
+                auto table = _obj.as<sol::table>();
+                if (sol::protected_function func = table[_tableKey])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        template<typename... Args>
+        expected<void, std::string> tryRun(Args&&... args) const noexcept
+        {
+            if (!valid())
+            {
+                return {};
+            }
+            return tryGet<void>(std::forward<Args>(args)...);
         }
 
         template<typename T, typename... Args>

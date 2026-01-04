@@ -20,22 +20,26 @@ namespace darmok::physics3d
 
 	expected<void, std::string> LuaCharacterDelegate::onAdjustBodyVelocity(CharacterController& character, PhysicsBody& body, glm::vec3& linearVelocity, glm::vec3& angularVelocity) noexcept
 	{
-		return _adjustBodyDef.tryGet<void>(_table, character, body, linearVelocity, angularVelocity);
+		return _adjustBodyDef.tryRun(_table, character, body, linearVelocity, angularVelocity);
 	}
 
 	expected<bool, std::string> LuaCharacterDelegate::onContactValidate(CharacterController& character, PhysicsBody& body) noexcept
 	{
+		if (!_contactValidateDef.valid(_table))
+		{
+			return ICharacterDelegate::onContactValidate(character, body);
+		}
 		return _contactValidateDef.tryGet<bool>(_table, character, body);
 	}
 
 	expected<void, std::string> LuaCharacterDelegate::onContactAdded(CharacterController& character, PhysicsBody& body, const Contact& contact, ContactSettings& settings) noexcept
 	{
-		return _contactAddedDef.tryGet<void>(_table, character, body, contact, settings);
+		return _contactAddedDef.tryRun(_table, character, body, contact, settings);
 	}
 
 	expected<void, std::string> LuaCharacterDelegate::onContactSolve(CharacterController& character, PhysicsBody& body, const Contact& contact, glm::vec3& characterVelocity) noexcept
 	{
-		return _contactSolveDef.tryGet<void>(_table, character, body, contact, characterVelocity);
+		return _contactSolveDef.tryRun(_table, character, body, contact, characterVelocity);
 	}
 
 	void LuaCharacterController::setLinearVelocity(CharacterController& ctrl, const VarLuaTable<glm::vec3>& velocity)

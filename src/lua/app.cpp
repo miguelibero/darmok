@@ -146,7 +146,7 @@ namespace darmok
 
 	expected<void, std::string> LuaAppUpdater::update(float deltaTime) noexcept
 	{
-		return _delegate.tryGet<void>(deltaTime);
+		return _delegate.tryRun(deltaTime);
 	}
 
 	const LuaDelegate& LuaAppUpdater::getDelegate() const noexcept
@@ -566,21 +566,25 @@ namespace darmok
 
 	expected<void, std::string> LuaAppComponent::init(App& app) noexcept
 	{
-		return _initDef.tryGet<void>(_table, app);
+		return _initDef.tryRun(_table, app);
 	}
 
 	expected<void, std::string> LuaAppComponent::shutdown() noexcept
 	{
-		return _shutdownDef.tryGet<void>(_table);
+		return _shutdownDef.tryRun(_table);
 	}
 
 	expected<bgfx::ViewId, std::string> LuaAppComponent::renderReset(bgfx::ViewId viewId) noexcept
 	{
+		if (!_renderResetDef.valid(_table))
+		{
+			return viewId;
+		}
 		return _renderResetDef.tryGet<bgfx::ViewId>(_table, viewId);
 	}
 
 	expected<void, std::string>  LuaAppComponent::update(float deltaTime) noexcept
 	{
-		return _updateDef.tryGet<void>(_table, deltaTime);
+		return _updateDef.tryRun(_table, deltaTime);
 	}
 }

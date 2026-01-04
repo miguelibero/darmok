@@ -88,6 +88,7 @@ namespace darmok::editor
 
     expected<void, std::string> EditorPlayerView::update(float deltaTime) noexcept
     {
+        _playbackChange.reset();
         return {};
     }
 
@@ -141,6 +142,7 @@ namespace darmok::editor
         }
         scene.setPaused(false);
         _playing = true;
+        _playbackChange = true;
         return {};
     }
 
@@ -152,7 +154,13 @@ namespace darmok::editor
         }
         _scene->setPaused(true);
         _playing = false;
+        _playbackChange = false;
         return _editorApp.getProject().updateScene();
+    }
+
+    std::optional<bool> EditorPlayerView::getPlaybackChange() const noexcept
+    {
+        return _playbackChange;
     }
 
     void EditorPlayerView::pause() noexcept

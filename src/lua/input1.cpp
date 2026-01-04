@@ -26,12 +26,12 @@ namespace darmok
 
 	expected<void, std::string> LuaKeyboardListener::onKeyboardKey(KeyboardKey key, const KeyboardModifiers& modifiers, bool down) noexcept
 	{
-		return _keyDelegate.tryGet<void>(_table, modifiers, down);
+		return _keyDelegate.tryRun(_table, modifiers, down);
 	}
 
 	expected<void, std::string> LuaKeyboardListener::onKeyboardChar(char32_t chr) noexcept
 	{
-		return _charDelegate.tryGet<void>(_table, StringUtils::toUtf8(chr));
+		return _charDelegate.tryRun(_table, StringUtils::toUtf8(chr));
 	}
 
 	LuaKeyboardListenerFilter::LuaKeyboardListenerFilter(const sol::table& table) noexcept
@@ -148,17 +148,17 @@ namespace darmok
 
 	expected<void, std::string> LuaMouseListener::onMousePositionChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
 	{
-		return _posDelegate.tryGet<void>(_table, delta, absolute);
+		return _posDelegate.tryRun(_table, delta, absolute);
 	}
 
 	expected<void, std::string> LuaMouseListener::onMouseScrollChange(const glm::vec2& delta, const glm::vec2& absolute) noexcept
 	{
-		return _scrollDelegate.tryGet<void>(_table, delta, absolute);
+		return _scrollDelegate.tryRun(_table, delta, absolute);
 	}
 
 	expected<void, std::string> LuaMouseListener::onMouseButton(MouseButton button, bool down) noexcept
 	{
-		return _buttonDelegate.tryGet<void>(_table, button, down);
+		return _buttonDelegate.tryRun(_table, button, down);
 	}
 
 	LuaMouseListenerFilter::LuaMouseListenerFilter(const sol::table& table) noexcept
@@ -301,17 +301,17 @@ namespace darmok
 
 	expected<void, std::string> LuaGamepadListener::onGamepadStickChange(uint8_t num, GamepadStick stick, const glm::vec3& delta, const glm::vec3& absolute) noexcept
 	{
-		return _stickDelegate.tryGet<void>(_table, num, stick, delta, absolute);
+		return _stickDelegate.tryRun(_table, num, stick, delta, absolute);
 	}
 
 	expected<void, std::string> LuaGamepadListener::onGamepadButton(uint8_t num, GamepadButton button, bool down) noexcept
 	{
-		return _buttonDelegate.tryGet<void>(_table, num, button, down);
+		return _buttonDelegate.tryRun(_table, num, button, down);
 	}
 
 	expected<void, std::string> LuaGamepadListener::onGamepadConnect(uint8_t num, bool connected) noexcept
 	{
-		return _connectDelegate.tryGet<void>(_table, num, connected);
+		return _connectDelegate.tryRun(_table, num, connected);
 	}
 
 	LuaGamepadListenerFilter::LuaGamepadListenerFilter(const sol::table& table) noexcept

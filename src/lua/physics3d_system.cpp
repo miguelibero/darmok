@@ -23,17 +23,17 @@ namespace darmok::physics3d
 
     expected<void, std::string> LuaCollisionListener::onCollisionEnter(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept
     {
-        return _enterDef.tryGet<void>(_table, body1, body2, collision);
+        return _enterDef.tryRun(_table, body1, body2, collision);
     }
 
     expected<void, std::string> LuaCollisionListener::onCollisionStay(PhysicsBody& body1, PhysicsBody& body2, const Collision& collision) noexcept
     {
-        return _stayDef.tryGet<void>(_table, body1, body2, collision);
+        return _stayDef.tryRun(_table, body1, body2, collision);
     }
 
     expected<void, std::string> LuaCollisionListener::onCollisionExit(PhysicsBody& body1, PhysicsBody& body2) noexcept
     {
-        return _exitDef.tryGet<void>(_table, body1, body2);
+        return _exitDef.tryRun(_table, body1, body2);
     }
 
     LuaCollisionListenerFilter::LuaCollisionListenerFilter(const sol::table& table) noexcept
@@ -59,7 +59,7 @@ namespace darmok::physics3d
 
     expected<void, std::string> LuaPhysicsUpdater::fixedUpdate(float fixedDeltaTime) noexcept
     {
-        return _delegate.tryGet<void>(fixedDeltaTime);
+        return _delegate.tryRun(fixedDeltaTime);
     }
 
     LuaPhysicsUpdaterFilter::LuaPhysicsUpdaterFilter(const sol::object& obj) noexcept

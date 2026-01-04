@@ -396,7 +396,7 @@ namespace darmok
 	{
 		if (auto scene = _scene.lock())
 		{
-			return _initDef.tryGet<void>(_table, scene);
+			return _initDef.tryRun(_table, scene);
 		}
 		else
 		{
@@ -406,17 +406,21 @@ namespace darmok
 
 	expected<void, std::string> LuaSceneComponent::shutdown() noexcept
 	{
-		return _shutdownDef.tryGet<void>(_table);
+		return _shutdownDef.tryRun(_table);
 	}
 
 	expected<bgfx::ViewId, std::string> LuaSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
 	{
+		if (!_renderResetDef.valid(_table))
+		{
+			return viewId;
+		}
 		return _renderResetDef.tryGet<bgfx::ViewId>(_table, viewId);
 	}
 
 	expected<void, std::string> LuaSceneComponent::update(float deltaTime) noexcept
 	{
-		return _updateDef.tryGet<void>(_table, deltaTime);
+		return _updateDef.tryRun(_table, deltaTime);
 	}
 
 	std::reference_wrapper<SceneAppComponent> LuaSceneAppComponent::addAppComponent1(App& app)

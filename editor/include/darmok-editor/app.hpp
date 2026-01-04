@@ -74,7 +74,6 @@ namespace darmok::editor
         App& _app;
         ProgramCompilerConfig _progCompConfig;
         std::unordered_map<void*, std::optional<FileDialogResult>> _fileInputResults;
-        std::optional<bool> _pendingPlaybackChange;
         OptionalRef<ImguiAppComponent> _imgui;
         EditorProject _proj;
         EditorSceneView _sceneView;

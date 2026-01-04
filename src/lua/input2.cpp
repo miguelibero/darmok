@@ -9,7 +9,7 @@ namespace darmok
 
 	expected<void, std::string> LuaInputEventListener::onInputEvent(const std::string& tag) noexcept
 	{
-		return _delegate.tryGet<void>(tag);
+		return _delegate.tryRun(tag);
 	}
 
 	const LuaDelegate& LuaInputEventListener::getDelegate() const noexcept

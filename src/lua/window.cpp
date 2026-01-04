@@ -16,27 +16,27 @@ namespace darmok
 
 	expected<void, std::string> LuaWindowListener::onWindowSize(const glm::uvec2& size) noexcept
 	{
-		return _sizeDelegate.tryGet<void>(_table, size);
+		return _sizeDelegate.tryRun(_table, size);
 	}
 
 	expected<void, std::string> LuaWindowListener::onWindowPixelSize(const glm::uvec2& size) noexcept
 	{
-		return _pixelSizeDelegate.tryGet<void>(_table, size);
+		return _pixelSizeDelegate.tryRun(_table, size);
 	}
 
 	expected<void, std::string> LuaWindowListener::onWindowPhase(WindowPhase phase) noexcept
 	{
-		return _phaseDelegate.tryGet<void>(_table, phase);
+		return _phaseDelegate.tryRun(_table, phase);
 	}
 
 	expected<void, std::string> LuaWindowListener::onWindowVideoMode(const VideoMode& mode) noexcept
 	{
-		return _videoModeDelegate.tryGet<void>(_table, mode);
+		return _videoModeDelegate.tryRun(_table, mode);
 	}
 
 	expected<void, std::string> LuaWindowListener::onWindowCursorMode(WindowCursorMode mode) noexcept
 	{
-		return _cursorModeDelegate.tryGet<void>(_table, mode);
+		return _cursorModeDelegate.tryRun(_table, mode);
 	}
 
 	const LuaTableDelegateDefinition LuaWindowListener::_sizeDelegate{ "on_window_size", "running window size listener" };

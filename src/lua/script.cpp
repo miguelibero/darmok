@@ -9,7 +9,7 @@ namespace darmok
 	{
 		Definition def;
 		def.set_content(R"(
-function init(entity)
+function init()
 end
 
 function update(dt)
@@ -40,24 +40,26 @@ end
 
 	expected<void, std::string> LuaScript::init(sol::state_view& lua, const LuaEntity& entity) noexcept
 	{
-		auto luaResult = lua.safe_script(_content, sol::script_pass_on_error);
+		sol::environment env{ lua, sol::create, lua.globals() };
+		env["entity"] = entity;
+		auto luaResult = lua.safe_script(_content, env, sol::script_pass_on_error);
 		if (!luaResult.valid())
 		{
 			sol::error err = luaResult;
 			return unexpected<std::string>{ err.what() };
 		}
 		_obj = luaResult;
+		if (_obj.get_type() == sol::type::nil)
+		{
+			_obj = env.as<sol::table>();
+		}
 		_entity = std::make_unique<LuaEntity>(entity);
 		return doInit();
 	}
 
 	expected<void, std::string> LuaScript::doInit() noexcept
 	{
-		if (!_entity)
-		{
-			return unexpected<std::string>{ "missing entity" };
-		}
-		auto initResult = LuaDelegate{ _obj, "init", "lua script init" }.tryGet<void>(*_entity);
+		auto initResult = LuaDelegate{ _obj, "init", "lua script init" }.tryRun();
 		if (!initResult)
 		{
 			return initResult;
@@ -70,7 +72,9 @@ end
 	{
 		_update.reset();
 		_entity.reset();
-		return LuaDelegate{ _obj, "shutdown", "lua script shutdown" }.tryGet<void>();
+		auto result = LuaDelegate{ _obj, "shutdown", "lua script shutdown" }.tryRun();
+		_obj.reset();
+		return result;
 	}
 
 	expected<void, std::string> LuaScript::update(float deltaTime) noexcept
@@ -79,7 +83,7 @@ end
 		{
 			return {};
 		}
-		return _update->tryGet<void>(deltaTime);
+		return _update->tryRun(deltaTime);
 	}
 
 	LuaScriptRunner::Definition LuaScriptRunner::createDefinition() noexcept
@@ -145,22 +149,21 @@ end
 		{
 			_scene->onConstructComponent<LuaScript>().disconnect<&LuaScriptRunner::onScriptConstructed>(*this);
 			_scene->onDestroyComponent<LuaScript>().disconnect<&LuaScriptRunner::onScriptDestroyed>(*this);
+			for (auto entity : _entities)
+			{
+				if (auto comp = _scene->getComponent<LuaScript>(entity))
+				{
+					auto result = comp->shutdown();
+					if (!result)
+					{
+						return result;
+					}
+				}
+			}
 			_scene.reset();
 		}
-		for (auto entity : _entities)
-		{
-			auto comp = _scene->getComponent<LuaScript>(entity);
-			if(!comp)
-			{
-				continue;
-			}
-			auto result = comp->shutdown();
-			if (!result)
-			{
-				return result;
-			}
-		}
 		_entities.clear();
+		_lua.reset();
 		return {};
 	}
 

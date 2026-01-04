@@ -696,14 +696,13 @@ namespace darmok::editor
 
     void EditorApp::focusNextWindowOnPlaybackChange(bool played) noexcept
     {
-        if (!_pendingPlaybackChange)
+        auto change = _playerView.getPlaybackChange();
+        if (!change)
         {
             return;
         }
-        auto v = *_pendingPlaybackChange;
-        if (v == played)
+        if (*change == played)
         {
-            _pendingPlaybackChange.reset();
             ImGui::SetNextWindowFocus();
             ImGui::SetNextWindowCollapsed(false);
         }
@@ -763,6 +762,11 @@ namespace darmok::editor
     expected<void, std::string> EditorApp::update(float deltaTime) noexcept
     {
         auto result = _sceneView.update(deltaTime);
+        if (!result)
+        {
+            return result;
+        }
+        result = _playerView.update(deltaTime);
         if (!result)
         {
             return result;
