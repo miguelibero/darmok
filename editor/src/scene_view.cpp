@@ -540,17 +540,6 @@ namespace darmok::editor
 
         _scene = scene;
         _cam = cam;
-
-        glm::uvec2 size{ 0 };
-        if (_sceneBuffer)
-        {
-            size = _sceneBuffer->getSize();
-        }
-        auto result = updateSize(size);
-        if (!result)
-        {
-            return result;
-        }
         
         return {};
     }
@@ -558,7 +547,6 @@ namespace darmok::editor
     expected<void, std::string> EditorSceneView::shutdown() noexcept
     {
         _scene.reset();
-        _sceneBuffer.reset();
         _cam.reset();
         _focused = false;
         _mouseMode = MouseMode::None;
@@ -635,32 +623,15 @@ namespace darmok::editor
         {
             return {};
         }
-        if (_sceneBuffer && size == _sceneBuffer->getSize())
+        auto result = _cam->setRenderOutputSize(size);
+        if (!result)
         {
-            return {};
+            return unexpected{ std::move(result).error() };
         }
-        if (size.x <= 0.F || size.y <= 0.F)
+        if (result.value())
         {
-            _sceneBuffer.reset();
-            _cam->setEnabled(false);
+            _app.requestRenderReset();
         }
-        else
-        {
-			auto fbResult = FrameBuffer::load(size);
-			if (!fbResult)
-            {
-                return unexpected{ std::move(fbResult).error() };
-            }
-            _sceneBuffer = std::make_shared<FrameBuffer>(std::move(fbResult).value());
-            auto result = _cam->getRenderChain().setOutput(_sceneBuffer);
-            if (!result)
-            {
-                return result;
-            }
-            _cam->setEnabled(true);
-            _cam->setBaseViewport(Viewport{ size });
-        }
-        _app.requestRenderReset();
         return {};
     }
 
@@ -752,9 +723,9 @@ namespace darmok::editor
                 return sizeResult;
             }
 
-            if (_sceneBuffer)
+            if (_cam && _cam->getRenderOutput())
             {
-                ImguiUtils::drawBuffer(*_sceneBuffer);
+                ImguiUtils::drawBuffer(*_cam->getRenderOutput());
             }
 
             _focused = ImGui::IsWindowFocused();

@@ -65,13 +65,12 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
             if (ImguiUtils::drawProtobufInput("Viewport", "viewport", cam))
             {
                 changed = true;
             }
         }
-
+        ImguiUtils::endFrame();
 
         if (cam.components_size() > 0)
         {
@@ -84,8 +83,8 @@ namespace darmok::editor
                         changed = true;
                     }
                 }
-				ImguiUtils::endFrame();
             }
+            ImguiUtils::endFrame();
         }
 
 

@@ -118,7 +118,7 @@ namespace darmok::editor
         bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         void drawBuffer(FrameBuffer& buffer) noexcept;
-
+        bool drawToggleButton(const char* label, bool* active) noexcept;
 
         bool beginFrame(const char* name) noexcept;
         void endFrame() noexcept;

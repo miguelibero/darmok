@@ -254,6 +254,8 @@ namespace darmok
 
         [[nodiscard]] RenderChain& getRenderChain() noexcept;
         [[nodiscard]] const RenderChain& getRenderChain() const noexcept;
+        [[nodiscard]] expected<bool, std::string> setRenderOutputSize(const glm::uvec2& size) noexcept;
+        [[nodiscard]] std::shared_ptr<FrameBuffer> getRenderOutput() const noexcept;
         
         void configureView(bgfx::ViewId viewId, const std::string& name) const;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;

@@ -114,11 +114,6 @@ namespace darmok::editor
 
         void onObjectSelected(const SelectableObject& obj) noexcept;
 
-        expected<void, std::string> playScene() noexcept;
-        expected<void, std::string> stopScene() noexcept;
-        void pauseScene() noexcept;
-        bool isScenePlaying() const noexcept;
-
         expected<bool, std::string> drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept;
 
         bool canAddSceneComponent(IdType typeId) const noexcept;

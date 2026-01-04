@@ -599,6 +599,27 @@ namespace darmok::editor
         }
     }
 
+    bool ImguiUtils::drawToggleButton(const char* label, bool* active) noexcept
+    {
+        static const ImVec4 offColor{ 0.5f, 0.5f, 0.5f, 1.0f };
+        static const ImVec4 onColor{ 0.2f, 0.7f, 0.2f, 1.0f };
+
+        ImGui::PushStyleColor(ImGuiCol_Button, *active ? onColor : offColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, *active ? ImVec4{ 0.3f, 0.8f, 0.3f, 1.0f }
+            : ImVec4{ 0.6f, 0.6f, 0.6f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, *active ? ImVec4{ 0.1f, 0.6f, 0.1f, 1.0f }
+            : ImVec4{ 0.4f, 0.4f, 0.4f, 1.0f });
+
+        auto pressed = ImGui::Button(label);
+        if (pressed)
+        {
+            *active = !*active;
+        }
+
+        ImGui::PopStyleColor(3);
+        return pressed;
+    }
+
     ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* name, const char* text) noexcept
     {
         auto action = ConfirmPopupAction::None;
@@ -636,10 +657,7 @@ namespace darmok::editor
     {
         ImGui::PushID(name);
 		auto result = ImGui::CollapsingHeader(name, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth);
-        if (result)
-        {
-            ImGui::Indent(ImguiUtils::frameIndent);
-        }
+        ImGui::Indent(ImguiUtils::frameIndent);
         return result;
     }
 

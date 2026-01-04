@@ -155,6 +155,22 @@ namespace darmok
         return _renderChain;
     }
 
+    expected<bool, std::string> Camera::setRenderOutputSize(const glm::uvec2& size) noexcept
+    {
+        auto result = getRenderChain().setOutputSize(size);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        setBaseViewport(Viewport{ size });
+        return result;
+    }
+
+    std::shared_ptr<FrameBuffer> Camera::getRenderOutput() const noexcept
+    {
+        return getRenderChain().getOutput();
+    }
+
     const glm::mat4& Camera::getProjectionMatrix() const noexcept
     {
         return _proj;
@@ -310,6 +326,10 @@ namespace darmok
     expected<void, std::string> Camera::render() noexcept
     {
         if (!_enabled)
+        {
+            return {};
+        }
+        if (!_renderChain.valid())
         {
             return {};
         }

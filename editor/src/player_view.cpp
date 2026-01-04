@@ -6,8 +6,9 @@
 #include <imgui.h>
 namespace darmok::editor
 {
-    EditorPlayerView::EditorPlayerView(EditorApp& app) noexcept
-        : _app{ app }
+    EditorPlayerView::EditorPlayerView(EditorApp& editorApp, App& app) noexcept
+        : _editorApp{ editorApp }
+        , _app{ app }
         , _camIndex{ 0 }
     {
     }
@@ -15,6 +16,7 @@ namespace darmok::editor
     expected<void, std::string> EditorPlayerView::init(std::shared_ptr<Scene> scene) noexcept
     {
         _scene = scene;
+        _playing = false;
         return {};
     }
 
@@ -23,6 +25,7 @@ namespace darmok::editor
         _cam.reset();
         _scene.reset();
         _camIndex = 0;
+        _playing = false;
         return {};
     }
 
@@ -41,20 +44,46 @@ namespace darmok::editor
             if (!camEntities.empty() && (changed || !_cam))
             {
                 _cam = _scene->getComponent<Camera>(camEntities.at(_camIndex));
-                _sceneBuffer.reset();
             }
             auto sizeResult = updateSize(ImguiUtils::getAvailableContentRegion());
             if (!sizeResult)
             {
                 return sizeResult;
             }
-            if (_sceneBuffer)
+            if (_cam && _cam->getRenderOutput())
             {
-                ImguiUtils::drawBuffer(*_sceneBuffer);
+                ImguiUtils::drawBuffer(*_cam->getRenderOutput());
             }
         }
         ImGui::End();
-        return {};
+
+        ImGuiIO& io = ImGui::GetIO();
+
+        expected<void, std::string> result;
+
+        bool ctrl = io.KeyCtrl || io.KeySuper;
+        bool shift = io.KeyShift;
+        if (ctrl && ImGui::IsKeyPressed(ImGuiKey_P, false))
+        {
+            if (isPlaying())
+            {
+                if (shift)
+                {
+                    pause();
+                }
+                else
+                {
+                    result = stop();
+                }
+            }
+            else
+            {
+                result = play();
+            }
+        }
+
+
+        return result;
     }
 
     expected<void, std::string> EditorPlayerView::update(float deltaTime) noexcept
@@ -75,32 +104,72 @@ namespace darmok::editor
         {
             return {};
         }
-        if (_sceneBuffer && size == _sceneBuffer->getSize())
+        auto result = _cam->setRenderOutputSize(size);
+        if (!result)
         {
-            return {};
+            return unexpected{ std::move(result).error() };
         }
-        if (size.x <= 0.F || size.y <= 0.F)
+        if (result.value())
         {
-            _sceneBuffer.reset();
-            _cam->setEnabled(false);
+            _app.requestRenderReset();
         }
-        else
+        return {};
+    }
+
+    expected<void, std::string> EditorPlayerView::play() noexcept
+    {
+        if (!_scene)
         {
-            auto fbResult = FrameBuffer::load(size);
-            if (!fbResult)
-            {
-                return unexpected{ std::move(fbResult).error() };
-            }
-            _sceneBuffer = std::make_shared<FrameBuffer>(std::move(fbResult).value());
-            auto result = _cam->getRenderChain().setOutput(_sceneBuffer);
+            return unexpected{ "missing scene" };
+        }
+        auto& scene = *_scene;
+        for (auto comp : scene.getSceneComponents())
+        {
+            auto result = comp.get().shutdown();
             if (!result)
             {
                 return result;
             }
-            _cam->setEnabled(true);
-            _cam->setBaseViewport(Viewport{ size });
         }
-        _app.requestRenderReset();
+        for (auto comp : scene.getSceneComponents())
+        {
+            auto result = comp.get().init(scene, _app);
+            if (!result)
+            {
+                return result;
+            }
+        }
+        scene.setPaused(false);
+        _playing = true;
         return {};
+    }
+
+    expected<void, std::string> EditorPlayerView::stop() noexcept
+    {
+        if (!_scene)
+        {
+            return unexpected{ "missing scene" };
+        }
+        _scene->setPaused(true);
+        _playing = false;
+        return _editorApp.getProject().updateScene();
+    }
+
+    void EditorPlayerView::pause() noexcept
+    {
+        if (_scene)
+        {
+            _scene->setPaused(!_scene->isPaused());
+        }
+    }
+
+    bool EditorPlayerView::isPlaying() const noexcept
+    {
+        return _playing;
+    }
+
+    bool EditorPlayerView::isPaused() const noexcept
+    {
+        return !_scene || _scene->isPaused();
     }
 }

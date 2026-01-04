@@ -20,7 +20,7 @@ namespace darmok
     {
     public:
         ~FrameBuffer() noexcept;
-        FrameBuffer(bgfx::FrameBufferHandle handle, std::shared_ptr<Texture> colorTex, std::shared_ptr<Texture> depthTex = nullptr) noexcept;
+        FrameBuffer(bgfx::FrameBufferHandle handle = { bgfx::kInvalidHandle }, std::shared_ptr<Texture> colorTex = nullptr, std::shared_ptr<Texture> depthTex = nullptr) noexcept;
         FrameBuffer(const FrameBuffer& other) = delete;
         FrameBuffer& operator=(const FrameBuffer& other) = delete;
         FrameBuffer(FrameBuffer&& other) noexcept;
@@ -96,6 +96,7 @@ namespace darmok
 
         void configureView(bgfx::ViewId viewId, const std::string& name, OptionalRef<const FrameBuffer> writeBuffer = nullptr) const noexcept;
 
+        expected<bool, std::string> setOutputSize(const glm::uvec2& size) noexcept;
         expected<void, std::string> setOutput(const std::shared_ptr<FrameBuffer>& fb) noexcept;
         std::shared_ptr<FrameBuffer> getOutput() const noexcept;
 
@@ -123,7 +124,7 @@ namespace darmok
 
         expected<bool, std::string> removeStep(const IRenderChainStep& step) noexcept;
         bool empty() const noexcept;
-
+        bool valid() const noexcept;
     private:
         IRenderChainDelegate& _delegate;
         std::unique_ptr<IRenderChainDelegate> _delegatePointer;

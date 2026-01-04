@@ -33,7 +33,7 @@ namespace darmok::editor
     EditorApp::EditorApp(App& app) noexcept
         : _app{ app }
         , _sceneView{ *this }
-        , _playerView{ *this }
+        , _playerView{ *this, app }
         , _proj{app}
         , _dockLeftId{0}
         , _dockRightId{0}
@@ -117,11 +117,8 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::shutdown() noexcept
     {
-        auto result = stopScene();
-        if (!result)
-        {
-            return result;
-        }
+        expected<void, std::string> result;
+
         result = _inspectorView.shutdown();
         if (!result)
         {
@@ -218,48 +215,6 @@ namespace darmok::editor
             ImGui::DockBuilderDockWindow(_assetsView.getWindowName().c_str(), _dockDownId);
         }
     }   
-
-    expected<void, std::string> EditorApp::playScene() noexcept
-    {
-        auto& scene = *_proj.getScene();
-        for (auto comp : scene.getSceneComponents())
-        {
-            auto result = comp.get().shutdown();
-            if (!result)
-            {
-                return result;
-            }
-        }
-        for (auto comp : scene.getSceneComponents())
-        {
-            auto result = comp.get().init(scene, _app);
-            if (!result)
-            {
-                return result;
-            }
-        }
-        scene.setPaused(false);
-        _pendingPlaybackChange = true;
-        return {};
-    }
-
-    expected<void, std::string> EditorApp::stopScene() noexcept
-    {
-        _proj.getScene()->setPaused(true);
-        _pendingPlaybackChange = false;
-        return _proj.updateScene();
-    }
-
-    void EditorApp::pauseScene() noexcept
-    {
-        auto& scene = *_proj.getScene();
-        scene.setPaused(!scene.isPaused());
-    }
-
-    bool EditorApp::isScenePlaying() const noexcept
-    {
-        return !_proj.getScene()->isPaused();
-    }
 
     EntityId EditorApp::getSelectedEntity() const noexcept
     {
@@ -473,7 +428,6 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::renderMainToolbar() noexcept
     {
-        ImGuiIO& io = ImGui::GetIO();
         expected<void, std::string> result;
              
         ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -502,6 +456,11 @@ namespace darmok::editor
             }
             ImGui::EndGroup();
             ImGui::SameLine();
+        }
+
+        if (!result)
+        {
+            return result;
         }
 
         renderSeparator();
@@ -534,29 +493,28 @@ namespace darmok::editor
 
         {
             ImGui::BeginGroup();
-            if (isScenePlaying())
+            if (_playerView.isPlaying())
             {
                 if (ImGui::Button(ICON_MD_STOP))
                 {
-                    auto result = stopScene();
-                    if (!result)
-                    {
-                        return result;
-                    }
+                    result = _playerView.stop();
                 }
             }
             else
             {
                 if (ImGui::Button(ICON_MD_PLAY_ARROW))
                 {
-                    playScene();
+                    result = _playerView.play();
                 }
             }
             ImGui::SameLine();
-            if (ImGui::Button(ICON_MD_PAUSE))
+            ImGui::BeginDisabled(!_playerView.isPlaying());
+            auto notPaused = !_playerView.isPaused();
+            if (ImguiUtils::drawToggleButton(ICON_MD_PAUSE, &notPaused))
             {
-                pauseScene();
+                _playerView.pause();
             }
+            ImGui::EndDisabled();
             ImGui::EndGroup();
             ImGui::SameLine();
         }
@@ -564,29 +522,8 @@ namespace darmok::editor
         ImGui::PopFont();
         _mainToolbarHeight = ImGui::GetWindowSize().y;
         ImGui::End();
-
-        bool ctrl = io.KeyCtrl || io.KeySuper;
-        bool shift = io.KeyShift;
-        if (ctrl && ImGui::IsKeyPressed(ImGuiKey_P, false))
-        {
-            if (isScenePlaying())
-            {
-                if (shift)
-                {
-                    pauseScene();
-                }
-                else
-                {
-                    stopScene();
-                }
-            }
-            else
-            {
-                playScene();
-            }
-        }
-
-        return {};
+       
+        return result;
     }
 
     void EditorApp::onSceneTreeSceneClicked() noexcept

@@ -238,14 +238,14 @@ namespace darmok::editor
         {
             if (auto cam = _scene->getComponent<Camera>(entity))
             {
-                if (cam != _cam)
+                auto camResult = cam->setRenderOutputSize(glm::uvec2{ 0 });
+                if (!camResult)
                 {
-                    cam->setEnabled(false);
+                    return unexpected{ std::move(camResult).error() };
                 }
             }
         }
         _app.requestRenderReset();
-        // return compResult.value().get().update(0.f);
         return {};
     }
 

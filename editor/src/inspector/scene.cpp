@@ -30,8 +30,8 @@ namespace darmok::editor
                         changed = true;
                     }
                 }
-				ImguiUtils::endFrame();
             }
+            ImguiUtils::endFrame();
         }
 
         return true;

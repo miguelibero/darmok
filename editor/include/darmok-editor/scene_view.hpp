@@ -165,7 +165,6 @@ namespace darmok::editor
         OptionalRef<Camera> _cam;
         MouseMode _mouseMode;
         bool _focused;
-        std::shared_ptr<FrameBuffer> _sceneBuffer;
         Entity _selectedEntity;
         OptionalRef<TransformGizmo> _transformGizmo;
 

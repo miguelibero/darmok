@@ -175,8 +175,9 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
         }
+        ImguiUtils::endFrame();
+
 
         return changed;
     }
@@ -206,8 +207,9 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
         }
+        ImguiUtils::endFrame();
+
         return changed;
     }
 
@@ -237,8 +239,9 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
         }
+        ImguiUtils::endFrame();
+
         return changed;
     }
 
@@ -267,8 +270,9 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
         }
+        ImguiUtils::endFrame();
+
         return changed;
     }
 
@@ -298,8 +302,8 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
         }
+        ImguiUtils::endFrame();
 
         return changed;
     }
@@ -330,8 +334,8 @@ namespace darmok::editor
             {
                 changed = true;
             }
-            ImguiUtils::endFrame();
         }
+        ImguiUtils::endFrame();
 
         return changed;
     }

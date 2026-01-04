@@ -112,6 +112,7 @@ namespace darmok::editor
             {
                 if (withTitle && !ImguiUtils::beginFrame(editor->getTitle().c_str()))
                 {
+                    ImguiUtils::endFrame();
                     return false;
                 }
                 auto result = editor->render(obj);

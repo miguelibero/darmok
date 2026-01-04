@@ -35,6 +35,10 @@ namespace darmok
 
 	expected<FrameBuffer, std::string> FrameBuffer::load(const glm::uvec2& size, bool depth) noexcept
 	{
+		if (size.x == 0 || size.y == 0)
+		{
+			return FrameBuffer{};
+		}
 		auto texResult = Texture::load(createColorConfig(size), BGFX_TEXTURE_RT);
 		if(!texResult)
 		{
@@ -122,6 +126,10 @@ namespace darmok
 
 	glm::uvec2 FrameBuffer::getSize() const noexcept
 	{
+		if (!_colorTex)
+		{
+			return glm::uvec2{ 0 };
+		}
 		return _colorTex->getSize();
 	}
 
@@ -225,6 +233,25 @@ namespace darmok
 			_output->configureView(*_viewId);
 		}
 		return {};
+	}
+
+	expected<bool, std::string> RenderChain::setOutputSize(const glm::uvec2& size) noexcept
+	{
+		if (_output && size == _output->getSize())
+		{
+			return false;
+		}
+		auto fbResult = FrameBuffer::load(size);
+		if (!fbResult)
+		{
+			return unexpected{ std::move(fbResult).error() };
+		}
+		auto setResult = setOutput(std::make_shared<FrameBuffer>(std::move(fbResult).value()));
+		if (!setResult)
+		{
+			return unexpected{ std::move(setResult).error() };
+		}
+		return true;
 	}
 
 	std::shared_ptr<FrameBuffer> RenderChain::getOutput() const noexcept
@@ -494,6 +521,11 @@ namespace darmok
 	bool RenderChain::empty() const noexcept
 	{
 		return _buffers.empty() && !_output;
+	}
+
+	bool RenderChain::valid() const noexcept
+	{
+		return !_output || _output->valid();
 	}
 
 	expected<void, std::string> RenderChain::render() noexcept
