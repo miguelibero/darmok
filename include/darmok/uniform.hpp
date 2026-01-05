@@ -13,6 +13,8 @@
 
 namespace darmok
 {
+    struct TextureHandle;
+
     struct DARMOK_EXPORT UniformHandle final
     {
     public:
@@ -108,9 +110,9 @@ namespace darmok
         UniformHandleContainer(UniformHandleContainer&& other) = default;
         UniformHandleContainer& operator=(UniformHandleContainer&& other) = default;
 
-        void configure(bgfx::Encoder& encoder, const UniformValueMap& values) const;
-        void configure(bgfx::Encoder& encoder, const UniformTextureMap& textures) const;
-        void configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept;
+        void configure(bgfx::Encoder& encoder, const UniformValueMap& values) const noexcept;
+        void configure(bgfx::Encoder& encoder, const UniformTextureMap& textures) const noexcept;
+        void configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const TextureHandle& texHandle) const noexcept;
         void configure(bgfx::Encoder& encoder, const std::string& name, const UniformValue& val) const noexcept;
         void clear() noexcept;
     private:

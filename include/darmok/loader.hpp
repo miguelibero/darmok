@@ -380,14 +380,14 @@ namespace darmok
         virtual bool releaseDefinitionCache(const Definition& def) noexcept = 0;
         virtual bool isDefinitionCached(const Definition& def) const noexcept = 0;
 
-        Result reload(Argument arg)
+        Result reload(Argument arg, bool forceDefinition = false) noexcept
         {
-			auto defResult = loadDefinition(arg);
+			auto defResult = loadDefinition(arg, forceDefinition);
             if (!defResult)
             {
-                return unexpected<Error>{ defResult.error() };
+                return unexpected{ std::move(defResult).error() };
             }
-			return reloadResource(*defResult.value());
+			return loadResource(defResult.value(), true);
         }
     };
 

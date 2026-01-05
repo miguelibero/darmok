@@ -230,7 +230,7 @@ namespace darmok
             return 0;
 		}
         auto texture = std::make_unique<Texture>(std::move(texResult).value());
-        Rml::TextureHandle handle = texture->getHandle().idx + 1;
+        Rml::TextureHandle handle = texture->getHandle().idx() + 1;
         _textureSources.emplace(source, *texture);
         _textures.emplace(handle, std::move(texture));
         return handle;
@@ -252,7 +252,7 @@ namespace darmok
             return 0;
         }
         auto texture = std::make_unique<Texture>(std::move(texResult).value());
-        Rml::TextureHandle handle = texture->getHandle().idx + 1;
+        Rml::TextureHandle handle = texture->getHandle().idx() + 1;
         _textures.emplace(handle, std::move(texture));
         return handle;
     }

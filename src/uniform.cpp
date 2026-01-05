@@ -191,7 +191,7 @@ namespace darmok
 		return hash;
 	}
 
-	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const UniformValueMap& values) const
+	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const UniformValueMap& values) const noexcept
 	{
 		for (const auto& [name, val] : values)
 		{
@@ -199,22 +199,21 @@ namespace darmok
 		}
 	}
 
-	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const UniformTextureMap& textures) const
+	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const UniformTextureMap& textures) const noexcept
 	{
 		for (const auto& [key, tex] : textures)
 		{
-			configure(encoder, key, tex);
+			if (tex)
+			{
+				configure(encoder, key, tex->getHandle());
+			}
 		}
 	}
 
-	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const std::shared_ptr<Texture>& tex) const noexcept
+	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const TextureUniformKey& key, const TextureHandle& texHandle) const noexcept
 	{
-		if (!tex)
-		{
-			return;
-		}
 		auto& handle = getHandle({ key.name(), bgfx::UniformType::Sampler });
-		encoder.setTexture(key.stage(), handle, tex->getHandle());
+		encoder.setTexture(key.stage(), handle, texHandle);
 	}
 
 	void UniformHandleContainer::configure(bgfx::Encoder& encoder, const std::string& name, const UniformValue& val) const noexcept

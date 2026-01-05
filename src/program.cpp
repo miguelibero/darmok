@@ -191,6 +191,10 @@ namespace darmok
         }
         for (auto& [defines, fragHandle] : handles.fragmentHandles)
         {
+            if (handles.programHandles.find(defines) != handles.programHandles.end())
+            {
+                continue;
+            }
             auto vertHandle = findBestShader(defines, handles.vertexHandles);
             auto result = createHandle(defines, vertHandle, fragHandle);
             if (!result)
@@ -214,31 +218,6 @@ namespace darmok
         return handle;
     }
 
-    Program::~Program() noexcept
-    {
-        for (auto& [defines, handle] : _handles)
-        {
-            if (isValid(handle))
-            {
-                bgfx::destroy(handle);
-            }
-        }
-        for (auto& [defines, handle] : _vertexHandles)
-        {
-            if (isValid(handle))
-            {
-                bgfx::destroy(handle);
-            }
-        }
-        for (auto& [defines, handle] : _fragmentHandles)
-        {
-            if (isValid(handle))
-            {
-                bgfx::destroy(handle);
-            }
-        }
-    }
-
     Program::Source Program::createSource() noexcept
     {
         Source src;
@@ -251,7 +230,7 @@ namespace darmok
         return def;
     }
 
-	bgfx::ProgramHandle Program::getHandle(const Defines& defines) const noexcept
+	ProgramHandle Program::getHandle(const Defines& defines) const noexcept
 	{
         Defines existingDefines;
         for (auto& define : defines)
@@ -266,7 +245,7 @@ namespace darmok
         {
             return itr->second;
         }
-        return { bgfx::kInvalidHandle };
+        return {};
 	}
 
 	const bgfx::VertexLayout& Program::getVertexLayout() const noexcept

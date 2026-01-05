@@ -9,6 +9,7 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/utils.hpp>
 #include <darmok/expected.hpp>
+#include <darmok/handle.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/texture.pb.h>
 
@@ -20,6 +21,16 @@
 
 namespace darmok
 {
+	class DARMOK_EXPORT TextureHandle final : public BaseBgfxHandle<bgfx::TextureHandle>
+	{
+		using BaseBgfxHandle<bgfx::TextureHandle>::BaseBgfxHandle;
+	};
+
+	class DARMOK_EXPORT TextureOwnedHandle final : public BaseBgfxOwnedHandle<bgfx::TextureHandle, TextureHandle>
+	{
+		using BaseBgfxOwnedHandle::BaseBgfxOwnedHandle;
+	};
+
 	const uint64_t defaultTextureLoadFlags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE;
 
 	class ConstTextureSourceWrapper
@@ -108,12 +119,11 @@ namespace darmok
 		using Format = protobuf::Texture::Format;
 		using UniformKey = protobuf::TextureUniformKey;
 
-		Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept;
-		~Texture() noexcept;
-		Texture(Texture&& other) noexcept;
-		Texture& operator=(Texture&& other) noexcept;
+		Texture(TextureOwnedHandle handle, const Config& cfg) noexcept;
 		Texture(const Texture& other) = delete;
 		Texture& operator=(const Texture& other) = delete;
+		Texture(Texture&& other) noexcept = default;
+		Texture& operator=(Texture&& other) noexcept = default;
 
 		static expected<Texture, std::string> load(const Config& cfg, uint64_t flags = defaultTextureLoadFlags) noexcept;
 		static expected<Texture, std::string> load(const Image& img, uint64_t flags = defaultTextureLoadFlags) noexcept;
@@ -128,7 +138,7 @@ namespace darmok
 		[[nodiscard]] uint32_t read(Data& data) noexcept;
 
 		[[nodiscard]] std::string toString() const noexcept;
-		[[nodiscard]] const bgfx::TextureHandle& getHandle() const noexcept;
+		[[nodiscard]] TextureHandle getHandle() const noexcept;
 		[[nodiscard]] Type getType() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] bgfx::TextureFormat::Enum getFormat() const noexcept;
@@ -162,12 +172,12 @@ namespace darmok
 		[[nodiscard]] static uint64_t getBorderColorFlag(const Color& color) noexcept;
 
 	private:
-		bgfx::TextureHandle _handle;
+		TextureOwnedHandle _handle;
 		Config _config;
 		static const FlagMap _textureFlags;
 		static const FlagMap _samplerFlags;
 
-		static expected<bgfx::TextureHandle, std::string> createTextureHandle(const Config& cfg, uint64_t flags = defaultTextureLoadFlags, const bgfx::Memory* mem = nullptr) noexcept;
+		static expected<TextureOwnedHandle, std::string> createTextureHandle(const Config& cfg, uint64_t flags = defaultTextureLoadFlags, const bgfx::Memory* mem = nullptr) noexcept;
 	};
 
 	class DARMOK_EXPORT BX_NO_VTABLE ITextureLoader : public ILoader<Texture>{};

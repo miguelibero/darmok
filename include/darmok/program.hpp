@@ -6,6 +6,7 @@
 #include <darmok/varying.hpp>
 #include <darmok/data.hpp>
 #include <darmok/collection.hpp>
+#include <darmok/handle.hpp>
 
 #include <filesystem>
 #include <memory>
@@ -22,12 +23,32 @@ namespace darmok
 	class IProgramLoader;
 	class IProgramDefinitionLoader;
 
+	class DARMOK_EXPORT ProgramHandle final : public BaseBgfxHandle<bgfx::ProgramHandle>
+	{
+		using BaseBgfxHandle::BaseBgfxHandle;
+	};
+
+	class DARMOK_EXPORT ShaderHandle final : public BaseBgfxHandle<bgfx::ShaderHandle>
+	{
+		using BaseBgfxHandle::BaseBgfxHandle;
+	};
+
+	class DARMOK_EXPORT ProgramOwnedHandle final : public BaseBgfxOwnedHandle<bgfx::ProgramHandle, ProgramHandle>
+	{
+		using BaseBgfxOwnedHandle::BaseBgfxOwnedHandle;
+	};
+
+	class DARMOK_EXPORT ShaderOwnedHandle final : public BaseBgfxOwnedHandle<bgfx::ShaderHandle, ShaderHandle>
+	{
+		using BaseBgfxOwnedHandle::BaseBgfxOwnedHandle;
+	};
+
 	class DARMOK_EXPORT Program final
 	{
 	public:
 		using Defines = ProgramDefines;
-		using ShaderHandles = std::unordered_map<Defines, bgfx::ShaderHandle>;
-		using ProgramHandles = std::unordered_map<Defines, bgfx::ProgramHandle>;
+		using ShaderHandles = std::unordered_map<Defines, ShaderOwnedHandle>;
+		using ProgramHandles = std::unordered_map<Defines, ProgramOwnedHandle>;
 		using Definition = protobuf::Program;
 		using Source = protobuf::ProgramSource;
 		using Standard = protobuf::StandardProgram;
@@ -41,7 +62,6 @@ namespace darmok
 		};
 		
 		Program(bgfx::VertexLayout layout, Handles handles) noexcept;
-		~Program() noexcept;
 		Program(const Program& other) = delete;
 		Program& operator=(const Program& other) = delete;
 		Program(Program&& other) = default;
@@ -49,7 +69,7 @@ namespace darmok
 
 		static expected<Program, std::string> load(const Definition& def) noexcept;
 
-		[[nodiscard]] bgfx::ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
+		[[nodiscard]] ProgramHandle getHandle(const Defines& defines = {}) const noexcept;
 		[[nodiscard]] const bgfx::VertexLayout& getVertexLayout() const noexcept;
 
 		template<class T>

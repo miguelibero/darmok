@@ -26,8 +26,8 @@ namespace darmok
 		return config;
 	}
 
-	FrameBuffer::FrameBuffer(bgfx::FrameBufferHandle handle, std::shared_ptr<Texture> colorTex, std::shared_ptr<Texture> depthTex) noexcept
-		: _handle{ handle }
+	FrameBuffer::FrameBuffer(FrameBufferOwnedHandle handle, std::shared_ptr<Texture> colorTex, std::shared_ptr<Texture> depthTex) noexcept
+		: _handle{ std::move(handle) }
 		, _colorTex{ colorTex }
 		, _depthTex{ depthTex }
 	{
@@ -61,20 +61,9 @@ namespace darmok
 		return FrameBuffer{ handle, colorTex, depthTex };
 	}
 
-	FrameBuffer::~FrameBuffer() noexcept
+	void FrameBuffer::reset() noexcept
 	{
-		reset();
-	}
-
-	bool FrameBuffer::reset() noexcept
-	{
-		if (isValid(_handle))
-		{
-			bgfx::destroy(_handle);
-			_handle.idx = bgfx::kInvalidHandle;
-			return true;
-		}
-		return false;
+		_handle.reset();
 	}
 
 	FrameBuffer::operator bool() const noexcept
@@ -84,29 +73,12 @@ namespace darmok
 
 	bool FrameBuffer::valid() const noexcept
 	{
-		return isValid(_handle);
+		return _handle.valid();
 	}
 
 	uint16_t FrameBuffer::idx() const noexcept
 	{
-		return _handle.idx;
-	}
-
-	FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
-		: _handle{ other._handle }
-		, _colorTex{ std::move(other._colorTex) }
-		, _depthTex{ std::move(other._depthTex) }
-	{
-		other._handle.idx = bgfx::kInvalidHandle;
-	}
-
-	FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept
-	{
-		_handle = other._handle;
-		other._handle.idx = bgfx::kInvalidHandle;
-		_colorTex = std::move(other._colorTex);
-		_depthTex = std::move(other._depthTex);
-		return *this;
+		return _handle.idx();
 	}
 
 	const std::shared_ptr<Texture>& FrameBuffer::getTexture() const noexcept
@@ -119,7 +91,7 @@ namespace darmok
 		return _depthTex;
 	}
 
-	const bgfx::FrameBufferHandle& FrameBuffer::getHandle() const noexcept
+	FrameBufferHandle FrameBuffer::getHandle() const noexcept
 	{
 		return _handle;
 	}

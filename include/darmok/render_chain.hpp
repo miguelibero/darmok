@@ -6,6 +6,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/viewport.hpp>
 #include <darmok/uniform.hpp>
+#include <darmok/handle.hpp>
 
 #include <memory>
 #include <optional>
@@ -16,29 +17,38 @@ namespace darmok
 {
     class Texture;
 
+    class DARMOK_EXPORT FrameBufferHandle final : public BaseBgfxHandle<bgfx::FrameBufferHandle>
+    {
+        using BaseBgfxHandle::BaseBgfxHandle;
+    };
+
+    class DARMOK_EXPORT FrameBufferOwnedHandle final : public BaseBgfxOwnedHandle<bgfx::FrameBufferHandle, FrameBufferHandle>
+    {
+        using BaseBgfxOwnedHandle::BaseBgfxOwnedHandle;
+    };
+
     class DARMOK_EXPORT FrameBuffer final
     {
     public:
-        ~FrameBuffer() noexcept;
-        FrameBuffer(bgfx::FrameBufferHandle handle = { bgfx::kInvalidHandle }, std::shared_ptr<Texture> colorTex = nullptr, std::shared_ptr<Texture> depthTex = nullptr) noexcept;
+        FrameBuffer(FrameBufferOwnedHandle handle = { }, std::shared_ptr<Texture> colorTex = nullptr, std::shared_ptr<Texture> depthTex = nullptr) noexcept;
         FrameBuffer(const FrameBuffer& other) = delete;
         FrameBuffer& operator=(const FrameBuffer& other) = delete;
-        FrameBuffer(FrameBuffer&& other) noexcept;
-        FrameBuffer& operator=(FrameBuffer&& other) noexcept;
+        FrameBuffer(FrameBuffer&& other) = default;
+        FrameBuffer& operator=(FrameBuffer&& other) = default;
 
         static expected<FrameBuffer, std::string> load(const glm::uvec2& size, bool depth = true) noexcept;
 
         const std::shared_ptr<Texture>& getTexture() const noexcept;
         const std::shared_ptr<Texture>& getDepthTexture() const noexcept;
-        const bgfx::FrameBufferHandle& getHandle() const noexcept;
+        FrameBufferHandle getHandle() const noexcept;
         void configureView(bgfx::ViewId viewId) const noexcept;
         glm::uvec2 getSize() const noexcept;
-        bool reset() noexcept;
+        void reset() noexcept;
         operator bool() const noexcept;
         bool valid() const noexcept;
         uint16_t idx() const noexcept;
     private:
-        bgfx::FrameBufferHandle _handle;
+        FrameBufferOwnedHandle _handle;
         std::shared_ptr<Texture> _colorTex;
         std::shared_ptr<Texture> _depthTex;
 

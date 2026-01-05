@@ -153,9 +153,9 @@ namespace darmok
         UniformHandle _lightDataUniform;
         UniformHandle _camPosUniform;
         UniformHandle _normalMatrixUniform;
-        DynamicVertexBufferHandle _pointLightBuffer;
-        DynamicVertexBufferHandle _dirLightBuffer;
-        DynamicVertexBufferHandle _spotLightBuffer;
+        DynamicVertexBuffer _pointLightBuffer;
+        DynamicVertexBuffer _dirLightBuffer;
+        DynamicVertexBuffer _spotLightBuffer;
 
         bgfx::VertexLayout _pointLightsLayout;
         bgfx::VertexLayout _dirLightsLayout;

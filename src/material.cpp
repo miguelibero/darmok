@@ -105,7 +105,7 @@ namespace darmok
 
 	bool Material::valid() const noexcept
 	{
-		return program && isValid(program->getHandle(programDefines));
+		return program && program->getHandle(programDefines).valid();
 	}
 
 	Material::Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept
@@ -236,7 +236,10 @@ namespace darmok
 			{
 				tex = config.defaultTexture;
 			}
-			config.uniformHandles.configure(encoder, key, tex);
+			if (tex)
+			{
+				config.uniformHandles.configure(encoder, key, tex->getHandle());
+			}
 		}
 
 		// pbr

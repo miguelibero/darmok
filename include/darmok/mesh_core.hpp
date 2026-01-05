@@ -90,8 +90,8 @@ namespace darmok
     private:
         struct StaticMode final
         {
-            VertexBufferHandle vertexBuffer;
-            IndexBufferHandle indexBuffer;
+            VertexBuffer vertexBuffer;
+            IndexBuffer indexBuffer;
 
             StaticMode() = default;
             StaticMode(const StaticMode& other) = delete;
@@ -105,8 +105,8 @@ namespace darmok
 
         struct DynamicMode final
         {
-            DynamicVertexBufferHandle vertexBuffer;
-            DynamicIndexBufferHandle indexBuffer;
+            DynamicVertexBuffer vertexBuffer;
+            DynamicIndexBuffer indexBuffer;
 
             DynamicMode() = default;
             DynamicMode(const DynamicMode& other) = delete;

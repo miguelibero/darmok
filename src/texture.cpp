@@ -391,13 +391,13 @@ namespace darmok
 	}
 
 
-	Texture::Texture(const bgfx::TextureHandle& handle, const Config& cfg) noexcept
-		: _handle{ handle }
+	Texture::Texture(TextureOwnedHandle handle, const Config& cfg) noexcept
+		: _handle{ std::move(handle) }
 		, _config{ cfg }
 	{
 	}
 
-	expected<bgfx::TextureHandle, std::string> Texture::createTextureHandle(const Config& cfg, uint64_t flags, const bgfx::Memory* mem) noexcept
+	expected<TextureOwnedHandle, std::string> Texture::createTextureHandle(const Config& cfg, uint64_t flags, const bgfx::Memory* mem) noexcept
 	{
 		auto x = cfg.size().x();
 		auto y = cfg.size().y();
@@ -405,14 +405,11 @@ namespace darmok
 		switch (cfg.type())
 		{
 		case Definition::CubeMap:
-			return bgfx::createTextureCube(x, cfg.mips(), cfg.layers(), format, flags, mem);
-			break;
+			return TextureOwnedHandle{ bgfx::createTextureCube(x, cfg.mips(), cfg.layers(), format, flags, mem) };
 		case Definition::Texture2D:
-			return bgfx::createTexture2D(x, y, cfg.mips(), cfg.layers(), format, flags, mem);
-			break;
+			return TextureOwnedHandle{ bgfx::createTexture2D(x, y, cfg.mips(), cfg.layers(), format, flags, mem) };
 		case Definition::Texture3D:
-			return bgfx::createTexture3D(x, y, cfg.depth(), cfg.mips(), format, flags, mem);
-			break;
+			return TextureOwnedHandle{ bgfx::createTexture3D(x, y, cfg.depth(), cfg.mips(), format, flags, mem) };
 		default:
 			return unexpected<std::string>{ "invalid texture type" };
 		}
@@ -425,7 +422,7 @@ namespace darmok
 		{
 			return unexpected{ std::move(result).error() };
 		}
-		return Texture{ result.value(), cfg };
+		return Texture{ std::move(result).value(), cfg };
 	}
 
 	expected<Texture, std::string> Texture::load(const Image& img, uint64_t flags) noexcept
@@ -442,37 +439,12 @@ namespace darmok
 		{
 			return unexpected{ std::move(result).error() };
 		}
-		return Texture{ result.value(), cfg };
+		return Texture{ std::move(result).value(), cfg };
 	}
 
 	expected<Texture, std::string> Texture::load(const Definition& def) noexcept
 	{
 		return load(DataView{ def.data() }, def.config(), def.flags());
-	}
-
-	Texture::Texture(Texture&& other) noexcept
-		: _handle{ other._handle }
-		, _config{ other._config }
-	{
-		other._handle.idx = bgfx::kInvalidHandle;
-		other._config = getEmptyConfig();
-	}
-
-	Texture& Texture::operator=(Texture&& other) noexcept
-	{
-		_handle = other._handle;
-		_config = other._config;
-		other._handle.idx = bgfx::kInvalidHandle;
-		other._config = getEmptyConfig();
-		return *this;
-	}
-
-	Texture::~Texture() noexcept
-	{
-		if (isValid(_handle))
-		{
-			bgfx::destroy(_handle);
-		}
 	}
 
 	bgfx::TextureInfo Texture::getInfo() const noexcept
@@ -581,11 +553,11 @@ namespace darmok
 
 	std::string Texture::toString() const noexcept
 	{
-		return "Texture(" + std::to_string(_handle.idx)
+		return "Texture(" + std::to_string(_handle)
 			+ " " + _config.DebugString() + ")";
 	}
 
-	const bgfx::TextureHandle& Texture::getHandle() const noexcept
+	TextureHandle Texture::getHandle() const noexcept
 	{
 		return _handle;
 	}
@@ -622,7 +594,7 @@ namespace darmok
 
 	Texture& Texture::setName(std::string_view name) noexcept
 	{
-		if (isValid(_handle))
+		if (_handle.valid())
 		{
 			bgfx::setName(_handle, name.data(), int32_t(name.size()));
 		}

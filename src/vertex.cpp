@@ -4,34 +4,33 @@
 
 namespace darmok
 {
-
-    VertexBufferHandle::VertexBufferHandle(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
-        : BaseBgfxHandle(bgfx::createVertexBuffer(mem, layout, flags))
+    VertexBuffer::VertexBuffer(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
+        : BaseBgfxOwnedHandle(bgfx::createVertexBuffer(mem, layout, flags))
     {
     }
 
-    IndexBufferHandle::IndexBufferHandle(const bgfx::Memory* mem, uint16_t flags) noexcept
-        : BaseBgfxHandle(bgfx::createIndexBuffer(mem, flags))
+    IndexBuffer::IndexBuffer(const bgfx::Memory* mem, uint16_t flags) noexcept
+        : BaseBgfxOwnedHandle(bgfx::createIndexBuffer(mem, flags))
     {
     }
 
-    DynamicVertexBufferHandle::DynamicVertexBufferHandle(uint32_t num, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
-        : BaseBgfxHandle(bgfx::createDynamicVertexBuffer(num, layout, flags))
+    DynamicVertexBuffer::DynamicVertexBuffer(uint32_t num, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
+        : BaseBgfxOwnedHandle(bgfx::createDynamicVertexBuffer(num, layout, flags))
     {
     }
 
-    DynamicVertexBufferHandle::DynamicVertexBufferHandle(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
-        : BaseBgfxHandle(bgfx::createDynamicVertexBuffer(mem, layout, flags))
+    DynamicVertexBuffer::DynamicVertexBuffer(const bgfx::Memory* mem, const bgfx::VertexLayout& layout, uint16_t flags) noexcept
+        : BaseBgfxOwnedHandle(bgfx::createDynamicVertexBuffer(mem, layout, flags))
     {
     }
 
-    DynamicIndexBufferHandle::DynamicIndexBufferHandle(uint32_t num, uint16_t flags) noexcept
-        : BaseBgfxHandle(bgfx::createDynamicIndexBuffer(num, flags))
+    DynamicIndexBuffer::DynamicIndexBuffer(uint32_t num, uint16_t flags) noexcept
+        : BaseBgfxOwnedHandle(bgfx::createDynamicIndexBuffer(num, flags))
     {
     }
 
-    DynamicIndexBufferHandle::DynamicIndexBufferHandle(const bgfx::Memory* mem, uint16_t flags) noexcept
-        : BaseBgfxHandle(bgfx::createDynamicIndexBuffer(mem, flags))
+    DynamicIndexBuffer::DynamicIndexBuffer(const bgfx::Memory* mem, uint16_t flags) noexcept
+        : BaseBgfxOwnedHandle(bgfx::createDynamicIndexBuffer(mem, flags))
     {
     }
 

@@ -97,9 +97,9 @@ namespace darmok
         UniformHandle _shadowMapUniform;
         UniformHandle _shadowData1Uniform;
         UniformHandle _shadowData2Uniform;
-        DynamicVertexBufferHandle _shadowTransBuffer;
+        DynamicVertexBuffer _shadowTransBuffer;
         bgfx::VertexLayout _shadowTransLayout;
-        DynamicVertexBufferHandle _shadowLightDataBuffer;
+        DynamicVertexBuffer _shadowLightDataBuffer;
         bgfx::VertexLayout _shadowLightDataLayout;
 
         static const size_t _pointLightFaceAmount;
