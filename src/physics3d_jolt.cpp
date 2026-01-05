@@ -596,16 +596,25 @@ namespace darmok::physics3d
         _scene->onDestroyComponent<CharacterController>().connect< &PhysicsSystemImpl::onCharacterDestroyed>(*this);
 
         auto rigidBodies = _scene->getComponents<PhysicsBody>();
+        std::vector<std::string> errors;
         for (auto [entity, body] : rigidBodies.each())
         {
-            body.getImpl().init(body, _system);
+            auto result = body.getImpl().init(entity, body, _system);
+            if (!result)
+            {
+                errors.push_back(result.error());
+            }
         }
         auto charCtrls = _scene->getComponents<CharacterController>();
         for (auto [entity, charCtrl] : charCtrls.each())
         {
-            charCtrl.getImpl().init(charCtrl, _system);
+            auto result = charCtrl.getImpl().init(entity, charCtrl, _system);
+            if (!result)
+            {
+                errors.push_back(result.error());
+            }
         }
-        return {};
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     expected<void, std::string> PhysicsSystemImpl::shutdown() noexcept
@@ -646,8 +655,7 @@ namespace darmok::physics3d
     expected<void, std::string> PhysicsSystemImpl::onRigidbodyConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& body = registry.get<PhysicsBody>(entity);
-        body.getImpl().init(body, _system);
-        return {};
+        return body.getImpl().init(entity, body, _system);
     }
 
     expected<void, std::string> PhysicsSystemImpl::onRigidbodyDestroyed(EntityRegistry& registry, Entity entity) noexcept
@@ -660,8 +668,7 @@ namespace darmok::physics3d
     expected<void, std::string> PhysicsSystemImpl::onCharacterConstructed(EntityRegistry& registry, Entity entity) noexcept
     {
         auto& character = registry.get<CharacterController>(entity);
-        character.getImpl().init(character, _system);
-        return {};
+        return character.getImpl().init(entity, character, _system);
     }
 
     expected<void, std::string> PhysicsSystemImpl::onCharacterDestroyed(EntityRegistry& registry, Entity entity) noexcept
@@ -1312,12 +1319,14 @@ namespace darmok::physics3d
     expected<void, std::string> PhysicsBodyImpl::load(const Definition& def, Entity entity) noexcept
     {
         _def = def;
+        _shape = darmok::convert<PhysicsShape>(def.shape());
         return doLoad(entity);
     }
 
     expected<void, std::string> PhysicsBodyImpl::load(const CharacterDefinition& def, Entity entity) noexcept
     {
         _def = def;
+        _shape = darmok::convert<PhysicsShape>(def.shape());
         return doLoad(entity);
     }
 
@@ -1334,7 +1343,7 @@ namespace darmok::physics3d
         return {};
     }
 
-    void PhysicsBodyImpl::init(PhysicsBody& body, PhysicsSystem& system) noexcept
+    expected<void, std::string> PhysicsBodyImpl::init(Entity entity, PhysicsBody& body, PhysicsSystem& system) noexcept
     {
         if (_system)
         {
@@ -1342,6 +1351,7 @@ namespace darmok::physics3d
         }
         _body = body;
         _system = system;
+        return doLoad(entity);
     }
 
     void PhysicsBodyImpl::doShutdown() noexcept
@@ -1417,7 +1427,6 @@ namespace darmok::physics3d
         _character = new JPH::Character(settings, trans.position, trans.rotation, userData, joltSystem.ptr());
         _character->AddToPhysicsSystem();
         _maxSepDistance = def.max_separation_distance();
-        _shape = darmok::convert<PhysicsShape>(def.shape());
         return _character->GetBodyID();
     }
 
@@ -1459,7 +1468,6 @@ namespace darmok::physics3d
             settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
             settings.mMassPropertiesOverride.mMass = def.mass();
         }
-        _shape = darmok::convert<PhysicsShape>(def.shape());
         return getBodyInterface()->CreateAndAddBody(settings, activation);
     }
 

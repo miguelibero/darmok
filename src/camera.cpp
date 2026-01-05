@@ -505,7 +505,11 @@ namespace darmok
     {
         if (auto type = component->getCameraComponentType())
         {
-            removeComponent(type->hash());
+            auto result = removeComponent(type->hash());
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
         }
         if (_scene)
         {
@@ -550,15 +554,20 @@ namespace darmok
             CameraComponentTypeHashFinder{ type });
     }
 
-    bool Camera::removeComponent(entt::id_type type) noexcept
+    expected<bool, std::string> Camera::removeComponent(entt::id_type type) noexcept
     {
         auto itr = findComponent(type);
-        auto found = itr != _components.end();
-        if (found)
+        if (itr == _components.end())
         {
-            _components.erase(itr);
+            return false;
         }
-        return found;
+        auto result = (*itr)->shutdown();
+        _components.erase(itr);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
+        return true;
     }
 
     bool Camera::hasComponent(entt::id_type type) const noexcept

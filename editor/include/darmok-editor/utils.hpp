@@ -93,8 +93,6 @@ namespace darmok::editor
 
         bool drawAsset(const char* label, bool selected = false);
 
-        void drawTexturePreview(const Texture& tex, const glm::vec2& maxSize = {}) noexcept;
-
         using FieldDescriptor = google::protobuf::FieldDescriptor;
         using Message = google::protobuf::Message;
 
@@ -117,7 +115,10 @@ namespace darmok::editor
         bool drawProtobufSliderInput(const char* label, const char* field, Message& msg, double min, double max) noexcept;
         bool drawProtobufEnumInput(const char* label, const FieldDescriptor& field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
         bool drawProtobufEnumInput(const char* label, const char* field, Message& msg, std::optional<ComboOptions> options = std::nullopt) noexcept;
-        void drawBuffer(FrameBuffer& buffer) noexcept;
+
+        void drawBuffer(const FrameBuffer& buffer, const glm::uvec2& size = {}) noexcept;
+        void drawTexture(const Texture& tex, const glm::uvec2& size = {}) noexcept;
+        void drawTexturePreview(const Texture& tex, const glm::uvec2& maxSize = {}) noexcept;
         bool drawToggleButton(const char* label, bool* active) noexcept;
 
         bool beginFrame(const char* name) noexcept;

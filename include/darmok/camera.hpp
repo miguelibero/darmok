@@ -163,7 +163,7 @@ namespace darmok
         EntityView getEntities(const EntityFilter& filter) const noexcept;
 
         expected<void, std::string> addComponent(std::unique_ptr<ICameraComponent> comp) noexcept;
-        bool removeComponent(entt::id_type type) noexcept;
+        expected<bool, std::string> removeComponent(entt::id_type type) noexcept;
         [[nodiscard]] bool hasComponent(entt::id_type type) const noexcept;
         [[nodiscard]] OptionalRef<ICameraComponent> getComponent(entt::id_type type) noexcept;
         [[nodiscard]] OptionalRef<const ICameraComponent> getComponent(entt::id_type type) const noexcept;
@@ -199,7 +199,7 @@ namespace darmok
         }
 
         template<typename T>
-        [[nodiscard]] bool removeComponent() noexcept
+        [[nodiscard]] expected<bool, std::string> removeComponent() noexcept
         {
             return removeComponent(entt::type_hash<T>::value());
         }

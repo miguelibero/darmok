@@ -87,7 +87,7 @@ namespace darmok
         Viewport getCurrentViewport() const noexcept;
 
         expected<void, std::string> addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
-        bool removeSceneComponent(entt::id_type type) noexcept;
+        expected<bool, std::string> removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
         OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;
@@ -154,7 +154,7 @@ namespace darmok
         }
 
         template<typename T>
-        bool removeSceneComponent() noexcept
+        expected<bool, std::string> removeSceneComponent() noexcept
         {
             return removeSceneComponent(entt::type_hash<T>::value());
         }

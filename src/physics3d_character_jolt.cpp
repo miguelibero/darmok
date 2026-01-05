@@ -2,7 +2,7 @@
 #include "detail/physics3d_jolt.hpp"
 #include <darmok/physics3d_character.hpp>
 #include <darmok/transform.hpp>
-#include <darmok/protobuf.hpp>
+#include <darmok/scene_serialize.hpp>
 #include <darmok/string.hpp>
 #include <Jolt/Physics/PhysicsSystem.h>
 
@@ -24,7 +24,7 @@ namespace darmok::physics3d
         return _system->getImpl();
     }
 
-    void CharacterControllerImpl::init(CharacterController& ctrl, PhysicsSystem& system) noexcept
+    expected<void, std::string> CharacterControllerImpl::init(Entity entity, CharacterController& ctrl, PhysicsSystem& system) noexcept
     {
         if (_system)
         {
@@ -32,6 +32,23 @@ namespace darmok::physics3d
         }
         _system = system;
         _ctrl = ctrl;
+        return doLoad(entity);
+    }
+
+    expected<void, std::string> CharacterControllerImpl::load(const Definition& def, Entity entity) noexcept
+    {
+        _def = def;
+        return doLoad(entity);
+    }
+
+    expected<void, std::string> CharacterControllerImpl::doLoad(Entity entity) noexcept
+    {
+        _ctrl.reset();
+        if (entity != entt::null)
+        {
+            return update(entity, 0.F);
+        }
+        return {};
     }
 
     void CharacterControllerImpl::shutdown() noexcept
@@ -405,6 +422,12 @@ namespace darmok::physics3d
     CharacterController::~CharacterController() = default;
     CharacterController::CharacterController(CharacterController&& other) noexcept = default;
     CharacterController& CharacterController::operator=(CharacterController&& other) noexcept = default;
+
+    expected<void, std::string> CharacterController::load(const Definition& def, IComponentLoadContext& context) noexcept
+    {
+        auto entity = context.getScene().getEntity(*this);
+        return _impl->load(def, entity);
+    }
 
     CharacterControllerImpl& CharacterController::getImpl() noexcept
     {

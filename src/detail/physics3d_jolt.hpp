@@ -330,7 +330,7 @@ namespace darmok::physics3d
         PhysicsBodyImpl(const Definition& def) noexcept;
         PhysicsBodyImpl(const CharacterDefinition& def) noexcept;
         ~PhysicsBodyImpl() noexcept;
-        void init(PhysicsBody& body, PhysicsSystem& system) noexcept;
+        expected<void, std::string> init(Entity entity, PhysicsBody& body, PhysicsSystem& system) noexcept;
         void shutdown(bool systemShutdown = false) noexcept;
         expected<void, std::string> update(Entity entity, float deltaTime) noexcept;
         std::string toString() const noexcept;		

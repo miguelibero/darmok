@@ -42,21 +42,6 @@ namespace darmok::editor
         return selected;
     }
 
-    void ImguiUtils::drawTexturePreview(const Texture& tex, const glm::vec2& maxSize) noexcept
-    {
-        ImguiTextureData texData{ tex.getHandle() };
-        glm::vec2 size{ tex.getSize() };
-        auto imAvailSize = ImGui::GetContentRegionAvail();
-		glm::vec2 availSize{ imAvailSize.x, imAvailSize.y };
-        if(maxSize != glm::vec2{ 0.F })
-        {
-            availSize = glm::min(availSize, maxSize);
-		}
-        auto ratio = glm::min(size.x / availSize.x, size.y / availSize.y);
-        size /= ratio;
-        ImGui::Image(texData, ImVec2{ size.x, size.y });
-    }
-
     void ImguiUtils::drawReferenceInput(const char* label, std::string& value) noexcept
     {
         ImVec4 bg = ImGui::GetStyle().Colors[ImGuiCol_FrameBg];
@@ -590,13 +575,33 @@ namespace darmok::editor
         return convert<glm::uvec2>(ImGui::GetContentRegionAvail());
     }
 
-    void ImguiUtils::drawBuffer(FrameBuffer& buffer) noexcept
+    void ImguiUtils::drawTexturePreview(const Texture& tex, const glm::uvec2& maxSize) noexcept
+    {
+        ImguiTextureData texData{ tex.getHandle().get() };
+        glm::vec2 size{ tex.getSize() };
+        auto availSize = getAvailableContentRegion();
+        if (maxSize != glm::uvec2{ 0 })
+        {
+            availSize = glm::min(availSize, maxSize);
+        }
+        auto ratio = glm::min(size.x / availSize.x, size.y / availSize.y);
+        size /= ratio;
+        drawTexture(tex, size);
+    }
+
+    void ImguiUtils::drawBuffer(const FrameBuffer& buffer, const glm::uvec2& size) noexcept
     {
         if (auto tex = buffer.getTexture())
         {
-            ImguiTextureData texData{ tex->getHandle() };
-            ImGui::Image(texData, convert<ImVec2>(buffer.getSize()));
+            drawTexture(*tex, size);
         }
+    }
+
+    void ImguiUtils::drawTexture(const Texture& tex, const glm::uvec2& size) noexcept
+    {
+        ImguiTextureData texData{ tex.getHandle().get() };
+        auto fsize = size == glm::uvec2{ 0 } ? tex.getSize() : size;
+        ImGui::Image(texData, convert<ImVec2>(fsize));
     }
 
     bool ImguiUtils::drawToggleButton(const char* label, bool* active) noexcept

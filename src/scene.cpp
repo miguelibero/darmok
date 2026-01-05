@@ -49,7 +49,11 @@ namespace darmok
     {
         if (auto type = component->getSceneComponentType())
         {
-            removeSceneComponent(type->hash());
+            auto result = removeSceneComponent(type->hash());
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
         }
         if (_app)
         {
@@ -63,14 +67,19 @@ namespace darmok
         return {};
     }
 
-    bool SceneImpl::removeSceneComponent(entt::id_type type) noexcept
+    expected<bool, std::string> SceneImpl::removeSceneComponent(entt::id_type type) noexcept
     {
         auto itr = findSceneComponent(type);
         if (itr == _components.end())
         {
             return false;
         }
+        auto result = (*itr)->shutdown();
         _components.erase(itr);
+        if (!result)
+        {
+            return unexpected{ std::move(result).error() };
+        }
         return true;
     }
 
@@ -789,7 +798,7 @@ namespace darmok
         return _impl->addSceneComponent(std::move(component));
     }
 
-    bool Scene::removeSceneComponent(entt::id_type type) noexcept
+    expected<bool, std::string> Scene::removeSceneComponent(entt::id_type type) noexcept
     {
         return _impl->removeSceneComponent(type);
     }

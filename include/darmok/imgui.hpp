@@ -31,7 +31,7 @@ namespace darmok
 		bool alphaBlend;
 		uint8_t mip;
 
-		ImguiTextureData(const TextureHandle& handle) noexcept;
+		ImguiTextureData(const bgfx::TextureHandle& handle) noexcept;
 		ImguiTextureData(const ImguiTextureData& other) = default;
 		ImguiTextureData(const ImTextureID& id) noexcept;
 		operator ImTextureID() const noexcept;

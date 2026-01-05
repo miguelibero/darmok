@@ -23,7 +23,7 @@ namespace darmok
 {
 	class DARMOK_EXPORT TextureHandle final : public BaseBgfxHandle<bgfx::TextureHandle>
 	{
-		using BaseBgfxHandle<bgfx::TextureHandle>::BaseBgfxHandle;
+		using BaseBgfxHandle::BaseBgfxHandle;
 	};
 
 	class DARMOK_EXPORT TextureOwnedHandle final : public BaseBgfxOwnedHandle<bgfx::TextureHandle, TextureHandle>

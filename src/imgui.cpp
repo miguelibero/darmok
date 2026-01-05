@@ -125,7 +125,7 @@ namespace darmok
 		return render(encoder, ImGui::GetDrawData());
 	}
 
-	ImguiTextureData::ImguiTextureData(const TextureHandle& handle) noexcept
+	ImguiTextureData::ImguiTextureData(const bgfx::TextureHandle& handle) noexcept
 		: handle{ handle }
 		, alphaBlend{ false }
 		, mip{ 0 }

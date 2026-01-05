@@ -73,8 +73,8 @@ namespace darmok
         glm::mat4 getLightViewMatrix(const OptionalRef<const Transform>& lightTrans) const noexcept;
 
         const Definition& getDefinition() const noexcept;
-        bgfx::ProgramHandle getProgramHandle() const noexcept;
-        bgfx::TextureHandle getTextureHandle() const noexcept;
+        ProgramHandle getProgramHandle() const noexcept;
+        TextureHandle getTextureHandle() const noexcept;
         OptionalRef<Camera> getCamera() noexcept;
         OptionalRef<Scene> getScene() noexcept;
         OptionalRef<const Camera> getCamera() const noexcept;

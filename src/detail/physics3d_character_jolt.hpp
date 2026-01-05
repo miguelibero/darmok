@@ -26,9 +26,11 @@ namespace darmok::physics3d
         using Contact = CharacterContact;
         CharacterControllerImpl(const Definition& def) noexcept;
         ~CharacterControllerImpl() noexcept;
-        void init(CharacterController& ctrl, PhysicsSystem& system) noexcept;
+        expected<void, std::string> init(Entity entity, CharacterController& ctrl, PhysicsSystem& system) noexcept;
         void shutdown() noexcept;
+        expected<void, std::string> load(const Definition& def, Entity entity) noexcept;
         expected<void, std::string> update(Entity entity, float deltaTime) noexcept;
+
         bool isGrounded() const noexcept;
         GroundState getGroundState() const noexcept;
 
@@ -65,5 +67,6 @@ namespace darmok::physics3d
 
         expected<void, std::string> tryCreateCharacter(Transform& transform) noexcept;
         OptionalRef<PhysicsBody> getPhysicsBody() const noexcept;
+        expected<void, std::string> doLoad(Entity entity) noexcept;
     };
 }

@@ -197,7 +197,7 @@ namespace darmok
 	{
 		if (auto typeId = LuaUtils::getTypeId(type))
 		{
-			return scene.removeSceneComponent(typeId.value());
+			return LuaUtils::unwrapExpected(scene.removeSceneComponent(typeId.value()));
 		}
 		return false;
 	}

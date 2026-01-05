@@ -160,7 +160,12 @@ namespace darmok::editor
                 {
                     return unexpected{ "failed to remove scene definition component" };
                 }
-                if (!scene.template removeSceneComponent<T>())
+                auto removeResult = scene.template removeSceneComponent<T>();
+                if (!removeResult)
+                {
+                    return unexpected{ std::move(removeResult).error() };
+                }
+                if (!removeResult.value())
                 {
                     return unexpected{ "failed to remove scene component" };
                 }
@@ -283,7 +288,12 @@ namespace darmok::editor
                         return unexpected{ "failed to remove camera component definition" };
                     }
                 }
-                if (!cam.removeComponent<T>())
+                auto removeResult = cam.removeComponent<T>();
+                if (!removeResult)
+                {
+                    return unexpected{ std::move(removeResult).error() };
+                }
+                if (!removeResult.value())
                 {
                     return unexpected{ "failed to remove camera component" };
                 }

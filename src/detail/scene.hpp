@@ -31,7 +31,7 @@ namespace darmok
         ~SceneImpl() noexcept;
 
         expected<void, std::string> addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept;
-        bool removeSceneComponent(entt::id_type type) noexcept;
+        expected<bool, std::string> removeSceneComponent(entt::id_type type) noexcept;
         bool hasSceneComponent(entt::id_type type) const noexcept;
         OptionalRef<ISceneComponent> getSceneComponent(entt::id_type type) noexcept;
         OptionalRef<const ISceneComponent> getSceneComponent(entt::id_type type) const noexcept;

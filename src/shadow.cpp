@@ -258,24 +258,28 @@ namespace darmok
 
     expected<void, std::string> ShadowRenderer::doLoad() noexcept
     {
-        Texture::Config texConfig;
-        *texConfig.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ _def.map_size() });
-        texConfig.set_layers(_def.max_pass_amount());
-        texConfig.set_format(Texture::Definition::D16);
-        texConfig.set_type(Texture::Definition::Texture2D);
-
-        auto texResult = Texture::load(texConfig,
-            BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
-            BGFX_SAMPLER_MAG_POINT |
-            // BGFX_SAMPLER_MAG_ANISOTROPIC |
-            BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
-            BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
-        );
-        if (!texResult)
+        glm::uvec2 size{ _def.map_size() };
+        if (!_tex || _tex->getSize() != size)
         {
-            return unexpected{ std::move(texResult).error() };
+            Texture::Config texConfig;
+            *texConfig.mutable_size() = convert<protobuf::Uvec2>(size);
+            texConfig.set_layers(_def.max_pass_amount());
+            texConfig.set_format(Texture::Definition::D16);
+            texConfig.set_type(Texture::Definition::Texture2D);
+
+            auto texResult = Texture::load(texConfig,
+                BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL |
+                BGFX_SAMPLER_MAG_POINT |
+                // BGFX_SAMPLER_MAG_ANISOTROPIC |
+                BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP |
+                BGFX_SAMPLER_U_BORDER | BGFX_SAMPLER_V_BORDER | BGFX_SAMPLER_BORDER_COLOR(2)
+            );
+            if (!texResult)
+            {
+                return unexpected{ std::move(texResult).error() };
+            }
+            _tex = std::make_unique<Texture>(std::move(texResult).value());
         }
-        _tex = std::make_unique<Texture>(std::move(texResult).value());
 
         for (auto& pass : _passes)
         {
@@ -533,12 +537,12 @@ namespace darmok
         return _def;
     }
 
-    bgfx::ProgramHandle ShadowRenderer::getProgramHandle() const noexcept
+    ProgramHandle ShadowRenderer::getProgramHandle() const noexcept
     {
         return _program->getHandle();
     }
 
-    bgfx::TextureHandle ShadowRenderer::getTextureHandle() const noexcept
+    TextureHandle ShadowRenderer::getTextureHandle() const noexcept
     {
         return _tex->getHandle();
     }

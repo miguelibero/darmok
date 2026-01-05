@@ -66,6 +66,8 @@ namespace darmok::physics3d
         CharacterController(CharacterController&& other) noexcept;
         CharacterController& operator=(CharacterController&& other) noexcept;
 
+        expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
+
         CharacterControllerImpl& getImpl() noexcept;
         const CharacterControllerImpl& getImpl() const noexcept;
 
