@@ -1,5 +1,6 @@
 #pragma once
 
+#include <darmok-editor/project.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/scene.hpp>
@@ -27,8 +28,6 @@ namespace darmok::editor
         virtual bool canRender(const Message& msg) const noexcept = 0;
         virtual RenderResult render(Message& msg) noexcept { return false; }
     };
-
-    class EditorProject;
 
     class BaseObjectEditor : public IObjectEditor
     {
@@ -147,42 +146,26 @@ namespace darmok::editor
         using RenderResult = ObjectEditor<Definition>::RenderResult;
         using Message = ObjectEditor<Definition>::Message;
         using Any = ObjectEditor<Definition>::Any;
-    protected:
+    private:
 
         RenderResult afterRenderAny(Any& any, Definition& def, bool changed) noexcept override
         {
-            auto& scene = BaseObjectEditor::getScene();
-            auto& sceneDef = BaseObjectEditor::getSceneDefinition();
-
+            auto& proj = BaseObjectEditor::getProject();
             if (ImGui::Button("Remove Component"))
             {
-                if (!sceneDef.template removeSceneComponent<Definition>())
-                {
-                    return unexpected{ "failed to remove scene definition component" };
-                }
-                auto removeResult = scene.template removeSceneComponent<T>();
+                auto removeResult = proj.template removeSceneComponent<T, Def>();
                 if (!removeResult)
                 {
                     return unexpected{ std::move(removeResult).error() };
-                }
-                if (!removeResult.value())
-                {
-                    return unexpected{ "failed to remove scene component" };
                 }
                 changed = true;
             }
             else if (changed)
             {
-                auto compResult = scene.template getOrAddSceneComponent<T>();
-                if (!compResult)
+                auto updateResult = proj.template updateSceneComponent<T, Def>(def);
+                if (!updateResult)
                 {
-					return unexpected{ std::move(compResult).error() };
-                }
-				auto& comp = compResult.value().get();
-                auto loadResult = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
-                if (!loadResult)
-                {
-                    return unexpected{ std::move(loadResult).error() };
+					return unexpected{ std::move(updateResult).error() };
                 }
             }
             return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
@@ -197,7 +180,7 @@ namespace darmok::editor
         using RenderResult = ObjectEditor<Definition>::RenderResult;
         using Message = ObjectEditor<Definition>::Message;
         using Any = ObjectEditor<Definition>::Any;
-    protected:
+    private:
         std::optional<EntityId> _entityId;
 
         RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
@@ -212,30 +195,23 @@ namespace darmok::editor
             {
                 return unexpected{ "missing entity" };
             }
-            auto& scene = BaseObjectEditor::getScene();
-            auto& sceneDef = BaseObjectEditor::getSceneDefinition();
             auto entityId = *_entityId;
-            auto entity = BaseObjectEditor::getEntity(entityId);
-
+            auto& proj = BaseObjectEditor::getProject();
             if (ImGui::Button("Remove Component"))
             {
-                if (!sceneDef.template removeComponent<Definition>(entityId))
+                auto removeResult = proj.template removeEntityComponent<T, Def>(entityId);
+                if (!removeResult)
                 {
-                    return unexpected{ "failed to remove entity component definition" };
-                }
-                if (!scene.template removeComponent<T>(entity))
-                {
-                    return unexpected{ "failed to remove entity component" };
+                    return unexpected{ std::move(removeResult).error() };
                 }
                 changed = true;
             }
             else if (changed)
             {
-                auto& comp = scene.template getOrAddComponent<T>(entity);
-                auto result = SceneArchive::loadComponent(comp, def, BaseObjectEditor::getComponentLoadContext());
-                if (!result)
+                auto updateResult = proj.template updateEntityComponent<T, Def>(entityId, def);
+                if (!updateResult)
                 {
-                    return unexpected{ std::move(result).error() };
+                    return unexpected{ std::move(updateResult).error() };
                 }
             }
             return ObjectEditor<Definition>::afterRenderAny(any, def, changed);
@@ -252,7 +228,7 @@ namespace darmok::editor
         using Message = ObjectEditor<Definition>::Message;
         using Any = ObjectEditor<Definition>::Any;
 
-    protected:
+    private:
         std::optional<EntityId> _entityId;
 
         RenderResult beforeRenderAny(Any& any, Definition& def) noexcept override
@@ -267,49 +243,23 @@ namespace darmok::editor
             {
                 return unexpected{ "missing entity" };
             }
-            auto& scene = BaseObjectEditor::getScene();
             auto entityId = *_entityId;
-            auto entity = BaseObjectEditor::getEntity(entityId);
-            auto optCam = scene.getComponent<Camera>(entity);
-            if (!optCam)
-            {
-                return unexpected{ "missing camera component on entity" };
-            }
-			auto& cam = *optCam;
-            auto& sceneDef = BaseObjectEditor::getSceneDefinition();
-
+            auto& proj = BaseObjectEditor::getProject();
             if (ImGui::Button("Remove Component"))
             {
-                if (auto camDef = sceneDef.getComponent<Camera::Definition>(entityId))
-                {
-                    CameraDefinitionWrapper camWrap{ *camDef };
-                    if (!camWrap.removeComponent<Definition>())
-                    {
-                        return unexpected{ "failed to remove camera component definition" };
-                    }
-                }
-                auto removeResult = cam.removeComponent<T>();
+                auto removeResult = proj.template removeCameraComponent<T, Def>(entityId);
                 if (!removeResult)
                 {
                     return unexpected{ std::move(removeResult).error() };
-                }
-                if (!removeResult.value())
-                {
-                    return unexpected{ "failed to remove camera component" };
                 }
                 changed = true;
             }
             else if (changed)
             {
-                auto compResult = cam.getOrAddComponent<T>();
-                if (!compResult)
+                auto updateResult = proj.template updateCameraComponent<T, Def>(entityId, def);
+                if (!updateResult)
                 {
-                    return unexpected{ std::move(compResult).error() };
-                }
-                auto loadResult = SceneArchive::loadComponent(compResult.value().get(), def, BaseObjectEditor::getComponentLoadContext());
-                if (!loadResult)
-                {
-                    return unexpected{ std::move(loadResult).error() };
+                    return unexpected{ std::move(updateResult).error() };
                 }
             }
 
@@ -321,11 +271,13 @@ namespace darmok::editor
         requires std::is_base_of_v<google::protobuf::Message, T>
     class BX_NO_VTABLE AssetObjectEditor : public ObjectEditor<T>
     {
-    protected:
-        std::optional<std::filesystem::path> _path;
+    public:
         using RenderResult = ObjectEditor<T>::RenderResult;
         using Message = ObjectEditor<T>::Message;
         using Any = ObjectEditor<T>::Any;
+
+    private:
+        std::optional<std::filesystem::path> _path;
 
         RenderResult beforeRenderAny(Any& any, T& def) noexcept override
         {

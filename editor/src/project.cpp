@@ -173,6 +173,21 @@ namespace darmok::editor
         return entityId;
     }
 
+    expected<bool, std::string> EditorProject::destroyEntity(EntityId entityId) noexcept
+    {
+        if (!_sceneDefWrapper.destroyEntity(entityId))
+        {
+            return false;
+        }
+        if (!_scene)
+        {
+            return unexpected<std::string>{"missing scene"};
+        }
+        auto entity = getComponentLoadContext().getEntity(entityId);
+        _scene->destroyEntity(entity);
+        return true;
+    }
+
     const char* EditorProject::_confirmNewPopup = "Confirm New Project";
 
     void EditorProject::requestResetScene() noexcept

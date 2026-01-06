@@ -31,6 +31,7 @@ namespace darmok::editor
 
         expected<void, std::string> render() noexcept;
         expected<EntityId, std::string> addEntity(EntityId parentEntity = 0) noexcept;
+        expected<bool, std::string> destroyEntity(EntityId entity) noexcept;
 
         template<typename T, typename Def = T::Definition>
         expected<void, std::string> addSceneComponent(const Def& def) noexcept
@@ -69,6 +70,126 @@ namespace darmok::editor
             CameraDefinitionWrapper camDefWrapper{ camDef };
             camDefWrapper.setComponent(def);
             _sceneDefWrapper.setComponent(entityId, camDef);
+            if (!_scene)
+            {
+                return unexpected<std::string>{"missing scene"};
+            }
+            auto& context = getComponentLoadContext();
+            auto entity = context.getEntity(entityId);
+            auto& cam = _scene->getOrAddComponent<Camera>(entity);
+            auto compResult = cam.getOrAddComponent<T>();
+            if (!compResult)
+            {
+                return unexpected{ std::move(compResult).error() };
+            }
+            return SceneArchive::loadComponent(compResult.value().get(), def, context);
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<void, std::string> removeSceneComponent() noexcept
+        {
+            if (!_sceneDefWrapper.removeSceneComponent<Def>())
+            {
+                return unexpected{ "failed to remove scene definition component" };
+            }
+            if (!_scene)
+            {
+                return unexpected<std::string>{"missing scene"};
+            }
+            auto removeResult = _scene->removeSceneComponent<T>();
+            if (!removeResult)
+            {
+                return unexpected{ std::move(removeResult).error() };
+            }
+            if (!removeResult.value())
+            {
+                return unexpected{ "failed to remove scene component" };
+            }
+            return {};
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<void, std::string> removeEntityComponent(EntityId entityId) noexcept
+        {
+            if (!_sceneDefWrapper.removeComponent<Def>(entityId))
+            {
+                return unexpected{ "failed to remove entity component definition" };
+            }
+            if (!_scene)
+            {
+                return unexpected<std::string>{"missing scene"};
+            }
+            auto entity = getComponentLoadContext().getEntity(entityId);
+            if (!_scene->removeComponent<T>(entity))
+            {
+                return unexpected{ "failed to remove entity component" };
+            }
+            return {};
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<void, std::string> removeCameraComponent(EntityId entityId) noexcept
+        {
+            if (auto camDef = _sceneDefWrapper.getComponent<Camera::Definition>(entityId))
+            {
+                CameraDefinitionWrapper camWrap{ *camDef };
+                if (!camWrap.removeComponent<Def>())
+                {
+                    return unexpected{ "failed to remove camera component definition" };
+                }
+            }
+            if (!_scene)
+            {
+                return unexpected<std::string>{"missing scene"};
+            }
+            auto entity = getComponentLoadContext().getEntity(entityId);
+            if (auto cam = _scene->getComponent<Camera>(entity))
+            {
+                auto removeResult = cam->removeComponent<T>();
+                if (!removeResult)
+                {
+                    return unexpected{ std::move(removeResult).error() };
+                }
+                if (!removeResult.value())
+                {
+                    return unexpected{ "failed to remove camera component" };
+                }
+            }
+            return {};
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<void, std::string> updateSceneComponent(const Def& def) noexcept
+        {
+            if (!_scene)
+            {
+                return unexpected<std::string>{"missing scene"};
+            }
+            auto compResult = _scene->getOrAddSceneComponent<T>();
+            if (!compResult)
+            {
+                return unexpected{ std::move(compResult).error() };
+            }
+            auto& comp = compResult.value().get();
+            return SceneArchive::loadComponent(comp, def, getComponentLoadContext());
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<void, std::string> updateEntityComponent(EntityId entityId, const Def& def) noexcept
+        {
+            if (!_scene)
+            {
+                return unexpected<std::string>{"missing scene"};
+            }
+            auto& context = getComponentLoadContext();
+            auto entity = context.getEntity(entityId);
+            auto& comp = _scene->getOrAddComponent<T>(entity);
+            return SceneArchive::loadComponent(comp, def, context);
+        }
+
+        template<typename T, typename Def = T::Definition>
+        expected<void, std::string> updateCameraComponent(EntityId entityId, const Def& def) noexcept
+        {
             if (!_scene)
             {
                 return unexpected<std::string>{"missing scene"};

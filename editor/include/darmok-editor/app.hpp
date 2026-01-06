@@ -100,7 +100,7 @@ namespace darmok::editor
         expected<void, std::string> renderMainMenu() noexcept;
         expected<void, std::string> renderMainToolbar() noexcept;
         void renderDockspace() noexcept;
-        bool renderSceneTree() noexcept;
+        expected<bool, std::string> renderSceneTree() noexcept;
         void renderAboutDialog() noexcept;
 
         using TransformDefinition = protobuf::Transform;

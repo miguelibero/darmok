@@ -552,9 +552,9 @@ namespace darmok::editor
 
     const char* EditorApp::_sceneTreeWindowName = "Scene Tree";
 
-    bool EditorApp::renderSceneTree() noexcept
+    expected<bool, std::string> EditorApp::renderSceneTree() noexcept
     {
-        auto& scene = _proj.getSceneDefinition();
+        auto& sceneDef = _proj.getSceneDefinition();
         auto changed = false;
         if (ImGui::Begin(_sceneTreeWindowName))
         {
@@ -563,7 +563,7 @@ namespace darmok::editor
             {
                 flags |= ImGuiTreeNodeFlags_Selected;
             }
-            std::string sceneName = scene.getName();
+            std::string sceneName = sceneDef.getName();
             if (sceneName.empty())
             {
                 sceneName = "Scene";
@@ -578,7 +578,7 @@ namespace darmok::editor
                 {
                     onSceneTreeSceneClicked();
                 }
-                for (auto entityId : scene.getRootEntities())
+                for (auto entityId : sceneDef.getRootEntities())
                 {
                     if (renderSceneTreeBranch(entityId))
                     {
@@ -590,7 +590,12 @@ namespace darmok::editor
             if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete))
             {
                 auto entity = _inspectorView.getSelectedEntity();
-                if (scene.destroyEntity(entity))
+                auto destroyResult = _proj.destroyEntity(entity);
+                if (!destroyResult)
+                {
+                    return unexpected{ std::move(destroyResult).error() };
+                }
+                if (destroyResult.value())
                 {
                     onObjectSelected(nullEntityId);
                     changed = true;
