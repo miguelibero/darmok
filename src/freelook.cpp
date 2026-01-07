@@ -57,7 +57,8 @@ namespace darmok
         {
             for (auto entity : _scene->getComponents<Camera>())
             {
-                if (_cam = _scene->getComponent<Camera>(entity))
+                _cam = _scene->getComponent<Camera>(entity);
+                if (_cam)
                 {
                     break;
                 }

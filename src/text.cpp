@@ -235,6 +235,8 @@ namespace darmok
 			lineSize = def.content_size().y();
 			linePos = pos.y;
 			break;
+		default:
+			break;
 		}
 		if (lineSize == 0 || lineSize > linePos)
 		{
@@ -251,6 +253,8 @@ namespace darmok
 		case Definition::AxisVertical:
 			pos.y = 0;
 			pos.y += f;
+			break;
+		default:
 			break;
 		}
 		return true;

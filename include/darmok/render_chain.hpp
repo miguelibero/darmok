@@ -63,7 +63,7 @@ namespace darmok
     public:
         virtual ~IRenderChainStep() = default;
         virtual expected<void, std::string> init(RenderChain& chain) noexcept = 0;
-        virtual expected<void, std::string> update(float deltaTime) noexcept {};
+        virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; };
         virtual expected<void, std::string> updateRenderChain(FrameBuffer& readBuffer, OptionalRef<FrameBuffer> writeBuffer) noexcept = 0;
         virtual expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept { return viewId; };
         virtual expected<void, std::string> render(bgfx::Encoder& encoder) noexcept = 0;

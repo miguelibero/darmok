@@ -484,6 +484,9 @@ namespace darmok
 		case AppPhase::Init:
 			out << "init";
 			break;
+		case AppPhase::Run:
+			out << "run";
+			break;
 		case AppPhase::Update:
 			out << "update";
 			break;
