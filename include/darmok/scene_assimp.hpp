@@ -6,6 +6,7 @@
 #include <darmok/varying.hpp>
 #include <darmok/program.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/protobuf/assimp.pb.h>
 
 #include <memory>
 #include <string>
@@ -19,17 +20,43 @@ namespace bx
     struct AllocatorI;
 }
 
+struct aiScene;
+
 namespace darmok
 {
     class IDataLoader;
-    class AssimpSceneDefinitionLoaderImpl;
     class ITextureSourceLoader;
+    class IProgramSourceLoader;
+    class IImageLoader;
+    class IProgramLoader;
+    class Image;
+    class Data;
+    class VertexDataWriter;
 
     namespace protobuf
     {
 		class AssimpSceneImportConfig;
 		class Scene;
     }
+
+    class AssimpSceneDefinitionConverterImpl;
+
+    class AssimpSceneDefinitionConverter final
+    {
+    public:
+        using ImportConfig = protobuf::AssimpSceneImportConfig;
+        using Definition = protobuf::Scene;
+
+        AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
+            bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader = nullptr, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
+        ~AssimpSceneDefinitionConverter() noexcept;
+        static std::vector<std::string> getDependencies(const aiScene& scene) noexcept;
+        expected<void, std::string> operator()() noexcept;
+    private:
+        std::unique_ptr<AssimpSceneDefinitionConverterImpl> _impl;
+    };
+
+    class AssimpSceneDefinitionLoaderImpl;
 
     class DARMOK_EXPORT AssimpSceneDefinitionLoader final : public ISceneDefinitionLoader
     {
@@ -52,8 +79,8 @@ namespace darmok
     {
     public:
         using Config = FileImportConfig;
-        AssimpSceneFileImporter(bx::AllocatorI& alloc);
-        ~AssimpSceneFileImporter();
+        AssimpSceneFileImporter(bx::AllocatorI& alloc) noexcept;
+        ~AssimpSceneFileImporter() noexcept;
         
         const std::string& getName() const noexcept override;
         expected<Effect, std::string> prepare(const Input& input) noexcept override;

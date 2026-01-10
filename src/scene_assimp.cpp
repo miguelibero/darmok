@@ -83,7 +83,7 @@ namespace darmok
         return model;
     }
 
-    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
+    AssimpSceneDefinitionConverterImpl::AssimpSceneDefinitionConverterImpl(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
         bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader, OptionalRef<IProgramSourceLoader> progLoader) noexcept
         : _assimpScene{ assimpScene }
 		, _scene{ sceneDef }
@@ -94,13 +94,13 @@ namespace darmok
     {
     }
 
-    std::vector<std::string> AssimpSceneDefinitionConverter::getDependencies(const aiScene& scene) noexcept
+    std::vector<std::string> AssimpSceneDefinitionConverterImpl::getDependencies(const aiScene& scene) noexcept
     {
         std::vector<std::string> deps = getTexturePaths(scene);
         return deps;
     }
 
-    std::vector<std::string> AssimpSceneDefinitionConverter::getTexturePaths(const aiScene& scene) noexcept
+    std::vector<std::string> AssimpSceneDefinitionConverterImpl::getTexturePaths(const aiScene& scene) noexcept
     {
         std::vector<std::string> paths;
         for (size_t i = 0; i < scene.mNumMaterials; ++i)
@@ -123,7 +123,7 @@ namespace darmok
         return paths;
     }
 
-    expected<bool, std::string> AssimpSceneDefinitionConverter::updateMeshes(EntityId entity, const std::regex& regex) noexcept
+    expected<bool, std::string> AssimpSceneDefinitionConverterImpl::updateMeshes(EntityId entity, const std::regex& regex) noexcept
     {
         auto found = false;
         auto addChild = _assimpScene.mNumMeshes > 1;
@@ -144,7 +144,7 @@ namespace darmok
         }
         return found;
     }
-    expected<void, std::string> AssimpSceneDefinitionConverter::addMeshComponents(EntityId entity, int index, bool addChild) noexcept
+    expected<void, std::string> AssimpSceneDefinitionConverterImpl::addMeshComponents(EntityId entity, int index, bool addChild) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
@@ -195,7 +195,7 @@ namespace darmok
         return {};
     }
     
-    expected<void, std::string> AssimpSceneDefinitionConverter::operator()() noexcept
+    expected<void, std::string> AssimpSceneDefinitionConverterImpl::operator()() noexcept
     {
         _scene.setName(convert<std::string>(_assimpScene.mName));
         if (!_config.root_mesh_regex().empty())
@@ -216,7 +216,7 @@ namespace darmok
         return {};
     }
 
-    expected<EntityId, std::string> AssimpSceneDefinitionConverter::updateNode(const aiNode& assimpNode, EntityId parentEntity) noexcept
+    expected<EntityId, std::string> AssimpSceneDefinitionConverterImpl::updateNode(const aiNode& assimpNode, EntityId parentEntity) noexcept
     {
         auto name = convert<std::string>(assimpNode.mName);
         if(AssimpUtils::match(name, _config.skip_nodes_regex()))
@@ -273,7 +273,7 @@ namespace darmok
         return entity;
     }
 
-    void AssimpSceneDefinitionConverter::updateCamera(EntityId entity, const aiCamera& assimpCam) noexcept
+    void AssimpSceneDefinitionConverterImpl::updateCamera(EntityId entity, const aiCamera& assimpCam) noexcept
     {
         aiMatrix4x4 mat;
         assimpCam.GetCameraMatrix(mat);
@@ -325,7 +325,7 @@ namespace darmok
 		_scene.setComponent(entity, cam);
     }
 
-    float AssimpSceneDefinitionConverter::getLightRange(const glm::vec3& attenuation) noexcept
+    float AssimpSceneDefinitionConverterImpl::getLightRange(const glm::vec3& attenuation) noexcept
     {
         static const float intensityThreshold = 0.001F;
         auto thres = intensityThreshold;
@@ -354,7 +354,7 @@ namespace darmok
         return glm::max(d1, d2);
     }
 
-    void AssimpSceneDefinitionConverter::updateLight(EntityId entity, const aiLight& assimpLight) noexcept
+    void AssimpSceneDefinitionConverterImpl::updateLight(EntityId entity, const aiLight& assimpLight) noexcept
     {
         auto pos = convert<glm::vec3>(assimpLight.mPosition);
         auto mat = glm::translate(glm::mat4{ 1.f }, pos);
@@ -418,7 +418,7 @@ namespace darmok
         _scene.setComponent(entity, trans);
     }
 
-    std::string AssimpSceneDefinitionConverter::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
+    std::string AssimpSceneDefinitionConverterImpl::getTexture(const aiMaterial& assimpMat, aiTextureType type, unsigned int index) noexcept
     {
         aiString aiPath{};
         if (assimpMat.GetTexture(type, index, &aiPath) != AI_SUCCESS)
@@ -430,7 +430,7 @@ namespace darmok
         return path;
     }
 
-    bool AssimpSceneDefinitionConverter::loadTexture(const std::string& path) noexcept
+    bool AssimpSceneDefinitionConverterImpl::loadTexture(const std::string& path) noexcept
     {
         if (_texturePaths.contains(path))
         {
@@ -488,7 +488,7 @@ namespace darmok
         return true;
     }
 
-    const std::vector<AssimpSceneDefinitionConverter::AssimpMaterialTexture> AssimpSceneDefinitionConverter::_materialTextures =
+    const std::vector<AssimpSceneDefinitionConverterImpl::AssimpMaterialTexture> AssimpSceneDefinitionConverterImpl::_materialTextures =
     {        
         { AI_MATKEY_BASE_COLOR_TEXTURE, Material::TextureDefinition::BaseColor },
         { aiTextureType_DIFFUSE, 0, Material::TextureDefinition::BaseColor },
@@ -501,7 +501,7 @@ namespace darmok
         { aiTextureType_EMISSIVE, 0, Material::TextureDefinition::Emissive },
     };
 
-    void AssimpSceneDefinitionConverter::updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
+    void AssimpSceneDefinitionConverterImpl::updateMaterial(MaterialDefinition& matDef, const aiMaterial& assimpMat) noexcept
     {
         matDef.set_name(convert<std::string>(assimpMat.GetName()));
 
@@ -635,7 +635,7 @@ namespace darmok
         }
     }
 
-    expected<bool, std::string> AssimpSceneDefinitionConverter::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
+    expected<bool, std::string> AssimpSceneDefinitionConverterImpl::updateMesh(MeshSource& meshSrc, const aiMesh& assimpMesh) noexcept
     {
         const std::string name = convert<std::string>(assimpMesh.mName);
         if (AssimpUtils::match(name, _config.skip_meshes_regex()))
@@ -655,13 +655,13 @@ namespace darmok
         return true;
     }
 
-    void AssimpSceneDefinitionConverter::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
+    void AssimpSceneDefinitionConverterImpl::updateArmature(ArmatureDefinition& armDef, const aiMesh& assimpMesh) noexcept
     {
         AssimpArmatureDefinitionConverter convert{ assimpMesh, armDef };
 		(void)convert();
     }
     
-    expected<std::string, std::string> AssimpSceneDefinitionConverter::getMesh(int index) noexcept
+    expected<std::string, std::string> AssimpSceneDefinitionConverterImpl::getMesh(int index) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
@@ -693,7 +693,7 @@ namespace darmok
         return path;
     }
 
-    std::string AssimpSceneDefinitionConverter::getArmature(int index) noexcept
+    std::string AssimpSceneDefinitionConverterImpl::getArmature(int index) noexcept
     {
         if (index < 0 || index >= _assimpScene.mNumMeshes)
         {
@@ -721,7 +721,7 @@ namespace darmok
         return path;
     }
 
-    std::string AssimpSceneDefinitionConverter::getMaterial(int index) noexcept
+    std::string AssimpSceneDefinitionConverterImpl::getMaterial(int index) noexcept
     {
         if(index < 0 || index >= _assimpScene.mNumMaterials)
         {
@@ -743,6 +743,24 @@ namespace darmok
         _materialPaths.emplace(assimpMat, path);
 		_scene.addAsset(path, matDef);
         return path;
+    }
+
+    AssimpSceneDefinitionConverter::AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
+        bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader, OptionalRef<IProgramSourceLoader> progLoader) noexcept
+        : _impl{ std::make_unique<AssimpSceneDefinitionConverterImpl>(assimpScene, sceneDef, config, alloc, texLoader, progLoader) }
+    {
+    }
+    
+    AssimpSceneDefinitionConverter::~AssimpSceneDefinitionConverter() noexcept = default;
+
+    std::vector<std::string> AssimpSceneDefinitionConverter::getDependencies(const aiScene& scene) noexcept
+    {
+        return AssimpSceneDefinitionConverterImpl::getDependencies(scene);
+    }
+
+    expected<void, std::string> AssimpSceneDefinitionConverter::operator()() noexcept
+    {
+        return (*_impl)();
     }
 
     AssimpSceneDefinitionLoader::AssimpSceneDefinitionLoader(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureSourceLoader> texLoader) noexcept
@@ -1098,7 +1116,7 @@ namespace darmok
         return name;
     }
 
-    AssimpSceneFileImporter::AssimpSceneFileImporter(bx::AllocatorI& alloc)
+    AssimpSceneFileImporter::AssimpSceneFileImporter(bx::AllocatorI& alloc) noexcept
         : _impl{ std::make_unique<AssimpSceneFileImporterImpl>(alloc) }
     {
     }

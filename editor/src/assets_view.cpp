@@ -26,6 +26,7 @@ namespace darmok::editor
         addAssetName<Material::Definition>("material");
         addAssetName<Armature::Definition>("armature");
         addAssetName<protobuf::FreetypeFont>("freetype_font");
+        addAssetName<protobuf::Scene>("scene");
         return {};
     }
 
@@ -179,10 +180,8 @@ namespace darmok::editor
     std::filesystem::path EditorAssetsView::addAsset(const Message& msg) noexcept
     {
         auto path = _currentPath;
-		if (auto name = getAssetTypeName(protobuf::getTypeId(msg)))
-        {
-            path = path / *name;
-        }
+        auto name = getAssetTypeName(protobuf::getTypeId(msg)).value_or("asset");
+        path = path / name;
         return _scene->addAsset(path.lexically_normal(), msg);
     }
 

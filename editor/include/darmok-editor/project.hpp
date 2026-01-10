@@ -233,7 +233,6 @@ namespace darmok::editor
         static const char* _confirmNewPopup;
 
         expected<void, std::string> configureEditorScene(Scene& scene) noexcept;
-        expected<void, std::string> configureDefaultScene(SceneDefinitionWrapper& scene) noexcept;
 
         expected<void, std::string> doResetScene() noexcept;
         expected<void, std::string> doExportScene(std::filesystem::path path) noexcept;

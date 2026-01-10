@@ -180,7 +180,8 @@ namespace darmok::editor
 
     SkeletalAnimationSceneComponentInspectorEditor::RenderResult SkeletalAnimationSceneComponentInspectorEditor::renderType(SkeletalAnimationSceneComponent::Definition& def) noexcept
     {
-        return {};
+        auto changed = false;
+        return false;
     }
 
 
@@ -191,6 +192,7 @@ namespace darmok::editor
 
     SkeletalAnimationRenderComponentInspectorEditor::RenderResult SkeletalAnimationRenderComponentInspectorEditor::renderType(SkeletalAnimationRenderComponent::Definition& def) noexcept
     {
-        return {};
+        auto changed = false;
+        return false;
     }
 }

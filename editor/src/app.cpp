@@ -276,6 +276,7 @@ namespace darmok::editor
                     drawAssetComponentMenu("Texture", Texture::createSource());
                     drawAssetComponentMenu("Mesh", Mesh::createSource());
                     drawAssetComponentMenu("Material", Material::createDefinition());
+                    drawAssetComponentMenu("Scene", SceneLoader::createDefinition(true));
                     if (ImGui::BeginMenu("Animation"))
                     {
                         drawAssetComponentMenu("Armature", Armature::createDefinition());
@@ -737,6 +738,14 @@ namespace darmok::editor
         if (!boolResult)
         {
             return unexpected<std::string>{ "failed to render inspector: " + boolResult.error() };
+        }
+        if (boolResult.value() && getSelectedEntity() == nullEntityId)
+        {
+            result = _proj.updateScene();
+            if (!result)
+            {
+                return result;
+            }
         }
 
         result = _proj.render();

@@ -542,7 +542,7 @@ namespace darmok
         using EntityResult = expected<Entity, std::string>;
         using Result = expected<void, std::string>;
         using LoadFunction = std::function<Result()>;
-		using SceneDefinition = protobuf::Scene;
+		using Definition = protobuf::Scene;
         using ComponentData = SceneConverterComponentData;
         using Message = protobuf::Message;
         using Any = google::protobuf::Any;
@@ -590,7 +590,7 @@ namespace darmok
             addLoad(std::move(func));
         }
 
-        EntityResult operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept;
+        EntityResult operator()(const Definition& sceneDef, Scene& scene) noexcept;
 
         IComponentLoadContext& getComponentLoadContext() noexcept;
         const IComponentLoadContext& getComponentLoadContext() const noexcept;
@@ -616,6 +616,8 @@ namespace darmok
         SceneLoader& addComponentListener(ComponentListener func) noexcept;
 		SceneLoader& clearComponentListeners() noexcept;
 
+        static Definition createDefinition(bool empty = true) noexcept;
+
     private:
 		std::unique_ptr<SceneLoaderImpl> _impl;
         SceneArchive _archive;
@@ -636,7 +638,7 @@ namespace darmok
         template<typename T, typename Def = typename T::Definition>
         expected<OptionalRef<T>, std::string> loadSceneComponent() noexcept
         {
-            ConstSceneDefinitionWrapper sceneDef{ getSceneDefinition() };
+            ConstSceneDefinitionWrapper sceneDef{ getDefinition() };
             if(auto def = sceneDef.getSceneComponent<Def>())
             {
                 auto result = getArchive().loadSceneComponent<T>(std::move(*def));
@@ -652,7 +654,7 @@ namespace darmok
         template<typename T, typename Def = typename T::Definition>
         Result loadCameraComponent() noexcept
         {
-            ConstSceneDefinitionWrapper sceneDef{ getSceneDefinition() };
+            ConstSceneDefinitionWrapper sceneDef{ getDefinition() };
             auto& context = getComponentLoadContext();
             for(auto& [entityId, camDef] : sceneDef.getTypeComponents<typename Camera::Definition>())
             {
@@ -674,7 +676,7 @@ namespace darmok
         Result afterLoadComponent(IdType typeId) noexcept;
 		entt::continuous_loader& getLoader() noexcept;
         SceneArchive& getArchive() noexcept;
-        const SceneDefinition& getSceneDefinition() const noexcept;
+        const Definition& getDefinition() const noexcept;
     };
 
     struct DARMOK_EXPORT SceneDefinitionCompilerConfig final

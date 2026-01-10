@@ -219,6 +219,6 @@ namespace darmok
 		{
 			return expectedVoid(_armatureLoader.reload(path));
 		}
-		return unexpected{ "type loader not found" };
+		return {};
 	}
 }

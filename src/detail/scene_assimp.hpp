@@ -56,7 +56,7 @@ namespace darmok
     class Data;
     class VertexDataWriter;
 
-    class AssimpSceneDefinitionConverter final
+    class AssimpSceneDefinitionConverterImpl final
     {
     public:
         using ImportConfig = protobuf::AssimpSceneImportConfig;
@@ -72,7 +72,7 @@ namespace darmok
         using TextureType = protobuf::MaterialTexture::Type;
         using Message = google::protobuf::Message;
 
-        AssimpSceneDefinitionConverter(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
+        AssimpSceneDefinitionConverterImpl(const aiScene& assimpScene, Definition& sceneDef, const ImportConfig& config,
             bx::AllocatorI& alloc, OptionalRef<ITextureSourceLoader> texLoader = nullptr, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
         static std::vector<std::string> getDependencies(const aiScene& scene) noexcept;
         expected<void, std::string> operator()() noexcept;

@@ -107,8 +107,8 @@ namespace darmok
 		AssimpLoader() noexcept;
 		~AssimpLoader() noexcept;
         bool supports(const std::filesystem::path& path) const noexcept;
-        Result loadFromFile(const std::filesystem::path& path, const Config& config) const;
-        Result loadFromMemory(DataView data, const Config& config) const;
+        Result loadFromFile(const std::filesystem::path& path, const Config& config) const noexcept;
+        Result loadFromMemory(DataView data, const Config& config) const noexcept;
     private:
 		std::unique_ptr<AssimpLoaderImpl> _impl;
     };

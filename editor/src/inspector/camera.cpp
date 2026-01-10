@@ -78,7 +78,12 @@ namespace darmok::editor
             {
                 for (auto& [typeId, comp] : *cam.mutable_components())
                 {
-                    if (renderChild(comp, true))
+                    auto result = renderChild(comp, true);
+                    if (!result)
+                    {
+                        return unexpected{ std::move(result).error() };
+                    }
+                    if (result.value())
                     {
                         changed = true;
                     }

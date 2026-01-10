@@ -672,37 +672,54 @@ namespace darmok::editor
         ImGui::PopID();
     }
 
-    MeshFileInput::MeshFileInput(const std::string& label) noexcept
+    SceneFileInput::SceneFileInput(const std::string& label) noexcept
         : _label{ label }
+    {
+    }
+
+    expected<bool, std::string> SceneFileInput::draw(EditorApp& app) noexcept
+    {
+        FileDialogOptions dialogOptions;
+        dialogOptions.filters = { "*.fbx", "*.glb" };
+        dialogOptions.filterDesc = "3D Model Files";
+        auto changed = false;
+        if (!app.drawFileInput(_label.c_str(), path, dialogOptions))
+        {
+            return false;
+        }
+
+        auto& assets = app.getAssets();
+        auto dataResult = assets.getDataLoader()(path);
+        if (!dataResult)
+        {
+            return unexpected{ std::move(dataResult).error() };
+        }
+        AssimpLoader loader;
+        AssimpLoader::Config config;
+        config.setPath(path);
+        auto sceneResult = loader.loadFromMemory(dataResult.value(), config);
+        if (!sceneResult)
+        {
+            return unexpected{ std::move(sceneResult).error() };
+        }
+        scene = std::move(*sceneResult);
+        return true;
+    }
+
+    MeshFileInput::MeshFileInput(const std::string& label) noexcept
+        : SceneFileInput( label )
         , _meshIndex{ 0 }
     {
     }
 
     expected<bool, std::string> MeshFileInput::draw(EditorApp& app) noexcept
     {
-        FileDialogOptions dialogOptions;
-        dialogOptions.filters = { "*.fbx", "*.glb" };
-        dialogOptions.filterDesc = "3D Model Files";
-        auto changed = false;
-        if (app.drawFileInput(_label.c_str(), path, dialogOptions))
+        auto sceneResult = SceneFileInput::draw(app);
+        if (!sceneResult)
         {
-            auto& assets = app.getAssets();
-            auto dataResult = assets.getDataLoader()(path);
-            if (!dataResult)
-            {
-                return unexpected{ std::move(dataResult).error() };
-            }
-            AssimpLoader loader;
-            AssimpLoader::Config config;
-            config.setPath(path);
-            auto sceneResult = loader.loadFromMemory(dataResult.value(), config);
-            if (!sceneResult)
-            {
-                return unexpected{ std::move(sceneResult).error() };
-            }
-            scene = std::move(*sceneResult);
-            changed = true;
+            return unexpected{ std::move(sceneResult).error() };
         }
+        auto changed = sceneResult.value();
         if (!scene)
         {
             return changed;

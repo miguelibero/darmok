@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok-editor/editor.hpp>
+#include <darmok-editor/utils.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/scene.hpp>
 
@@ -11,5 +12,7 @@ namespace darmok::editor
     public:
         std::string getTitle() const noexcept override;
         RenderResult renderType(Scene::Definition& scene) noexcept override;
+    private:
+        SceneFileInput _fileInput;
     };
 }

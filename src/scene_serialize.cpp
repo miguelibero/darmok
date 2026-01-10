@@ -584,7 +584,7 @@ namespace darmok
     }
 
 	Scene SceneLoaderImpl::_emptyScene{};
-    const SceneLoaderImpl::SceneDefinition SceneLoaderImpl::_emptySceneDef;
+    const SceneLoaderImpl::Definition SceneLoaderImpl::_emptySceneDef;
 
     SceneLoaderImpl::SceneLoaderImpl() noexcept
         : _scene{ _emptyScene }
@@ -668,7 +668,7 @@ namespace darmok
         return *_scene;
     }
 
-    const SceneLoaderImpl::SceneDefinition& SceneLoaderImpl::getSceneDefinition() const noexcept
+    const SceneLoaderImpl::Definition& SceneLoaderImpl::getDefinition() const noexcept
     {
 		return _sceneDef ? *_sceneDef : _emptySceneDef;
     }
@@ -920,12 +920,12 @@ namespace darmok
 
     SceneLoader::~SceneLoader() = default;
 
-    const SceneLoader::SceneDefinition& SceneLoader::getSceneDefinition() const noexcept
+    const SceneLoader::Definition& SceneLoader::getDefinition() const noexcept
     {
-		return _impl->getSceneDefinition();
+		return _impl->getDefinition();
     }
 
-    SceneLoader::EntityResult SceneLoader::operator()(const SceneDefinition& sceneDef, Scene& scene) noexcept
+    SceneLoader::EntityResult SceneLoader::operator()(const Definition& sceneDef, Scene& scene) noexcept
     {
 		return _impl->load(sceneDef, scene);
     }
@@ -1047,5 +1047,82 @@ namespace darmok
         }
 
         return {};
+    }
+
+    SceneLoader::Definition SceneLoader::createDefinition(bool empty) noexcept
+    {
+        Definition def;
+        SceneDefinitionWrapper scene{ def };
+
+        scene.setName("Scene");
+        scene.setSceneComponent(SkeletalAnimationSceneComponent::createDefinition());
+
+        auto camEntity = scene.createEntity();
+
+        auto cam = Camera::createDefinition();
+        CameraDefinitionWrapper camWrapper{ cam };
+        camWrapper.setComponent(LightingRenderComponent::createDefinition());
+        camWrapper.setComponent(ShadowRenderer::createDefinition());
+        camWrapper.setComponent(ForwardRenderer::createDefinition());
+        camWrapper.setComponent(SkeletalAnimationRenderComponent::createDefinition());
+        scene.setComponent(camEntity, cam);
+
+        auto camTrans = Transform::createDefinition();
+        camTrans.set_name("Main Camera");
+        *camTrans.mutable_position() = convert<protobuf::Vec3>(glm::vec3{ 0.f, 1.f, -5.f });
+        scene.setComponent(camEntity, camTrans);
+
+        if (empty)
+        {
+            return def;
+        }
+
+        auto lightsEntity = scene.createEntity();
+        auto lightsTrans = Transform::createDefinition();
+        lightsTrans.set_name("Lighting");
+        scene.setComponent(lightsEntity, lightsTrans);
+
+        auto ambLightEntity = scene.createEntity();
+        auto ambLight = AmbientLight::createDefinition();
+        ambLight.set_intensity(0.2f);
+        scene.setComponent(ambLightEntity, ambLight);
+        auto ambLightTrans = Transform::createDefinition();
+        ambLightTrans.set_name("Ambient Light");
+        ambLightTrans.set_parent(entt::to_integral(lightsEntity));
+        scene.setComponent(ambLightEntity, ambLightTrans);
+
+        auto dirLightEntity = scene.createEntity();
+        auto dirLight = DirectionalLight::createDefinition();
+        dirLight.set_intensity(3.f);
+        scene.setComponent(dirLightEntity, dirLight);
+        auto dirLightTrans = Transform::createDefinition();
+        dirLightTrans.set_name("Directional Light");
+        dirLightTrans.set_parent(entt::to_integral(lightsEntity));
+        *dirLightTrans.mutable_position() = convert<protobuf::Vec3>(glm::vec3{ 0.f, 3.f, 0.f });
+        auto rot = glm::quat{ glm::radians(glm::vec3{50.f, -30.f, 0.f}) };
+        *dirLightTrans.mutable_rotation() = convert<protobuf::Quat>(rot);
+        scene.setComponent(dirLightEntity, dirLightTrans);
+
+        auto mesh = Mesh::createSource();
+        mesh.set_name("Default Mesh");
+        std::string meshPath = "default/mesh";
+        scene.setAsset(meshPath, mesh);
+
+        auto mat = Material::createDefinition();
+        mat.set_name("Default");
+        std::string matPath = "default/material";
+        scene.setAsset(matPath, mat);
+
+        auto renderableEntity = scene.createEntity();
+        auto renderable = Renderable::createDefinition();
+        renderable.set_mesh_path(meshPath);
+        renderable.set_material_path(matPath);
+        scene.setComponent(renderableEntity, renderable);
+
+        auto renderableTrans = Transform::createDefinition();
+        renderableTrans.set_name("Sphere");
+        scene.setComponent(renderableEntity, renderableTrans);
+
+        return def;
     }
 }

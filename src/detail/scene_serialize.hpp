@@ -24,7 +24,7 @@ namespace darmok
         using ComponentData = SceneLoader::ComponentData;
         using Message = SceneLoader::Message;
 		using Any = SceneLoader::Any;
-        using SceneDefinition = protobuf::Scene;
+        using Definition = protobuf::Scene;
         using ComponentListener = SceneLoader::ComponentListener;
 
         SceneLoaderImpl() noexcept;
@@ -40,7 +40,7 @@ namespace darmok
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
 
-		const SceneDefinition& getSceneDefinition() const noexcept;
+		const Definition& getDefinition() const noexcept;
         void addError(std::string_view error) noexcept;
         ComponentData getComponentData() noexcept;
         void addLoad(LoadFunction&& func);
@@ -59,9 +59,9 @@ namespace darmok
 
     private:
         static Scene _emptyScene;
-        static const SceneDefinition _emptySceneDef;
+        static const Definition _emptySceneDef;
         OptionalRef<Scene> _scene;     
-        OptionalRef<const SceneDefinition> _sceneDef;
+        OptionalRef<const Definition> _sceneDef;
         Entity _parentEntity;
         std::vector<ComponentListener> _compListeners;
         AssetPackConfig _assetConfig;

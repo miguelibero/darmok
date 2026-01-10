@@ -105,8 +105,8 @@ namespace darmok
         using Config = AssimpLoader::Config;
         using Result = AssimpLoader::Result;
         bool supports(const std::filesystem::path& path) const noexcept;
-        Result loadFromFile(const std::filesystem::path& path, const Config& config = {}) const ;
-        Result loadFromMemory(DataView data, const Config& config = {}) const;
+        Result loadFromFile(const std::filesystem::path& path, const Config& config = {}) const noexcept;
+        Result loadFromMemory(DataView data, const Config& config = {}) const noexcept;
     private:
         static unsigned int getImporterFlags(const Config& config = {}) noexcept;
         static std::shared_ptr<aiScene> fixScene(Assimp::Importer& importer) noexcept;
@@ -144,7 +144,7 @@ namespace darmok
         return flags;
     }
 
-    AssimpLoader::Result AssimpLoaderImpl::loadFromFile(const std::filesystem::path& path, const Config& config) const
+    AssimpLoader::Result AssimpLoaderImpl::loadFromFile(const std::filesystem::path& path, const Config& config) const noexcept
     {
         try
         {
@@ -174,7 +174,7 @@ namespace darmok
         }
     }
 
-    AssimpLoader::Result AssimpLoaderImpl::loadFromMemory(DataView data, const Config& config) const
+    AssimpLoader::Result AssimpLoaderImpl::loadFromMemory(DataView data, const Config& config) const noexcept
     {
         Assimp::Importer importer;
         if (!config.basePath.empty())
@@ -249,12 +249,12 @@ namespace darmok
         return _impl->supports(path);
     }
 
-    AssimpLoader::Result AssimpLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const
+    AssimpLoader::Result AssimpLoader::loadFromFile(const std::filesystem::path& path, const Config& config) const noexcept
     {
         return _impl->loadFromFile(path, config);
     }
 
-    AssimpLoader::Result AssimpLoader::loadFromMemory(DataView data, const Config& config) const
+    AssimpLoader::Result AssimpLoader::loadFromMemory(DataView data, const Config& config) const noexcept
     {
         return _impl->loadFromMemory(data, config);
     }

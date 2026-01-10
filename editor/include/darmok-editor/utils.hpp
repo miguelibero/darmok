@@ -128,10 +128,20 @@ namespace darmok::editor
         glm::uvec2 getAvailableContentRegion() noexcept;
     };
 
-    struct MeshFileInput final
+    struct SceneFileInput
     {
         std::filesystem::path path;
         std::shared_ptr<aiScene> scene;
+
+        SceneFileInput(const std::string& label = "Load Scene from file") noexcept;
+        expected<bool, std::string> draw(EditorApp& app) noexcept;
+
+    private:
+        std::string _label;
+    };
+
+    struct MeshFileInput final : public SceneFileInput
+    {
         OptionalRef<aiMesh> mesh;
 
         MeshFileInput(const std::string& label = "Load Mesh from file") noexcept;

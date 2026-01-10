@@ -797,12 +797,7 @@ namespace darmok
         Definition def;
         def.set_perspective_fovy(glm::radians(60.f));
         def.set_near(0.3f);
-        def.set_far(1000.f);
-
-        //cam.addComponent<ShadowRenderer>(shadowConfig);
-        //cam.addComponent<LightingRenderComponent>();
-        //cam.addComponent<ForwardRenderer>();
-        //cam.addComponent<FrustumCuller>();
+        def.set_far(100.f);
 
         return def;
     }

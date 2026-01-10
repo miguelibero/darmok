@@ -12,7 +12,8 @@ namespace darmok::editor
 
     FreetypeFontInspectorEditor::RenderResult FreetypeFontInspectorEditor::renderType(protobuf::FreetypeFont& font) noexcept
     {
-        return {};
+        auto changed = false;
+        return false;
     }
 
     std::string TextInspectorEditor::getTitle() const noexcept
@@ -70,7 +71,8 @@ namespace darmok::editor
 
     TextRendererInspectorEditor::RenderResult TextRendererInspectorEditor::renderType(TextRenderer::Definition& text) noexcept
     {
-        return {};
+        auto changed = false;
+        return false;
     }
 
 }
