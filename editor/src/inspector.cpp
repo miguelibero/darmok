@@ -11,9 +11,6 @@
 #include <darmok-editor/inspector/shape.hpp>
 #include <darmok-editor/inspector/mesh.hpp>
 #include <darmok-editor/inspector/texture.hpp>
-#include <darmok-editor/inspector/skeleton.hpp>
-#include <darmok-editor/inspector/physics3d.hpp>
-#include <darmok-editor/inspector/text.hpp>
 #include <darmok-editor/inspector/script.hpp>
 #include <darmok/scene_serialize.hpp>
 
@@ -28,43 +25,37 @@ namespace darmok::editor
     {
     }
 
+    expected<void, std::string> EditorInspectorView::addEditor(std::unique_ptr<IObjectEditor> editor) noexcept
+    {
+        return _editors.add(std::move(editor));
+    }
+
     expected<void, std::string> EditorInspectorView::setup() noexcept
     {
-        _editors.add<SceneInspectorEditor>();
-        _editors.add<TransformInspectorEditor>();
-        _editors.add<CameraInspectorEditor>();
-        _editors.add<PointLightInspectorEditor>();
-        _editors.add<DirectionalLightInspectorEditor>();
-        _editors.add<SpotLightInspectorEditor>();
-        _editors.add<AmbientLightInspectorEditor>();
-        _editors.add<RenderableInspectorEditor>();
-        _editors.add<CubeInspectorEditor>();
-        _editors.add<SphereInspectorEditor>();
-        _editors.add<CapsuleInspectorEditor>();
-        _editors.add<RectangleInspectorEditor>();
-        _editors.add<PolygonInspectorEditor>();
-        _editors.add<BoundingBoxInspectorEditor>();
-        _editors.add<ConeInspectorEditor>();
-        _editors.add<CylinderInspectorEditor>();
-        _editors.add<MaterialInspectorEditor>();
-        _editors.add<ProgramSourceInspectorEditor>();
-        _editors.add<ProgramRefInspectorEditor>();
-        _editors.add<MeshSourceInspectorEditor>();
-        _editors.add<TextureInspectorEditor>();
-        _editors.add<ArmatureInspectorEditor>();
-        _editors.add<SkinnableInspectorEditor>();
-        _editors.add<SkeletalAnimatorInspectorEditor>();
-        _editors.add<SkeletalAnimationSceneComponentInspectorEditor>();
-        _editors.add<SkeletalAnimationRenderComponentInspectorEditor>();
-        _editors.add<Physics3dShapeInspectorEditor>();
-        _editors.add<Physics3dBodyInspectorEditor>();
-        _editors.add<Physics3dCharacterControllerInspectorEditor>();
-        _editors.add<Physics3dSystemInspectorEditor>();
-        _editors.add<FreetypeFontInspectorEditor>();
-        _editors.add<TextInspectorEditor>();
-        _editors.add<TextRendererInspectorEditor>();
-        _editors.add<LuaScriptInspectorEditor>();
-        _editors.add<LuaScriptRunnerInspectorEditor>();
+        DARMOK_TRY(addEditor<SceneInspectorEditor>());
+        DARMOK_TRY(addEditor<TransformInspectorEditor>());
+        DARMOK_TRY(addEditor<CameraInspectorEditor>());
+        DARMOK_TRY(addEditor<PointLightInspectorEditor>());
+        DARMOK_TRY(addEditor<DirectionalLightInspectorEditor>());
+        DARMOK_TRY(addEditor<SpotLightInspectorEditor>());
+        DARMOK_TRY(addEditor<AmbientLightInspectorEditor>());
+        DARMOK_TRY(addEditor<RenderableInspectorEditor>());
+        DARMOK_TRY(addEditor<CubeInspectorEditor>());
+        DARMOK_TRY(addEditor<SphereInspectorEditor>());
+        DARMOK_TRY(addEditor<CapsuleInspectorEditor>());
+        DARMOK_TRY(addEditor<RectangleInspectorEditor>());
+        DARMOK_TRY(addEditor<PolygonInspectorEditor>());
+        DARMOK_TRY(addEditor<BoundingBoxInspectorEditor>());
+        DARMOK_TRY(addEditor<ConeInspectorEditor>());
+        DARMOK_TRY(addEditor<CylinderInspectorEditor>());
+        DARMOK_TRY(addEditor<MaterialInspectorEditor>());
+        DARMOK_TRY(addEditor<ProgramSourceInspectorEditor>());
+        DARMOK_TRY(addEditor<ProgramRefInspectorEditor>());
+        DARMOK_TRY(addEditor<MeshSourceInspectorEditor>());
+        DARMOK_TRY(addEditor<TextureInspectorEditor>());
+
+        DARMOK_TRY(addEditor<LuaScriptInspectorEditor>());
+        DARMOK_TRY(addEditor<LuaScriptRunnerInspectorEditor>());
         return {};
     }
 
@@ -119,7 +110,6 @@ namespace darmok::editor
         }
         bool changed = false;
         int i = 0;
-		std::vector<std::string> errors;
         for (auto& comp : _sceneDef->getComponents(entity))
         {
             ImGui::PushID(i);
@@ -127,7 +117,7 @@ namespace darmok::editor
             ImGui::PopID();
             if (!result)
             {
-                errors.push_back(std::move(result).error());
+                ImguiUtils::drawProtobufError(comp, result.error());
             }
             else if (result.value())
             {
@@ -135,11 +125,7 @@ namespace darmok::editor
             }
             ++i;
         }
-        if (!errors.empty())
-        {
-			return unexpected{ StringUtils::joinErrors(errors) };
-        }
-        return changed;
+        return {};
     }
 
     EditorInspectorView::RenderResult EditorInspectorView::renderAsset(std::filesystem::path path) noexcept

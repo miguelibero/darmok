@@ -7,6 +7,7 @@
 #include <darmok/app.hpp>
 #include <darmok/math.hpp>
 #include <darmok/string.hpp>
+#include <darmok/protobuf.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/glm_serialize.hpp>
 
@@ -44,6 +45,12 @@ namespace darmok
         return itr != components.end();
     }
 
+
+    std::vector<std::reference_wrapper<const ConstCameraDefinitionWrapper::Any>> ConstCameraDefinitionWrapper::getComponents() const noexcept
+    {
+        return protobuf::mapToSortedVector(_def->components());
+    }
+
     CameraDefinitionWrapper::CameraDefinitionWrapper(Definition& def) noexcept
         : ConstCameraDefinitionWrapper(def)
         , _def{ def }
@@ -69,6 +76,11 @@ namespace darmok
     bool CameraDefinitionWrapper::removeComponent(IdType typeId) noexcept
     {
         return _def->mutable_components()->erase(typeId) > 0;
+    }
+
+    std::vector<std::reference_wrapper<CameraDefinitionWrapper::Any>> CameraDefinitionWrapper::getComponents() noexcept
+    {
+        return protobuf::mapToSortedVector(*_def->mutable_components());
     }
 
     Camera::Camera(const glm::mat4& projMatrix) noexcept

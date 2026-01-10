@@ -2,6 +2,7 @@
 
 #include <darmok-editor/editor.hpp>
 #include <darmok/skeleton.hpp>
+#include <darmok-editor/utils.hpp>
 
 struct aiScene;
 
@@ -13,11 +14,7 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Armature::Definition& armature) noexcept override;
     private:
-        std::shared_ptr<aiScene> _scene;
-        std::vector<std::string> _meshes;
-        size_t _meshIndex = 0;
-
-        expected<void, std::string> loadSceneMesh(Armature::Definition& armature) noexcept;
+        MeshFileInput _meshInput;
     };
 
     class SkinnableInspectorEditor final : public EntityComponentObjectEditor<Skinnable>

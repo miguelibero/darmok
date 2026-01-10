@@ -316,10 +316,8 @@ namespace darmok::editor
     class ObjectEditorContainer final
     {
     public:
-        ObjectEditorContainer();
-
         template<typename T, typename... A>
-        expected<std::reference_wrapper<T>, std::string> add(A&&... args)
+        expected<std::reference_wrapper<T>, std::string> add(A&&... args) noexcept
         {
             auto ptr = std::make_unique<T>(std::forward<A>(args)...);
             auto& ref = *ptr;

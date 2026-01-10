@@ -24,14 +24,15 @@ namespace darmok::editor
         {
             if (ImguiUtils::beginFrame("Components"))
             {
-                for (auto comp : SceneDefinitionWrapper{ scene }.getSceneComponents())
+                for (auto compRef : SceneDefinitionWrapper{ scene }.getSceneComponents())
                 {
-                    auto result = renderChild(comp.get(), true);
+                    auto& comp = compRef.get();
+                    auto result = renderChild(comp, true);
                     if (!result)
                     {
-                        return unexpected{ std::move(result).error() };
+                        ImguiUtils::drawProtobufError(comp, result.error());
                     }
-                    if (result.value())
+                    else if (result.value())
                     {
                         changed = true;
                     }

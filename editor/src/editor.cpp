@@ -94,10 +94,6 @@ namespace darmok::editor
         return getProject().getSceneDefinition().getAssetPath(anyAsset);
     }
 
-    ObjectEditorContainer::ObjectEditorContainer()
-    {
-    }
-
     ObjectEditorContainer::RenderResult ObjectEditorContainer::render(google::protobuf::Message& obj, bool withTitle) const noexcept
     {
 		auto typeUrl = protobuf::getTypeUrl(obj);

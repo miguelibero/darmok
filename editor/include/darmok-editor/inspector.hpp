@@ -34,6 +34,22 @@ namespace darmok::editor
 		std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept;
 
         static const std::string& getWindowName() noexcept;
+
+        expected<void, std::string> addEditor(std::unique_ptr<IObjectEditor> editor) noexcept;
+
+        template<typename T, typename... A>
+        expected<std::reference_wrapper<T>, std::string> addEditor(A&&... args) noexcept
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            auto result = addEditor(std::move(ptr));
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            return std::ref(ref);
+        }
+
     private:
         ObjectEditorContainer _editors;
         static const std::string _windowName;

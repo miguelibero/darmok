@@ -19,6 +19,10 @@ set(EDITOR_HEADERS
   inspector.hpp
   assets_view.hpp
   player_view.hpp
+  physics3d.hpp
+  skeleton.hpp
+  rmlui.hpp
+  text.hpp
   inspector/transform.hpp
   inspector/camera.hpp
   inspector/scene.hpp
@@ -45,6 +49,10 @@ set(EDITOR_SOURCES
   inspector.cpp
   assets_view.cpp
   player_view.cpp
+  physics3d.cpp
+  skeleton.cpp
+  rmlui.cpp
+  text.cpp
   inspector/transform.cpp
   inspector/camera.cpp
   inspector/scene.cpp

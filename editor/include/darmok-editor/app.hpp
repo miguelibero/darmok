@@ -30,11 +30,39 @@ namespace darmok
 
 namespace darmok::editor
 {
+    enum class EditorAppMainMenuSection
+    {
+        File,
+        Edit,
+        AddAsset,
+        AddSceneComponent,
+        AddEntityComponent,
+        AddCameraComponent,
+        Help,
+        Main,
+    };
+
+    class EditorApp;
+
+    class IEditorAppComponent
+    {
+    public:
+        virtual ~IEditorAppComponent() = default;
+        using MainMenuSection = EditorAppMainMenuSection;
+        virtual expected<void, std::string> renderMainMenu(MainMenuSection section) noexcept { return {}; };
+        virtual expected<void, std::string> init(EditorApp& app) noexcept { return {}; };
+        virtual expected<void, std::string> shutdown() noexcept { return {}; };
+        virtual expected<void, std::string> render() noexcept { return {}; };
+        virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; };
+    };
+
     class EditorApp final : 
         public IAppDelegate, public IImguiRenderer,
         IEditorAssetsViewDelegate
     {
     public:
+        using MainMenuSection = EditorAppMainMenuSection;
+
 		EditorApp(App& app) noexcept;
         ~EditorApp() noexcept;
 
@@ -52,6 +80,11 @@ namespace darmok::editor
 
         EditorProject& getProject() noexcept;
         const EditorProject& getProject() const noexcept;
+        const EditorInspectorView& getInspectorView() const noexcept;
+        EditorInspectorView& getInspectorView() noexcept;
+        const EditorSceneView& getSceneView() const noexcept;
+        EditorSceneView& getSceneView() noexcept;
+
         AssetContext& getAssets() noexcept;
         const AssetContext& getAssets() const noexcept;
 		const Window& getWindow() const noexcept;   
@@ -70,55 +103,22 @@ namespace darmok::editor
         bool drawFileInput(const char* label, std::filesystem::path& path, FileDialogOptions options) noexcept;
         EntityId getSelectedEntity() const noexcept;
 
-    private:
-        App& _app;
-        ProgramCompilerConfig _progCompConfig;
-        std::unordered_map<void*, std::optional<FileDialogResult>> _fileInputResults;
-        OptionalRef<ImguiAppComponent> _imgui;
-        EditorProject _proj;
-        EditorSceneView _sceneView;
-        EditorPlayerView _playerView;
-        EditorInspectorView _inspectorView;
-        EditorAssetsView _assetsView;
+        expected<void, std::string> addComponent(std::unique_ptr<IEditorAppComponent> comp) noexcept;
 
-        ImGuiID _dockDownId;
-        ImGuiID _dockRightId;
-        ImGuiID _dockLeftId;
-        ImGuiID _dockCenterId;
-
-        ImFont* _symbolsFont;
-        float _mainToolbarHeight;
-
-        static const ImGuiWindowFlags _fixedFlags;
-        static const char* _sceneTreeWindowName;
-
-        // IEditorAssetsViewDelegate
-        std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept override;
-        void onAssetPathSelected(const std::filesystem::path& assetPath) noexcept override;
-        void onAssetFolderEntered(const std::filesystem::path& assetPath) noexcept override;
-
-        expected<void, std::string> renderMainMenu() noexcept;
-        expected<void, std::string> renderMainToolbar() noexcept;
-        void renderDockspace() noexcept;
-        expected<bool, std::string> renderSceneTree() noexcept;
-        void renderAboutDialog() noexcept;
-
-        using TransformDefinition = protobuf::Transform;
-
-        bool renderEntityDragDropTarget(EntityId entityId) noexcept;
-        bool renderSceneTreeBranch(EntityId entityId) noexcept;
-        void onSceneTreeEntityClicked(EntityId entityId) noexcept;
-        void onSceneTreeEntityFocused(EntityId entityId) noexcept;
-        void onSceneTreeSceneClicked() noexcept;
-
-        void onObjectSelected(const SelectableObject& obj) noexcept;
+        template<typename T, typename... A>
+        expected<std::reference_wrapper<T>, std::string> addComponent(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            auto result = addComponent(std::move(ptr));
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            return std::ref(ref);
+        }
 
         expected<bool, std::string> drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept;
-
-        bool canAddSceneComponent(IdType typeId) const noexcept;
-        bool canAddEntityComponent(IdType typeId) const noexcept;
-        bool canAddCameraComponent(IdType typeId) const noexcept;
-        void focusNextWindowOnPlaybackChange(bool played) noexcept;
 
         template<typename T, typename Def = T::Definition>
         expected<bool, std::string> drawSceneComponentMenu(const char* name, const Def& def = T::createDefinition()) noexcept
@@ -182,5 +182,54 @@ namespace darmok::editor
             return result;
         }
 
+    private:
+        App& _app;
+        ProgramCompilerConfig _progCompConfig;
+        std::unordered_map<void*, std::optional<FileDialogResult>> _fileInputResults;
+        OptionalRef<ImguiAppComponent> _imgui;
+        EditorProject _proj;
+        EditorSceneView _sceneView;
+        EditorPlayerView _playerView;
+        EditorInspectorView _inspectorView;
+        EditorAssetsView _assetsView;
+
+        ImGuiID _dockDownId;
+        ImGuiID _dockRightId;
+        ImGuiID _dockLeftId;
+        ImGuiID _dockCenterId;
+
+        ImFont* _symbolsFont;
+        float _mainToolbarHeight;
+
+        static const ImGuiWindowFlags _fixedFlags;
+        static const char* _sceneTreeWindowName;
+        std::vector<std::unique_ptr<IEditorAppComponent>> _comps;
+
+        // IEditorAssetsViewDelegate
+        std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept override;
+        void onAssetPathSelected(const std::filesystem::path& assetPath) noexcept override;
+        void onAssetFolderEntered(const std::filesystem::path& assetPath) noexcept override;
+
+        expected<void, std::string> renderMainMenu() noexcept;
+        expected<void, std::string> renderMainToolbar() noexcept;
+        void renderDockspace() noexcept;
+        expected<bool, std::string> renderSceneTree() noexcept;
+        void renderAboutDialog() noexcept;
+
+        using TransformDefinition = protobuf::Transform;
+
+        bool renderEntityDragDropTarget(EntityId entityId) noexcept;
+        bool renderSceneTreeBranch(EntityId entityId) noexcept;
+        void onSceneTreeEntityClicked(EntityId entityId) noexcept;
+        void onSceneTreeEntityFocused(EntityId entityId) noexcept;
+        void onSceneTreeSceneClicked() noexcept;
+        expected<void, std::string> onMainMenuRender(MainMenuSection section) noexcept;
+
+        void onObjectSelected(const SelectableObject& obj) noexcept;
+
+        bool canAddSceneComponent(IdType typeId) const noexcept;
+        bool canAddEntityComponent(IdType typeId) const noexcept;
+        bool canAddCameraComponent(IdType typeId) const noexcept;
+        void focusNextWindowOnPlaybackChange(bool played) noexcept;
     };
 }

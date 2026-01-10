@@ -1,6 +1,10 @@
 ﻿#include <darmok-editor/app.hpp>
 #include <darmok-editor/utils.hpp>
 #include <darmok-editor/IconsMaterialDesign.h>
+#include <darmok-editor/physics3d.hpp>
+#include <darmok-editor/skeleton.hpp>
+#include <darmok-editor/text.hpp>
+#include <darmok-editor/rmlui.hpp>
 
 #include <darmok/window.hpp>
 #include <darmok/transform.hpp>
@@ -10,17 +14,11 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/render_forward.hpp>
 #include <darmok/render_deferred.hpp>
-#include <darmok/rmlui.hpp>
 #include <darmok/environment.hpp>
 #include <darmok/shadow.hpp>
 #include <darmok/culling.hpp>
 #include <darmok/scene_serialize.hpp>
-#include <darmok/physics3d.hpp>
-#include <darmok/physics3d_character.hpp>
-#include <darmok/physics3d_debug.hpp>
 #include <darmok/freelook.hpp>
-#include <darmok/text.hpp>
-#include <darmok/text_freetype.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/lua_script.hpp>
 
@@ -92,58 +90,54 @@ namespace darmok::editor
         {
             return unexpected{"failed to initialize project: " + projResult.error()};
 		}
-        auto result = _sceneView.init(_proj.getScene(), _proj.getCamera().value());
-        if (!result)
+        DARMOK_TRY(_sceneView.init(_proj.getScene(), _proj.getCamera().value()));
+        DARMOK_TRY(_playerView.init(_proj.getScene()));
+        DARMOK_TRY(_inspectorView.init(*this));;
+        DARMOK_TRY(_assetsView.init(_proj.getSceneDefinition(), *this));
+
+        std::vector<std::string> compErrors;
+        for (auto& comp : _comps)
         {
-            return result;
+            auto result = comp->init(*this);
+            if (!result)
+            {
+                compErrors.push_back(std::move(result).error());
+            }
         }
-        result = _playerView.init(_proj.getScene());
-        if (!result)
+        if (!compErrors.empty())
         {
-            return result;
+            return StringUtils::joinExpectedErrors(compErrors);
         }
-        result = _inspectorView.init(*this);
-        if (!result)
-        {
-            return result;
-        }
-        result = _assetsView.init(_proj.getSceneDefinition(), *this);
-        if (!result)
-        {
-            return result;
-        }
+
+        DARMOK_TRY(addComponent<Physics3dEditorAppComponent>());
+        DARMOK_TRY(addComponent<SkeletonEditorAppComponent>());
+        DARMOK_TRY(addComponent<TextEditorAppComponent>());
+        DARMOK_TRY(addComponent<RmluiEditorAppComponent>());
+
         return {};
     }
 
     expected<void, std::string> EditorApp::shutdown() noexcept
     {
-        expected<void, std::string> result;
+        std::vector<std::string> compErrors;
+        for (auto& comp : _comps)
+        {
+            auto result = comp->shutdown();
+            if (!result)
+            {
+                compErrors.push_back(std::move(result).error());
+            }
+        }
+        if (!compErrors.empty())
+        {
+            return StringUtils::joinExpectedErrors(compErrors);
+        }
+        DARMOK_TRY(_inspectorView.shutdown());
+        DARMOK_TRY(_assetsView.shutdown());
+        DARMOK_TRY(_sceneView.shutdown());
+        DARMOK_TRY(_playerView.shutdown());
+        DARMOK_TRY(_proj.shutdown());
 
-        result = _inspectorView.shutdown();
-        if (!result)
-        {
-            return result;
-        }
-        result = _assetsView.shutdown();
-        if (!result)
-        {
-            return result;
-        }
-        result = _sceneView.shutdown();
-        if (!result)
-        {
-            return result;
-        }
-        result = _playerView.shutdown();
-        if (!result)
-        {
-            return result;
-        }
-        result = _proj.shutdown();
-        if (!result)
-        {
-            return result;
-        }
         _imgui.reset();
         _app.removeComponent<ImguiAppComponent>();
         _app.removeComponent<SceneAppComponent>();
@@ -155,6 +149,16 @@ namespace darmok::editor
         _mainToolbarHeight = 0.F;
         _fileInputResults.clear();
 
+        return {};
+    }
+
+    expected<void, std::string> EditorApp::addComponent(std::unique_ptr<IEditorAppComponent> comp) noexcept
+    {
+        if (_imgui)
+        {
+            DARMOK_TRY(comp->init(*this));
+        }
+        _comps.push_back(std::move(comp));
         return {};
     }
 
@@ -249,6 +253,7 @@ namespace darmok::editor
                 {
                     result = _proj.exportScene();
                 }
+                DARMOK_TRY(onMainMenuRender(MainMenuSection::File));
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit"))
                 {
@@ -266,24 +271,19 @@ namespace darmok::editor
                         result = unexpected{ std::move(entityResult).error() };
                     }
                 }
+                DARMOK_TRY(onMainMenuRender(MainMenuSection::Edit));
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Asset"))
             {
                 if (ImGui::BeginMenu("Add"))
                 {
-                    drawAssetComponentMenu("Program", Program::createSource());
-                    drawAssetComponentMenu("Texture", Texture::createSource());
-                    drawAssetComponentMenu("Mesh", Mesh::createSource());
-                    drawAssetComponentMenu("Material", Material::createDefinition());
-                    drawAssetComponentMenu("Scene", SceneLoader::createDefinition(true));
-                    if (ImGui::BeginMenu("Animation"))
-                    {
-                        drawAssetComponentMenu("Armature", Armature::createDefinition());
-                        drawAssetComponentMenu("Animator", SkeletalAnimator::createDefinition());
-                        ImGui::EndMenu();
-                    }
-                    drawAssetComponentMenu("Freetype Font", FreetypeFontLoader::createDefinition());
+                    DARMOK_TRY(drawAssetComponentMenu("Program", Program::createSource()));
+                    DARMOK_TRY(drawAssetComponentMenu("Texture", Texture::createSource()));
+                    DARMOK_TRY(drawAssetComponentMenu("Mesh", Mesh::createSource()));
+                    DARMOK_TRY(drawAssetComponentMenu("Material", Material::createDefinition()));
+                    DARMOK_TRY(drawAssetComponentMenu("Scene", SceneLoader::createDefinition(true)));
+                    DARMOK_TRY(onMainMenuRender(MainMenuSection::AddAsset));
 					ImGui::EndMenu();
                 }
                 ImGui::EndMenu();
@@ -295,31 +295,18 @@ namespace darmok::editor
                 {
                     if (ImGui::BeginMenu("Add"))
                     {
-                        drawEntityComponentMenu<Renderable>("Renderable");
-                        drawEntityComponentMenu<Camera>("Camera");
-                        drawEntityComponentMenu<LuaScript>("Lua Script");
-                        drawEntityComponentMenu<Text>("Text");
+                        DARMOK_TRY(drawEntityComponentMenu<Renderable>("Renderable"));
+                        DARMOK_TRY(drawEntityComponentMenu<Camera>("Camera"));
+                        DARMOK_TRY(drawEntityComponentMenu<LuaScript>("Lua Script"));
                         if (ImGui::BeginMenu("Light"))
                         {
-                            drawEntityComponentMenu<PointLight>("Point Light");
-                            drawEntityComponentMenu<DirectionalLight>("Directional Light");
-                            drawEntityComponentMenu<SpotLight>("Spot Light");
-                            drawEntityComponentMenu<AmbientLight>("Ambient Light");
+                            DARMOK_TRY(drawEntityComponentMenu<PointLight>("Point Light"));
+                            DARMOK_TRY(drawEntityComponentMenu<DirectionalLight>("Directional Light"));
+                            DARMOK_TRY(drawEntityComponentMenu<SpotLight>("Spot Light"));
+                            DARMOK_TRY(drawEntityComponentMenu<AmbientLight>("Ambient Light"));
                             ImGui::EndMenu();
                         }
-                        if (ImGui::BeginMenu("Skeletal Animation"))
-                        {
-                            drawEntityComponentMenu<Skinnable>("Skinnable");
-                            drawEntityComponentMenu<SkeletalAnimator>("Animator");
-                            ImGui::EndMenu();
-                        }
-                        if (ImGui::BeginMenu("Physics3d"))
-                        {
-                            drawEntityComponentMenu<physics3d::PhysicsBody>("Body");
-                            drawEntityComponentMenu<physics3d::PhysicsBody>("Character", physics3d::PhysicsBody::createCharacterDefinition());
-                            drawEntityComponentMenu<physics3d::CharacterController>("Character Controller");
-                            ImGui::EndMenu();
-                        }
+                        DARMOK_TRY(onMainMenuRender(MainMenuSection::AddEntityComponent));
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
@@ -329,10 +316,9 @@ namespace darmok::editor
                 {
                     if (ImGui::BeginMenu("Add"))
                     {
-                        drawSceneComponentMenu<FreelookController>("Freelook Controller");
-                        drawSceneComponentMenu<SkeletalAnimationSceneComponent>("Skeletal Animation");
-                        drawSceneComponentMenu<physics3d::PhysicsSystem>("Physics3d System");
-                        drawSceneComponentMenu<LuaScriptRunner>("Lua Script Runner");
+                        DARMOK_TRY(drawSceneComponentMenu<FreelookController>("Freelook Controller"));
+                        DARMOK_TRY(drawSceneComponentMenu<LuaScriptRunner>("Lua Script Runner"));
+                        DARMOK_TRY(onMainMenuRender(MainMenuSection::AddSceneComponent));
                         ImGui::EndMenu();
                     }
                     ImGui::EndMenu();
@@ -344,39 +330,36 @@ namespace darmok::editor
                     {
                         if (ImGui::BeginMenu("Renderer"))
                         {
-                            drawCameraComponentMenu<ForwardRenderer>("Forward");
-                            drawCameraComponentMenu<DeferredRenderer>("Deferred");
-                            drawCameraComponentMenu<RmluiRenderer>("Rmlui");
-                            drawCameraComponentMenu<SkyboxRenderer>("Skybox");
-                            drawCameraComponentMenu<ShadowRenderer>("Shadow");
-                            drawCameraComponentMenu<TextRenderer>("Text");
+                            DARMOK_TRY(drawCameraComponentMenu<ForwardRenderer>("Forward"));
+                            DARMOK_TRY(drawCameraComponentMenu<DeferredRenderer>("Deferred"));
+                            DARMOK_TRY(drawCameraComponentMenu<SkyboxRenderer>("Skybox"));
+                            DARMOK_TRY(drawCameraComponentMenu<ShadowRenderer>("Shadow"));
                             ImGui::EndMenu();
                         }
                         if (ImGui::BeginMenu("Culling"))
                         {
-                            drawCameraComponentMenu<FrustumCuller>("Frustum Culler");
-                            drawCameraComponentMenu<OcclusionCuller>("Occlusion Culler");
+                            DARMOK_TRY(drawCameraComponentMenu<FrustumCuller>("Frustum Culler"));
+                            DARMOK_TRY(drawCameraComponentMenu<OcclusionCuller>("Occlusion Culler"));
                             ImGui::EndMenu();
                         }
                         if (ImGui::BeginMenu("Debug"))
                         {
-                            drawCameraComponentMenu<CullingDebugRenderer>("Culling Debug");
-                            drawCameraComponentMenu<physics3d::PhysicsDebugRenderer>("Physics3d Debug");
-                            drawCameraComponentMenu<ShadowDebugRenderer>("Shadow Debug");
+                            DARMOK_TRY(drawCameraComponentMenu<CullingDebugRenderer>("Culling Debug"));
+                            DARMOK_TRY(drawCameraComponentMenu<ShadowDebugRenderer>("Shadow Debug"));
                             ImGui::EndMenu();
                         }
-                        drawCameraComponentMenu<SkeletalAnimationRenderComponent>("Skeletal Animation");
-                        drawCameraComponentMenu<LightingRenderComponent>("Lighting");
+                        DARMOK_TRY(drawCameraComponentMenu<LightingRenderComponent>("Lighting"));
+                        DARMOK_TRY(onMainMenuRender(MainMenuSection::AddCameraComponent));
                         ImGui::EndMenu();
                     }
-  
                     ImGui::EndMenu();
                 }
                 ImGui::EndDisabled();
-                ImGui::EndMenu();
             }
+            DARMOK_TRY(onMainMenuRender(MainMenuSection::Main));
             if (ImGui::BeginMenu("Help"))
             {
+                DARMOK_TRY(onMainMenuRender(MainMenuSection::Help));
                 if (ImGui::MenuItem("About darmok"))
                 {
                     renderAboutDialog();
@@ -386,6 +369,20 @@ namespace darmok::editor
             ImGui::EndMainMenuBar();
         }
         return result;
+    }
+
+    expected<void, std::string> EditorApp::onMainMenuRender(MainMenuSection section) noexcept
+    {
+        std::vector<std::string> errors;
+        for (auto& comp : _comps)
+        {
+            auto result = comp->renderMainMenu(section);
+            if (!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     expected<bool, std::string> EditorApp::drawAssetComponentMenu(const char* name, const google::protobuf::Message& asset) noexcept
@@ -717,59 +714,28 @@ namespace darmok::editor
     expected<void, std::string> EditorApp::imguiRender() noexcept
     {
         auto changed = false;
-        auto result = _sceneView.beforeRender();
-        if (!result)
-        {
-            return result;
-        }
-        result = renderMainMenu();
-        if (!result)
-        {
-            return result;
-        }
+        DARMOK_TRY_PREFIX(_sceneView.beforeRender(), "scene view: ");
+        DARMOK_TRY_PREFIX(renderMainMenu(), "main menu: ");
         renderDockspace();
-        result = renderMainToolbar();
-        if (!result)
-        {
-            return result;
-        }
-        renderSceneTree();
+        DARMOK_TRY_PREFIX(renderMainToolbar(), "main toolbar: ");
+        DARMOK_TRY_PREFIX(renderSceneTree(), "scene tree: ");
         auto boolResult = _inspectorView.render();
         if (!boolResult)
         {
-            return unexpected<std::string>{ "failed to render inspector: " + boolResult.error() };
+            return unexpected<std::string>{ "inspector: " + boolResult.error() };
         }
         if (boolResult.value() && getSelectedEntity() == nullEntityId)
         {
-            result = _proj.updateScene();
-            if (!result)
-            {
-                return result;
-            }
+            DARMOK_TRY_PREFIX(_proj.updateScene(), "update scene: ");
         }
 
-        result = _proj.render();
-        if (!result)
-        {
-            return unexpected<std::string>{ "failed to render project: " + result.error() };
-        }
+        DARMOK_TRY_PREFIX(_proj.render(), "project: ");
         focusNextWindowOnPlaybackChange(false);
-        result = _sceneView.render();
-        if (!result)
-        {
-            return unexpected<std::string>{ "failed to render scene: " + result.error() };
-        }
+        DARMOK_TRY_PREFIX(_sceneView.render(), "scene: ");
         focusNextWindowOnPlaybackChange(true);
-        result = _playerView.render();
-        if (!result)
-        {
-            return unexpected<std::string>{ "failed to render player: " + result.error() };
-        }
-        boolResult = _assetsView.render();
-        if (!boolResult)
-        {
-            return unexpected<std::string>{ "failed to render assets: " + boolResult.error() };
-        }
+        DARMOK_TRY_PREFIX(_playerView.render(), "player: ");
+        DARMOK_TRY_PREFIX(_assetsView.render(), "assets: ");
+
         return {};
     }
 
@@ -796,6 +762,26 @@ namespace darmok::editor
     const EditorProject& EditorApp::getProject() const noexcept
     {
         return _proj;
+    }
+
+    const EditorInspectorView& EditorApp::getInspectorView() const noexcept
+    {
+        return _inspectorView;
+    }
+
+    EditorInspectorView& EditorApp::getInspectorView() noexcept
+    {
+        return _inspectorView;
+    }
+
+    const EditorSceneView& EditorApp::getSceneView() const noexcept
+    {
+        return _sceneView;
+    }
+
+    EditorSceneView& EditorApp::getSceneView() noexcept
+    {
+        return _sceneView;
     }
 
     AssetContext& EditorApp::getAssets() noexcept

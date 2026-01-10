@@ -60,7 +60,7 @@ namespace darmok
 
 		using MousePositionMode = RmluiCanvasMousePositionMode;
 
-		RmluiCanvas(const std::string& name, const std::optional<glm::uvec2>& size = std::nullopt) noexcept;
+		RmluiCanvas(const std::string& name = "", const std::optional<glm::uvec2>& size = std::nullopt) noexcept;
 		RmluiCanvas(const Definition& def) noexcept;
 		~RmluiCanvas() noexcept;
 

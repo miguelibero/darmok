@@ -81,17 +81,6 @@ namespace darmok::editor
         OptionalRef<Scene> _scene;
     };
 
-    class Physics3dShapeGizmo final : public ISceneGizmo
-    {
-    public:
-        expected<void, std::string> init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept override;
-        expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
-    private:
-        OptionalRef<SceneGizmosRenderer> _renderer;
-        OptionalRef<Scene> _scene;
-    };
-
     class SceneGizmosRenderer final : public ITypeCameraComponent<SceneGizmosRenderer>
     {
     public:
@@ -158,6 +147,21 @@ namespace darmok::editor
         TransformMode getTransformMode() const noexcept;
         EditorSceneView& setTransformMode(TransformMode mode) noexcept;
 
+        expected<void, std::string> addGizmo(std::unique_ptr<ISceneGizmo> gizmo) noexcept;
+
+        template<typename T, typename... A>
+        expected<std::reference_wrapper<T>, std::string> addGizmo(A&&... args)
+        {
+            auto ptr = std::make_unique<T>(std::forward<A>(args)...);
+            auto& ref = *ptr;
+            auto result = addGizmo(std::move(ptr));
+            if (!result)
+            {
+                return unexpected{ std::move(result).error() };
+            }
+            return std::ref(ref);
+        }
+
     private:
         static const std::string _windowName;
         EditorApp& _app;
@@ -166,6 +170,7 @@ namespace darmok::editor
         MouseMode _mouseMode;
         bool _focused;
         Entity _selectedEntity;
+        OptionalRef<SceneGizmosRenderer> _gizmos;
         OptionalRef<TransformGizmo> _transformGizmo;
 
         expected<void, std::string> updateSize(const glm::uvec2& size) noexcept;

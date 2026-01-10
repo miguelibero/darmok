@@ -31,6 +31,7 @@ namespace darmok
 
 namespace google::protobuf
 {
+    class Any;
     class Message;
     class FieldDescriptor;
 }
@@ -120,7 +121,8 @@ namespace darmok::editor
         void drawTexture(const Texture& tex, const glm::uvec2& size = {}) noexcept;
         void drawTexturePreview(const Texture& tex, const glm::uvec2& maxSize = {}) noexcept;
         bool drawToggleButton(const char* label, bool* active) noexcept;
-
+        void drawError(const char* msg) noexcept;
+        void drawProtobufError(const google::protobuf::Any& def, const std::string& error) noexcept;
         bool beginFrame(const char* name) noexcept;
         void endFrame() noexcept;
 

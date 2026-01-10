@@ -57,6 +57,7 @@ namespace darmok
         ConstCameraDefinitionWrapper(const Definition& def) noexcept;
         OptionalRef<const Any> getComponent(IdType typeId) const noexcept;
         bool hasComponent(IdType typeId) const noexcept;
+        std::vector<std::reference_wrapper<const Any>> getComponents() const noexcept;
 
         template<typename T>
         std::optional<T> getComponent() const noexcept
@@ -87,6 +88,7 @@ namespace darmok
         CameraDefinitionWrapper(Definition& def) noexcept;
         bool setComponent(const Message& comp) noexcept;
         bool removeComponent(IdType typeId) noexcept;
+        std::vector<std::reference_wrapper<Any>> getComponents() noexcept;
 
         template<typename T>
         bool removeComponent() noexcept

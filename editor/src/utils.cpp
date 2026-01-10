@@ -653,6 +653,36 @@ namespace darmok::editor
         return action;
     }
 
+    void ImguiUtils::drawError(const char* msg) noexcept
+    {
+        ImVec2 p = ImGui::GetCursorScreenPos();
+        ImVec2 size = ImGui::CalcTextSize(msg);
+
+        ImDrawList* draw = ImGui::GetWindowDrawList();
+        draw->AddRectFilled(
+            ImVec2{ p.x - 4, p.y - 2 },
+            ImVec2{ p.x + size.x + 4, p.y + size.y + 2 },
+            IM_COL32(120, 0, 0, 160),
+            4.0f
+        );
+
+        ImGui::TextColored(ImVec4{ 1, 0.6f, 0.6f, 1.0f }, msg);
+    }
+
+    void ImguiUtils::drawProtobufError(const google::protobuf::Any& def, const std::string& error) noexcept
+    {
+        auto name = def.type_url();
+        static const std::vector<std::string> prefixes{ "type.googleapis.com/", "darmok.protobuf." };
+        for (auto& prefix : prefixes)
+        {
+            if (name.starts_with(prefix))
+            {
+                name = name.substr(prefix.size());
+            }
+        }
+        drawError(fmt::format("{}: {}",name , error).c_str());
+    }
+
     namespace ImguiUtils
     {
         const float frameIndent = 10.f;

@@ -86,6 +86,43 @@ namespace darmok
             return getTypeUrl(*T::descriptor());
         }
 
+        template<class K, class V>
+        std::vector<V> pairsToSortedVector(std::vector<std::pair<K, V>>& pairs)
+        {
+            std::sort(pairs.begin(), pairs.end(), [](auto& a, auto& b) { return a.first < b.first; });
+            std::vector<V> values;
+            values.reserve(pairs.size());
+            for (const auto& [key, value] : pairs)
+            {
+                values.push_back(value);
+            }
+            return values;
+        }
+
+        template<class K, class V>
+        std::vector<std::reference_wrapper<V>> mapToSortedVector(google::protobuf::Map<K, V>& map)
+        {
+            std::vector<std::pair<K, std::reference_wrapper<V>>> pairs;
+            pairs.reserve(map.size());
+            for (auto& [key, value] : map)
+            {
+                pairs.emplace_back(key, value);
+            }
+            return pairsToSortedVector(pairs);
+        }
+
+        template<class K, class V>
+        std::vector<std::reference_wrapper<const V>> mapToSortedVector(const google::protobuf::Map<K, V>& map)
+        {
+            std::vector<std::pair<K, std::reference_wrapper<const V>>> pairs;
+            pairs.reserve(map.size());
+            for (auto& [key, value] : map)
+            {
+                pairs.emplace_back(key, value);
+            }
+            return pairsToSortedVector(pairs);
+        }
+
         template<typename T>
         struct BX_NO_VTABLE IFieldConverter
         {

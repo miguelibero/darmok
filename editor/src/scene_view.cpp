@@ -16,8 +16,6 @@
 #include <darmok/shape.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/glm.hpp>
-#include <darmok/physics3d.hpp>
-#include <darmok/physics3d_character.hpp>
 #include <darmok/math.hpp>
 
 #include <imgui.h>
@@ -262,78 +260,7 @@ namespace darmok::editor
             return unexpected{ std::move(meshResult).error() };
         }
         return _renderer->renderMesh(entity, meshResult.value(), Colors::red(), Material::Definition::Line);
-    }
-
-    expected<void, std::string> Physics3dShapeGizmo::init(Camera& cam, Scene& scene, SceneGizmosRenderer& renderer) noexcept
-    {
-        _scene = scene;
-        _renderer = renderer;
-        return {};
-    }
-
-    expected<void, std::string> Physics3dShapeGizmo::shutdown() noexcept
-    {
-        _scene.reset();
-        _renderer.reset();
-        return {};
-    }
-
-    expected<void, std::string> Physics3dShapeGizmo::render(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
-    {
-        if (!_renderer)
-        {
-            return unexpected<std::string>{"renderer not initialized"};
-        }
-        auto& layout = _renderer->getVertexLayout();
-        if (layout.getStride() == 0)
-        {
-            return unexpected<std::string>{"empty vertex layout"};
-        }
-        using namespace physics3d;
-        auto entity = _renderer->getSelectedEntity();
-        std::optional<PhysicsShape> shape;
-        if (auto body = _scene->getComponent<PhysicsBody>(entity))
-        {
-            shape = body->getShape();
-        }
-        if (auto ctrl = _scene->getComponent<CharacterController>(entity))
-        {
-            shape = ctrl->getShape();
-        }
-        if (!shape)
-        {
-            return {};
-        }
-        MeshData meshData;
-        static constexpr unsigned int lod = 8;
-        if (auto cube = std::get_if<Cube>(&*shape))
-        {
-            meshData = MeshData{ *cube, Mesh::Definition::FillOutline };
-        }
-        else if (auto sphere = std::get_if<Sphere>(&*shape))
-        {
-            meshData = MeshData{ *sphere, lod };
-        }
-        else if (auto capsule = std::get_if<Capsule>(&*shape))
-        {
-            meshData = MeshData{ *capsule, lod };
-        }
-        else if (auto polygon = std::get_if<Polygon>(&*shape))
-        {
-            meshData = MeshData{ *polygon };
-        }
-        else if (auto bbox = std::get_if<BoundingBox>(&*shape))
-        {
-            meshData = MeshData{ *bbox, Mesh::Definition::FillOutline };
-        }
-
-        auto meshResult = meshData.createMesh(layout, { .type = Mesh::Definition::Transient });
-        if (!meshResult)
-        {
-            return unexpected{ std::move(meshResult).error() };
-        }
-        return _renderer->renderMesh(entity, meshResult.value(), Colors::red(), Material::Definition::Line);
-    }
+    }   
 
     SceneGizmosRenderer::SceneGizmosRenderer(EditorApp& app) noexcept
         : _app{ app }
@@ -509,43 +436,28 @@ namespace darmok::editor
 
     expected<void, std::string> EditorSceneView::init(std::shared_ptr<Scene> scene, Camera& cam) noexcept
     {
-
-        auto gizmosResult = cam.addComponent<SceneGizmosRenderer>(_app);
-        if (!gizmosResult)
-        {
-            return unexpected{ std::move(gizmosResult).error() };
-        }
-        {
-            auto result = gizmosResult.value().get().add<TransformGizmo>();
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
-            _transformGizmo = result.value().get();
-        }
-        {
-            auto result = gizmosResult.value().get().add<CameraGizmo>();
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
-        }
-        {
-            auto result = gizmosResult.value().get().add<Physics3dShapeGizmo>();
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
-            }
-        }
+        DARMOK_TRY_VALUE(_gizmos, cam.addComponent<SceneGizmosRenderer>(_app));
+        DARMOK_TRY_VALUE(_transformGizmo, _gizmos->add<TransformGizmo>());
+        DARMOK_TRY(_gizmos->add<CameraGizmo>());
 
         _scene = scene;
         _cam = cam;
         
         return {};
     }
+
+    expected<void, std::string> EditorSceneView::addGizmo(std::unique_ptr<ISceneGizmo> gizmo) noexcept
+    {
+        if (!_gizmos)
+        {
+            return unexpected{ "not initialized" };
+        }
+        return _gizmos->add(std::move(gizmo));
+    }
     
     expected<void, std::string> EditorSceneView::shutdown() noexcept
     {
+        _gizmos.reset();
         _scene.reset();
         _cam.reset();
         _focused = false;

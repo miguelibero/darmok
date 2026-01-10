@@ -62,13 +62,7 @@ namespace darmok
 
     std::vector<std::reference_wrapper<const ConstSceneDefinitionWrapper::Any>> ConstSceneDefinitionWrapper::getSceneComponents() noexcept
     {
-        std::vector<std::reference_wrapper<const Any>> comps;
-        comps.reserve(_def->scene_components_size());
-        for (auto& [typeId, comp] : _def->scene_components())
-        {
-            comps.push_back(comp);
-        }
-        return comps;
+        return protobuf::mapToSortedVector(_def->scene_components());
     }
 
     std::vector<EntityId> ConstSceneDefinitionWrapper::getEntities() const noexcept
@@ -145,6 +139,21 @@ namespace darmok
             return std::nullopt;
         }
         return itr->second;
+    }
+
+    std::vector<std::reference_wrapper<const ConstSceneDefinitionWrapper::Any>> ConstSceneDefinitionWrapper::getComponents(EntityId entity) const noexcept
+    {
+        std::vector<std::pair<uint32_t, std::reference_wrapper<const Any>>> comps;
+        for (auto& [typeId, typeComps] : _def->registry().components())
+        {
+            auto& components = typeComps.components();
+            auto itr = components.find(entity);
+            if (itr != components.end())
+            {
+                comps.emplace_back(typeId, itr->second);
+            }
+        }
+        return protobuf::pairsToSortedVector(comps);
     }
 
     OptionalRef<const ConstSceneDefinitionWrapper::Any> ConstSceneDefinitionWrapper::getComponent(EntityId entity, IdType typeId) const noexcept
@@ -346,13 +355,7 @@ namespace darmok
 
     std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getSceneComponents() noexcept
     {
-        std::vector<std::reference_wrapper<Any>> comps;
-        comps.reserve(_def->scene_components_size());
-        for (auto& [typeId, comp] : *_def->mutable_scene_components())
-        {
-            comps.push_back(comp);
-        }
-        return comps;
+        return protobuf::mapToSortedVector(*_def->mutable_scene_components());
     }
 
     EntityId SceneDefinitionWrapper::createEntity() noexcept
@@ -422,17 +425,17 @@ namespace darmok
 
     std::vector<std::reference_wrapper<SceneDefinitionWrapper::Any>> SceneDefinitionWrapper::getComponents(EntityId entity) noexcept
     {
-        std::vector<std::reference_wrapper<Any>> comps;
+        std::vector<std::pair<uint32_t, std::reference_wrapper<Any>>> comps;
         for(auto& [typeId, typeComps] : *_def->mutable_registry()->mutable_components())
         {
             auto& components = *typeComps.mutable_components();
             auto itr = components.find(entity);
             if (itr != components.end())
             {
-                comps.push_back(std::ref(itr->second));
+                comps.emplace_back(typeId, itr->second);
             }
 		}
-        return comps;
+        return protobuf::pairsToSortedVector(comps);
     }
 
     OptionalRef<SceneDefinitionWrapper::RegistryComponents> SceneDefinitionWrapper::getTypeComponents(IdType typeId) noexcept

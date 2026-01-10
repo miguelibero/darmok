@@ -17,38 +17,6 @@ namespace darmok::editor
         return "Armature";
     }
 
-    expected<void, std::string> ArmatureInspectorEditor::loadSceneMesh(Armature::Definition& armature) noexcept
-    {
-        if (!_scene)
-        {
-            return unexpected<std::string>{ "no scene loaded" };
-        }
-        if (_meshIndex < 0 || _meshIndex >= _meshes.size())
-        {
-            return unexpected<std::string>{ "invalid mesh index" };
-        }
-        OptionalRef<const aiMesh> assimpMesh;
-        auto& meshName = _meshes[_meshIndex];
-
-        for (size_t i = 0; i < _scene->mNumMeshes; i++)
-        {
-            auto& m = _scene->mMeshes[i];
-            if (convert<std::string_view>(m->mName) == meshName)
-            {
-                assimpMesh = m;
-                break;
-            }
-        }
-
-        if (!assimpMesh)
-        {
-            return unexpected<std::string>{ "selected mesh not found in scene" };
-        }
-
-        AssimpArmatureDefinitionConverter convert{ *assimpMesh, armature };
-        return convert();
-    }
-
     ArmatureInspectorEditor::RenderResult ArmatureInspectorEditor::renderType(Armature::Definition& armature) noexcept
     {
         auto changed = false;
@@ -57,56 +25,20 @@ namespace darmok::editor
             changed = true;
         }
 
-        std::filesystem::path path;
-        FileDialogOptions dialogOptions;
-        dialogOptions.filters = { "*.fbx", "*.glb" };
-		dialogOptions.filterDesc = "3D Model Files";
-        if (getApp().drawFileInput("Load File", path, dialogOptions))
+        auto meshResult = _meshInput.draw(getApp());
+        if (!meshResult)
         {
-            auto& assets = getApp().getAssets();
-            auto dataResult = assets.getDataLoader()(path);
-            if (!dataResult)
+            return unexpected{ std::move(meshResult).error() };
+        }
+        if (meshResult.value() && _meshInput.mesh)
+        {
+            AssimpArmatureDefinitionConverter converter{ *_meshInput.mesh, armature };
+            auto convertResult = converter();
+            if (!convertResult)
             {
-                return unexpected{ std::move(dataResult).error() };
-            }
-            AssimpLoader loader;
-            AssimpLoader::Config config;
-            config.setPath(path);
-            auto sceneResult = loader.loadFromMemory(dataResult.value(), config);
-            if (!sceneResult)
-            {
-                return unexpected{ std::move(sceneResult).error() };
-            }
-            _scene = std::move(*sceneResult);
-            _meshes.clear();
-            _meshIndex = 0;
-            for (size_t i = 0; i < _scene->mNumMeshes; i++)
-            {
-                auto mesh = _scene->mMeshes[i];
-                if(mesh->mNumBones == 0)
-                {
-                    continue;
-				}
-                _meshes.push_back(convert<std::string>(mesh->mName));
-            }
-            auto result = loadSceneMesh(armature);
-            if (!result)
-            {
-                return unexpected{ std::move(result).error() };
+                return unexpected{ std::move(convertResult).error() };
             }
             changed = true;
-        }
-        if (!_meshes.empty())
-        {
-            if (ImguiUtils::drawListCombo("Mesh Name", _meshIndex, _meshes))
-            {
-                auto result = loadSceneMesh(armature);
-                if (!result)
-                {
-                    return unexpected{ std::move(result).error() };
-                }
-                changed = true;
-            }
         }
 
         if (armature.joints_size() > 0)
@@ -165,6 +97,20 @@ namespace darmok::editor
             }
             changed = true;
         }
+        if (ImguiUtils::drawProtobufInput("Animation Name Pattern", "animation_pattern", animator))
+        {
+            changed = true;
+        }
+        if (ImguiUtils::beginFrame("States"))
+        {
+
+        }
+        ImguiUtils::endFrame();
+        if (ImguiUtils::beginFrame("Transitions"))
+        {
+
+        }
+        ImguiUtils::endFrame();
         if(animator.states_size() > 0 || animator.transitions_size() > 0)
         {
             auto desc = fmt::format("{} states, {} transitions", animator.states_size(), animator.transitions_size());

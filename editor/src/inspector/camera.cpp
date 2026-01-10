@@ -76,14 +76,15 @@ namespace darmok::editor
         {
             if (ImguiUtils::beginFrame("Components"))
             {
-                for (auto& [typeId, comp] : *cam.mutable_components())
+                for (auto& compRef : CameraDefinitionWrapper{ cam }.getComponents())
                 {
+                    auto& comp = compRef.get();
                     auto result = renderChild(comp, true);
                     if (!result)
                     {
-                        return unexpected{ std::move(result).error() };
+                        ImguiUtils::drawProtobufError(comp, result.error());
                     }
-                    if (result.value())
+                    else if (result.value())
                     {
                         changed = true;
                     }
@@ -91,7 +92,6 @@ namespace darmok::editor
             }
             ImguiUtils::endFrame();
         }
-
 
         return changed;
     }
