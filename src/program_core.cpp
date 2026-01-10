@@ -884,7 +884,7 @@ namespace darmok
     {
     }
 
-    ProgramFileImporter::~ProgramFileImporter() = default;
+    ProgramFileImporter::~ProgramFileImporter() noexcept = default;
 
     ProgramFileImporter& ProgramFileImporter::setShadercPath(const fs::path& path) noexcept
     {

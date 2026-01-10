@@ -99,8 +99,8 @@ namespace darmok
             [[nodiscard]] virtual bool check() const noexcept = 0;
             [[nodiscard]] virtual T get(const google::protobuf::Message& msg) noexcept = 0;
             [[nodiscard]] virtual T get(const google::protobuf::Message& msg, int i) noexcept = 0;
-            [[nodiscard]] virtual void set(google::protobuf::Message& msg, const T& val) noexcept = 0;
-            [[nodiscard]] virtual void add(google::protobuf::Message& msg, const T& val) noexcept = 0;
+            virtual void set(google::protobuf::Message& msg, const T& val) noexcept = 0;
+            virtual void add(google::protobuf::Message& msg, const T& val) noexcept = 0;
 
             [[nodiscard]] expected<std::vector<T>, std::string> tryGetVector(const google::protobuf::Message& msg) noexcept
             {
@@ -180,12 +180,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedInt32(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetInt32(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddInt32(&msg, _field, val);
             }
@@ -214,12 +214,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedInt64(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetInt64(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddInt64(&msg, _field, val);
             }
@@ -248,12 +248,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedUInt32(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetUInt32(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddUInt32(&msg, _field, val);
             }
@@ -282,12 +282,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedUInt64(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetUInt64(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddUInt64(&msg, _field, val);
             }
@@ -316,12 +316,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedFloat(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetFloat(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddFloat(&msg, _field, val);
             }
@@ -350,12 +350,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedDouble(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetDouble(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddDouble(&msg, _field, val);
             }
@@ -384,12 +384,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedBool(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetBool(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddBool(&msg, _field, val);
             }
@@ -418,12 +418,12 @@ namespace darmok
                 return msg.GetReflection()->GetRepeatedString(msg, _field, i);
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->SetString(&msg, _field, val);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 msg.GetReflection()->AddString(&msg, _field, val);
             }
@@ -452,13 +452,13 @@ namespace darmok
                 return static_cast<T>(msg.GetReflection()->GetRepeatedEnum(msg, _field, i)->number());
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 auto enumVal = _field->enum_type()->FindValueByNumber(static_cast<int>(val));
                 msg.GetReflection()->SetEnum(&msg, _field, enumVal);
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 auto enumVal = _field->enum_type()->FindValueByNumber(static_cast<int>(val));
                 msg.GetReflection()->AddEnum(&msg, _field, enumVal);
@@ -488,12 +488,12 @@ namespace darmok
                 return *static_cast<const T*>(msg.GetReflection()->GetRepeatedMessage(msg, _field, i));
             }
 
-            [[nodiscard]] void set(google::protobuf::Message& msg, const T& val) noexcept override
+            void set(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 *static_cast<T*>(msg.GetReflection()->MutableMessage(&msg, _field)) = val;
             }
 
-            [[nodiscard]] void add(google::protobuf::Message& msg, const T& val) noexcept override
+            void add(google::protobuf::Message& msg, const T& val) noexcept override
             {
                 *static_cast<T*>(msg.GetReflection()->AddMessage(&msg, _field)) = val;
             }

@@ -675,7 +675,7 @@ namespace darmok
             if (storage.contains(entity))
             {
                 const auto* ptr = storage.value(entity);
-                ptrs.emplace(storage.type(), ptr);
+                ptrs.emplace(storage.info(), ptr);
             }
         }
         return ptrs;
@@ -689,7 +689,7 @@ namespace darmok
             if (storage.contains(entity))
             {
                 auto* ptr = storage.value(entity);
-                ptrs.emplace(storage.type(), ptr);
+                ptrs.emplace(storage.info(), ptr);
             }
         }
         return ptrs;

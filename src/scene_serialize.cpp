@@ -912,13 +912,15 @@ namespace darmok
         registerCameraComponent<SkyboxRenderer>();
         registerCameraComponent<GridRenderer>();
         registerCameraComponent<LightingRenderComponent>();
+#ifdef _DEBUG
         registerCameraComponent<physics3d::PhysicsDebugRenderer>();
+#endif
         registerCameraComponent<ShadowRenderer>();
         registerCameraComponent<ShadowDebugRenderer>();
         registerCameraComponent<TextRenderer>();
 	}
 
-    SceneLoader::~SceneLoader() = default;
+    SceneLoader::~SceneLoader() noexcept = default;
 
     const SceneLoader::Definition& SceneLoader::getDefinition() const noexcept
     {

@@ -331,14 +331,18 @@ namespace darmok
 	DarmokAssetFileImporter& DarmokAssetFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.setShadercPath(path);
+#ifdef DARMOK_ASSIMP
 		_sceneImporter.setShadercPath(path);
+#endif
 		return *this;
 	}
 
 	DarmokAssetFileImporter& DarmokAssetFileImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.addIncludePath(path);
+#ifdef DARMOK_ASSIMP
 		_sceneImporter.addIncludePath(path);
+#endif
 		return *this;
 	}
 

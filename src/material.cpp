@@ -209,6 +209,8 @@ namespace darmok
 			return BGFX_STATE_DEPTH_TEST_NEVER;
 		case Definition::DepthAlways:
 			return BGFX_STATE_DEPTH_TEST_ALWAYS;
+		default:
+			break;
 		}
 		return 0;
 	}
