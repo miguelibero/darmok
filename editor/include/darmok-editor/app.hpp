@@ -182,6 +182,8 @@ namespace darmok::editor
             return result;
         }
 
+        void showError(const std::string& error) noexcept;
+
     private:
         App& _app;
         ProgramCompilerConfig _progCompConfig;
@@ -204,6 +206,7 @@ namespace darmok::editor
         static const ImGuiWindowFlags _fixedFlags;
         static const char* _sceneTreeWindowName;
         std::vector<std::unique_ptr<IEditorAppComponent>> _comps;
+        std::string _errorPopup;
 
         // IEditorAssetsViewDelegate
         std::optional<std::filesystem::path> getSelectedAssetPath() const noexcept override;

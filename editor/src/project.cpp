@@ -139,12 +139,23 @@ namespace darmok::editor
 
     expected<void, std::string> EditorProject::render() noexcept
     {
+        const char* confirmNewPopup = "Confirm New Project";
+        const char* loadErrorPopup = "Scene Load Error";
+
         if (_requestReset)
         {
             _requestReset = false;
-            ImGui::OpenPopup(_confirmNewPopup);
+            ImGui::OpenPopup(confirmNewPopup);
         }
-        auto action = ImguiUtils::drawConfirmPopup(_confirmNewPopup, "Are you sure you want to create a new project?");
+        if (!_loadError.empty())
+        {
+            ImGui::OpenPopup(loadErrorPopup);
+        }
+        if (ImguiUtils::drawErrorPopup(loadErrorPopup, _loadError.c_str()))
+        {
+            _loadError.clear();
+        }
+        auto action = ImguiUtils::drawConfirmPopup(confirmNewPopup, "Are you sure you want to create a new project?");
         if (action == ConfirmPopupAction::Ok)
         {
             auto result = doResetScene();
@@ -187,8 +198,6 @@ namespace darmok::editor
         _scene->destroyEntity(entity);
         return true;
     }
-
-    const char* EditorProject::_confirmNewPopup = "Confirm New Project";
 
     void EditorProject::requestResetScene() noexcept
     {
@@ -235,7 +244,7 @@ namespace darmok::editor
         auto loadResult = _sceneLoader(_sceneDef, *_scene);
         if (!loadResult)
         {
-            return unexpected{ std::move(loadResult).error() };
+            _loadError = loadResult.error();
         }
         auto compResult = _app.getOrAddComponent<SceneAppComponent>();
         if (!compResult)

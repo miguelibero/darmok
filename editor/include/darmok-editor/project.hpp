@@ -225,12 +225,11 @@ namespace darmok::editor
         SceneDefinition _sceneDef;
 		SceneDefinitionWrapper _sceneDefWrapper;
         bool _requestReset;
-
+        std::string _loadError;
         std::filesystem::path _path;
         std::filesystem::path _exportPath;
 
         static const FileDialogOptions _dialogOptions;
-        static const char* _confirmNewPopup;
 
         expected<void, std::string> configureEditorScene(Scene& scene) noexcept;
 

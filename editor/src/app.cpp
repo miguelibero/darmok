@@ -355,6 +355,7 @@ namespace darmok::editor
                     ImGui::EndMenu();
                 }
                 ImGui::EndDisabled();
+                ImGui::EndMenu();
             }
             DARMOK_TRY(onMainMenuRender(MainMenuSection::Main));
             if (ImGui::BeginMenu("Help"))
@@ -369,6 +370,11 @@ namespace darmok::editor
             ImGui::EndMainMenuBar();
         }
         return result;
+    }
+
+    void EditorApp::showError(const std::string& error) noexcept
+    {
+        _errorPopup = error;
     }
 
     expected<void, std::string> EditorApp::onMainMenuRender(MainMenuSection section) noexcept
@@ -735,6 +741,16 @@ namespace darmok::editor
         focusNextWindowOnPlaybackChange(true);
         DARMOK_TRY_PREFIX(_playerView.render(), "player: ");
         DARMOK_TRY_PREFIX(_assetsView.render(), "assets: ");
+
+        static const char* errorPopupName = "Darmok Editor Error";
+        if (!_errorPopup.empty())
+        {
+            ImGui::OpenPopup(errorPopupName);
+        }
+        if (ImguiUtils::drawErrorPopup(errorPopupName, _errorPopup.c_str()))
+        {
+            _errorPopup.clear();
+        }
 
         return {};
     }

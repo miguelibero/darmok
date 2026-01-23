@@ -1,5 +1,6 @@
 #include <darmok-editor/inspector/scene.hpp>
 #include <darmok-editor/utils.hpp>
+#include <darmok-editor/app.hpp>
 #include <darmok/scene_serialize.hpp>
 #include <darmok/scene_assimp.hpp>
 #include <imgui.h>
@@ -50,14 +51,27 @@ namespace darmok::editor
         {
             auto& assets = getProject().getAssets();
             AssimpSceneDefinitionConverter::ImportConfig importConfig;
-            AssimpSceneDefinitionConverter converter{ *_fileInput.scene, scene, importConfig, assets.getAllocator() };
+            importConfig.set_embed_textures(true);
+            importConfig.mutable_program()->set_standard(Program::Standard::Forward);
+            importConfig.mutable_program_source()->set_standard(Program::Standard::Forward);
+            FileDataLoader dataLoader;
+            dataLoader.setAbsolutePathsAllowed(true);
+            dataLoader.setBasePath(_fileInput.path.parent_path());
+            dataLoader.addRootPath(_fileInput.path.parent_path());
+            ImageTextureSourceLoader texLoader{ dataLoader };
+            ProgramSourceLoader progLoader{ dataLoader };
+
+            AssimpSceneDefinitionConverter converter{ *_fileInput.scene, scene, importConfig, assets.getAllocator(), texLoader, progLoader };
             auto convertResult = converter();
             if (!convertResult)
             {
-                return unexpected{ std::move(convertResult).error() };
+                getApp().showError(convertResult.error());
+            }
+            else
+            {
+                changed = true;
             }
         }
-        changed |= fileResult.value();
 
         return changed;
     }

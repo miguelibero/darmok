@@ -126,7 +126,8 @@ namespace darmok::editor
         bool beginFrame(const char* name) noexcept;
         void endFrame() noexcept;
 
-        ConfirmPopupAction drawConfirmPopup(const char* name, const char* text) noexcept;
+        ConfirmPopupAction drawConfirmPopup(const char* title, const char* text) noexcept;
+        bool drawErrorPopup(const char* title, const char* text) noexcept;
         glm::uvec2 getAvailableContentRegion() noexcept;
     };
 

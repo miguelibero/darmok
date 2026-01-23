@@ -625,15 +625,19 @@ namespace darmok::editor
         return pressed;
     }
 
-    ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* name, const char* text) noexcept
+    ConfirmPopupAction ImguiUtils::drawConfirmPopup(const char* title, const char* text) noexcept
     {
         auto action = ConfirmPopupAction::None;
 
-        if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        ImGui::SetNextWindowSize(ImVec2{ 400, 0 }, ImGuiCond_Always);
+        if (ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text("%s", text);
+            ImGui::TextColored(ImVec4{ 1, 0.25f, 0.25f, 1.0f }, title);
             ImGui::Separator();
+            ImGui::TextWrapped("%s", text);
+            ImGui::Spacing();
 
+            ImGui::SetItemDefaultFocus();
             if (ImGui::Button("Ok"))
             {
                 ImGui::CloseCurrentPopup();
@@ -651,6 +655,29 @@ namespace darmok::editor
             ImGui::EndPopup();
         }
         return action;
+    }
+
+    bool ImguiUtils::drawErrorPopup(const char* title, const char* text) noexcept
+    {
+        ImGui::SetNextWindowSize(ImVec2{ 400, 0 }, ImGuiCond_Always);
+        if (ImGui::BeginPopupModal(title, nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextColored(ImVec4{ 1, 0.25f, 0.25f, 1.0f }, title);
+            ImGui::Separator();
+            ImGui::TextWrapped("%s", text);
+            ImGui::Spacing();
+
+            ImGui::SetItemDefaultFocus();
+            auto result = ImGui::Button("OK", ImVec2{ 120, 0 });
+            if(result)
+            {
+               ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+            return result;
+        }
+        return false;
     }
 
     void ImguiUtils::drawError(const char* msg) noexcept
