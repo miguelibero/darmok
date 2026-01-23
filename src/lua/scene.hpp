@@ -149,11 +149,5 @@ namespace darmok
 		static std::reference_wrapper<SceneAppComponent> addAppComponent1(App& app);
 		static std::reference_wrapper<SceneAppComponent> addAppComponent2(App& app, const std::shared_ptr<Scene>& scene);
 		static OptionalRef<SceneAppComponent>::std_t getAppComponent(App& app) noexcept;
-		static std::shared_ptr<Scene> getScene1(const SceneAppComponent& comp) noexcept;
-		static std::shared_ptr<Scene> getScene2(const SceneAppComponent& comp, size_t i) noexcept;
-		static std::shared_ptr<Scene> addScene1(SceneAppComponent& comp) noexcept;
-		static void addScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept;
-		static void setScene1(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept;
-		static void setScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene, size_t i) noexcept;
 	};
 }

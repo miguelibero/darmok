@@ -842,34 +842,22 @@ namespace darmok
 
     SceneAppComponent::SceneAppComponent(const std::shared_ptr<Scene>& scene) noexcept
         : _paused{ false }
+        , _scene{ scene ? scene : std::make_shared<Scene>() }
     {
-        _scenes.push_back(scene ? scene : std::make_shared<Scene>());
     }
 
-    std::shared_ptr<Scene> SceneAppComponent::getScene(size_t i) const noexcept
+    std::shared_ptr<Scene> SceneAppComponent::getScene() const noexcept
     {
-        if (i < 0 || i >= _scenes.size())
-        {
-            return nullptr;
-        }
-        return _scenes[i];
+        return _scene;
     }
 
-    expected<void, std::string> SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene, size_t i) noexcept
+    expected<void, std::string> SceneAppComponent::setScene(const std::shared_ptr<Scene>& scene) noexcept
     {
-        if (i < 0)
-        {
-            return unexpected<std::string>{"invalid index"};
-        }
         if (!scene)
         {
             return unexpected<std::string>{"empty scene"};
         }
-        if (i >= _scenes.size())
-        {
-            _scenes.resize(i + 1);
-        }
-        auto& oldScene = _scenes[i];
+        auto& oldScene = _scene;
         if (_app && oldScene)
         {
             auto result = oldScene->getImpl().shutdown();
@@ -878,7 +866,7 @@ namespace darmok
                 return result;
 			}
         }
-        _scenes[i] = scene;
+        _scene = scene;
         if (_app)
         {
             auto result = scene->getImpl().init(*_app);
@@ -888,39 +876,6 @@ namespace darmok
             }
         }
         return {};
-    }
-
-    std::shared_ptr<Scene> SceneAppComponent::addScene() noexcept
-    {
-        auto scene = std::make_shared<Scene>();
-        if (!addScene(scene))
-        {
-            return nullptr;
-        }
-        return scene;
-    }
-
-    expected<void, std::string> SceneAppComponent::addScene(const std::shared_ptr<Scene>& scene) noexcept
-    {
-        if (!scene)
-        {
-            return unexpected<std::string>{"empty scene"};
-        }
-        _scenes.push_back(scene);
-        if (_app)
-        {
-            auto result = scene->getImpl().init(*_app);
-            if (!result)
-            {
-                return result;
-            }
-        }
-        return {};
-    }
-
-    const SceneAppComponent::Scenes& SceneAppComponent::getScenes() const noexcept
-    {
-        return _scenes;
     }
 
     bool SceneAppComponent::isPaused() const noexcept
@@ -945,59 +900,23 @@ namespace darmok
             }
         }
         _app = app;
-		std::vector<std::string> errors;
-        for(auto& scene : _scenes)
-        {
-            auto result = scene->getImpl().init(app);
-            if(!result)
-            {
-                errors.push_back(std::move(result).error());
-			}
-        }
-        return StringUtils::joinExpectedErrors(errors);
+        return _scene->getImpl().init(app);
     }
 
     expected<bgfx::ViewId, std::string> SceneAppComponent::renderReset(bgfx::ViewId viewId) noexcept
     {
-        for (auto& scene : _scenes)
-        {
-            auto result = scene->getImpl().renderReset(viewId);
-            if(!result)
-            {
-                return result;
-			}
-			viewId = result.value();
-        }
-        return viewId;
+        return _scene->getImpl().renderReset(viewId);
     }
 
     expected<void, std::string> SceneAppComponent::render() noexcept
     {
-        std::vector<std::string> errors;
-        for (auto& scene : _scenes)
-        {
-            auto result = scene->getImpl().render();
-            if (!result)
-            {
-                errors.push_back(std::move(result).error());
-            }
-        }
-        return StringUtils::joinExpectedErrors(errors);
+        return _scene->getImpl().render();
     }
 
     expected<void, std::string> SceneAppComponent::shutdown() noexcept
     {
         _app = nullptr;
-        std::vector<std::string> errors;
-        for (auto itr = _scenes.rbegin(); itr != _scenes.rend(); ++itr)
-        {
-            auto result = (*itr)->getImpl().shutdown();
-            if (!result)
-            {
-                errors.push_back(std::move(result).error());
-            }
-        }
-        return StringUtils::joinExpectedErrors(errors);
+        return _scene->getImpl().shutdown();
     }
 
     expected<void, std::string> SceneAppComponent::update(float deltaTime) noexcept
@@ -1006,15 +925,6 @@ namespace darmok
         {
             return {};
         }
-        std::vector<std::string> errors;
-        for (auto& scene : _scenes)
-        {
-            auto result = scene->getImpl().update(deltaTime);
-            if (!result)
-            {
-                errors.push_back(std::move(result).error());
-            }
-        }
-        return StringUtils::joinExpectedErrors(errors);
+        return _scene->getImpl().update(deltaTime);
     }
 }

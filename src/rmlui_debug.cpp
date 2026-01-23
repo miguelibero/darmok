@@ -63,13 +63,11 @@ namespace darmok
             return;
         }
 
-        for (auto scene : comp->getScenes())
+        auto scene = comp->getScene();
+        auto view = scene->getComponents<RmluiCanvas>();
+        for (auto [entity, canvas] : view.each())
         {
-            auto view = scene->getComponents<RmluiCanvas>();
-            for (auto [entity, canvas] : view.each())
-            {
-                _canvases.emplace_back(canvas);
-            }
+            _canvases.emplace_back(canvas);
         }
     }
 

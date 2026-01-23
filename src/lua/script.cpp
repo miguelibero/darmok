@@ -109,17 +109,15 @@ end
 			_luaView = *_lua;
 		}
 		_scene = scene;
-		auto appScenesResult = app.getOrAddComponent<SceneAppComponent>();
-		if (!appScenesResult)
+		auto appSceneResult = app.getOrAddComponent<SceneAppComponent>();
+		if (!appSceneResult)
 		{
-			return unexpected{ std::move(appScenesResult).error() };
+			return unexpected{ std::move(appSceneResult).error() };
 		}
-		for (auto scenePtr : appScenesResult.value().get().getScenes())
+		auto scenePtr = appSceneResult.value().get().getScene();
+		if (&*scenePtr == &scene)
 		{
-			if (&*scenePtr == &scene)
-			{
-				_scenePtr = scenePtr;
-			}
+			_scenePtr = scenePtr;
 		}
 
 		scene.onConstructComponent<LuaScript>().connect<&LuaScriptRunner::onScriptConstructed>(*this);

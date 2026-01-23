@@ -438,36 +438,6 @@ namespace darmok
 		return app.getComponent<SceneAppComponent>();
 	}
 
-	std::shared_ptr<Scene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept
-	{
-		return getScene2(comp, 0);
-	}
-
-	std::shared_ptr<Scene>LuaSceneAppComponent::getScene2(const SceneAppComponent& comp, size_t i) noexcept
-	{
-		return comp.getScene(i);
-	}
-
-	void LuaSceneAppComponent::setScene1(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept
-	{
-		setScene2(comp, scene, 0);
-	}
-
-	void LuaSceneAppComponent::setScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene, size_t i) noexcept
-	{
-		LuaUtils::unwrapExpected(comp.setScene(scene, i), "setting scene");
-	}
-
-	std::shared_ptr<Scene> LuaSceneAppComponent::addScene1(SceneAppComponent& comp) noexcept
-	{
-		return comp.addScene();
-	}
-
-	void LuaSceneAppComponent::addScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept
-	{
-		LuaUtils::unwrapExpected(comp.addScene(scene), "setting scene");
-	}
-
 	void LuaSceneAppComponent::bind(sol::state_view& lua) noexcept
 	{
 		lua.new_usertype<SceneAppComponent>("SceneAppComponent",
@@ -478,10 +448,7 @@ namespace darmok
 				&LuaSceneAppComponent::addAppComponent2
 			),
 			"get_app_component", &LuaSceneAppComponent::getAppComponent,
-			"scene", sol::property(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::setScene1),
-			"get_scene", sol::overload(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::getScene2),
-			"set_scene", sol::overload(&LuaSceneAppComponent::setScene1, &LuaSceneAppComponent::setScene2),
-			"add_scene", sol::overload(&LuaSceneAppComponent::addScene1, &LuaSceneAppComponent::addScene2),
+			"scene", sol::property(&SceneAppComponent::getScene, &SceneAppComponent::setScene),
 			"paused", sol::property(&SceneAppComponent::isPaused, &SceneAppComponent::setPaused)
 		);
 	}
