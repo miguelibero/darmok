@@ -27,6 +27,7 @@ namespace darmok
         using Any = google::protobuf::Any;
         using RegistryComponents = protobuf::RegistryComponents;
         using Transform = protobuf::Transform;
+        using Prefab = protobuf::Prefab;
 
         ConstSceneDefinitionWrapper(const Definition& def) noexcept;
         const std::string& getName() const noexcept;
@@ -44,6 +45,8 @@ namespace darmok
         OptionalRef<const Any> getComponent(EntityId entity, IdType typeId) const noexcept;
 		EntityId getEntity(const Any& anyComp) const noexcept;
 		bool hasComponent(EntityId entity, IdType typeId) const noexcept;
+        size_t getComponentCount(IdType typeId) const noexcept;
+		bool empty() const noexcept;
 
         std::optional<std::filesystem::path> getAssetPath(const Any& anyAsset) const noexcept;
         std::vector<std::filesystem::path> getAssetPaths(IdType typeId) const noexcept;
@@ -70,6 +73,12 @@ namespace darmok
         bool hasSceneComponent() const noexcept
         {
             return hasSceneComponent(protobuf::getTypeId<T>());
+        }
+
+        template<typename T>
+        size_t getComponentCount() const noexcept
+        {
+            return getComponentCount(protobuf::getTypeId<T>());
         }
 
         template<typename T>
@@ -236,6 +245,7 @@ namespace darmok
         using Message = google::protobuf::Message;
         using Any = google::protobuf::Any;
         using RegistryComponents = protobuf::RegistryComponents;
+		using Prefab = protobuf::Prefab;
 
         SceneDefinitionWrapper(Definition& def) noexcept;
         void setName(std::string_view name) noexcept;
@@ -243,6 +253,7 @@ namespace darmok
         bool setSceneComponent(const Message& comp) noexcept;
 		bool removeSceneComponent(IdType typeId) noexcept;
         std::vector<std::reference_wrapper<Any>> getSceneComponents() noexcept;
+        void clearSceneComponents() noexcept;
 
         EntityId createEntity() noexcept;
         bool setAsset(const std::filesystem::path& path, const Message& asset) noexcept;
@@ -254,12 +265,17 @@ namespace darmok
         bool destroyEntity(EntityId entity) noexcept;
         bool removeComponent(EntityId entity, IdType typeId) noexcept;
         bool removeComponent(const Any& anyComp) noexcept;
+        void clearEntities() noexcept;
 
         std::unordered_map<std::filesystem::path, OptionalRef<Any>> getAssets(IdType typeId = 0) noexcept;
         std::unordered_map<std::filesystem::path, OptionalRef<Any>> getAssets(const std::filesystem::path& parentPath) noexcept;
         OptionalRef<Any> getAsset(const std::filesystem::path& path);
         bool removeAsset(const std::filesystem::path& path) noexcept;
         bool removeAsset(const Any& anyAsset) noexcept;
+		void clearAssets() noexcept;
+
+        void applyPrefabs() noexcept;
+		void applyPrefab(const Definition& prefab, EntityId parentEntity = nullEntityId) noexcept;
 
         template<typename T>
         bool removeSceneComponent() noexcept
@@ -280,6 +296,12 @@ namespace darmok
             }
             setSceneComponent(comp);
             return comp;
+        }
+
+        template<typename T>
+        std::unordered_map<EntityId, T> getTypeComponents() const noexcept
+        {
+			return ConstSceneDefinitionWrapper::getTypeComponents<T>();
         }
 
         template<typename T>
@@ -508,7 +530,7 @@ namespace darmok
             auto comp = getScene().getComponent<T>(entity);
             if(!comp)
             {
-                return unexpected<std::string>{"Missing scene component"};
+                return unexpected<std::string>{"Missing entity component"};
 			}
 
 			using Def = T::Definition;
@@ -589,6 +611,8 @@ namespace darmok
             };
             addLoad(std::move(func));
         }
+
+		void reload() noexcept;
 
         EntityResult operator()(const Definition& sceneDef, Scene& scene) noexcept;
 

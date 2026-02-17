@@ -161,6 +161,27 @@ namespace darmok::editor
             return result;
         }
 
+        template<typename Def>
+        expected<bool, std::string> drawEntityComponentDefinitionMenu(const char* name, const Def& def = {}) noexcept
+        {
+            ImGui::BeginDisabled(!canAddEntityComponent(protobuf::getTypeId<Def>()));
+            expected<bool, std::string> result{ false };
+            if (ImGui::MenuItem(name))
+            {
+                auto entity = _inspectorView.getSelectedEntity();
+                if (auto addResult = _proj.addEntityComponentDefinition<Def>(entity, def))
+                {
+                    result = true;
+                }
+                else
+                {
+                    result = unexpected{ std::move(addResult).error() };
+                }
+            }
+            ImGui::EndDisabled();
+            return result;
+        }
+
         template<typename T, typename Def = T::Definition>
         expected<bool, std::string> drawCameraComponentMenu(const char* name, const Def& def = T::createDefinition()) noexcept
         {

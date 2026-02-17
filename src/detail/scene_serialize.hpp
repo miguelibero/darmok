@@ -36,6 +36,7 @@ namespace darmok
         Entity getEntity(EntityId entityId) const noexcept override;
 
         // SceneLoader
+        void reload() noexcept;
         EntityResult load(const Scene::Definition& sceneDef, Scene& scene) noexcept;
         void operator()(std::underlying_type_t<Entity>& count) noexcept;
         void operator()(Entity& entity) noexcept;
@@ -51,6 +52,7 @@ namespace darmok
 
 		AssetPack& getAssetPack() noexcept;
         const AssetPack& getAssetPack() const noexcept;
+        void reloadAssets() noexcept;
         void setParent(Entity entity) noexcept;
         void setAssetPackConfig(AssetPackConfig assetConfig) noexcept;
         void addComponentListener(ComponentListener func) noexcept;
@@ -59,9 +61,9 @@ namespace darmok
 
     private:
         static Scene _emptyScene;
-        static const Definition _emptySceneDef;
         OptionalRef<Scene> _scene;     
-        OptionalRef<const Definition> _sceneDef;
+        OptionalRef<const Definition> _sceneDefRef;
+        Definition _sceneDef;
         Entity _parentEntity;
         std::vector<ComponentListener> _compListeners;
         AssetPackConfig _assetConfig;

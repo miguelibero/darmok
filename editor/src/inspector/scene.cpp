@@ -47,6 +47,9 @@ namespace darmok::editor
         {
             return unexpected{ std::move(fileResult).error() };
         }
+
+        SceneDefinitionWrapper wrapper{ scene };
+
         if (fileResult.value() && _fileInput.scene)
         {
             auto& assets = getProject().getAssets();
@@ -61,6 +64,7 @@ namespace darmok::editor
             ImageTextureSourceLoader texLoader{ dataLoader };
             ProgramSourceLoader progLoader{ dataLoader };
 
+			scene = Scene::Definition{};
             AssimpSceneDefinitionConverter converter{ *_fileInput.scene, scene, importConfig, assets.getAllocator(), texLoader, progLoader };
             auto convertResult = converter();
             if (!convertResult)
@@ -71,6 +75,12 @@ namespace darmok::editor
             {
                 changed = true;
             }
+        }
+
+		auto transCount = wrapper.getComponentCount<protobuf::Transform>();
+        if (transCount > 0)
+        {
+			ImGui::Text("%d transforms", transCount);
         }
 
         return changed;

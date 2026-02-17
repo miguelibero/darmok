@@ -43,7 +43,7 @@ namespace darmok::editor
         std::optional<std::string> getAssetDragType(uint32_t assetType) const noexcept;
         std::optional<std::string> getAssetTypeName(uint32_t assetType) const noexcept;
 
-        std::filesystem::path addAsset(const Message& msg) noexcept;
+        std::filesystem::path getNewAssetPath(const Message& asset) noexcept;
 
     private:
         OptionalRef<SceneDefinitionWrapper> _scene;

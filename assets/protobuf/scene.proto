@@ -24,6 +24,10 @@ message Transform {
     optional uint32 parent = 5;
 }
 
+message Prefab {
+    string scene_path = 2;
+}
+
 message LuaScript {
     string content = 1;
 }

@@ -268,13 +268,13 @@ namespace darmok
         {
             return result;
         }
-		std::vector<std::string> errors;
+        std::vector<std::string> errors;
         for (auto& comp : copySceneComponents())
         {
             auto result = comp->init(_scene, app);
             if (!result)
             {
-				errors.push_back(std::move(result).error());
+                errors.push_back(std::move(result).error());
             }
         }
 
@@ -330,13 +330,13 @@ namespace darmok
     expected<void, std::string> SceneImpl::render() noexcept
     {
         auto& cams = _registry.storage<Camera>();
-		std::vector<std::string> errors;
+        std::vector<std::string> errors;
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
             auto result = itr->render();
             if (!result)
             {
-				errors.push_back(std::move(result).error());
+                errors.push_back(std::move(result).error());
             }
         }
         auto result = _renderChain.render();
@@ -376,10 +376,10 @@ namespace darmok
     expected<bgfx::ViewId, std::string> SceneImpl::renderReset(bgfx::ViewId viewId) noexcept
     {
         auto beforeResult = _renderChain.beforeRenderReset(viewId);
-        if(!beforeResult)
+        if (!beforeResult)
         {
             return unexpected{ std::move(beforeResult).error() };
-		}
+        }
 
         viewId = beforeResult.value();
 
@@ -390,11 +390,11 @@ namespace darmok
             if (!result)
             {
                 return result;
-			}
-			viewId = result.value();
+            }
+            viewId = result.value();
         }
 
-        // iteration in reverse to maintain the order in wich the cameras where added
+        // iteration in reverse to maintain the order in which the cameras where added
         auto& cams = _registry.storage<Camera>();
         for (auto itr = cams.rbegin(), last = cams.rend(); itr != last; ++itr)
         {
@@ -411,7 +411,7 @@ namespace darmok
         {
             return result;
         }
-		viewId = result.value();
+        viewId = result.value();
         return viewId;
     }
 
@@ -421,10 +421,10 @@ namespace darmok
         if (destroyChildren)
         {
             _scene.forEachChild(entity, [&entities](auto entity, auto& /* trans */)
-            {
-                entities.push_back(entity);
-                return false;
-            });
+                {
+                    entities.push_back(entity);
+                    return false;
+                });
         }
         else
         {
@@ -464,7 +464,7 @@ namespace darmok
             _pendingDestroyFilter.elements.clear();
             destroyEntitiesImmediate(filter);
         }
-        if(!_pendingDestroy.empty())
+        if (!_pendingDestroy.empty())
         {
             auto entities(_pendingDestroy);
             _pendingDestroy.clear();
@@ -531,10 +531,10 @@ namespace darmok
         if (destroyChildren)
         {
             _scene.forEachChild(entity, [this](auto entity, auto& /* trans */)
-            {
-                _pendingDestroy.insert(entity);
-                return false;
-            });
+                {
+                    _pendingDestroy.insert(entity);
+                    return false;
+                });
         }
     }
 
@@ -556,7 +556,7 @@ namespace darmok
     }
 
     Scene::Scene() noexcept
-    : _impl(std::make_unique<SceneImpl>(*this))
+        : _impl{ std::make_unique<SceneImpl>(*this) }
     {
     }
 

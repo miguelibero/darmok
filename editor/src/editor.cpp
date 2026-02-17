@@ -86,7 +86,6 @@ namespace darmok::editor
     Entity BaseObjectEditor::getEntity(EntityId entityId) const noexcept
     {
         return getProject().getComponentLoadContext().getEntity(entityId);
-
     }
 
     std::optional<std::filesystem::path> BaseObjectEditor::getAssetPath(const Any& anyAsset) const noexcept

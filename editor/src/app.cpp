@@ -47,11 +47,7 @@ namespace darmok::editor
 
     expected<int32_t, std::string> EditorApp::setup(const CmdArgs& args) noexcept
     {
-        auto inspectorResult = _inspectorView.setup();
-        if (!inspectorResult)
-        {
-            return unexpected{ std::move(inspectorResult).error() };
-        }
+        DARMOK_TRY(_inspectorView.setup());
 
         CLI::App cli{ "darmok editor" };
         std::string version = "VERSION " DARMOK_VERSION;
@@ -78,22 +74,12 @@ namespace darmok::editor
         win.requestTitle("darmok editor");
         _app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-        auto imguiResult = _app.getOrAddComponent<ImguiAppComponent>(*this);
-        if(!imguiResult)
-        {
-            return unexpected{"failed to add imgui component: " + imguiResult.error()};
-		}
-        _imgui = imguiResult.value();
-        
-        auto projResult = _proj.init(_progCompConfig);
-        if(!projResult)
-        {
-            return unexpected{"failed to initialize project: " + projResult.error()};
-		}
-        DARMOK_TRY(_sceneView.init(_proj.getScene(), _proj.getCamera().value()));
-        DARMOK_TRY(_playerView.init(_proj.getScene()));
-        DARMOK_TRY(_inspectorView.init(*this));;
-        DARMOK_TRY(_assetsView.init(_proj.getSceneDefinition(), *this));
+        DARMOK_TRY_VALUE_PREFIX(_imgui, _app.getOrAddComponent<ImguiAppComponent>(*this), "imgui component: ");
+        DARMOK_TRY_PREFIX(_proj.init(_progCompConfig), "project: ");
+        DARMOK_TRY_PREFIX(_sceneView.init(_proj.getScene(), _proj.getCamera().value()), "scene view: ");
+        DARMOK_TRY_PREFIX(_playerView.init(_proj.getScene()), "player view: ");
+        DARMOK_TRY_PREFIX(_inspectorView.init(*this), "inspector view: ");
+        DARMOK_TRY_PREFIX(_assetsView.init(_proj.getSceneDefinition(), *this), "assets view: ");
 
         std::vector<std::string> compErrors;
         for (auto& comp : _comps)
@@ -265,11 +251,7 @@ namespace darmok::editor
             {
                 if (ImGui::MenuItem("Add Entity"))
                 {
-                    auto entityResult = _proj.addEntity(_inspectorView.getSelectedEntity());
-                    if (!entityResult)
-                    {
-                        result = unexpected{ std::move(entityResult).error() };
-                    }
+                    DARMOK_TRY(_proj.addEntity(_inspectorView.getSelectedEntity()));
                 }
                 DARMOK_TRY(onMainMenuRender(MainMenuSection::Edit));
                 ImGui::EndMenu();
@@ -296,6 +278,7 @@ namespace darmok::editor
                     if (ImGui::BeginMenu("Add"))
                     {
                         DARMOK_TRY(drawEntityComponentMenu<Renderable>("Renderable"));
+                        DARMOK_TRY(drawEntityComponentDefinitionMenu<protobuf::Prefab>("Prefab"));
                         DARMOK_TRY(drawEntityComponentMenu<Camera>("Camera"));
                         DARMOK_TRY(drawEntityComponentMenu<LuaScript>("Lua Script"));
                         if (ImGui::BeginMenu("Light"))
@@ -395,7 +378,8 @@ namespace darmok::editor
     {
         if (ImGui::MenuItem(name))
         {
-            _assetsView.addAsset(asset);
+            auto path = _assetsView.getNewAssetPath(asset);
+            path = _proj.addAsset(path, asset);
             return true;
         }
         return false;
@@ -757,16 +741,8 @@ namespace darmok::editor
 
     expected<void, std::string> EditorApp::update(float deltaTime) noexcept
     {
-        auto result = _sceneView.update(deltaTime);
-        if (!result)
-        {
-            return result;
-        }
-        result = _playerView.update(deltaTime);
-        if (!result)
-        {
-            return result;
-        }
+        DARMOK_TRY(_sceneView.update(deltaTime));
+        DARMOK_TRY(_playerView.update(deltaTime));
         return {};
     }
 

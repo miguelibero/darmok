@@ -177,12 +177,12 @@ namespace darmok::editor
         return std::nullopt;
     }
 
-    std::filesystem::path EditorAssetsView::addAsset(const Message& msg) noexcept
+    std::filesystem::path EditorAssetsView::getNewAssetPath(const Message& asset) noexcept
     {
         auto path = _currentPath;
-        auto name = getAssetTypeName(protobuf::getTypeId(msg)).value_or("asset");
+        auto name = getAssetTypeName(protobuf::getTypeId(asset)).value_or("asset");
         path = path / name;
-        return _scene->addAsset(path.lexically_normal(), msg);
+        return path.lexically_normal();
     }
 
     std::optional<std::string> EditorAssetsView::getAssetDragType(uint32_t assetType) const noexcept

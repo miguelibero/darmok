@@ -17,6 +17,8 @@ namespace darmok::editor
     class EditorProject final
     {
     public:
+        using Message = google::protobuf::Message;
+
         EditorProject(App& app) noexcept;
 
         expected<void, std::string> init(const ProgramCompilerConfig& progCompilerConfig) noexcept;
@@ -61,6 +63,13 @@ namespace darmok::editor
             auto entity = context.getEntity(entityId);
             auto& comp = _scene->getOrAddComponent<T>(entity);
             return SceneArchive::loadComponent(comp, def, context);
+        }
+
+        template<typename Def>
+        expected<void, std::string> addEntityComponentDefinition(EntityId entityId, const Def& def) noexcept
+        {
+            _sceneDefWrapper.setComponent(entityId, def);
+            return {};
         }
         
         template<typename T, typename Def = T::Definition>
@@ -183,6 +192,10 @@ namespace darmok::editor
             }
             auto& context = getComponentLoadContext();
             auto entity = context.getEntity(entityId);
+			if (!_scene->isValidEntity(entity))
+            {
+                return unexpected<std::string>{"entity does not exist in scene"};
+            }
             auto& comp = _scene->getOrAddComponent<T>(entity);
             return SceneArchive::loadComponent(comp, def, context);
         }
@@ -205,6 +218,11 @@ namespace darmok::editor
             return SceneArchive::loadComponent(compResult.value().get(), def, context);
         }
 
+        expected<void, std::string> updatePrefab(EntityId entityId, const std::string& scenePath) noexcept;
+        expected<void, std::string> removePrefab(EntityId entityId) noexcept;
+
+        std::filesystem::path addAsset(const std::filesystem::path& path, const Message& asset) noexcept;
+
         std::shared_ptr<Scene> getScene() noexcept;
         std::shared_ptr<const Scene> getScene() const noexcept;
         SceneDefinitionWrapper& getSceneDefinition() noexcept;
@@ -214,6 +232,7 @@ namespace darmok::editor
         IComponentLoadContext& getComponentLoadContext() noexcept;
         const IComponentLoadContext& getComponentLoadContext() const noexcept;
         AssetPack& getAssets() noexcept;
+        const AssetPack& getAssets() const noexcept;
 
     private:
         App& _app;

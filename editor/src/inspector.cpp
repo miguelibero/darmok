@@ -40,6 +40,7 @@ namespace darmok::editor
         DARMOK_TRY(addEditor<SpotLightInspectorEditor>());
         DARMOK_TRY(addEditor<AmbientLightInspectorEditor>());
         DARMOK_TRY(addEditor<RenderableInspectorEditor>());
+        DARMOK_TRY(addEditor<PrefabInspectorEditor>());
         DARMOK_TRY(addEditor<CubeInspectorEditor>());
         DARMOK_TRY(addEditor<SphereInspectorEditor>());
         DARMOK_TRY(addEditor<CapsuleInspectorEditor>());

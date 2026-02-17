@@ -7,6 +7,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/scene_serialize.hpp>
+#include "detail/scene.hpp"
 
 using namespace entt::literals;
 
