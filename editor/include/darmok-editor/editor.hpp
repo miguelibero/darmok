@@ -74,7 +74,7 @@ namespace darmok::editor
 
         std::string getTitle() const noexcept override
         {
-            return T::descriptor()->name();
+            return std::string{ T::descriptor()->name() };
         }
 
         std::string getObjectTypeUrl() const noexcept override

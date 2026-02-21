@@ -454,7 +454,7 @@ namespace darmok
 
         IdType getTypeId(const Descriptor& desc) noexcept
         {
-            return static_cast<IdType>(std::hash<std::string>{}(desc.full_name()));
+            return static_cast<IdType>(std::hash<std::string_view>{}(desc.full_name()));
         }
 
         std::string getFullName(const Message& msg) noexcept
@@ -468,7 +468,7 @@ namespace darmok
                 }
                 return fullName;
             }
-            return msg.GetDescriptor()->full_name();
+            return std::string{ msg.GetDescriptor()->full_name() };
         }
 
         std::string getTypeUrl(const Message& msg) noexcept
@@ -482,7 +482,7 @@ namespace darmok
 
         std::string getTypeUrl(const Descriptor& desc) noexcept
         {
-            return std::string{ typeUrlPrefix } + desc.full_name();
+            return std::string{ typeUrlPrefix } + std::string{ desc.full_name() };
         }
 
         bool isAny(const Message& msg) noexcept
@@ -493,11 +493,11 @@ namespace darmok
         std::vector<std::string> getEnumValues(const google::protobuf::EnumDescriptor& enumDesc) noexcept
         {
             std::vector<std::string> values;
-            auto prefix = enumDesc.full_name() + "_";
+            auto prefix = std::string{ enumDesc.full_name() } + "_";
             values.reserve(enumDesc.value_count());
             for (int i = 0; i < enumDesc.value_count(); ++i)
             {
-                auto value = enumDesc.value(i)->name();
+                auto value = std::string{ enumDesc.value(i)->name() };
                 if (StringUtils::startsWith(value, prefix))
                 {
                     value = value.substr(prefix.size());

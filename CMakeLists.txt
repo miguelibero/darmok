@@ -803,13 +803,12 @@ if(DARMOK_BUILD_LUA)
   target_compile_definitions(${LIB_NAME} PRIVATE
     $<$<CONFIG:Debug>:LUA_PATH=${LUA_PATH_DEFINE}>
     $<$<CONFIG:Debug>:LUA_CPATH=${LUA_CPATH_DEFINE}>
-  )  
+  )
 
   find_package(sol2 CONFIG REQUIRED)
-  set(SOL_DEFINES LUA_USE_APICHECK SOL_ALL_SAFETIES_ON=1)
-  find_path(SOL2_INCLUDE_DIRS "sol/abort.hpp")
-  target_include_directories(${LIB_NAME} PRIVATE ${SOL2_INCLUDE_DIRS})
+  set(SOL_DEFINES SOL_LUA_VERSION=505 LUA_USE_APICHECK SOL_ALL_SAFETIES_ON=1)
   target_compile_definitions(${LIB_NAME} PUBLIC ${SOL_DEFINES})
+  target_link_libraries(${LIB_NAME} PRIVATE sol2::sol2)
   list(APPEND VCPKG_MANIFEST_FEATURES "lua")
 
 endif()

@@ -259,7 +259,7 @@ namespace darmok::editor
             {
                 continue;
             }
-            auto label = field->name();
+            std::string label{ field->name() };
             auto itr = labels.find(label);
             if (itr == labels.end())
             {

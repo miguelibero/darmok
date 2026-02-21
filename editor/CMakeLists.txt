@@ -95,8 +95,9 @@ set_target_properties(${EDITOR_NAME}
   VS_DEBUGGER_COMMAND_ARGUMENTS "${EDITOR_ARGS}"
 )
 target_link_libraries(${EDITOR_NAME} PRIVATE darmok)
-
+darmok_copy_dynamic_libs(${EDITOR_NAME})
 target_compile_definitions(${EDITOR_NAME} PRIVATE "DARMOK_IMPLEMENT_MAIN=1")
+_darmok_analysis_setup(${EDITOR_NAME})
 
 target_sources(${EDITOR_NAME} PUBLIC FILE_SET HEADERS
   BASE_DIRS ${EDITOR_INCLUDE_BASE_DIR} FILES ${EDITOR_HEADERS})
