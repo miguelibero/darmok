@@ -153,7 +153,7 @@ namespace darmok
             return {};
         }
 
-        static const uint64_t state = BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_CULL_CCW;
+        static const uint64_t state = BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_CULL_CW;
 
         auto viewId = _viewId.value();
         auto& encoder = *bgfx::begin();

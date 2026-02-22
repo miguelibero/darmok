@@ -146,7 +146,7 @@ namespace darmok
         static const uint64_t renderState =
             BGFX_STATE_WRITE_Z
             | BGFX_STATE_DEPTH_TEST_LESS
-            | BGFX_STATE_CULL_CCW
+            | BGFX_STATE_CULL_CW
             ;
 
         auto scene = _renderer->getScene();

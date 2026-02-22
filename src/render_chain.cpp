@@ -629,11 +629,7 @@ namespace darmok
 		_uniformHandles.configure(encoder, _uniformValues);
 		_uniformHandles.configure(encoder, _uniformTextures);
 
-		uint64_t state = 0
-			| BGFX_STATE_WRITE_RGB
-			| BGFX_STATE_WRITE_A
-			| BGFX_STATE_BLEND_ALPHA
-			;
+		uint64_t state = BGFX_STATE_DEFAULT;
 		encoder.setState(state);
 		encoder.submit(viewId, _program->getHandle());
 
