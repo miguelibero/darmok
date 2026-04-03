@@ -1,5 +1,6 @@
 $input v_position, v_normal, v_tangent, v_texcoord0, v_viewDir
 
+#include <bgfx_shader.sh>
 #include <darmok_forward.sc>
 
 void main()

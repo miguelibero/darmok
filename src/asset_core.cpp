@@ -872,6 +872,11 @@ namespace darmok
 
     bool FileImporterImpl::operator()(std::ostream& log) const noexcept
     {
+        if (_inputPath.empty())
+        {
+            log << "no input path specified" << std::endl;
+            return false;
+        }
         for(auto& importer : _importers)
         {
             auto initResult = importer.second->init(log);
@@ -1011,7 +1016,7 @@ namespace darmok
         auto importResult = op.importer(op.input, config);
         if (!importResult)
         {
-            log << name << " error in import: " << importResult.error();
+            log << name << " error in import: " << importResult.error() << std::endl;
             config.outputStreams.clear();
             result.error = true;
         }

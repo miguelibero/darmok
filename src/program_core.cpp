@@ -456,7 +456,7 @@ namespace darmok
     {
         if (!fs::exists(_config.programConfig.shadercPath))
         {
-            return unexpected{ "could not find shaderc.exe" };
+            return unexpected{ "could not find shaderc" };
         }
         fs::path varyingPath = _config.varyingPath;
         auto inputDir = _config.path.parent_path();
@@ -536,7 +536,7 @@ namespace darmok
         for (auto& include : _config.programConfig.includePaths)
         {
             args.push_back("-i");
-            args.push_back(include);
+            args.push_back(fs::absolute(include));
         }
 
         auto r = Exec::run(args);

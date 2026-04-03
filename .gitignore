@@ -5,6 +5,7 @@ CMakeFiles/*
 [Tt]esting/*
 CMakeSettings.json
 **/vcpkg_installed/*
+.idea/*
 
 samples/build*/*
 samples/*/build*/*

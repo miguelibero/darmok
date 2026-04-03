@@ -60,12 +60,12 @@ namespace darmok
 
         std::ifstream createInputStream(const std::filesystem::path& path, Format format) noexcept
         {
-            int streamFlags = 0;
+            std::ios_base::openmode mode = std::ios::in;
             if (format == Format::Binary)
             {
-                streamFlags = std::ios::binary;
+                mode |= std::ios::binary;
             }
-            return std::ifstream(path, streamFlags);
+            return std::ifstream{path, mode};
         }
 
         std::pair<std::ofstream, Format> createOutputStream(const std::filesystem::path& path) noexcept
