@@ -22,6 +22,7 @@
 #include <darmok/culling.hpp>
 #include <darmok/environment.hpp>
 #include <darmok/shadow.hpp>
+#include <darmok/prefab.hpp>
 
 #include <fmt/format.h>
 
@@ -782,7 +783,6 @@ namespace darmok
     void SceneLoaderImpl::reload() noexcept
     {
         _sceneDef = _sceneDefRef ? *_sceneDefRef : Definition{};
-        SceneDefinitionWrapper{ _sceneDef }.applyPrefabs();
         createAssetPack();
     }
 
@@ -1002,6 +1002,7 @@ namespace darmok
         registerComponent<physics3d::PhysicsBody>();
         registerComponent<physics3d::CharacterController>();
         registerComponent<BoundingBox>();
+        registerComponent<Prefab>();
 
         registerCameraComponent<ForwardRenderer>();
         registerCameraComponent<DeferredRenderer>();

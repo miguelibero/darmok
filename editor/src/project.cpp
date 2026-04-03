@@ -348,16 +348,6 @@ namespace darmok::editor
         return {};
     }
 
-    expected<void, std::string> EditorProject::updatePrefab(EntityId entityId, const std::string& scenePath) noexcept
-    {
-        return updateScene();
-    }
-
-    expected<void, std::string> EditorProject::removePrefab(EntityId entityId) noexcept
-    {
-        return updateScene();
-    }
-
     std::filesystem::path EditorProject::addAsset(const std::filesystem::path& path, const Message& asset) noexcept
     {
 		auto fpath = _sceneDefWrapper.addAsset(path, asset);

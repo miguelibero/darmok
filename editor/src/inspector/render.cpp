@@ -2,9 +2,6 @@
 #include <darmok-editor/utils.hpp>
 #include <darmok-editor/app.hpp>
 #include <darmok/mesh.hpp>
-#include <darmok/app.hpp>
-
-#include <imgui.h>
 
 namespace darmok::editor
 {
@@ -40,7 +37,7 @@ namespace darmok::editor
 		return "Prefab";
 	}
 
-	PrefabInspectorEditor::RenderResult PrefabInspectorEditor::renderType(protobuf::Prefab& prefab) noexcept
+	PrefabInspectorEditor::RenderResult PrefabInspectorEditor::renderType(Prefab::Definition& prefab) noexcept
 	{
 		auto changed = false;
 		auto sceneDragType = getApp().getAssetDragType<Scene::Definition>().value_or("");
@@ -50,31 +47,5 @@ namespace darmok::editor
 			changed = true;
 		}
 		return changed;
-	}
-
-	PrefabInspectorEditor::RenderResult PrefabInspectorEditor::beforeRenderAny(Any& any, protobuf::Prefab& prefab) noexcept
-	{
-		_entityId = BaseObjectEditor::getEntityId(any);
-		return ObjectEditor<protobuf::Prefab>::beforeRenderAny(any, prefab);
-	}
-
-	PrefabInspectorEditor::RenderResult PrefabInspectorEditor::afterRenderAny(Any& any, protobuf::Prefab& prefab, bool changed) noexcept
-	{
-		if (!_entityId)
-		{
-			return unexpected{ "missing entity" };
-		}
-		auto entityId = *_entityId;
-		auto& proj = BaseObjectEditor::getProject();
-		if (ImGui::Button("Remove Component"))
-		{
-			DARMOK_TRY(proj.removePrefab(entityId));
-			changed = true;
-		}
-		else if (changed)
-		{
-			DARMOK_TRY(proj.updatePrefab(entityId, prefab.scene_path()));
-		}
-		return ObjectEditor<protobuf::Prefab>::afterRenderAny(any, prefab, changed);
 	}
 }

@@ -606,6 +606,8 @@ namespace darmok::editor
         {
             name = "Entity";
         }
+
+		name += "##" + std::to_string(entityId);
         
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
         auto children = scene.getChildren(entityId);
@@ -819,7 +821,7 @@ namespace darmok::editor
         auto itr = _fileInputResults.find(ptr);
         if (itr != _fileInputResults.end())
         {
-            if (itr->second)
+            if (itr->second && !itr->second.value().empty())
             {
                 path = itr->second.value()[0];
                 _fileInputResults.erase(itr);

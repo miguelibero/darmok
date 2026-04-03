@@ -19,13 +19,13 @@ namespace darmok::editor
 		bool changed = false;
 		MaterialDefinitionWrapper wrapper{ mat };
 		std::string assetPath = wrapper.getTexturePath(_type).value_or("");
-		auto action = ImguiUtils::drawTextureReferenceInput(_label.c_str(), assetPath, _tex, loader, maxPreviewSize);
+		auto tex = _textures[assetPath];
+		auto action = ImguiUtils::drawTextureReferenceInput(_label.c_str(), assetPath, tex, loader, maxPreviewSize);
 		if (action == ReferenceInputAction::Changed)
 		{
 			wrapper.setTexturePath(_type, assetPath);
 			changed = true;
 		}
-
 		return changed;
 	}
 

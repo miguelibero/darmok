@@ -4,6 +4,7 @@
 #include <darmok/texture.hpp>
 
 #include <memory>
+#include <unordered_map>
 
 namespace darmok::editor
 {
@@ -13,7 +14,7 @@ namespace darmok::editor
         std::string getTitle() const noexcept override;
         RenderResult renderType(Texture::Source& def) noexcept override;
     private:
-        std::shared_ptr<Texture> _tex;
+        std::unordered_map<std::size_t, std::shared_ptr<Texture>> _textures;
         static const glm::vec2 _maxPreviewSize;
     };
 }

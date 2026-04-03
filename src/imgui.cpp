@@ -210,9 +210,9 @@ namespace darmok
 					auto tex = _fontsTexture->getHandle();
 					auto program = _program->getHandle();
 
-					if (cmd->TextureId != 0)
+					if (cmd->TexRef.GetTexID() != 0)
 					{
-						const ImguiTextureData texData{ cmd->TextureId };
+						const ImguiTextureData texData{ cmd->TexRef.GetTexID() };
 						state |= 0 != (texData.alphaBlend)
 							? BGFX_STATE_BLEND_ALPHA
 							: BGFX_STATE_NONE

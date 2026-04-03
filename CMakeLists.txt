@@ -221,6 +221,7 @@ set(SOURCES
   freelook.cpp
   text.cpp
   environment.cpp
+  prefab.cpp
 )
 
 set(HEADERS
@@ -255,6 +256,7 @@ set(HEADERS
   freelook.hpp
   text.hpp
   environment.hpp
+  prefab.hpp
 )
 
 set(LUA_SOURCES
@@ -294,7 +296,7 @@ set(LUA_SOURCES
   protobuf.cpp
   skeleton.cpp
   freelook.cpp
-  coroutine.cpp 
+  coroutine.cpp
 )
 
 if(NOT DARMOK_PLATFORM)

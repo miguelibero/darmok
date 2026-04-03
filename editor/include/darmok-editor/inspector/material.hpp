@@ -21,7 +21,7 @@ namespace darmok::editor
     private:
 		std::string _label;
 		Material::TextureDefinition::Type _type;
-        std::shared_ptr<Texture> _tex;
+        std::unordered_map<std::string, std::shared_ptr<Texture>> _textures;
     };
 
     class MaterialInspectorEditor final : public AssetObjectEditor<Material::Definition>

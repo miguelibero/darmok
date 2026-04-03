@@ -466,7 +466,7 @@ namespace darmok
         }
         if (!_pendingDestroy.empty())
         {
-            auto entities(_pendingDestroy);
+            auto entities{ _pendingDestroy };
             _pendingDestroy.clear();
             for (auto entity : entities)
             {

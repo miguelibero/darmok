@@ -3,8 +3,6 @@
 #include <darmok-editor/utils.hpp>
 #include <darmok/image.hpp>
 
-#include <imgui.h>
-
 namespace darmok::editor
 {
     std::string TextureInspectorEditor::getTitle() const noexcept
@@ -31,6 +29,9 @@ namespace darmok::editor
         auto& proj = getProject();
         auto& assets = getApp().getAssets();
 
+        auto hash = std::hash<std::string>{}(src.data());
+
+
         std::filesystem::path imgPath;
         FileDialogOptions dialogOptions;
         dialogOptions.filters = { "*.png", "*.jpg", "*.jpeg", "*.bmp" };
@@ -44,12 +45,12 @@ namespace darmok::editor
                 {
                     return unexpected<std::string>{ result.error() };
                 }
-                _tex.reset();
                 changed = true;
             }
         }
 
-        if (!_tex)
+		auto itr = _textures.find(hash);
+        if (itr == _textures.end())
         {
             Texture::Definition def;
 			TextureDefinitionWrapper defWrapper{ def };
@@ -57,14 +58,15 @@ namespace darmok::editor
             {
                 if (auto texResult = Texture::load(def))
                 {
-                    _tex = std::make_shared<Texture>(std::move(texResult).value());
+                    auto tex = std::make_shared<Texture>(std::move(texResult).value());
+                    itr = _textures.emplace_hint(itr, hash, tex);
                 }
             }
         }
 
-        if (_tex)
+        if (itr != _textures.end())
         {
-			ImguiUtils::drawTexturePreview(*_tex, _maxPreviewSize);
+			ImguiUtils::drawTexturePreview(*itr->second, _maxPreviewSize);
         }
 
         return changed;

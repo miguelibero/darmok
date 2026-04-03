@@ -167,11 +167,11 @@ namespace darmok
         std::unordered_map<entt::type_info, const void*> getComponents(Entity entity) const noexcept;
         std::unordered_map<entt::type_info, void*> getComponents(Entity entity) noexcept;
 
-        void destroyEntity(Entity entity, bool destroyChildren = false) noexcept;
+        void destroyEntity(Entity entity, bool destroyChildren = true) noexcept;
         void destroyEntities() noexcept;
         void destroyEntities(const EntityFilter& filter) noexcept;
 
-        void destroyEntityImmediate(Entity entity, bool destroyChildren = false) noexcept;
+        void destroyEntityImmediate(Entity entity, bool destroyChildren = true) noexcept;
         void destroyEntitiesImmediate() noexcept;
         void destroyEntitiesImmediate(const EntityFilter& filter) noexcept;
 

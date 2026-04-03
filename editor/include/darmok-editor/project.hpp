@@ -218,9 +218,6 @@ namespace darmok::editor
             return SceneArchive::loadComponent(compResult.value().get(), def, context);
         }
 
-        expected<void, std::string> updatePrefab(EntityId entityId, const std::string& scenePath) noexcept;
-        expected<void, std::string> removePrefab(EntityId entityId) noexcept;
-
         std::filesystem::path addAsset(const std::filesystem::path& path, const Message& asset) noexcept;
 
         std::shared_ptr<Scene> getScene() noexcept;

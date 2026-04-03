@@ -44,6 +44,8 @@ namespace
 			auto& audio = _app.getAudio();
 			_soundVolume = audio.getVolume(AudioGroup::Sound);
 			_musicVolume = audio.getVolume(AudioGroup::Music);
+
+			return {};
 		}
 
 		expected<void, std::string> shutdown() noexcept override
@@ -58,7 +60,11 @@ namespace
 			auto& audio = _app.getAudio();
 			if (ImGui::Button("Play Sound"))
 			{
-				audio.play(_sound);
+				auto result = audio.play(_sound);
+				if(!result)
+				{
+					return result;
+				}
 			}
 
 			if (ImGui::SliderFloat("Sound Volume", &_soundVolume, 0.F, 1.F))
@@ -76,7 +82,11 @@ namespace
 				}
 				else
 				{
-					audio.play(_music);
+					auto result = audio.play(_music);
+					if (!result)
+					{
+						return result;
+					}
 				}
 			}
 			if (running)
@@ -84,7 +94,11 @@ namespace
 				auto playing = musicState == MusicState::Playing;
 				if (ImGui::Button(playing ? "Pause Music" : "Play Music"))
 				{
-					audio.pauseMusic();
+					auto result = audio.pauseMusic();
+					if (!result)
+					{
+						return result;
+					}
 				}
 			}
 

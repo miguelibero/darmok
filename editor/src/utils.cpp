@@ -599,9 +599,9 @@ namespace darmok::editor
 
     void ImguiUtils::drawTexture(const Texture& tex, const glm::uvec2& size) noexcept
     {
-        ImguiTextureData texData{ tex.getHandle().get() };
+        ImTextureRef texRef{ tex.getHandle().get().idx };
         auto fsize = size == glm::uvec2{ 0 } ? tex.getSize() : size;
-        ImGui::Image(texData, convert<ImVec2>(fsize));
+        ImGui::Image(texRef, convert<ImVec2>(fsize));
     }
 
     bool ImguiUtils::drawToggleButton(const char* label, bool* active) noexcept
