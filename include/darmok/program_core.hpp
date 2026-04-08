@@ -7,6 +7,7 @@
 #include <darmok/asset_core.hpp>
 #include <darmok/loader.hpp>
 #include <darmok/expected.hpp>
+#include <darmok/convert.hpp>
 #include <darmok/protobuf.hpp>
 #include <darmok/protobuf/program.pb.h>
 
@@ -23,27 +24,43 @@ namespace darmok
 
 	using ProgramDefines = std::unordered_set<std::string>;
 
+	template<>
+	struct Converter<bgfx::RendererType::Enum, protobuf::Program::Renderer>
+	{
+		static bgfx::RendererType::Enum run(const protobuf::Program::Renderer& v) noexcept;
+	};
+
+	template<>
+	struct Converter<protobuf::Program::Renderer, bgfx::RendererType::Enum>
+	{
+		static protobuf::Program::Renderer run(const bgfx::RendererType::Enum& v) noexcept;
+	};
+
 	class DARMOK_EXPORT ConstProgramDefinitionWrapper
 	{
 	public:
 		using Definition = protobuf::Program;
-		using Profile = protobuf::ProgramProfile;
+		using RendererDefinition = protobuf::RendererProgram;
 		ConstProgramDefinitionWrapper(const Definition& def) noexcept;
 
-		expected<std::reference_wrapper<const Profile>, std::string> getCurrentProfile();
+		expected<std::reference_wrapper<const RendererDefinition>, std::string> getCurrent() noexcept;
 
-		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::vector<std::string>>;
-		static const RendererProfileMap& getRendererProfiles() noexcept;
 	private:
 		const Definition& _def;
+
+		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::string>;
+		static const RendererProfileMap _rendererProfileMap;
+
 	};
 
 	class DARMOK_EXPORT ProgramDefinitionWrapper final : public ConstProgramDefinitionWrapper
 	{
 	public:
 		ProgramDefinitionWrapper(Definition& def) noexcept;
+		RendererDefinition& getRendererProgram(bgfx::RendererType::Enum renderer) noexcept;
+
 	private:
-		const Definition& _def;
+		Definition& _def;
 	};
 
 	class DARMOK_EXPORT ProgramSourceWrapper final

@@ -124,12 +124,8 @@ darmok_process_assets(
     tonemap.fragment.sc
     tonemap.vertex.sc
     tonemap.program.json
-    gui.fragment.sc
-    gui.vertex.sc
-    gui.program.json
-    unlit.fragment.sc
-    unlit.vertex.sc
-    unlit.program.json
+    gui.slang
+    unlit.slang
 )
 set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
 
@@ -151,6 +147,7 @@ set(CORE_SOURCES
   varying.cpp
   viewport.cpp
   program_core.cpp
+  slang.cpp
   asset_core.cpp
   easing.cpp
   protobuf.cpp
@@ -183,6 +180,7 @@ set(CORE_HEADERS
   collection.hpp
   viewport.hpp
   program_core.hpp
+  slang.hpp
   asset_core.hpp
   loader.hpp
   easing.hpp
@@ -604,6 +602,42 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 # bgfx
 target_link_libraries(${CORE_LIB_NAME} PUBLIC bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
 set(BGFX_SHADERC_TARGET bgfx::shaderc)
+
+# slang
+find_package(slang CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE slang::slang)
+# complains about invalid dll file
+# target_link_libraries(${CORE_LIB_NAME} PRIVATE slang::slang-glslang)
+if (WIN32)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      set(D3D_ARCH x64)
+  else()
+      set(D3D_ARCH x86)
+  endif()
+  set(D3D_BASE_PATH "Windows Kits/10/Redist/D3D")
+  macro(copy_d3d_file NAME FILENAME)
+    find_file(D3D_PATH_${NAME}
+      NAMES ${FILENAME}
+      PATHS 
+          "$ENV{ProgramFiles}/${D3D_BASE_PATH}"
+          "$ENV{ProgramFiles\(x86\)}/${D3D_BASE_PATH}"
+      PATH_SUFFIXES ${D3D_ARCH}
+      NO_DEFAULT_PATH
+    )
+    if(D3D_PATH_${NAME})
+      add_custom_command(TARGET ${CORE_LIB_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${D3D_PATH_${NAME}}" $<TARGET_FILE_DIR:${CORE_LIB_NAME}>
+      )
+    endif()
+  endmacro(copy_d3d_file)
+
+  copy_d3d_file(DXIL dxil.dll)
+  copy_d3d_file(DXCOMPILER dxcompiler.dll)
+
+  
+
+endif()
 
 # fmt
 find_package(fmt CONFIG REQUIRED)

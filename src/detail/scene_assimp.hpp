@@ -156,8 +156,9 @@ namespace darmok
         expected<Effect, std::string> prepare(const Input& input) noexcept;
         expected<void, std::string> operator()(const Input& input, ImportConfig& config) noexcept;
 
-        void setShadercPath(const std::filesystem::path& path) noexcept;
-        void addIncludePath(const std::filesystem::path& path) noexcept;
+        void setBgfxShadercPath(const std::filesystem::path& path) noexcept;
+        void addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept;
+        void addSlangShaderIncludePath(const std::filesystem::path& path) noexcept;
     private:
         bx::AllocatorI& _alloc;
         bx::FileReader _fileReader;

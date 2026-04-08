@@ -10,49 +10,92 @@
 
 namespace darmok
 {
-    namespace fs = std::filesystem;
+    bgfx::RendererType::Enum Converter<bgfx::RendererType::Enum, protobuf::Program::Renderer>::run(const protobuf::Program::Renderer& v) noexcept
+    {
+        switch (v)
+        {
+        case protobuf::Program::Direct3D11:
+			return bgfx::RendererType::Direct3D11;
+        case protobuf::Program::Direct3D12:
+            return bgfx::RendererType::Direct3D12;
+        case protobuf::Program::Metal:
+            return bgfx::RendererType::Metal;
+        case protobuf::Program::OpenGLES:
+            return bgfx::RendererType::OpenGLES;
+        case protobuf::Program::OpenGL:
+            return bgfx::RendererType::OpenGL;
+        case protobuf::Program::Vulkan:
+            return bgfx::RendererType::Vulkan;
+        }
+		return bgfx::RendererType::Noop;
+    }
+
+    protobuf::Program::Renderer Converter<protobuf::Program::Renderer, bgfx::RendererType::Enum>::run(const bgfx::RendererType::Enum& v) noexcept
+    {
+        switch (v)
+        {
+        case bgfx::RendererType::Direct3D11:
+            return protobuf::Program::Direct3D11;
+        case bgfx::RendererType::Direct3D12:
+            return protobuf::Program::Direct3D12;
+        case bgfx::RendererType::Metal:
+            return protobuf::Program::Metal;
+        case bgfx::RendererType::OpenGLES:
+            return protobuf::Program::OpenGLES;
+        case bgfx::RendererType::OpenGL:
+            return protobuf::Program::OpenGL;
+        case bgfx::RendererType::Vulkan:
+            return protobuf::Program::Vulkan;
+        }
+        return protobuf::Program::Unknown;
+    }
 
     ConstProgramDefinitionWrapper::ConstProgramDefinitionWrapper(const Definition& def) noexcept
         : _def{ def }
     {
     }
 
-    expected<std::reference_wrapper<const ConstProgramDefinitionWrapper::Profile>, std::string> ConstProgramDefinitionWrapper::getCurrentProfile()
+    expected<std::reference_wrapper<const ConstProgramDefinitionWrapper::RendererDefinition>, std::string> ConstProgramDefinitionWrapper::getCurrent() noexcept
     {
         auto render = bgfx::getRendererType();
-        auto& rendererProfiles = getRendererProfiles();
-        auto itr = rendererProfiles.find(render);
-        if (itr == rendererProfiles.end())
+        auto protoRender = darmok::convert<protobuf::Program::Renderer>(render);
+        
+		for (auto& rendererProgram : _def.renderers())
         {
-            return unexpected{ std::string{"could not find renderer profiles"} };
-        }
-        auto& profiles = _def.profiles();
-        for (auto& profileName : itr->second)
-        {
-            auto itr = profiles.find(profileName);
-            if (itr == profiles.end())
+            if (rendererProgram.renderer() == protoRender)
             {
-                continue;
+                return rendererProgram;
             }
-            return itr->second;
         }
-        return unexpected{ std::string{"no valid profile found"} };
+        return unexpected{ fmt::format("renderer {} not found", render) };
     }
 
-    const ConstProgramDefinitionWrapper::RendererProfileMap& ConstProgramDefinitionWrapper::getRendererProfiles() noexcept
+    ProgramDefinitionWrapper::ProgramDefinitionWrapper(Definition& def) noexcept
+        : ConstProgramDefinitionWrapper(def)
+        , _def{def}
     {
-        static const RendererProfileMap profiles
-        {
-            { bgfx::RendererType::Direct3D11,   { "s_5_0" }},
-            { bgfx::RendererType::Direct3D12,   { "s_5_0" }},
-            { bgfx::RendererType::Metal,        { "metal" }},
-            { bgfx::RendererType::OpenGLES,     { "300_es" }},
-            { bgfx::RendererType::OpenGL,       { "150", "130" }},
-            { bgfx::RendererType::Vulkan,       { "spirv16-13", "spirv14-11", "spirv" }},
-        };
-        return profiles;
     }
 
+    ProgramDefinitionWrapper::RendererDefinition& ProgramDefinitionWrapper::getRendererProgram(bgfx::RendererType::Enum renderer) noexcept
+    {
+        auto protoRenderer = darmok::convert<protobuf::Program::Renderer>(renderer);
+        OptionalRef<protobuf::RendererProgram> rendererProgram;
+        for (auto& r : *_def.mutable_renderers())
+        {
+            if (r.renderer() == protoRenderer)
+            {
+                rendererProgram = r;
+                break;
+            }
+        }
+        if (!rendererProgram)
+        {
+            rendererProgram = _def.add_renderers();
+            rendererProgram->set_renderer(protoRenderer);
+        }
+        return *rendererProgram;
+    }
+    
     ProgramSourceWrapper::ProgramSourceWrapper(Source& src) noexcept
         : _src{ src }
     {
@@ -105,7 +148,7 @@ namespace darmok
         {
             if (itr->is_string())
             {
-                fs::path varyingPath = basePath / itr->get<std::string>();
+                auto varyingPath = basePath / itr->get<std::string>();
                 result = std::move(varying.read(varyingPath));
             }
             else
@@ -182,7 +225,7 @@ namespace darmok
         for (auto& include : _includePaths)
         {
             auto path = include / name;
-            if (fs::exists(path))
+            if (std::filesystem::exists(path))
             {
                 return path;
             }
@@ -293,7 +336,7 @@ namespace darmok
 
     const std::string ShaderParser::_enableDefineSuffix = "_enabled";
 
-    ShaderType ShaderParser::getType(const fs::path& path) noexcept
+    ShaderType ShaderParser::getType(const std::filesystem::path& path) noexcept
     {
         auto exts = StringUtils::split('.', path.extension().string());
         for (auto& ext : exts)
@@ -307,10 +350,16 @@ namespace darmok
         return ShaderType::Unknown;
     }
 
-    const std::vector<bgfx::RendererType::Enum>& ShaderParser::getSupportedRenderers() noexcept
-    {
-        static const std::vector<bgfx::RendererType::Enum> renderers
-        {
+    const ShaderParser::RendererProfileMap ShaderParser::_rendererProfiles = {
+            { bgfx::RendererType::Direct3D11,   "s_5_0"},
+            { bgfx::RendererType::Direct3D12,   "s_5_0"},
+            { bgfx::RendererType::Metal,        "metal"},
+            { bgfx::RendererType::OpenGLES,     "300_es"},
+            { bgfx::RendererType::OpenGL,       "150"},
+            { bgfx::RendererType::Vulkan,       "spirv"},
+    };
+
+    const std::vector<bgfx::RendererType::Enum> ShaderParser::_renderers = {
 #if BX_PLATFORM_WINDOWS
             bgfx::RendererType::Direct3D11, bgfx::RendererType::Direct3D12, bgfx::RendererType::Vulkan,
 #elif BX_PLATFORM_OSX
@@ -319,9 +368,8 @@ namespace darmok
             bgfx::RendererType::Vulkan,
 #endif
             bgfx::RendererType::OpenGL, bgfx::RendererType::OpenGLES,
-        };
-        return renderers;
-    }
+    };
+
 
     expected<std::vector<ShaderParser::CompilerOperation>, std::string> ShaderParser::prepareCompilerOperations(const CompilerConfig& config, const DataView& shader, const std::filesystem::path& baseOutputPath) const noexcept
     {
@@ -345,20 +393,19 @@ namespace darmok
         auto defineCombs = CollectionUtils::combinations(defines);
         std::vector<CompilerOperation> ops;
 
-        auto& rendererProfiles = ProgramDefinitionWrapper::getRendererProfiles();
-        auto& renderers = getSupportedRenderers();
-
         auto baseOutputStr = baseOutputPath.string();
         if(baseOutputStr.empty())
         {
             baseOutputStr = config.path.string() + ".";
         }
 
-        for (auto& renderer : renderers)
+        for (auto& renderer : _renderers)
         {
-            for (auto& profile : rendererProfiles.at(renderer))
+			auto itr = _rendererProfiles.find(renderer);
+            if(itr != _rendererProfiles.end())
             {
-                std::string profileExt = profile;
+                auto& profile = itr->second;
+                std::string profileExt = "." + profile;
                 auto itr = _rendererExtensions.find(renderer);
                 if (itr != _rendererExtensions.end())
                 {
@@ -380,23 +427,17 @@ namespace darmok
 
     expected<std::reference_wrapper<protobuf::Shader>, std::string> ShaderParser::getShader(protobuf::Program& def, ShaderType shaderType, const CompilerOperation& op) noexcept
     {
-        auto& profiles = *def.mutable_profiles();
-        auto itr = profiles.find(op.profile);
-        if (itr == profiles.end())
-        {
-            itr = profiles.emplace(op.profile, protobuf::ProgramProfile{}).first;
-        }
-        auto& profile = itr->second;
+        auto& rendererProgram = ProgramDefinitionWrapper{ def }.getRendererProgram(op.renderer);
 
         google::protobuf::RepeatedPtrField<protobuf::Shader>* shaders = nullptr;
 
         switch (shaderType)
         {
         case ShaderType::Fragment:
-            shaders = profile.mutable_fragment_shaders();
+            shaders = rendererProgram.mutable_fragment_shaders();
             break;
 		case ShaderType::Vertex:
-            shaders = profile.mutable_vertex_shaders();
+            shaders = rendererProgram.mutable_vertex_shaders();
             break;
         default:
 			return unexpected<std::string>{ "unsupported shader type" };
@@ -454,11 +495,11 @@ namespace darmok
 
     expected<void, std::string> ShaderCompiler::operator()(const Operation& op) const noexcept
     {
-        if (!fs::exists(_config.programConfig.shadercPath))
+        if (!std::filesystem::exists(_config.programConfig.shadercPath))
         {
             return unexpected{ "could not find shaderc" };
         }
-        fs::path varyingPath = _config.varyingPath;
+        std::filesystem::path varyingPath = _config.varyingPath;
         auto inputDir = _config.path.parent_path();
         if (varyingPath.empty())
         {
@@ -536,7 +577,7 @@ namespace darmok
         for (auto& include : _config.programConfig.includePaths)
         {
             args.push_back("-i");
-            args.push_back(fs::absolute(include));
+            args.push_back(std::filesystem::absolute(include));
         }
 
         auto r = Exec::run(args);
@@ -556,12 +597,12 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> ProgramFileImporterImpl::readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const fs::path& path) noexcept
+    expected<void, std::string> ProgramFileImporterImpl::readSource(Source& src, const nlohmann::ordered_json& json, const std::filesystem::path& path) noexcept
     {
         // maybe switch to arrays to avoid ordered_json
         auto basePath = path.parent_path();
         ProgramSourceWrapper srcWrapper{ src };
-        if (fs::is_regular_file(path) && path.extension() == ".json")
+        if (std::filesystem::is_regular_file(path) && path.extension() == ".json")
         {
             auto pathJsonResult = StreamUtils::parseOrderedJson(path);
             if(!pathJsonResult)
@@ -636,7 +677,7 @@ namespace darmok
         auto itr = json.find("includeDirs");
         if (itr != json.end())
         {
-            for (fs::path path : *itr)
+            for (std::filesystem::path path : *itr)
             {
                 includePaths.insert(fixPath(path));
             }
@@ -706,9 +747,9 @@ namespace darmok
 				}
 				auto& shader = shaderResult.value().get();
                 *shader.mutable_data() = std::move(readResult).value();
-                fs::remove(op.outputPath);
+                std::filesystem::remove(op.outputPath);
             }
-            fs::remove(shaderConfig.path);
+            std::filesystem::remove(shaderConfig.path);
             return std::nullopt;
         };
 
@@ -729,7 +770,7 @@ namespace darmok
         }
 
         // TODO: remove files in case of exception?
-        fs::remove(varyingDefPath);
+        std::filesystem::remove(varyingDefPath);
         
         return def;
     }
@@ -794,7 +835,6 @@ namespace darmok
             std::istringstream in{ _src->fragment_shader() };
             parser.getDependencies(in, effect.dependencies);
         }
-
         return effect;
     }
 
@@ -886,13 +926,13 @@ namespace darmok
 
     ProgramFileImporter::~ProgramFileImporter() noexcept = default;
 
-    ProgramFileImporter& ProgramFileImporter::setShadercPath(const fs::path& path) noexcept
+    ProgramFileImporter& ProgramFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
     {
         _impl->setShadercPath(path);
         return *this;
     }
 
-    ProgramFileImporter& ProgramFileImporter::addIncludePath(const fs::path& path) noexcept
+    ProgramFileImporter& ProgramFileImporter::addIncludePath(const std::filesystem::path& path) noexcept
     {
         _impl->addIncludePath(path);
         return *this;

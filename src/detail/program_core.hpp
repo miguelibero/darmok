@@ -44,6 +44,7 @@ namespace darmok
 
     struct ShaderCompilerOperation final
     {
+		bgfx::RendererType::Enum renderer;
         std::string profile;
         ShaderDefines defines;
         std::filesystem::path outputPath;
@@ -87,7 +88,12 @@ namespace darmok
         static std::optional<std::string> readDefine(const std::string& line) noexcept;
         size_t getDependencies(std::istream& in, Dependencies& deps, std::unordered_set<std::filesystem::path>& checkedPaths) const noexcept;
         std::optional<std::filesystem::path> readDependency(const std::string& line) const noexcept;
-        static const std::vector<bgfx::RendererType::Enum>& getSupportedRenderers() noexcept;
+        
+
+        static const std::vector<bgfx::RendererType::Enum> _renderers;
+
+		using RendererProfileMap = std::unordered_map<bgfx::RendererType::Enum, std::string>;
+		static const RendererProfileMap _rendererProfiles;
     };
 
     class ShaderCompiler final
@@ -113,6 +119,7 @@ namespace darmok
         using Input = FileImportInput;
         using CompileConfig = ProgramCompilerConfig;
         using ImportConfig = FileImportConfig;
+        using Source = protobuf::ProgramSource;
         ProgramFileImporterImpl(size_t defaultBufferSize = 4096) noexcept;
 
         void setShadercPath(const std::filesystem::path& path) noexcept;
@@ -127,8 +134,8 @@ namespace darmok
         CompileConfig _defaultConfig;
 
         std::optional<CompileConfig> _config;
-        std::optional<protobuf::ProgramSource> _src;
+        std::optional<Source> _src;
 
-        expected<void, std::string> readSource(protobuf::ProgramSource& src, const nlohmann::ordered_json& json, const std::filesystem::path& path) noexcept;
+        expected<void, std::string> readSource(Source& src, const nlohmann::ordered_json& json, const std::filesystem::path& path) noexcept;
     };
 }

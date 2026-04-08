@@ -3,8 +3,8 @@
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/protobuf.hpp>
-#include "generated/shaders/gui.program.h"
-#include "generated/shaders/unlit.program.h"
+#include "generated/shaders/gui.h"
+#include "generated/shaders/unlit.h"
 #include "generated/shaders/forward.program.h"
 #include "generated/shaders/forward_basic.program.h"
 #include "generated/shaders/tonemap.program.h"
@@ -156,23 +156,23 @@ namespace darmok
 
 	expected<Program, std::string> Program::load(const Definition& def) noexcept
 	{
-        auto profileResult = ConstProgramDefinitionWrapper{ def }.getCurrentProfile();
-		if (!profileResult)
+        auto result = ConstProgramDefinitionWrapper{ def }.getCurrent();
+		if (!result)
 		{
-            return unexpected{ std::move(profileResult).error() };
+            return unexpected{ std::move(result).error() };
 		}
 
-        auto& profile = profileResult.value().get();
+        auto& rendererProgram = result.value().get();
 
         Handles handles;
 		
-        auto fragResult = createShaders(profile.fragment_shaders(), def.name());
+        auto fragResult = createShaders(rendererProgram.fragment_shaders(), def.name());
         if (!fragResult)
         {
             return unexpected{ std::move(fragResult).error()};
         }
         handles.fragmentHandles = std::move(fragResult.value());
-        auto vertResult = createShaders(profile.vertex_shaders(), def.name());
+        auto vertResult = createShaders(rendererProgram.vertex_shaders(), def.name());
         if (!vertResult)
         {
             return unexpected{ std::move(vertResult).error() };
@@ -258,9 +258,9 @@ namespace darmok
         switch (type)
         {
         case protobuf::StandardProgram::Gui:
-            return protobuf::readStaticMem(def, gui_program);
+            return protobuf::readStaticMem(def, gui);
         case protobuf::StandardProgram::Unlit:
-            return protobuf::readStaticMem(def, unlit_program);
+            return protobuf::readStaticMem(def, unlit);
         case protobuf::StandardProgram::Forward:
             return protobuf::readStaticMem(def, forward_program);
         case protobuf::StandardProgram::ForwardBasic:

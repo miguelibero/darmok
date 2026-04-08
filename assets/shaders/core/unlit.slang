@@ -1,0 +1,46 @@
+#include "darmok_skinning.inc.slang"
+#include "darmok_material_basic.inc.slang"
+
+cbuffer Constants
+{
+    float4x4 u_modelViewProj;
+    float4x4 u_skinning[64];
+}
+
+Texture2D s_texColor;
+SamplerState samplerState;
+
+struct VSInput
+{
+    float3 a_position : POSITION;
+    float4 a_color0   : COLOR0;
+    float2 a_texcoord0: TEXCOORD0;
+    float4 a_indices  : TEXCOORD1; // bone indices
+    float4 a_weight   : TEXCOORD2; // bone weights
+};
+
+struct VSOutput
+{
+    float4 position : SV_Position;
+    float4 v_color0 : COLOR0;
+    float2 v_texcoord0 : TEXCOORD0;
+};
+
+
+
+VSOutput vert(VSInput IN)
+{
+    VSOutput OUT;
+    float4 pos = float4(IN.a_position, 1.0);
+    pos = applySkinning(pos, IN.a_indices, IN.a_weight);
+    OUT.position = mul(u_modelViewProj, pos);
+    OUT.v_color0 = IN.a_color0;
+    OUT.v_texcoord0 = IN.a_texcoord0;
+    return OUT;
+}
+
+float4 frag(VSOutput input) : SV_Target
+{
+	Material mat = getMaterial(input.v_texcoord0);
+	return mat.diffuse * input.v_color0;
+}

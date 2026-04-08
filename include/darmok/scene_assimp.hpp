@@ -86,8 +86,9 @@ namespace darmok
         expected<Effect, std::string> prepare(const Input& input) noexcept override;
         expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
 
-        AssimpSceneFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-        AssimpSceneFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+        AssimpSceneFileImporter& setBgfxShadercPath(const std::filesystem::path& path) noexcept;
+        AssimpSceneFileImporter& addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept;
+        AssimpSceneFileImporter& addSlangShaderIncludePath(const std::filesystem::path& path) noexcept;
     private:
         std::unique_ptr<AssimpSceneFileImporterImpl> _impl;
     };

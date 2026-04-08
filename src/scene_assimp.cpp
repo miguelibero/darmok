@@ -799,14 +799,19 @@ namespace darmok
         _defaultCompilerConfig.progCompiler.log = log;
     }
 
-    void AssimpSceneFileImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
+    void AssimpSceneFileImporterImpl::setBgfxShadercPath(const std::filesystem::path& path) noexcept
     {
         _defaultCompilerConfig.progCompiler.shadercPath = path;
     }
 
-    void AssimpSceneFileImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
+    void AssimpSceneFileImporterImpl::addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept
     {
         _defaultCompilerConfig.progCompiler.includePaths.insert(path);
+    }
+
+    void AssimpSceneFileImporterImpl::addSlangShaderIncludePath(const std::filesystem::path& path) noexcept
+    {
+        // TODO
     }
 
     void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config)
@@ -1138,15 +1143,21 @@ namespace darmok
         return (*_impl)(input, config);
     }
 
-    AssimpSceneFileImporter& AssimpSceneFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    AssimpSceneFileImporter& AssimpSceneFileImporter::setBgfxShadercPath(const std::filesystem::path& path) noexcept
     {
-        _impl->setShadercPath(path);
+        _impl->setBgfxShadercPath(path);
         return *this;
     }
 
-    AssimpSceneFileImporter& AssimpSceneFileImporter::addIncludePath(const std::filesystem::path& path) noexcept
+    AssimpSceneFileImporter& AssimpSceneFileImporter::addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept
     {
-        _impl->addIncludePath(path);
+        _impl->addBgfxShaderIncludePath(path);
+        return *this;
+    }
+
+    AssimpSceneFileImporter& AssimpSceneFileImporter::addSlangShaderIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _impl->addSlangShaderIncludePath(path);
         return *this;
     }
 

@@ -88,8 +88,9 @@ namespace darmok
         std::filesystem::path outputPath;
         std::filesystem::path cachePath;
         bool dry = false;
-        std::filesystem::path shadercPath;
-        std::vector<std::filesystem::path> shaderIncludePaths;
+        std::filesystem::path bgfxShadercPath;
+        std::vector<std::filesystem::path> bgfxShaderIncludePaths;
+        std::vector<std::filesystem::path> slangShaderIncludePaths;
 
         static const std::string defaultInputPath;
         static const std::string defaultOutputPath;
@@ -145,6 +146,7 @@ namespace darmok
     };
 
     class ProgramFileImporter;
+	class SlangProgramFileImporter;
 
     class DARMOK_EXPORT DarmokCoreAssetFileImporter final
     {
@@ -154,13 +156,15 @@ namespace darmok
         DarmokCoreAssetFileImporter(const std::filesystem::path& inputPath);
         DarmokCoreAssetFileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
         DarmokCoreAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-        DarmokCoreAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-        DarmokCoreAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetFileImporter& setBgfxShadercPath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetFileImporter& addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetFileImporter& addSlangShaderIncludePath(const std::filesystem::path& path) noexcept;
         expected<Paths, std::string> getOutputPaths() const noexcept;
         bool operator()(std::ostream& log) const noexcept;
     private:
         FileImporter _importer;
         ProgramFileImporter& _progImporter;
+		SlangProgramFileImporter& _slangImporter;
     };
 
     class DARMOK_EXPORT CopyFileImporter final : public IFileTypeImporter

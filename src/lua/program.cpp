@@ -59,7 +59,7 @@ namespace darmok
 			.protobufProperty<protobuf::Varying>("varying");
 
 		LuaProtobufBinding<protobuf::Shader>{lua, "ShaderDefinition"};
-		LuaProtobufBinding<protobuf::ProgramProfile>{lua, "ProgramProfileDefinition"};
+		LuaProtobufBinding<protobuf::RendererProgram>{lua, "RendererProgramDefinition"};
 
 		auto def = lua.new_usertype<Program::Definition>("ProgramDefinition",
 			sol::factories(
@@ -71,7 +71,7 @@ namespace darmok
 			}
 		);
 		LuaProtobufBinding{ std::move(def) }
-			.protobufProperty<protobuf::ProgramProfile>("profiles")
+			.protobufProperty<protobuf::RendererProgram>("renderers")
 			.protobufProperty<protobuf::Varying>("varying");
 	}
 

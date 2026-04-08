@@ -21,6 +21,11 @@ message ProgramRef {
     }
 }
 
+message SlangProgramSource {
+    string name = 1;
+    string data = 2;
+}
+
 message ProgramSource {
     string name = 1;
     string vertex_shader = 2;
@@ -33,13 +38,24 @@ message Shader {
     repeated string defines = 3;
 }
 
-message ProgramProfile {
-    repeated Shader fragment_shaders = 1;
-    repeated Shader vertex_shaders = 2;
+message RendererProgram {
+    Program.Renderer renderer = 1;
+    repeated Shader fragment_shaders = 2;
+    repeated Shader vertex_shaders = 3;
 }
 
 message Program {
+    enum Renderer {
+        Unknown = 0;
+        Direct3D11 = 1;
+        Direct3D12 = 2;
+        Metal = 3;
+        OpenGLES = 4;
+        OpenGL = 5;
+        Vulkan = 6;
+    }
+
     string name = 1;
-    map<string, ProgramProfile> profiles = 2;
+    repeated RendererProgram renderers = 2;
     Varying varying = 3;
 }

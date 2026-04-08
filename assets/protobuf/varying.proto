@@ -61,5 +61,5 @@ message FragmentLayout {
 message Varying {
     VertexLayout vertex = 1;
     FragmentLayout fragment = 2;
-    uint32 instance_attribs = 3;
+    // uint32 instance_attribs = 3;
 }

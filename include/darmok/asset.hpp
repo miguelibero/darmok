@@ -105,14 +105,16 @@ namespace darmok
 		DarmokAssetFileImporter(const std::filesystem::path& inputPath) noexcept;
 		DarmokAssetFileImporter& setCachePath(const std::filesystem::path& cachePath) noexcept;
 		DarmokAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
-		DarmokAssetFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
-		DarmokAssetFileImporter& addShaderIncludePath(const std::filesystem::path& path) noexcept;
+		DarmokAssetFileImporter& setBgfxShadercPath(const std::filesystem::path& path) noexcept;
+		DarmokAssetFileImporter& addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept;
+		DarmokAssetFileImporter& addSlangShaderIncludePath(const std::filesystem::path& path) noexcept;
 		expected<Paths, std::string> getOutputPaths() const noexcept;
 		bool operator()(std::ostream& log) const noexcept;
 	private:
 		bx::DefaultAllocator _alloc;
 		FileImporter _importer;
 		ProgramFileImporter& _progImporter;
+		SlangProgramFileImporter& _slangImporter;
 #ifdef DARMOK_ASSIMP
 		AssimpSceneFileImporter& _sceneImporter;
 #endif

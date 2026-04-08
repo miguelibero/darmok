@@ -1,7 +1,7 @@
 #include "detail/asset.hpp"
 
 #include <darmok/asset_pack.hpp>
-
+#include <darmok/slang.hpp>
 
 namespace darmok
 {
@@ -286,19 +286,24 @@ namespace darmok
 		{
 			setOutputPath(config.outputPath);
 		}
-		if (!config.shadercPath.empty())
+		if (!config.bgfxShadercPath.empty())
 		{
-			setShadercPath(config.shadercPath);
+			setBgfxShadercPath(config.bgfxShadercPath);
 		}
-		for (const auto& path : config.shaderIncludePaths)
+		for (const auto& path : config.bgfxShaderIncludePaths)
 		{
-			addShaderIncludePath(path);
+			addBgfxShaderIncludePath(path);
+		}
+		for (const auto& path : config.slangShaderIncludePaths)
+		{
+			addSlangShaderIncludePath(path);
 		}
 	}
 
 	DarmokAssetFileImporter::DarmokAssetFileImporter(const std::filesystem::path& inputPath) noexcept
 		: _importer{ inputPath }
 		, _progImporter{ _importer.addTypeImporter<ProgramFileImporter>() }
+		, _slangImporter{ _importer.addTypeImporter<SlangProgramFileImporter>() }
 #ifdef DARMOK_ASSIMP
 		, _sceneImporter{ _importer.addTypeImporter<AssimpSceneFileImporter>(_alloc) }
 #endif
@@ -328,20 +333,29 @@ namespace darmok
 		return *this;
 	}
 
-	DarmokAssetFileImporter& DarmokAssetFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
+	DarmokAssetFileImporter& DarmokAssetFileImporter::setBgfxShadercPath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.setShadercPath(path);
 #ifdef DARMOK_ASSIMP
-		_sceneImporter.setShadercPath(path);
+		_sceneImporter.setBgfxShadercPath(path);
 #endif
 		return *this;
 	}
 
-	DarmokAssetFileImporter& DarmokAssetFileImporter::addShaderIncludePath(const std::filesystem::path& path) noexcept
+	DarmokAssetFileImporter& DarmokAssetFileImporter::addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept
 	{
 		_progImporter.addIncludePath(path);
 #ifdef DARMOK_ASSIMP
-		_sceneImporter.addIncludePath(path);
+		_sceneImporter.addBgfxShaderIncludePath(path);
+#endif
+		return *this;
+	}
+
+	DarmokAssetFileImporter& DarmokAssetFileImporter::addSlangShaderIncludePath(const std::filesystem::path& path) noexcept
+	{
+		_slangImporter.addIncludePath(path);
+#ifdef DARMOK_ASSIMP
+		_sceneImporter.addSlangShaderIncludePath(path);
 #endif
 		return *this;
 	}

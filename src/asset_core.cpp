@@ -6,16 +6,14 @@
 #include <darmok/image.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/program_core.hpp>
+#include <darmok/slang.hpp>
 
 #include <filesystem>
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
-#include <cstdlib>
 #include <algorithm>
 #include <chrono>
 
-#include <bx/platform.h>
 #include <CLI/CLI.hpp>
 
 namespace darmok
@@ -1148,19 +1146,24 @@ namespace darmok
         {
             setOutputPath(config.outputPath);
         }
-        if (!config.shadercPath.empty())
+        if (!config.bgfxShadercPath.empty())
         {
-            setShadercPath(config.shadercPath);
+            setBgfxShadercPath(config.bgfxShadercPath);
         }
-        for (auto& path : config.shaderIncludePaths)
+        for (auto& path : config.bgfxShaderIncludePaths)
         {
-            addShaderIncludePath(path);
+            addBgfxShaderIncludePath(path);
+        }
+        for (auto& path : config.slangShaderIncludePaths)
+        {
+            addSlangShaderIncludePath(path);
         }
     }
 
     DarmokCoreAssetFileImporter::DarmokCoreAssetFileImporter(const fs::path& inputPath)
-        : _importer(inputPath)
-        , _progImporter(_importer.addTypeImporter<ProgramFileImporter>())
+        : _importer{ inputPath }
+        , _progImporter{ _importer.addTypeImporter<ProgramFileImporter>() }
+        , _slangImporter{ _importer.addTypeImporter<SlangProgramFileImporter>() }
     {
         _importer.addTypeImporter<CopyFileImporter>();
         _importer.addTypeImporter<ImageFileImporter>();
@@ -1179,15 +1182,21 @@ namespace darmok
         return *this;
     }
 
-    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setShadercPath(const fs::path& path) noexcept
+    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setBgfxShadercPath(const fs::path& path) noexcept
     {
         _progImporter.setShadercPath(path);
         return *this;
     }
 
-    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::addShaderIncludePath(const fs::path& path) noexcept
+    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::addBgfxShaderIncludePath(const fs::path& path) noexcept
     {
         _progImporter.addIncludePath(path);
+        return *this;
+    }
+
+    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::addSlangShaderIncludePath(const fs::path& path) noexcept
+    {
+        _slangImporter.addIncludePath(path);
         return *this;
     }
 
@@ -1244,12 +1253,15 @@ namespace darmok
             ->envname("DARMOK_IMPORT_DRY");
 
         auto progGroup = cli.add_option_group("Program Compiler");
-        progGroup->add_option("--bgfx-shaderc", cfg.shadercPath, "path to the shaderc executable")
+        progGroup->add_option("--bgfx-shaderc", cfg.bgfxShadercPath, "path to the shaderc executable")
             ->option_text("PATH")
             ->envname("DARMOK_IMPORT_BGFX_SHADERC");
-        progGroup->add_option("--bgfx-shader-include", cfg.shaderIncludePaths, "paths to shader files to be included")
+        progGroup->add_option("--bgfx-shader-include", cfg.bgfxShaderIncludePaths, "paths to shader files to be included")
             ->option_text("PATH ...")
-            ->envname("DARMOK_IMPORT_BGFX_SHADER_INCLUDE");
+            ->envname("DARMOK_IMPORT_BGFX_SHADER_INCLUDES");
+        progGroup->add_option("--slang-shader-include", cfg.slangShaderIncludePaths, "paths to slang shader files to be included")
+            ->option_text("PATH ...")
+            ->envname("DARMOK_IMPORT_SLANG_SHADER_INCLUDES");
     }
 
     const std::string CommandLineFileImporterConfig::defaultInputPath = "assets";
@@ -1314,7 +1326,7 @@ namespace darmok
         }
         catch (const CLI::ParseError& ex)
         {
-            return cli.exit(ex);                                                                                          \
+            return cli.exit(ex);
         }
         catch(const std::exception& ex)
         {

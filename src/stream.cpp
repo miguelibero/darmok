@@ -36,7 +36,7 @@ namespace darmok
             return str;
         }
 
-        expected<std::string, std::string> readString(std::filesystem::path& path) noexcept
+        expected<std::string, std::string> readString(const std::filesystem::path& path) noexcept
         {
             if (!std::filesystem::exists(path))
             {

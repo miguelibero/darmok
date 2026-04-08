@@ -55,6 +55,7 @@
         "tools"
       ]
     },
+    "shader-slang",
     "luajit",
     "luasocket",
     "sol2",

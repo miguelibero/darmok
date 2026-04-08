@@ -14,7 +14,7 @@ namespace darmok
     namespace StreamUtils
     {
         expected<std::string, std::string> readString(std::istream& input) noexcept;
-        expected<std::string, std::string> readString(std::filesystem::path& path) noexcept;
+        expected<std::string, std::string> readString(const std::filesystem::path& path) noexcept;
         void copy(std::istream& input, std::ostream& output, size_t bufferSize = 4096);
         void log(std::string_view msg, bool error = false) noexcept;
         void writeUtf8Bom(std::ostream& out);
