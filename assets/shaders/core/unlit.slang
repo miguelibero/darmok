@@ -1,10 +1,9 @@
-#include "darmok_skinning.inc.slang"
-#include "darmok_material_basic.inc.slang"
+#include <darmok_skinning.inc.slang>
+#include <darmok_material_basic.inc.slang>
 
 cbuffer Constants
 {
     float4x4 u_modelViewProj;
-    float4x4 u_skinning[64];
 }
 
 Texture2D s_texColor;
@@ -26,8 +25,6 @@ struct VSOutput
     float2 v_texcoord0 : TEXCOORD0;
 };
 
-
-
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -39,8 +36,8 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
-float4 frag(VSOutput input) : SV_Target
+float4 frag(VSOutput IN) : SV_Target
 {
-	Material mat = getMaterial(input.v_texcoord0);
-	return mat.diffuse * input.v_color0;
+	Material mat = getMaterial(IN.v_texcoord0);
+	return mat.diffuse * IN.v_color0;
 }

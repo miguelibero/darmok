@@ -1,47 +1,46 @@
-#ifndef DARMOK_LIGHTS_HEADER
-#define DARMOK_LIGHTS_HEADER
-
-#include <bgfx_compute.sh>
-#include <darmok_sampler.sc>
-
-uniform vec4 u_lightCountVec;
-#define u_pointLightCount uint(u_lightCountVec.x)
-#define u_dirLightCount   uint(u_lightCountVec.y)
-#define u_spotLightCount  uint(u_lightCountVec.z)
-
-uniform vec4 u_ambientLightIrradiance;
+#pragma once
 
 // for each point light:
 //   vec4 position + uint entity
 //   vec4 intensity + range (xyz is intensity, w is range)
-BUFFER_RO(b_pointLights, vec4, DARMOK_SAMPLER_LIGHTS_POINT);
+Texture2D<float4> b_pointLights;
 
 // for each spot light:
 //   vec3 position + uint entity
 //   vec4 direction (w is padding)
 //   vec4 intensity + range (xyz is intensity, w is range)
 //   vec4 cone angle, inner cone angle
-BUFFER_RO(b_spotLights, vec4, DARMOK_SAMPLER_LIGHTS_SPOT);
+Texture2D<float4> b_spotLights;
 
 // for each directional light:
 //   vec3 direction + uint entity
 //   vec4 intensity (xyz is intensity)
-BUFFER_RO(b_dirLights, vec4, DARMOK_SAMPLER_LIGHTS_DIR);
+Texture2D<float4> b_dirLights;
+
+cbuffer LightConstants
+{
+    float4 u_lightCountVec;
+    float4 u_ambientLightIrradiance;
+}
+
+#define u_pointLightCount uint(u_lightCountVec.x)
+#define u_dirLightCount   uint(u_lightCountVec.y)
+#define u_spotLightCount  uint(u_lightCountVec.z)
 
 struct PointLight
 {
     uint entity;
-    vec3 position;
-    vec3 intensity;
+    float3 position;
+    float3 intensity;
     float range;
 };
 
 struct SpotLight
 {
     uint entity;
-    vec3 position;
-    vec3 direction;
-    vec3 intensity;
+    float3 position;
+    float3 direction;
+    float3 intensity;
     float range;
     float coneAngle;
     float innerConeAngle;
@@ -50,19 +49,20 @@ struct SpotLight
 struct DirLight
 {
     uint entity;
-    vec3 direction;
-    vec3 intensity;
+    float3 direction;
+    float3 intensity;
 };
 
 struct AmbientLight
 {
-    vec3 irradiance;
+    float3 irradiance;
 };
 
 // primary source:
 // https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
 // also really good:
 // https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+
 
 float distanceAttenuation(float distance)
 {
@@ -88,11 +88,11 @@ uint pointLightCount()
 PointLight getPointLight(uint i)
 {
     PointLight light;
-    i *= 2;
-    vec4 posVec = b_pointLights[i + 0];
-    light.entity = posVec.w;
+    i *= 2u;
+    float4 posVec = b_pointLights.Load(int3(i+0,0,0));
+    light.entity = (uint)posVec.w;
     light.position = posVec.xyz;
-    vec4 intensityRangeVec = b_pointLights[i + 1];
+    float4 intensityRangeVec = b_pointLights.Load(int3(i+1,0,0));
     light.intensity = intensityRangeVec.xyz;
     light.range = intensityRangeVec.w;
     return light;
@@ -106,15 +106,15 @@ uint spotLightCount()
 SpotLight getSpotLight(uint i)
 {
     SpotLight light;
-    i *= 4;
-    vec4 posVec = b_spotLights[i + 0];
-    light.entity = posVec.w;
+    i *= 4u;
+    float4 posVec = b_spotLights.Load(int3(i+0,0,0));
+    light.entity = (uint)posVec.w;
     light.position = posVec.xyz;
-    light.direction = b_spotLights[i + 1].xyz;
-    vec4 intensityRangeVec = b_spotLights[i + 2];
+    light.direction = b_spotLights.Load(int3(i+1,0,0)).xyz;
+    float4 intensityRangeVec = b_spotLights.Load(int3(i+2,0,0));
     light.intensity = intensityRangeVec.xyz;
     light.range = intensityRangeVec.w;
-    vec4 dataVec = b_spotLights[i + 3];
+    float4 dataVec = b_spotLights.Load(int3(i+3,0,0));
     light.coneAngle = dataVec.x;
     light.innerConeAngle = dataVec.y;
     return light;
@@ -128,29 +128,29 @@ uint dirLightCount()
 DirLight getDirLight(uint i)
 {
     DirLight light;
-    i *= 2;
-    vec4 posVec = b_dirLights[i + 0];
-    light.entity = posVec.w;
+    i *= 2u;
+    float4 posVec = b_dirLights.Load(int3(i+0,0,0));
+    light.entity = (uint)posVec.w;
     light.direction = posVec.xyz;
-    vec4 intensityVec = b_dirLights[i + 1];
+    float4 intensityVec = b_dirLights.Load(int3(i+1,0,0));
     light.intensity = intensityVec.xyz;
     return light;
 }
 
 AmbientLight getAmbientLight()
 {
-    AmbientLight light;
-    light.irradiance = u_ambientLightIrradiance.xyz;
-    return light;
+    AmbientLight l;
+    l.irradiance = u_ambientLightIrradiance.xyz;
+    return l;
 }
 
 struct LightData
 {
-    vec3 radiance;
-    vec3 direction;
+    float3 radiance;
+    float3 direction;
 };
 
-LightData calcPointLight(PointLight light, vec3 pos)
+LightData calcPointLight(PointLight light, float3 pos)
 {
     LightData data;
     data.direction = light.position - pos;
@@ -161,27 +161,21 @@ LightData calcPointLight(PointLight light, vec3 pos)
     return data;
 }
 
-LightData calcSpotLight(SpotLight light, vec3 pos)
+LightData calcSpotLight(SpotLight light, float3 pos)
 {
-    LightData data;
-    data.radiance = 0.0;
+    LightData data; data.radiance = float3(0.0,0.0,0.0);
     data.direction = light.position - pos;
     float dist = length(data.direction);
     data.direction = data.direction / dist;
     float cosTheta = dot(data.direction, -light.direction);
     float innerCutoff = cos(light.innerConeAngle);
     float outerCutoff = cos(light.coneAngle);
-
     if (cosTheta > outerCutoff)
     {
         float factor = (cosTheta - outerCutoff) / (innerCutoff - outerCutoff);
         float attenuation = factor * smoothAttenuation(dist, light.range);
-        if(attenuation > 0.0)
-        {
-            data.radiance = light.intensity * attenuation;
-        }
+        if(attenuation > 0.0) data.radiance = light.intensity * attenuation;
     }
-
     return data;
 }
 
@@ -192,5 +186,3 @@ LightData calcDirLight(DirLight light)
     data.radiance = light.intensity;
     return data;
 }
-
-#endif // DARMOK_LIGHTS_HEADER

@@ -48,8 +48,8 @@ namespace darmok
         {SlangCompileTarget::SLANG_DXBC, "sm_5_0"}, 
         // {SlangCompileTarget::SLANG_DXIL, "sm_6_0"}, // -disable-payload-qualifiers option error
         {SlangCompileTarget::SLANG_METAL, "metallib_2_4"},
-        //{SlangCompileTarget::SLANG_GLSL, "glsl_330"},
-        //{SlangCompileTarget::SLANG_SPIRV, "spirv_1_3"},
+        {SlangCompileTarget::SLANG_GLSL, "glsl_330"},
+        {SlangCompileTarget::SLANG_SPIRV, "spirv_1_3"},
     };
 
     const std::vector<SlangCompileTarget> SlangProgramCompilerImpl::_supportedTargets

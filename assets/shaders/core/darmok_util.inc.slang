@@ -1,35 +1,37 @@
-#ifndef DARMOK_UTIL_HEADER
-#define DARMOK_UTIL_HEADER
+#pragma once
 
-#include <bgfx_shader.sh>
-
-bool getBitfieldValue(vec4 field, int pos)
+cbuffer UtilConstants
 {
-    return (uint(field.x) & uint(1 << pos)) != uint(0);
+    float4 u_viewRect;
+    float4x4 u_invProj;
+}
+
+inline bool getBitfieldValue(float4 field, int pos)
+{
+    return ((uint(field.x) & (1u << pos)) != 0u);
 }
 
 // from screen coordinates (gl_FragCoord) to eye space
-vec4 screen2Eye(vec4 coord)
+float4 screen2Eye(float4 coord)
 {
-#if BGFX_SHADER_LANGUAGE_GLSL
+#ifdef SLANG_GLSL
     // https://www.khronos.org/opengl/wiki/Compute_eye_space_from_window_space
-    vec3 ndc = vec3(
+    float3 ndc = float3(
         2.0 * (coord.x - u_viewRect.x) / u_viewRect.z - 1.0,
         2.0 * (coord.y - u_viewRect.y) / u_viewRect.w - 1.0,
-        2.0 * coord.z - 1.0 // -> [-1, 1]
+        2.0 * coord.z - 1.0
     );
 #else
-    vec3 ndc = vec3(
+    float3 ndc = float3(
         2.0 * (coord.x - u_viewRect.x) / u_viewRect.z - 1.0,
-        2.0 * (u_viewRect.w - coord.y - 1 - u_viewRect.y) / u_viewRect.w - 1.0, // y is flipped
-        coord.z // -> [0, 1]
+        2.0 * (u_viewRect.w - coord.y - 1 - u_viewRect.y) / u_viewRect.w - 1.0,
+        coord.z
     );
 #endif
 
     // https://stackoverflow.com/a/16597492/862300
-    vec4 eye = mul(u_invProj, vec4(ndc, 1.0));
+    float4 eye = mul(u_invProj, float4(ndc, 1.0));
     eye = eye / eye.w;
-
     return eye;
 }
 
@@ -39,9 +41,7 @@ vec4 screen2Eye(vec4 coord)
 // for a left-handed coordinate system
 float screen2EyeDepth(float depth, float near, float far)
 {
-    // https://stackoverflow.com/a/45710371/862300
-
-#if BGFX_SHADER_LANGUAGE_GLSL
+#ifdef SLANG_GLSL
     float ndc = 2.0 * depth - 1.0;
     // ndc = (eye * (far + near) / (far - near) - 2 * (far * near) / (far - near)) / eye
     float eye = 2.0 * far * near / (far + near + ndc * (near - far));
@@ -50,19 +50,14 @@ float screen2EyeDepth(float depth, float near, float far)
     // ndc = (eye * far / (far - near) - (far * near) / (far - near)) / eye
     float eye = far * near / (far + ndc * (near - far));
 #endif
-
     return eye;
 }
 
 // convert normal from tangent space to space of normal_ref and tangent_ref
-vec3 convertTangentNormal(vec3 normal_ref, vec3 tangent_ref, vec3 normal)
+float3 convertTangentNormal(float3 normal_ref, float3 tangent_ref, float3 normal)
 {
-    vec3 bitangent = cross(normal_ref, tangent_ref);
-    mat3 TBN = mtxFromCols(
-        normalize(tangent_ref),
-        normalize(bitangent),
-        normalize(normal_ref)
-    );
+    float3 bitangent = cross(normal_ref, tangent_ref);
+    float3x3 TBN = float3x3(normalize(tangent_ref), normalize(bitangent), normalize(normal_ref));
     return normalize(mul(TBN, normal));
 }
 
@@ -75,18 +70,16 @@ vec3 convertTangentNormal(vec3 normal_ref, vec3 tangent_ref, vec3 normal)
 // changed it to return normals pointing towards the camera for
 // a left-handed coordinate system
 
-vec2 packNormal(vec3 normal)
+float2 packNormal(float3 normal)
 {
     float f = sqrt(8.0 * -normal.z + 8.0);
     return normal.xy / f + 0.5;
 }
 
-vec3 unpackNormal(vec2 encoded)
+float3 unpackNormal(float2 encoded)
 {
-    vec2 fenc = encoded * 4.0 - 2.0;
+    float2 fenc = encoded * 4.0 - 2.0;
     float f = dot(fenc, fenc);
     float g = sqrt(1.0 - f * 0.25);
-    return vec3(fenc * g, -(1.0 - f * 0.5));
+    return float3(fenc * g, -(1.0 - f * 0.5));
 }
-
-#endif // DARMOK_UTIL_HEADER

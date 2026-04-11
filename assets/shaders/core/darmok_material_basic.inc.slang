@@ -1,9 +1,18 @@
-// Slang conversion of darmok_material_basic.sc
+#pragma once
 
-Texture2D<float4> s_texBaseColor;
-SamplerState s_texBaseColorState;
-Texture2D<float4> s_texSpecular;
-SamplerState s_texSpecularState;
+#include <darmok_sampler.inc.slang>
+
+[[vk::binding(1, 0)]]
+Texture2D<float4> s_texBaseColor : register(t1);
+
+[[vk::binding(1, 0)]]
+SamplerState s_texBaseColorState : register(s1);
+
+[[vk::binding(2, 0)]]
+Texture2D<float4> s_texSpecular : register(t2);
+
+[[vk::binding(2, 0)]]
+SamplerState s_texSpecularState : register(s2);
 
 cbuffer MaterialUniforms
 {
