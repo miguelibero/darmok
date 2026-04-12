@@ -1,3 +1,4 @@
 {
-    "headerIncludeDir": "generated"
+    "headerIncludeDir": "generated",
+    "headerVarPrefix": "darmok_program_"
 }

@@ -15,7 +15,7 @@
 #include <darmok/string.hpp>
 #include <darmok/transform.hpp>
 #include <darmok/glm_serialize.hpp>
-#include "generated/shaders/shadow.program.h"
+#include "generated/shaders/shadow.h"
 #include "detail/render_samplers.hpp"
 
 namespace darmok
@@ -234,7 +234,7 @@ namespace darmok
             0.5f, 0.5f, tz,   1.0f,
         };
 
-        auto progResult = Program::loadStaticMem(shadow_program);
+        auto progResult = Program::loadStaticMem(darmok_program_shadow);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };

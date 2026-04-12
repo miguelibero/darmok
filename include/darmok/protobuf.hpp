@@ -198,8 +198,12 @@ namespace darmok
             requires IsFieldConvertible<T, int32_t>
         struct Int32FieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            Int32FieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -232,8 +236,12 @@ namespace darmok
             requires IsFieldConvertible<T, int64_t>
         struct Int64FieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            Int64FieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -266,8 +274,12 @@ namespace darmok
             requires IsFieldConvertible<T, uint32_t>
         struct Uint32FieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            Uint32FieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -300,8 +312,12 @@ namespace darmok
             requires IsFieldConvertible<T, uint64_t>
         struct Uint64FieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            Uint64FieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -334,8 +350,12 @@ namespace darmok
             requires IsFieldConvertible<T, float>
         struct FloatFieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            FloatFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -368,8 +388,12 @@ namespace darmok
             requires IsFieldConvertible<T, double>
         struct DoubleFieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            DoubleFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -402,8 +426,12 @@ namespace darmok
             requires IsFieldConvertible<T, bool>
         struct BoolFieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            BoolFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -436,8 +464,12 @@ namespace darmok
             requires IsFieldConvertible<T, std::string>
         struct StringFieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            StringFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -470,8 +502,12 @@ namespace darmok
             requires std::is_enum_v<T> || std::is_same_v<T, int>
         struct EnumFieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            EnumFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {
@@ -506,8 +542,12 @@ namespace darmok
             requires std::is_assignable_v<T, google::protobuf::Message>
         struct MessageFieldConverter final : public IFieldConverter<T>
         {
-            using IFieldConverter<T>::IFieldConverter;
             using IFieldConverter<T>::_field;
+
+            MessageFieldConverter(const google::protobuf::FieldDescriptor& field) noexcept
+            : IFieldConverter<T>( field )
+            {
+            }
 
             [[nodiscard]] bool check() const noexcept override
             {

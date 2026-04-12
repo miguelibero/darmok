@@ -9,8 +9,8 @@
 #include <darmok/glm_serialize.hpp>
 #include <darmok/scene_serialize.hpp>
 
-#include "generated/shaders/skybox.program.h"
-#include "generated/shaders/grid.program.h"
+#include "generated/shaders/skybox.h"
+#include "generated/shaders/grid.h"
 
 namespace darmok
 {
@@ -22,7 +22,7 @@ namespace darmok
     expected<void, std::string> SkyboxRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
         _cam = cam;
-        auto progResult = Program::loadStaticMem(skybox_program);
+        auto progResult = Program::loadStaticMem(darmok_program_skybox);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };
@@ -126,7 +126,7 @@ namespace darmok
 
     expected<void, std::string> GridRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
     {
-        auto progResult = Program::loadStaticMem(grid_program);
+        auto progResult = Program::loadStaticMem(darmok_program_grid);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };

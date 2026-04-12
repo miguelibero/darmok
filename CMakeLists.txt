@@ -327,9 +327,7 @@ if(DARMOK_BUILD_IMGUI)
     INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/imgui
     OUTPUT include/private/generated/shaders/imgui
     ASSETS
-      imgui.fragment.sc
-      imgui.vertex.sc
-      imgui.program.json
+      imgui.slang
       darmok-import.json
   )
   list(APPEND ASSET_TARGETS ${IMGUI_ASSETS_TARGET})
@@ -359,9 +357,7 @@ if(DARMOK_BUILD_RMLUI)
     INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/rmlui
     OUTPUT include/private/generated/shaders/rmlui
     ASSETS
-      rmlui.fragment.sc
-      rmlui.vertex.sc
-      rmlui.program.json
+      rmlui.slang
       darmok-import.json
   )
   list(APPEND ASSET_TARGETS ${RMLUI_ASSETS_TARGET})

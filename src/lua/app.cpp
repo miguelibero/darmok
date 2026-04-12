@@ -46,7 +46,7 @@ namespace darmok
 		std::vector<std::string> strArgs;
 		strArgs.reserve(args.size());
 		std::transform(args.begin(), args.end(), std::back_inserter(strArgs),
-			[](const auto& arg) { return arg.as<std::string>(); });
+			[](const auto& arg) { return arg.template as<std::string>(); });
 		StreamUtils::log(StringUtils::join(", ", strArgs) + "\n");
 	}
 

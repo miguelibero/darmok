@@ -19,7 +19,7 @@ cbuffer Constants
     float4 u_imageLodEnabled; // x = lod, y = enabled
 }
 
-VSOutput main(VSInput IN)
+VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
     OUT.position = mul(u_modelViewProj, float4(IN.a_position.xy, 0.0, 1.0));
@@ -28,17 +28,17 @@ VSOutput main(VSInput IN)
     return OUT;
 }
 
-Texture2D<float4> s_texColor;
-SamplerState s_texColorState;
+Texture2D<float4> s_texColor : register(t1);
+SamplerState s_texColorState : register(s1);
 
-float4 main(VSOutput IN) : SV_Target
+float4 frag(VSOutput IN) : SV_Target
 {
-#if DARMOK_VARIANT_LOD_ENABLED
-    float3 color = s_texColor.SampleLevel(s_texColor_s, IN.v_texcoord0, u_imageLodEnabled.x).xyz;
+#ifdef DARMOK_VARIANT_LOD_ENABLED
+    float3 color = s_texColor.SampleLevel(s_texColorState, IN.v_texcoord0, u_imageLodEnabled.x).xyz;
     float alpha = 0.2 + 0.8 * u_imageLodEnabled.y;
     return float4(color, alpha) * IN.v_color0;
 #else
-    float4 texel = s_texColor.Sample(s_texColor_s, IN.v_texcoord0);
+    float4 texel = s_texColor.Sample(s_texColorState, IN.v_texcoord0);
     return texel * IN.v_color0;
 #endif
 }

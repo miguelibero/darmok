@@ -14,6 +14,7 @@ struct VSOutput
 
 cbuffer Constants
 {
+    float4x4 u_modelViewProj;
     float4 u_rmluiData;
 }
 
@@ -36,15 +37,15 @@ VSOutput vert(VSInput IN)
 }
 
 #ifndef DARMOK_VARIANT_TEXTURE_DISABLE
-Texture2D<float4> s_texColor;
-SamplerState s_texColorState;
+Texture2D<float4> s_texColor : register(t1);
+SamplerState s_texColorState : register(s1);
 #endif
 
 float4 frag(VSOutput IN) : SV_Target
 {
     float4 outColor = IN.v_color0;
 #ifndef DARMOK_VARIANT_TEXTURE_DISABLE
-    outColor *= s_texColor.Sample(s_texCs_texColorStateolor_s, IN.v_texcoord0);
+    outColor *= s_texColor.Sample(s_texColorState, IN.v_texcoord0);
 #endif
     return outColor;
 }

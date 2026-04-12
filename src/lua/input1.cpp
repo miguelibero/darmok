@@ -465,7 +465,7 @@ namespace darmok
 		{
 			return std::nullopt;
 		}
-		uint8_t gamepad = Gamepad::Any;
+		uint32_t gamepad = Gamepad::Any;
 		if (size > 2 && tab[3].is<int>())
 		{
 			gamepad = tab[3];

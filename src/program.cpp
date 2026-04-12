@@ -5,9 +5,9 @@
 #include <darmok/protobuf.hpp>
 #include "generated/shaders/gui.h"
 #include "generated/shaders/unlit.h"
-#include "generated/shaders/forward.program.h"
-#include "generated/shaders/forward_basic.program.h"
-#include "generated/shaders/tonemap.program.h"
+#include "generated/shaders/forward.h"
+#include "generated/shaders/forward_basic.h"
+#include "generated/shaders/tonemap.h"
 
 namespace darmok
 {    
@@ -258,15 +258,15 @@ namespace darmok
         switch (type)
         {
         case protobuf::StandardProgram::Gui:
-            return protobuf::readStaticMem(def, gui);
+            return protobuf::readStaticMem(def, darmok_program_gui);
         case protobuf::StandardProgram::Unlit:
-            return protobuf::readStaticMem(def, unlit);
+            return protobuf::readStaticMem(def, darmok_program_unlit);
         case protobuf::StandardProgram::Forward:
-            return protobuf::readStaticMem(def, forward_program);
+            return protobuf::readStaticMem(def, darmok_program_forward);
         case protobuf::StandardProgram::ForwardBasic:
-            return protobuf::readStaticMem(def, forward_basic_program);
+            return protobuf::readStaticMem(def, darmok_program_forward);
         case protobuf::StandardProgram::Tonemap:
-            return protobuf::readStaticMem(def, tonemap_program);
+            return protobuf::readStaticMem(def, darmok_program_tonemap);
         default:
             break;
         }
