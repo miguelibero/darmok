@@ -1,0 +1,16 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{c,cpp,h,hpp}]
+ij_c_cpp_brace_style = next_line
+ij_c_cpp_class_brace_style = next_line
+ij_c_cpp_method_brace_style = next_line
+ij_c_cpp_namespace_brace_style = next_line
+ij_c_cpp_lambda_brace_style = next_line
