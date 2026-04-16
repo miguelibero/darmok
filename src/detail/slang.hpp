@@ -21,6 +21,7 @@ namespace darmok
         slang::SessionDesc _sessionDesc;
         std::vector<std::string> _searchPathStrings;
         std::vector<const char*> _searchPathChars;
+        std::vector<slang::TargetDesc> _targetDescs;
 
         using TargetProfileMap = std::unordered_map<SlangCompileTarget, std::string>;
 		static const TargetProfileMap _targetProfileMap;
@@ -28,12 +29,14 @@ namespace darmok
         using TargetRendererMap = std::unordered_map<SlangCompileTarget, bgfx::RendererType::Enum>;
         static const TargetRendererMap _targetRenderers;
 
-		static expected<slang::TypeLayoutReflection*, std::string> getStructParamLayout(slang::ICompileRequest& request, SlangUInt entryPointIdx) noexcept;
-		static expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::ICompileRequest& request, SlangUInt vertIdx) noexcept;
-        static expected<protobuf::FragmentLayout, std::string> createFragmentLayout(slang::ICompileRequest& request, SlangUInt fragIdx) noexcept;
+		static expected<slang::TypeLayoutReflection*, std::string> getStructParamLayout(slang::EntryPointReflection& entryPoint) noexcept;
+		static expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::EntryPointReflection& entryPoint) noexcept;
+        static expected<protobuf::FragmentLayout, std::string> createFragmentLayout(slang::EntryPointReflection& entryPoint) noexcept;
         static void updateShader(protobuf::Shader& shader, const std::unordered_set<std::string>& defines, slang::IBlob& data) noexcept;
         static std::optional<protobuf::Bgfx::Attrib> getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept;
         static std::optional<protobuf::Bgfx::AttribType> getBgfxAttribType(slang::TypeReflection::ScalarType scalarType) noexcept;
+        static std::string getDiagnosticsString(slang::IBlob* diagnostics) noexcept;
+        expected<slang::IComponentType*, std::string> compileProgram(const Source& src, const std::unordered_set<std::string>& defines, OptionalRef<std::ostream> log = nullptr) noexcept;
     };
 
     class SlangProgramFileImporterImpl final
@@ -54,7 +57,7 @@ namespace darmok
         const std::string& getName() const noexcept;
     private:
         CompileConfig _defaultConfig;
-
+        OptionalRef<std::ostream> _log;
         std::optional<CompileConfig> _config;
         std::optional<Source> _src;
     };

@@ -21,6 +21,7 @@ struct VSOutput
     float4 v_color0 : COLOR0;
 };
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -30,6 +31,7 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
+[shader("fragment")]
 float4 frag(VSOutput input) : SV_Target
 {
     float4 texColor = s_texColor.Sample(samplerState, input.v_texcoord0);

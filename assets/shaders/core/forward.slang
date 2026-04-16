@@ -29,6 +29,7 @@ cbuffer Constants
     float4x4 u_viewProj;
 }
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -49,6 +50,7 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
     return forwardFragment(IN.v_viewDir, IN.v_normal, IN.v_tangent, IN.v_position, IN.v_texcoord0);

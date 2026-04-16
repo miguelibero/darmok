@@ -21,6 +21,7 @@ cbuffer Constants
 #define u_rmluiForceDepth ((int(u_rmluiData.x) & 1 << 0) != 0)
 #define u_rmluiDepth u_rmluiData.y
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -41,6 +42,7 @@ Texture2D<float4> s_texColor : register(t1);
 SamplerState s_texColorState : register(s1);
 #endif
 
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
     float4 outColor = IN.v_color0;

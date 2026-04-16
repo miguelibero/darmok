@@ -16,6 +16,10 @@ struct VSOutput
     float2 v_texcoord0 : TEXCOORD0;
 };
 
+Texture2D s_texColor;
+SamplerState s_texColorState;
+
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -24,12 +28,10 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
-Texture2D s_texColor;
-SamplerState samplerState;
-
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    float4 baseColor = s_texColor.Sample(samplerState, IN.v_texcoord0);
+    float4 baseColor = s_texColor.Sample(s_texColorState, IN.v_texcoord0);
     float3 hdrColor = baseColor.rgb;
   
     // reinhard tone mapping

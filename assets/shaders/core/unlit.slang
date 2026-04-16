@@ -25,6 +25,7 @@ struct VSOutput
     float2 v_texcoord0 : TEXCOORD0;
 };
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -36,6 +37,7 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
 	Material mat = getMaterial(IN.v_texcoord0);

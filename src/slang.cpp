@@ -82,8 +82,22 @@ namespace darmok
         std::transform(_searchPathStrings.begin(), _searchPathStrings.end(),
             _searchPathChars.begin(), [](const std::string& str) { return str.c_str(); });
 
+        _sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
         _sessionDesc.searchPaths = &_searchPathChars.front();
         _sessionDesc.searchPathCount = _searchPathChars.size();
+
+        for (auto& target : _supportedTargets)
+        {
+            slang::TargetDesc targetDesc{ .format = target };
+            auto itr = _targetProfileMap.find(target);
+            if (itr != _targetProfileMap.end())
+            {
+                targetDesc.profile = _globalSession->findProfile(itr->second.c_str());
+            }
+            _targetDescs.push_back(targetDesc);
+        }
+        _sessionDesc.targetCount = _targetDescs.size();
+        _sessionDesc.targets = _targetDescs.data();
     }
 
     expected<SlangProgramCompilerImpl, std::string> SlangProgramCompilerImpl::create(const Config& config) noexcept
@@ -106,77 +120,149 @@ namespace darmok
         shader.set_data(DataView{ data.getBufferPointer(), data.getBufferSize() }.toString());
     }
 
-    expected<protobuf::Program, std::string> SlangProgramCompilerImpl::operator()(const Source& src) noexcept
+    std::string SlangProgramCompilerImpl::getDiagnosticsString(slang::IBlob* diagnostics) noexcept
     {
-        ShaderParser shaderParser{ _config.includePaths };
-        ShaderParser::Defines defines;
-        std::istringstream in{ src.data() };
-        shaderParser.getDefines(in, defines);
+        if (!diagnostics)
+        {
+            return {};
+        }
+        return {static_cast<const char*>(diagnostics->getBufferPointer()), diagnostics->getBufferSize()};
+    }
 
-        protobuf::Program program;
-		program.set_name(src.name());
-        ProgramDefinitionWrapper progWrap{ program };
+    expected<slang::IComponentType*, std::string> SlangProgramCompilerImpl::compileProgram(const Source& src, const std::unordered_set<std::string>& defines, OptionalRef<std::ostream> log) noexcept
+    {
+        auto addLog = [log](const std::string& title, const std::string& msg)
+        {
+            if (!log || msg.empty())
+            {
+                return;
+            }
+            *log << title << "\n";
+            *log << ">>>\n";
+            *log << msg << "\n";
+            *log << ">>>\n";
+        };
+
+        auto sessionDesc = _sessionDesc;
+        std::vector<slang::PreprocessorMacroDesc> macros;
+        for (auto& define : defines)
+        {
+            macros.emplace_back(define.c_str(), "1");
+        }
+        sessionDesc.preprocessorMacroCount = macros.size();
+        sessionDesc.preprocessorMacros = macros.data();
 
         Slang::ComPtr<slang::ISession> session;
-        SLANG_TRY("creating slang session",
-            _globalSession->createSession(_sessionDesc, session.writeRef()));
 
+        SLANG_TRY("creating slang session",
+            _globalSession->createSession(sessionDesc, session.writeRef()));
+
+        auto path = src.name() + ".slang";
+        Slang::ComPtr<slang::IBlob> diagnostics;
+        Slang::ComPtr<slang::IModule> module{session->loadModuleFromSourceString(src.name().c_str(), path.c_str(), src.data().c_str(), diagnostics.writeRef())};
+        std::string msg = getDiagnosticsString(diagnostics);
+        if (module == nullptr)
+        {
+            return unexpected{msg};
+        }
+        addLog("loading program source", msg);
+
+        std::vector<slang::IComponentType*> components;
+        components.reserve(module->getDefinedEntryPointCount() + 1);
+        components.push_back(module);
+        for (SlangInt32 i = 0; i < module->getDefinedEntryPointCount(); i++)
+        {
+            Slang::ComPtr<slang::IEntryPoint> entryPoint;
+            module->getDefinedEntryPoint(i, entryPoint.writeRef());
+            components.push_back(entryPoint);
+        }
+
+        Slang::ComPtr<slang::IComponentType> composite;
+        SlangResult result =
+            session->createCompositeComponentType(components.data(), components.size(), composite.writeRef(), diagnostics.writeRef());
+        msg = getDiagnosticsString(diagnostics);
+        if (SLANG_FAILED(result))
+        {
+            return unexpected{msg};
+        }
+        addLog("creating composite component type", msg);
+
+        slang::IComponentType* program;
+        result = composite->link(&program, diagnostics.writeRef());
+        msg = getDiagnosticsString(diagnostics);
+        if (SLANG_FAILED(result))
+        {
+            return unexpected{msg};
+        }
+        addLog("linking program", msg);
+        return program;
+    }
+
+    expected<protobuf::Program, std::string> SlangProgramCompilerImpl::operator()(const Source& src) noexcept
+    {
+        ShaderParser::Defines defines;
+        {
+            ShaderParser shaderParser{ _config.includePaths };
+            std::istringstream in{ src.data() };
+            shaderParser.getDefines(in, defines);
+        }
+
+        protobuf::Program programDef;
+        programDef.set_name(src.name());
+        ProgramDefinitionWrapper progWrap{ programDef };
 
         for (auto& defineComb : CollectionUtils::combinations(defines))
         {
-            Slang::ComPtr<slang::ICompileRequest> request;
-            SLANG_TRY("creating slang compile request",
-                session->createCompileRequest(request.writeRef()));
-
-			std::unordered_map<SlangCompileTarget, SlangInt> targetIdxMap;
-            for (auto& target : _supportedTargets)
+            auto compileResult = compileProgram(src, defineComb, _config.log);
+            if (!compileResult)
             {
-				auto itr = _targetProfileMap.find(target);
-				if (itr != _targetProfileMap.end())
+                return unexpected{std::move(compileResult).error()};
+            }
+            auto linkedProgram = std::move(compileResult).value();
+            auto layout = linkedProgram->getLayout();
+
+            SlangInt vertIdx = -1;
+            SlangInt fragIdx = -1;
+            for (SlangInt i = 0; i < layout->getEntryPointCount(); i++)
+            {
+                auto entryPoint = layout->getEntryPointByIndex(i);
+                if (entryPoint->getStage() == SLANG_STAGE_VERTEX)
                 {
-                    auto targetIdx = request->addCodeGenTarget(target);
-                    auto profile = _globalSession->findProfile(itr->second.c_str());
-					if(profile != SLANG_PROFILE_UNKNOWN)
+                    auto result = createVertexLayout(*entryPoint);
+                    if (!result)
                     {
-					    request->setTargetProfile(targetIdx, profile);                   
+                        return unexpected<std::string>{ "failed to create vertex layout: " + result.error() };
                     }
-                    targetIdxMap.emplace(target, targetIdx);
+                    *programDef.mutable_varying()->mutable_vertex() = std::move(result).value();
+                    vertIdx = i;
+                }
+                if (entryPoint->getStage() == SLANG_STAGE_FRAGMENT)
+                {
+                    auto result = createFragmentLayout(*entryPoint);
+                    if (!result)
+                    {
+                        return unexpected<std::string>{ "failed to create fragment layout: " + result.error() };
+                    }
+                    *programDef.mutable_varying()->mutable_fragment() = std::move(result).value();
+                    fragIdx = i;
+                }
+                if (vertIdx >= 0 && fragIdx >= 0)
+                {
+                    break;
                 }
             }
-            auto path = src.name() + ".slang";
-            auto transUnitIdx = request->addTranslationUnit(SLANG_SOURCE_LANGUAGE_SLANG, path.c_str());
-            request->addTranslationUnitSourceString(transUnitIdx, path.c_str(), src.data().c_str());
-
-            for (auto& name : defineComb)
+            if (vertIdx < 0)
             {
-                request->addPreprocessorDefine(name.c_str(), "1");
+                return unexpected<std::string>{ "missing vertex entry point" };
+            }
+            if (fragIdx < 0)
+            {
+                return unexpected<std::string>{ "missing fragment entry point" };
             }
 
-            auto vertIdx = request->addEntryPoint(transUnitIdx, "vert", SlangStage::SLANG_STAGE_VERTEX);
-            auto fragIdx = request->addEntryPoint(transUnitIdx, "frag", SlangStage::SLANG_STAGE_FRAGMENT);
-            
-            if (SLANG_FAILED(request->compile()))
+            for (SlangInt targetIdx = 0; targetIdx < _supportedTargets.size(); targetIdx++)
             {
-                return unexpected<std::string>{ request->getDiagnosticOutput() };
-            }
-           
-            auto vertexLayoutResult = createVertexLayout(*request, vertIdx);
-			if (!vertexLayoutResult)
-            {
-                return unexpected<std::string>{ "failed to create vertex layout: " + vertexLayoutResult.error() };
-            }
-			*program.mutable_varying()->mutable_vertex() = std::move(vertexLayoutResult).value();
-
-            auto fragmentLayoutResult = createFragmentLayout(*request, fragIdx);
-            if (!fragmentLayoutResult)
-            {
-                return unexpected<std::string>{ "failed to create fragment layout: " + fragmentLayoutResult.error() };
-            }
-            *program.mutable_varying()->mutable_fragment() = std::move(fragmentLayoutResult).value();
-
-            for (auto& [target, targetIdx] : targetIdxMap)
-            {
-                auto itr = _targetRenderers.find(target);
+                auto itr = _targetRenderers.find(_supportedTargets.at(targetIdx));
                 if (itr == _targetRenderers.end())
                 {
                     continue;
@@ -185,20 +271,21 @@ namespace darmok
                 auto& programRenderer = progWrap.getRendererProgram(renderer);
 
                 Slang::ComPtr<slang::IBlob> compiledBlob;
-                if (SLANG_FAILED(request->getEntryPointCodeBlob(vertIdx, targetIdx, compiledBlob.writeRef())))
+                Slang::ComPtr<slang::IBlob> diagnostics;
+                if (SLANG_FAILED(linkedProgram->getEntryPointCode(vertIdx, targetIdx, compiledBlob.writeRef(), diagnostics.writeRef())))
                 {
-                    return unexpected<std::string>{ fmt::format("failed to read compiled vertex shader {}", renderer) };
+                    return unexpected<std::string>{ fmt::format("failed to read compiled vertex shader {}: {}", renderer, getDiagnosticsString(diagnostics)) };
                 }
                 updateShader(*programRenderer.add_vertex_shaders(), defineComb, *compiledBlob);
-                if (SLANG_FAILED(request->getEntryPointCodeBlob(fragIdx, targetIdx, compiledBlob.writeRef())))
+                if (SLANG_FAILED(linkedProgram->getEntryPointCode(fragIdx, targetIdx, compiledBlob.writeRef(), diagnostics.writeRef())))
                 {
-                    return unexpected<std::string>{ fmt::format("failed to read compiled fragment shader {}", renderer) };
+                    return unexpected<std::string>{ fmt::format("failed to read compiled fragment shader {}: {}", renderer, getDiagnosticsString(diagnostics)) };
                 }
                 updateShader(*programRenderer.add_fragment_shaders(), defineComb, *compiledBlob);
             }
         }
 
-        return program;
+        return programDef;
     }
 
     std::optional<protobuf::Bgfx::Attrib> SlangProgramCompilerImpl::getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept
@@ -250,38 +337,26 @@ namespace darmok
     {
         switch (scalarType)
         {
-        case SLANG_SCALAR_TYPE_UINT8:
+        case slang::TypeReflection::ScalarType::UInt8:
             return protobuf::Bgfx::Uint8;
-        case SLANG_SCALAR_TYPE_INT16:
+        case slang::TypeReflection::ScalarType::Int16:
             return protobuf::Bgfx::Int16;
-        case SLANG_SCALAR_TYPE_FLOAT16:
+        case slang::TypeReflection::ScalarType::Float16:
             return protobuf::Bgfx::Half;
-        case SLANG_SCALAR_TYPE_FLOAT32:
+        case slang::TypeReflection::ScalarType::Float32:
             return protobuf::Bgfx::Float;
+        default:
+            return std::nullopt;
         }
-        return std::nullopt;
     }
 
-    expected<slang::TypeLayoutReflection*, std::string> SlangProgramCompilerImpl::getStructParamLayout(slang::ICompileRequest& request, SlangUInt entryPointIdx) noexcept
+    expected<slang::TypeLayoutReflection*, std::string> SlangProgramCompilerImpl::getStructParamLayout(slang::EntryPointReflection& entryPoint) noexcept
     {
-        Slang::ComPtr<slang::IComponentType> comp;
-        if (SLANG_FAILED(request.getEntryPoint(entryPointIdx, comp.writeRef())))
-        {
-            return unexpected<std::string>{ "failed to get compiled entry point" };
-        }
-
-        if (comp->getLayout()->getEntryPointCount() == 0)
-        {
-            return unexpected<std::string>{ "missing vertex entry point" };
-        }
-
-        auto entryPoint = comp->getLayout()->getEntryPointByIndex(0);
-        if (entryPoint->getParameterCount() == 0)
+        if (entryPoint.getParameterCount() == 0)
         {
             return unexpected<std::string>{ "vertex entry point without parameters" };
         }
-
-        auto param = entryPoint->getParameterByIndex(0);
+        auto param = entryPoint.getParameterByIndex(0);
         auto typeLayout = param->getTypeLayout();
         if (typeLayout->getType()->getKind() != slang::TypeReflection::Kind::Struct)
         {
@@ -290,9 +365,13 @@ namespace darmok
 		return typeLayout;
     }
 
-    expected<protobuf::VertexLayout, std::string> SlangProgramCompilerImpl::createVertexLayout(slang::ICompileRequest& request, SlangUInt vertIdx) noexcept
+    expected<protobuf::VertexLayout, std::string> SlangProgramCompilerImpl::createVertexLayout(slang::EntryPointReflection& entryPoint) noexcept
     {
-		auto typeLayoutResult = getStructParamLayout(request, vertIdx);
+        if (entryPoint.getStage() != SLANG_STAGE_VERTEX)
+        {
+            return unexpected<std::string>{ "entry point is not a vertex state" };
+        }
+		auto typeLayoutResult = getStructParamLayout(entryPoint);
         if(!typeLayoutResult)
         {
             return unexpected<std::string>{ std::move(typeLayoutResult).error() };
@@ -325,9 +404,13 @@ namespace darmok
         return vertexLayout;
     }
 
-    expected<protobuf::FragmentLayout, std::string> SlangProgramCompilerImpl::createFragmentLayout(slang::ICompileRequest& request, SlangUInt fragIdx) noexcept
+    expected<protobuf::FragmentLayout, std::string> SlangProgramCompilerImpl::createFragmentLayout(slang::EntryPointReflection& entryPoint) noexcept
     {
-        auto typeLayoutResult = getStructParamLayout(request, fragIdx);
+        if (entryPoint.getStage() != SLANG_STAGE_FRAGMENT)
+        {
+            return unexpected<std::string>{ "entry point is not a fragment state" };
+        }
+        auto typeLayoutResult = getStructParamLayout(entryPoint);
         if (!typeLayoutResult)
         {
             return unexpected<std::string>{ std::move(typeLayoutResult).error() };

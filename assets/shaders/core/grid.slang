@@ -31,6 +31,7 @@ float3 unproject(float3 pos)
     return p.xyz / p.w;
 }
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
 	float4 pos = float4(IN.a_position, 0.0, 1.0);
@@ -81,6 +82,7 @@ float computeDepth(float3 pos)
     return (p.z / p.w);
 }
 
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
     float t = -IN.v_nearPoint.y / (IN.v_farPoint.y - IN.v_nearPoint.y);

@@ -19,6 +19,7 @@ cbuffer Constants
     float4 u_imageLodEnabled; // x = lod, y = enabled
 }
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -31,6 +32,7 @@ VSOutput vert(VSInput IN)
 Texture2D<float4> s_texColor : register(t1);
 SamplerState s_texColorState : register(s1);
 
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
 #ifdef DARMOK_VARIANT_LOD_ENABLED

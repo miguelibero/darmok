@@ -15,6 +15,10 @@ struct VSOutput
     float3 v_direction : TEXCOORD0;
 };
 
+Texture2D<float4> s_texSkybox;
+SamplerState s_texSkyboxState;
+
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
@@ -23,9 +27,7 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
-Texture2D<float4> s_texSkybox;
-SamplerState s_texSkyboxState;
-
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
     return s_texSkybox.Sample(s_texSkyboxState, IN.v_direction.xy);

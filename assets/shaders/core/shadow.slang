@@ -18,6 +18,7 @@ cbuffer Constants
     float4x4 u_modelViewProj;
 }
 
+[shader("vertex")]
 VSOutput vert(VSInput IN)
 {
 	float4 pos = float4(IN.a_position, 1.0);
@@ -27,6 +28,7 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
+[shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
     return float4(0.0);
