@@ -3,37 +3,31 @@
 
 [[vk::binding(0, 0)]]
 Texture2D<float4> s_texAlbedoLUT : register(t0);
-
 [[vk::binding(0, 0)]]
 SamplerState s_texAlbedoLUTState : register(s0);
 
 [[vk::binding(1, 0)]]
 Texture2D<float4> s_texBaseColor : register(t1);
-
 [[vk::binding(1, 0)]]
 SamplerState s_texBaseColorState : register(s1);
 
 [[vk::binding(3, 0)]]
 Texture2D<float4> s_texMetallicRoughness : register(t3);
-
 [[vk::binding(3, 0)]]
 SamplerState s_texMetallicRoughnessState : register(s3);
 
 [[vk::binding(4, 0)]]
 Texture2D<float4> s_texNormal : register(t4);
-
 [[vk::binding(4, 0)]]
 SamplerState s_texNormalState : register(s4);
 
 [[vk::binding(5, 0)]]
 Texture2D<float4> s_texOcclusion : register(t5);
-
 [[vk::binding(5, 0)]]
 SamplerState s_texOcclusionState : register(s5);
 
 [[vk::binding(6, 0)]]
 Texture2D<float4> s_texEmissive : register(t6);
-
 [[vk::binding(6, 0)]]
 SamplerState s_texEmissiveState : register(s6);
 

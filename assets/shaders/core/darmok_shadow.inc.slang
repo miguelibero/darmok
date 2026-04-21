@@ -29,7 +29,7 @@ SamplerComparisonState s_shadowMapCmp;
 
 // for each shadow map:
 //   mat4 transform
-StructuredBuffer<float4> b_shadowTrans;
+StructuredBuffer<float4x4> b_shadowTrans;
 
 #define SHADOW_LIGHT_TYPE_DIR 0
 #define SHADOW_LIGHT_TYPE_SPOT 1
@@ -47,12 +47,7 @@ StructuredBuffer<float4> b_shadowLightData;
 
 float4x4 getShadowTransform(uint shadowMapIndex)
 {
-	shadowMapIndex *= 4u;
-	float4 r0 = b_shadowTrans[shadowMapIndex + 0u];
-	float4 r1 = b_shadowTrans[shadowMapIndex + 1u];
-	float4 r2 = b_shadowTrans[shadowMapIndex + 2u];
-	float4 r3 = b_shadowTrans[shadowMapIndex + 3u];
-	return float4x4(r0, r1, r2, r3);
+	return b_shadowTrans[shadowMapIndex];
 }
 
 bool outsideShadowMap(float3 texCoord)

@@ -32,11 +32,22 @@ namespace darmok
 		static expected<slang::TypeLayoutReflection*, std::string> getStructParamLayout(slang::EntryPointReflection& entryPoint) noexcept;
 		static expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::EntryPointReflection& entryPoint) noexcept;
         static expected<protobuf::FragmentLayout, std::string> createFragmentLayout(slang::EntryPointReflection& entryPoint) noexcept;
-        static void updateShader(protobuf::Shader& shader, const std::unordered_set<std::string>& defines, slang::IBlob& data) noexcept;
+        static expected<void, std::string> updateShader(protobuf::Shader& shader, slang::IComponentType& linkedProgram, const std::unordered_set<std::string>& defines, SlangInt entryPointIdx, SlangInt targetIdx) noexcept;
         static std::optional<protobuf::Bgfx::Attrib> getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept;
         static std::optional<protobuf::Bgfx::AttribType> getBgfxAttribType(slang::TypeReflection::ScalarType scalarType) noexcept;
         static std::string getDiagnosticsString(slang::IBlob* diagnostics) noexcept;
-        expected<slang::IComponentType*, std::string> compileProgram(const Source& src, const std::unordered_set<std::string>& defines, OptionalRef<std::ostream> log = nullptr) noexcept;
+        expected<Slang::ComPtr<slang::ISession> , std::string> createSession(const std::unordered_set<std::string>& defines) noexcept;
+        static expected<Slang::ComPtr<slang::IComponentType>, std::string> compileProgram(const Source& src, slang::ISession& session, OptionalRef<std::ostream> log = nullptr) noexcept;
+
+        struct LayoutParam final
+        {
+            std::string name;
+            std::string qualifiedName;
+            bgfx::Attrib::Enum attrib;
+        };
+
+        static expected<std::vector<LayoutParam>, std::string> getLayoutParams(slang::VariableLayoutReflection& layout, const std::string& prefix = "") noexcept;
+        static uint32_t hashLayoutParams(const std::vector<LayoutParam> &params) noexcept;
     };
 
     class SlangProgramFileImporterImpl final

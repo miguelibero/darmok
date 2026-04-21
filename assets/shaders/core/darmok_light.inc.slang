@@ -3,19 +3,48 @@
 // for each point light:
 //   vec4 position + uint entity
 //   vec4 intensity + range (xyz is intensity, w is range)
-Texture2D<float4> b_pointLights;
+struct PointLight
+{
+    float3 position;
+    uint entity;
+    float3 intensity;
+    float range;
+};
+
+[[vk::binding(7, 0)]]
+StructuredBuffer<PointLight> b_pointLights : register(t7);
 
 // for each spot light:
 //   vec3 position + uint entity
 //   vec4 direction (w is padding)
 //   vec4 intensity + range (xyz is intensity, w is range)
 //   vec4 cone angle, inner cone angle
-Texture2D<float4> b_spotLights;
+struct SpotLight
+{
+    float3 position;
+    uint entity;
+    float3 direction;
+    float3 intensity;
+    float range;
+    float coneAngle;
+    float innerConeAngle;
+};
+
+[[vk::binding(8, 0)]]
+StructuredBuffer<SpotLight> b_spotLights : register(t8);
 
 // for each directional light:
 //   vec3 direction + uint entity
 //   vec4 intensity (xyz is intensity)
-Texture2D<float4> b_dirLights;
+struct DirLight
+{
+    float3 direction;
+    uint entity;
+    float3 intensity;
+};
+
+[[vk::binding(9, 0)]]
+StructuredBuffer<DirLight> b_dirLights : register(t9);
 
 cbuffer LightConstants
 {
@@ -26,32 +55,6 @@ cbuffer LightConstants
 #define u_pointLightCount uint(u_lightCountVec.x)
 #define u_dirLightCount   uint(u_lightCountVec.y)
 #define u_spotLightCount  uint(u_lightCountVec.z)
-
-struct PointLight
-{
-    uint entity;
-    float3 position;
-    float3 intensity;
-    float range;
-};
-
-struct SpotLight
-{
-    uint entity;
-    float3 position;
-    float3 direction;
-    float3 intensity;
-    float range;
-    float coneAngle;
-    float innerConeAngle;
-};
-
-struct DirLight
-{
-    uint entity;
-    float3 direction;
-    float3 intensity;
-};
 
 struct AmbientLight
 {
@@ -87,15 +90,7 @@ uint pointLightCount()
 
 PointLight getPointLight(uint i)
 {
-    PointLight light;
-    i *= 2u;
-    float4 posVec = b_pointLights.Load(int3(i+0,0,0));
-    light.entity = (uint)posVec.w;
-    light.position = posVec.xyz;
-    float4 intensityRangeVec = b_pointLights.Load(int3(i+1,0,0));
-    light.intensity = intensityRangeVec.xyz;
-    light.range = intensityRangeVec.w;
-    return light;
+    return b_pointLights[i];
 }
 
 uint spotLightCount()
@@ -105,19 +100,7 @@ uint spotLightCount()
 
 SpotLight getSpotLight(uint i)
 {
-    SpotLight light;
-    i *= 4u;
-    float4 posVec = b_spotLights.Load(int3(i+0,0,0));
-    light.entity = (uint)posVec.w;
-    light.position = posVec.xyz;
-    light.direction = b_spotLights.Load(int3(i+1,0,0)).xyz;
-    float4 intensityRangeVec = b_spotLights.Load(int3(i+2,0,0));
-    light.intensity = intensityRangeVec.xyz;
-    light.range = intensityRangeVec.w;
-    float4 dataVec = b_spotLights.Load(int3(i+3,0,0));
-    light.coneAngle = dataVec.x;
-    light.innerConeAngle = dataVec.y;
-    return light;
+    return b_spotLights[i];
 }
 
 uint dirLightCount()
@@ -127,14 +110,7 @@ uint dirLightCount()
 
 DirLight getDirLight(uint i)
 {
-    DirLight light;
-    i *= 2u;
-    float4 posVec = b_dirLights.Load(int3(i+0,0,0));
-    light.entity = (uint)posVec.w;
-    light.direction = posVec.xyz;
-    float4 intensityVec = b_dirLights.Load(int3(i+1,0,0));
-    light.intensity = intensityVec.xyz;
-    return light;
+    return b_dirLights[i];
 }
 
 AmbientLight getAmbientLight()
