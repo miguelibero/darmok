@@ -1,5 +1,7 @@
 #include <darmok/slang.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/data.hpp>
+#include <darmok/data_stream.hpp>
 #include "detail/program_core.hpp"
 #include "detail/slang.hpp"
 #include <fmt/format.h>
@@ -17,10 +19,10 @@ namespace darmok
 {
     namespace SlangBgfxShaderUtils
     {
-        constexpr uint8_t kUniformFragmentBit = 0x10;
-        constexpr uint8_t kUniformReadOnlyBit = 0x40;
+        constexpr uint8_t uniformFragmentBit = 0x10;
+        constexpr uint8_t uniformReadOnlyBit = 0x40;
 
-        constexpr uint16_t storageBufferDesrcriptor = 0x0007;
+        constexpr uint16_t storageBufferDescriptor = 0x0007;
         constexpr uint16_t storageImageDescriptor = 0x0003;
 
         constexpr uint8_t version = 11;
@@ -48,6 +50,807 @@ namespace darmok
                 return 0;
             }
         }
+
+        std::string getDiagnosticsString(slang::IBlob *diagnostics) noexcept
+        {
+            if (!diagnostics)
+            {
+                return {};
+            }
+            return {static_cast<const char *>(diagnostics->getBufferPointer()), diagnostics->getBufferSize()};
+        }
+
+        std::optional<protobuf::Bgfx::Attrib> getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept
+        {
+            auto consecutive = [semanticIndex](protobuf::Bgfx::Attrib base, int max) -> std::optional<protobuf::Bgfx::Attrib>
+            {
+                if (semanticIndex >= max)
+                {
+                    return std::nullopt;
+                }
+                return static_cast<protobuf::Bgfx::Attrib>(static_cast<int>(base) + semanticIndex);
+            };
+            if (semanticName == "POSITION" || semanticName == "SV_POSITION")
+            {
+                return protobuf::Bgfx::Position;
+            }
+            if (semanticName == "NORMAL")
+            {
+                return protobuf::Bgfx::Normal;
+            }
+            if (semanticName == "TANGENT")
+            {
+                return protobuf::Bgfx::Tangent;
+            }
+            if (semanticName == "BITANGENT")
+            {
+                return protobuf::Bgfx::Bitangent;
+            }
+            if (semanticName == "TEXCOORD")
+            {
+                return consecutive(protobuf::Bgfx::TexCoord0, 8);
+            }
+            if (semanticName == "COLOR")
+            {
+                return consecutive(protobuf::Bgfx::Color0, 4);
+            }
+            if (semanticName == "INDICES")
+            {
+                return protobuf::Bgfx::Indices;
+            }
+            if (semanticName == "WEIGHT")
+            {
+                return protobuf::Bgfx::Weight;
+            }
+            return std::nullopt;
+        }
+
+        std::optional<protobuf::Bgfx::AttribType> getBgfxAttribType(slang::TypeReflection::ScalarType scalarType) noexcept
+        {
+            switch (scalarType)
+            {
+            case slang::TypeReflection::ScalarType::UInt8:
+                return protobuf::Bgfx::Uint8;
+            case slang::TypeReflection::ScalarType::Int16:
+                return protobuf::Bgfx::Int16;
+            case slang::TypeReflection::ScalarType::Float16:
+                return protobuf::Bgfx::Half;
+            case slang::TypeReflection::ScalarType::Float32:
+                return protobuf::Bgfx::Float;
+            default:
+                return std::nullopt;
+            }
+        }
+
+        expected<slang::TypeLayoutReflection *, std::string> getStructParamLayout(slang::EntryPointReflection &entryPoint) noexcept
+        {
+            if (entryPoint.getParameterCount() == 0)
+            {
+                return unexpected<std::string>{"vertex entry point without parameters"};
+            }
+            auto param = entryPoint.getParameterByIndex(0);
+            auto typeLayout = param->getTypeLayout();
+            if (typeLayout->getType()->getKind() != slang::TypeReflection::Kind::Struct)
+            {
+                return unexpected<std::string>{"vertex entry point param is not a struct"};
+            }
+            return typeLayout;
+        }
+
+        expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::EntryPointReflection &entryPoint) noexcept
+        {
+            if (entryPoint.getStage() != SLANG_STAGE_VERTEX)
+            {
+                return unexpected<std::string>{"entry point is not a vertex state"};
+            }
+            auto typeLayoutResult = getStructParamLayout(entryPoint);
+            if (!typeLayoutResult)
+            {
+                return unexpected<std::string>{std::move(typeLayoutResult).error()};
+            }
+            auto typeLayout = typeLayoutResult.value();
+            protobuf::VertexLayout vertexLayout;
+
+            SlangInt fieldCount = typeLayout->getFieldCount();
+            for (SlangInt f = 0; f < fieldCount; ++f)
+            {
+                auto &vertexAttrib = *vertexLayout.add_attributes();
+
+                auto field = typeLayout->getFieldByIndex(f);
+                auto fieldType = field->getTypeLayout()->getType();
+
+                auto bgfxAttrib = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
+                if (!bgfxAttrib)
+                {
+                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}", field->getSemanticName(), field->getName())};
+                }
+                auto bgfxAttribType = getBgfxAttribType(fieldType->getScalarType());
+                if (!bgfxAttribType)
+                {
+                    return unexpected<std::string>{fmt::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), field->getName())};
+                }
+                vertexAttrib.set_bgfx_type(*bgfxAttribType);
+                vertexAttrib.set_num(fieldType->getElementCount());
+            }
+
+            return vertexLayout;
+        }
+
+        expected<protobuf::FragmentLayout, std::string> createFragmentLayout(slang::EntryPointReflection &entryPoint) noexcept
+        {
+            if (entryPoint.getStage() != SLANG_STAGE_FRAGMENT)
+            {
+                return unexpected<std::string>{"entry point is not a fragment state"};
+            }
+            auto typeLayoutResult = getStructParamLayout(entryPoint);
+            if (!typeLayoutResult)
+            {
+                return unexpected<std::string>{std::move(typeLayoutResult).error()};
+            }
+            auto typeLayout = typeLayoutResult.value();
+
+            protobuf::FragmentLayout fragmentLayout;
+
+            SlangInt fieldCount = typeLayout->getFieldCount();
+            for (SlangInt f = 0; f < fieldCount; ++f)
+            {
+                auto &fragAttrib = *fragmentLayout.add_attributes();
+
+                auto field = typeLayout->getFieldByIndex(f);
+                auto fieldType = field->getTypeLayout()->getType();
+
+                auto bgfxAttrib = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
+                if (!bgfxAttrib)
+                {
+                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}", field->getSemanticName(), field->getName())};
+                }
+                fragAttrib.set_num(fieldType->getElementCount());
+                fragAttrib.set_name(field->getName());
+            }
+
+            return fragmentLayout;
+        }
+
+        using TargetProfileMap = std::unordered_map<SlangCompileTarget, std::string>;
+        using TargetRendererMap = std::unordered_map<SlangCompileTarget, bgfx::RendererType::Enum>;
+
+        const TargetProfileMap _targetProfileMap{
+            {SlangCompileTarget::SLANG_DXBC, "sm_5_0"},
+            {SlangCompileTarget::SLANG_DXIL, "sm_6_0"}, // -disable-payload-qualifiers option error
+            {SlangCompileTarget::SLANG_METAL, "metallib_2_4"},
+            {SlangCompileTarget::SLANG_GLSL, "glsl_330"},
+            {SlangCompileTarget::SLANG_SPIRV, "spirv_1_3"},
+        };
+
+        const std::vector<SlangCompileTarget> _supportedTargets{
+#if BX_PLATFORM_WINDOWS
+            SlangCompileTarget::SLANG_DXBC,
+            SlangCompileTarget::SLANG_DXIL,
+#elif BX_PLATFORM_OSX
+            SlangCompileTarget::SLANG_METAL,
+#endif
+            SlangCompileTarget::SLANG_SPIRV,
+            SlangCompileTarget::SLANG_GLSL,
+        };
+
+        const TargetRendererMap _targetRenderers{
+            {SlangCompileTarget::SLANG_DXBC, bgfx::RendererType::Direct3D11},
+            {SlangCompileTarget::SLANG_DXIL, bgfx::RendererType::Direct3D12},
+            {SlangCompileTarget::SLANG_METAL, bgfx::RendererType::Metal},
+            {SlangCompileTarget::SLANG_GLSL, bgfx::RendererType::OpenGL},
+            {SlangCompileTarget::SLANG_SPIRV, bgfx::RendererType::Vulkan},
+        };
+
+        
+        struct LayoutParam final
+        {
+            std::string name;
+            std::string qualifiedName;
+            bgfx::Attrib::Enum attrib;
+        };
+
+        enum class TextureComponentType : uint8_t
+        {
+            Float,
+            Int,
+            Uint,
+            Depth,
+            UnfilterableFloat,
+
+            Unknown,
+        };
+
+        enum class TextureDimension : uint8_t
+        {
+            Dimension1D,
+            Dimension2D,
+            Dimension2DArray,
+            DimensionCube,
+            DimensionCubeArray,
+            Dimension3D,
+
+            Unknown,
+        };
+
+        struct Uniform final
+        {
+            std::string name;
+            bgfx::UniformType::Enum type;
+            uint8_t count;
+            uint16_t regIndex;
+            uint16_t regCount;
+            TextureComponentType texComponent = TextureComponentType::Float;
+            TextureDimension texDimension = TextureDimension::Dimension1D;
+            bgfx::TextureFormat::Enum texFormat = bgfx::TextureFormat::BC1;
+        };
+
+        struct UniformData final
+        {
+            std::vector<Uniform> uniforms;
+            uint16_t bufferSize = 0;
+        };
+
+        bool isUsedUniform(slang::IMetadata& entryPointMetadata, SlangCompileTarget target, SlangStage stage, slang::VariableLayoutReflection& param) noexcept
+        {
+            auto category = param.getCategory();
+            if (category == slang::ParameterCategory::Uniform)
+            {
+                category = slang::ParameterCategory::ConstantBuffer;
+            }
+
+            uint32_t offsetshift = 0;
+            if (target == SLANG_SPIRV && stage == SLANG_STAGE_FRAGMENT)
+            {
+                if (category == slang::ParameterCategory::ConstantBuffer)
+                {
+                    offsetshift = 1;
+                }
+            }
+
+            bool isUsed = false;
+            entryPointMetadata.isParameterLocationUsed(static_cast<SlangParameterCategory>(category), param.getBindingSpace(category),
+                                                        param.getOffset(category) + offsetshift, isUsed);
+
+            return isUsed;
+        }
+
+        bool isSkippableUniform(slang::TypeReflection& type) noexcept
+        {
+            return type.getKind() == slang::TypeReflection::Kind::SamplerState;
+        }
+
+        bgfx::UniformType::Enum convertUniformType(slang::TypeReflection& type, bool isCompute) noexcept
+        {
+            switch (type.getKind())
+            {
+            case slang::TypeReflection::Kind::Resource:
+                if (isCompute || type.getResourceShape() == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
+                {
+                    return type.getResourceAccess() == SlangResourceAccess::SLANG_RESOURCE_ACCESS_READ
+                               ? static_cast<bgfx::UniformType::Enum>(uniformReadOnlyBit | static_cast<uint8_t>(bgfx::UniformType::Count))
+                               : bgfx::UniformType::Count;
+                }
+                return bgfx::UniformType::Sampler;
+            case slang::TypeReflection::Kind::Vector:
+                return bgfx::UniformType::Vec4;
+            case slang::TypeReflection::Kind::Matrix:
+                return type.getRowCount() == 3 ? bgfx::UniformType::Mat3 : bgfx::UniformType::Mat4;
+            default:
+                return bgfx::UniformType::Count;
+            }
+        }
+
+        TextureComponentType convertTextureComponentType(slang::TypeReflection& type) noexcept
+        {
+            auto texType = type.getResourceResultType()->getScalarType();
+            switch (texType)
+            {
+            case slang::TypeReflection::ScalarType::Float16:
+            case slang::TypeReflection::ScalarType::Float32:
+            case slang::TypeReflection::ScalarType::Float64:
+                return TextureComponentType::Float;
+            case slang::TypeReflection::ScalarType::Int8:
+            case slang::TypeReflection::ScalarType::Int16:
+            case slang::TypeReflection::ScalarType::Int32:
+            case slang::TypeReflection::ScalarType::Int64:
+                return TextureComponentType::Int;
+            case slang::TypeReflection::ScalarType::UInt8:
+            case slang::TypeReflection::ScalarType::UInt16:
+            case slang::TypeReflection::ScalarType::UInt32:
+            case slang::TypeReflection::ScalarType::UInt64:
+                return TextureComponentType::Uint;
+            default:
+                return TextureComponentType::Float;
+            }
+        }
+
+        TextureDimension convertTextureDimension(slang::TypeReflection& type) noexcept
+        {
+            auto shape = type.getResourceShape();
+            switch (shape)
+            {
+            case SLANG_TEXTURE_1D:
+                return TextureDimension::Dimension1D;
+            case SLANG_TEXTURE_2D: // original bgfx compiler vulkan compiler reports simple BgfxSampler as array so we're doing same here
+            case SLANG_TEXTURE_2D_ARRAY:
+                return TextureDimension::Dimension2DArray;
+            case SLANG_TEXTURE_CUBE:
+                return TextureDimension::DimensionCube;
+            case SLANG_TEXTURE_CUBE_ARRAY:
+                return TextureDimension::DimensionCubeArray;
+            case SLANG_TEXTURE_3D:
+                return TextureDimension::Dimension3D;
+            default:
+                return TextureDimension::Unknown;
+            }
+        }
+
+        bgfx::TextureFormat::Enum convertTextureFormat(slang::TypeLayoutReflection& containerLayout, uint64_t index)
+        {
+            SlangImageFormat imageFormat = containerLayout.getBindingRangeImageFormat(index);
+
+            switch (imageFormat)
+            {
+            case SLANG_IMAGE_FORMAT_unknown:
+                return  bgfx::TextureFormat::Unknown;
+            case SLANG_IMAGE_FORMAT_rgba32f:
+                return  bgfx::TextureFormat::RGBA32F;
+            case SLANG_IMAGE_FORMAT_rgba16f:
+                return  bgfx::TextureFormat::RGBA16F;
+            case SLANG_IMAGE_FORMAT_rg32f:
+                return  bgfx::TextureFormat::RG32F;
+            case SLANG_IMAGE_FORMAT_rg16f:
+                return  bgfx::TextureFormat::RG16F;
+            case SLANG_IMAGE_FORMAT_r11f_g11f_b10f:
+                return  bgfx::TextureFormat::RG11B10F;
+            case SLANG_IMAGE_FORMAT_r32f:
+                return  bgfx::TextureFormat::R32F;
+            case SLANG_IMAGE_FORMAT_r16f:
+                return  bgfx::TextureFormat::R16F;
+            case SLANG_IMAGE_FORMAT_rgba16:
+                return  bgfx::TextureFormat::RGBA16;
+            case SLANG_IMAGE_FORMAT_rgb10_a2:
+                return  bgfx::TextureFormat::RGB10A2;
+            case SLANG_IMAGE_FORMAT_rgba8:
+                return  bgfx::TextureFormat::RGBA8;
+            case SLANG_IMAGE_FORMAT_rg16:
+                return  bgfx::TextureFormat::RG16;
+            case SLANG_IMAGE_FORMAT_rg8:
+                return  bgfx::TextureFormat::RG8;
+            case SLANG_IMAGE_FORMAT_r16:
+                return  bgfx::TextureFormat::R16;
+            case SLANG_IMAGE_FORMAT_r8:
+                return  bgfx::TextureFormat::R8;
+            case SLANG_IMAGE_FORMAT_rgba16_snorm:
+                return  bgfx::TextureFormat::RGBA16S;
+            case SLANG_IMAGE_FORMAT_rgba8_snorm:
+                return  bgfx::TextureFormat::RGBA8S;
+            case SLANG_IMAGE_FORMAT_rg16_snorm:
+                return  bgfx::TextureFormat::RG16S;
+            case SLANG_IMAGE_FORMAT_rg8_snorm:
+                return  bgfx::TextureFormat::RG8S;
+            case SLANG_IMAGE_FORMAT_r16_snorm:
+                return  bgfx::TextureFormat::R16S;
+            case SLANG_IMAGE_FORMAT_r8_snorm:
+                return  bgfx::TextureFormat::R8S;
+            case SLANG_IMAGE_FORMAT_rgba32i:
+                return  bgfx::TextureFormat::RGBA32I;
+            case SLANG_IMAGE_FORMAT_rgba16i:
+                return  bgfx::TextureFormat::RGBA16I;
+            case SLANG_IMAGE_FORMAT_rgba8i:
+                return  bgfx::TextureFormat::RGBA8I;
+            case SLANG_IMAGE_FORMAT_rg32i:
+                return  bgfx::TextureFormat::RG32I;
+            case SLANG_IMAGE_FORMAT_rg16i:
+                return  bgfx::TextureFormat::RG16I;
+            case SLANG_IMAGE_FORMAT_rg8i:
+                return  bgfx::TextureFormat::RG8I;
+            case SLANG_IMAGE_FORMAT_r32i:
+                return  bgfx::TextureFormat::R32I;
+            case SLANG_IMAGE_FORMAT_r16i:
+                return  bgfx::TextureFormat::R16I;
+            case SLANG_IMAGE_FORMAT_r8i:
+                return  bgfx::TextureFormat::R8I;
+            case SLANG_IMAGE_FORMAT_rgba32ui:
+                return  bgfx::TextureFormat::RGBA32U;
+            case SLANG_IMAGE_FORMAT_rgba16ui:
+                return  bgfx::TextureFormat::RGBA16U;
+            case SLANG_IMAGE_FORMAT_rgb10_a2ui:
+                return  bgfx::TextureFormat::RGB10A2;
+            case SLANG_IMAGE_FORMAT_rgba8ui:
+                return  bgfx::TextureFormat::RGBA8U;
+            case SLANG_IMAGE_FORMAT_rg32ui:
+                return  bgfx::TextureFormat::RG32U;
+            case SLANG_IMAGE_FORMAT_rg16ui:
+                return  bgfx::TextureFormat::RG16U;
+            case SLANG_IMAGE_FORMAT_rg8ui:
+                return  bgfx::TextureFormat::RG8U;
+            case SLANG_IMAGE_FORMAT_r32ui:
+                return  bgfx::TextureFormat::R32U;
+            case SLANG_IMAGE_FORMAT_r16ui:
+                return  bgfx::TextureFormat::R16U;
+            case SLANG_IMAGE_FORMAT_r8ui:
+                return  bgfx::TextureFormat::R8U;
+            case SLANG_IMAGE_FORMAT_r64ui:
+            case SLANG_IMAGE_FORMAT_r64i:
+                return  bgfx::TextureFormat::Unknown;
+            case SLANG_IMAGE_FORMAT_bgra8:
+                return  bgfx::TextureFormat::BGRA8;
+            default:
+                return  bgfx::TextureFormat::Unknown;
+            }
+        }
+
+        std::unordered_map<bgfx::Attrib::Enum, uint16_t> attribToIdMap = {
+            {bgfx::Attrib::Position, 0x0001},
+            {bgfx::Attrib::Normal, 0x0002},
+            {bgfx::Attrib::Tangent, 0x0003},
+            {bgfx::Attrib::Bitangent, 0x0004},
+            {bgfx::Attrib::Color0, 0x0005},
+            {bgfx::Attrib::Color1, 0x0006},
+            {bgfx::Attrib::Color2, 0x0018},
+            {bgfx::Attrib::Color3, 0x0019},
+            {bgfx::Attrib::Indices, 0x000e},
+            {bgfx::Attrib::Weight, 0x000f},
+            {bgfx::Attrib::TexCoord0, 0x0010},
+            {bgfx::Attrib::TexCoord1, 0x0011},
+            {bgfx::Attrib::TexCoord2, 0x0012},
+            {bgfx::Attrib::TexCoord3, 0x0013},
+            {bgfx::Attrib::TexCoord4, 0x0014},
+            {bgfx::Attrib::TexCoord5, 0x0015},
+            {bgfx::Attrib::TexCoord6, 0x0016},
+            {bgfx::Attrib::TexCoord7, 0x0017},
+        };
+
+        uint16_t attribToId(bgfx::Attrib::Enum attr)
+        {
+            return attribToIdMap.at(attr);
+        }
+
+        uint16_t layoutParamToId(const LayoutParam &param, SlangCompileTarget target)
+        {
+            if (target == SLANG_SPIRV && param.name.find("data") != std::string::npos)
+            {
+                return std::numeric_limits<uint16_t>::max();
+            }
+            return attribToId(param.attrib);
+        }
+
+        expected<std::vector<LayoutParam>, std::string> getLayoutParams(slang::VariableLayoutReflection &layout, const std::string &prefix = "") noexcept
+        {
+            std::vector<LayoutParam> params;
+            auto *typeLayout = layout.getTypeLayout();
+
+            switch (typeLayout->getKind())
+            {
+            case slang::TypeReflection::Kind::Struct:
+            {
+                for (int i = 0; i < typeLayout->getFieldCount(); i++)
+                {
+                    auto *field = typeLayout->getFieldByIndex(i);
+                    auto subprefix = layout.getName() != nullptr ? prefix + layout.getName() + "." : "";
+                    auto subparams = getLayoutParams(*field, subprefix);
+                    if (!subparams)
+                    {
+                        return unexpected{fmt::format("failed in field {}: {}", subprefix, subparams.error())};
+                    }
+                    params.insert(params.end(), subparams->begin(), subparams->end());
+                }
+                return params;
+            }
+            case slang::TypeReflection::Kind::Vector:
+            case slang::TypeReflection::Kind::Scalar:
+            {
+                if (layout.getSemanticName() == nullptr)
+                {
+                    return unexpected{fmt::format("no semantic name specified for var: {}", layout.getName())};
+                }
+                auto attrib = getBgfxAttrib(layout.getSemanticName(), layout.getSemanticIndex());
+                if (!attrib)
+                {
+                    return unexpected{fmt::format("unsupported semantic name: {}", layout.getSemanticName())};
+                }
+                params.emplace_back(layout.getName(), prefix + layout.getName(), bgfx::Attrib::Enum(*attrib));
+                return params;
+            }
+            default:
+                return unexpected{fmt::format("Unsupported type of param: {}", layout.getName())};
+            }
+            return params;
+        }
+
+        expected<slang::TypeLayoutReflection*, std::string> verifyUniformLayout(slang::TypeLayoutReflection& scopeTypeLayout, slang::VariableLayoutReflection& globalVarLayout)
+        {
+            slang::VariableLayoutReflection *elementsVarLayout = &globalVarLayout;
+
+            if (scopeTypeLayout.getKind() != slang::TypeReflection::Kind::Struct)
+            {
+                if (scopeTypeLayout.getKind() != slang::TypeReflection::Kind::ConstantBuffer)
+                {
+                    return unexpected<std::string>{"global scope is not a struct or constant buffer"};
+                }
+
+                elementsVarLayout = scopeTypeLayout.getElementVarLayout();
+            }
+
+            auto elementsTypeLayout = elementsVarLayout->getTypeLayout();
+
+            if (elementsTypeLayout->getKind() != slang::TypeReflection::Kind::Struct)
+            {
+                return unexpected<std::string>{"global scope elements are not a struct"};
+            }
+            return elementsTypeLayout;
+        }
+
+        expected<UniformData, std::string> getUniforms(slang::ProgramLayout& layout, slang::IMetadata& entryPointMetadata, SlangCompileTarget target, SlangStage stage) noexcept
+        {
+            auto &globalVarLayout = *layout.getGlobalParamsVarLayout();
+            auto &scopeTypeLayout = *globalVarLayout.getTypeLayout();
+
+            auto verifyResult = verifyUniformLayout(scopeTypeLayout, globalVarLayout);
+            if (!verifyResult)
+            {
+                return unexpected{std::move(verifyResult).error()};
+            }
+            auto elementsTypeLayout = verifyResult.value();
+            UniformData data;
+
+            uint64_t textureIndex = 0;
+            for (int i = 0; i < elementsTypeLayout->getFieldCount(); i++)
+            {
+                auto &param = *elementsTypeLayout->getFieldByIndex(i);
+                Uniform uniform;
+
+                auto &paramType = *param.getType();
+                bool isArray = paramType.getKind() == slang::TypeReflection::Kind::Array;
+
+                auto &elementType = isArray ? *paramType.getElementType() : paramType;
+
+                if (!isUsedUniform(entryPointMetadata, target, stage, param))
+                {
+                    continue;
+                }
+
+                if (isSkippableUniform(elementType))
+                {
+                    continue;
+                }
+
+                auto isCompute = stage == SLANG_STAGE_COMPUTE;
+
+                auto convertedType = convertUniformType(elementType, isCompute);
+                if (convertedType == bgfx::UniformType::Count)
+                {
+                    return unexpected{fmt::format("unsupported uniform type for param {}", param.getName())};
+                }
+
+                bool isBuffer = elementType.getKind() == slang::TypeReflection::Kind::Resource &&
+                                elementType.getResourceShape() == SlangResourceShape::SLANG_STRUCTURED_BUFFER;
+                bool isSampler = convertedType == bgfx::UniformType::Sampler && !isCompute;
+                bool isStorageImage = elementType.getKind() == slang::TypeReflection::Kind::Resource && !isBuffer && !isCompute;
+
+                uniform.name = param.getName();
+                uniform.type = convertedType;
+                uniform.count = isArray ? paramType.getElementCount() : 1;
+
+                if (isSampler)
+                {
+                    uniform.regIndex = param.getBindingIndex();
+                    uniform.regCount = uniform.count;
+                }
+                else if (isBuffer)
+                {
+                    uniform.regIndex = param.getBindingIndex();
+                    uniform.regCount = storageBufferDescriptor;
+                }
+                else if (isStorageImage)
+                {
+                    uniform.regIndex = param.getBindingIndex();
+                    uniform.regCount = storageImageDescriptor;
+                }
+                else
+                {
+                    uniform.regIndex = param.getOffset();
+                    uniform.regCount *= elementType.getRowCount();
+                }
+
+                if (isSampler || isStorageImage)
+                {
+                    uniform.texComponent = convertTextureComponentType(paramType);
+                    uniform.texDimension = convertTextureDimension(paramType);
+                    uniform.texFormat = convertTextureFormat(*elementsTypeLayout, textureIndex++);
+                }
+
+                data.uniforms.push_back(uniform);
+            }
+
+            data.bufferSize = static_cast<uint16_t>(elementsTypeLayout->getSize());
+            return data;
+        }
+
+        uint32_t hashLayoutParams(const std::vector<LayoutParam>& params) noexcept
+        {
+            uint32_t hash = 0;
+            std::vector<std::string> names(params.size());
+            std::transform(params.begin(), params.end(), names.begin(), [](const auto &p)
+                           { return p.name; });
+            std::sort(names.begin(), names.end());
+            std::hash<std::string> hasher;
+            for (const auto &name : names)
+            {
+                hash ^= hasher(name);
+            }
+            return hash;
+        }        
+
+        expected<protobuf::Shader, std::string> createShader(slang::IComponentType &linkedProgram, const std::unordered_set<std::string> &defines, SlangInt entryPointIdx, SlangInt targetIdx, SlangCompileTarget target) noexcept
+        {
+            protobuf::Shader shader;
+
+            Slang::ComPtr<slang::IBlob> data;
+            Slang::ComPtr<slang::IBlob> diagnostics;
+            if (SLANG_FAILED(linkedProgram.getEntryPointCode(entryPointIdx, targetIdx, data.writeRef(), diagnostics.writeRef())))
+            {
+                return unexpected{getDiagnosticsString(diagnostics)};
+            }
+            shader.mutable_defines()->Clear();
+            for (auto &define : defines)
+            {
+                *shader.add_defines() = define;
+            }
+            auto* programLayout = linkedProgram.getLayout(targetIdx, diagnostics.writeRef());
+            if (!programLayout)
+            {
+                return unexpected{getDiagnosticsString(diagnostics)};
+            }
+            auto* entryPoint = programLayout->getEntryPointByIndex(entryPointIdx);
+            auto stage = entryPoint->getStage();
+
+            std::vector<LayoutParam> inputParams;
+            {
+                for (int i = 0; i < entryPoint->getParameterCount(); i++)
+                {
+                    auto *varLayout = entryPoint->getParameterByIndex(i);
+                    auto result = getLayoutParams(*varLayout);
+                    if (!result)
+                    {
+                        return unexpected<std::string>{fmt::format("could not get input param {} layout: {}", i, result.error())};
+                    }
+                    inputParams.insert(inputParams.begin(), result->begin(), result->end());
+                }
+            }
+
+            std::vector<LayoutParam> outputParams;
+            {
+                auto *varLayout = entryPoint->getResultVarLayout();
+                if (!varLayout)
+                {
+                    return unexpected<std::string>{"could not get result layout"};
+                }
+                auto result = getLayoutParams(*varLayout);
+                if (!result)
+                {
+                    return unexpected<std::string>{fmt::format("could not get result layout: {}", result.error())};
+                }
+                outputParams = std::move(result).value();
+            }
+
+
+            Slang::ComPtr<slang::IMetadata> metadata;
+            if (SLANG_FAILED(linkedProgram.getEntryPointMetadata(entryPointIdx, targetIdx, metadata.writeRef(), diagnostics.writeRef())))
+            {
+                return unexpected{getDiagnosticsString(diagnostics)};
+            }
+
+            auto uniformsResult = getUniforms(*programLayout, *metadata, target, stage);
+            if (!uniformsResult)
+            {
+                return unexpected{fmt::format("getting uniforms: {}", uniformsResult.error())};
+            }
+            auto uniformData = std::move(uniformsResult).value();
+
+            Data bgfxShaderData;
+            DataOutputStream out{bgfxShaderData};
+            out << SlangBgfxShaderUtils::getMagic(stage);
+
+            if (stage == SLANG_STAGE_FRAGMENT)
+            {
+                out << hashLayoutParams(inputParams);
+                out << static_cast<uint32_t>(0);
+            }
+            else
+            {
+                out << static_cast<uint32_t>(0);
+                out << hashLayoutParams(outputParams);
+            }
+
+            out << static_cast<uint16_t>(uniformData.uniforms.size());
+
+            const uint32_t fragmentBit = stage == SLANG_STAGE_FRAGMENT ? uniformFragmentBit : 0;
+
+            for (const auto& uniform : uniformData.uniforms)
+            {
+                out << static_cast<uint8_t>(uniform.name.size());
+                out << uniform.name;
+                out << (static_cast<uint8_t>(uniform.type) | fragmentBit);
+                out << uniform.count;
+                out << uniform.regIndex;
+                out << uniform.regCount;
+                out << static_cast<uint8_t>(uniform.texComponent);
+                out << static_cast<uint8_t>(uniform.texDimension);
+                out << uniform.texFormat;
+            }
+
+            out << static_cast<uint32_t>(data->getBufferSize());
+            out << DataView{data->getBufferPointer(), data->getBufferSize()}.toString();
+            out << static_cast<uint8_t>(0);
+
+            out << static_cast<uint8_t>(inputParams.size());
+            for (const auto &param : inputParams)
+            {
+                out << layoutParamToId(param, target);
+            }
+
+            out << uniformData.bufferSize;
+
+            shader.set_data(bgfxShaderData.toString());
+            return shader;
+        }        
+
+        expected<Slang::ComPtr<slang::IComponentType>, std::string> compileProgram(const SlangProgramCompiler::Source &src, slang::ISession &session, OptionalRef<std::ostream> log) noexcept
+        {
+            auto addLog = [log](const std::string &title, const std::string &msg)
+            {
+                if (!log || msg.empty())
+                {
+                    return;
+                }
+                *log << title << "\n";
+                *log << ">>>\n";
+                *log << msg << "\n";
+                *log << ">>>\n";
+            };
+
+            auto path = src.name() + ".slang";
+            Slang::ComPtr<slang::IBlob> diagnostics;
+            Slang::ComPtr<slang::IModule> module{session.loadModuleFromSourceString(src.name().c_str(), path.c_str(), src.data().c_str(), diagnostics.writeRef())};
+            std::string msg = getDiagnosticsString(diagnostics);
+            if (module == nullptr)
+            {
+                return unexpected{msg};
+            }
+            addLog("loading program source", msg);
+
+            std::vector<slang::IComponentType *> components;
+            components.reserve(module->getDefinedEntryPointCount() + 1);
+            components.push_back(module);
+            for (SlangInt32 i = 0; i < module->getDefinedEntryPointCount(); i++)
+            {
+                Slang::ComPtr<slang::IEntryPoint> entryPoint;
+                module->getDefinedEntryPoint(i, entryPoint.writeRef());
+                components.push_back(entryPoint);
+            }
+
+            Slang::ComPtr<slang::IComponentType> composite;
+            SlangResult result =
+                session.createCompositeComponentType(components.data(), components.size(), composite.writeRef(), diagnostics.writeRef());
+            msg = getDiagnosticsString(diagnostics);
+            if (SLANG_FAILED(result))
+            {
+                return unexpected{msg};
+            }
+            addLog("creating composite component type", msg);
+
+            Slang::ComPtr<slang::IComponentType> program;
+            result = composite->link(program.writeRef(), diagnostics.writeRef());
+            msg = getDiagnosticsString(diagnostics);
+            if (SLANG_FAILED(result))
+            {
+                return unexpected{msg};
+            }
+            addLog("linking program", msg);
+            return program;
+        }        
     }
 
     void SlangProgramCompilerConfig::read(const nlohmann::json& json, const ReadConfig& config) noexcept
@@ -78,34 +881,6 @@ namespace darmok
         }
     }
 
-    const SlangProgramCompilerImpl::TargetProfileMap SlangProgramCompilerImpl::_targetProfileMap
-    {
-        {SlangCompileTarget::SLANG_DXBC, "sm_5_0"},
-        {SlangCompileTarget::SLANG_DXIL, "sm_6_0"}, // -disable-payload-qualifiers option error
-        {SlangCompileTarget::SLANG_METAL, "metallib_2_4"},
-        {SlangCompileTarget::SLANG_GLSL, "glsl_330"},
-        {SlangCompileTarget::SLANG_SPIRV, "spirv_1_3"},
-    };
-
-    const std::vector<SlangCompileTarget> SlangProgramCompilerImpl::_supportedTargets
-    {
-#if BX_PLATFORM_WINDOWS
-            SlangCompileTarget::SLANG_DXBC, SlangCompileTarget::SLANG_DXIL,
-#elif BX_PLATFORM_OSX
-           SlangCompileTarget::SLANG_METAL,
-#endif
-            SlangCompileTarget::SLANG_SPIRV, SlangCompileTarget::SLANG_GLSL,
-    };
-
-    const SlangProgramCompilerImpl::TargetRendererMap SlangProgramCompilerImpl::_targetRenderers
-    {
-        {SlangCompileTarget::SLANG_DXBC, bgfx::RendererType::Direct3D11},
-        {SlangCompileTarget::SLANG_DXIL, bgfx::RendererType::Direct3D12},
-        {SlangCompileTarget::SLANG_METAL, bgfx::RendererType::Metal},
-        {SlangCompileTarget::SLANG_GLSL, bgfx::RendererType::OpenGL},
-        {SlangCompileTarget::SLANG_SPIRV, bgfx::RendererType::Vulkan},
-    };
-
     SlangProgramCompilerImpl::SlangProgramCompilerImpl(Slang::ComPtr<slang::IGlobalSession> globalSession, const Config& config) noexcept
         : _globalSession{ std::move(globalSession) }
         , _config{ config }
@@ -120,6 +895,8 @@ namespace darmok
         _sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
         _sessionDesc.searchPaths = &_searchPathChars.front();
         _sessionDesc.searchPathCount = _searchPathChars.size();
+
+        using namespace SlangBgfxShaderUtils;
 
         for (auto& target : _supportedTargets)
         {
@@ -145,82 +922,11 @@ namespace darmok
 		return SlangProgramCompilerImpl{ std::move(globalSession), config };
     }
 
-    expected<void, std::string> SlangProgramCompilerImpl::updateShader(protobuf::Shader& shader, slang::IComponentType& linkedProgram, const std::unordered_set<std::string>& defines, SlangInt entryPointIdx, SlangInt targetIdx) noexcept
-    {
-        Slang::ComPtr<slang::IBlob> data;
-        Slang::ComPtr<slang::IBlob> diagnostics;
-        if (SLANG_FAILED(linkedProgram.getEntryPointCode(entryPointIdx, targetIdx, data.writeRef(), diagnostics.writeRef())))
-        {
-            return unexpected{ getDiagnosticsString(diagnostics) };
-        }
-        shader.mutable_defines()->Clear();
-        for (auto& define : defines)
-        {
-            *shader.add_defines() = define;
-        }
-        auto* programLayout = linkedProgram.getLayout(targetIdx, diagnostics.writeRef());
-        if (!programLayout)
-        {
-            return unexpected{ getDiagnosticsString(diagnostics) };
-        }
-        auto* entryPoint = programLayout->getEntryPointByIndex(entryPointIdx);
-        auto stage = entryPoint->getStage();
-
-        std::vector<LayoutParam> params;
-        if (stage == SLANG_STAGE_VERTEX)
-        {
-            auto* varLayout = entryPoint->getResultVarLayout();
-            if (!varLayout)
-            {
-                return unexpected<std::string>{"could not get vertex result layout"};
-            }
-            auto result = getLayoutParams(*varLayout);
-            if (!result)
-            {
-                return unexpected{ fmt::format("could not get vertex result layout: {}", result.error()) };
-            }
-            params = std::move(result).value();
-        }
-        else if (stage == SLANG_STAGE_FRAGMENT)
-        {
-            for (int i = 0; i < entryPoint->getParameterCount(); i++)
-            {
-                auto *varLayout = entryPoint->getParameterByIndex(i);
-                auto result = getLayoutParams(*varLayout);
-                if (!result)
-                {
-                    return unexpected{ fmt::format("could not get fragment param {} layout: {}", i, result.error()) };
-                }
-                params.insert(params.begin(), result->begin(), result->end());
-            }
-        }
-        else
-        {
-            return unexpected{ fmt::format("unsupported entry point stage: {}", stage) };
-        }
-
-        std::ostringstream out;
-        out << SlangBgfxShaderUtils::getMagic(stage);
-        out << DataView{ data->getBufferPointer(), data->getBufferSize() }.toString();
-        shader.set_data(out.str());
-
-        return {};
-    }
-
-    std::string SlangProgramCompilerImpl::getDiagnosticsString(slang::IBlob* diagnostics) noexcept
-    {
-        if (!diagnostics)
-        {
-            return {};
-        }
-        return {static_cast<const char*>(diagnostics->getBufferPointer()), diagnostics->getBufferSize()};
-    }
-
-    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(const std::unordered_set<std::string>& defines) noexcept
+    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(const std::unordered_set<std::string> &defines) noexcept
     {
         auto sessionDesc = _sessionDesc;
         std::vector<slang::PreprocessorMacroDesc> macros;
-        for (auto& define : defines)
+        for (auto &define : defines)
         {
             macros.emplace_back(define.c_str(), "1");
         }
@@ -230,125 +936,15 @@ namespace darmok
         Slang::ComPtr<slang::ISession> session;
 
         SLANG_TRY("creating slang session",
-            _globalSession->createSession(sessionDesc, session.writeRef()));
+                  _globalSession->createSession(sessionDesc, session.writeRef()));
 
         return session;
-    }
-
-    expected<std::vector<SlangProgramCompilerImpl::LayoutParam>, std::string> SlangProgramCompilerImpl::getLayoutParams(slang::VariableLayoutReflection& layout, const std::string& prefix) noexcept
-    {
-        std::vector<LayoutParam> params;
-        auto* typeLayout = layout.getTypeLayout();
-
-        switch (typeLayout->getKind())
-        {
-        case slang::TypeReflection::Kind::Struct:
-        {
-            for (int i = 0; i < typeLayout->getFieldCount(); i++)
-            {
-                auto *field = typeLayout->getFieldByIndex(i);
-                auto subprefix = layout.getName() != nullptr ? prefix + layout.getName() + "." : "";
-                auto subparams = getLayoutParams(*field, subprefix);
-                if (!subparams)
-                {
-                    return unexpected{fmt::format("failed in field {}: {}", subprefix, subparams.error())};
-                }
-                params.insert(params.end(), subparams->begin(), subparams->end());
-            }
-            return params;
-        }
-        case slang::TypeReflection::Kind::Vector:
-        case slang::TypeReflection::Kind::Scalar:
-        {
-            if (layout.getSemanticName() == nullptr)
-            {
-                return unexpected{fmt::format("no semantic name specified for var: {}",layout.getName())};
-            }
-            auto attrib = getBgfxAttrib(layout.getSemanticName(), layout.getSemanticIndex());
-            if (!attrib)
-            {
-                return unexpected{fmt::format("unsupported semantic name: {}",layout.getSemanticName())};
-            }
-            params.emplace_back(layout.getName(), prefix + layout.getName(), bgfx::Attrib::Enum(*attrib));
-            return params;
-        }
-        default:
-            return unexpected{fmt::format("Unsupported type of param: {}",layout.getName())};
-        }
-        return params;
-    }
-
-    uint32_t SlangProgramCompilerImpl::hashLayoutParams(const std::vector<LayoutParam> &params) noexcept
-    {
-        uint32_t hash = 0;
-        std::vector<std::string> names(params.size());
-        std::transform(params.begin(), params.end(), names.begin(), [](const auto& p) { return p.name; });
-        std::sort(names.begin(), names.end());
-        std::hash<std::string> hasher;
-        for (const auto &name : names)
-        {
-            hash ^= hasher(name);
-        }
-        return hash;
-    }
-
-    expected<Slang::ComPtr<slang::IComponentType>, std::string> SlangProgramCompilerImpl::compileProgram(const Source& src, slang::ISession& session, OptionalRef<std::ostream> log) noexcept
-    {
-        auto addLog = [log](const std::string& title, const std::string& msg)
-        {
-            if (!log || msg.empty())
-            {
-                return;
-            }
-            *log << title << "\n";
-            *log << ">>>\n";
-            *log << msg << "\n";
-            *log << ">>>\n";
-        };
-
-        auto path = src.name() + ".slang";
-        Slang::ComPtr<slang::IBlob> diagnostics;
-        Slang::ComPtr<slang::IModule> module{session.loadModuleFromSourceString(src.name().c_str(), path.c_str(), src.data().c_str(), diagnostics.writeRef())};
-        std::string msg = getDiagnosticsString(diagnostics);
-        if (module == nullptr)
-        {
-            return unexpected{msg};
-        }
-        addLog("loading program source", msg);
-
-        std::vector<slang::IComponentType*> components;
-        components.reserve(module->getDefinedEntryPointCount() + 1);
-        components.push_back(module);
-        for (SlangInt32 i = 0; i < module->getDefinedEntryPointCount(); i++)
-        {
-            Slang::ComPtr<slang::IEntryPoint> entryPoint;
-            module->getDefinedEntryPoint(i, entryPoint.writeRef());
-            components.push_back(entryPoint);
-        }
-
-        Slang::ComPtr<slang::IComponentType> composite;
-        SlangResult result =
-            session.createCompositeComponentType(components.data(), components.size(), composite.writeRef(), diagnostics.writeRef());
-        msg = getDiagnosticsString(diagnostics);
-        if (SLANG_FAILED(result))
-        {
-            return unexpected{msg};
-        }
-        addLog("creating composite component type", msg);
-
-        Slang::ComPtr<slang::IComponentType> program;
-        result = composite->link(program.writeRef(), diagnostics.writeRef());
-        msg = getDiagnosticsString(diagnostics);
-        if (SLANG_FAILED(result))
-        {
-            return unexpected{msg};
-        }
-        addLog("linking program", msg);
-        return program;
-    }
+    }    
 
     expected<protobuf::Program, std::string> SlangProgramCompilerImpl::operator()(const Source& src) noexcept
     {
+        using namespace SlangBgfxShaderUtils;
+
         ShaderParser::Defines defines;
         {
             ShaderParser shaderParser{ _config.includePaths };
@@ -422,175 +1018,27 @@ namespace darmok
                 {
                     continue;
                 }
+                auto target = itr->first;
                 auto renderer = itr->second;
                 auto& programRenderer = progWrap.getRendererProgram(renderer);
-                auto updateResult = updateShader(*programRenderer.add_vertex_shaders(), *linkedProgram, defineComb, vertIdx, targetIdx);
-                if (!updateResult)
+                auto createShaderResult = createShader(*linkedProgram, defineComb, vertIdx, targetIdx, target);
+                if (!createShaderResult)
                 {
-                    return unexpected{fmt::format("failed to update vertex shader: {}", updateResult.error())};
+                    return unexpected{fmt::format("failed to update vertex shader: {}", createShaderResult.error())};
                 }
-                updateResult = updateShader(*programRenderer.add_fragment_shaders(), *linkedProgram, defineComb, fragIdx, targetIdx);
-                if (!updateResult)
+                *programRenderer.add_vertex_shaders() = std::move(createShaderResult).value();
+
+                createShaderResult = createShader(*linkedProgram, defineComb, fragIdx, targetIdx, target);
+                if (!createShaderResult)
                 {
-                    return unexpected{fmt::format("failed to update fragment shader: {}", updateResult.error())};
+                    return unexpected{fmt::format("failed to update fragment shader: {}", createShaderResult.error())};
                 }
+                *programRenderer.add_fragment_shaders() = std::move(createShaderResult).value();
             }
         }
 
         return programDef;
     }
-
-    std::optional<protobuf::Bgfx::Attrib> SlangProgramCompilerImpl::getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept
-    {
-        auto consecutive = [semanticIndex](protobuf::Bgfx::Attrib base, int max) -> std::optional<protobuf::Bgfx::Attrib>
-        {
-            if(semanticIndex >= max)
-            {
-				return std::nullopt;
-            }
-            return static_cast<protobuf::Bgfx::Attrib>(static_cast<int>(base) + semanticIndex);
-        };
-        if (semanticName == "POSITION" || semanticName == "SV_POSITION")
-        {
-            return protobuf::Bgfx::Position;
-        }
-        if (semanticName == "NORMAL")
-        {
-            return protobuf::Bgfx::Normal;
-        }
-        if (semanticName == "TANGENT")
-        {
-            return protobuf::Bgfx::Tangent;
-        }
-        if (semanticName == "BITANGENT")
-        {
-            return protobuf::Bgfx::Bitangent;
-        }
-        if (semanticName == "TEXCOORD")
-        {
-            return consecutive(protobuf::Bgfx::TexCoord0, 8);
-        }
-        if (semanticName == "COLOR")
-        {
-            return consecutive(protobuf::Bgfx::Color0, 4);
-        }
-        if (semanticName == "INDICES")
-        {
-            return protobuf::Bgfx::Indices;
-        }
-        if (semanticName == "WEIGHT")
-        {
-            return protobuf::Bgfx::Weight;
-        }
-        return std::nullopt;
-    }
-
-    std::optional<protobuf::Bgfx::AttribType> SlangProgramCompilerImpl::getBgfxAttribType(slang::TypeReflection::ScalarType scalarType) noexcept
-    {
-        switch (scalarType)
-        {
-        case slang::TypeReflection::ScalarType::UInt8:
-            return protobuf::Bgfx::Uint8;
-        case slang::TypeReflection::ScalarType::Int16:
-            return protobuf::Bgfx::Int16;
-        case slang::TypeReflection::ScalarType::Float16:
-            return protobuf::Bgfx::Half;
-        case slang::TypeReflection::ScalarType::Float32:
-            return protobuf::Bgfx::Float;
-        default:
-            return std::nullopt;
-        }
-    }
-
-    expected<slang::TypeLayoutReflection*, std::string> SlangProgramCompilerImpl::getStructParamLayout(slang::EntryPointReflection& entryPoint) noexcept
-    {
-        if (entryPoint.getParameterCount() == 0)
-        {
-            return unexpected<std::string>{ "vertex entry point without parameters" };
-        }
-        auto param = entryPoint.getParameterByIndex(0);
-        auto typeLayout = param->getTypeLayout();
-        if (typeLayout->getType()->getKind() != slang::TypeReflection::Kind::Struct)
-        {
-            return unexpected<std::string>{ "vertex entry point param is not a struct" };
-        }
-		return typeLayout;
-    }
-
-    expected<protobuf::VertexLayout, std::string> SlangProgramCompilerImpl::createVertexLayout(slang::EntryPointReflection& entryPoint) noexcept
-    {
-        if (entryPoint.getStage() != SLANG_STAGE_VERTEX)
-        {
-            return unexpected<std::string>{ "entry point is not a vertex state" };
-        }
-		auto typeLayoutResult = getStructParamLayout(entryPoint);
-        if(!typeLayoutResult)
-        {
-            return unexpected<std::string>{ std::move(typeLayoutResult).error() };
-		}
-		auto typeLayout = typeLayoutResult.value();
-        protobuf::VertexLayout vertexLayout;
-
-        SlangInt fieldCount = typeLayout->getFieldCount();
-        for (SlangInt f = 0; f < fieldCount; ++f)
-        {
-            auto& vertexAttrib = *vertexLayout.add_attributes();
-
-            auto field = typeLayout->getFieldByIndex(f);
-            auto fieldType = field->getTypeLayout()->getType();
-
-            auto bgfxAttrib = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
-            if (!bgfxAttrib)
-            {
-                return unexpected<std::string>{ fmt::format("unsupported attrib {} in vertex field {}", field->getSemanticName(), field->getName()) };
-            }
-            auto bgfxAttribType = getBgfxAttribType(fieldType->getScalarType());
-            if (!bgfxAttribType)
-            {
-                return unexpected<std::string>{ fmt::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), field->getName()) };
-            }
-            vertexAttrib.set_bgfx_type(*bgfxAttribType);
-            vertexAttrib.set_num(fieldType->getElementCount());
-        }
-
-        return vertexLayout;
-    }
-
-    expected<protobuf::FragmentLayout, std::string> SlangProgramCompilerImpl::createFragmentLayout(slang::EntryPointReflection& entryPoint) noexcept
-    {
-        if (entryPoint.getStage() != SLANG_STAGE_FRAGMENT)
-        {
-            return unexpected<std::string>{ "entry point is not a fragment state" };
-        }
-        auto typeLayoutResult = getStructParamLayout(entryPoint);
-        if (!typeLayoutResult)
-        {
-            return unexpected<std::string>{ std::move(typeLayoutResult).error() };
-        }
-        auto typeLayout = typeLayoutResult.value();
-
-        protobuf::FragmentLayout fragmentLayout;
-
-        SlangInt fieldCount = typeLayout->getFieldCount();
-        for (SlangInt f = 0; f < fieldCount; ++f)
-        {
-            auto& fragAttrib = *fragmentLayout.add_attributes();
-
-            auto field = typeLayout->getFieldByIndex(f);
-            auto fieldType = field->getTypeLayout()->getType();
-
-            auto bgfxAttrib = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
-            if (!bgfxAttrib)
-            {
-                return unexpected<std::string>{ fmt::format("unsupported attrib {} in vertex field {}", field->getSemanticName(), field->getName()) };
-            }
-            fragAttrib.set_num(fieldType->getElementCount());
-            fragAttrib.set_name(field->getName());
-        }
-
-        return fragmentLayout;
-    }
-
 
     SlangProgramCompiler::SlangProgramCompiler(const Config& config) noexcept
         : _config{config}

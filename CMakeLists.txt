@@ -597,37 +597,39 @@ set(BGFX_SHADERC_TARGET bgfx::shaderc)
 # slang
 find_package(slang CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE slang::slang)
-# complains about invalid dll file
 # target_link_libraries(${CORE_LIB_NAME} PRIVATE slang::slang-glslang)
+
 if (WIN32)
-  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-      set(D3D_ARCH x64)
-  else()
-      set(D3D_ARCH x86)
-  endif()
-  set(D3D_BASE_PATH "Windows Kits/10/Redist/D3D")
-  macro(copy_d3d_file NAME FILENAME)
-    find_file(D3D_PATH_${NAME}
-      NAMES ${FILENAME}
-      PATHS 
-          "$ENV{ProgramFiles}/${D3D_BASE_PATH}"
-          "$ENV{ProgramFiles\(x86\)}/${D3D_BASE_PATH}"
-      PATH_SUFFIXES ${D3D_ARCH}
-      NO_DEFAULT_PATH
-    )
-    if(D3D_PATH_${NAME})
-      add_custom_command(TARGET ${CORE_LIB_NAME} POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${D3D_PATH_${NAME}}" $<TARGET_FILE_DIR:${CORE_LIB_NAME}>
-      )
+  find_package(directx-dxc CONFIG REQUIRED)
+  target_link_libraries(${CORE_LIB_NAME} PRIVATE Microsoft::DirectXShaderCompiler)
+
+  if(DARMOK_COPY_D3D_DLLS)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(D3D_ARCH x64)
+    else()
+        set(D3D_ARCH x86)
     endif()
-  endmacro(copy_d3d_file)
+    set(D3D_BASE_PATH "Windows Kits/10/Redist/D3D")
+    macro(copy_d3d_file NAME FILENAME)
+      find_file(D3D_PATH_${NAME}
+        NAMES ${FILENAME}
+        PATHS 
+            "$ENV{ProgramFiles}/${D3D_BASE_PATH}"
+            "$ENV{ProgramFiles\(x86\)}/${D3D_BASE_PATH}"
+        PATH_SUFFIXES ${D3D_ARCH}
+        NO_DEFAULT_PATH
+      )
+      if(D3D_PATH_${NAME})
+        add_custom_command(TARGET ${CORE_LIB_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${D3D_PATH_${NAME}}" $<TARGET_FILE_DIR:${CORE_LIB_NAME}>
+        )
+      endif()
+    endmacro(copy_d3d_file)
 
-  copy_d3d_file(DXIL dxil.dll)
-  copy_d3d_file(DXCOMPILER dxcompiler.dll)
-
-  
-
+    copy_d3d_file(DXIL dxil.dll)
+    copy_d3d_file(DXCOMPILER dxcompiler.dll)
+  endif()
 endif()
 
 # fmt

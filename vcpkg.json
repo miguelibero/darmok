@@ -55,6 +55,10 @@
         "tools"
       ]
     },
+    {
+      "name": "directx-dxc",
+      "platform": "windows"
+    },
     "shader-slang",
     "luajit",
     "luasocket",
