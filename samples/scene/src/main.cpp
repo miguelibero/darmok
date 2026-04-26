@@ -116,6 +116,7 @@ namespace
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 			scene.tryAddSceneComponent<FrameAnimationUpdater>();
 
+
 			auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
 			if (!progResult)
 			{

@@ -21,7 +21,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 
-#include "generated/shaders/rmlui/rmlui.program.h"
+#include "generated/shaders/rmlui/rmlui.h"
 
 namespace darmok
 {
@@ -66,7 +66,7 @@ namespace darmok
         , _textureUniform{ "s_texColor", bgfx::UniformType::Sampler }
         , _dataUniform{ "u_rmluiData", bgfx::UniformType::Vec4 }
     {
-        if (auto result = Program::loadStaticMem(rmlui_program))
+        if (auto result = Program::loadStaticMem(darmok_program_rmlui))
         {
             _program = std::make_unique<Program>(std::move(result).value());
         }

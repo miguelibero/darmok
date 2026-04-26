@@ -30,7 +30,7 @@ namespace darmok
     public:
         DataStreamBuffer(Data& data, float overflowSizeFactor = 2.f) noexcept;
         size_t size() const noexcept;
-        void writebin(const void *data, std::size_t size) noexcept;
+        void writebin(const void* data, std::size_t size) noexcept;
 
         template <typename T>
         void writebin(const T &value) noexcept

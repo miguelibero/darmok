@@ -10,7 +10,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/program_core.hpp>
 #include <bx/allocator.h>
-#include "generated/shaders/imgui/imgui.program.h"
+#include "generated/shaders/imgui/imgui.h"
 
 namespace darmok
 {
@@ -59,7 +59,7 @@ namespace darmok
 		{
 			return unexpected{ std::move(fontsResult).error() };
 		}
-		auto progResult = Program::loadStaticMem(imgui_program);
+		auto progResult = Program::loadStaticMem(darmok_program_imgui);
 		if (!progResult)
 		{
 			return unexpected{ std::move(progResult).error() };

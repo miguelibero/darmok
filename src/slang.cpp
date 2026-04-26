@@ -285,7 +285,7 @@ namespace darmok
         {
             std::string name;
             bgfx::UniformType::Enum type;
-            uint8_t count;
+            uint8_t num;
             uint16_t regIndex;
             uint16_t regCount;
             TextureComponentType texComponent = TextureComponentType::Float;
@@ -616,12 +616,12 @@ namespace darmok
 
             uniform.name = paramName;
             uniform.type = convertedType;
-            uniform.count = isArray ? paramType.getElementCount() : 1;
+            uniform.num = isArray ? paramType.getElementCount() : 1;
 
             if (isSampler)
             {
                 uniform.regIndex = param.getBindingIndex();
-                uniform.regCount = uniform.count;
+                uniform.regCount = uniform.num;
             }
             else if (isBuffer)
             {
@@ -672,7 +672,7 @@ namespace darmok
                 data.uniforms.insert(data.uniforms.end(), fieldResult->begin(), fieldResult->end());
             }
 
-            data.bufferSize = static_cast<uint16_t>(typeLayout.getSize());
+            data.bufferSize = static_cast<uint16_t>(elementsTypeLayout.getSize());
             return data;
         }
 
@@ -773,21 +773,21 @@ namespace darmok
                 out.writebin(hashLayoutParams(outputParams));
             }
 
-            out.writebin<uint16_t>(uniformData.uniforms.size());
+            out.writebin(static_cast<uint16_t>(uniformData.uniforms.size()));
 
-            const uint32_t fragmentBit = stage == SLANG_STAGE_FRAGMENT ? uniformFragmentBit : 0;
+            const uint8_t fragmentBit = stage == SLANG_STAGE_FRAGMENT ? uniformFragmentBit : 0;
 
             for (const auto& uniform : uniformData.uniforms)
             {
                 out.writebin<uint8_t>(uniform.name.size());
-                out << uniform.name;
-                out.writebin(static_cast<uint8_t>(uniform.type) | fragmentBit);
-                out.writebin(uniform.count);
+                out.writebin(&uniform.name.front(), sizeof(std::string::value_type) * uniform.name.size());
+                out.writebin(static_cast<uint8_t>(uniform.type | fragmentBit));
+                out.writebin(uniform.num);
                 out.writebin(uniform.regIndex);
                 out.writebin(uniform.regCount);
                 out.writebin(static_cast<uint8_t>(uniform.texComponent));
                 out.writebin(static_cast<uint8_t>(uniform.texDimension));
-                out.writebin(uniform.texFormat);
+                out.writebin(static_cast<uint16_t>(uniform.texFormat));
             }
 
             out.writebin<uint32_t>(data->getBufferSize());
@@ -801,9 +801,10 @@ namespace darmok
             }
             out.writebin(uniformData.bufferSize);
 
-            shader.set_data(bgfxShaderData.toString());
+            auto dataStr = bgfxShaderData.view(0, out.tellp()).toString();
+            shader.set_data(std::move(dataStr));
             return shader;
-        }        
+        }
 
         expected<Slang::ComPtr<slang::IComponentType>, std::string> compileProgram(const SlangProgramCompiler::Source &src, slang::ISession &session, OptionalRef<std::ostream> log) noexcept
         {

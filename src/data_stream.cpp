@@ -33,7 +33,7 @@ namespace darmok
         return _data.size();
     }
 
-    void DataStreamBuffer::writebin(const void *data, std::size_t size) noexcept
+    void DataStreamBuffer::writebin(const void* data, std::size_t size) noexcept
     {
         sputn(reinterpret_cast<const char *>(data), size);
     }

@@ -100,7 +100,8 @@ namespace darmok
 			{
 				return unexpected{ "shader is empty: " + shaderName };
 			}
-            auto handle = bgfx::createShader(protobuf::copyMem(shader.data()));
+            auto& dataStr = shader.data();
+            auto handle = bgfx::createShader(protobuf::copyMem(dataStr));
             if (!isValid(handle))
             {
                 return unexpected{ "failed to create shader: " + shaderName };
