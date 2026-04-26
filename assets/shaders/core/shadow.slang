@@ -13,10 +13,7 @@ struct VSOutput
     float4 position : SV_Position;
 };
 
-cbuffer Constants
-{
-    float4x4 u_modelViewProj;
-}
+float4x4 u_modelViewProj;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

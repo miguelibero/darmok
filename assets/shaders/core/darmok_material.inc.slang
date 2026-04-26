@@ -31,14 +31,11 @@ Texture2D<float4> s_texEmissive : register(t6);
 [[vk::binding(6, 0)]]
 SamplerState s_texEmissiveState : register(s6);
 
-cbuffer MaterialConstants
-{
-    float4 u_baseColorFactor;
-    float4 u_metallicRoughnessNormalOcclusionFactor;
-    float4 u_emissiveFactorVec;
-    float4 u_hasTextures;
-    float4 u_multipleScatteringVec;
-}
+float4 u_baseColorFactor;
+float4 u_metallicRoughnessNormalOcclusionFactor;
+float4 u_emissiveFactorVec;
+float4 u_hasTextures;
+float4 u_multipleScatteringVec;
 
 #define u_hasBaseColorTexture         ((uint(u_hasTextures.x) & (1 << 0)) != 0)
 #define u_hasMetallicRoughnessTexture ((uint(u_hasTextures.x) & (1 << 2)) != 0)

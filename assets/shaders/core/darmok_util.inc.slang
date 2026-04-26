@@ -1,10 +1,7 @@
 #pragma once
 
-cbuffer UtilConstants
-{
-    float4 u_viewRect;
-    float4x4 u_invProj;
-}
+float4 u_viewRect;
+float4x4 u_invProj;
 
 inline bool getBitfieldValue(float4 field, int pos)
 {

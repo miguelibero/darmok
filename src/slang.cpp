@@ -60,17 +60,17 @@ namespace darmok
             return {static_cast<const char *>(diagnostics->getBufferPointer()), diagnostics->getBufferSize()};
         }
 
-        std::optional<protobuf::Bgfx::Attrib> getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept
+        expected<std::optional<protobuf::Bgfx::Attrib>, std::string> getBgfxAttrib(std::string_view semanticName, size_t semanticIndex) noexcept
         {
-            auto consecutive = [semanticIndex](protobuf::Bgfx::Attrib base, int max) -> std::optional<protobuf::Bgfx::Attrib>
+            auto consecutive = [semanticIndex](protobuf::Bgfx::Attrib base, int max) -> expected<std::optional<protobuf::Bgfx::Attrib>, std::string>
             {
                 if (semanticIndex >= max)
                 {
-                    return std::nullopt;
+                    return unexpected{fmt::format("unsupported index {} for attrib type {}", semanticIndex, base)};
                 }
                 return static_cast<protobuf::Bgfx::Attrib>(static_cast<int>(base) + semanticIndex);
             };
-            if (semanticName == "POSITION" || semanticName == "SV_POSITION")
+            if (semanticName == "POSITION")
             {
                 return protobuf::Bgfx::Position;
             }
@@ -102,7 +102,11 @@ namespace darmok
             {
                 return protobuf::Bgfx::Weight;
             }
-            return std::nullopt;
+            if (semanticName.starts_with("SV_"))
+            {
+                return std::nullopt;
+            }
+            return unexpected{fmt::format("could not deduce attrib type {}", semanticName)};
         }
 
         std::optional<protobuf::Bgfx::AttribType> getBgfxAttribType(slang::TypeReflection::ScalarType scalarType) noexcept
@@ -117,9 +121,8 @@ namespace darmok
                 return protobuf::Bgfx::Half;
             case slang::TypeReflection::ScalarType::Float32:
                 return protobuf::Bgfx::Float;
-            default:
-                return std::nullopt;
             }
+            return std::nullopt;
         }
 
         expected<slang::TypeLayoutReflection *, std::string> getStructParamLayout(slang::EntryPointReflection &entryPoint) noexcept
@@ -154,21 +157,28 @@ namespace darmok
             SlangInt fieldCount = typeLayout->getFieldCount();
             for (SlangInt f = 0; f < fieldCount; ++f)
             {
-                auto &vertexAttrib = *vertexLayout.add_attributes();
 
                 auto field = typeLayout->getFieldByIndex(f);
                 auto fieldType = field->getTypeLayout()->getType();
 
-                auto bgfxAttrib = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
+                auto bgfxAttribResult = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
+                if (!bgfxAttribResult)
+                {
+                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}: {}", field->getSemanticName(), field->getName(), bgfxAttribResult.error())};
+                }
+                auto& bgfxAttrib = bgfxAttribResult.value();
                 if (!bgfxAttrib)
                 {
-                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}", field->getSemanticName(), field->getName())};
+                    continue;
                 }
                 auto bgfxAttribType = getBgfxAttribType(fieldType->getScalarType());
                 if (!bgfxAttribType)
                 {
                     return unexpected<std::string>{fmt::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), field->getName())};
                 }
+
+                auto &vertexAttrib = *vertexLayout.add_attributes();
+                vertexAttrib.set_bgfx(*bgfxAttrib);
                 vertexAttrib.set_bgfx_type(*bgfxAttribType);
                 vertexAttrib.set_num(fieldType->getElementCount());
             }
@@ -241,7 +251,6 @@ namespace darmok
             {SlangCompileTarget::SLANG_SPIRV, bgfx::RendererType::Vulkan},
         };
 
-        
         struct LayoutParam final
         {
             std::string name;
@@ -290,54 +299,51 @@ namespace darmok
             uint16_t bufferSize = 0;
         };
 
-        bool isUsedUniform(slang::IMetadata& entryPointMetadata, SlangCompileTarget target, SlangStage stage, slang::VariableLayoutReflection& param) noexcept
+        expected<bgfx::UniformType::Enum, std::string> convertUniformType(slang::TypeReflection& type, bool isCompute) noexcept
         {
-            auto category = param.getCategory();
-            if (category == slang::ParameterCategory::Uniform)
+            auto kind = type.getKind();
+            switch (kind)
             {
-                category = slang::ParameterCategory::ConstantBuffer;
-            }
-
-            uint32_t offsetshift = 0;
-            if (target == SLANG_SPIRV && stage == SLANG_STAGE_FRAGMENT)
-            {
-                if (category == slang::ParameterCategory::ConstantBuffer)
+                case slang::TypeReflection::Kind::Resource:
                 {
-                    offsetshift = 1;
+                    if (isCompute || type.getResourceShape() == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
+                    {
+                        if (type.getResourceAccess() == SlangResourceAccess::SLANG_RESOURCE_ACCESS_READ)
+                        {
+                            return static_cast<bgfx::UniformType::Enum>(uniformReadOnlyBit | static_cast<uint8_t>(bgfx::UniformType::Count));
+                        }
+                        return bgfx::UniformType::Count;
+                    }
+                    return bgfx::UniformType::Sampler;
+                }
+                case slang::TypeReflection::Kind::SamplerState:
+                {
+                    // skip sampler states
+                    return bgfx::UniformType::Count;
+                }
+                case slang::TypeReflection::Kind::Vector:
+                {
+                    auto count = type.getElementCount();
+                    if (count == 4)
+                    {
+                        return bgfx::UniformType::Vec4;
+                    }
+                    return unexpected{fmt::format("unsupported uniform vector count {}", count)};
+                }
+                case slang::TypeReflection::Kind::Matrix:
+                {
+                    auto count = type.getRowCount();
+                    switch (count)
+                    {
+                    case 3:
+                        return bgfx::UniformType::Mat3;
+                    case 4:
+                        return bgfx::UniformType::Mat4;
+                    }
+                    return unexpected{fmt::format("unsupported uniform matrix count {}", count)};
                 }
             }
-
-            bool isUsed = false;
-            entryPointMetadata.isParameterLocationUsed(static_cast<SlangParameterCategory>(category), param.getBindingSpace(category),
-                                                        param.getOffset(category) + offsetshift, isUsed);
-
-            return isUsed;
-        }
-
-        bool isSkippableUniform(slang::TypeReflection& type) noexcept
-        {
-            return type.getKind() == slang::TypeReflection::Kind::SamplerState;
-        }
-
-        bgfx::UniformType::Enum convertUniformType(slang::TypeReflection& type, bool isCompute) noexcept
-        {
-            switch (type.getKind())
-            {
-            case slang::TypeReflection::Kind::Resource:
-                if (isCompute || type.getResourceShape() == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
-                {
-                    return type.getResourceAccess() == SlangResourceAccess::SLANG_RESOURCE_ACCESS_READ
-                               ? static_cast<bgfx::UniformType::Enum>(uniformReadOnlyBit | static_cast<uint8_t>(bgfx::UniformType::Count))
-                               : bgfx::UniformType::Count;
-                }
-                return bgfx::UniformType::Sampler;
-            case slang::TypeReflection::Kind::Vector:
-                return bgfx::UniformType::Vec4;
-            case slang::TypeReflection::Kind::Matrix:
-                return type.getRowCount() == 3 ? bgfx::UniformType::Mat3 : bgfx::UniformType::Mat4;
-            default:
-                return bgfx::UniformType::Count;
-            }
+            return unexpected{fmt::format("unsupported uniform kind {}", kind)};
         }
 
         TextureComponentType convertTextureComponentType(slang::TypeReflection& type) noexcept
@@ -385,11 +391,9 @@ namespace darmok
             }
         }
 
-        bgfx::TextureFormat::Enum convertTextureFormat(slang::TypeLayoutReflection& containerLayout, uint64_t index)
+        bgfx::TextureFormat::Enum convertTextureFormat(SlangImageFormat format)
         {
-            SlangImageFormat imageFormat = containerLayout.getBindingRangeImageFormat(index);
-
-            switch (imageFormat)
+            switch (format)
             {
             case SLANG_IMAGE_FORMAT_unknown:
                 return  bgfx::TextureFormat::Unknown;
@@ -516,7 +520,7 @@ namespace darmok
             return attribToId(param.attrib);
         }
 
-        expected<std::vector<LayoutParam>, std::string> getLayoutParams(slang::VariableLayoutReflection &layout, const std::string &prefix = "") noexcept
+        expected<std::vector<LayoutParam>, std::string> getLayoutParams(slang::VariableLayoutReflection& layout, const std::string &prefix = "") noexcept
         {
             std::vector<LayoutParam> params;
             auto *typeLayout = layout.getTypeLayout();
@@ -536,7 +540,7 @@ namespace darmok
                     }
                     params.insert(params.end(), subparams->begin(), subparams->end());
                 }
-                return params;
+                break;
             }
             case slang::TypeReflection::Kind::Vector:
             case slang::TypeReflection::Kind::Scalar:
@@ -545,13 +549,16 @@ namespace darmok
                 {
                     return unexpected{fmt::format("no semantic name specified for var: {}", layout.getName())};
                 }
-                auto attrib = getBgfxAttrib(layout.getSemanticName(), layout.getSemanticIndex());
-                if (!attrib)
+                auto attribResult = getBgfxAttrib(layout.getSemanticName(), layout.getSemanticIndex());
+                if (!attribResult)
                 {
                     return unexpected{fmt::format("unsupported semantic name: {}", layout.getSemanticName())};
                 }
-                params.emplace_back(layout.getName(), prefix + layout.getName(), bgfx::Attrib::Enum(*attrib));
-                return params;
+                if (auto &attrib = attribResult.value())
+                {
+                    params.emplace_back(layout.getName(), prefix + layout.getName(), static_cast<bgfx::Attrib::Enum>(*attrib));
+                }
+                break;
             }
             default:
                 return unexpected{fmt::format("Unsupported type of param: {}", layout.getName())};
@@ -559,112 +566,113 @@ namespace darmok
             return params;
         }
 
-        expected<slang::TypeLayoutReflection*, std::string> verifyUniformLayout(slang::TypeLayoutReflection& scopeTypeLayout, slang::VariableLayoutReflection& globalVarLayout)
+        expected<std::vector<Uniform>, std::string> getUniforms(slang::VariableLayoutReflection& param, SlangStage stage)
         {
-            slang::VariableLayoutReflection *elementsVarLayout = &globalVarLayout;
+            auto& paramType = *param.getType();
+            auto paramKind = paramType.getKind();
+            auto isCompute = stage == SLANG_STAGE_COMPUTE;
+            auto paramName = param.getName();
 
-            if (scopeTypeLayout.getKind() != slang::TypeReflection::Kind::Struct)
+            std::vector<Uniform> uniforms;
+
+            if (paramKind == slang::TypeReflection::Kind::ConstantBuffer)
             {
-                if (scopeTypeLayout.getKind() != slang::TypeReflection::Kind::ConstantBuffer)
+                auto& paramLayout = *param.getTypeLayout();
+                auto &elementsVarLayout = *paramLayout.getElementVarLayout();
+                auto& elementsTypeLayout = *elementsVarLayout.getTypeLayout();
+
+                auto paramCount = elementsTypeLayout.getFieldCount();
+                for (unsigned int i = 0; i < paramCount; i++)
                 {
-                    return unexpected<std::string>{"global scope is not a struct or constant buffer"};
+                    auto& subparam = *elementsTypeLayout.getFieldByIndex(i);
+                    auto fieldResult = getUniforms(subparam, stage);
+                    if (!fieldResult)
+                    {
+                        return unexpected{fmt::format("getting uniform for field {}: {}", subparam.getName(), fieldResult.error())};
+                    }
+                    uniforms.insert(uniforms.end(), fieldResult->begin(), fieldResult->end());
                 }
-
-                elementsVarLayout = scopeTypeLayout.getElementVarLayout();
+                return uniforms;
             }
 
-            auto elementsTypeLayout = elementsVarLayout->getTypeLayout();
-
-            if (elementsTypeLayout->getKind() != slang::TypeReflection::Kind::Struct)
+            bool isArray = paramKind == slang::TypeReflection::Kind::Array;
+            auto &elementType = isArray ? *paramType.getElementType() : paramType;
+            auto convertResult = convertUniformType(elementType, isCompute);
+            if (!convertResult)
             {
-                return unexpected<std::string>{"global scope elements are not a struct"};
+                return unexpected{fmt::format("faied to convert param {}: {}", paramName, convertResult.error())};
             }
-            return elementsTypeLayout;
+            auto convertedType = *convertResult;
+            if (convertedType == bgfx::UniformType::Count)
+            {
+                return uniforms;
+            }
+            bool isBuffer = elementType.getKind() == slang::TypeReflection::Kind::Resource &&
+                            elementType.getResourceShape() == SlangResourceShape::SLANG_STRUCTURED_BUFFER;
+            bool isSampler = convertedType == bgfx::UniformType::Sampler && !isCompute;
+            bool isStorageImage = elementType.getKind() == slang::TypeReflection::Kind::Resource && !isBuffer && !isCompute;
+
+            auto& uniform = uniforms.emplace_back();
+
+            uniform.name = paramName;
+            uniform.type = convertedType;
+            uniform.count = isArray ? paramType.getElementCount() : 1;
+
+            if (isSampler)
+            {
+                uniform.regIndex = param.getBindingIndex();
+                uniform.regCount = uniform.count;
+            }
+            else if (isBuffer)
+            {
+                uniform.regIndex = param.getBindingIndex();
+                uniform.regCount = storageBufferDescriptor;
+            }
+            else if (isStorageImage)
+            {
+                uniform.regIndex = param.getBindingIndex();
+                uniform.regCount = storageImageDescriptor;
+            }
+            else
+            {
+                uniform.regIndex = param.getOffset();
+                uniform.regCount *= elementType.getRowCount();
+            }
+
+            if (isSampler || isStorageImage)
+            {
+                uniform.texComponent = convertTextureComponentType(paramType);
+                uniform.texDimension = convertTextureDimension(paramType);
+                uniform.texFormat = convertTextureFormat(param.getImageFormat());
+            }
+
+            return uniforms;
         }
 
         expected<UniformData, std::string> getUniforms(slang::ProgramLayout& layout, slang::IMetadata& entryPointMetadata, SlangCompileTarget target, SlangStage stage) noexcept
         {
-            auto &globalVarLayout = *layout.getGlobalParamsVarLayout();
-            auto &scopeTypeLayout = *globalVarLayout.getTypeLayout();
-
-            auto verifyResult = verifyUniformLayout(scopeTypeLayout, globalVarLayout);
-            if (!verifyResult)
-            {
-                return unexpected{std::move(verifyResult).error()};
-            }
-            auto elementsTypeLayout = verifyResult.value();
+            auto& varsLayout = *layout.getGlobalParamsVarLayout();
+            auto& typeLayout = *varsLayout.getTypeLayout();
+            auto layoutKind = typeLayout.getKind(); 
             UniformData data;
-
             uint64_t textureIndex = 0;
-            for (int i = 0; i < elementsTypeLayout->getFieldCount(); i++)
+
+            auto& elementsVarLayout = *typeLayout.getElementVarLayout();
+            auto& elementsTypeLayout = *elementsVarLayout.getTypeLayout();
+
+            auto paramCount = elementsTypeLayout.getFieldCount();
+            for (unsigned int i = 0; i < paramCount; i++)
             {
-                auto &param = *elementsTypeLayout->getFieldByIndex(i);
-                Uniform uniform;
-
-                auto &paramType = *param.getType();
-                bool isArray = paramType.getKind() == slang::TypeReflection::Kind::Array;
-
-                auto &elementType = isArray ? *paramType.getElementType() : paramType;
-
-                if (!isUsedUniform(entryPointMetadata, target, stage, param))
+                auto &param = *elementsTypeLayout.getFieldByIndex(i);
+                auto fieldResult = getUniforms(param, stage);
+                if (!fieldResult)
                 {
-                    continue;
+                    return unexpected{fmt::format("getting uniform for field {}: {}", param.getName(), fieldResult.error())};
                 }
-
-                if (isSkippableUniform(elementType))
-                {
-                    continue;
-                }
-
-                auto isCompute = stage == SLANG_STAGE_COMPUTE;
-
-                auto convertedType = convertUniformType(elementType, isCompute);
-                if (convertedType == bgfx::UniformType::Count)
-                {
-                    return unexpected{fmt::format("unsupported uniform type for param {}", param.getName())};
-                }
-
-                bool isBuffer = elementType.getKind() == slang::TypeReflection::Kind::Resource &&
-                                elementType.getResourceShape() == SlangResourceShape::SLANG_STRUCTURED_BUFFER;
-                bool isSampler = convertedType == bgfx::UniformType::Sampler && !isCompute;
-                bool isStorageImage = elementType.getKind() == slang::TypeReflection::Kind::Resource && !isBuffer && !isCompute;
-
-                uniform.name = param.getName();
-                uniform.type = convertedType;
-                uniform.count = isArray ? paramType.getElementCount() : 1;
-
-                if (isSampler)
-                {
-                    uniform.regIndex = param.getBindingIndex();
-                    uniform.regCount = uniform.count;
-                }
-                else if (isBuffer)
-                {
-                    uniform.regIndex = param.getBindingIndex();
-                    uniform.regCount = storageBufferDescriptor;
-                }
-                else if (isStorageImage)
-                {
-                    uniform.regIndex = param.getBindingIndex();
-                    uniform.regCount = storageImageDescriptor;
-                }
-                else
-                {
-                    uniform.regIndex = param.getOffset();
-                    uniform.regCount *= elementType.getRowCount();
-                }
-
-                if (isSampler || isStorageImage)
-                {
-                    uniform.texComponent = convertTextureComponentType(paramType);
-                    uniform.texDimension = convertTextureDimension(paramType);
-                    uniform.texFormat = convertTextureFormat(*elementsTypeLayout, textureIndex++);
-                }
-
-                data.uniforms.push_back(uniform);
+                data.uniforms.insert(data.uniforms.end(), fieldResult->begin(), fieldResult->end());
             }
 
-            data.bufferSize = static_cast<uint16_t>(elementsTypeLayout->getSize());
+            data.bufferSize = static_cast<uint16_t>(typeLayout.getSize());
             return data;
         }
 
@@ -751,47 +759,47 @@ namespace darmok
 
             Data bgfxShaderData;
             DataOutputStream out{bgfxShaderData};
-            out << SlangBgfxShaderUtils::getMagic(stage);
+
+            out.writebin(SlangBgfxShaderUtils::getMagic(stage));
 
             if (stage == SLANG_STAGE_FRAGMENT)
             {
-                out << hashLayoutParams(inputParams);
-                out << static_cast<uint32_t>(0);
+                out.writebin(hashLayoutParams(inputParams));
+                out.writebin<uint32_t>(0);
             }
             else
             {
-                out << static_cast<uint32_t>(0);
-                out << hashLayoutParams(outputParams);
+                out.writebin<uint32_t>(0);
+                out.writebin(hashLayoutParams(outputParams));
             }
 
-            out << static_cast<uint16_t>(uniformData.uniforms.size());
+            out.writebin<uint16_t>(uniformData.uniforms.size());
 
             const uint32_t fragmentBit = stage == SLANG_STAGE_FRAGMENT ? uniformFragmentBit : 0;
 
             for (const auto& uniform : uniformData.uniforms)
             {
-                out << static_cast<uint8_t>(uniform.name.size());
+                out.writebin<uint8_t>(uniform.name.size());
                 out << uniform.name;
-                out << (static_cast<uint8_t>(uniform.type) | fragmentBit);
-                out << uniform.count;
-                out << uniform.regIndex;
-                out << uniform.regCount;
-                out << static_cast<uint8_t>(uniform.texComponent);
-                out << static_cast<uint8_t>(uniform.texDimension);
-                out << uniform.texFormat;
+                out.writebin(static_cast<uint8_t>(uniform.type) | fragmentBit);
+                out.writebin(uniform.count);
+                out.writebin(uniform.regIndex);
+                out.writebin(uniform.regCount);
+                out.writebin(static_cast<uint8_t>(uniform.texComponent));
+                out.writebin(static_cast<uint8_t>(uniform.texDimension));
+                out.writebin(uniform.texFormat);
             }
 
-            out << static_cast<uint32_t>(data->getBufferSize());
-            out << DataView{data->getBufferPointer(), data->getBufferSize()}.toString();
-            out << static_cast<uint8_t>(0);
+            out.writebin<uint32_t>(data->getBufferSize());
+            out.writebin(data->getBufferPointer(), data->getBufferSize());
+            out.writebin<uint8_t>(0);
 
-            out << static_cast<uint8_t>(inputParams.size());
+            out.writebin<uint8_t>(inputParams.size());
             for (const auto &param : inputParams)
             {
-                out << layoutParamToId(param, target);
+                out.writebin(layoutParamToId(param, target));
             }
-
-            out << uniformData.bufferSize;
+            out.writebin(uniformData.bufferSize);
 
             shader.set_data(bgfxShaderData.toString());
             return shader;

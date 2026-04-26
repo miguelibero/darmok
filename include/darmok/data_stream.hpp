@@ -30,6 +30,14 @@ namespace darmok
     public:
         DataStreamBuffer(Data& data, float overflowSizeFactor = 2.f) noexcept;
         size_t size() const noexcept;
+        void writebin(const void *data, std::size_t size) noexcept;
+
+        template <typename T>
+        void writebin(const T &value) noexcept
+        {
+            writebin(&value, sizeof(T));
+        }
+
     protected:
         int_type overflow(int_type ch) override;
         std::streampos seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which) override;
@@ -43,6 +51,15 @@ namespace darmok
     {
     public:
         DataOutputStream(Data& data) noexcept;
+
+        void writebin(const void *data, std::size_t size) noexcept;
+
+        template <typename T>
+        void writebin(const T &value) noexcept
+        {
+            writebin(&value, sizeof(T));
+        }
+
     private:
         DataStreamBuffer _buffer;
     };

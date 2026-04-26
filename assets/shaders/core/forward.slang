@@ -7,8 +7,8 @@ struct VSInput
     float3 a_normal   : NORMAL;
     float3 a_tangent  : TANGENT;
     float2 a_texcoord0: TEXCOORD0;
-    float4 a_indices  : TEXCOORD1;
-    float4 a_weight   : TEXCOORD2;
+    float4 a_indices  : INDICES;
+    float4 a_weight   : WEIGHT;
 };
 
 struct VSOutput
@@ -21,13 +21,10 @@ struct VSOutput
     float3 v_viewDir : TEXCOORD4;
 };
 
-cbuffer Constants
-{
-    float4 u_camPos;
-    float3x3 u_normalMatrix;
-    float4x4 u_model0;
-    float4x4 u_viewProj;
-}
+float4 u_camPos;
+float3x3 u_normalMatrix;
+float4x4 u_model0;
+float4x4 u_viewProj;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

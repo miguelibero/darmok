@@ -12,11 +12,8 @@ struct VSOutput
     float4 v_color0 : COLOR0;
 };
 
-cbuffer Constants
-{
-    float4x4 u_modelViewProj;
-    float4 u_rmluiData;
-}
+float4x4 u_modelViewProj;
+float4 u_rmluiData;
 
 #define u_rmluiForceDepth ((int(u_rmluiData.x) & 1 << 0) != 0)
 #define u_rmluiDepth u_rmluiData.y

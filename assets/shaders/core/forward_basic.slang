@@ -19,13 +19,10 @@ struct VSOutput
     float3 v_viewDir : TEXCOORD3;
 };
 
-cbuffer Constants
-{
-    float4 u_camPos;
-    float3x3 u_normalMatrix;
-    float4x4 u_model0;
-    float4x4 u_viewProj;
-}
+float4 u_camPos;
+float3x3 u_normalMatrix;
+float4x4 u_model0;
+float4x4 u_viewProj;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

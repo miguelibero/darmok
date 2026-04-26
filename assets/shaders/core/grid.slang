@@ -1,16 +1,13 @@
 #include <darmok_util.inc.slang>
 
-cbuffer Constants
-{
-    float4x4 u_invViewProj;
-    float4x4 u_viewProj;
+float4x4 u_invViewProj;
+float4x4 u_viewProj;
 
-    float4 u_gridColor1;
-    float4 u_gridColor2;
-    float4 u_xAxisColor;
-    float4 u_zAxisColor;
-    float4 u_data;
-}
+float4 u_gridColor1;
+float4 u_gridColor2;
+float4 u_xAxisColor;
+float4 u_zAxisColor;
+float4 u_data;
 
 struct VSInput
 {

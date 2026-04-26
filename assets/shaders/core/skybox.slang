@@ -1,8 +1,5 @@
 
-cbuffer Constants
-{
-    float4x4 u_modelViewProj;
-}
+float4x4 u_modelViewProj;
 
 struct VSInput
 {

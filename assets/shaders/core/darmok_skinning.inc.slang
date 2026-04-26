@@ -1,9 +1,6 @@
 #pragma once
 
-cbuffer SkinningConstants
-{
-    float4x4 u_skinning[64];
-}
+float4x4 u_skinning[64];
 
 float4x4 getSkinningMatrixPart(float v)
 {

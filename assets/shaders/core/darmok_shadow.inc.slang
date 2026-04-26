@@ -3,11 +3,8 @@
 
 #include "darmok_light.inc.slang"
 
-cbuffer ShadowConstants
-{
-	float4 u_shadowData1; // x: texel size, y: cascade amount, z: bias, w: normal bias
-	float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount, w: map amount
-}
+float4 u_shadowData1; // x: texel size, y: cascade amount, z: bias, w: normal bias
+float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount, w: map amount
 
 #define u_shadowTexelSize        u_shadowData1.x
 #define u_shadowCascadeAmount    uint(u_shadowData1.y)

@@ -1,8 +1,5 @@
-cbuffer Constants
-{
-    float4x4 u_modelViewProj;
-    float4 u_color;
-};
+float4x4 u_modelViewProj;
+float4 u_color;
 
 Texture2D s_texColor;
 SamplerState samplerState;

@@ -12,12 +12,9 @@ Texture2D<float4> s_texSpecular : register(t2);
 [[vk::binding(2, 0)]]
 SamplerState s_texSpecularState : register(s2);
 
-cbuffer MaterialUniforms
-{
-    float4 u_baseColorFactor;
-    float4 u_specularFactorVec;
-    float4 u_hasTextures;
-}
+float4 u_baseColorFactor;
+float4 u_specularFactorVec;
+float4 u_hasTextures;
 
 inline bool getBitfieldValue(float4 field, int pos)
 {

@@ -33,6 +33,11 @@ namespace darmok
         return _data.size();
     }
 
+    void DataStreamBuffer::writebin(const void *data, std::size_t size) noexcept
+    {
+        sputn(reinterpret_cast<const char *>(data), size);
+    }
+
     std::streampos DataStreamBuffer::seekoff(std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which)
     {
         if (which & std::ios_base::out)
@@ -101,6 +106,11 @@ namespace darmok
         , _buffer{ data }
     {
         rdbuf(&_buffer);
+    }
+
+    void DataOutputStream::writebin(const void* data, std::size_t size) noexcept
+    {
+        _buffer.writebin(data, size);
     }
 
     DataMemoryBlock::DataMemoryBlock(Data& data) noexcept

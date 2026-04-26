@@ -1,11 +1,7 @@
 #include <darmok_skinning.inc.slang>
 #include <darmok_material_basic.inc.slang>
 
-cbuffer Constants
-{
-    float4x4 u_modelViewProj;
-}
-
+float4x4 u_modelViewProj;
 Texture2D s_texColor;
 SamplerState samplerState;
 
