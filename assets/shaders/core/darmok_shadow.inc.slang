@@ -3,8 +3,8 @@
 
 #include "darmok_light.inc.slang"
 
-float4 u_shadowData1; // x: texel size, y: cascade amount, z: bias, w: normal bias
-float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount, w: map amount
+uniform float4 u_shadowData1; // x: texel size, y: cascade amount, z: bias, w: normal bias
+uniform float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount, w: map amount
 
 #define u_shadowTexelSize        u_shadowData1.x
 #define u_shadowCascadeAmount    uint(u_shadowData1.y)
@@ -19,7 +19,7 @@ float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount, w: map 
 #ifdef DARMOK_VARIANT_SHADOW_ENABLED
 
 // light shadow maps ordered by type: directional (cascaded), spot, point
-Texture2DArray<float> s_shadowMap;
+uniform Texture2DArray s_shadowMap;
 SamplerComparisonState s_shadowMapCmp;
 
 #endif
@@ -60,7 +60,7 @@ float getShadowMapValue(uint shadowMapIndex, float3 texCoord)
 	// SampleCmp expects float3 coords: (u,v,layer) and a comparison value
 	float cmp = texCoord.z;
 	float3 coord = float3(texCoord.xy, (float)shadowMapIndex);
-	return s_shadowMap.SampleCmp(s_shadowMapCmp, coord, cmp);
+	return s_shadowMap.SampleCmpLevelZero(s_shadowMapCmp, coord, cmp);
 }
 
 #else

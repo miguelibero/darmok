@@ -13,7 +13,7 @@ struct VSOutput
     float2 v_texcoord0 : TEXCOORD0;
 };
 
-Texture2D s_texColor;
+uniform Texture2D s_texColor;
 SamplerState s_texColorState;
 
 [shader("vertex")]

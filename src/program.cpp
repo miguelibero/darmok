@@ -94,7 +94,11 @@ namespace darmok
         for (auto& shader : shaders)
         {
             Defines defines{ shader.defines().begin(), shader.defines().end() };
-            auto shaderName = name + StringUtils::join(" ", defines.begin(), defines.end());
+            auto shaderName = name;
+            if (!defines.empty())
+            {
+                shaderName += " " + StringUtils::join(" ", defines.begin(), defines.end());
+            }
             
 			if (shader.data().empty())
 			{

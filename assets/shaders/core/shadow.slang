@@ -13,7 +13,7 @@ struct VSOutput
     float4 position : SV_Position;
 };
 
-float4x4 u_modelViewProj;
+uniform float4x4 u_modelViewProj;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

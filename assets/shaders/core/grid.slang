@@ -1,13 +1,13 @@
 #include <darmok_util.inc.slang>
 
-float4x4 u_invViewProj;
-float4x4 u_viewProj;
+uniform float4x4 u_invViewProj;
+uniform float4x4 u_viewProj;
 
-float4 u_gridColor1;
-float4 u_gridColor2;
-float4 u_xAxisColor;
-float4 u_zAxisColor;
-float4 u_data;
+uniform float4 u_gridColor1;
+uniform float4 u_gridColor2;
+uniform float4 u_xAxisColor;
+uniform float4 u_zAxisColor;
+uniform float4 u_data;
 
 struct VSInput
 {

@@ -1,7 +1,7 @@
-float4x4 u_modelViewProj;
-float4 u_color;
+uniform float4x4 u_modelViewProj;
+uniform float4 u_color;
 
-Texture2D s_texColor;
+uniform Texture2D s_texColor;
 SamplerState samplerState;
 
 struct VSInput

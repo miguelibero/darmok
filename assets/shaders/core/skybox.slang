@@ -1,5 +1,5 @@
 
-float4x4 u_modelViewProj;
+uniform float4x4 u_modelViewProj;
 
 struct VSInput
 {

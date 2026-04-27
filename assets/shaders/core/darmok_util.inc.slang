@@ -1,7 +1,7 @@
 #pragma once
 
-float4 u_viewRect;
-float4x4 u_invProj;
+uniform float4 u_viewRect;
+uniform float4x4 u_invProj;
 
 inline bool getBitfieldValue(float4 field, int pos)
 {

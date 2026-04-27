@@ -13,8 +13,8 @@ struct VSOutput
     float4 v_color0 : COLOR0;
 };
 
-float4x4 u_modelViewProj;
-float4 u_imageLodEnabled; // x = lod, y = enabled
+uniform float4x4 u_modelViewProj;
+uniform float4 u_imageLodEnabled; // x = lod, y = enabled
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

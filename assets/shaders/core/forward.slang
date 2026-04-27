@@ -21,10 +21,10 @@ struct VSOutput
     float3 v_viewDir : TEXCOORD4;
 };
 
-float4 u_camPos;
-float3x3 u_normalMatrix;
-float4x4 u_model0;
-float4x4 u_viewProj;
+uniform float4 u_camPos;
+uniform float3x3 u_normalMatrix;
+uniform float4x4 u_model0;
+uniform float4x4 u_viewProj;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

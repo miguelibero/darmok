@@ -44,10 +44,10 @@ struct DirLight
 };
 
 [[vk::binding(9, 0)]]
-StructuredBuffer<DirLight> b_dirLights : register(t9);
+uniform StructuredBuffer<DirLight> b_dirLights : register(t9);
 
-float4 u_lightCountVec;
-float4 u_ambientLightIrradiance;
+uniform float4 u_lightCountVec;
+uniform float4 u_ambientLightIrradiance;
 
 #define u_pointLightCount uint(u_lightCountVec.x)
 #define u_dirLightCount   uint(u_lightCountVec.y)

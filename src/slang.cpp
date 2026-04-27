@@ -228,7 +228,7 @@ namespace darmok
             {SlangCompileTarget::SLANG_DXBC, "sm_5_0"},
             {SlangCompileTarget::SLANG_DXIL, "sm_6_0"}, // -disable-payload-qualifiers option error
             {SlangCompileTarget::SLANG_METAL, "metallib_2_4"},
-            {SlangCompileTarget::SLANG_GLSL, "glsl_330"},
+            {SlangCompileTarget::SLANG_GLSL, "glsl_450"},
             {SlangCompileTarget::SLANG_SPIRV, "spirv_1_3"},
         };
 
@@ -701,7 +701,6 @@ namespace darmok
             {
                 return unexpected{getDiagnosticsString(diagnostics)};
             }
-            shader.mutable_defines()->Clear();
             for (auto &define : defines)
             {
                 *shader.add_defines() = define;
@@ -931,11 +930,12 @@ namespace darmok
 		return SlangProgramCompilerImpl{ std::move(globalSession), config };
     }
 
-    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(const std::unordered_set<std::string> &defines) noexcept
+    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(const std::unordered_set<std::string>& defines) noexcept
     {
         auto sessionDesc = _sessionDesc;
         std::vector<slang::PreprocessorMacroDesc> macros;
-        for (auto &define : defines)
+
+        for (auto& define : defines)
         {
             macros.emplace_back(define.c_str(), "1");
         }
@@ -967,7 +967,11 @@ namespace darmok
 
         for (auto& defineComb : CollectionUtils::combinations(defines))
         {
-            auto sessionResult = createSession(defineComb);
+            std::unordered_set<std::string> fdefineComb;
+            std::transform(defineComb.begin(), defineComb.end(), std::inserter(fdefineComb, fdefineComb.end()), [](const std::string &define)
+                           { return "DARMOK_VARIANT_" + define; });
+
+            auto sessionResult = createSession(fdefineComb);
             if (!sessionResult)
             {
                 return unexpected{fmt::format("failed to create session: {}", sessionResult.error())};

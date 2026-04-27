@@ -1,41 +1,40 @@
 #pragma once
 
-
 [[vk::binding(0, 0)]]
-Texture2D<float4> s_texAlbedoLUT : register(t0);
+uniform Texture2D s_texAlbedoLUT : register(t0);
 [[vk::binding(0, 0)]]
 SamplerState s_texAlbedoLUTState : register(s0);
 
 [[vk::binding(1, 0)]]
-Texture2D<float4> s_texBaseColor : register(t1);
+uniform Texture2D s_texBaseColor : register(t1);
 [[vk::binding(1, 0)]]
 SamplerState s_texBaseColorState : register(s1);
 
 [[vk::binding(3, 0)]]
-Texture2D<float4> s_texMetallicRoughness : register(t3);
+uniform Texture2D s_texMetallicRoughness : register(t3);
 [[vk::binding(3, 0)]]
 SamplerState s_texMetallicRoughnessState : register(s3);
 
 [[vk::binding(4, 0)]]
-Texture2D<float4> s_texNormal : register(t4);
+uniform Texture2D s_texNormal : register(t4);
 [[vk::binding(4, 0)]]
 SamplerState s_texNormalState : register(s4);
 
 [[vk::binding(5, 0)]]
-Texture2D<float4> s_texOcclusion : register(t5);
+uniform Texture2D s_texOcclusion : register(t5);
 [[vk::binding(5, 0)]]
 SamplerState s_texOcclusionState : register(s5);
 
 [[vk::binding(6, 0)]]
-Texture2D<float4> s_texEmissive : register(t6);
+uniform Texture2D s_texEmissive : register(t6);
 [[vk::binding(6, 0)]]
 SamplerState s_texEmissiveState : register(s6);
 
-float4 u_baseColorFactor;
-float4 u_metallicRoughnessNormalOcclusionFactor;
-float4 u_emissiveFactorVec;
-float4 u_hasTextures;
-float4 u_multipleScatteringVec;
+uniform float4 u_baseColorFactor;
+uniform float4 u_metallicRoughnessNormalOcclusionFactor;
+uniform float4 u_emissiveFactorVec;
+uniform float4 u_hasTextures;
+uniform float4 u_multipleScatteringVec;
 
 #define u_hasBaseColorTexture         ((uint(u_hasTextures.x) & (1 << 0)) != 0)
 #define u_hasMetallicRoughnessTexture ((uint(u_hasTextures.x) & (1 << 2)) != 0)
