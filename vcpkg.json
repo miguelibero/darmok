@@ -60,6 +60,7 @@
       "platform": "windows"
     },
     "shader-slang",
+    "spirv-cross",
     "luajit",
     "luasocket",
     "sol2",

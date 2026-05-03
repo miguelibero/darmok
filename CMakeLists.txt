@@ -598,7 +598,12 @@ set(BGFX_SHADERC_TARGET bgfx::shaderc)
 # slang
 find_package(slang CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE slang::slang)
-# target_link_libraries(${CORE_LIB_NAME} PRIVATE slang::slang-glslang)
+
+find_package(spirv_cross_cpp CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE spirv-cross-cpp)
+
+find_package(spirv_cross_glsl CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE spirv-cross-glsl)
 
 if (WIN32)
   find_package(directx-dxc CONFIG REQUIRED)

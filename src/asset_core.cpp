@@ -1185,14 +1185,12 @@ namespace darmok
     DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setBgfxShadercPath(const fs::path& path) noexcept
     {
         _progImporter.setShadercPath(path);
-        _slangImporter.setShadercPath(path);
         return *this;
     }
 
     DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::addBgfxShaderIncludePath(const fs::path& path) noexcept
     {
         _progImporter.addIncludePath(path);
-        _slangImporter.addBgfxIncludePath(path);
         return *this;
     }
 
