@@ -143,6 +143,7 @@ set(CORE_SOURCES
   viewport.cpp
   program_core.cpp
   slang.cpp
+  glsl.cpp
   asset_core.cpp
   easing.cpp
   protobuf.cpp

@@ -106,7 +106,7 @@ namespace darmok::StringUtils
 		return { str.begin(), itr.base() };
 	}
 
-	std::string_view trim(std::string& str) noexcept
+	std::string_view trim(std::string_view str) noexcept
 	{
 		return trimRight(trimLeft(str));
 	}

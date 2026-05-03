@@ -22,6 +22,10 @@ namespace darmok
 		IncludePaths includePaths;
 		OptionalRef<std::ostream> log;
 
+	    // used to compile glsl
+	    IncludePaths bgfxIncludePaths;
+	    std::filesystem::path shadercPath;
+
 		struct ReadConfig final
 		{
 			std::filesystem::path rootPath;
@@ -55,6 +59,8 @@ namespace darmok
 		SlangProgramFileImporter() noexcept;
 		~SlangProgramFileImporter() noexcept;
 		SlangProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+	    SlangProgramFileImporter& addBgfxIncludePath(const std::filesystem::path& path) noexcept;
+	    SlangProgramFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 
 		const std::string& getName() const noexcept override;
 		expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept override;

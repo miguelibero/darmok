@@ -1,9 +1,11 @@
 #include <darmok/slang.hpp>
 #include <darmok/stream.hpp>
+#include <darmok/utils.hpp>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include "detail/program_core.hpp"
 #include "detail/slang.hpp"
+#include "detail/glsl.hpp"
 #include <fmt/format.h>
 #include <magic_enum/magic_enum_format.hpp>
 #include <bx/bx.h>
@@ -121,8 +123,9 @@ namespace darmok
                 return protobuf::Bgfx::Half;
             case slang::TypeReflection::ScalarType::Float32:
                 return protobuf::Bgfx::Float;
+            default:
+                return std::nullopt;
             }
-            return std::nullopt;
         }
 
         expected<slang::TypeLayoutReflection *, std::string> getStructParamLayout(slang::EntryPointReflection &entryPoint) noexcept
@@ -342,8 +345,9 @@ namespace darmok
                     }
                     return unexpected{fmt::format("unsupported uniform matrix count {}", count)};
                 }
+            default:
+                return unexpected{fmt::format("unsupported uniform kind {}", kind)};
             }
-            return unexpected{fmt::format("unsupported uniform kind {}", kind)};
         }
 
         TextureComponentType convertTextureComponentType(slang::TypeReflection& type) noexcept
@@ -391,7 +395,22 @@ namespace darmok
             }
         }
 
-        bgfx::TextureFormat::Enum convertTextureFormat(SlangImageFormat format)
+        ShaderType convertShaderType(SlangStage stage) noexcept
+        {
+            switch (stage)
+            {
+            case SLANG_STAGE_FRAGMENT:
+                return ShaderType::Fragment;
+            case SLANG_STAGE_VERTEX:
+                return ShaderType::Vertex;
+            case SLANG_STAGE_COMPUTE:
+                return ShaderType::Compute;
+            default:
+                return ShaderType::Unknown;
+            }
+        }
+
+        bgfx::TextureFormat::Enum convertTextureFormat(SlangImageFormat format) noexcept
         {
             switch (format)
             {
@@ -649,13 +668,11 @@ namespace darmok
             return uniforms;
         }
 
-        expected<UniformData, std::string> getUniforms(slang::ProgramLayout& layout, slang::IMetadata& entryPointMetadata, SlangCompileTarget target, SlangStage stage) noexcept
+        expected<UniformData, std::string> getUniforms(slang::ProgramLayout& layout, SlangStage stage) noexcept
         {
             auto& varsLayout = *layout.getGlobalParamsVarLayout();
             auto& typeLayout = *varsLayout.getTypeLayout();
-            auto layoutKind = typeLayout.getKind(); 
             UniformData data;
-            uint64_t textureIndex = 0;
 
             auto& elementsVarLayout = *typeLayout.getElementVarLayout();
             auto& elementsTypeLayout = *elementsVarLayout.getTypeLayout();
@@ -689,29 +706,66 @@ namespace darmok
                 hash ^= hasher(name);
             }
             return hash;
-        }        
+        }
 
-        expected<protobuf::Shader, std::string> createShader(slang::IComponentType &linkedProgram, const std::unordered_set<std::string> &defines, SlangInt entryPointIdx, SlangInt targetIdx, SlangCompileTarget target) noexcept
+        struct SlangShaderContext final
+        {
+            SlangInt entryPointIdx;
+            SlangInt targetIdx;
+            SlangCompileTarget target;
+        };
+
+        struct DarmokShaderContext final
+        {
+            std::reference_wrapper<const protobuf::Varying> varying;
+            std::unordered_set<std::string> defines;
+            std::unordered_set<std::filesystem::path> bgfxIncludePaths;
+            std::filesystem::path shadercPath;
+            OptionalRef<std::ostream> log;
+        };
+
+        expected<protobuf::Shader, std::string> createShader(slang::IComponentType& linkedProgram, const DarmokShaderContext& darmokCtx, const SlangShaderContext& slangCtx) noexcept
         {
             protobuf::Shader shader;
 
-            Slang::ComPtr<slang::IBlob> data;
-            Slang::ComPtr<slang::IBlob> diagnostics;
-            if (SLANG_FAILED(linkedProgram.getEntryPointCode(entryPointIdx, targetIdx, data.writeRef(), diagnostics.writeRef())))
-            {
-                return unexpected{getDiagnosticsString(diagnostics)};
-            }
-            for (auto &define : defines)
+            for (auto &define : darmokCtx.defines)
             {
                 *shader.add_defines() = define;
             }
-            auto* programLayout = linkedProgram.getLayout(targetIdx, diagnostics.writeRef());
-            if (!programLayout)
+
+            Slang::ComPtr<slang::IBlob> data;
+            Slang::ComPtr<slang::IBlob> diagnostics;
+            if (SLANG_FAILED(linkedProgram.getEntryPointCode(slangCtx.entryPointIdx, slangCtx.targetIdx, data.writeRef(), diagnostics.writeRef())))
             {
                 return unexpected{getDiagnosticsString(diagnostics)};
             }
-            auto* entryPoint = programLayout->getEntryPointByIndex(entryPointIdx);
+            std::string shaderData{static_cast<const char*>(data->getBufferPointer()), data->getBufferSize()};
+
+            auto* programLayout = linkedProgram.getLayout(slangCtx.targetIdx, diagnostics.writeRef());
+            if (programLayout == nullptr)
+            {
+                return unexpected{getDiagnosticsString(diagnostics)};
+            }
+            auto* entryPoint = programLayout->getEntryPointByIndex(slangCtx.entryPointIdx);
             auto stage = entryPoint->getStage();
+
+            if (slangCtx.target == SLANG_GLSL)
+            {
+                const ProgramCompilerConfig programConfig
+                {
+                    .shadercPath = darmokCtx.shadercPath,
+                    .includePaths = darmokCtx.bgfxIncludePaths,
+                    .log = darmokCtx.log,
+                };
+                auto bgfxResult = GlslShaderConverter::compileToBgfx(shaderData, convertShaderType(stage), programConfig, darmokCtx.varying, darmokCtx.defines);
+                if (!bgfxResult)
+                {
+                    return unexpected{fmt::format("failed to compile bgfx glsl: {}", bgfxResult.error())};
+                }
+                auto dataStr = std::move(bgfxResult).value();
+                shader.set_data(std::move(dataStr));
+                return shader;
+            }
 
             std::vector<LayoutParam> inputParams;
             {
@@ -742,14 +796,13 @@ namespace darmok
                 outputParams = std::move(result).value();
             }
 
-
             Slang::ComPtr<slang::IMetadata> metadata;
-            if (SLANG_FAILED(linkedProgram.getEntryPointMetadata(entryPointIdx, targetIdx, metadata.writeRef(), diagnostics.writeRef())))
+            if (SLANG_FAILED(linkedProgram.getEntryPointMetadata(slangCtx.entryPointIdx, slangCtx.targetIdx, metadata.writeRef(), diagnostics.writeRef())))
             {
                 return unexpected{getDiagnosticsString(diagnostics)};
             }
 
-            auto uniformsResult = getUniforms(*programLayout, *metadata, target, stage);
+            auto uniformsResult = getUniforms(*programLayout, stage);
             if (!uniformsResult)
             {
                 return unexpected{fmt::format("getting uniforms: {}", uniformsResult.error())};
@@ -789,19 +842,20 @@ namespace darmok
                 out.writebin(static_cast<uint16_t>(uniform.texFormat));
             }
 
-            out.writebin<uint32_t>(data->getBufferSize());
-            out.writebin(data->getBufferPointer(), data->getBufferSize());
+            out.writebin<uint32_t>(shaderData.size());
+            out.writebin(&shaderData.front(), shaderData.size());
             out.writebin<uint8_t>(0);
 
             out.writebin<uint8_t>(inputParams.size());
             for (const auto &param : inputParams)
             {
-                out.writebin(layoutParamToId(param, target));
+                out.writebin(layoutParamToId(param, slangCtx.target));
             }
             out.writebin(uniformData.bufferSize);
 
             auto dataStr = bgfxShaderData.view(0, out.tellp()).toString();
             shader.set_data(std::move(dataStr));
+
             return shader;
         }
 
@@ -1031,17 +1085,33 @@ namespace darmok
                 {
                     continue;
                 }
-                auto target = itr->first;
+                SlangShaderContext slangCtx
+                {
+                    .targetIdx = targetIdx,
+                    .target = itr->first
+                };
+                DarmokShaderContext darmokCtx
+                {
+                    .varying = programDef.varying(),
+                    .defines = defineComb,
+                    .bgfxIncludePaths = _config.bgfxIncludePaths,
+                    .shadercPath = _config.shadercPath,
+                    .log = _config.log,
+                };
+
                 auto renderer = itr->second;
                 auto& programRenderer = progWrap.getRendererProgram(renderer);
-                auto createShaderResult = createShader(*linkedProgram, defineComb, vertIdx, targetIdx, target);
+
+                slangCtx.entryPointIdx = vertIdx;
+                auto createShaderResult = createShader(*linkedProgram, darmokCtx, slangCtx);
                 if (!createShaderResult)
                 {
                     return unexpected{fmt::format("failed to update vertex shader: {}", createShaderResult.error())};
                 }
                 *programRenderer.add_vertex_shaders() = std::move(createShaderResult).value();
 
-                createShaderResult = createShader(*linkedProgram, defineComb, fragIdx, targetIdx, target);
+                slangCtx.entryPointIdx = fragIdx;
+                createShaderResult = createShader(*linkedProgram, darmokCtx, slangCtx);
                 if (!createShaderResult)
                 {
                     return unexpected{fmt::format("failed to update fragment shader: {}", createShaderResult.error())};
@@ -1077,6 +1147,16 @@ namespace darmok
     void SlangProgramFileImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
     {
 		_defaultConfig.includePaths.insert(path);
+    }
+
+    void SlangProgramFileImporterImpl::addBgfxIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _defaultConfig.bgfxIncludePaths.insert(path);
+    }
+
+    void SlangProgramFileImporterImpl::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _defaultConfig.shadercPath = path;
     }
 
     expected<void, std::string> SlangProgramFileImporterImpl::init(OptionalRef<std::ostream> log) noexcept
@@ -1180,6 +1260,18 @@ namespace darmok
     SlangProgramFileImporter& SlangProgramFileImporter::addIncludePath(const std::filesystem::path& path) noexcept
     {
 		_impl->addIncludePath(path);
+        return *this;
+    }
+
+    SlangProgramFileImporter& SlangProgramFileImporter::addBgfxIncludePath(const std::filesystem::path& path) noexcept
+    {
+        _impl->addBgfxIncludePath(path);
+        return *this;
+    }
+
+    SlangProgramFileImporter& SlangProgramFileImporter::setShadercPath(const std::filesystem::path& path) noexcept
+    {
+        _impl->setShadercPath(path);
         return *this;
     }
 

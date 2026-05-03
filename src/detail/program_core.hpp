@@ -64,6 +64,7 @@ namespace darmok
         size_t getDependencies(std::istream& in, Dependencies& deps) const noexcept;
         size_t getDefines(std::istream& in, Defines& defines) const noexcept;
         static std::string getDefinesArgument(const Defines& defines) noexcept;
+        static std::string getRendererProfile(bgfx::RendererType::Enum renderer) noexcept;
 
         static ShaderType getType(const std::string& name) noexcept;
         static ShaderType getType(const std::filesystem::path& path) noexcept;

@@ -334,6 +334,16 @@ namespace darmok
         return StringUtils::join(",", realDefines);
     }
 
+    std::string ShaderParser::getRendererProfile(bgfx::RendererType::Enum renderer) noexcept
+    {
+        auto itr = _rendererProfiles.find(renderer);
+        if (itr != _rendererProfiles.end())
+        {
+            return itr->second;
+        }
+        return "";
+    }
+
     const std::string ShaderParser::_enableDefineSuffix = "_enabled";
 
     ShaderType ShaderParser::getType(const std::filesystem::path& path) noexcept
@@ -769,7 +779,6 @@ namespace darmok
             return unexpected{ *error };
         }
 
-        // TODO: remove files in case of exception?
         std::filesystem::remove(varyingDefPath);
         
         return def;
