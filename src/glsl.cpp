@@ -2,6 +2,7 @@
 #include <darmok/stream.hpp>
 #include <darmok/string.hpp>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum_format.hpp>
 #include <regex>
 #include <unordered_map>
 #include <spirv_glsl.hpp>
@@ -15,9 +16,84 @@ namespace darmok
             return renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES;
         }
 
-        expected<std::string, std::string> compileToBgfx(std::string_view glsl, ShaderType type, const std::string& profile) noexcept
+        const std::string uniformsPlaceholder{"[uniforms]"};
+
+        std::string typeToString(const spirv_cross::SPIRType& type, spirv_cross::CompilerGLSL& compiler)
         {
-            spirv_cross::CompilerGLSL compiler{reinterpret_cast<const uint32_t*>(&glsl.front()), glsl.size() / 4};
+            using T = spirv_cross::SPIRType;
+
+            switch (type.basetype)
+            {
+            case T::Float:
+                if (type.columns == 1 && type.vecsize == 1) return "float";
+                if (type.vecsize == 2) return "vec2";
+                if (type.vecsize == 3) return "vec3";
+                if (type.vecsize == 4) return "vec4";
+                if (type.columns == 2) return "mat2";
+                if (type.columns == 3) return "mat3";
+                if (type.columns == 4) return "mat4";
+                break;
+
+            case T::Int:
+                if (type.vecsize == 1) return "int";
+                if (type.vecsize == 2) return "ivec2";
+                if (type.vecsize == 3) return "ivec3";
+                if (type.vecsize == 4) return "ivec4";
+                break;
+
+            case T::UInt:
+                if (type.vecsize == 1) return "uint";
+                if (type.vecsize == 2) return "uvec2";
+                if (type.vecsize == 3) return "uvec3";
+                if (type.vecsize == 4) return "uvec4";
+                break;
+            case T::Struct:
+                return compiler.get_name(type.self);
+            default:
+                break;
+            }
+            return "";
+        }
+
+        expected<std::string, std::string> stripGlslUbo(std::string glsl, spirv_cross::CompilerGLSL& compiler, const spirv_cross::SmallVector<spirv_cross::Resource>& ubos) noexcept
+        {
+            std::ostringstream out;
+            for (auto& ubo : ubos)
+            {
+                std::regex defRegex{"struct " + ubo.name + "\\s*\\{[^}]+\\};"};
+                std::regex declRegex{"uniform\\s+" + ubo.name + ".*;"};
+
+                const auto& bufferName = compiler.get_name(ubo.id);
+
+                glsl = std::regex_replace(glsl, defRegex, "");
+                glsl = std::regex_replace(glsl, declRegex, uniformsPlaceholder);
+
+                auto& type = compiler.get_type(ubo.type_id);
+                auto memberCount = type.member_types.size();
+
+                for (size_t i = 0; i < memberCount; i++)
+                {
+                    const auto& memberName = compiler.get_member_name(ubo.base_type_id, i);
+                    const auto& memberType = compiler.get_type(type.member_types[i]);
+                    auto typeStr = typeToString(memberType, compiler);
+                    if (typeStr.empty())
+                    {
+                        return unexpected{ fmt::format("failed to convert uniform {} to string", memberName) };
+                    }
+                    out << "uniform " << typeStr << " " << memberName << ";\n";
+
+                    StringUtils::replace(glsl, bufferName + "." + memberName, memberName);
+                }
+                StringUtils::replace(glsl, uniformsPlaceholder, out.str());
+                out.clear();
+            }
+
+            return glsl;
+        }
+
+        expected<std::string, std::string> compileToBgfx(std::string_view spirv, ShaderType type, const std::string& profile) noexcept
+        {
+            spirv_cross::CompilerGLSL compiler{reinterpret_cast<const uint32_t*>(&spirv.front()), spirv.size() / 4};
             spirv_cross::CompilerGLSL::Options options;
             options.version = std::stoi(profile);
             options.es = profile.ends_with("_es");
@@ -33,9 +109,31 @@ namespace darmok
                 compiler.set_name(sampler.combined_id, compiler.get_name(sampler.image_id));
             }
 
+            auto resources = compiler.get_shader_resources();
+
+            if (type == ShaderType::Vertex)
+            {
+                for (auto& input : resources.stage_inputs)
+                {
+                    std::string_view name = input.name;
+                    const auto lastDotPos = name.rfind('.');
+                    if (lastDotPos != std::string::npos)
+                    {
+                        name = name.substr(lastDotPos + 1);
+                        compiler.set_name(input.id, std::string{name});
+                    }
+                }
+            }
+
             try
             {
                 auto source = compiler.compile();
+                auto result = stripGlslUbo(source, compiler, resources.uniform_buffers);
+                if (!result)
+                {
+                    return unexpected{ "failed to strip glsl uniform buffer objects: " + result.error() };
+                }
+                source = std::move(result).value();
                 return source;
             }
             catch(const std::exception &e)
