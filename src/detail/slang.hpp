@@ -21,9 +21,9 @@ namespace darmok
         slang::SessionDesc _sessionDesc;
         std::vector<std::string> _searchPathStrings;
         std::vector<const char*> _searchPathChars;
-        std::vector<slang::TargetDesc> _targetDescs;
 
-        expected<Slang::ComPtr<slang::ISession>, std::string> createSession(const std::unordered_set<std::string> &defines) noexcept;
+        expected<Slang::ComPtr<slang::ISession>, std::string> createSession(bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept;
+        expected<void, std::string> compileRendererProgram(const Source& src, protobuf::Program& progDef, bgfx::RendererType::Enum renderer, const std::unordered_set<std::string> &defines) noexcept;
     };
 
     class SlangProgramFileImporterImpl final

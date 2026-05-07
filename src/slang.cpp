@@ -225,7 +225,7 @@ namespace darmok
         }
 
         using TargetProfileMap = std::unordered_map<SlangCompileTarget, std::string>;
-        using TargetRendererMap = std::unordered_map<SlangCompileTarget, bgfx::RendererType::Enum>;
+        using RendererTargetMap = std::unordered_map<bgfx::RendererType::Enum, SlangCompileTarget>;
 
         const TargetProfileMap _targetProfileMap{
             {SlangCompileTarget::SLANG_DXBC, "sm_5_0"},
@@ -244,11 +244,31 @@ namespace darmok
             SlangCompileTarget::SLANG_SPIRV,
         };
 
-        const TargetRendererMap _targetRenderers{
-            {SlangCompileTarget::SLANG_DXBC, bgfx::RendererType::Direct3D11},
-            {SlangCompileTarget::SLANG_DXIL, bgfx::RendererType::Direct3D12},
-            {SlangCompileTarget::SLANG_METAL, bgfx::RendererType::Metal},
-            {SlangCompileTarget::SLANG_SPIRV, bgfx::RendererType::Vulkan},
+        const RendererTargetMap _rendererTargets{
+            {
+                bgfx::RendererType::Direct3D11,
+                SlangCompileTarget::SLANG_DXBC,
+            },
+            {
+                bgfx::RendererType::Direct3D12,
+                SlangCompileTarget::SLANG_DXIL,
+            },
+            {
+                bgfx::RendererType::Metal,
+                SlangCompileTarget::SLANG_METAL,
+            },
+            {
+                bgfx::RendererType::Vulkan,
+                SlangCompileTarget::SLANG_SPIRV,
+            },
+            {
+                bgfx::RendererType::OpenGL,
+                SlangCompileTarget::SLANG_SPIRV,
+            },
+            {
+                bgfx::RendererType::OpenGLES,
+                SlangCompileTarget::SLANG_SPIRV,
+            },
         };
 
         struct LayoutParam final
@@ -612,7 +632,7 @@ namespace darmok
             }
 
             bool isArray = paramKind == slang::TypeReflection::Kind::Array;
-            auto &elementType = isArray ? *paramType.getElementType() : paramType;
+            auto& elementType = isArray ? *paramType.getElementType() : paramType;
             auto convertResult = convertUniformType(elementType, isCompute);
             if (!convertResult)
             {
@@ -652,7 +672,7 @@ namespace darmok
             else
             {
                 uniform.regIndex = param.getOffset();
-                uniform.regCount *= elementType.getRowCount();
+                uniform.regCount = elementType.getRowCount() * uniform.num;
             }
 
             if (isSampler || isStorageImage)
@@ -707,8 +727,8 @@ namespace darmok
 
         struct SlangShaderContext final
         {
-            SlangInt entryPointIdx;
-            SlangInt targetIdx;
+            SlangInt entryPointIdx = 0;
+            SlangInt targetIdx = 0;
             SlangCompileTarget target;
         };
 
@@ -716,8 +736,8 @@ namespace darmok
         {
             std::unordered_set<std::string> defines;
             std::optional<bgfx::RendererType::Enum> bgfxRenderer;
-            SlangInt vertEntryPointIdx;
-            SlangInt fragEntryPointIdx;
+            SlangInt vertEntryPointIdx = -1;
+            SlangInt fragEntryPointIdx = -1;
         };
 
         expected<protobuf::Shader, std::string> createShader(slang::IComponentType& linkedProgram, const DarmokShaderContext& darmokCtx, const SlangShaderContext& slangCtx) noexcept
@@ -924,6 +944,52 @@ namespace darmok
             return {};
         }
 
+        std::vector<slang::CompilerOptionEntry> getCompilerOptions(bgfx::RendererType::Enum renderer) noexcept
+        {
+            return {};
+        }
+
+        expected<DarmokShaderContext, std::string> updateVarying(protobuf::Varying &varying, slang::ProgramLayout &layout)
+        {
+            DarmokShaderContext ctx;
+            for (SlangInt i = 0; i < layout.getEntryPointCount(); i++)
+            {
+                auto entryPoint = layout.getEntryPointByIndex(i);
+                if (entryPoint->getStage() == SLANG_STAGE_VERTEX)
+                {
+                    auto result = createVertexLayout(*entryPoint);
+                    if (!result)
+                    {
+                        return unexpected<std::string>{"failed to create vertex layout: " + result.error()};
+                    }
+                    *varying.mutable_vertex() = std::move(result).value();
+                    ctx.vertEntryPointIdx = i;
+                }
+                if (entryPoint->getStage() == SLANG_STAGE_FRAGMENT)
+                {
+                    auto result = createFragmentLayout(*entryPoint);
+                    if (!result)
+                    {
+                        return unexpected<std::string>{"failed to create fragment layout: " + result.error()};
+                    }
+                    *varying.mutable_fragment() = std::move(result).value();
+                    ctx.fragEntryPointIdx = i;
+                }
+                if (ctx.vertEntryPointIdx >= 0 && ctx.fragEntryPointIdx >= 0)
+                {
+                    break;
+                }
+            }
+            if (ctx.vertEntryPointIdx < 0)
+            {
+                return unexpected<std::string>{"missing vertex entry point"};
+            }
+            if (ctx.fragEntryPointIdx < 0)
+            {
+                return unexpected<std::string>{"missing fragment entry point"};
+            }
+            return ctx;
+        }
     }
 
     void SlangProgramCompilerConfig::read(const nlohmann::json& json, const ReadConfig& config) noexcept
@@ -968,21 +1034,6 @@ namespace darmok
         _sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
         _sessionDesc.searchPaths = &_searchPathChars.front();
         _sessionDesc.searchPathCount = _searchPathChars.size();
-
-        using namespace SlangBgfxShaderUtils;
-
-        for (auto& target : _supportedTargets)
-        {
-            slang::TargetDesc targetDesc{ .format = target };
-            auto itr = _targetProfileMap.find(target);
-            if (itr != _targetProfileMap.end())
-            {
-                targetDesc.profile = _globalSession->findProfile(itr->second.c_str());
-            }
-            _targetDescs.push_back(targetDesc);
-        }
-        _sessionDesc.targetCount = _targetDescs.size();
-        _sessionDesc.targets = _targetDescs.data();
     }
 
     expected<SlangProgramCompilerImpl, std::string> SlangProgramCompilerImpl::create(const Config& config) noexcept
@@ -995,17 +1046,43 @@ namespace darmok
 		return SlangProgramCompilerImpl{ std::move(globalSession), config };
     }
 
-    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(const std::unordered_set<std::string>& defines) noexcept
+    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept
     {
+        using namespace SlangBgfxShaderUtils;
         auto sessionDesc = _sessionDesc;
         std::vector<slang::PreprocessorMacroDesc> macros;
 
-        for (auto& define : defines)
+        std::unordered_set<std::string> fdefines;
+        std::transform(defines.begin(), defines.end(), std::inserter(fdefines, fdefines.end()), [](const std::string &define)
+                       { return "DARMOK_VARIANT_" + define; });
+        for (auto& define : fdefines)
         {
             macros.emplace_back(define.c_str(), "1");
         }
+
         sessionDesc.preprocessorMacroCount = macros.size();
         sessionDesc.preprocessorMacros = macros.data();
+
+        auto options = getCompilerOptions(renderer);
+        sessionDesc.compilerOptionEntryCount = options.size();
+        sessionDesc.compilerOptionEntries = options.data();
+
+        auto itr = _rendererTargets.find(renderer);
+        if (itr == _rendererTargets.end())
+        {
+            return unexpected{fmt::format("unsupported renderer: {}", renderer)};
+        }
+        auto target = itr->second;
+        slang::TargetDesc targetDesc{.format = target};
+        auto itr2 = _targetProfileMap.find(target);
+        if (itr2 != _targetProfileMap.end())
+        {
+            targetDesc.profile = _globalSession->findProfile(itr2->second.c_str());
+        }
+
+        std::vector<slang::TargetDesc> targetDescs{targetDesc};
+        sessionDesc.targetCount = targetDescs.size();
+        sessionDesc.targets = targetDescs.data();
 
         Slang::ComPtr<slang::ISession> session;
 
@@ -1013,7 +1090,55 @@ namespace darmok
                   _globalSession->createSession(sessionDesc, session.writeRef()));
 
         return session;
-    }    
+    }
+
+    expected<void, std::string> SlangProgramCompilerImpl::compileRendererProgram(const Source& src, protobuf::Program& progDef, bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept
+    {
+        using namespace SlangBgfxShaderUtils;
+
+        auto itr = _rendererTargets.find(renderer);
+        if (itr == _rendererTargets.end())
+        {
+            return unexpected{fmt::format("unsupported renderer: {}", renderer)};
+        }
+        auto target = itr->second;
+
+        auto sessionResult = createSession(renderer, defines);
+        if (!sessionResult)
+        {
+            return unexpected{fmt::format("failed to create session: {}", sessionResult.error())};
+        }
+        auto session = sessionResult.value();
+        auto compileResult = compileProgram(src, *session, _config.log);
+        if (!compileResult)
+        {
+            return unexpected{fmt::format("failed to compile program: {}", compileResult.error())};
+        }
+        auto linkedProgram = std::move(compileResult).value();
+        auto layout = linkedProgram->getLayout();
+
+        auto varyingResult = updateVarying(*progDef.mutable_varying(), *layout);
+        if (!varyingResult)
+        {
+            return unexpected{fmt::format("failed to update varying: {}", varyingResult.error())};
+        }
+
+        auto darmokCtx = std::move(varyingResult).value();
+        darmokCtx.bgfxRenderer = renderer;
+        darmokCtx.defines = defines;
+        SlangShaderContext slangCtx{
+            .targetIdx = 0,
+            .target = target,
+        };
+
+        auto& rendererProg = ProgramDefinitionWrapper{progDef}.getRendererProgram(renderer);
+        auto result = updateRendererProgram(rendererProg, *linkedProgram, slangCtx, darmokCtx);
+        if (!result)
+        {
+            return unexpected{fmt::format("failed to update program for renderer {}: {}", renderer, result.error())};
+        }
+        return {};
+    }
 
     expected<protobuf::Program, std::string> SlangProgramCompilerImpl::operator()(const Source& src) noexcept
     {
@@ -1032,104 +1157,18 @@ namespace darmok
 
         for (auto& defineComb : CollectionUtils::combinations(defines))
         {
-            std::unordered_set<std::string> fdefineComb;
-            std::transform(defineComb.begin(), defineComb.end(), std::inserter(fdefineComb, fdefineComb.end()), [](const std::string &define)
-                           { return "DARMOK_VARIANT_" + define; });
-
-            auto sessionResult = createSession(fdefineComb);
-            if (!sessionResult)
+            for (auto& [renderer, target] : _rendererTargets)
             {
-                return unexpected{fmt::format("failed to create session: {}", sessionResult.error())};
-            }
-            auto session = sessionResult.value();
-            auto compileResult = compileProgram(src, *session, _config.log);
-            if (!compileResult)
-            {
-                return unexpected{fmt::format("failed to compile program: {}", compileResult.error())};
-            }
-            auto linkedProgram = std::move(compileResult).value();
-            auto layout = linkedProgram->getLayout();
-
-            SlangInt vertIdx = -1;
-            SlangInt fragIdx = -1;
-            for (SlangInt i = 0; i < layout->getEntryPointCount(); i++)
-            {
-                auto entryPoint = layout->getEntryPointByIndex(i);
-                if (entryPoint->getStage() == SLANG_STAGE_VERTEX)
-                {
-                    auto result = createVertexLayout(*entryPoint);
-                    if (!result)
-                    {
-                        return unexpected<std::string>{ "failed to create vertex layout: " + result.error() };
-                    }
-                    *programDef.mutable_varying()->mutable_vertex() = std::move(result).value();
-                    vertIdx = i;
-                }
-                if (entryPoint->getStage() == SLANG_STAGE_FRAGMENT)
-                {
-                    auto result = createFragmentLayout(*entryPoint);
-                    if (!result)
-                    {
-                        return unexpected<std::string>{ "failed to create fragment layout: " + result.error() };
-                    }
-                    *programDef.mutable_varying()->mutable_fragment() = std::move(result).value();
-                    fragIdx = i;
-                }
-                if (vertIdx >= 0 && fragIdx >= 0)
-                {
-                    break;
-                }
-            }
-            if (vertIdx < 0)
-            {
-                return unexpected<std::string>{ "missing vertex entry point" };
-            }
-            if (fragIdx < 0)
-            {
-                return unexpected<std::string>{ "missing fragment entry point" };
-            }
-
-            DarmokShaderContext darmokCtx
-            {
-                .defines = defineComb,
-                .vertEntryPointIdx = vertIdx,
-                .fragEntryPointIdx = fragIdx,
-            };
-
-            for (SlangInt targetIdx = 0; targetIdx < _supportedTargets.size(); targetIdx++)
-            {
-                auto itr = _targetRenderers.find(_supportedTargets.at(targetIdx));
-                if (itr == _targetRenderers.end())
+                auto itr = std::find(_supportedTargets.begin(), _supportedTargets.end(), target);
+                if (itr == _supportedTargets.end())
                 {
                     continue;
                 }
-
-                SlangShaderContext slangCtx
+                auto result = compileRendererProgram(src, programDef, renderer, defineComb);
+                if (!result)
                 {
-                    .targetIdx = targetIdx,
-                    .target = itr->first,
-                };
-
-                std::unordered_set<bgfx::RendererType::Enum> renderers{ itr->second };
-                if (slangCtx.target == SLANG_SPIRV)
-                {
-                    // compile from SPIRV to opengl
-                    renderers.insert(bgfx::RendererType::OpenGL);
-                    renderers.insert(bgfx::RendererType::OpenGLES);
+                    return unexpected{fmt::format("failed to compile for renderer {}: {}", renderer, result.error())};
                 }
-
-                for (auto& renderer : renderers)
-                {
-                    auto& rendererProg = progWrap.getRendererProgram(renderer);
-                    darmokCtx.bgfxRenderer = renderer;
-                    auto result = updateRendererProgram(rendererProg, *linkedProgram, slangCtx, darmokCtx);
-                    if (!result)
-                    {
-                        return unexpected{ fmt::format("failed to update program for renderer {}: {}", renderer, result.error())};
-                    }
-                }
-
-
             }
         }
 
