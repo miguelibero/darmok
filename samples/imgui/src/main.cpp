@@ -93,19 +93,18 @@ namespace
 			return true;
 		}
 
-		static bool getMonitorName(void* data, int idx, const char** outText)
+		static const char* getMonitorName(void* data, int idx)
 		{
 			if (data == nullptr)
 			{
-				return false;
+				return nullptr;
 			}
 			auto self = (VideoModeState*)data;
 			if (self->_info.monitors.size() <= idx)
 			{
-				return false;
+                return nullptr;
 			}
-			*outText = self->_info.monitors[idx].name.c_str();
-			return true;
+			return self->_info.monitors[idx].name.c_str();
 		};
 
 		bool isSelectableMode(const VideoMode& mode) const
@@ -148,20 +147,19 @@ namespace
 			return std::nullopt;
 		}
 
-		static bool getResolutionName(void* data, int idx, const char** outText)
+		static const char* getResolutionName(void *data, int idx)
 		{
 			if (data == nullptr)
 			{
-				return false;
+                return nullptr;
 			}
 			auto self = (VideoModeState*)data;
 			auto modeIdx = self->getVideoModeIndex(idx);
 			if (!modeIdx)
 			{
-				return false;
+				return nullptr;
 			}
-			*outText = self->_videoModeNames[modeIdx.value()].c_str();
-			return true;
+			return self->_videoModeNames[modeIdx.value()].c_str();
 		};
 	};
 
