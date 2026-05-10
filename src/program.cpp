@@ -269,7 +269,7 @@ namespace darmok
         case protobuf::StandardProgram::Forward:
             return protobuf::readStaticMem(def, darmok_program_forward);
         case protobuf::StandardProgram::ForwardBasic:
-            return protobuf::readStaticMem(def, darmok_program_forward);
+            return protobuf::readStaticMem(def, darmok_program_forward_basic);
         case protobuf::StandardProgram::Tonemap:
             return protobuf::readStaticMem(def, darmok_program_tonemap);
         default:

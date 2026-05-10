@@ -10,7 +10,7 @@
 #include <darmok/protobuf.hpp>
 #include <darmok/asset_pack.hpp>
 #include <nlohmann/json.hpp>
-
+#include <exception>
 #include "protobuf/scene_serialize_test.pb.h"
 
 namespace

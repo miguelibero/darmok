@@ -25,28 +25,62 @@ namespace darmok
             switch (type.basetype)
             {
             case T::Float:
-                if (type.columns == 1 && type.vecsize == 1) return "float";
-                if (type.vecsize == 2) return "vec2";
-                if (type.vecsize == 3) return "vec3";
-                if (type.vecsize == 4) return "vec4";
-                if (type.columns == 2) return "mat2";
-                if (type.columns == 3) return "mat3";
-                if (type.columns == 4) return "mat4";
-                break;
-
+            {
+                switch (type.columns)
+                {
+                    case 1:
+                    {
+                        switch (type.vecsize)
+                        {
+                        case 1: return "float";
+                        case 2: return "vec2";
+                        case 3: return "vec3";
+                        case 4: return "vec4";
+                        }
+                    }
+                case 2: return "mat2";
+                case 3: return "mat3";
+                case 4: return "mat4";
+                }
+            }
             case T::Int:
-                if (type.vecsize == 1) return "int";
-                if (type.vecsize == 2) return "ivec2";
-                if (type.vecsize == 3) return "ivec3";
-                if (type.vecsize == 4) return "ivec4";
-                break;
-
+            {
+                switch (type.columns)
+                {
+                case 1:
+                {
+                    switch (type.vecsize)
+                    {
+                    case 1: return "int";
+                    case 2: return "ivec2";
+                    case 3: return "ivec3";
+                    case 4: return "ivec4";
+                    }
+                }
+                case 2: return "imat2";
+                case 3: return "imat3";
+                case 4: return "imat4";
+                }
+            }
             case T::UInt:
-                if (type.vecsize == 1) return "uint";
-                if (type.vecsize == 2) return "uvec2";
-                if (type.vecsize == 3) return "uvec3";
-                if (type.vecsize == 4) return "uvec4";
-                break;
+            {
+                switch (type.columns)
+                {
+                case 1:
+                {
+                    switch (type.vecsize)
+                    {
+                    case 1: return "uint";
+                    case 2: return "uvec2";
+                    case 3: return "uvec3";
+                    case 4: return "uvec4";
+                    }
+                }
+                case 2: return "umat2";
+                case 3: return "umat3";
+                case 4: return "umat4";
+                }
+            }
             case T::Struct:
                 return compiler.get_name(type.self);
             default:

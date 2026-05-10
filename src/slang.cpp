@@ -1,14 +1,15 @@
+#include "detail/slang.hpp"
+#include "detail/glsl.hpp"
+#include "detail/program_core.hpp"
+#include <bx/bx.h>
+#include <c++/16.1.1/algorithm>
+#include <darmok/data.hpp>
+#include <darmok/data_stream.hpp>
 #include <darmok/slang.hpp>
 #include <darmok/stream.hpp>
 #include <darmok/utils.hpp>
-#include <darmok/data.hpp>
-#include <darmok/data_stream.hpp>
-#include "detail/program_core.hpp"
-#include "detail/slang.hpp"
-#include "detail/glsl.hpp"
 #include <fmt/format.h>
 #include <magic_enum/magic_enum_format.hpp>
-#include <bx/bx.h>
 
 #define SLANG_TRY(desc, failable)                             \
     do {                                                      \
@@ -868,7 +869,7 @@ namespace darmok
             return shader;
         }
 
-        expected<Slang::ComPtr<slang::IComponentType>, std::string> compileProgram(const SlangProgramCompiler::Source &src, slang::ISession &session, OptionalRef<std::ostream> log) noexcept
+        expected<Slang::ComPtr<slang::IComponentType>, std::string> compileProgram(const SlangProgramCompiler::Source& src, slang::ISession& session, OptionalRef<std::ostream> log) noexcept
         {
             auto addLog = [log](const std::string &title, const std::string &msg)
             {
@@ -923,24 +924,52 @@ namespace darmok
             return program;
         }
 
-        expected<void, std::string> updateRendererProgram(protobuf::RendererProgram& rendererProg, slang::IComponentType& linkedProgram, SlangShaderContext slangCtx, DarmokShaderContext darmokCtx) noexcept
+        expected<bool, std::string> updateShader(protobuf::RendererProgram& rendererProg, slang::IComponentType& linkedProgram, const SlangShaderContext& slangCtx, const DarmokShaderContext& darmokCtx) noexcept
+        {
+            auto result = createShader(linkedProgram, darmokCtx, slangCtx);
+            if (!result)
+            {
+                return unexpected{fmt::format("failed to create shader: {}", result.error())};
+            }
+            auto shader = std::move(result).value();
+            google::protobuf::RepeatedPtrField<protobuf::Shader>* shaders = nullptr;
+            if (slangCtx.entryPointIdx == darmokCtx.vertEntryPointIdx)
+            {
+                shaders = rendererProg.mutable_vertex_shaders();
+            }
+            else
+            {
+                shaders = rendererProg.mutable_fragment_shaders();
+            }
+
+            /* possible optimization
+            for (auto& oldShader : *shaders)
+            {
+                if (oldShader.data() == shader.data())
+                {
+                    return false;
+                }
+            }
+            */
+
+            shaders->Add(std::move(shader));
+            return true;
+        }
+
+        expected<void, std::string> updateRendererProgram(protobuf::RendererProgram& rendererProg, slang::IComponentType& linkedProgram, SlangShaderContext slangCtx, const DarmokShaderContext& darmokCtx) noexcept
         {
             slangCtx.entryPointIdx = darmokCtx.vertEntryPointIdx;
-            auto createShaderResult = createShader(linkedProgram, darmokCtx, slangCtx);
-            if (!createShaderResult)
+            auto result = updateShader(rendererProg, linkedProgram, slangCtx, darmokCtx);
+            if (!result)
             {
-                return unexpected{fmt::format("failed to update vertex shader: {}", createShaderResult.error())};
+                return unexpected{fmt::format("failed to update vertex shader: {}", result.error())};
             }
-            *rendererProg.add_vertex_shaders() = std::move(createShaderResult).value();
-
             slangCtx.entryPointIdx = darmokCtx.fragEntryPointIdx;
-            createShaderResult = createShader(linkedProgram, darmokCtx, slangCtx);
-            if (!createShaderResult)
+            result = updateShader(rendererProg, linkedProgram, slangCtx, darmokCtx);
+            if (!result)
             {
-                return unexpected{fmt::format("failed to update fragment shader: {}", createShaderResult.error())};
+                return unexpected{fmt::format("failed to update fragment shader: {}", result.error())};
             }
-            *rendererProg.add_fragment_shaders() = std::move(createShaderResult).value();
-
             return {};
         }
 
