@@ -2,12 +2,11 @@
 #include "detail/glsl.hpp"
 #include "detail/program_core.hpp"
 #include <bx/bx.h>
-#include <c++/16.1.1/algorithm>
+#include <algorithm>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/slang.hpp>
 #include <darmok/stream.hpp>
-#include <darmok/utils.hpp>
 #include <fmt/format.h>
 #include <magic_enum/magic_enum_format.hpp>
 
@@ -144,7 +143,7 @@ namespace darmok
             return typeLayout;
         }
 
-        expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::EntryPointReflection &entryPoint) noexcept
+        expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::EntryPointReflection& entryPoint) noexcept
         {
             if (entryPoint.getStage() != SLANG_STAGE_VERTEX)
             {
@@ -185,6 +184,30 @@ namespace darmok
                 vertexAttrib.set_bgfx(*bgfxAttrib);
                 vertexAttrib.set_bgfx_type(*bgfxAttribType);
                 vertexAttrib.set_num(fieldType->getElementCount());
+
+                unsigned attrCount = fieldType->getUserAttributeCount();
+
+                for (unsigned i = 0; i < attrCount; i++)
+                {
+                    auto attr = fieldType->getUserAttributeByIndex(i);
+                    if (attr->getName() != "DarmokVertex")
+                    {
+                        continue;
+                    }
+                    unsigned argCount = attr->getArgumentCount();
+                    for (unsigned j = 0; j < argCount; j++)
+                    {
+                        auto arg = attr->getArgumentValueString(j, nullptr);
+                        if (arg == "normalize")
+                        {
+                            vertexAttrib.set_normalize(true);
+                        }
+                        if (arg == "as_int")
+                        {
+                            vertexAttrib.set_as_int(true);
+                        }
+                    }
+                }
             }
 
             return vertexLayout;
@@ -276,7 +299,7 @@ namespace darmok
         {
             std::string name;
             std::string qualifiedName;
-            bgfx::Attrib::Enum attrib;
+            bgfx::Attrib::Enum attrib = bgfx::Attrib::Count;
         };
 
         enum class TextureComponentType : uint8_t
@@ -305,13 +328,13 @@ namespace darmok
         struct Uniform final
         {
             std::string name;
-            bgfx::UniformType::Enum type;
-            uint8_t num;
-            uint16_t regIndex;
-            uint16_t regCount;
-            TextureComponentType texComponent = TextureComponentType::Float;
-            TextureDimension texDimension = TextureDimension::Dimension1D;
-            bgfx::TextureFormat::Enum texFormat = bgfx::TextureFormat::BC1;
+            bgfx::UniformType::Enum type = bgfx::UniformType::Count;
+            uint8_t num = 0;
+            uint16_t regIndex = 0;
+            uint16_t regCount = 0;
+            TextureComponentType texComponent = TextureComponentType::Unknown;
+            TextureDimension texDimension = TextureDimension::Unknown;
+            bgfx::TextureFormat::Enum texFormat = bgfx::TextureFormat::Unknown;
         };
 
         struct UniformData final

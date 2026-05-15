@@ -3,6 +3,13 @@
 uniform float4 u_viewRect;
 uniform float4x4 u_invProj;
 
+[__AttributeUsage(_AttributeTargets.Var)]
+struct DarmokVertexAttribute
+{
+    bool normalize = false;
+    bool as_int = false;
+};
+
 inline bool getBitfieldValue(float4 field, int pos)
 {
     return ((uint(field.x) & (1u << pos)) != 0u);

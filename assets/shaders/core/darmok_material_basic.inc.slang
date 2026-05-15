@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok_sampler.inc.slang>
+#include <darmok_util.inc.slang>
 
 [[vk::binding(1, 0)]]
 uniform Texture2D s_texBaseColor : register(t1);
@@ -15,11 +16,6 @@ SamplerState s_texSpecularState : register(s2);
 uniform float4 u_baseColorFactor;
 uniform float4 u_specularFactorVec;
 uniform float4 u_hasTextures;
-
-inline bool getBitfieldValue(float4 field, int pos)
-{
-    return ((uint(field.x) & (1u << pos)) != 0u);
-}
 
 #define u_hasBaseColorTexture getBitfieldValue(u_hasTextures, 0)
 #define u_hasSpecularTexture  getBitfieldValue(u_hasTextures, 1)

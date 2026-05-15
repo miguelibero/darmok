@@ -608,34 +608,26 @@ target_link_libraries(${CORE_LIB_NAME} PRIVATE spirv-cross-glsl)
 if (WIN32)
   find_package(directx-dxc CONFIG REQUIRED)
   target_link_libraries(${CORE_LIB_NAME} PRIVATE Microsoft::DirectXShaderCompiler)
-
-  if(DARMOK_COPY_D3D_DLLS)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(D3D_ARCH x64)
-    else()
-        set(D3D_ARCH x86)
-    endif()
-    set(D3D_BASE_PATH "Windows Kits/10/Redist/D3D")
-    macro(copy_d3d_file NAME FILENAME)
-      find_file(D3D_PATH_${NAME}
-        NAMES ${FILENAME}
-        PATHS 
-            "$ENV{ProgramFiles}/${D3D_BASE_PATH}"
-            "$ENV{ProgramFiles\(x86\)}/${D3D_BASE_PATH}"
-        PATH_SUFFIXES ${D3D_ARCH}
-        NO_DEFAULT_PATH
-      )
-      if(D3D_PATH_${NAME})
-        add_custom_command(TARGET ${CORE_LIB_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${D3D_PATH_${NAME}}" $<TARGET_FILE_DIR:${CORE_LIB_NAME}>
-        )
-      endif()
-    endmacro(copy_d3d_file)
-
-    copy_d3d_file(DXIL dxil.dll)
-    copy_d3d_file(DXCOMPILER dxcompiler.dll)
+  set(D3D_BASE_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
+  if(CONFIG STREQUAL "Debug")
+    set(D3D_BASE_PATH "${D3D_BASE_PATH}/debug")
   endif()
+  macro(copy_d3d_file NAME FILENAME)
+    find_file(D3D_PATH_${NAME}
+      NAMES ${FILENAME}
+      PATHS "${D3D_BASE_PATH}/bin"
+      NO_DEFAULT_PATH
+    )
+    if(D3D_PATH_${NAME})
+      add_custom_command(TARGET ${CORE_LIB_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${D3D_PATH_${NAME}}" $<TARGET_FILE_DIR:${CORE_LIB_NAME}>
+      )
+    endif()
+  endmacro(copy_d3d_file)
+
+  copy_d3d_file(DXIL dxil.dll)
+  copy_d3d_file(DXCOMPILER dxcompiler.dll)
 endif()
 
 # fmt

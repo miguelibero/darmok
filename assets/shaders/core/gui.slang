@@ -1,6 +1,7 @@
+#include <darmok_util.inc.slang>
+
 uniform float4x4 u_modelViewProj;
 uniform float4 u_color;
-
 uniform Texture2D s_texColor;
 SamplerState samplerState;
 
@@ -8,6 +9,8 @@ struct VSInput
 {
     float2 a_position : POSITION;
     float2 a_texcoord0 : TEXCOORD0;
+
+    [DarmokVertex(true, false)]
     float4 a_color0 : COLOR0;
 };
 
