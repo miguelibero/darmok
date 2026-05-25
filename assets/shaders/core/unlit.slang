@@ -1,6 +1,6 @@
 #include <darmok_skinning.inc.slang>
 #include <darmok_material_basic.inc.slang>
-#include <darmok_util.inc.slang>
+#include <darmok.inc.slang>
 
 uniform float4x4 u_modelViewProj;
 uniform Texture2D s_texColor;
@@ -9,7 +9,7 @@ SamplerState samplerState;
 struct VSInput
 {
     float3 a_position : POSITION;
-    [DarmokVertex(true, false)]
+    [DarmokVertexNormalize]
     float4 a_color0   : COLOR0;
     float2 a_texcoord0: TEXCOORD0;
     float4 a_indices  : TEXCOORD1; // bone indices

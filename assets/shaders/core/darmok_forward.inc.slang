@@ -3,7 +3,7 @@
 #include <darmok_material.inc.slang>
 #include <darmok_light.inc.slang>
 #include <darmok_shadow.inc.slang>
-#include <darmok_util.inc.slang>
+#include <darmok.inc.slang>
 
 float3 calcLightRadiance(LightData data, float3 V, float3 N, float NoV, float3 msFactor, Material mat)
 {

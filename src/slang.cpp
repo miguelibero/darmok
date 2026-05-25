@@ -143,6 +143,9 @@ namespace darmok
             return typeLayout;
         }
 
+        constexpr std::string_view vertexNormalizeAttrName = "DarmokVertexNormalize";
+        constexpr std::string_view vertexAsIntAttrName = "DarmokVertexAsInt";
+
         expected<protobuf::VertexLayout, std::string> createVertexLayout(slang::EntryPointReflection& entryPoint) noexcept
         {
             if (entryPoint.getStage() != SLANG_STAGE_VERTEX)
@@ -185,27 +188,20 @@ namespace darmok
                 vertexAttrib.set_bgfx_type(*bgfxAttribType);
                 vertexAttrib.set_num(fieldType->getElementCount());
 
-                unsigned attrCount = fieldType->getUserAttributeCount();
+                auto var = field->getVariable();
+                unsigned attrCount = var->getUserAttributeCount();
 
                 for (unsigned i = 0; i < attrCount; i++)
                 {
-                    auto attr = fieldType->getUserAttributeByIndex(i);
-                    if (attr->getName() != "DarmokVertex")
+                    auto attr = var->getUserAttributeByIndex(i);
+                    if (attr->getName() == vertexNormalizeAttrName)
                     {
-                        continue;
+                        vertexAttrib.set_bgfx_type(protobuf::Bgfx::Uint8);
+                        vertexAttrib.set_normalize(true);
                     }
-                    unsigned argCount = attr->getArgumentCount();
-                    for (unsigned j = 0; j < argCount; j++)
+                    else if (attr->getName() == vertexAsIntAttrName)
                     {
-                        auto arg = attr->getArgumentValueString(j, nullptr);
-                        if (arg == "normalize")
-                        {
-                            vertexAttrib.set_normalize(true);
-                        }
-                        if (arg == "as_int")
-                        {
-                            vertexAttrib.set_as_int(true);
-                        }
+                        vertexAttrib.set_as_int(true);
                     }
                 }
             }
@@ -1110,6 +1106,14 @@ namespace darmok
         for (auto& define : fdefines)
         {
             macros.emplace_back(define.c_str(), "1");
+        }
+        if (renderer == bgfx::RendererType::Direct3D11)
+        {
+            macros.emplace_back("SLANG_HLSL", "1");
+        }
+        else if (renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
+        {
+            macros.emplace_back("SLANG_GLSL", "1");
         }
 
         sessionDesc.preprocessorMacroCount = macros.size();

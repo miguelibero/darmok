@@ -225,8 +225,8 @@ namespace darmok
 
 	void ConstVertexAttributeWrapper::addToBgfx(bgfx::VertexLayout& layout) noexcept
 	{
-		auto bgfx = bgfx::Attrib::Enum(_def.bgfx());
-		auto bgfxType = bgfx::AttribType::Enum(_def.bgfx_type());
+		auto bgfx = static_cast<bgfx::Attrib::Enum>(_def.bgfx());
+        auto bgfxType = static_cast<bgfx::AttribType::Enum>(_def.bgfx_type());
 		layout.add(bgfx, _def.num(), bgfxType, _def.normalize(), _def.as_int());
 	}
 
@@ -451,7 +451,7 @@ namespace darmok
 		bgfxLayout.begin();
 		for (auto& attib : _def.attributes())
 		{
-			auto bgfx = bgfx::Attrib::Enum(attib.bgfx());
+			auto bgfx = static_cast<bgfx::Attrib::Enum>(attib.bgfx());
 			if (AttribUtils::inGroups(bgfx, disabledGroups))
 			{
 				continue;

@@ -1,4 +1,4 @@
-#include <darmok_util.inc.slang>
+#include <darmok.inc.slang>
 
 uniform float4x4 u_modelViewProj;
 uniform float4 u_color;
@@ -10,7 +10,7 @@ struct VSInput
     float2 a_position : POSITION;
     float2 a_texcoord0 : TEXCOORD0;
 
-    [DarmokVertex(true, false)]
+    [DarmokVertexNormalize]
     float4 a_color0 : COLOR0;
 };
 

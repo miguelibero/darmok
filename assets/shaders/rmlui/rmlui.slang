@@ -1,7 +1,11 @@
+#include <darmok.inc.slang>
+
 struct VSInput
 {
     float2 a_position : POSITION;
     float2 a_texcoord0 : TEXCOORD0;
+
+    [DarmokVertexNormalize]
     float4 a_color0 : COLOR0;
 };
 

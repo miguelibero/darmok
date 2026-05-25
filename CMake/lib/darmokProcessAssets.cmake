@@ -39,6 +39,7 @@ function(darmok_process_assets)
     --import-cache ${CACHE_DIR}
     --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
     --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
+    --slang-shader-include ${BGFX_SHADER_INCLUDE_PATH}
   )
 
   list(TRANSFORM ARGS_ASSETS PREPEND "${ARGS_INPUT}/")

@@ -114,7 +114,6 @@ darmok_process_assets(
     darmok_forward.inc.slang
     darmok_forward_basic.inc.slang
     darmok_skinning.inc.slang
-    darmok_util.inc.slang
     darmok-import.json
     forward.slang
     forward_basic.slang

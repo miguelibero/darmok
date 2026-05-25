@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "darmok_light.inc.slang"
+#include <darmok_light.inc.slang>
 
 uniform float4 u_shadowData1; // x: texel size, y: cascade amount, z: bias, w: normal bias
 uniform float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount, w: map amount

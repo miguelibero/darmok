@@ -1,4 +1,4 @@
-#include <darmok_util.inc.slang>
+#include <darmok.inc.slang>
 
 uniform float4x4 u_invViewProj;
 uniform float4x4 u_viewProj;

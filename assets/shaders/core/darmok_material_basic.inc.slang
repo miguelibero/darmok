@@ -1,7 +1,7 @@
 #pragma once
 
 #include <darmok_sampler.inc.slang>
-#include <darmok_util.inc.slang>
+#include <darmok.inc.slang>
 
 [[vk::binding(1, 0)]]
 uniform Texture2D s_texBaseColor : register(t1);
