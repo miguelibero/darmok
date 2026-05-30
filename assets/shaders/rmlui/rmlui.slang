@@ -3,10 +3,11 @@
 struct VSInput
 {
     float2 a_position : POSITION;
-    float2 a_texcoord0 : TEXCOORD0;
 
     [DarmokVertexNormalize]
     float4 a_color0 : COLOR0;
+
+    float2 a_texcoord0 : TEXCOORD0;
 };
 
 struct VSOutput
@@ -39,8 +40,8 @@ VSOutput vert(VSInput IN)
 }
 
 #ifndef DARMOK_VARIANT_TEXTURE_DISABLE
-Texture2D<float4> s_texColor : register(t1);
-SamplerState s_texColorState : register(s1);
+uniform Texture2D s_texColor;
+SamplerState s_texColorState;
 #endif
 
 [shader("fragment")]

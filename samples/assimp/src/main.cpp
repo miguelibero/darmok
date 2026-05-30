@@ -71,7 +71,7 @@ namespace
 				auto& trans = *scene->getComponent<Transform>(entity);
 				if (trans.getName() == "human")
 				{
-					scene->addSceneComponent<RotateUpdater>(trans, 100.f);
+                    DARMOK_TRY(scene->addSceneComponent<RotateUpdater>(trans, 100.f));
 				}
 			}
 			for (auto entity : scene->getComponents<Camera>())

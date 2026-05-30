@@ -250,8 +250,8 @@ namespace
 				, glm::to_string(_mouseScrollMax).c_str()
 			);
 			bgfx::dbgTextPrintf(0, 6, 0x0f, "Gamepad Sticks: %s %s"
-				, glm::to_string(_app.getInput().getGamepad().getStick(Gamepad::Definition::LeftStick)).c_str()
-				, glm::to_string(_app.getInput().getGamepad().getStick(Gamepad::Definition::RightStick)).c_str()
+				, glm::to_string(_app.getInput().getGamepad().getStick(Gamepad::Definition::StickLeft)).c_str()
+				, glm::to_string(_app.getInput().getGamepad().getStick(Gamepad::Definition::StickRight)).c_str()
 			);
 
 			return {};

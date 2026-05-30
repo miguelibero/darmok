@@ -18,6 +18,8 @@ struct VSOutput
 
 uniform float4x4 u_modelViewProj;
 uniform float4 u_imageLodEnabled; // x = lod, y = enabled
+uniform Texture2D s_texColor;
+SamplerState s_texColorState;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)
@@ -28,9 +30,6 @@ VSOutput vert(VSInput IN)
     OUT.v_color0 = IN.a_color0;
     return OUT;
 }
-
-Texture2D<float4> s_texColor : register(t1);
-SamplerState s_texColorState : register(s1);
 
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target

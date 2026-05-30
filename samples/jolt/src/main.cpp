@@ -155,7 +155,7 @@ namespace
 				if (auto playerMeshResult = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout()))
 				{
 					_scene->addComponent<Renderable>(playerEntity, playerMeshResult.value(), prog, Colors::red());
-					_characterTrans = _scene->addComponent<Transform>(playerEntity);
+					_characterTrans = _scene->getOrAddComponent<Transform>(playerEntity);
 				}
 			}
 

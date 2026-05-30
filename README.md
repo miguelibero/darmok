@@ -8,6 +8,7 @@ C++ game engine combining opensource libraries & tools that I like
 currently using:
 
 * [bgfx](https://github.com/bkaradzic/bgfx) as the renderer
+* [slang](https://github.com/shader-slang/slang) as the shader language
 * [CMake](https://cmake.org/) as the build system 
 * [vcpkg](https://vcpkg.io) as the package manager
 * [glm](https://github.com/g-truc/glm) for 3d math
@@ -34,7 +35,6 @@ currently using:
 * [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
 
 planned to use:
-* [slang](https://github.com/shader-slang/slang) unified shader language that compiles to  the different render
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * [Box2D](https://box2d.org/) 2D physics
@@ -79,6 +79,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
     * cascaded shadow mapping
         * ambient, directional, spot & point light shadows
     * camera culling (frustum, occlusion seems to be broken)
+    * slang shader support
 * asset system
     * sprites and spritesheets
     * loading models using assimp (FBX, gltf, etc...)
@@ -109,7 +110,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * editor using imgui
 
 #### Upcoming
-* slang support
 * move main thread to taskflow
 * frame limiting
 * more renderer features
