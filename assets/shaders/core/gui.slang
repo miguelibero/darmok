@@ -8,17 +8,19 @@ SamplerState samplerState;
 struct VSInput
 {
     float2 a_position : POSITION;
-    float2 a_texcoord0 : TEXCOORD0;
 
     [DarmokVertexNormalize]
-    float4 a_color0 : COLOR0;
+    uint4 a_color0 : COLOR0;
+
+    float2 a_texcoord0 : TEXCOORD0;
 };
 
 struct VSOutput
 {
-    float4 position : SV_Position;
-    float2 v_texcoord0 : TEXCOORD0;
+    float4 position : SV_Position;    
     float4 v_color0 : COLOR0;
+
+    float2 v_texcoord0 : TEXCOORD0;
 };
 
 [shader("vertex")]

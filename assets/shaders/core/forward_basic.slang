@@ -5,23 +5,23 @@ struct VSInput
 {
     float3 a_position : POSITION;
     float3 a_normal : NORMAL;
+    uint4 a_indices : BLENDINDICES;
+    float4 a_weight : BLENDWEIGHT;
     float2 a_texcoord0 : TEXCOORD0;
-    float4 a_indices : TEXCOORD1;
-    float4 a_weight : TEXCOORD2;
 };
 
 struct VSOutput
 {
     float4 position : SV_Position;
-    float3 v_position : TEXCOORD0;
-    float3 v_normal : TEXCOORD1;
-    float2 v_texcoord0 : TEXCOORD2;
-    float3 v_viewDir : TEXCOORD3;
+    float3 v_position : POSITION;
+    float3 v_normal : NORMAL;
+    float2 v_texcoord0 : TEXCOORD0;
+    float3 v_viewDir : VIEWDIR;
 };
 
 uniform float4 u_camPos;
 uniform float3x3 u_normalMatrix;
-uniform float4x4 u_model0;
+uniform float4x4 u_model[32];
 uniform float4x4 u_viewProj;
 
 [shader("vertex")]
@@ -32,7 +32,7 @@ VSOutput vert(VSInput IN)
     float4 norm = float4(IN.a_normal, 0.0);
     pos = applySkinning(pos, IN.a_indices, IN.a_weight);
     norm = applySkinning(norm, IN.a_indices, IN.a_weight);
-    pos = mul(u_model0, pos);
+    pos = mul(u_model[0], pos);
 
     OUT.v_position = pos.xyz;
     OUT.v_normal = mul(u_normalMatrix, norm.xyz);

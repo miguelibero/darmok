@@ -27,14 +27,14 @@ file(GET_RUNTIME_DEPENDENCIES
   MODULES ${TARGET}
 )
 get_filename_component(TARGET_DIR ${TARGET} DIRECTORY)
-set(BUILD_DIR_SLASH "${BUILD_DIR}/")
 
 foreach(DEP_PATH ${DEPENDENCIES})
-  string(FIND "${DEP_PATH}" "${BUILD_DIR_SLASH}" POS)
+  string(FIND "${DEP_PATH}" "${BUILD_DIR}" POS)
   if (NOT POS EQUAL 0)
     continue()
   endif()
   get_filename_component(DEP_NAME ${DEP_PATH} NAME)
-  set(TARGET_PATH "${TARGET_DIR}/${DEP_NAME}")
+  set(TARGET_PATH "${TARGET_DIR}")
+  cmake_path(APPEND TARGET_PATH "${DEP_NAME}")
   file(COPY_FILE ${DEP_PATH} ${TARGET_PATH} ONLY_IF_DIFFERENT)
 endforeach()

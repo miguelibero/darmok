@@ -2,9 +2,7 @@
 #include <darmok/stream.hpp>
 #include <darmok/string.hpp>
 #include <fmt/format.h>
-#include <magic_enum/magic_enum_format.hpp>
 #include <regex>
-#include <unordered_map>
 #include <spirv_glsl.hpp>
 
 namespace darmok

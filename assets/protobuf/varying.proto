@@ -24,6 +24,7 @@ message Bgfx {
         TexCoord5 = 15;
         TexCoord6 = 16;
         TexCoord7 = 17;
+        Custom = 18;
     }
 
     enum AttribType {

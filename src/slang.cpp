@@ -96,11 +96,11 @@ namespace darmok
             {
                 return consecutive(protobuf::Bgfx::Color0, 4);
             }
-            if (semanticName == "INDICES")
+            if (semanticName == "BLENDINDICES")
             {
                 return protobuf::Bgfx::Indices;
             }
-            if (semanticName == "WEIGHT")
+            if (semanticName == "BLENDWEIGHT")
             {
                 return protobuf::Bgfx::Weight;
             }
@@ -108,7 +108,7 @@ namespace darmok
             {
                 return std::nullopt;
             }
-            return unexpected{fmt::format("could not deduce attrib type {}", semanticName)};
+            return protobuf::Bgfx::Custom;
         }
 
         std::optional<protobuf::Bgfx::AttribType> getBgfxAttribType(slang::TypeReflection::ScalarType scalarType) noexcept
@@ -116,6 +116,7 @@ namespace darmok
             switch (scalarType)
             {
             case slang::TypeReflection::ScalarType::UInt8:
+            case slang::TypeReflection::ScalarType::UInt32:
                 return protobuf::Bgfx::Uint8;
             case slang::TypeReflection::ScalarType::Int16:
                 return protobuf::Bgfx::Int16;
@@ -163,14 +164,18 @@ namespace darmok
             SlangInt fieldCount = typeLayout->getFieldCount();
             for (SlangInt f = 0; f < fieldCount; ++f)
             {
-
                 auto field = typeLayout->getFieldByIndex(f);
                 auto fieldType = field->getTypeLayout()->getType();
-
-                auto bgfxAttribResult = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
+                auto name = field->getName();
+                auto semanticName = field->getSemanticName();
+                if (name == nullptr || semanticName == nullptr)
+                {
+                    continue;
+                }
+                auto bgfxAttribResult = getBgfxAttrib(semanticName, field->getSemanticIndex());
                 if (!bgfxAttribResult)
                 {
-                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}: {}", field->getSemanticName(), field->getName(), bgfxAttribResult.error())};
+                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}: {}", semanticName, name, bgfxAttribResult.error())};
                 }
                 auto& bgfxAttrib = bgfxAttribResult.value();
                 if (!bgfxAttrib)
@@ -180,7 +185,7 @@ namespace darmok
                 auto bgfxAttribType = getBgfxAttribType(fieldType->getScalarType());
                 if (!bgfxAttribType)
                 {
-                    return unexpected<std::string>{fmt::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), field->getName())};
+                    return unexpected<std::string>{fmt::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), name)};
                 }
 
                 auto &vertexAttrib = *vertexLayout.add_attributes();
@@ -228,15 +233,8 @@ namespace darmok
             for (SlangInt f = 0; f < fieldCount; ++f)
             {
                 auto &fragAttrib = *fragmentLayout.add_attributes();
-
                 auto field = typeLayout->getFieldByIndex(f);
                 auto fieldType = field->getTypeLayout()->getType();
-
-                auto bgfxAttrib = getBgfxAttrib(field->getSemanticName(), field->getSemanticIndex());
-                if (!bgfxAttrib)
-                {
-                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}", field->getSemanticName(), field->getName())};
-                }
                 fragAttrib.set_num(fieldType->getElementCount());
                 fragAttrib.set_name(field->getName());
             }
@@ -350,9 +348,9 @@ namespace darmok
                     {
                         if (type.getResourceAccess() == SlangResourceAccess::SLANG_RESOURCE_ACCESS_READ)
                         {
-                            return static_cast<bgfx::UniformType::Enum>(uniformReadOnlyBit | static_cast<uint8_t>(bgfx::UniformType::Count));
+                            return static_cast<bgfx::UniformType::Enum>(uniformReadOnlyBit | static_cast<uint8_t>(bgfx::UniformType::End));
                         }
-                        return bgfx::UniformType::Count;
+                        return bgfx::UniformType::End;
                     }
                     return bgfx::UniformType::Sampler;
                 }
@@ -560,6 +558,7 @@ namespace darmok
             {bgfx::Attrib::TexCoord5, 0x0015},
             {bgfx::Attrib::TexCoord6, 0x0016},
             {bgfx::Attrib::TexCoord7, 0x0017},
+            {bgfx::Attrib::Count, 0xFFFF},
         };
 
         uint16_t attribToId(bgfx::Attrib::Enum attr)
@@ -994,7 +993,45 @@ namespace darmok
 
         std::vector<slang::CompilerOptionEntry> getCompilerOptions(bgfx::RendererType::Enum renderer) noexcept
         {
-            return {};
+            constexpr int slangShiftKindUnorderedAccess = 0;
+            constexpr int slangShiftKindSampler = 1;
+            constexpr int slangShiftKindShaderResource = 2;
+            constexpr int slangShiftKindConstantBuffer = 3;
+
+            constexpr int vulkanVertexCBufferShift = 0;
+            constexpr int vulkanFragmentCBufferShift = 1;
+            constexpr int vulkanTextureShift = 2;
+            constexpr int vulkanSamplerShift = 18;
+
+            std::vector<slang::CompilerOptionEntry> options;
+
+            SlangStage stage = SlangStage::SLANG_STAGE_VERTEX;
+
+            if (renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
+            {
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindConstantBuffer, .intValue1 = 0}});
+                options.push_back(
+                    slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll, {.intValue0 = slangShiftKindSampler, .intValue1 = 0}});
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindShaderResource, .intValue1 = 0}});
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindUnorderedAccess, .intValue1 = 0}});
+            }
+            else if (renderer == bgfx::RendererType::Vulkan)
+            {
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                           {.intValue0 = slangShiftKindConstantBuffer,
+                            .intValue1 = stage == SlangStage::SLANG_STAGE_FRAGMENT ? vulkanFragmentCBufferShift : vulkanVertexCBufferShift}});
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindSampler, .intValue1 = vulkanSamplerShift}});
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindShaderResource, .intValue1 = vulkanTextureShift}});
+                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindUnorderedAccess, .intValue1 = vulkanTextureShift}});
+            }
+
+            return options;
         }
 
         expected<DarmokShaderContext, std::string> updateVarying(protobuf::Varying &varying, slang::ProgramLayout &layout)

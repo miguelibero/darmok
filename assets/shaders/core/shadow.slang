@@ -4,8 +4,8 @@
 struct VSInput
 {
     float3 a_position : POSITION;
-    float4 a_indices : INDICES;
-    float4 a_weight : WEIGHT;
+    uint4 a_indices : BLENDINDICES;
+    float4 a_weight : BLENDWEIGHT;
 };
 
 struct VSOutput

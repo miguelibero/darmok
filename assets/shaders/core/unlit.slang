@@ -8,12 +8,12 @@ SamplerState samplerState;
 
 struct VSInput
 {
-    float3 a_position : POSITION;
+    float3 a_position  : POSITION;
     [DarmokVertexNormalize]
-    float4 a_color0   : COLOR0;
-    float2 a_texcoord0: TEXCOORD0;
-    float4 a_indices  : TEXCOORD1; // bone indices
-    float4 a_weight   : TEXCOORD2; // bone weights
+    float4 a_color0    : COLOR0;
+    uint4 a_indices    : BLENDINDICES;
+    float4 a_weight    : BLENDWEIGHT;
+    float2 a_texcoord0 : TEXCOORD0;
 };
 
 struct VSOutput

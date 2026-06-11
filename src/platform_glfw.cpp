@@ -335,23 +335,14 @@ namespace darmok
 		{
 			return;
 		}
-#if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
-#if DARMOK_CONFIG_USE_WAYLAND
-		wl_egl_window* win_impl = (wl_egl_window*)glfwGetWindowUserPointer(window);
-		if (win_impl)
-		{
-			glfwSetWindowUserPointer(window, nullptr);
-			wl_egl_window_destroy(win_impl);
-		}
-#endif
-#endif
 		glfwDestroyWindow(window);
 	}
-
 
 	GLFWwindow* PlatformImpl::createWindow(const glm::uvec2& size, const char* title) noexcept
 	{
 		// glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
 		glm::uvec2 fsize(size);
 		GLFWmonitor* monitor = nullptr;
 		if (fsize.x == 0 || fsize.y == 0)

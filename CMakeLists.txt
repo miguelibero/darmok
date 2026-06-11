@@ -722,7 +722,6 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
   target_compile_definitions(${LIB_NAME} PRIVATE DARMOK_PLATFORM_GLFW)
   if (DARMOK_PLATFORM_SUPPORT_WAYLAND)
     target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
-    target_compile_definitions(bgfx::bgfx INTERFACE WL_EGL_PLATFORM)
   endif()
 endif()
 
