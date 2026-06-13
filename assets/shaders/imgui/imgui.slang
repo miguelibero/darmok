@@ -6,7 +6,7 @@ struct VSInput
     float2 a_texcoord0 : TEXCOORD0;
 
     [DarmokVertexNormalize]
-    uint4 a_color0 : COLOR0;
+    float4 a_color0 : COLOR0;
 };
 
 struct VSOutput

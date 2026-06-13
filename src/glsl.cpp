@@ -143,6 +143,19 @@ namespace darmok
 
             auto resources = compiler.get_shader_resources();
 
+            auto fixResourceNames = [&compiler](auto& resources)
+            {
+                for (auto& res : resources)
+                {
+                    auto name = compiler.get_name(res.id);
+                    auto pos = name.find('.');
+                    if (pos != std::string::npos)
+                    {
+                        compiler.set_name(res.id, name.substr(pos + 1));
+                    }
+                }
+            };
+
             if (type == ShaderType::Vertex)
             {
                 for (auto& input : resources.stage_inputs)
@@ -155,6 +168,11 @@ namespace darmok
                         compiler.set_name(input.id, std::string{name});
                     }
                 }
+                fixResourceNames(resources.stage_outputs);
+            }
+            else if (type == ShaderType::Fragment)
+            {
+                fixResourceNames(resources.stage_inputs);
             }
 
             try
