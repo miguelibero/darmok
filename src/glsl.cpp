@@ -131,6 +131,7 @@ namespace darmok
             options.es = profile.ends_with("_es");
             options.emit_uniform_buffer_as_plain_uniforms = true;
             options.enable_420pack_extension = false;
+            options.enable_row_major_load_workaround = false;
             options.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
             compiler.set_common_options(options);
 

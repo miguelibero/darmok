@@ -269,7 +269,8 @@ namespace darmok
             },
             {
                 bgfx::RendererType::Direct3D12,
-                SlangCompileTarget::SLANG_DXIL,
+                // SlangCompileTarget::SLANG_DXIL,
+                SlangCompileTarget::SLANG_DXBC,
             },
             {
                 bgfx::RendererType::Metal,
@@ -1144,13 +1145,13 @@ namespace darmok
         {
             macros.emplace_back(define.c_str(), "1");
         }
-        if (renderer == bgfx::RendererType::Direct3D11)
+        if (renderer == bgfx::RendererType::Direct3D11 || renderer == bgfx::RendererType::Direct3D12)
         {
-            macros.emplace_back("SLANG_HLSL", "1");
+            macros.emplace_back("DARMOK_HLSL", "1");
         }
         else if (renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
         {
-            macros.emplace_back("SLANG_GLSL", "1");
+            macros.emplace_back("DARMOK_GLSL", "1");
         }
 
         sessionDesc.preprocessorMacroCount = macros.size();

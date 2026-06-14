@@ -13,6 +13,11 @@ struct DarmokVertexAsIntAttribute
 {
 };
 
+#ifdef DARMOK_GLSL
+// invert the matrix multiply in glsl because bgfx works that way
+#define mul(M, v) ::mul(v, M)
+#endif
+
 inline bool getBitfieldValue(float4 field, int pos)
 {
     return ((uint(field.x) & (1u << pos)) != 0u);
@@ -21,7 +26,7 @@ inline bool getBitfieldValue(float4 field, int pos)
 // from screen coordinates (gl_FragCoord) to eye space
 float4 screen2Eye(float4 coord)
 {
-#ifdef SLANG_GLSL
+#ifdef DARMOK_GLSL
     // https://www.khronos.org/opengl/wiki/Compute_eye_space_from_window_space
     float3 ndc = float3(
         2.0 * (coord.x - u_viewRect.x) / u_viewRect.z - 1.0,
@@ -48,7 +53,7 @@ float4 screen2Eye(float4 coord)
 // for a left-handed coordinate system
 float screen2EyeDepth(float depth, float near, float far)
 {
-#ifdef SLANG_GLSL
+#ifdef DARMOK_GLSL
     float ndc = 2.0 * depth - 1.0;
     // ndc = (eye * (far + near) / (far - near) - 2 * (far * near) / (far - near)) / eye
     float eye = 2.0 * far * near / (far + near + ndc * (near - far));
