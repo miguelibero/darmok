@@ -1158,6 +1158,11 @@ namespace darmok
         {
             addSlangShaderIncludePath(path);
         }
+        setIncludeShaderDebugInfo(config.includeShaderDebugInfo);
+        if(config.shaderOptimizationLevel)
+        {
+            setShaderOptimizationLevel(*config.shaderOptimizationLevel);
+        }
     }
 
     DarmokCoreAssetFileImporter::DarmokCoreAssetFileImporter(const fs::path& inputPath)
@@ -1197,6 +1202,20 @@ namespace darmok
     DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::addSlangShaderIncludePath(const fs::path& path) noexcept
     {
         _slangImporter.addIncludePath(path);
+        return *this;
+    }
+
+    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setIncludeShaderDebugInfo(bool debug) noexcept
+    {
+        _progImporter.setIncludeDebugInfo(debug);
+        _slangImporter.setIncludeDebugInfo(debug);
+        return *this;
+    }
+
+    DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setShaderOptimizationLevel(int level) noexcept
+    {
+        _progImporter.setOptimizationLevel(level);
+        _slangImporter.setOptimizationLevel(level);
         return *this;
     }
 
@@ -1262,6 +1281,11 @@ namespace darmok
         progGroup->add_option("--slang-shader-include", cfg.slangShaderIncludePaths, "paths to slang shader files to be included")
             ->option_text("PATH ...")
             ->envname("DARMOK_IMPORT_SLANG_SHADER_INCLUDES");
+        progGroup->add_flag("--shader-debug", cfg.includeShaderDebugInfo, "include shader debug info")
+            ->envname("DARMOK_IMPORT_SHADER_DEBUG");
+        progGroup->add_option("--shader-optimization-level", cfg.shaderOptimizationLevel, "shader optimization level")
+            ->option_text("[0-3]")
+            ->envname("DARMOK_IMPORT_SHADER_OPTIMIZATION_LEVEL");
     }
 
     const std::string CommandLineFileImporterConfig::defaultInputPath = "assets";

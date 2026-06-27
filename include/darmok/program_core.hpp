@@ -81,6 +81,8 @@ namespace darmok
 		std::filesystem::path shadercPath;
 		using IncludePaths = std::unordered_set<std::filesystem::path>;
 		IncludePaths includePaths;
+        bool includeDebugInfo = false;
+        std::optional<int> optimizationLevel;
 		OptionalRef<std::ostream> log;
 
 		struct ReadConfig final
@@ -137,6 +139,8 @@ namespace darmok
 		~ProgramFileImporter() noexcept;
 		ProgramFileImporter& setShadercPath(const std::filesystem::path& path) noexcept;
 		ProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+        ProgramFileImporter& setIncludeDebugInfo(bool debug) noexcept;
+        ProgramFileImporter& setOptimizationLevel(int level) noexcept;
 
 		expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept override;
 		expected<Effect, std::string> prepare(const Input& input) noexcept override;

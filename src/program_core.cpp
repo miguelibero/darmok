@@ -505,23 +505,23 @@ namespace darmok
 
     expected<void, std::string> ShaderCompiler::operator()(const Operation& op) const noexcept
     {
-        if (!std::filesystem::exists(_config.programConfig.shadercPath))
+        if(!std::filesystem::exists(_config.programConfig.shadercPath))
         {
-            return unexpected{ "could not find shaderc" };
+            return unexpected{"could not find shaderc"};
         }
         std::filesystem::path varyingPath = _config.varyingPath;
         auto inputDir = _config.path.parent_path();
-        if (varyingPath.empty())
+        if(varyingPath.empty())
         {
             varyingPath = inputDir / (_config.path.stem().string() + ".varyingdef");
         }
         auto shaderType = _config.type;
-        if (shaderType == ShaderType::Unknown)
+        if(shaderType == ShaderType::Unknown)
         {
             shaderType = ShaderParser::getType(_config.path);
         }
         auto outputPath = op.outputPath;
-        if (outputPath.empty())
+        if(outputPath.empty())
         {
             outputPath = _config.path.parent_path() / ShaderParser::getDefaultOutputFile(_config, op);
         }
@@ -531,8 +531,17 @@ namespace darmok
             "-f", _config.path,
             "-o", outputPath,
             "--type", ShaderParser::getTypeName(shaderType),
-            "--varyingdef", varyingPath
-        };
+            "--varyingdef", varyingPath};
+
+        if(_config.includeDebugInfo)
+        {
+            args.push_back("--debug");
+        }
+        if(auto level = _config.optimizationLevel)
+        {
+            args.push_back("-O");
+            args.push_back(std::to_string(*level));
+        }
 
         auto getPlatformArg = [](PlatformType plat)
         {
@@ -727,6 +736,8 @@ namespace darmok
         {
             .programConfig = _config,
             .varyingPath = varyingDefPath,
+            .includeDebugInfo = _config.includeDebugInfo,
+            .optimizationLevel = _config.optimizationLevel
         };
         ShaderParser shaderParser{ _config.includePaths };
 
@@ -797,6 +808,16 @@ namespace darmok
     void ProgramFileImporterImpl::addIncludePath(const std::filesystem::path& path) noexcept
     {
         _defaultConfig.includePaths.insert(path);
+    }
+
+    void ProgramFileImporterImpl::setIncludeDebugInfo(bool debug) noexcept
+    {
+        _defaultConfig.includeDebugInfo = debug;
+    }
+
+    void ProgramFileImporterImpl::setOptimizationLevel(int level) noexcept
+    {
+        _defaultConfig.optimizationLevel = level;
     }
 
     expected<void, std::string> ProgramFileImporterImpl::init(OptionalRef<std::ostream> log) noexcept
@@ -946,6 +967,19 @@ namespace darmok
         _impl->addIncludePath(path);
         return *this;
     }
+
+    ProgramFileImporter& ProgramFileImporter::setIncludeDebugInfo(bool debug) noexcept
+    {
+        _impl->setIncludeDebugInfo(debug);
+        return *this;
+    }
+
+    ProgramFileImporter& ProgramFileImporter::setOptimizationLevel(int level) noexcept
+    {
+        _impl->setOptimizationLevel(level);
+        return *this;
+    }
+
 
     expected<void, std::string> ProgramFileImporter::init(OptionalRef<std::ostream> log) noexcept
     {

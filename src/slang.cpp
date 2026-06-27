@@ -992,7 +992,7 @@ namespace darmok
             return {};
         }
 
-        std::vector<slang::CompilerOptionEntry> getCompilerOptions(bgfx::RendererType::Enum renderer) noexcept
+        std::vector<slang::CompilerOptionEntry> getCompilerOptions(bgfx::RendererType::Enum renderer, SlangStage stage, const SlangProgramCompilerConfig& config) noexcept
         {
             constexpr int slangShiftKindUnorderedAccess = 0;
             constexpr int slangShiftKindSampler = 1;
@@ -1004,31 +1004,52 @@ namespace darmok
             constexpr int vulkanTextureShift = 2;
             constexpr int vulkanSamplerShift = 18;
 
-            std::vector<slang::CompilerOptionEntry> options;
+            using Entry = slang::CompilerOptionEntry;
+            using Option = slang::CompilerOptionName;
 
-            SlangStage stage = SlangStage::SLANG_STAGE_VERTEX;
+            std::vector<Entry> options;
+
+            if (config.optimizationLevel)
+            {
+                options.push_back(Entry{
+                    Option::Optimization,
+                    {.intValue0 = *config.optimizationLevel}});
+            }
+            
+            if (config.includeDebugInfo)
+            {
+                options.push_back(Entry{
+                    Option::DebugInformation,
+                    {.intValue0 = SlangDebugInfoLevel::SLANG_DEBUG_INFO_LEVEL_MAXIMAL}});
+                if (!config.optimizationLevel)
+                {
+                    options.push_back(Entry{
+                        Option::Optimization,
+                        {.intValue0 = SLANG_OPTIMIZATION_LEVEL_NONE}});
+                }
+            }
 
             if (renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
             {
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
-                                                             {.intValue0 = slangShiftKindConstantBuffer, .intValue1 = 0}});
+                options.push_back(Entry{Option::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindConstantBuffer}});
                 options.push_back(
-                    slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll, {.intValue0 = slangShiftKindSampler, .intValue1 = 0}});
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
-                                                             {.intValue0 = slangShiftKindShaderResource, .intValue1 = 0}});
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
-                                                             {.intValue0 = slangShiftKindUnorderedAccess, .intValue1 = 0}});
+                    Entry{Option::VulkanBindShiftAll, {.intValue0 = slangShiftKindSampler}});
+                options.push_back(Entry{Option::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindShaderResource}});
+                options.push_back(Entry{Option::VulkanBindShiftAll,
+                                                             {.intValue0 = slangShiftKindUnorderedAccess}});
             }
             else if (renderer == bgfx::RendererType::Vulkan)
             {
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                options.push_back(Entry{Option::VulkanBindShiftAll,
                            {.intValue0 = slangShiftKindConstantBuffer,
                             .intValue1 = stage == SlangStage::SLANG_STAGE_FRAGMENT ? vulkanFragmentCBufferShift : vulkanVertexCBufferShift}});
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                options.push_back(Entry{Option::VulkanBindShiftAll,
                                                              {.intValue0 = slangShiftKindSampler, .intValue1 = vulkanSamplerShift}});
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                options.push_back(Entry{Option::VulkanBindShiftAll,
                                                              {.intValue0 = slangShiftKindShaderResource, .intValue1 = vulkanTextureShift}});
-                options.push_back(slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanBindShiftAll,
+                options.push_back(Entry{Option::VulkanBindShiftAll,
                                                              {.intValue0 = slangShiftKindUnorderedAccess, .intValue1 = vulkanTextureShift}});
             }
 
@@ -1157,7 +1178,7 @@ namespace darmok
         sessionDesc.preprocessorMacroCount = macros.size();
         sessionDesc.preprocessorMacros = macros.data();
 
-        auto options = getCompilerOptions(renderer);
+        auto options = getCompilerOptions(renderer, SlangStage::SLANG_STAGE_FRAGMENT, _config);
         sessionDesc.compilerOptionEntryCount = options.size();
         sessionDesc.compilerOptionEntries = options.data();
 
@@ -1295,6 +1316,16 @@ namespace darmok
 		_defaultConfig.includePaths.insert(path);
     }
 
+    void SlangProgramFileImporterImpl::setIncludeDebugInfo(bool debug) noexcept
+    {
+        _defaultConfig.includeDebugInfo = debug;
+    }
+
+    void SlangProgramFileImporterImpl::setOptimizationLevel(int level) noexcept
+    {
+        _defaultConfig.optimizationLevel = level;
+    }
+
     expected<void, std::string> SlangProgramFileImporterImpl::init(OptionalRef<std::ostream> log) noexcept
     {
         _defaultConfig.log = log;
@@ -1396,6 +1427,18 @@ namespace darmok
     SlangProgramFileImporter& SlangProgramFileImporter::addIncludePath(const std::filesystem::path& path) noexcept
     {
 		_impl->addIncludePath(path);
+        return *this;
+    }
+
+    SlangProgramFileImporter& SlangProgramFileImporter::setIncludeDebugInfo(bool debug) noexcept
+    {
+        _impl->setIncludeDebugInfo(debug);
+        return *this;
+    }
+
+    SlangProgramFileImporter& SlangProgramFileImporter::setOptimizationLevel(int level) noexcept
+    {
+        _impl->setOptimizationLevel(level);
         return *this;
     }
 

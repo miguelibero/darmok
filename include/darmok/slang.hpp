@@ -20,6 +20,8 @@ namespace darmok
 	{
 		using IncludePaths = std::unordered_set<std::filesystem::path>;
 		IncludePaths includePaths;
+        bool includeDebugInfo = false;
+        std::optional<int> optimizationLevel;
 		OptionalRef<std::ostream> log;
 
 		struct ReadConfig final
@@ -55,6 +57,8 @@ namespace darmok
 		SlangProgramFileImporter() noexcept;
 		~SlangProgramFileImporter() noexcept;
 		SlangProgramFileImporter& addIncludePath(const std::filesystem::path& path) noexcept;
+        SlangProgramFileImporter& setIncludeDebugInfo(bool debug) noexcept;
+        SlangProgramFileImporter& setOptimizationLevel(int level) noexcept;
 
 		const std::string& getName() const noexcept override;
 		expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept override;

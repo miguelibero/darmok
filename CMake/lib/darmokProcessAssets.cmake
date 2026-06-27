@@ -40,7 +40,16 @@ function(darmok_process_assets)
     --bgfx-shaderc $<TARGET_FILE:${BGFX_SHADERC_TARGET}>
     --bgfx-shader-include ${BGFX_SHADER_INCLUDE_PATH}
     --slang-shader-include ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders
+    
   )
+
+  if(DARMOK_SHADER_OPTIMIZATION_LEVEL)
+    list(APPEND APPEND --shader-optimization-level ${DARMOK_SHADER_OPTIMIZATION_LEVEL})    
+  endif()
+
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND CMD --shader-debug)    
+  endif()
 
   list(TRANSFORM ARGS_ASSETS PREPEND "${ARGS_INPUT}/")
 

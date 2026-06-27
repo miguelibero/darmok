@@ -91,6 +91,8 @@ namespace darmok
         std::filesystem::path bgfxShadercPath;
         std::vector<std::filesystem::path> bgfxShaderIncludePaths;
         std::vector<std::filesystem::path> slangShaderIncludePaths;
+        bool includeShaderDebugInfo = false;
+        std::optional<int> shaderOptimizationLevel;
 
         static const std::string defaultInputPath;
         static const std::string defaultOutputPath;
@@ -158,7 +160,9 @@ namespace darmok
         DarmokCoreAssetFileImporter& setOutputPath(const std::filesystem::path& outputPath) noexcept;
         DarmokCoreAssetFileImporter& setBgfxShadercPath(const std::filesystem::path& path) noexcept;
         DarmokCoreAssetFileImporter& addBgfxShaderIncludePath(const std::filesystem::path& path) noexcept;
-        DarmokCoreAssetFileImporter& addSlangShaderIncludePath(const std::filesystem::path& path) noexcept;
+        DarmokCoreAssetFileImporter& addSlangShaderIncludePath(const std::filesystem::path &path) noexcept;
+        DarmokCoreAssetFileImporter& setIncludeShaderDebugInfo(bool debug) noexcept;
+        DarmokCoreAssetFileImporter& setShaderOptimizationLevel(int level) noexcept;
         expected<Paths, std::string> getOutputPaths() const noexcept;
         bool operator()(std::ostream& log) const noexcept;
     private:

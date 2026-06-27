@@ -123,6 +123,16 @@ namespace darmok
             return glsl;
         }
 
+        std::string replaceStorageBufferTypes(std::string glsl, uint32_t version)
+        {
+            if (version < 430)
+            {
+                StringUtils::replace(glsl, "readonly buffer", "uniform");
+                StringUtils::replace(glsl, "layout(std430)", "layout(std140)");            
+            }
+            return glsl;
+        }
+
         expected<std::string, std::string> compileToBgfx(std::string_view spirv, ShaderType type, const std::string& profile) noexcept
         {
             spirv_cross::CompilerGLSL compiler{reinterpret_cast<const uint32_t*>(&spirv.front()), spirv.size() / 4};
@@ -185,6 +195,9 @@ namespace darmok
                     return unexpected{ "failed to strip glsl uniform buffer objects: " + result.error() };
                 }
                 source = std::move(result).value();
+
+                source = replaceStorageBufferTypes(source, options.version);
+
                 return source;
             }
             catch(const std::exception &e)

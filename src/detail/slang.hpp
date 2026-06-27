@@ -36,6 +36,8 @@ namespace darmok
         using Source = protobuf::SlangProgramSource;
 
         void addIncludePath(const std::filesystem::path& path) noexcept;
+        void setIncludeDebugInfo(bool debug) noexcept;
+        void setOptimizationLevel(int level) noexcept;
 
         expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept;
         expected<Effect, std::string> prepare(const Input& input) noexcept;

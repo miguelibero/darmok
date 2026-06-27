@@ -2,7 +2,6 @@
 
 #include <darmok/program_core.hpp>
 #include <darmok/asset_core.hpp>
-#include <darmok/varying.hpp>
 
 #include <regex>
 #include <unordered_set>
@@ -37,6 +36,8 @@ namespace darmok
         std::filesystem::path path;
         std::filesystem::path varyingPath;
         ShaderType type;
+        bool includeDebugInfo = false;
+        std::optional<int> optimizationLevel;
 
         using PlatformType = ShaderCompilerPlatformType;
         std::optional<PlatformType> platform;
@@ -125,7 +126,8 @@ namespace darmok
 
         void setShadercPath(const std::filesystem::path& path) noexcept;
         void addIncludePath(const std::filesystem::path& path) noexcept;
-
+        void setIncludeDebugInfo(bool debug) noexcept;
+        void setOptimizationLevel(int level) noexcept;        
         expected<void, std::string> init(OptionalRef<std::ostream> log = nullptr) noexcept;
         expected<Effect, std::string> prepare(const Input& input) noexcept;
         expected<void, std::string> operator()(const Input& input, ImportConfig& config) noexcept;
