@@ -1152,9 +1152,9 @@ namespace darmok::physics3d
     PhysicsSystem::Definition PhysicsSystem::createDefinition() noexcept
     {
         Definition def;
-		def.set_max_bodies(1024);
-		def.set_max_body_pairs(1024);
-		def.set_max_contact_constraints(1024);
+        def.set_max_bodies(20480);
+        def.set_max_body_pairs(65536);
+        def.set_max_contact_constraints(32768);
 		def.set_fixed_delta_time(1.F / 60.F);
 		def.set_collision_steps(1);
 		def.mutable_gravity()->set_y(-9.81F);
