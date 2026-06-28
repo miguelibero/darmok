@@ -4,7 +4,7 @@
 struct VSInput
 {
     float3 a_position : POSITION;
-    uint4 a_indices : BLENDINDICES;
+    float4 a_indices : BLENDINDICES;
     float4 a_weight : BLENDWEIGHT;
 };
 

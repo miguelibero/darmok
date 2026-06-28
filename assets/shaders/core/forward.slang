@@ -6,7 +6,7 @@ struct VSInput
     float3 a_position  : POSITION;
     float3 a_normal    : NORMAL;
     float3 a_tangent   : TANGENT;
-    uint4 a_indices    : BLENDINDICES;
+    float4 a_indices    : BLENDINDICES;
     float4 a_weight    : BLENDWEIGHT;
     float2 a_texcoord0 : TEXCOORD0;
 };

@@ -11,7 +11,7 @@ struct VSInput
     float3 a_position  : POSITION;
     [DarmokVertexNormalize]
     float4 a_color0    : COLOR0;
-    uint4 a_indices    : BLENDINDICES;
+    float4 a_indices    : BLENDINDICES;
     float4 a_weight    : BLENDWEIGHT;
     float2 a_texcoord0 : TEXCOORD0;
 };

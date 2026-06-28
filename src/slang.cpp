@@ -247,7 +247,7 @@ namespace darmok
 
         const TargetProfileMap _targetProfileMap{
             {SlangCompileTarget::SLANG_DXBC, "sm_5_0"},
-            {SlangCompileTarget::SLANG_DXIL, "sm_6_0"}, // -disable-payload-qualifiers option error
+            {SlangCompileTarget::SLANG_DXIL, "sm_6_5"}, // -disable-payload-qualifiers option error
             {SlangCompileTarget::SLANG_METAL, "metallib_2_4"},
             {SlangCompileTarget::SLANG_SPIRV, "spirv_1_3"},
         };
@@ -269,8 +269,8 @@ namespace darmok
             },
             {
                 bgfx::RendererType::Direct3D12,
-                // SlangCompileTarget::SLANG_DXIL,
-                SlangCompileTarget::SLANG_DXBC,
+                SlangCompileTarget::SLANG_DXIL,
+                // SlangCompileTarget::SLANG_DXBC,
             },
             {
                 bgfx::RendererType::Metal,
@@ -1021,11 +1021,25 @@ namespace darmok
                 options.push_back(Entry{
                     Option::DebugInformation,
                     {.intValue0 = SlangDebugInfoLevel::SLANG_DEBUG_INFO_LEVEL_MAXIMAL}});
+                if(renderer == bgfx::RendererType::Direct3D11 || renderer == bgfx::RendererType::Direct3D12)
+                {
+                    options.push_back(Entry{
+                        Option::DebugInformationFormat,
+                        {.intValue0 = SlangDebugInfoFormat::SLANG_DEBUG_INFO_FORMAT_PDB}});
+                }
+                auto mode = SlangLineDirectiveMode::SLANG_LINE_DIRECTIVE_MODE_STANDARD;
+                if(renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
+                {
+                    mode = SlangLineDirectiveMode::SLANG_LINE_DIRECTIVE_MODE_GLSL;
+                }
+                options.push_back(Entry{
+                    Option::LineDirectiveMode,
+                    {.intValue0 = int(mode)}});
                 if (!config.optimizationLevel)
                 {
                     options.push_back(Entry{
                         Option::Optimization,
-                        {.intValue0 = SLANG_OPTIMIZATION_LEVEL_NONE}});
+                        {.intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE}});
                 }
             }
 
