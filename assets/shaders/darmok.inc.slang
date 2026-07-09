@@ -69,7 +69,7 @@ float screen2EyeDepth(float depth, float near, float far)
 float3 convertTangentNormal(float3 normal_ref, float3 tangent_ref, float3 normal)
 {
     float3 bitangent = cross(normal_ref, tangent_ref);
-    float3x3 TBN = float3x3(normalize(tangent_ref), normalize(bitangent), normalize(normal_ref));
+    float3x3 TBN = transpose(float3x3(normalize(tangent_ref), normalize(bitangent), normalize(normal_ref)));
     return normalize(mul(TBN, normal));
 }
 

@@ -269,8 +269,9 @@ namespace darmok
             },
             {
                 bgfx::RendererType::Direct3D12,
-                SlangCompileTarget::SLANG_DXIL,
-                // SlangCompileTarget::SLANG_DXBC,
+                // DXIL does not seem to work with bgfx
+                // SlangCompileTarget::SLANG_DXIL, 
+                SlangCompileTarget::SLANG_DXBC,
             },
             {
                 bgfx::RendererType::Metal,

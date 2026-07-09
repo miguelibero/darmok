@@ -1,8 +1,5 @@
 #pragma once
 
-// for each point light:
-//   vec4 position + uint entity
-//   vec4 intensity + range (xyz is intensity, w is range)
 struct PointLight
 {
     float3 position;
@@ -12,13 +9,18 @@ struct PointLight
 };
 
 [[vk::binding(7, 0)]]
-StructuredBuffer<PointLight> b_pointLights : register(t7);
+uniform StructuredBuffer<PointLight> b_pointLights : register(t7);
 
-// for each spot light:
-//   vec3 position + uint entity
-//   vec4 direction (w is padding)
-//   vec4 intensity + range (xyz is intensity, w is range)
-//   vec4 cone angle, inner cone angle
+struct DirLight
+{
+    float3 direction;
+    uint entity;
+    float3 intensity;
+};
+
+[[vk::binding(8, 0)]]
+uniform StructuredBuffer<DirLight> b_dirLights : register(t8);
+
 struct SpotLight
 {
     float3 position;
@@ -30,21 +32,8 @@ struct SpotLight
     float innerConeAngle;
 };
 
-[[vk::binding(8, 0)]]
-StructuredBuffer<SpotLight> b_spotLights : register(t8);
-
-// for each directional light:
-//   vec3 direction + uint entity
-//   vec4 intensity (xyz is intensity)
-struct DirLight
-{
-    float3 direction;
-    uint entity;
-    float3 intensity;
-};
-
 [[vk::binding(9, 0)]]
-uniform StructuredBuffer<DirLight> b_dirLights : register(t9);
+uniform StructuredBuffer<SpotLight> b_spotLights : register(t9);
 
 uniform float4 u_lightCountVec;
 uniform float4 u_ambientLightIrradiance;

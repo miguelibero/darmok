@@ -8,9 +8,9 @@
 #include <darmok/color.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/scene_serialize.hpp>
-
 #include "generated/shaders/skybox.h"
 #include "generated/shaders/grid.h"
+#include "detail/render_samplers.hpp"
 
 namespace darmok
 {
@@ -74,7 +74,7 @@ namespace darmok
             return unexpected{ std::move(renderResult).error() };
 		}
 
-        encoder.setTexture(0, _texUniform, _texture->getHandle());
+        encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO, _texUniform, _texture->getHandle());
 
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB

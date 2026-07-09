@@ -288,21 +288,25 @@ namespace darmok
         , _lightData{ 0 }
         , _camPos{ 0 }
     {
+
         _pointLightsLayout.begin()
-            .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
+            .end();
+
+       _dirLightsLayout.begin()
+            .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+            .add(bgfx::Attrib::Color1, 3, bgfx::AttribType::Float)
             .end();
 
         _spotLightsLayout.begin()
-            .add(bgfx::Attrib::Position, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Normal, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Weight, 4, bgfx::AttribType::Float)
-            .end();
-
-        _dirLightsLayout.begin()
-            .add(bgfx::Attrib::Normal, 4, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+            .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color1, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Weight, 3, bgfx::AttribType::Float)
             .end();
 
         createHandles();
@@ -355,7 +359,8 @@ namespace darmok
 
     struct DirectionalLightBufferElement final
     {
-        glm::vec4 dir{ 0.f };
+        glm::vec3 dir{ 0.f };
+        uint32_t entity = 0;
         glm::vec3 color{ 1.f };
     };
 
@@ -369,36 +374,29 @@ namespace darmok
             if (trans)
             {
                 // elm.dir = -glm::normalize(trans->getWorldPosition());
-                elm.dir = glm::vec4{ trans->getWorldDirection(), 0.f };
+                elm.dir = trans->getWorldDirection();
             }
-            elm.dir.w = float(entity);
+            elm.entity = static_cast<uint32_t>(entity);
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
             auto intensity = light.getIntensity();
             elm.color = Colors::normalize(light.getColor()) * intensity;
         }
 
-        VertexDataWriter writer{ _dirLightsLayout, uint32_t(elms.size()) };
-        uint32_t index = 0;
-
-        for (auto& elm : elms)
+        if(!elms.empty())
         {
-            writer.write(bgfx::Attrib::Normal, index, elm.dir);
-            writer.write(bgfx::Attrib::Color0, index, elm.color);
-            ++index;
-        }
-        auto data = writer.finish();
-        if (!data.empty())
-        {
-            bgfx::update(_dirLightBuffer, 0, data.copyMem());
+            auto data = bgfx::copy(&elms.front(), sizeof(DirectionalLightBufferElement) * elms.size());
+            bgfx::update(_dirLightBuffer, 0, data);
         }
 
-        return index;
+        return elms.size();
     }
 
     struct PointLightBufferElement final
     {
-        glm::vec4 pos{ 0.f };
-        glm::vec4 color{ 1.f };
+        glm::vec3 pos{ 0.f };
+        uint32_t entity = 0;
+        glm::vec3 intensity{ 1.f };
+        float range = 0.f;
     };
 
     size_t LightingRenderComponent::updatePointLights() noexcept
@@ -412,38 +410,32 @@ namespace darmok
             float scale = 1.f;
             if (trans)
             {
-                elm.pos = glm::vec4{ trans->getWorldPosition(), 0.f };
+                elm.pos = trans->getWorldPosition();
                 scale = glm::compMax(trans->getWorldScale());
             }
-            elm.pos.w = float(entity);
-            auto range = light.getRange() * scale;
-            auto intensity = light.getIntensity();
-            elm.color = glm::vec4{ Colors::normalize(light.getColor()) * intensity, range };
+            elm.entity = static_cast<uint32_t>(entity);
+            elm.intensity = Colors::normalize(light.getColor()) * light.getIntensity();
+            elm.range = light.getRange() * scale;
         }
 
-        VertexDataWriter writer{ _pointLightsLayout, static_cast<uint32_t>(elms.size()) };
-        uint32_t index = 0;
-        for (auto& elm : elms)
+        if (!elms.empty())
         {
-            writer.write(bgfx::Attrib::Position, index, elm.pos);
-            writer.write(bgfx::Attrib::Color0, index, elm.color);
-            ++index;
-        }
-        auto data = writer.finish();
-        if (!data.empty())
-        {
-            bgfx::update(_pointLightBuffer, 0, data.copyMem());
+            auto data = bgfx::copy(&elms.front(), sizeof(PointLightBufferElement) * elms.size());
+            bgfx::update(_pointLightBuffer, 0, data);
         }
 
-        return index;
+        return elms.size();
     }
 
     struct SpotLightBufferElement final
     {
-        glm::vec4 pos{ 0.f };
+        glm::vec3 pos{ 0.f };
+        uint32_t entity = 0;
         glm::vec3 direction{ 0.f, 0.f, 1.f };
-        glm::vec4 color{ 1.f };
-        glm::vec4 data{ 0.f };
+        glm::vec3 intensity;
+        float range = 0.f;
+        float coneAngle = 0.f;
+        float innerConeAngle = 0.f;
     };
 
     size_t LightingRenderComponent::updateSpotLights() noexcept
@@ -457,34 +449,24 @@ namespace darmok
             float scale = 1.f;
             if (trans)
             {
-                elm.pos = glm::vec4(trans->getWorldPosition(), 0.f);
+                elm.pos = trans->getWorldPosition();
                 scale = glm::compMax(trans->getWorldScale());
                 elm.direction = trans->getWorldDirection();
             }
-            elm.pos.w = static_cast<float>(entity);
-            auto range = light.getRange() * scale;
-            auto intensity = light.getIntensity();
-            elm.color = glm::vec4{ Colors::normalize(light.getColor()) * intensity, range };
-            elm.data = glm::vec4{ light.getConeAngle(), light.getInnerConeAngle(), 0.f, 0.f };
+            elm.entity = static_cast<uint32_t>(entity);
+            elm.intensity = Colors::normalize(light.getColor()) * light.getIntensity();
+            elm.range = light.getRange() * scale;
+            elm.coneAngle = light.getConeAngle();
+            elm.innerConeAngle = light.getInnerConeAngle();
         }
 
-        VertexDataWriter writer{ _spotLightsLayout, static_cast<uint32_t>(elms.size()) };
-        uint32_t index = 0;
-        for (auto& elm : elms)
+        if(!elms.empty())
         {
-            writer.write(bgfx::Attrib::Position, index, elm.pos);
-            writer.write(bgfx::Attrib::Normal, index, elm.direction);
-            writer.write(bgfx::Attrib::Color0, index, elm.color);
-            writer.write(bgfx::Attrib::Weight, index, elm.data);
-            ++index;
-        }
-        auto data = writer.finish();
-        if (!data.empty())
-        {
-            bgfx::update(_spotLightBuffer, 0, data.copyMem());
+            auto data = bgfx::copy(&elms.front(), sizeof(SpotLightBufferElement) * elms.size());
+            bgfx::update(_spotLightBuffer, 0, data);
         }
 
-        return index;
+        return elms.size();
     }
 
     void LightingRenderComponent::updateAmbientLights() noexcept
