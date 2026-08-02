@@ -918,9 +918,9 @@ namespace darmok
             return unexpected{ result.error() };
         }
         auto jsonResult = StringUtils::parseOrderedJson(result.value().toString());
-        if (!result)
+        if(!jsonResult)
         {
-            return unexpected{ result.error() };
+            return unexpected{jsonResult.error()};
         }
 
         auto src = std::make_shared<protobuf::ProgramSource>();

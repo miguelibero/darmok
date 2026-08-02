@@ -225,7 +225,11 @@ namespace darmok
 		}
 
 		const char* tfdResult = nullptr;
-		auto defaultPath = std::filesystem::absolute(_options.defaultPath).string();
+        std::string defaultPath;
+        if (!_options.defaultPath.empty())
+        {
+            defaultPath = std::filesystem::absolute(_options.defaultPath).string();
+        }
 
 		switch (_options.type)
 		{

@@ -164,7 +164,7 @@ namespace darmok
         bx::FileReader _fileReader;
         FileDataLoader _dataLoader;
         ImageTextureSourceLoader _texLoader;
-        ProgramSourceLoader _progLoader;
+        DataProgramDefinitionLoader _progLoader;
         AssimpLoader _assimpLoader;
 
         std::optional<AssimpConfig> _currentConfig;

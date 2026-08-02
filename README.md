@@ -128,7 +128,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 #### In the future
 * run clang-tidy
 * fix occlusion culling
-* switch from exceptions to std::expected
 * more unit tests
 * performance profiling
 * prefabs

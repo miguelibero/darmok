@@ -226,13 +226,13 @@ namespace darmok::physics3d
         angularVelocity = JoltUtils::convert(angv);
     }
 
-    bool CharacterControllerImpl::OnContactValidate(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2) noexcept
+    bool CharacterControllerImpl::OnContactValidate(const JPH::CharacterVirtual* inCharacter, const JPH::CharacterContact& inContact) noexcept
     {
         if (!_delegate || !_ctrl || !_system)
         {
             return true;
         }
-        auto body = getSystemImpl().getPhysicsBody(bodyID2);
+        auto body = getSystemImpl().getPhysicsBody(inContact.mBodyB);
         if (!body)
         {
             return true;
@@ -246,29 +246,30 @@ namespace darmok::physics3d
         return result.value();
     }
 
-    void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::CharacterContactSettings& settings) noexcept
+    void CharacterControllerImpl::OnContactAdded(const JPH::CharacterVirtual* inCharacter, const JPH::CharacterContact& inContact, JPH::CharacterContactSettings& ioSettings) noexcept
     {
         if (!_delegate || !_ctrl || !_system)
         {
             return;
         }
-        auto body = getSystemImpl().getPhysicsBody(bodyID2);
+        auto body = getSystemImpl().getPhysicsBody(inContact.mBodyB);
         if (!body)
         {
             return;
         }
-        Contact contact{ JoltUtils::convert(contactPosition), JoltUtils::convert(contactNormal) };
+        
+        Contact contact{ JoltUtils::convert(inContact.mPosition), JoltUtils::convert(inContact.mContactNormal) };
         CharacterContactSettings darmokSettings
         {
-            settings.mCanPushCharacter, settings.mCanReceiveImpulses
+            ioSettings.mCanPushCharacter, ioSettings.mCanReceiveImpulses
         };
         auto result = _delegate->onContactAdded(_ctrl.value(), body.value(), contact, darmokSettings);
         if (!result)
         {
             _pendingErrors.push_back("onContactAdded: " + result.error());
         }
-        settings.mCanPushCharacter = darmokSettings.canPushCharacter;
-        settings.mCanReceiveImpulses = darmokSettings.canReceiveImpulses;
+        ioSettings.mCanPushCharacter = darmokSettings.canPushCharacter;
+        ioSettings.mCanReceiveImpulses = darmokSettings.canReceiveImpulses;
     }
 
     void CharacterControllerImpl::OnContactSolve(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2, JPH::RVec3Arg contactPosition, JPH::Vec3Arg contactNormal, JPH::Vec3Arg contactVelocity, const JPH::PhysicsMaterial* contactMaterial, JPH::Vec3Arg characterVelocity, JPH::Vec3& newCharacterVelocity) noexcept

@@ -463,13 +463,17 @@ namespace darmok
         static TransformChildren getTransformChildren(const Transform& trans) noexcept;
     };
 
-    class DARMOK_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>
+class DARMOK_EXPORT SceneAppComponent final : public ITypeAppComponent<SceneAppComponent>
     {
-    public:
+      public:
+        using Scenes = std::vector<std::shared_ptr<Scene>>;
 
         SceneAppComponent(const std::shared_ptr<Scene>& scene = nullptr) noexcept;
-        std::shared_ptr<Scene> getScene() const noexcept;
-        expected<void, std::string> setScene(const std::shared_ptr<Scene>& scene) noexcept;
+        std::shared_ptr<Scene> getScene(size_t i = 0) const noexcept;
+        expected<void, std::string> setScene(const std::shared_ptr<Scene>& scene, size_t i = 0) noexcept;
+        std::shared_ptr<Scene> addScene() noexcept;
+        expected<void, std::string> addScene(const std::shared_ptr<Scene>& scene) noexcept;
+        const Scenes& getScenes() const noexcept;
         bool isPaused() const noexcept;
         SceneAppComponent& setPaused(bool paused) noexcept;
 
@@ -479,12 +483,12 @@ namespace darmok
         expected<void, std::string> render() noexcept override;
         expected<void, std::string> update(float dt) noexcept override;
 
-    private:
-        std::shared_ptr<Scene> _scene;
+      private:
+        Scenes _scenes;
         bool _paused;
         OptionalRef<App> _app;
     };
-}
+    }
 
 namespace std
 {

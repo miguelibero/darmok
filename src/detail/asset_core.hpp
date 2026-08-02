@@ -16,7 +16,7 @@
 
 namespace darmok
 {
-    class FileImporterImpl final : public IFileImportContext
+    class FileImporterImpl final
     {
     public:
         using Input = FileImportInput;
@@ -115,6 +115,7 @@ namespace darmok
         expected<std::vector<Operation>, std::string> getOperations() const noexcept;
         static void mergeConfig(nlohmann::json& json, const nlohmann::json& other) noexcept;
         void loadDependencies(const std::vector<Operation>& ops) const noexcept;
+        expected<void, std::string> sortOperations(std::vector<Operation>& ops) const noexcept;
         void getDependencies(const std::filesystem::path& path, const std::vector<Operation>& ops, Dependencies& deps) const noexcept;
         std::filesystem::path fixOutputPath(const std::filesystem::path& path, const Operation& op) const noexcept;
         expected<Paths, std::string> getOutputPaths(const Operation& op) const noexcept;
@@ -127,10 +128,12 @@ namespace darmok
             bool error = false;
         };
 
+        using FileImportResultMap = std::unordered_map<std::filesystem::path, FileImportResult>;
+
         using DirConfigs = std::vector<OptionalRef<const DirConfig>>;
         DirConfigs getDirConfigs(const std::filesystem::path& path) const noexcept;
         bool addFileCachePath(const std::filesystem::path& path, std::time_t cacheTime = 0) const noexcept;
-        FileImportResult importFile(const Operation& op, std::ostream& log) const noexcept;
+        FileImportResult importFile(const Operation& op, std::ostream& log, const FileImportResultMap& fileResults) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path, const std::string& baseName) const noexcept;
         std::filesystem::path getHeaderPath(const std::filesystem::path& path) const noexcept;
         bool loadInput(const std::filesystem::path& path, const Paths& paths) noexcept;

@@ -13,6 +13,7 @@
 #include <fstream>
 #include <algorithm>
 #include <chrono>
+#include <queue>
 
 #include <CLI/CLI.hpp>
 
@@ -714,6 +715,11 @@ namespace darmok
             }
         }
         loadDependencies(ops);
+        auto sortResult = sortOperations(ops);
+        if (!sortResult)
+        {
+            return unexpected{ std::move(sortResult).error() };
+        }
         return ops;
     }
 
@@ -733,6 +739,73 @@ namespace darmok
                 }
             }
         }
+    }
+
+    expected<void, std::string> FileImporterImpl::sortOperations(std::vector<Operation>& ops) const noexcept
+    {
+        const size_t n = ops.size();
+
+        std::vector<int> indegree(n);
+        std::vector<std::vector<size_t>> edges;
+
+        for(size_t from = 0; from < n; ++from)
+        {
+            for(size_t to = 0; to < n; ++to)
+            {
+                if (from == to)
+                {
+                    continue;
+                }
+
+                auto itr = _fileDependencies.find(ops[to].input.path);
+                if (itr == _fileDependencies.end())
+                {
+                    continue;
+                }
+
+                if(itr->second.contains(ops[from].input.path))
+                {
+                    edges[from].push_back(to);
+                    ++indegree[to];
+                }
+            }
+        }
+
+        std::queue<size_t> ready;
+        for(size_t i = 0; i < n; ++i)
+        {
+            if (indegree[i] == 0)
+            {
+                ready.push(i);
+            }
+        }
+
+        std::vector<Operation> result;
+        result.reserve(n);
+
+        while(!ready.empty())
+        {
+            size_t current = ready.front();
+            ready.pop();
+
+            result.push_back(std::move(ops[current]));
+
+            for(size_t next : edges[current])
+            {
+                if (--indegree[next] == 0)
+                {
+                    ready.push(next);
+                }
+            }
+        }
+
+        if (result.size() != n)
+        {
+            return unexpected("dependency cycle");
+        }
+
+        ops = std::move(result);
+        return {};
     }
 
     void FileImporterImpl::getDependencies(const fs::path& path, const std::vector<Operation>& ops, Dependencies& deps) const noexcept
@@ -892,9 +965,10 @@ namespace darmok
             return false;
         }
         auto hasError = false;
+        FileImportResultMap fileResults;
         for (auto& op : opsResult.value())
         {
-            auto result = importFile(op, log);
+            auto result = importFile(op, log, fileResults);
             hasError = hasError || result.error;
             if (op.headerConfig.produceHeaders && !result.updatedOutputPaths.empty())
             {
@@ -905,6 +979,7 @@ namespace darmok
                     produceCombinedHeader(groupPath, paths, op.headerConfig.includeDir);
                 }
             }
+            fileResults[op.input.path] = std::move(result);
         }
         if (isCacheUpdated())
         {
@@ -919,10 +994,10 @@ namespace darmok
 
         for (auto& importer : _importers)
         {
-            auto initResult = importer.second->shutdown();
-            if (!initResult)
+            auto shutdownResult = importer.second->shutdown();
+            if(!shutdownResult)
             {
-                log << "error shutting down importer \"" << importer.second->getName() << "\": " << initResult.error();
+                log << "error shutting down importer \"" << importer.second->getName() << "\": " << shutdownResult.error();
 				hasError = true;
             }
         }
@@ -965,7 +1040,7 @@ namespace darmok
         return outputs;
     }
 
-    FileImporterImpl::FileImportResult FileImporterImpl::importFile(const Operation& op, std::ostream& log) const noexcept
+    FileImporterImpl::FileImportResult FileImporterImpl::importFile(const Operation& op, std::ostream& log, const FileImportResultMap& fileResults) const noexcept
     {
         FileImportResult result;
         auto prepareResult = op.importer.prepare(op.input);
@@ -985,7 +1060,17 @@ namespace darmok
         result.inputCached = isCached(op.input.path);
         size_t i = 0;
         auto relInput = fs::relative(op.input.path, _inputPath);
-        FileImportConfig config{ .context = *this };
+        FileImportConfig config;
+        config.dependencyOutputs.reserve(effect.dependencies.size());
+        for(auto dep : effect.dependencies)
+        {
+            dep = op.input.basePath / dep;
+            auto itr = fileResults.find(dep);
+            if(itr != fileResults.end() && !itr->second.outputPaths.empty())
+            {
+                config.dependencyOutputs[dep] = itr->second.outputPaths.front();
+            }
+        }
         auto outputNum = effect.outputs.size();
         std::vector<Data> datas;
         datas.resize(outputNum);

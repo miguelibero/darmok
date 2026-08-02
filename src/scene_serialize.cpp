@@ -1108,7 +1108,7 @@ namespace darmok
 		return _impl->getLoader();
     }
     
-    SceneDefinitionCompiler::SceneDefinitionCompiler(const Config& config, OptionalRef<IProgramSourceLoader> progLoader) noexcept
+    SceneDefinitionCompiler::SceneDefinitionCompiler(const Config& config, OptionalRef<IProgramDefinitionLoader> progLoader) noexcept
         : _config{ config }
         , _progLoader{ progLoader }
     {

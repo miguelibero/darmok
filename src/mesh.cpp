@@ -4,7 +4,7 @@
 
 namespace darmok
 {
-	MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramSourceLoader& progLoader) noexcept
+    MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progLoader) noexcept
 		: FromDefinitionLoader(srcLoader)
 		, _progLoader{ progLoader }
 	{

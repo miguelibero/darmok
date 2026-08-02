@@ -42,7 +42,7 @@ namespace darmok
     };
     
     AssimpSceneDefinitionLoaderImpl::AssimpSceneDefinitionLoaderImpl(IDataLoader& dataLoader, bx::AllocatorI& allocator, OptionalRef<ITextureSourceLoader> texLoader) noexcept
-        : _dataLoader{ dataLoader }
+        : _dataLoader{dataLoader}
         , _allocator{ allocator }
         , _texLoader{ texLoader }
     {
@@ -643,7 +643,7 @@ namespace darmok
             return false;
         }
         
-        *meshSrc.mutable_program() = _config.program_source();
+        *meshSrc.mutable_program() = _config.program();
 
         AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
         auto convertResult = converter();
@@ -822,12 +822,6 @@ namespace darmok
         {
             progRef.set_path(itr->get<std::string>());
         }
-        itr = json.find("programSourcePath");
-        auto& progSrcRef = *config.mutable_program_source();
-        if (itr != json.end())
-        {
-            progSrcRef.set_path(itr->get<std::string>());
-        }
         itr = json.find("program");
         if (itr != json.end())
         {
@@ -836,7 +830,6 @@ namespace darmok
             if (Program::Standard::Type_Parse(val, &standard))
             {
                 progRef.set_standard(standard);
-                progSrcRef.set_standard(standard);
             }
             else
             {
@@ -1063,17 +1056,38 @@ namespace darmok
         {
             texLoader = nullptr;
         }
-        auto addedRootPath = _dataLoader.addRootPath(input.basePath);
-        _dataLoader.setBasePath(basePath);
+        std::vector<std::filesystem::path> addedRootPaths;
+
+        auto addRootPath = [&](const std::filesystem::path& path)
+        {
+            if(_dataLoader.addRootPath(path))
+            {
+                addedRootPaths.push_back(path);
+            }
+        };
 
         auto fixDataLoaderPaths = [&]()
         {
-            if (addedRootPath)
+            for(auto& addedRootPath : addedRootPaths)
             {
-                _dataLoader.removeRootPath(input.basePath);
+                _dataLoader.removeRootPath(addedRootPath);
             }
             _dataLoader.setBasePath({});
         };
+
+        addRootPath(input.basePath);
+        _dataLoader.setBasePath(basePath);
+
+        // set program path if it was compiled in a previous step
+        if (_currentConfig->program().has_path())
+        {
+            auto programPath = _currentConfig->program().path();
+            auto itr = config.dependencyOutputs.find(programPath);
+            if (itr != config.dependencyOutputs.end())
+            {
+                _currentConfig->mutable_program()->set_path(itr->second.string());
+            }
+        }
 
         AssimpSceneDefinitionConverter converter{ *_currentScene, def, *_currentConfig, _alloc, texLoader };
         auto convertResult = converter();

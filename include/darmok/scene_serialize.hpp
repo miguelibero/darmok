@@ -715,12 +715,12 @@ namespace darmok
         using Config = SceneDefinitionCompilerConfig;
         using Definition = protobuf::Scene;
 
-        SceneDefinitionCompiler(const Config& config = {}, OptionalRef<IProgramSourceLoader> progLoader = nullptr) noexcept;
+        SceneDefinitionCompiler(const Config& config = {}, OptionalRef<IProgramDefinitionLoader> progLoader = nullptr) noexcept;
         expected<void, std::string> operator()(Definition& def);
     private:
         Config _config;
         bx::DefaultAllocator _defAlloc;
-        OptionalRef<IProgramSourceLoader> _progLoader;
+        OptionalRef<IProgramDefinitionLoader> _progLoader;
     };
 }
 

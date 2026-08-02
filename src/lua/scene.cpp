@@ -377,79 +377,107 @@ namespace darmok
 	}
 
 	LuaSceneComponent::LuaSceneComponent(const sol::table& table, const std::weak_ptr<Scene>& scene) noexcept
-		: _table(table)
-		, _scene(scene)
-	{
-	}
+        : _table(table), _scene(scene)
+    {
+    }
 
-	sol::object LuaSceneComponent::getReal() const noexcept
-	{
-		return _table;
-	}
+    sol::object LuaSceneComponent::getReal() const noexcept
+    {
+        return _table;
+    }
 
-	const LuaTableDelegateDefinition LuaSceneComponent::_initDef{ "init", "scene component init" };
-	const LuaTableDelegateDefinition LuaSceneComponent::_shutdownDef{ "shutdown", "scene component shutdown" };
-	const LuaTableDelegateDefinition LuaSceneComponent::_renderResetDef{ "render_reset", "scene component render reset" };
-	const LuaTableDelegateDefinition LuaSceneComponent::_updateDef{ "update", "scene component update" };
+    const LuaTableDelegateDefinition LuaSceneComponent::_initDef{"init", "scene component init"};
+    const LuaTableDelegateDefinition LuaSceneComponent::_shutdownDef{"shutdown", "scene component shutdown"};
+    const LuaTableDelegateDefinition LuaSceneComponent::_renderResetDef{"render_reset", "scene component render reset"};
+    const LuaTableDelegateDefinition LuaSceneComponent::_updateDef{"update", "scene component update"};
 
-	expected<void, std::string> LuaSceneComponent::init(Scene& scene, App& app) noexcept
-	{
-		if (auto scene = _scene.lock())
-		{
-			return _initDef.tryRun(_table, scene);
-		}
-		else
-		{
-			return unexpected<std::string>{ "scene expired in lua scene component init" };
-		}
-	}
+    expected<void, std::string> LuaSceneComponent::init(Scene& scene, App& app) noexcept
+    {
+        if(auto scene = _scene.lock())
+        {
+            return _initDef.tryRun(_table, scene);
+        }
+        else
+        {
+            return unexpected<std::string>{"scene expired in lua scene component init"};
+        }
+    }
 
-	expected<void, std::string> LuaSceneComponent::shutdown() noexcept
-	{
-		return _shutdownDef.tryRun(_table);
-	}
+    expected<void, std::string> LuaSceneComponent::shutdown() noexcept
+    {
+        return _shutdownDef.tryRun(_table);
+    }
 
-	expected<bgfx::ViewId, std::string> LuaSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
-	{
-		if (!_renderResetDef.valid(_table))
-		{
-			return viewId;
-		}
-		return _renderResetDef.tryGet<bgfx::ViewId>(_table, viewId);
-	}
+    expected<bgfx::ViewId, std::string> LuaSceneComponent::renderReset(bgfx::ViewId viewId) noexcept
+    {
+        if(!_renderResetDef.valid(_table))
+        {
+            return viewId;
+        }
+        return _renderResetDef.tryGet<bgfx::ViewId>(_table, viewId);
+    }
 
-	expected<void, std::string> LuaSceneComponent::update(float deltaTime) noexcept
-	{
-		return _updateDef.tryRun(_table, deltaTime);
-	}
+    expected<void, std::string> LuaSceneComponent::update(float deltaTime) noexcept
+    {
+        return _updateDef.tryRun(_table, deltaTime);
+    }
 
-	std::reference_wrapper<SceneAppComponent> LuaSceneAppComponent::addAppComponent1(App& app)
-	{
-		return LuaUtils::unwrapExpected(app.addComponent<SceneAppComponent>());
-	}
+    std::reference_wrapper<SceneAppComponent> LuaSceneAppComponent::addAppComponent1(App& app)
+    {
+        return LuaUtils::unwrapExpected(app.addComponent<SceneAppComponent>());
+    }
 
-	std::reference_wrapper<SceneAppComponent> LuaSceneAppComponent::addAppComponent2(App& app, const std::shared_ptr<Scene>& scene)
-	{
-		return LuaUtils::unwrapExpected(app.addComponent<SceneAppComponent>(scene));
-	}
+    std::reference_wrapper<SceneAppComponent> LuaSceneAppComponent::addAppComponent2(App& app, const std::shared_ptr<Scene>& scene)
+    {
+        return LuaUtils::unwrapExpected(app.addComponent<SceneAppComponent>(scene));
+    }
 
-	OptionalRef<SceneAppComponent>::std_t LuaSceneAppComponent::getAppComponent(App& app) noexcept
-	{
-		return app.getComponent<SceneAppComponent>();
-	}
+    OptionalRef<SceneAppComponent>::std_t LuaSceneAppComponent::getAppComponent(App& app) noexcept
+    {
+        return app.getComponent<SceneAppComponent>();
+    }
 
-	void LuaSceneAppComponent::bind(sol::state_view& lua) noexcept
-	{
-		lua.new_usertype<SceneAppComponent>("SceneAppComponent",
-			sol::no_constructor,
-			"type_id", sol::property(&entt::type_hash<SceneAppComponent>::value),
-			"add_app_component", sol::overload(
-				&LuaSceneAppComponent::addAppComponent1,
-				&LuaSceneAppComponent::addAppComponent2
-			),
-			"get_app_component", &LuaSceneAppComponent::getAppComponent,
-			"scene", sol::property(&SceneAppComponent::getScene, &SceneAppComponent::setScene),
-			"paused", sol::property(&SceneAppComponent::isPaused, &SceneAppComponent::setPaused)
-		);
-	}
-}
+    std::shared_ptr<Scene> LuaSceneAppComponent::getScene1(const SceneAppComponent& comp) noexcept
+    {
+        return getScene2(comp, 0);
+    }
+
+    std::shared_ptr<Scene> LuaSceneAppComponent::getScene2(const SceneAppComponent& comp, size_t i) noexcept
+    {
+        return comp.getScene(i);
+    }
+
+    void LuaSceneAppComponent::setScene1(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept
+    {
+        setScene2(comp, scene, 0);
+    }
+
+    void LuaSceneAppComponent::setScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene, size_t i) noexcept
+    {
+        LuaUtils::unwrapExpected(comp.setScene(scene, i), "setting scene");
+    }
+
+    std::shared_ptr<Scene> LuaSceneAppComponent::addScene1(SceneAppComponent& comp) noexcept
+    {
+        return comp.addScene();
+    }
+
+    void LuaSceneAppComponent::addScene2(SceneAppComponent& comp, const std::shared_ptr<Scene>& scene) noexcept
+    {
+        LuaUtils::unwrapExpected(comp.addScene(scene), "setting scene");
+    }
+
+    void LuaSceneAppComponent::bind(sol::state_view& lua) noexcept
+    {
+        lua.new_usertype<SceneAppComponent>("SceneAppComponent",
+                                            sol::no_constructor,
+                                            "type_id", sol::property(&entt::type_hash<SceneAppComponent>::value),
+                                            "add_app_component", sol::overload(&LuaSceneAppComponent::addAppComponent1, &LuaSceneAppComponent::addAppComponent2),
+                                            "get_app_component", &LuaSceneAppComponent::getAppComponent,
+                                            "scene", sol::property(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::setScene1),
+                                            "get_scene", sol::overload(&LuaSceneAppComponent::getScene1, &LuaSceneAppComponent::getScene2),
+                                            "set_scene", sol::overload(&LuaSceneAppComponent::setScene1, &LuaSceneAppComponent::setScene2),
+                                            "add_scene", sol::overload(&LuaSceneAppComponent::addScene1, &LuaSceneAppComponent::addScene2),
+                                            "paused", sol::property(&SceneAppComponent::isPaused, &SceneAppComponent::setPaused));
+    }
+    }

@@ -56,7 +56,6 @@ namespace darmok::editor
             AssimpSceneDefinitionConverter::ImportConfig importConfig;
             importConfig.set_embed_textures(true);
             importConfig.mutable_program()->set_standard(Program::Standard::Forward);
-            importConfig.mutable_program_source()->set_standard(Program::Standard::Forward);
             FileDataLoader dataLoader;
             dataLoader.setAbsolutePathsAllowed(true);
             dataLoader.setBasePath(_fileInput.path.parent_path());

@@ -9,14 +9,14 @@ namespace bx
 
 namespace darmok
 {
-    class IProgramSourceLoader;
+    class IProgramDefinitionLoader;
 
     class DARMOK_EXPORT MeshDefinitionFromSourceLoader final : public FromDefinitionLoader<IMeshDefinitionFromSourceLoader, IMeshSourceLoader>
     {
     public:
-        MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramSourceLoader& progLoader) noexcept;
+        MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progLoader) noexcept;
     private:
-        IProgramSourceLoader& _progLoader;
+        IProgramDefinitionLoader& _progLoader;
         Result create(std::shared_ptr<Mesh::Source> src) noexcept override;
     };
 }

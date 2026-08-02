@@ -11,7 +11,7 @@
 
 namespace darmok
 {    
-    expected<protobuf::Varying, std::string> Program::loadRefVarying(const Ref& ref, OptionalRef<IProgramSourceLoader> loader) noexcept
+    expected<protobuf::Varying, std::string> Program::loadRefVarying(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader) noexcept
     {
         if (ref.has_standard())
         {
@@ -33,12 +33,12 @@ namespace darmok
             {
                 return unexpected{ "program " + ref.path() + ": " + result.error()};
             }
-            auto src = result.value();
-            if (!src)
+            auto def = result.value();
+            if(!def)
             {
-                return unexpected{ "empty program source" };
+                return unexpected{ "empty program definition" };
             }
-            return src->varying();
+            return def->varying();
         }
         return unexpected{ "empty program ref" };
     }

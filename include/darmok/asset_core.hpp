@@ -53,15 +53,13 @@ namespace darmok
         FileImportDependencies dependencies;
     };
 
-    class DARMOK_EXPORT BX_NO_VTABLE IFileImportContext
-    {
-    };
-
     struct DARMOK_EXPORT FileImportConfig final
     {
         // empty element if output should be skipped
         std::vector<std::unique_ptr<std::ostream>> outputStreams;
-        const IFileImportContext& context;
+
+        using FileMap = std::unordered_map<std::filesystem::path, std::filesystem::path>;
+        FileMap dependencyOutputs;
     };
 
     class DARMOK_EXPORT BX_NO_VTABLE IFileTypeImporter
