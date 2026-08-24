@@ -35,12 +35,14 @@ currently using:
 * [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
 
 planned to use:
+* [meshoptimizer](https://github.com/zeux/meshoptimizer) to replace `mikktspace`
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * [Box2D](https://box2d.org/) 2D physics
 * [ldtk](https://ldtk.io/) for 2D level editor
 * [spine](https://github.com/EsotericSoftware/spine-runtimes) for 2d skeletal animations
  backends
+* [TooManyCooks](https://github.com/tzcnt/TooManyCooks) for C# style async/await
 
 Trying to target the following platforms:
 * desktop (windows, macos, linux)
@@ -143,7 +145,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * lua debugging
 * particle systems (maybe effekseer)
 * more sound options (spatialization, effects)
-* animation root motion 
+* animation root motion & inverse kinematics
 * [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
 * async/await style wrapper for taskflow
 

@@ -1131,7 +1131,7 @@ namespace darmok
         for (auto& [path, texSrc] : scene.getAssets<Texture::Source>())
         {
             Texture::Definition def;
-            auto result = TextureDefinitionWrapper{ def }.loadSource(texSrc, alloc);
+            auto result = TextureDefinitionWrapper{ def }.loadSource(texSrc, alloc, _config.generateTextureMips);
             if (!result)
             {
                 return unexpected{ fmt::format("failed to load texture {}: {}", path.string(), result.error()) };

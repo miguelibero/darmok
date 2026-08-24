@@ -322,8 +322,12 @@ namespace darmok
 		return _container == nullptr || _container->m_size == 0;
 	}
 
-	expected<void, std::string> Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset, size_t elmSize)
+	expected<void, std::string> Image::update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset, size_t elmSize) noexcept
 	{
+        if(!_container)
+        {
+            return unexpected{"image is empty"};
+        }
 		auto imgSize = getSize();
 		if (pos.x + size.x > imgSize.x || pos.y + size.y > imgSize.y)
 		{
@@ -360,6 +364,127 @@ namespace darmok
 		return {};
 	}
 
+    expected<bimg::ImageMip, std::string> Image::getMip(uint16_t side, uint8_t lod) const noexcept
+    {
+        if (!_container)
+        {
+            return unexpected{"image is empty"};
+        }
+        bimg::ImageMip mip;
+        if(!bimg::imageGetRawData(
+               *_container,
+               side,
+               lod,
+               _container->m_data,
+               _container->m_size,
+               mip))
+        {
+            return unexpected{"failed to get mip level"};
+        }
+        return mip;
+    }
+
+    expected<Image, std::string> Image::convertFormat(bimg::TextureFormat::Enum format) const noexcept
+    {
+        if(!_container)
+        {
+            return unexpected{"image is empty"};
+        }
+        bimg::ImageContainer* converted = bimg::imageConvert(
+            _container->m_allocator,
+            format,
+            *_container);
+        if(!converted)
+        {
+            return unexpected{"failed to convert image"};
+        }
+        return Image{converted};
+    }
+
+    expected<Image, std::string> Image::generateMips() const noexcept
+    {
+        if(!_container)
+        {
+            return unexpected{"image is empty"};
+        }
+        if (_container->m_numMips != 1)
+        {
+            return unexpected{"image already has mips"};
+        }
+
+        auto convertResult = convertFormat(bimg::TextureFormat::RGBA8);
+        if (!convertResult)
+        {
+            return convertResult;
+        }
+
+        auto rgba = std::move(convertResult).value();
+
+        const uint8_t numMips = rgba.getMaxMipCount();
+
+        bimg::ImageContainer* dstContainer = bimg::imageAlloc(
+            _container->m_allocator,
+            bimg::TextureFormat::RGBA8,
+            rgba.getSize().x,
+            rgba.getSize().y,
+            rgba.getDepth(),
+            rgba.getLayerCount(),
+            rgba.isCubeMap(),
+            true);
+
+        if(!dstContainer)
+        {
+            return unexpected{"failed to allocate mipmap chain"};
+        }
+
+        dstContainer->m_numMips = numMips;
+        dstContainer->m_hasAlpha = rgba._container->m_hasAlpha;
+        dstContainer->m_srgb = rgba._container->m_srgb;
+        dstContainer->m_orientation = rgba._container->m_orientation;
+        Image dst{dstContainer};
+
+        auto srcMip = rgba.getMip(0, 0);
+        if(!srcMip)
+        {
+            return unexpected{"failed to get source mip level 0"};
+        }
+
+        auto dstMip = dst.getMip(0, 0);
+        if(!dstMip)
+        {
+            return unexpected{"failed to get destination mip level 0"};
+        }
+
+        std::memcpy(const_cast<uint8_t*>(dstMip->m_data), srcMip->m_data, srcMip->m_size);
+
+        // Generate the remaining mips.
+        for(uint8_t level = 1; level < numMips; ++level)
+        {
+            srcMip = dst.getMip(0, level - 1);
+            if(!srcMip)
+            {
+                return unexpected{"failed to get source mip"};
+            }
+
+            dstMip = dst.getMip(0, level);
+            if(!dstMip)
+            {
+                return unexpected{"failed to get destination mip"};
+            }
+
+            bimg::imageRgba8Downsample2x2(
+                const_cast<uint8_t*>(dstMip->m_data),
+                srcMip->m_width,
+                srcMip->m_height,
+                srcMip->m_depth,
+                srcMip->m_width * 4,
+                dstMip->m_width * 4,
+                srcMip->m_data);
+        }
+
+        return dst;
+    }
+
 	glm::uvec2 Image::getSize() const noexcept
 	{
 		if (!_container)
@@ -395,6 +520,19 @@ namespace darmok
 		}
 		return _container->m_numMips;
 	}
+
+    uint8_t Image::getMaxMipCount() const noexcept
+    {
+        if(!_container)
+        {
+            return 0;
+        }
+        return bimg::imageGetNumMips(
+            bimg::TextureFormat::RGBA8,
+            _container->m_width,
+            _container->m_height,
+            _container->m_depth);
+    }
 
 	uint16_t Image::getLayerCount() const noexcept
 	{
@@ -445,9 +583,10 @@ namespace darmok
 		return config;
 	}
 
-	ImageLoader::ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept
+	ImageLoader::ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc, bool generateMips) noexcept
 		: _dataLoader{ dataLoader }
 		, _alloc{ alloc }
+        , _generateMips{ generateMips }
 	{
 	}
 
@@ -463,7 +602,17 @@ namespace darmok
 		{
 			return unexpected{ std::move(loadResult).error() };
 		}
-		return std::make_shared<Image>(std::move(loadResult).value());
+        auto img = std::move(loadResult).value();
+        if (_generateMips && img.getMipCount() == 1)
+        {
+            auto mipsResult = img.generateMips();
+            if (!mipsResult)
+            {
+                return unexpected{std::move(mipsResult).error()};
+            }
+            img = std::move(mipsResult).value();
+        }
+		return std::make_shared<Image>(img);
 	}
 
 	ImageFileImporter::ImageFileImporter() noexcept

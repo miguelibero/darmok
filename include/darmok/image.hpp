@@ -50,6 +50,7 @@ namespace darmok
 		[[nodiscard]] uint32_t getDepth() const noexcept;
 		[[nodiscard]] bool isCubeMap() const noexcept;
 		[[nodiscard]] uint8_t getMipCount() const noexcept;
+        [[nodiscard]] uint8_t getMaxMipCount() const noexcept;
 		[[nodiscard]] uint16_t getLayerCount() const noexcept;
 		[[nodiscard]] bimg::TextureFormat::Enum getFormat() const noexcept;
 		[[nodiscard]] bgfx::TextureInfo getTextureInfo() const noexcept;
@@ -63,7 +64,10 @@ namespace darmok
 		[[nodiscard]] expected<Data, std::string> encode(ImageEncoding encoding) const noexcept;
 		[[nodiscard]] expected<void, std::string> write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 
-		[[nodiscard]] expected<void, std::string> update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1);
+		[[nodiscard]] expected<void, std::string> update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1) noexcept;
+        [[nodiscard]] expected<bimg::ImageMip, std::string> getMip(uint16_t side, uint8_t lod) const noexcept;
+        [[nodiscard]] expected<Image, std::string> convertFormat(bimg::TextureFormat::Enum format) const noexcept;
+        [[nodiscard]] expected<Image, std::string> generateMips() const noexcept;
 
 		static bimg::TextureFormat::Enum readFormat(std::string_view name) noexcept;
 		static ImageEncoding readEncoding(std::string_view name) noexcept;
@@ -82,11 +86,12 @@ namespace darmok
 	class DARMOK_EXPORT ImageLoader final : public IImageLoader
 	{
 	public:
-		ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc) noexcept;
+		ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc, bool generateMips = true) noexcept;
 		[[nodiscard]] Result operator()(std::filesystem::path path) noexcept override;
 	private:
 		IDataLoader& _dataLoader;
 		bx::AllocatorI& _alloc;
+        bool _generateMips;
 	};
 
 	class DARMOK_EXPORT ImageFileImporter final : public IFileTypeImporter

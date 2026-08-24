@@ -73,7 +73,7 @@ namespace darmok
 	public:
 		TextureDefinitionWrapper(Definition& def) noexcept;
 
-		expected<void, std::string> loadSource(const protobuf::TextureSource& src, bx::AllocatorI& alloc) noexcept;
+		expected<void, std::string> loadSource(const protobuf::TextureSource& src, bx::AllocatorI& alloc, bool generateMips = false) noexcept;
 		expected<void, std::string> loadImage(const Image& img) noexcept;
 	private:
 		Definition& _def;

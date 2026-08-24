@@ -373,6 +373,7 @@ namespace darmok
             );
             light.set_range(getLightRange(attn));
             light.set_intensity(intensity);
+            light.set_shadow_type(_config.shadow_type());
             *light.mutable_color() = pbColor;
             // we're not supporting different specular color in lights
 			_scene.setComponent(entity, light);
@@ -381,6 +382,7 @@ namespace darmok
         {
 			protobuf::DirectionalLight light;
 			light.set_intensity(intensity);
+            light.set_shadow_type(_config.shadow_type());
             *light.mutable_color() = pbColor;
             _scene.setComponent(entity, light);
 
@@ -395,6 +397,7 @@ namespace darmok
             *light.mutable_color() = pbColor;
 			light.set_cone_angle(assimpLight.mAngleOuterCone);
 			light.set_inner_cone_angle(assimpLight.mAngleInnerCone);
+            light.set_shadow_type(_config.shadow_type());
             _scene.setComponent(entity, light);
         }
         else if (assimpLight.mType == aiLightSource_AMBIENT)
@@ -908,11 +911,21 @@ namespace darmok
         {
             config.set_compile(*itr);
         }
+        itr = json.find("generateTextureMips");
+        if(itr != json.end())
+        {
+            _compilerConfig->generateTextureMips = *itr;
+        }
         itr = json.find("textureFlags");
         if (itr != json.end())
         {
             config.set_texture_flags(Texture::readFlags(*itr));
         }
+        else
+        {
+            config.set_texture_flags(defaultTextureLoadFlags);
+        }
+
         itr = json.find("shadowType");
         if (itr != json.end())
         {
@@ -1140,7 +1153,7 @@ namespace darmok
     {
     }
 
-    AssimpSceneFileImporter::~AssimpSceneFileImporter() = default;
+    AssimpSceneFileImporter::~AssimpSceneFileImporter() noexcept = default;
 
     const std::string& AssimpSceneFileImporter::getName() const noexcept
     {

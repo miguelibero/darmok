@@ -242,7 +242,7 @@ namespace darmok
     {
     }
 
-    AssimpLoader::~AssimpLoader() = default;
+    AssimpLoader::~AssimpLoader() noexcept = default;
 
     bool AssimpLoader::supports(const std::filesystem::path& path) const noexcept
     {

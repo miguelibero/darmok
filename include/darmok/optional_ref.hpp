@@ -33,7 +33,7 @@ namespace darmok
         {
         }
 
-        OptionalRef(const std::reference_wrapper<T>& value) noexcept
+        OptionalRef(std::reference_wrapper<T> value) noexcept
             : _value{ &value.get() }
         {
         }

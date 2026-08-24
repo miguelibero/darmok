@@ -77,8 +77,8 @@ namespace
 			for (auto entity : scene->getComponents<Camera>())
 			{
 				auto& cam = *scene->getComponent<Camera>(entity);
-				cam.addComponent<ForwardRenderer>();
-				cam.addComponent<LightingRenderComponent>();
+                DARMOK_TRY(cam.addComponent<ForwardRenderer>());
+                DARMOK_TRY(cam.addComponent<LightingRenderComponent>());
 			}
 
 			return {};

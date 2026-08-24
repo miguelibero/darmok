@@ -49,7 +49,7 @@ namespace darmok
     {
     }
 
-    Skeleton::~Skeleton() = default;
+    Skeleton::~Skeleton() noexcept = default;
 
     std::string Skeleton::toString() const noexcept
     {
@@ -77,7 +77,7 @@ namespace darmok
     {
     }
 
-    SkeletalAnimation::~SkeletalAnimation() = default;
+    SkeletalAnimation::~SkeletalAnimation() noexcept = default;
 
     std::string SkeletalAnimation::toString() const noexcept
     {
@@ -223,7 +223,7 @@ namespace darmok
     {
     }
 
-    SkeletalAnimatorImpl::~SkeletalAnimatorImpl()
+    SkeletalAnimatorImpl::~SkeletalAnimatorImpl() noexcept
     {
         for (auto& listener : _listeners.copy())
         {
@@ -932,7 +932,7 @@ namespace darmok
         return {};
     }
 
-    SkeletalAnimator::~SkeletalAnimator() = default;
+    SkeletalAnimator::~SkeletalAnimator() noexcept = default;
 
     glm::mat4 SkeletalAnimator::getJointModelMatrix(const std::string& name) const noexcept
     {

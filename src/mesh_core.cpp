@@ -331,6 +331,7 @@ namespace darmok
 			writer.write(bgfx::Attrib::TexCoord0, i, vertex.texCoord);
 			writer.write(bgfx::Attrib::Normal, i, vertex.normal);
 			writer.write(bgfx::Attrib::Tangent, i, vertex.tangent);
+            writer.write(bgfx::Attrib::Bitangent, i, vertex.bitangent);
 			writer.write(bgfx::Attrib::Color0, i, vertex.color);
 
 			glm::vec4 weights{ 1, 0, 0, 0 };
@@ -1147,6 +1148,9 @@ namespace darmok
 
 		vertices.reserve(def.vertices_size());
 		size_t vertexIndex = 0;
+        bool hasNormals = true;
+        bool hasTangents = true;
+        bool hasBitangents = true;
 		for (auto& v : def.vertices())
 		{
 			auto itr = weightsByVertex.find(vertexIndex);
@@ -1156,17 +1160,37 @@ namespace darmok
 				weights = std::move(itr->second);
 			}
 
-			vertices.push_back({
-				.position = convert<glm::vec3>(v.position()),
-				.texCoord = convert<glm::vec2>(v.tex_coord()),
-				.normal = convert<glm::vec3>(v.normal()),
-				.tangent = convert<glm::vec3>(v.tangent()),
-				.color = convert<Color>(v.color()),
-				.weights = std::move(weights)
-				});
+            if (!v.has_normal())
+            {
+                hasNormals = false;
+            }
+            if(!v.has_tangent())
+            {
+                hasTangents = false;
+            }
+            if(!v.has_bitangent())
+            {
+                hasBitangents = false;
+            }
+
+			vertices.push_back({.position = convert<glm::vec3>(v.position()),
+                                .texCoord = convert<glm::vec2>(v.tex_coord()),
+                                .normal = convert<glm::vec3>(v.normal()),
+                                .tangent = convert<glm::vec3>(v.tangent()),
+                                .bitangent = convert<glm::vec3>(v.bitangent()),
+                                .color = convert<Color>(v.color()),
+                                .weights = std::move(weights)});
 
 			++vertexIndex;
 		}
+        if (!hasNormals)
+        {
+            calcNormals();
+        }
+        if(!hasTangents)
+        {
+            calcTangents();
+        }
 	}
 
 	MeshData::MeshData(const CubeDefinition& def) noexcept

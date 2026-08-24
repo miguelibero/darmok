@@ -28,11 +28,21 @@ namespace darmok
 			auto& v = *vertices.Add();
 			*v.mutable_color() = convert<protobuf::Color>(Colors::white());
 
-			*v.mutable_position() = convert<protobuf::Vec3>(convert<glm::vec3>(_assimpMesh.mVertices[i]));
-            *v.mutable_normal() = convert<protobuf::Vec3>(convert<glm::vec3>(_assimpMesh.mNormals[i]));
+            if(_assimpMesh.mVertices != nullptr)
+            {
+                *v.mutable_position() = convert<protobuf::Vec3>(convert<glm::vec3>(_assimpMesh.mVertices[i]));
+            }
+            if (_assimpMesh.mNormals != nullptr)
+            {
+                *v.mutable_normal() = convert<protobuf::Vec3>(convert<glm::vec3>(_assimpMesh.mNormals[i]));
+            }
             if (_assimpMesh.mTangents != nullptr)
             {
                 *v.mutable_tangent() = convert<protobuf::Vec3>(convert<glm::vec3>(_assimpMesh.mTangents[i]));
+            }
+            if(_assimpMesh.mBitangents != nullptr)
+            {
+                *v.mutable_bitangent() = convert<protobuf::Vec3>(convert<glm::vec3>(_assimpMesh.mBitangents[i]));
             }
             for (size_t j = 0; j < AI_MAX_NUMBER_OF_COLOR_SETS; ++j)
             {

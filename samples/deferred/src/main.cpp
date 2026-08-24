@@ -62,54 +62,35 @@ namespace
 			_app.setResetFlag(BGFX_RESET_MAXANISOTROPY);
 			_app.setDebugFlag(BGFX_DEBUG_TEXT);
 
-			auto sceneResult = _app.addComponent<SceneAppComponent>();
-			if(!sceneResult)
-			{
-				return unexpected{ std::move(sceneResult).error() };
-			}
-			auto scene = sceneResult.value().get().getScene();
+            OptionalRef<SceneAppComponent> sceneComp;
+            DARMOK_TRY_VALUE_PREFIX(sceneComp, _app.addComponent<SceneAppComponent>(), "adding scene component");
+            auto scene = sceneComp->getScene();
 
-			_cam = createCamera(*scene);
-			_freeCam = createCamera(*scene, _cam);
+    		_cam = createCamera(*scene);
+            _freeCam = createCamera(*scene, _cam);
 
-			auto freelookResult = scene->addSceneComponent<FreelookController>(*_freeCam);
-			if(!freelookResult)
-			{
-				return unexpected{ std::move(freelookResult).error() };
-			}
-			auto& freelook = freelookResult.value().get();
-			freelook.addListener(*this);
+            OptionalRef<FreelookController> freelookRef;
+            DARMOK_TRY_VALUE_PREFIX(freelookRef, scene->addSceneComponent<FreelookController>(*_freeCam), "adding freelook component");
+            freelookRef->addListener(*this);
 
-			auto progResult = StandardProgramLoader::load(Program::Standard::Tonemap);
-			if (!progResult)
-			{
-				return unexpected{ std::move(progResult).error() };
-			}
-			auto tonemapResult = scene->getRenderChain().addStep<ScreenSpaceRenderPass>(
-				progResult.value(), "Tonemap");
-			if (!tonemapResult)
-			{
-				return unexpected{ std::move(tonemapResult).error() };
-			}
+            std::shared_ptr<Program> prog;
+            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
+            DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
 
-			auto lightEntity = scene->createEntity();
-			scene->addComponent<AmbientLight>(lightEntity, 0.05);
+            auto lightEntity = scene->createEntity();
+            scene->addComponent<AmbientLight>(lightEntity, 0.05);
 
-			auto dirLightEntity = scene->createEntity();
-			auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{ -7.5, 3.5, 0 })
-				.lookDir(glm::vec3{ 0, -1, 0 }, glm::vec3{ 0, 0, 1 });
-			auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
-			dirLight.setShadowType(LightDefinition::SoftShadow);
-			scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
+            auto dirLightEntity = scene->createEntity();
+            auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0})
+                                      .lookDir(glm::vec3{0, -1, 0}, glm::vec3{0, 0, 1});
+            auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
+            dirLight.setShadowType(LightDefinition::SoftShadow);
+            scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
-			progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-			if (!progResult)
-			{
-				return unexpected{ std::move(progResult).error() };
-			}
-			auto prog = progResult.value();
-			auto arrowMesh = std::make_shared<Mesh>(MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(prog->getVertexLayout()).value());
-			scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
+            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
+
+            auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
+            scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)
 			{
@@ -119,16 +100,9 @@ namespace
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
-			auto sceneDefResult = _app.getAssets().getSceneDefinitionLoader()("Sponza.dsc");
-			if(!sceneDefResult)
-			{
-				return unexpected{ std::move(sceneDefResult).error() };
-			}
-			auto result = SceneLoader{}(*sceneDefResult.value(), *scene);
-			if(!result)
-			{
-				return unexpected{ std::move(result).error() };
-			}
+            std::shared_ptr<Scene::Definition> sceneDef;
+            DARMOK_TRY_VALUE_PREFIX(sceneDef, _app.getAssets().getSceneDefinitionLoader()("Sponza.dsc"), "loading sponza definition");
+            DARMOK_TRY_PREFIX(SceneLoader{}(*sceneDef, *scene), "loading sponza into scene");
 
 			_mouseVel = glm::vec2{ 0 };
 
@@ -161,7 +135,7 @@ namespace
 		{
 			glm::vec3 position;
 			float intensity = 1.F;
-			float radius = 1.F;
+			float radius = 1000.F;
 			Color3 color = Colors::white3();
 		};
 
@@ -213,9 +187,9 @@ namespace
 	};
 
 	const std::vector<DeferredSampleAppDelegate::PointLightConfig> DeferredSampleAppDelegate::_pointLights = {
-		{{ -5.0f, 0.3f, 0.0f }, 10.F, 50.F, Colors::blue3()},
-		{{ 0.0f, 0.3f, 0.0f }, 10.F, 50.F},
-		{{ 5.0f, 0.3f, 0.0f }, 10.F, 50.F, Colors::red3()},
+        {{0.0f, 8.0f, 0.0f}, 0.5f},
+        {{0.0f, 3.0f, 0.0f}, 0.5f},
+        {{0.0f, 1.0f, 5.0f}, 0.1f},
 	};
 }
 

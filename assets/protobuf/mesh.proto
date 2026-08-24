@@ -41,9 +41,10 @@ message DataMeshSource {
     message Vertex {
         Vec3 position = 1;
         Vec2 tex_coord = 2;
-        Vec3 normal = 3;
-        Vec3 tangent = 4;
-        Color color = 5;
+        Color color = 3;
+        optional Vec3 normal = 4;
+        optional Vec3 tangent = 5;
+        optional Vec3 bitangent = 6;
     }
 
     message Bone {
@@ -58,7 +59,6 @@ message DataMeshSource {
     repeated Vertex vertices = 1;
     repeated uint32 indices = 2;
     repeated Bone bones = 3;
-    bool has_tangents = 5;
 }
 
 message MeshSource {

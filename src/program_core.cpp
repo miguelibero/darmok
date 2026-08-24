@@ -26,6 +26,8 @@ namespace darmok
             return bgfx::RendererType::OpenGL;
         case protobuf::Program::Vulkan:
             return bgfx::RendererType::Vulkan;
+        default:
+            break;
         }
 		return bgfx::RendererType::Noop;
     }
@@ -46,6 +48,8 @@ namespace darmok
             return protobuf::Program::OpenGL;
         case bgfx::RendererType::Vulkan:
             return protobuf::Program::Vulkan;
+        default:
+            break;
         }
         return protobuf::Program::Unknown;
     }

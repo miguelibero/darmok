@@ -5,7 +5,10 @@
                 "outputPath": "../Sponza.dsc",
                 "program": "Forward",
                 "embedTextures": true,
-                "shadowType": "Soft"
+                "shadowType": "Soft",
+                "textureFlags": ["BGFX_TEXTURE_MSAA_SAMPLE", "MIN_ANISOTROPIC", "MAG_ANISOTROPIC"],
+                "programDefines": ["SHADOW_ENABLED"],
+                "generateTextureMips": true
             }
         }
     }

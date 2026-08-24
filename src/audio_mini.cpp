@@ -62,7 +62,7 @@ namespace darmok
     {
     }
 
-    Sound::~Sound() = default;
+    Sound::~Sound() noexcept = default;
 
     float Sound::getDuration() const noexcept
     {
@@ -117,7 +117,7 @@ namespace darmok
     {
     }
 
-    Music::~Music() = default;
+    Music::~Music() noexcept = default;
 
     float Music::getDuration() const noexcept
     {

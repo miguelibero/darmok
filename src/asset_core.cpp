@@ -746,7 +746,7 @@ namespace darmok
         const size_t n = ops.size();
 
         std::vector<int> indegree(n);
-        std::vector<std::vector<size_t>> edges;
+        std::vector<std::vector<size_t>> edges(n);
 
         for(size_t from = 0; from < n; ++from)
         {

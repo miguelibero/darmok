@@ -266,7 +266,7 @@ namespace
 			return {};
 		}
 
-		expected<void, std::string> onInputEvent(const std::string& tag) noexcept
+		expected<void, std::string> onInputEvent(const std::string& tag) noexcept override
 		{
 			if (tag == "pause")
 			{
