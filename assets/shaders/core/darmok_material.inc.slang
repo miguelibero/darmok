@@ -102,7 +102,9 @@ float3 materialNormalValue(float2 texcoord)
         // the normal scale can cause problems and serves no real purpose
         // normal compression and BRDF calculations assume unit length
         float3 n = s_texNormal.Sample(s_texNormalState, texcoord).rgb * 2.0 - 1.0;
-        return normalize(n) * u_normalScale;
+        n.xy *= u_normalScale;
+        n.z = sqrt(saturate(1.0 - dot(n.xy, n.xy)));
+        return n;
     }
     else
     {
@@ -221,9 +223,9 @@ float3 F_Schlick(float VoH, float3 F0)
 // equivalent to Trowbridge-Reitz
 float D_GGX(float NoH, float a)
 {
-    a = NoH * a;
-    float k = a / (1.0 - NoH * NoH + a * a);
-    return k * k * INV_PI;
+    float a2 = a * a;
+    float f = NoH * NoH * (a2 - 1.0) + 1.0;
+    return a2 / (PI * f * f);
 }
 
 // Visibility function

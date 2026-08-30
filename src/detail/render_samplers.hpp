@@ -14,8 +14,8 @@ namespace darmok
         static const uint8_t MATERIAL_OCCLUSION = 5;
         static const uint8_t MATERIAL_EMISSIVE = 6;
 
-        static const uint8_t LIGHTS_POINT = 7;
-        static const uint8_t LIGHTS_DIR = 8;
+        static const uint8_t LIGHTS_DIR = 7;
+        static const uint8_t LIGHTS_POINT = 8;
         static const uint8_t LIGHTS_SPOT = 9;
 
         static const uint8_t SHADOW_MAP = 10;

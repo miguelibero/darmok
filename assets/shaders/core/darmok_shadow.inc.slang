@@ -31,21 +31,6 @@ SamplerComparisonState s_shadowMapCmp : register(s10);
 [[vk::binding(11, 0)]]
 uniform StructuredBuffer<float4x4> b_shadowTrans : register(t11);
 
-#define SHADOW_LIGHT_TYPE_DIR 0
-#define SHADOW_LIGHT_TYPE_SPOT 1
-#define SHADOW_LIGHT_TYPE_POINT 2
-
-#define SHADOW_TYPE_NONE 0
-#define SHADOW_TYPE_HARD 1
-#define SHADOW_TYPE_SOFT 2
-
-// for each shadow map:
-//   uint entity
-//   uint light type (0 = Dir, 1 = Spot, 2 = Point)
-//   uint shadow type (0 = None, 1 = Hard, 2 = Soft)
-[[vk::binding(12, 0)]]
-uniform StructuredBuffer<float4> b_shadowLightData : register(t12);
-
 float4x4 getShadowTransform(uint shadowMapIndex)
 {
 	return b_shadowTrans[shadowMapIndex];
@@ -139,59 +124,45 @@ float softShadow(uint startIdx, uint countIdx, float3 fragPos, float bias)
 	return v / 16.0f;
 }
 
-struct EntityShadowData
+float lightShadow(LightShadowData data, uint countMapIdx, float3 fragPos, float bias)
 {
-	uint shadowType;
-	uint startMapIndex;
-};
-
-EntityShadowData getEntityShadowData(uint entity, uint lightType)
-{
-	EntityShadowData data;
-	data.shadowType = SHADOW_TYPE_NONE;
-	data.startMapIndex = 0u;
-	for(uint i = 0u; i < u_shadowMapAmount; ++i)
+	if(data.shadowType == ShadowType::Hard)
 	{
-		float4 elm = b_shadowLightData[i];
-		if((uint)elm.x == entity && (uint)elm.y == lightType)
-		{
-			data.shadowType = (uint)elm.z;
-			data.startMapIndex = i;
-			return data;
-		}
+		return hardShadow(data.shadowMapIndex, countMapIdx, fragPos, bias);
 	}
-	return data;
-}
-
-float lightShadow(EntityShadowData data, uint countMapIdx, float3 fragPos, float bias)
-{
-	if(data.shadowType == SHADOW_TYPE_HARD)
-		return hardShadow(data.startMapIndex, countMapIdx, fragPos, bias);
-	if(data.shadowType == SHADOW_TYPE_SOFT)
-		return softShadow(data.startMapIndex, countMapIdx, fragPos, bias);
+	if(data.shadowType == ShadowType::Soft)
+	{
+		return softShadow(data.shadowMapIndex, countMapIdx, fragPos, bias);
+	}
 	return 1.0f;
 }
 
-float dirLightShadow(uint entity, float3 fragPos, float3 normal, float3 dir)
+float dirLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3 dir)
 {
-	EntityShadowData data = getEntityShadowData(entity, SHADOW_LIGHT_TYPE_DIR);
-	if(data.shadowType == SHADOW_TYPE_NONE) return 1.0f;
+	if(data.shadowType == ShadowType::None)
+	{
+		return 1.0f;
+	}
 	float bias = normalShadowBias(normal, dir);
 	return lightShadow(data, u_shadowCascadeAmount, fragPos, bias);
 }
 
-float spotLightShadow(uint entity, float3 fragPos, float3 normal, float3 dir)
+float spotLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3 dir)
 {
-	EntityShadowData data = getEntityShadowData(entity, SHADOW_LIGHT_TYPE_SPOT);
-	if(data.shadowType == SHADOW_TYPE_NONE) return 1.0f;
+	if(data.shadowType == ShadowType::None)
+	{
+		return 1.0f;
+	}
 	float bias = normalShadowBias(normal, dir);
 	return lightShadow(data, 1u, fragPos, bias);
 }
 
-float pointLightShadow(uint entity, float3 fragPos, float3 normal, float3 dir)
+float pointLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3 dir)
 {
-	EntityShadowData data = getEntityShadowData(entity, SHADOW_LIGHT_TYPE_POINT);
-	if(data.shadowType == SHADOW_TYPE_NONE) return 1.0f;
+	if(data.shadowType == ShadowType::None)
+	{
+		return 1.0f;
+	}
 	float bias = normalShadowBias(normal, dir);
 	return lightShadow(data, 6u, fragPos, bias);
 }

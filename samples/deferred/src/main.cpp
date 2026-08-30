@@ -82,7 +82,7 @@ namespace
 
             auto dirLightEntity = scene->createEntity();
             auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0})
-                                      .lookDir(glm::vec3{0, -1, 0}, glm::vec3{0, 0, 1});
+                                      .lookDir(glm::vec3{-0.4, -0.7, -0.5}, glm::vec3{0, 0, 1});
             auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
             dirLight.setShadowType(LightDefinition::SoftShadow);
             scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
@@ -96,7 +96,7 @@ namespace
 			{
 				auto entity = scene->createEntity();
 				auto& light = scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
-				light.setShadowType(LightDefinition::HardShadow);
+				// light.setShadowType(LightDefinition::HardShadow);
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 

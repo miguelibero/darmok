@@ -206,9 +206,6 @@ namespace darmok
             .add(bgfx::Attrib::Color2, 4, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Color3, 4, bgfx::AttribType::Float)
         .end();
-        _shadowLightDataLayout.begin()
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float)
-        .end();
     }
 
     expected<void, std::string> ShadowRenderer::load(const Definition& def) noexcept
@@ -251,7 +248,6 @@ namespace darmok
         _shadowData1Uniform = { "u_shadowData1", bgfx::UniformType::Vec4 };
         _shadowData2Uniform = { "u_shadowData2", bgfx::UniformType::Vec4 };
         _shadowTransBuffer = { 1, _shadowTransLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
-        _shadowLightDataBuffer = { 1, _shadowLightDataLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
     
         return {};
     }
@@ -307,7 +303,6 @@ namespace darmok
         _shadowData1Uniform.reset();
         _shadowData2Uniform.reset();
         _shadowTransBuffer.reset();
-        _shadowLightDataBuffer.reset();
         _program.reset();
         _cam.reset();
         _scene.reset();
@@ -371,19 +366,6 @@ namespace darmok
             }
             ++_dirAmount;
         }
-        for (auto entity : _cam->getEntities<SpotLight>())
-        {
-            auto light = _scene->getComponent<const SpotLight>(entity);
-            if (light->getShadowType() == LightDefinition::NoShadow)
-            {
-                continue;
-            }
-            if (!configurePasses(entity, 1))
-            {
-                break;
-            }
-            ++_spotAmount;
-        }
         for (auto entity : _cam->getEntities<PointLight>())
         {
             auto light = _scene->getComponent<const PointLight>(entity);
@@ -396,6 +378,19 @@ namespace darmok
                 break;
             }
             ++_pointAmount;
+        }
+        for(auto entity : _cam->getEntities<SpotLight>())
+        {
+            auto light = _scene->getComponent<const SpotLight>(entity);
+            if(light->getShadowType() == LightDefinition::NoShadow)
+            {
+                continue;
+            }
+            if(!configurePasses(entity, 1))
+            {
+                break;
+            }
+            ++_spotAmount;
         }
         for (; passIdx < _passes.size(); ++passIdx)
         {
@@ -449,15 +444,36 @@ namespace darmok
         Point
     };
 
+    uint32_t ShadowRenderer::getDirectionalLightShadowMapIndex(entt::entity entity) const
+    {
+        auto itr = _dirShadowMapIndices.find(entity);
+        return itr == _dirShadowMapIndices.end() ? 0 : itr->second;
+    }
+
+    uint32_t ShadowRenderer::getPointLightShadowMapIndex(entt::entity entity) const
+    {
+        auto itr = _pointShadowMapIndices.find(entity);
+        return itr == _pointShadowMapIndices.end() ? 0 : itr->second;
+    }
+
+    uint32_t ShadowRenderer::getSpotLightShadowMapIndex(entt::entity entity) const
+    {
+        auto itr = _spotShadowMapIndices.find(entity);
+        return itr == _spotShadowMapIndices.end() ? 0 : itr->second;
+    }
+
     void ShadowRenderer::updateBuffers() noexcept
     {
         auto amount = static_cast<uint32_t>(getShadowMapAmount());
         VertexDataWriter transWriter{_shadowTransLayout, amount };
-        VertexDataWriter lightDataWriter{_shadowLightDataLayout, amount};
 
         uint32_t index = 0;
 
-        auto addElement = [&transWriter, &lightDataWriter, &index]
+        _dirShadowMapIndices.clear();
+        _pointShadowMapIndices.clear();
+        _spotShadowMapIndices.clear();
+
+        auto addElement = [&transWriter, &index]
             (Entity entity, const glm::mat4& mtx, ShadowLightType lightType, ShadowType shadowType)
         {
             // not sure why but the shader reads the data by rows
@@ -468,30 +484,44 @@ namespace darmok
             transWriter.write(bgfx::Attrib::Color2, index, tmtx[2]);
             transWriter.write(bgfx::Attrib::Color3, index, tmtx[3]);
 
-            const glm::vec4 lightData{ entity, lightType, toUnderlying(shadowType), 0.f };
-            lightDataWriter.write(bgfx::Attrib::Color0, index, lightData);
-
             ++index;
         };
 
-        for (auto entity : _cam->getEntities<DirectionalLight>())
+        for(auto entity : _cam->getEntities<DirectionalLight>())
         {
+            _dirShadowMapIndices[entity] = index;
             auto light = _scene->getComponent<const DirectionalLight>(entity);
             auto shadowType = light->getShadowType();
-            if (shadowType == LightDefinition::NoShadow)
+            if(shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
             auto lightTrans = _scene->getComponent<const Transform>(entity);
-            for (auto casc = 0; casc < _def.cascade_amount(); ++casc)
+            for(auto casc = 0; casc < _def.cascade_amount(); ++casc)
             {
                 auto mtx = getDirLightMapMatrix(lightTrans, casc);
                 addElement(entity, mtx, ShadowLightType::Dir, shadowType);
             }
         }
-
+        for(auto entity : _cam->getEntities<PointLight>())
+        {
+            _pointShadowMapIndices[entity] = index;
+            auto light = _scene->getComponent<const PointLight>(entity);
+            auto shadowType = light->getShadowType();
+            if(shadowType == LightDefinition::NoShadow)
+            {
+                continue;
+            }
+            auto lightTrans = _scene->getComponent<const Transform>(entity);
+            for(auto face = 0; face < _pointLightFaceAmount; ++face)
+            {
+                auto mtx = getPointLightMapMatrix(light.value(), lightTrans, face);
+                addElement(entity, mtx, ShadowLightType::Point, shadowType);
+            }
+        }
         for (auto entity : _cam->getEntities<SpotLight>())
         {
+            _spotShadowMapIndices[entity] = index;
             auto light = _scene->getComponent<const SpotLight>(entity);
             auto shadowType = light->getShadowType();
             if (shadowType == LightDefinition::NoShadow)
@@ -503,31 +533,10 @@ namespace darmok
             addElement(entity, mtx, ShadowLightType::Spot, shadowType);
         }
 
-        for (auto entity : _cam->getEntities<PointLight>())
-        {
-            auto light = _scene->getComponent<const PointLight>(entity);
-            auto shadowType = light->getShadowType();
-            if (shadowType == LightDefinition::NoShadow)
-            {
-                continue;
-            }
-            auto lightTrans = _scene->getComponent<const Transform>(entity);
-            for (auto face = 0; face < _pointLightFaceAmount; ++face)
-            {
-                auto mtx = getPointLightMapMatrix(light.value(), lightTrans, face);
-                addElement(entity, mtx, ShadowLightType::Point, shadowType);
-            }
-        }
-
         auto data = transWriter.finish();
         if (!data.empty())
         {
             bgfx::update(_shadowTransBuffer, 0, data.copyMem());
-        }
-        data = lightDataWriter.finish();
-        if (!data.empty())
-        {
-            bgfx::update(_shadowLightDataBuffer, 0, data.copyMem());
         }
     }
 
@@ -687,7 +696,6 @@ namespace darmok
     void ShadowRenderer::configureUniforms(bgfx::Encoder& encoder) const noexcept
     {
         encoder.setBuffer(RenderSamplers::SHADOW_TRANS, _shadowTransBuffer, bgfx::Access::Read);
-        encoder.setBuffer(RenderSamplers::SHADOW_LIGHT_DATA, _shadowLightDataBuffer, bgfx::Access::Read);
         encoder.setTexture(RenderSamplers::SHADOW_MAP, _shadowMapUniform, getTextureHandle());
 
         auto texelSize = 1.f / _def.map_size();
@@ -723,7 +731,7 @@ namespace darmok
     expected<void, std::string> ShadowDebugRenderer::shutdown() noexcept
     {
         _scene.reset();
-        return _debugRender.shutdown();;
+        return _debugRender.shutdown();
     }
 
     expected<void, std::string> ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept

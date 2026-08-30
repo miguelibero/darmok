@@ -8,6 +8,7 @@
 #include <darmok/scene_filter.hpp>
 #include <darmok/program.hpp>
 #include <darmok/protobuf/camera.pb.h>
+#include <darmok/light.hpp>
 
 namespace darmok
 {
@@ -80,6 +81,11 @@ namespace darmok
         OptionalRef<const Camera> getCamera() const noexcept;
         OptionalRef<const Scene> getScene() const noexcept;
 
+        uint32_t getDirectionalLightShadowMapIndex(entt::entity entity) const;
+        uint32_t getPointLightShadowMapIndex(entt::entity entity) const;
+        uint32_t getSpotLightShadowMapIndex(entt::entity entity) const;
+
+
     private:
         Definition _def;
         OptionalRef<Camera> _cam;
@@ -91,16 +97,17 @@ namespace darmok
         std::vector<glm::mat4> _camProjs;
         glm::mat4 _crop;
         size_t _dirAmount;
-        size_t _spotAmount;
         size_t _pointAmount;
+        size_t _spotAmount;
+        std::unordered_map<entt::entity, uint32_t> _dirShadowMapIndices;
+        std::unordered_map<entt::entity, uint32_t> _pointShadowMapIndices;
+        std::unordered_map<entt::entity, uint32_t> _spotShadowMapIndices;
 
         UniformHandle _shadowMapUniform;
         UniformHandle _shadowData1Uniform;
         UniformHandle _shadowData2Uniform;
         DynamicVertexBuffer _shadowTransBuffer;
         bgfx::VertexLayout _shadowTransLayout;
-        DynamicVertexBuffer _shadowLightDataBuffer;
-        bgfx::VertexLayout _shadowLightDataLayout;
 
         static const size_t _pointLightFaceAmount;
 
@@ -110,7 +117,6 @@ namespace darmok
         size_t getShadowMapAmount() const noexcept;
 
         void configureUniforms(bgfx::Encoder& encoder) const noexcept;
-        void drawDebug() noexcept;
         expected<void, std::string> doLoad() noexcept;
     };
 

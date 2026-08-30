@@ -23,7 +23,7 @@ static inline float4 forwardFragment(float3 V, float3 N, float3 fragPos, float2 
     {
         PointLight light = getPointLight(i);
         LightData data = calcPointLight(light, fragPos);
-        float visibility = pointLightShadow(light.entity, fragPos, N, data.direction);
+        float visibility = pointLightShadow(light.shadow, fragPos, N, data.direction);
         if(visibility <= 0.0f) continue;
         radianceOut += calcLightRadiance(data, V, N, mat) * visibility;
     }
@@ -33,7 +33,7 @@ static inline float4 forwardFragment(float3 V, float3 N, float3 fragPos, float2 
     {
         SpotLight light = getSpotLight(i);
         LightData data = calcSpotLight(light, fragPos);
-        float visibility = spotLightShadow(light.entity, fragPos, N, data.direction);
+        float visibility = spotLightShadow(light.shadow, fragPos, N, data.direction);
         if(visibility <= 0.0f) continue;
         radianceOut += calcLightRadiance(data, V, N, mat) * visibility;
     }
@@ -43,7 +43,7 @@ static inline float4 forwardFragment(float3 V, float3 N, float3 fragPos, float2 
     {
         DirLight light = getDirLight(i);
         LightData data = calcDirLight(light);
-        float visibility = dirLightShadow(light.entity, fragPos, N, data.direction);
+        float visibility = dirLightShadow(light.shadow, fragPos, N, data.direction);
         if(visibility <= 0.0f) continue;
         radianceOut += calcLightRadiance(data, V, N, mat) * visibility;
     }

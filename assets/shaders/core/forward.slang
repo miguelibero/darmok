@@ -38,12 +38,18 @@ VSOutput vert(VSInput IN)
     tangent = applySkinning(tangent, IN.a_indices, IN.a_weight);
     pos = mul(u_model[0], pos);
 
-    OUT.v_position = pos.xyz;
-    OUT.v_normal = normalize(mul(u_normalMatrix, norm.xyz));
+    OUT.v_position = pos.xyz;    
     OUT.v_viewDir = normalize(u_camPos.xyz - OUT.v_position);
-    OUT.v_tangent = mul(u_model[0], tangent).xyz;
     OUT.v_texcoord0 = IN.a_texcoord0;
     OUT.position = mul(u_viewProj, pos);
+
+    float3 N = normalize(mul(u_normalMatrix, norm.xyz));
+    float3 T = normalize(mul(u_normalMatrix, tangent.xyz));
+    // Gram-Schmidt
+    T = normalize(T - N * dot(N, T));
+    OUT.v_normal = N;
+    OUT.v_tangent = T;
+
     return OUT;
 }
 

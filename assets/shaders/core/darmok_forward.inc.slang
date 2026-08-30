@@ -37,8 +37,11 @@ float4 forwardFragment(float3 V, float3 normal, float3 tangent, float3 fragPos, 
     {
         PointLight light = getPointLight(i);
         LightData data = calcPointLight(light, fragPos);
-        float visibility = pointLightShadow(light.entity, fragPos, N, data.direction);
-        if(visibility <= 0.0) continue;
+        float visibility = pointLightShadow(light.shadow, fragPos, N, data.direction);
+        if(visibility <= 0.0)
+        {
+            continue;
+        }
         radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
 
@@ -47,8 +50,11 @@ float4 forwardFragment(float3 V, float3 normal, float3 tangent, float3 fragPos, 
     {
         SpotLight light = getSpotLight(i);
         LightData data = calcSpotLight(light, fragPos);
-        float visibility = spotLightShadow(light.entity, fragPos, N, data.direction);
-        if(visibility <= 0.0) continue;
+        float visibility = spotLightShadow(light.shadow, fragPos, N, data.direction);
+        if(visibility <= 0.0)
+        {
+            continue;
+        }
         radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
 
@@ -57,8 +63,11 @@ float4 forwardFragment(float3 V, float3 normal, float3 tangent, float3 fragPos, 
     {
         DirLight light = getDirLight(i);
         LightData data = calcDirLight(light);
-        float visibility = dirLightShadow(light.entity, fragPos, N, data.direction);
-        if(visibility <= 0.0) continue;
+        float visibility = dirLightShadow(light.shadow, fragPos, N, data.direction);
+        if(visibility <= 0.0)
+        {
+            continue;
+        }
         radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
 

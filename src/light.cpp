@@ -6,6 +6,7 @@
 #include <darmok/vertex.hpp>
 #include <darmok/scene.hpp>
 #include <darmok/math.hpp>
+#include <darmok/shadow.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <glm/gtx/matrix_operation.hpp>
@@ -289,21 +290,23 @@ namespace darmok
         , _camPos{ 0 }
     {
 
-        _pointLightsLayout.begin()
-            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
-            .add(bgfx::Attrib::Color1, 4, bgfx::AttribType::Float)
-            .end();
-
        _dirLightsLayout.begin()
             .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+            .add(bgfx::Attrib::Color0, 3, bgfx::AttribType::Uint8)
             .add(bgfx::Attrib::Color1, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color2, 3, bgfx::AttribType::Float)
+            .end();
+
+        _pointLightsLayout.begin()
+            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color1, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color2, 3, bgfx::AttribType::Float)
             .end();
 
         _spotLightsLayout.begin()
             .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8)
+            .add(bgfx::Attrib::Color0, 3, bgfx::AttribType::Uint8)
             .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Color1, 3, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Weight, 3, bgfx::AttribType::Float)
@@ -357,16 +360,24 @@ namespace darmok
         return {};
     }
 
+    
+    struct LightShadowBufferElement final
+    {
+        ShadowType shadowType = protobuf::Light::NoShadow;
+        uint32_t shadowMapIndex = -1;
+    };
+
     struct DirectionalLightBufferElement final
     {
         glm::vec3 dir{ 0.f };
-        uint32_t entity = 0;
         glm::vec3 color{ 1.f };
+        LightShadowBufferElement shadow;
     };
 
     size_t LightingRenderComponent::updateDirLights() noexcept
     {
         std::vector<DirectionalLightBufferElement> elms;
+        auto shadow = _cam->getComponent<ShadowRenderer>();
         for (auto entity : _cam->getEntities<DirectionalLight>())
         {
             auto& elm = elms.emplace_back();
@@ -376,10 +387,14 @@ namespace darmok
                 // elm.dir = -glm::normalize(trans->getWorldPosition());
                 elm.dir = trans->getWorldDirection();
             }
-            elm.entity = static_cast<uint32_t>(entity);
             auto& light = _scene->getComponent<const DirectionalLight>(entity).value();
             auto intensity = light.getIntensity();
             elm.color = Colors::normalize(light.getColor()) * intensity;
+            elm.shadow.shadowType = light.getShadowType();
+            if (shadow)
+            {
+                elm.shadow.shadowMapIndex = shadow->getDirectionalLightShadowMapIndex(entity);
+            }
         }
 
         if(!elms.empty())
@@ -394,14 +409,15 @@ namespace darmok
     struct PointLightBufferElement final
     {
         glm::vec3 pos{ 0.f };
-        uint32_t entity = 0;
         glm::vec3 intensity{ 1.f };
         float range = 0.f;
+        LightShadowBufferElement shadow;
     };
 
     size_t LightingRenderComponent::updatePointLights() noexcept
     {
         std::vector<PointLightBufferElement> elms;
+        auto shadow = _cam->getComponent<ShadowRenderer>();
         for (auto entity : _cam->getEntities<PointLight>())
         {
             auto& elm = elms.emplace_back();
@@ -413,9 +429,13 @@ namespace darmok
                 elm.pos = trans->getWorldPosition();
                 scale = glm::compMax(trans->getWorldScale());
             }
-            elm.entity = static_cast<uint32_t>(entity);
             elm.intensity = Colors::normalize(light.getColor()) * light.getIntensity();
             elm.range = light.getRange() * scale;
+            elm.shadow.shadowType = light.getShadowType();
+            if(shadow)
+            {
+                elm.shadow.shadowMapIndex = shadow->getPointLightShadowMapIndex(entity);
+            }
         }
 
         if (!elms.empty())
@@ -430,17 +450,18 @@ namespace darmok
     struct SpotLightBufferElement final
     {
         glm::vec3 pos{ 0.f };
-        uint32_t entity = 0;
         glm::vec3 direction{ 0.f, 0.f, 1.f };
         glm::vec3 intensity;
         float range = 0.f;
         float coneAngle = 0.f;
         float innerConeAngle = 0.f;
+        LightShadowBufferElement shadow;
     };
 
     size_t LightingRenderComponent::updateSpotLights() noexcept
     {
         std::vector<SpotLightBufferElement> elms;
+        auto shadow = _cam->getComponent<ShadowRenderer>();
         for (auto entity : _cam->getEntities<SpotLight>())
         {
             auto& elm = elms.emplace_back();
@@ -453,11 +474,15 @@ namespace darmok
                 scale = glm::compMax(trans->getWorldScale());
                 elm.direction = trans->getWorldDirection();
             }
-            elm.entity = static_cast<uint32_t>(entity);
             elm.intensity = Colors::normalize(light.getColor()) * light.getIntensity();
             elm.range = light.getRange() * scale;
             elm.coneAngle = light.getConeAngle();
             elm.innerConeAngle = light.getInnerConeAngle();
+            elm.shadow.shadowType = light.getShadowType();
+            if(shadow)
+            {
+                elm.shadow.shadowMapIndex = shadow->getSpotLightShadowMapIndex(entity);
+            }
         }
 
         if(!elms.empty())
@@ -504,8 +529,9 @@ namespace darmok
         {
             return unexpected<std::string>{ "scene not loaded" };
         }
-        _lightCount.x = static_cast<float>(updatePointLights());
-        _lightCount.y = static_cast<float>(updateDirLights());
+
+        _lightCount.x = static_cast<float>(updateDirLights());
+        _lightCount.y = static_cast<float>(updatePointLights());
         _lightCount.z = static_cast<float>(updateSpotLights());
         updateAmbientLights();
         updateCamera();
