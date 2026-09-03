@@ -29,8 +29,8 @@ struct DirLight
     LightShadowData shadow;
 };
 
-[[vk::binding(7, 0)]]
-uniform StructuredBuffer<DirLight> b_dirLights : register(t7);
+[[vk::binding(10, 0)]]
+uniform StructuredBuffer<DirLight> b_dirLights : register(t10);
 
 struct PointLight
 {
@@ -41,9 +41,8 @@ struct PointLight
     LightShadowData shadow;
 };
 
-[[vk::binding(8, 0)]]
-uniform StructuredBuffer<PointLight> b_pointLights : register(t8);
-
+[[vk::binding(11, 0)]]
+uniform StructuredBuffer<PointLight> b_pointLights : register(t11);
 
 struct SpotLight
 {
@@ -57,8 +56,8 @@ struct SpotLight
     LightShadowData shadow;
 };
 
-[[vk::binding(9, 0)]]
-uniform StructuredBuffer<SpotLight> b_spotLights : register(t9);
+[[vk::binding(12, 0)]]
+uniform StructuredBuffer<SpotLight> b_spotLights : register(t12);
 
 uniform float4 u_lightCountVec;
 uniform float4 u_ambientLightIrradiance;
@@ -72,24 +71,13 @@ struct AmbientLight
     float3 irradiance;
 };
 
-// primary source:
-// https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
-// also really good:
-// https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
-
-
 float distanceAttenuation(float distance)
 {
-    // only for point lights
-    // physics: inverse square falloff
-    // to keep irradiance from reaching infinity at really close distances, stop at 1cm
     return 1.0 / max(distance * distance, 0.01 * 0.01);
 }
 
 float smoothAttenuation(float distance, float range)
 {
-    // window function with smooth transition to 0
-    // range is arbitrary (and usually artist controlled)
     float nom = saturate(1.0 - pow(distance / range, 4.0));
     return nom * nom * distanceAttenuation(distance);
 }

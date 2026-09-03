@@ -71,7 +71,7 @@ float4 forwardFragment(float3 V, float3 normal, float3 tangent, float3 fragPos, 
         radianceOut += calcLightRadiance(data, V, N, NoV, msFactor, mat) * visibility;
     }
 
-    radianceOut += getAmbientLight().irradiance * mat.diffuse * mat.occlusion;
+    radianceOut += calcAmbientIBL(mat, N, V, NoV) * getAmbientLight().irradiance * mat.occlusion;
     radianceOut += mat.emissive;
 
     return float4(radianceOut, mat.albedo.a);

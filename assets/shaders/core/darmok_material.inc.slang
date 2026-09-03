@@ -1,34 +1,49 @@
 #pragma once
 
 [[vk::binding(0, 0)]]
-uniform Texture2D s_texAlbedoLUT : register(t0);
+uniform Texture2D s_texBaseColor : register(t0);
 [[vk::binding(0, 0)]]
-SamplerState s_texAlbedoLUTState : register(s0);
+SamplerState s_texBaseColorState : register(s0);
 
-[[vk::binding(1, 0)]]
-uniform Texture2D s_texBaseColor : register(t1);
-[[vk::binding(1, 0)]]
-SamplerState s_texBaseColorState : register(s1);
+[[vk::binding(2, 0)]]
+uniform Texture2D s_texMetallicRoughness : register(t2);
+[[vk::binding(2, 0)]]
+SamplerState s_texMetallicRoughnessState : register(s2);
 
 [[vk::binding(3, 0)]]
-uniform Texture2D s_texMetallicRoughness : register(t3);
+uniform Texture2D s_texNormal : register(t3);
 [[vk::binding(3, 0)]]
-SamplerState s_texMetallicRoughnessState : register(s3);
+SamplerState s_texNormalState : register(s3);
 
 [[vk::binding(4, 0)]]
-uniform Texture2D s_texNormal : register(t4);
+uniform Texture2D s_texOcclusion : register(t4);
 [[vk::binding(4, 0)]]
-SamplerState s_texNormalState : register(s4);
+SamplerState s_texOcclusionState : register(s4);
 
 [[vk::binding(5, 0)]]
-uniform Texture2D s_texOcclusion : register(t5);
+uniform Texture2D s_texEmissive : register(t5);
 [[vk::binding(5, 0)]]
-SamplerState s_texOcclusionState : register(s5);
+SamplerState s_texEmissiveState : register(s5);
 
 [[vk::binding(6, 0)]]
-uniform Texture2D s_texEmissive : register(t6);
+TextureCube<float4> s_irradiance : register(t6);
 [[vk::binding(6, 0)]]
-SamplerState s_texEmissiveState : register(s6);
+uniform SamplerState s_irradianceState : register(s6);
+
+[[vk::binding(7, 0)]]
+TextureCube<float4> s_prefilteredEnv : register(t7);
+[[vk::binding(7, 0)]]
+uniform SamplerState s_prefilteredEnvState : register(s7);
+
+[[vk::binding(8, 0)]]
+uniform Texture2D s_albedoLut : register(t8);
+[[vk::binding(8, 0)]]
+SamplerState s_albedoLutState : register(s8);
+
+[[vk::binding(9, 0)]]
+uniform Texture2D<float2> s_brdfLut : register(t9);
+[[vk::binding(9, 0)]]
+uniform SamplerState s_brdfLutState : register(s9);
 
 uniform float4 u_baseColorFactor;
 uniform float4 u_metallicRoughnessNormalOcclusionFactor;
@@ -46,6 +61,7 @@ uniform float4 u_multipleScatteringVec;
 #define u_normalScale             (u_metallicRoughnessNormalOcclusionFactor.z)
 #define u_occlusionStrength       (u_metallicRoughnessNormalOcclusionFactor.w)
 #define u_emissiveFactor          (u_emissiveFactorVec.xyz)
+#define u_environmentMaxMip       (u_emissiveFactorVec.w)
 
 #define u_multipleScattering   (u_multipleScatteringVec.x != 0.0)
 #define u_whiteFurnaceRadiance (u_multipleScatteringVec.y)
@@ -274,7 +290,7 @@ float3 multipleScatteringFactor(Material mat, float NoV)
     {
         // Turquin approximates the multiple scattering portion of the BRDF using a scaled down version of the single scattering BRDF
         // That scale factor is E: the directional albedo for single scattering, ie. the total reflectance for a viewing direction
-        float2 E = s_texAlbedoLUT.Sample(s_texAlbedoLUTState, float2(NoV, mat.a)).xy;
+        float2 E = s_albedoLut.Sample(s_albedoLutState, float2(NoV, mat.a)).xy;
 
         // for metals, the albedo value is calculated with F = 1 (perfect reflection)
         // fresnel determines whether light is reflected or absorbed
@@ -300,7 +316,7 @@ bool whiteFurnaceEnabled()
 // This is exactly what the multiple scattering LUT calculates
 float3 whiteFurnace(float NoV, Material mat)
 {
-    float2 Es = s_texAlbedoLUT.Sample(s_texAlbedoLUTState, float2(NoV, mat.a)).xy;
+    float2 Es = s_albedoLut.Sample(s_albedoLutState, float2(NoV, mat.a)).xy;
     float E = lerp(Es.y, Es.x, mat.metallic);
     return E * float3(u_whiteFurnaceRadiance, u_whiteFurnaceRadiance, u_whiteFurnaceRadiance);
 }
@@ -327,4 +343,39 @@ float3 BRDF(float3 v, float3 l, float3 n, float NoV, float NoL, Material mat)
     float3 Fd = mat.diffuse * Fd_Lambert();
 
     return Fr + (1.0 - F) * Fd;
+}
+
+float3 calcAmbientIBL(
+    Material mat,
+    float3 N,
+    float3 V,
+    float NoV)
+{
+    float3 irradiance =
+        s_irradiance.Sample(s_irradianceState, N).rgb;
+
+    float3 diffuse =
+        irradiance * mat.diffuse;
+
+    float3 R = reflect(-V, N);
+
+    float mip = mat.roughness * u_environmentMaxMip;
+
+    float3 environment =
+        s_prefilteredEnv.SampleLevel(
+            s_prefilteredEnvState,
+            R,
+            mip
+        ).rgb;
+
+    float2 brdf =
+        s_brdfLut.Sample(
+            s_brdfLutState,
+            float2(NoV, mat.roughness)
+        );
+
+    float3 specular =
+        environment * (mat.F0 * brdf.x + brdf.y);
+
+    return diffuse + specular;
 }

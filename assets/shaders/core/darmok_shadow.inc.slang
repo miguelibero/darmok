@@ -19,17 +19,17 @@ uniform float4 u_shadowData2; // x: dir amount, y: spot amount, z: point amount,
 #ifdef DARMOK_VARIANT_SHADOW_ENABLED
 
 // light shadow maps ordered by type: directional (cascaded), spot, point
-[[vk::binding(10, 0)]]
-uniform Texture2DArray<float> s_shadowMap : register(t10);
-[[vk::binding(10, 0)]]
-SamplerComparisonState s_shadowMapCmp : register(s10);
+[[vk::binding(13, 0)]]
+uniform Texture2DArray<float> s_shadowMap : register(t13);
+[[vk::binding(13, 0)]]
+SamplerComparisonState s_shadowMapCmp : register(s13);
 
 #endif
 
 // for each shadow map:
 //   mat4 transform
-[[vk::binding(11, 0)]]
-uniform StructuredBuffer<float4x4> b_shadowTrans : register(t11);
+[[vk::binding(14, 0)]]
+uniform StructuredBuffer<float4x4> b_shadowTrans : register(t14);
 
 float4x4 getShadowTransform(uint shadowMapIndex)
 {

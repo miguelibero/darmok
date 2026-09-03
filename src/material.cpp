@@ -7,9 +7,12 @@
 #include <darmok/app.hpp>
 #include <darmok/string.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/texture_pbr.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
 #include "detail/render_samplers.hpp"
+#include "generated/textures/albedo_lut.h"
+#include "generated/textures/brdf_lut.h"
 
 namespace darmok
 {
@@ -224,6 +227,7 @@ namespace darmok
 		}
 		auto& config = optConfig ? *optConfig : *defConfig;
 		glm::vec4 hasTextures{ 0 };
+        uint8_t maxTextureMips = 0;
 
 		for (const auto& [type, key] : config.textureUniformKeys)
 		{
@@ -240,20 +244,21 @@ namespace darmok
 			}
 			if (tex)
 			{
+                maxTextureMips = std::max(maxTextureMips, tex->getMipsCount());
 				config.uniformHandles.configure(encoder, key, tex->getHandle());
 			}
 		}
 
-		// pbr
-		if (config.defaultTexture)
-		{
-			encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO_LUT, config.albedoLutSamplerUniform, config.defaultTexture->getHandle());
-		}
+		for(auto& fixedConfig : config.fixedTextures)
+        {
+            auto tex = fixedConfig.texture ? fixedConfig.texture : config.defaultTexture;
+            encoder.setTexture(fixedConfig.stage, fixedConfig.uniform, tex->getHandle());
+        }
 		auto val = Colors::normalize(baseColor);
 		encoder.setUniform(config.baseColorUniform, glm::value_ptr(val));
 		val = glm::vec4{ metallicFactor, roughnessFactor, normalScale, occlusionStrength };
 		encoder.setUniform(config.metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
-		val = glm::vec4{ Colors::normalize(emissiveColor), 0 };
+        val = glm::vec4{Colors::normalize(emissiveColor), maxTextureMips - 1 };
 		encoder.setUniform(config.emissiveColorUniform, glm::value_ptr(val));
 		val = glm::vec4{ multipleScattering ? 1.F : 0.F, whiteFurnanceFactor, 0, 0 };
 		encoder.setUniform(config.multipleScatteringUniform, glm::value_ptr(val));
@@ -297,7 +302,7 @@ namespace darmok
 		encoder.submit(viewId, prog);
 	}
 
-	MaterialRenderConfig MaterialRenderConfig::createDefault() noexcept
+	MaterialRenderConfig MaterialRenderConfig::createDefault(bool pbr) noexcept
 	{
 		MaterialRenderConfig config;
 		config.textureUniformKeys = std::unordered_map<TextureType, TextureUniformKey>{
@@ -307,8 +312,16 @@ namespace darmok
 			{ Material::TextureDefinition::Occlusion, Texture::createUniformKey("s_texOcclusion", RenderSamplers::MATERIAL_OCCLUSION) },
 			{ Material::TextureDefinition::Emissive, Texture::createUniformKey("s_texEmissive", RenderSamplers::MATERIAL_EMISSIVE) },
 			{ Material::TextureDefinition::Specular, Texture::createUniformKey("s_texSpecular", RenderSamplers::MATERIAL_SPECULAR)},
+            { Material::TextureDefinition::EnvironmentIrradiance, Texture::createUniformKey("s_irradiance", RenderSamplers::MATERIAL_ENV_IRRADIANCE)},
+            { Material::TextureDefinition::EnvironmentPrefiltered, Texture::createUniformKey("s_prefilteredEnv", RenderSamplers::MATERIAL_ENV_PREFILTERED)},
 		};
-		config.albedoLutSamplerUniform = { "s_texAlbedoLUT", bgfx::UniformType::Sampler };
+
+        if (pbr)
+        {
+            (void)config.addFixedTexture("s_albedoLut", RenderSamplers::PBR_ALBEDO_LUT, darmok_texture_albedo_lut);
+            (void)config.addFixedTexture("s_brdfLut", RenderSamplers::PBR_BRDF_LUT, darmok_texture_brdf_lut);
+        }
+
 		config.baseColorUniform = { "u_baseColorFactor", bgfx::UniformType::Vec4 };
 		config.specularColorUniform = { "u_specularFactorVec", bgfx::UniformType::Vec4 };
 		config.metallicRoughnessNormalOcclusionUniform = { "u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4 };
@@ -322,7 +335,7 @@ namespace darmok
 
 	void MaterialRenderConfig::reset() noexcept
 	{
-		albedoLutSamplerUniform.reset();
+		fixedTextures.clear();
 		baseColorUniform.reset();
 		specularColorUniform.reset();
 		metallicRoughnessNormalOcclusionUniform.reset();
@@ -358,9 +371,13 @@ namespace darmok
 		return mat;
 	}
 
+    MaterialAppComponent::MaterialAppComponent(RenderConfig config) noexcept
+        : _renderConfig{std::move(config)}
+    {
+    }
+
 	expected<void, std::string> MaterialAppComponent::init(App& app) noexcept
 	{
-		_renderConfig = RenderConfig::createDefault();
 		auto texResult = Texture::load(Image{ Colors::cyan(), app.getAssets().getAllocator() });
 		if (!texResult)
 		{

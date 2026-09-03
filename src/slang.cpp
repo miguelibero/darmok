@@ -1353,7 +1353,12 @@ namespace darmok
         if (input.config.is_null())
         {
             auto filename = input.path.filename().string();
-            auto ext = filename.substr(filename.find('.'));
+            auto pos = filename.find('.');
+            if (pos == std::string::npos)
+            {
+                return effect;
+            }
+            auto ext = filename.substr(pos);
             if (ext != ".slang")
             {
                 return effect;

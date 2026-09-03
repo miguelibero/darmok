@@ -66,6 +66,9 @@ namespace
             DARMOK_TRY_VALUE_PREFIX(sceneComp, _app.addComponent<SceneAppComponent>(), "adding scene component");
             auto scene = sceneComp->getScene();
 
+            auto matConfig = MaterialRenderConfig::createDefault(true);
+            DARMOK_TRY_PREFIX(_app.addComponent<MaterialAppComponent>(std::move(matConfig)), "adding material component");
+
     		_cam = createCamera(*scene);
             _freeCam = createCamera(*scene, _cam);
 

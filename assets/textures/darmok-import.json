@@ -1,0 +1,18 @@
+{
+    "headerIncludeDir": "generated",
+    "headerVarPrefix": "darmok_texture_",
+    "importers": {
+        "generated_textures": {
+            "atest_albedoLut": {
+                "outputPath": "albedo_lut.bin",
+                "size": 512,
+                "sampleCount": 2048
+            },
+            "brdfLut": {
+                "outputPath": "brdf_lut.bin",
+                "size": 256,
+                "sampleCount": 1024
+            }
+        }
+    }
+}

@@ -147,6 +147,7 @@ namespace darmok
         bool isPathCached(const std::filesystem::path& path) const noexcept;
         bool isCacheUpdated() const noexcept;
         expected<void, std::string> writeCache() const noexcept;
+        bool importFiles(std::ostream& log) const noexcept;
     };
 
     class BaseCommandLineFileImporter;

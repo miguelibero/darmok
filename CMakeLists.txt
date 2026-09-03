@@ -102,9 +102,9 @@ find_package(lodepng CONFIG REQUIRED)
 
 include(darmokProcessAssets)
 
-set(CORE_ASSETS_TARGET darmok-core-assets)
+set(CORE_SHADERS_TARGET darmok-core-shaders)
 darmok_process_assets(
-  TARGET ${CORE_ASSETS_TARGET} CORE
+  TARGET ${CORE_SHADERS_TARGET} CORE
   INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/core
   OUTPUT include/private/generated/shaders
   ASSETS
@@ -121,7 +121,15 @@ darmok_process_assets(
     gui.slang
     unlit.slang
 )
-set(ASSET_TARGETS ${CORE_ASSETS_TARGET})
+set(CORE_TEXTURES_TARGET darmok-core-textures)
+darmok_process_assets(
+  TARGET ${CORE_TEXTURES_TARGET} CORE
+  INPUT ${PROJECT_SOURCE_DIR}/assets/textures
+  OUTPUT include/private/generated/textures
+  ASSETS
+    darmok-import.json
+)
+set(ASSET_TARGETS ${CORE_SHADERS_TARGET} ${CORE_TEXTURES_TARGET})
 
 set(CORE_SOURCES
   string.cpp
@@ -136,6 +144,7 @@ set(CORE_SOURCES
   shape.cpp
   handle.cpp
   texture.cpp
+  texture_pbr.cpp
   mesh_core.cpp
   vertex.cpp
   varying.cpp
@@ -170,6 +179,7 @@ set(CORE_HEADERS
   image_fwd.hpp
   image.hpp
   texture.hpp
+  texture_pbr.hpp
   vertex.hpp
   varying.hpp
   collection.hpp

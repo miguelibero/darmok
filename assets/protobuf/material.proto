@@ -22,6 +22,9 @@ message MaterialTexture {
         Occlusion = 3;
         Emissive = 4;
         Specular = 5;
+
+        EnvironmentIrradiance = 6;
+        EnvironmentPrefiltered = 7;
     }
 
     oneof key {

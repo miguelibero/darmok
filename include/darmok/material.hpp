@@ -60,7 +60,15 @@ namespace darmok
         std::unordered_map<TextureType, TextureUniformKey> textureUniformKeys;
         UniformHandleContainer uniformHandles;
 
-        UniformHandle albedoLutSamplerUniform;
+        struct FixedTextureConfig
+        {
+            uint8_t stage;
+            UniformHandle uniform;
+            std::shared_ptr<Texture> texture;
+        };
+
+        std::vector<FixedTextureConfig> fixedTextures;
+
         UniformHandle baseColorUniform;
         UniformHandle specularColorUniform;
         UniformHandle metallicRoughnessNormalOcclusionUniform;
@@ -76,7 +84,32 @@ namespace darmok
         MaterialRenderConfig(MaterialRenderConfig&& other) = default;
         MaterialRenderConfig& operator=(MaterialRenderConfig&& other) = default;
 
-        static MaterialRenderConfig createDefault() noexcept;
+        static MaterialRenderConfig createDefault(bool pbr = false) noexcept;
+
+        template<typename T>
+        expected<std::reference_wrapper<FixedTextureConfig>, std::string> addFixedTexture(const std::string& name, uint8_t stage, const T& mem)
+        {
+            Texture::Definition def;
+            std::shared_ptr<Texture> tex;
+            auto readResult = protobuf::readStaticMem<T>(def, mem);
+            if(!readResult)
+            {
+                return unexpected{std::move(readResult).error()};
+            }
+            auto texResult = Texture::load(def);
+            if(!texResult)
+            {
+                return unexpected{std::move(texResult).error()};
+            }
+            tex = std::make_shared<Texture>(std::move(texResult).value());
+
+            fixedTextures.push_back(FixedTextureConfig{
+                .stage = stage,
+                .uniform = {name, bgfx::UniformType::Sampler},
+                .texture = tex
+            });
+            return fixedTextures.back();
+        };
 
         void reset() noexcept;
     };
@@ -138,7 +171,7 @@ namespace darmok
     {
     public:
         using RenderConfig = MaterialRenderConfig;
-
+        MaterialAppComponent(RenderConfig config = RenderConfig::createDefault()) noexcept;
         expected<void, std::string> init(App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
