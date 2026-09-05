@@ -77,6 +77,7 @@ namespace darmok
         UniformHandle multipleScatteringUniform;
         BasicUniforms basicUniforms;
         std::shared_ptr<Texture> defaultTexture;
+        std::unordered_map<TextureType, std::shared_ptr<Texture>> defaultTextures;
 
         MaterialRenderConfig() = default;
         MaterialRenderConfig(const MaterialRenderConfig& other) = delete;

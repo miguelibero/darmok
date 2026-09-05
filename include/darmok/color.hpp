@@ -50,7 +50,7 @@ namespace darmok
         Color3 multiply(const Color3& a, const Color3& b) noexcept;
         Color divide(const Color& a, const Color& b) noexcept;
         Color3 divide(const Color3& a, const Color3& b) noexcept;
-    };
+    };        
 }
 
 namespace std

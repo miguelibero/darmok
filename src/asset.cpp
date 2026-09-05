@@ -2,6 +2,7 @@
 
 #include <darmok/asset_pack.hpp>
 #include <darmok/slang.hpp>
+#include <darmok/texture_pbr.hpp>
 
 namespace darmok
 {
@@ -318,7 +319,8 @@ namespace darmok
 #endif
 		_importer.addTypeImporter<CopyFileImporter>();
 		_importer.addTypeImporter<TexturePackerAtlasFileImporter>();
-		_importer.addTypeImporter<ImageFileImporter>();
+        _importer.addTypeImporter<ImageFileImporter>(_alloc);
+        _importer.addTypeImporter<EnvironmentTextureFileImporter>(_alloc);
 	}
 
 	DarmokAssetFileImporter& DarmokAssetFileImporter::setCachePath(const std::filesystem::path& cachePath) noexcept

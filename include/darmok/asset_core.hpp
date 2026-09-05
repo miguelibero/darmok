@@ -13,6 +13,7 @@
 #include <unordered_set>
 
 #include <bx/bx.h>
+#include <bx/allocator.h>
 #include <nlohmann/json.hpp>
 
 namespace CLI
@@ -164,6 +165,7 @@ namespace darmok
         expected<Paths, std::string> getOutputPaths() const noexcept;
         bool operator()(std::ostream& log) const noexcept;
     private:
+        bx::DefaultAllocator _alloc;
         FileImporter _importer;
         ProgramFileImporter& _progImporter;
 		SlangProgramFileImporter& _slangImporter;

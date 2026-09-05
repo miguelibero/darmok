@@ -171,6 +171,7 @@ set(CORE_HEADERS
   data_stream.hpp
   uniform.hpp
   math.hpp
+  multiarray.hpp
   shape.hpp
   handle.hpp
   mesh_core.hpp

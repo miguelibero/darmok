@@ -45,6 +45,8 @@ namespace darmok
 		static expected<Image, std::string> load(DataView data, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) noexcept;
 		static expected<Image, std::string> load(const std::array<DataView, 6>& faceData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format = bimg::TextureFormat::Count) noexcept;
 
+        [[nodiscard]] static uint8_t getMipCountForSize(glm::uint size);
+
 		[[nodiscard]] bool empty() const noexcept;
 		[[nodiscard]] glm::uvec2 getSize() const noexcept;
 		[[nodiscard]] uint32_t getDepth() const noexcept;
@@ -97,7 +99,7 @@ namespace darmok
 	class DARMOK_EXPORT ImageFileImporter final : public IFileTypeImporter
 	{
 	public:
-		ImageFileImporter() noexcept;
+        ImageFileImporter(OptionalRef<bx::AllocatorI> alloc = {}) noexcept;
 		const std::string& getName() const noexcept override;
 
 		expected<Effect, std::string> prepare(const Input& input) noexcept override;
@@ -106,6 +108,7 @@ namespace darmok
 	private:
 		std::optional<std::array<std::filesystem::path, 6>> _cubemapFaces;
 		ImageEncoding _outputEncoding;
-		bx::DefaultAllocator _alloc;
+        OptionalRef<bx::AllocatorI> _alloc;
+		bx::DefaultAllocator _defaultAlloc;
 	};
 }

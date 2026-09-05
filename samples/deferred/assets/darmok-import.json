@@ -10,6 +10,20 @@
                 "programDefines": ["SHADOW_ENABLED"],
                 "generateTextureMips": true
             }
+        },
+        "environment.exr": {
+            "env_texture": {
+                "irradiance": {
+                    "outputPath": "env_irradiance.bin",
+                    "size": 32,
+                    "samples": 256
+                },
+                "prefiltered" : {
+                    "outputPath": "env_prefiltered.bin",
+                    "size": 128,
+                    "samples": 1024
+                }
+            }
         }
     }
 }

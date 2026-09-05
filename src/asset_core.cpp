@@ -1303,9 +1303,10 @@ namespace darmok
         , _slangImporter{ _importer.addTypeImporter<SlangProgramFileImporter>() }
     {
         _importer.addTypeImporter<CopyFileImporter>();
-        _importer.addTypeImporter<ImageFileImporter>();
+        _importer.addTypeImporter<ImageFileImporter>(_alloc);
         _importer.addTypeImporter<TextureFileImporter>();
         _importer.addTypeImporter<GeneratedTexturesFileImporter>();
+        _importer.addTypeImporter<EnvironmentTextureFileImporter>(_alloc);
     }
 
     DarmokCoreAssetFileImporter& DarmokCoreAssetFileImporter::setCachePath(const std::filesystem::path& cachePath) noexcept

@@ -145,5 +145,5 @@ namespace darmok
 		static glm::quat quatLookAt(const glm::vec3& direction, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f), float threshold = 0.01F) noexcept;
 	
 		static glm::vec3 getAlongNormal(const glm::vec3& normal) noexcept;
-	};
+	};    
 }

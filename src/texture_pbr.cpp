@@ -1,4 +1,7 @@
 #include <darmok/texture_pbr.hpp>
+#include <darmok/multiarray.hpp>
+#include <fmt/format.h>
+#include <magic_enum/magic_enum_format.hpp>
 
 namespace darmok
 {
@@ -34,30 +37,61 @@ namespace darmok
                 radicalInverseVdC(i)};
         }
 
-        glm::vec3 importanceSampleGgx(
-            const glm::vec2& xi,
-            float alpha)
+        void buildBasis(
+            glm::vec3 N,
+            glm::vec3& T,
+            glm::vec3& B)
         {
-            const float alpha2 = alpha * alpha;
+            const glm::vec3 up =
+                std::abs(N.y) < 0.999f
+                    ? glm::vec3(0, 1, 0)
+                    : glm::vec3(1, 0, 0);
+
+            T = glm::normalize(glm::cross(up, N));
+            B = glm::cross(N, T);
+        }
+
+        glm::vec3 importanceSampleGgx(
+            glm::vec2 Xi,
+            float alpha,
+            glm::vec3 N = glm::vec3(0.0f, 0.0f, 1.0f)
+        )
+        {
+            const float alpha2 =
+                alpha * alpha;
 
             const float phi =
-                2.0f * glm::pi<float>() * xi.x;
+                2.0f *
+                glm::pi<float>() *
+                Xi.x;
 
             const float cosTheta =
                 std::sqrt(
-                    (1.0f - xi.y) /
-                    (1.0f + (alpha2 - 1.0f) * xi.y));
+                    (1.0f - Xi.y) /
+                    (1.0f +
+                     (alpha2 - 1.0f) * Xi.y));
 
             const float sinTheta =
                 std::sqrt(
                     std::max(
                         0.0f,
-                        1.0f - cosTheta * cosTheta));
+                        1.0f -
+                            cosTheta * cosTheta));
 
-            return glm::normalize(glm::vec3{
-                sinTheta * std::cos(phi),
-                sinTheta * std::sin(phi),
-                cosTheta});
+            glm::vec3 H{
+                std::cos(phi) * sinTheta,
+                std::sin(phi) * sinTheta,
+                cosTheta};
+
+            glm::vec3 T;
+            glm::vec3 B;
+
+            buildBasis(N, T, B);
+
+            return glm::normalize(
+                T * H.x +
+                B * H.y +
+                N * H.z);
         }
 
         float smithGgxCorrelated(
@@ -147,7 +181,6 @@ namespace darmok
                 const float NoH =
                     std::max(H.z, 0.0f);
 
-                // GGX NDF
                 const float alpha2 =
                     alpha * alpha;
 
@@ -159,27 +192,23 @@ namespace darmok
                     alpha2 /
                     (glm::pi<float>() * denominator * denominator);
 
-                // Smith visibility
                 const float Vterm =
                     smithGgxCorrelated(
                         NoV,
                         NoL,
                         alpha);
 
-                // Fresnel
                 const float F =
                     fresnelSchlick(
                         VoH,
                         F0);
 
-                // PDF of the sampled half vector.
                 const float pdf =
                     D * NoH /
                     std::max(
                         4.0f * VoH,
                         1e-6f);
 
-                // BRDF * NoL / PDF
                 const float weight =
                     F *
                     Vterm *
@@ -196,35 +225,154 @@ namespace darmok
 
         float geometrySchlickGgx(
             float NoV,
-            float roughness)
+            float alpha)
         {
-            // UE4-style Schlick-GGX approximation.
-            //
-            // This is commonly used when generating the
-            // standard split-sum BRDF LUT.
             const float k =
-                (roughness * roughness) / 2.0f;
+                alpha / 2.0f;
 
             return NoV /
                    (NoV * (1.0f - k) + k);
         }
 
+        glm::vec3 cosineSampleHemisphere(
+            glm::vec2 xi)
+        {
+            const float phi =
+                2.0f * glm::pi<float>() * xi.x;
+
+            const float cosTheta =
+                std::sqrt(1.0f - xi.y);
+
+            const float sinTheta =
+                std::sqrt(xi.y);
+
+            return {
+                std::cos(phi) * sinTheta,
+                std::sin(phi) * sinTheta,
+                cosTheta};
+        }
+
+        glm::vec2 directionToEquirectangularUv(glm::vec3 dir)
+        {
+            dir = glm::normalize(dir);
+
+            const float u =
+                std::atan2(dir.z, dir.x) /
+                    (2.0f * glm::pi<float>()) +
+                0.5f;
+
+            const float v =
+                std::asin(glm::clamp(dir.y, -1.0f, 1.0f)) /
+                    glm::pi<float>() +
+                0.5f;
+
+            return {u, v};
+        }
+
+        using PixelArray2d = Array2d<glm::vec4, uint32_t>;
+        using PixelArray3d = Array3d<glm::vec4, uint32_t>;
+
+        glm::vec3 sampleEquirectangular(
+            const PixelArray2d& pixels,
+            glm::vec3 direction)
+        {
+            glm::vec2 uv =
+                directionToEquirectangularUv(direction);
+
+            uv.x -= std::floor(uv.x);
+
+            uv.y = glm::clamp(uv.y, 0.0f, 1.0f);
+
+            const float x =
+                uv.x * static_cast<float>(pixels.size().x - 1);
+
+            const float y =
+                uv.y * static_cast<float>(pixels.size().y - 1);
+
+            const uint32_t x0 =
+                static_cast<uint32_t>(x);
+
+            const uint32_t y0 =
+                static_cast<uint32_t>(y);
+
+            const uint32_t x1 =
+                (x0 + 1) % pixels.size().x;
+
+            const uint32_t y1 =
+                std::min(y0 + 1, pixels.size().y - 1);
+
+            const float tx = x - static_cast<float>(x0);
+            const float ty = y - static_cast<float>(y0);
+
+            const auto c00 = pixels(x0, y0);
+            const auto c10 = pixels(x1, y0);
+            const auto c01 = pixels(x0, y1);
+            const auto c11 = pixels(x1, y1);
+
+            return glm::mix(
+                glm::mix(c00, c10, tx),
+                glm::mix(c01, c11, tx),
+                ty);
+        }
+
+        glm::vec3 integrateIrradiance(
+            const PixelArray2d& hdr,
+            glm::vec3 N,
+            uint32_t sampleCount)
+        {
+            glm::vec3 T;
+            glm::vec3 B;
+
+            buildBasis(N, T, B);
+
+            glm::vec3 result{0.0f};
+
+            for(uint32_t i = 0; i < sampleCount; ++i)
+            {
+                const glm::vec2 xi{
+                    static_cast<float>(i) /
+                        static_cast<float>(sampleCount),
+
+                    radicalInverseVdC(i)};
+
+                const glm::vec3 local =
+                    cosineSampleHemisphere(xi);
+
+                const glm::vec3 L =
+                    glm::normalize(
+                        T * local.x +
+                        B * local.y +
+                        N * local.z);
+
+                const float NoL =
+                    std::max(glm::dot(N, L), 0.0f);
+
+                result +=
+                    sampleEquirectangular(
+                        hdr,
+                        L) *
+                    NoL;
+            }
+
+            return result *
+                   (glm::pi<float>() /
+                    static_cast<float>(sampleCount));
+        }
 
         float geometrySmith(
             float NoV,
             float NoL,
-            float roughness)
+            float alpha)
         {
-            return geometrySchlickGgx(NoV, roughness) *
-                   geometrySchlickGgx(NoL, roughness);
+            return geometrySchlickGgx(NoV, alpha) *
+                   geometrySchlickGgx(NoL, alpha);
         }
 
         glm::vec2 integrateBrdf(
             float NoV,
-            float roughness,
+            float alpha,
             uint32_t sampleCount)
         {
-            // View direction in tangent space.
             const float sinThetaV =
                 std::sqrt(
                     std::max(
@@ -247,7 +395,7 @@ namespace darmok
                 const glm::vec3 H =
                     importanceSampleGgx(
                         Xi,
-                        roughness);
+                        alpha);
 
                 const float VoH =
                     std::max(
@@ -271,9 +419,8 @@ namespace darmok
                     geometrySmith(
                         NoV,
                         NoL,
-                        roughness);
+                        alpha);
 
-                // Visibility term from the split-sum derivation.
                 const float GVis =
                     (G * VoH) /
                     std::max(
@@ -285,12 +432,6 @@ namespace darmok
                         1.0f - VoH,
                         5.0f);
 
-                // F = F0 * (1 - Fc) + Fc
-                //
-                // Therefore:
-                //
-                // A accumulates the coefficient of F0
-                // B accumulates the constant Fresnel term.
                 A += (1.0f - Fc) * GVis;
                 B += Fc * GVis;
             }
@@ -301,37 +442,83 @@ namespace darmok
             return {
                 A * invSampleCount,
                 B * invSampleCount};
+        }        
+
+        glm::vec3 integratePrefilteredEnvironment(
+            const PixelArray2d& hdr,
+            glm::vec3 R,
+            float alpha,
+            uint32_t sampleCount)
+        {
+            glm::vec3 result{0.0f};
+            float totalWeight = 0.0f;
+
+            for(uint32_t i = 0; i < sampleCount; ++i)
+            {
+                const glm::vec2 Xi{
+                    static_cast<float>(i) /
+                        static_cast<float>(sampleCount),
+
+                    radicalInverseVdC(i)};
+
+                const glm::vec3 H =
+                    importanceSampleGgx(
+                        Xi,
+                        alpha, R);
+
+                const glm::vec3 L =
+                    glm::normalize(
+                        2.0f *
+                            glm::dot(R, H) *
+                            H -
+                        R);
+
+                const float NoL =
+                    std::max(
+                        glm::dot(R, L),
+                        0.0f);
+
+                if(NoL <= 0.0f)
+                    continue;
+
+                result +=
+                    sampleEquirectangular(
+                        hdr,
+                        L) *
+                    NoL;
+
+                totalWeight += NoL;
+            }
+
+            return totalWeight > 0.0f
+                       ? result / totalWeight
+                       : glm::vec3(0.0f);
         }
 
-        Definition createDefinition(std::vector<uint16_t> pixels, uint16_t size)
+        // RG16F = 2 half-floats per pixel
+        using HalfFloatPixelArray2d = Array2d<glm::vec<2, uint16_t>, uint16_t>;
+
+        Definition createHalfFloatDefinition(const HalfFloatPixelArray2d& pixels, uint16_t size)
         {
             Definition def;
             auto& config = *def.mutable_config();
 
-            def.set_data(std::string_view{
-                reinterpret_cast<const char*>(pixels.data()),
-                pixels.size() * sizeof(uint16_t)});
-
+            def.set_data(pixels.dataView().stringView());
             config.mutable_size()->set_x(size);
             config.mutable_size()->set_y(size);
             config.set_format(Texture::Definition::RG16F);
             config.set_type(Texture::Definition::Texture2D);
             config.set_mips(false);
-            config.set_depth(1);
+            config.set_depth(0);
+            config.set_layers(1);
 
             return def;
         }
 
+
         Definition createAlbedoLutDefinition(uint16_t size, uint32_t sampleCount)
         {
-            // RG16F = 2 half-floats per pixel.
-            //
-            // uint16_t is exactly what we want here because each
-            // channel is a 16-bit IEEE half float.
-            std::vector<uint16_t> pixels(
-                static_cast<size_t>(size) *
-                static_cast<size_t>(size) *
-                2);
+            HalfFloatPixelArray2d pixels{size};
 
             for(uint16_t y = 0; y < size; ++y)
             {
@@ -366,29 +553,19 @@ namespace darmok
                             0.0f,
                             sampleCount);
 
-                    const size_t index =
-                        (static_cast<size_t>(y) * size +
-                         static_cast<size_t>(x)) *
-                        2;
-
-                    pixels[index + 0] =
-                        bx::halfFromFloat(E1);
-
-                    pixels[index + 1] =
-                        bx::halfFromFloat(E0);
+                    pixels(x, y) = {
+                        bx::halfFromFloat(E1),
+                        bx::halfFromFloat(E0)
+                    };
                 }
             }
 
-            return createDefinition(std::move(pixels), size);
+            return createHalfFloatDefinition(std::move(pixels), size);
         }
 
         Definition createBrdfLutDefinition(uint16_t size, uint32_t sampleCount)
         {
-            // Two 16-bit half floats per pixel.
-            std::vector<uint16_t> pixels(
-                static_cast<size_t>(size) *
-                static_cast<size_t>(size) *
-                2);
+            HalfFloatPixelArray2d pixels{size};
 
             for(uint16_t y = 0; y < size; ++y)
             {
@@ -396,6 +573,8 @@ namespace darmok
                 const float roughness =
                     static_cast<float>(y) /
                     static_cast<float>(size - 1);
+
+                const float alpha = roughness * roughness;
 
                 for(uint16_t x = 0; x < size; ++x)
                 {
@@ -412,27 +591,207 @@ namespace darmok
                     const glm::vec2 result =
                         integrateBrdf(
                             NoV,
-                            roughness,
+                            alpha,
                             sampleCount);
 
-                    const size_t index =
-                        (static_cast<size_t>(y) * size +
-                         static_cast<size_t>(x)) *
-                        2;
-
-                    pixels[index + 0] =
-                        bx::halfFromFloat(result.x);
-
-                    pixels[index + 1] =
-                        bx::halfFromFloat(result.y);
+                    pixels(x, y) = {
+                        bx::halfFromFloat(result.x),
+                        bx::halfFromFloat(result.y)
+                    };
                 }
             }
 
-            return createDefinition(std::move(pixels), size);
+            return createHalfFloatDefinition(std::move(pixels), size);
+        }
+
+        expected<PixelArray2d, std::string> loadMipData(const bimg::ImageMip& mip)
+        {
+            if (mip.m_format != bimg::TextureFormat::RGBA32F)
+            {
+                return unexpected{"format is not RGBA32F"};
+            }
+            return PixelArray2d::load(DataView{mip.m_data, mip.m_size}, {mip.m_width, mip.m_height});
+        }
+
+        glm::vec3 cubeDirection(
+            uint32_t face,
+            uint32_t x,
+            uint32_t y,
+            uint32_t size)
+        {
+            float a = 2.0f * (float(x) + 0.5f) / float(size) - 1.0f;
+            float b = 2.0f * (float(y) + 0.5f) / float(size) - 1.0f;
+
+            switch(face)
+            {
+            case 0:
+                return glm::normalize(glm::vec3(1.0f, -b, -a)); // +X
+            case 1:
+                return glm::normalize(glm::vec3(-1.0f, -b, a)); // -X
+            case 2:
+                return glm::normalize(glm::vec3(a, 1.0f, b)); // +Y
+            case 3:
+                return glm::normalize(glm::vec3(a, -1.0f, -b)); // -Y
+            case 4:
+                return glm::normalize(glm::vec3(a, -b, 1.0f)); // +Z
+            case 5:
+                return glm::normalize(glm::vec3(-a, -b, -1.0f)); // -Z
+            default:
+                return {};
+            }
+        }
+
+        Definition createEnvironmentIrradianceDefinition(const PixelArray2d& source, uint32_t size, uint32_t sampleCount)
+        {
+            // 6 faces × width × height × RGBA
+            PixelArray3d result{6, size, size};
+
+            for(uint32_t face = 0; face < 6; ++face)
+            {
+                for(uint32_t y = 0; y < size; ++y)
+                {
+                    for(uint32_t x = 0; x < size; ++x)
+                    {
+                        glm::vec3 N =
+                            cubeDirection(face, x, y, size);
+
+                        glm::vec3 irradiance =
+                            integrateIrradiance(
+                                source,
+                                N,
+                                sampleCount);
+
+                        result[face][x][y] = glm::vec4{irradiance, 1.0f};
+                    }
+                }
+            }
+
+            Definition def;
+            auto& config = *def.mutable_config();
+
+            def.set_data(result.dataView().stringView());
+            config.mutable_size()->set_x(size);
+            config.mutable_size()->set_y(size);
+            config.set_format(Texture::Definition::RGBA32F);
+            config.set_type(Texture::Definition::CubeMap);
+            config.set_mips(false);
+            config.set_depth(0);
+            config.set_layers(1);
+
+            return def;
+        }
+
+        Definition createEnvironmentPrefilteredDefinition(const PixelArray2d& source, uint16_t size, uint32_t sampleCount)
+        {
+            // mipCount x 6 faces × width × height × RGBA
+            auto mipCount = Image::getMipCountForSize(size);
+            std::vector<PixelArray2d::value_type> result;
+
+            for(uint32_t mipNum = 0; mipNum < mipCount; ++mipNum)
+            {
+                uint32_t mipSize = size >> mipNum;
+                mipSize = std::max(uint32_t{1}, mipSize);
+                PixelArray3d mip{6, mipSize, mipSize};
+
+                float roughness =
+                    mipCount > 1
+                        ? float(mipNum) / float(mipCount - 1)
+                        : 0.0f;
+
+                auto alpha = roughness * roughness;
+
+                for(uint32_t face = 0; face < 6; ++face)
+                {
+                    for(uint32_t y = 0; y < mipSize; ++y)
+                    {
+                        for(uint32_t x = 0; x < mipSize; ++x)
+                        {
+                            glm::vec3 N =
+                                cubeDirection(
+                                    face,
+                                    x,
+                                    y,
+                                    mipSize);
+
+                            glm::vec3 prefilteredColor(0.0f);
+                            float totalWeight = 0.0f;
+
+                            for(uint32_t i = 0;
+                                i < sampleCount;
+                                ++i)
+                            {
+                                glm::vec2 Xi;
+
+                                Xi.x =
+                                    float(i) /
+                                    float(sampleCount);
+
+                                Xi.y =
+                                    radicalInverseVdC(i);
+
+                                glm::vec3 H =
+                                    importanceSampleGgx(
+                                        Xi,
+                                        alpha,
+                                        N);
+
+                                glm::vec3 L =
+                                    glm::normalize(
+                                        glm::reflect(-N, H));
+
+                                float NoL =
+                                    glm::max(
+                                        glm::dot(N, L),
+                                        0.0f);
+
+                                if(NoL > 0.0f)
+                                {
+                                    glm::vec3 radiance =
+                                        sampleEquirectangular(
+                                            source,
+                                            L);
+
+                                    prefilteredColor +=
+                                        radiance * NoL;
+
+                                    totalWeight += NoL;
+                                }
+                            }
+
+                            if(totalWeight > 0.0f)
+                            {
+                                prefilteredColor /= totalWeight;
+                            }
+
+                            mip[face][x][y] = glm::vec4(prefilteredColor, 1.0f);
+                        }
+                    }
+                }
+                result.insert(result.end(),
+                    std::make_move_iterator(mip.begin()),
+                    std::make_move_iterator(mip.end())
+                );
+            }
+
+            Definition def;
+            auto& config = *def.mutable_config();
+
+            DataView dataView{result.data(), result.size() * sizeof(PixelArray2d::value_type)};
+
+            def.set_data(dataView.stringView());
+            config.mutable_size()->set_x(size);
+            config.mutable_size()->set_y(size);
+            config.set_format(Texture::Definition::RGBA32F);
+            config.set_type(Texture::Definition::CubeMap);
+            config.set_mips(true);
+            config.set_depth(0);
+            config.set_layers(1);
+
+            return def;
         }
     }
 
-    void GeneratedTexturesFileImporter::TextureConfig::parse(const nlohmann::json& json) noexcept
+    void GeneratedTextureConfig::parse(const nlohmann::json& json) noexcept
     {
         auto itr = json.find("outputPath");
         if(itr != json.end())
@@ -444,10 +803,10 @@ namespace darmok
         {
             size = *itr;
         }
-        itr = json.find("sampleCount");
+        itr = json.find("samples");
         if(itr != json.end())
         {
-            sampleCount = *itr;
+            samples = *itr;
         }
     }
 
@@ -455,6 +814,14 @@ namespace darmok
     {
         auto& json = input.config;
         Effect effect;
+        if(!std::filesystem::is_directory(input.path))
+        {
+            return effect;
+        }
+        if(json.is_null())
+        {
+            return effect;
+        }
         auto itr = json.find("albedoLut");
         if(itr != json.end())
         {
@@ -490,18 +857,23 @@ namespace darmok
         size_t i = 0;
         for (auto& [texType, texConfig] : _textures)
         {
+            if(config.outputStreams.size() <= i || !config.outputStreams[i])
+            {
+                ++i;
+                continue;
+            }
             auto& out = *config.outputStreams[i++];
             Texture::Definition def;
             switch (texType)
             {
                 case TextureType::AlbedoLut:
                 {
-                    def = PbrTextureUtils::createAlbedoLutDefinition(texConfig.size, texConfig.sampleCount);
+                    def = PbrTextureUtils::createAlbedoLutDefinition(texConfig.size, texConfig.samples);
                     break;
                 }
                 case TextureType::BrdfLut:
                 {
-                    def = PbrTextureUtils::createBrdfLutDefinition(texConfig.size, texConfig.sampleCount);
+                    def = PbrTextureUtils::createBrdfLutDefinition(texConfig.size, texConfig.samples);
                     break;
                 }
             }
@@ -519,4 +891,126 @@ namespace darmok
         static const std::string name = "generated_textures";
         return name;
     }
+
+    EnvironmentTextureFileImporter::EnvironmentTextureFileImporter(OptionalRef<bx::AllocatorI> alloc) noexcept 
+        : _alloc{alloc}
+    {
     }
+
+    expected<EnvironmentTextureFileImporter::Effect, std::string> EnvironmentTextureFileImporter::prepare(const Input& input) noexcept
+    {
+        Effect effect;
+        auto& json = input.config;
+        if(json.is_null())
+        {
+            return effect;
+        }
+
+        auto addOutput = [&](std::filesystem::path path)
+        {
+            auto str = path.string();
+            StringUtils::replace(str, "{name}", input.path.stem().string());
+            effect.outputs.emplace_back(str, true);
+        };
+
+        auto itr = json.find("irradiance");
+        if(itr != json.end())
+        {
+            auto& file = _textures[TextureType::Irradiance];
+            file = TextureConfig{"{name}_env_irradiance.bin", 32, 256};
+            file.parse(*itr);
+            addOutput(file.outputPath);
+        }
+        itr = json.find("prefiltered");
+        if(itr != json.end())
+        {
+            auto& file = _textures[TextureType::Prefiltered];
+            file = TextureConfig{"{name}_env_prefiltered.bin", 128, 1024};
+            file.parse(*itr);
+            addOutput(file.outputPath);
+        }
+        _outputFormat = OutputFormat::Binary;
+        itr = json.find("outputFormat");
+        if(itr != json.end())
+        {
+            std::string val{*itr};
+            _outputFormat = protobuf::getFormat(val).value();
+        }
+        else if(!_textures.empty())
+        {
+            _outputFormat = protobuf::getPathFormat(_textures.begin()->second.outputPath);
+        }
+        return effect;
+    }
+
+    expected<void, std::string> EnvironmentTextureFileImporter::operator()(const Input& input, Config& config) noexcept
+    {
+        using namespace PbrTextureUtils;
+
+        auto& alloc = _alloc ? *_alloc : _defaultAlloc;
+        auto dataResult = Data::fromFile(input.path, alloc);
+        if(!dataResult)
+        {
+            return unexpected{fmt::format("Failed to read file: {}", dataResult.error())};
+        }
+        auto imgResult = Image::load(dataResult.value(), alloc);
+        if (!imgResult)
+        {
+            return unexpected{fmt::format("Failed to load image: {}", imgResult.error())};
+        }
+        auto convertResult = imgResult->convertFormat(bimg::TextureFormat::RGBA32F);
+        if(!convertResult)
+        {
+            return unexpected{fmt::format("Failed to convert image: {}", convertResult.error())};
+        }
+        auto mipResult = convertResult->getMip(0, 0);
+        if(!mipResult)
+        {
+            return unexpected{fmt::format("Failed to get image mip: {}", mipResult.error())};
+        }
+        auto arrayResult = loadMipData(mipResult.value());
+        if(!arrayResult)
+        {
+            return unexpected{fmt::format("Failed to convert image mip to array: {}", arrayResult.error())};
+        }
+
+        auto pixels = std::move(arrayResult).value();
+
+        size_t i = 0;
+        for(auto& [texType, texConfig] : _textures)
+        {
+            if(config.outputStreams.size() <= i || !config.outputStreams[i])
+            {
+                ++i;
+                continue;
+            }
+            auto& out = *config.outputStreams[i++];
+            Texture::Definition def;
+            switch(texType)
+            {
+                case TextureType::Irradiance:
+                {
+                    def = createEnvironmentIrradianceDefinition(pixels, texConfig.size, texConfig.samples);
+                    break;
+                }
+                case TextureType::Prefiltered:
+                {
+                    def = createEnvironmentPrefilteredDefinition(pixels, texConfig.size, texConfig.samples);
+                    break;
+                }
+            }
+            auto result = protobuf::write(def, out, _outputFormat);
+            if(!result)
+            {
+                return result;
+            }
+        }
+        return {};
+    }
+
+    const std::string& EnvironmentTextureFileImporter::getName() const noexcept
+    {
+        static const std::string name = "env_texture";
+        return name;
+    }
+}

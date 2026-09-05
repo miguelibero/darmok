@@ -485,6 +485,11 @@ namespace darmok
         return dst;
     }
 
+    uint8_t Image::getMipCountForSize(glm::uint size)
+    {
+        return 1u + static_cast<uint8_t>(std::floor(std::log2(size)));
+    }
+
 	glm::uvec2 Image::getSize() const noexcept
 	{
 		if (!_container)
@@ -615,8 +620,9 @@ namespace darmok
 		return std::make_shared<Image>(img);
 	}
 
-	ImageFileImporter::ImageFileImporter() noexcept
-		: _outputEncoding{ ImageEncoding::Count }
+	ImageFileImporter::ImageFileImporter(OptionalRef<bx::AllocatorI> alloc) noexcept
+		: _alloc{alloc}
+        , _outputEncoding{ ImageEncoding::Count }
 	{
 	}
 
@@ -674,6 +680,7 @@ namespace darmok
 			}
 		}
 		auto format = Image::readFormat(formatStr);
+        auto& alloc = _alloc ? *_alloc : _defaultAlloc;
 		for (auto& optOut : config.outputStreams)
 		{
 			if (!optOut)
@@ -698,7 +705,7 @@ namespace darmok
 					faceDataView[i] = faceData[i];
 					++i;
 				}
-				auto imgResult = Image::load(faceDataView, _alloc, format);
+				auto imgResult = Image::load(faceDataView, alloc, format);
 				if (!imgResult)
 				{
 					return unexpected{ "failed to load image " + imgResult.error() };
@@ -713,7 +720,7 @@ namespace darmok
 					return unexpected{ "failed to read data: " + readResult.error() };
 				}
 
-				auto loadResult = Image::load(readResult.value(), _alloc, format);
+				auto loadResult = Image::load(readResult.value(), alloc, format);
 				if (loadResult)
 				{
 					return unexpected{ "failed to load image: " + loadResult.error() };
