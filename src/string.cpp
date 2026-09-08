@@ -10,7 +10,7 @@ namespace darmok::StringUtils
 	std::string toLower(std::string_view sv) noexcept
 	{
 		std::string s{ sv };
-		std::transform(s.begin(), s.end(), s.begin(),
+		std::ranges::transform(s, s.begin(),
 			[](auto c) { return std::tolower(c); }
 		);
 		return s;
@@ -19,7 +19,7 @@ namespace darmok::StringUtils
 	std::string toUpper(std::string_view sv) noexcept
 	{
 		std::string s{ sv };
-		std::transform(s.begin(), s.end(), s.begin(),
+		std::ranges::transform(s, s.begin(),
 			[](auto c) { return std::toupper(c); }
 		);
 		return s;

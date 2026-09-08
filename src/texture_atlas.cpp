@@ -389,13 +389,13 @@ namespace darmok
 				if (elm.positions_size() > 0)
 				{
 					std::vector<glm::uvec2> positions(elm.positions_size());
-					std::transform(elm.positions().begin(), elm.positions().end(), positions.begin(), convertUvec2);
+					std::ranges::transform(elm.positions(), positions.begin(), convertUvec2);
 					xml.append_child("vertices").set_value(TextureAtlasDetail::writeUvec2List(positions));
 				}
 				if (elm.texture_coords_size() > 0)
 				{
 					std::vector<glm::uvec2> texCoords(elm.texture_coords_size());
-					std::transform(elm.texture_coords().begin(), elm.texture_coords().end(), texCoords.begin(), convertUvec2);
+					std::ranges::transform(elm.texture_coords(), texCoords.begin(), convertUvec2);
 					xml.append_child("verticesUV").set_value(TextureAtlasDetail::writeUvec2List(texCoords));
 				}
 				if (elm.indices_size() > 0)
