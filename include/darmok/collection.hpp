@@ -304,11 +304,9 @@ namespace darmok
         template<typename Callback>
         size_t eraseIf(const Callback& callback) noexcept
         {
-            auto itr = std::remove_if(_elms.begin(), _elms.end(),
+            const auto n = std::erase_if(_elms,
                 [&callback](auto& elm) { return callback(elm.ref.get()); });
-            auto count = std::distance(itr, _elms.end());
-            _elms.erase(itr, _elms.end());
-            return count;
+            return n;
         }
 
         bool erase(const T& listener) noexcept
