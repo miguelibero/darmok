@@ -263,7 +263,7 @@ namespace darmok
         if (itr != _textures.end())
         {
             auto ptr = itr->second.get();
-            auto itr2 = std::find_if(_textureSources.begin(), _textureSources.end(),
+            auto itr2 = std::ranges::find_if(_textureSources,
                 [ptr](auto& elm) { return &elm.second.get() == ptr; });
             if (itr2 != _textureSources.end())
             {

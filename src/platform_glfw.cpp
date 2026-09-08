@@ -979,7 +979,7 @@ namespace darmok
 					auto winMode = defMode;
 					winMode.size = mode.size;
 					winMode.screenMode = WindowScreenMode::Normal;
-					auto itr = std::find(info.modes.begin(), info.modes.end(), winMode);
+					auto itr = std::ranges::find(info.modes, winMode);
 					if (itr == info.modes.end())
 					{
 						info.modes.push_back(winMode);

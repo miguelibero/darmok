@@ -326,7 +326,7 @@ namespace darmok
 
     std::optional<StandardProgramLoader::Type> StandardProgramLoader::getType(const std::shared_ptr<Program>& prog) noexcept
     {
-        auto itr = std::find_if(_cache.begin(), _cache.end(),
+        auto itr = std::ranges::find_if(_cache,
             [prog](auto& elm) { return elm.second.lock() == prog; });
         if (itr != _cache.end())
         {
@@ -337,7 +337,7 @@ namespace darmok
 
     std::optional<StandardProgramLoader::Type> StandardProgramLoader::getType(const std::shared_ptr<Definition>& def) noexcept
     {
-        auto itr = std::find_if(_defCache.begin(), _defCache.end(),
+        auto itr = std::ranges::find_if(_defCache,
             [def](auto& elm) { return elm.second.lock() == def; });
         if (itr != _defCache.end())
         {

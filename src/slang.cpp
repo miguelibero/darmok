@@ -1289,7 +1289,7 @@ namespace darmok
         {
             for (auto& [renderer, target] : _rendererTargets)
             {
-                auto itr = std::find(_supportedTargets.begin(), _supportedTargets.end(), target);
+                auto itr = std::ranges::find(_supportedTargets, target);
                 if (itr == _supportedTargets.end())
                 {
                     continue;

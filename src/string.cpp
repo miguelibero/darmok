@@ -92,7 +92,7 @@ namespace darmok::StringUtils
 
 	std::string_view trimLeft(std::string_view str) noexcept
 	{
-		auto itr = std::find_if(str.begin(), str.end(), [](auto ch) {
+		auto itr = std::ranges::find_if(str, [](auto ch) {
 			return !std::isspace(ch);
 			});
 		return { itr, str.end() };

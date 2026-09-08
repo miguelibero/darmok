@@ -703,7 +703,7 @@ namespace darmok
 	{
 		auto renderer = bgfx::getCaps()->rendererType;
 		const auto& renderers = getSupportedRenderers();
-		auto itr = std::find(renderers.begin(), renderers.end(), renderer);
+		auto itr = std::ranges::find(renderers, renderer);
 		size_t i = 0;
 		if (itr != renderers.end())
 		{
@@ -918,13 +918,13 @@ namespace darmok
 
 	AppImpl::Components::iterator AppImpl::findComponent(entt::id_type type) noexcept
 	{
-		return std::find_if(_components.begin(), _components.end(),
+		return std::ranges::find_if(_components,
 			[type](auto& comp) { return comp->getAppComponentType() == type; });
 	}
 
 	AppImpl::Components::const_iterator AppImpl::findComponent(entt::id_type type) const noexcept
 	{
-		return std::find_if(_components.begin(), _components.end(),
+		return std::ranges::find_if(_components,
 			[type](auto& comp) { return comp->getAppComponentType() == type; });
 	}
 

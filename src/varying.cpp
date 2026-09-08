@@ -558,13 +558,13 @@ namespace darmok
 	{
 		for (auto i = bgfx::Attrib::TexCoord0; i < bgfx::Attrib::TexCoord7; i = (bgfx::Attrib::Enum)(i + 1))
 		{
-			auto itr1 = std::find(used.begin(), used.end(), i);
+			auto itr1 = std::ranges::find(used, i);
 			if (itr1 != used.end())
 			{
 				continue;
 			}
 			auto& attributes = _def.attributes();
-            auto itr2 = std::find_if(attributes.begin(), attributes.end(), [i](auto& elm) { return elm.bgfx() == static_cast<uint32_t>(i); });
+            auto itr2 = std::ranges::find_if(attributes, [i](auto& elm) { return elm.bgfx() == static_cast<uint32_t>(i); });
 			if (itr2 == attributes.end())
 			{
 				return i;

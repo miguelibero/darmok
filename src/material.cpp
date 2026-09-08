@@ -21,10 +21,7 @@ namespace darmok
 	std::optional<std::string> ConstMaterialDefinitionWrapper::getTexturePath(TextureType textureType) noexcept
 	{
 		auto& textures = _def.textures();
-		auto itr = std::find_if(textures.begin(), textures.end(),
-			[textureType](const Material::TextureDefinition& tex) {
-				return tex.type() == textureType;
-			});
+		auto itr = std::ranges::find(textures, &Material::TextureDefinition::type, textureType)
 		if (itr != textures.end())
 		{
 			return itr->texture_path();
@@ -35,7 +32,7 @@ namespace darmok
 	std::optional<std::string> ConstMaterialDefinitionWrapper::getTexturePath(const TextureUniformKey& uniformKey) noexcept
 	{
 		auto& textures = _def.textures();
-		auto itr = std::find_if(textures.begin(), textures.end(),
+		auto itr = std::ranges::find_if(textures,
 			[uniformKey](const Material::TextureDefinition& tex) {
 				return tex.has_uniform() && tex.uniform().SerializeAsString() == uniformKey.SerializeAsString();
 			});
@@ -74,7 +71,7 @@ namespace darmok
 	bool MaterialDefinitionWrapper::setTexturePath(TextureType textureType, const std::string& texturePath) noexcept
 	{
 		auto& textures = *_def.mutable_textures();
-		auto itr = std::find_if(textures.begin(), textures.end(),
+		auto itr = std::ranges::find_if(textures,
 			[textureType](const Material::TextureDefinition& tex) {
 				return tex.has_type() && tex.type() == textureType;
 			});
@@ -90,7 +87,7 @@ namespace darmok
 	bool MaterialDefinitionWrapper::setTexturePath(const TextureUniformKey& uniformKey, const std::string& texturePath) noexcept
 	{
 		auto& textures = *_def.mutable_textures();
-		auto itr = std::find_if(textures.begin(), textures.end(),
+		auto itr = std::ranges::find_if(textures,
 			[uniformKey](const Material::TextureDefinition& tex) {
 				return tex.has_uniform() && tex.uniform().SerializeAsString() == uniformKey.SerializeAsString();
 			});

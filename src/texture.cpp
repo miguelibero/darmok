@@ -279,7 +279,7 @@ namespace darmok
 
 	const std::string& Texture::getTextureFlagName(uint64_t flag) noexcept
 	{
-		auto itr = std::find_if(_textureFlags.begin(), _textureFlags.end(),
+		auto itr = std::ranges::find_if(_textureFlags,
 			[flag](auto& elm) { return elm.second == flag; });
 		if (itr != _textureFlags.end())
 		{
@@ -306,7 +306,7 @@ namespace darmok
 
 	const std::string& Texture::getSamplerFlagName(uint64_t flag) noexcept
 	{
-		auto itr = std::find_if(_samplerFlags.begin(), _samplerFlags.end(),
+		auto itr = std::ranges::find_if(_samplerFlags,
 			[flag](auto& elm) { return elm.second == flag; });
 		if (itr != _samplerFlags.end())
 		{

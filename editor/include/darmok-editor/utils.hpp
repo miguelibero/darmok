@@ -79,7 +79,7 @@ namespace darmok::editor
             if (drawListCombo(label, current, options))
             {
                 auto currentOption = options[current];
-                auto itr = std::find_if(enumValues.begin(), enumValues.end(),
+                auto itr = std::ranges::find_if(enumValues,
 					[&currentOption](const auto& pair) { return pair.second == currentOption; });
                 if(itr != enumValues.end())
                 {

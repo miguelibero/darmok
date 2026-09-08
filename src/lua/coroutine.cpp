@@ -354,7 +354,7 @@ namespace darmok
 
 	LuaCoroutineRunner::Coroutines::const_iterator LuaCoroutineRunner::findCoroutine(const void* coroutinePtr) const noexcept
 	{
-		return std::find_if(_coroutines.begin(), _coroutines.end(), [coroutinePtr](auto& bundle) {
+		return std::ranges::find_if(_coroutines, [coroutinePtr](auto& bundle) {
 			return bundle->coroutine.pointer() == coroutinePtr;
 		});
 	}

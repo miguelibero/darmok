@@ -419,7 +419,7 @@ namespace darmok
     bool AssimpOzzAnimationConverter::isBone(const aiNode& node) const noexcept
     {
         const std::string name = node.mName.C_Str();
-        return std::find(_boneNames.begin(), _boneNames.end(), name) != _boneNames.end();
+        return std::ranges::find(_boneNames, name) != _boneNames.end();
     }
 
     void AssimpOzzAnimationConverter::update(const std::string& boneName, float tickPerSecond, const aiNodeAnim& assimpTrack, RawAnimation::JointTrack& track) noexcept
@@ -1134,7 +1134,7 @@ namespace darmok
             auto boneName = convert<std::string_view>(bone->mName);
             if (!_boneNames.empty())
             {
-                auto itr = std::find_if(_boneNames.begin(), _boneNames.end(),
+                auto itr = std::ranges::find_if(_boneNames),
                     [&boneName](auto& elm) { return elm.first == boneName; });
                 if (itr == _boneNames.end())
                 {

@@ -530,7 +530,7 @@ namespace darmok
             }
         }
 
-		auto itr = std::find_if(textures.begin(), textures.end(), [](auto& tex)
+		auto itr = std::ranges::find_if(textures, [](auto& tex)
 		{
 			return tex.type() == Material::TextureDefinition::BaseColor;
 		});
