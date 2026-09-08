@@ -79,7 +79,7 @@ namespace darmok
                 }
             }
         }
-        std::sort(entities.begin(), entities.end());
+        std::ranges::sort(entities);
         return entities;
     }
 
@@ -114,7 +114,7 @@ namespace darmok
                 entities.push_back(entity);
             }
         }
-        std::sort(entities.begin(), entities.end());
+        std::ranges::sort(entities);
         return entities;
     }
 

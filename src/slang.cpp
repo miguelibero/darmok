@@ -737,7 +737,7 @@ namespace darmok
             std::vector<std::string> names(params.size());
             std::transform(params.begin(), params.end(), names.begin(), [](const auto &p)
                            { return p.name; });
-            std::sort(names.begin(), names.end());
+            std::ranges::sort(names);
             std::hash<std::string> hasher;
             for (const auto &name : names)
             {
