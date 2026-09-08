@@ -669,7 +669,7 @@ namespace darmok
             }
             parentPath = parentPath.parent_path();
         }
-        std::reverse(configs.begin(), configs.end());
+        std::ranges::reverse(configs);
         return configs;
     }
 
