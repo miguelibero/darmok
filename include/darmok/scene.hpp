@@ -221,11 +221,9 @@ namespace darmok
         bool hasSpecificComponent(const T& component) const noexcept
         {
             auto view = getComponents<T>();
-            auto end = std::cend(view);
-            auto it = std::find_if(std::cbegin(view), end, [&component, &view](const auto& entity) {
+            return std::ranges::any_of(view, [&component, &view](const auto& entity) {
                 return &view.template get<T>(entity) == &component;
             });
-            return it != end;
         }
 
         template<typename T>
