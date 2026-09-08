@@ -54,7 +54,7 @@ namespace darmok
 	{
 		static const char sep = ';';
 		std::string fpath{ path };
-		std::replace(fpath.begin(), fpath.end(), ',', sep);
+		std::ranges::replace(fpath, ',', sep);
 		auto key = binary ? "cpath" : "path";
 		std::string current = lua["package"][key];
 

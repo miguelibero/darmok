@@ -534,7 +534,7 @@ namespace darmok
         static const std::string separators("\\/:");
         for (auto& chr : separators)
         {
-            std::replace(fileName.begin(), fileName.end(), chr, '-');
+            std::ranges::replace(fileName, chr, '-');
         }
         _cachePath = cachePath / (fileName + ".json");
         if (auto jsonResult = StreamUtils::parseJson(_cachePath))

@@ -118,7 +118,7 @@ namespace darmok
         auto uptr = static_cast<uint8_t*>(ptr);
 
         std::string fixVarName(varName);
-        std::replace(fixVarName.begin(), fixVarName.end(), '.', '_');
+        std::ranges::replace(fixVarName, '.', '_');
         std::stringstream ss;
 
         ss << "static const uint8_t " << fixVarName << "[" << size << "] = " << std::endl;
