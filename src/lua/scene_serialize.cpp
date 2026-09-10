@@ -69,7 +69,7 @@ namespace darmok
 		auto result = sceneWrapper.getChildren(_entity);
 		std::vector<LuaEntityDefinition> entities;
 		entities.reserve(result.size());
-		std::transform(result.begin(), result.end(), std::back_inserter(entities),
+		std::ranges::transform(result, std::back_inserter(entities),
 			[scene](const auto& entityId) { return LuaEntityDefinition{ entityId, scene }; });
 		return entities;
 	}
@@ -81,7 +81,7 @@ namespace darmok
 		auto result = sceneWrapper.getComponents(_entity);
 		std::vector<google::protobuf::Any*> comps;
 		comps.reserve(result.size());
-		std::transform(result.begin(), result.end(), std::back_inserter(comps),
+		std::ranges::transform(result, std::back_inserter(comps),
 			[](const auto& comp) { return &comp.get(); });
 		return comps;
 	}
@@ -132,7 +132,7 @@ namespace darmok
 		auto result = SceneDefinitionWrapper{ *_scene }.getRootEntities();
 		std::vector<LuaEntityDefinition> entities;
 		entities.reserve(result.size());
-		std::transform(result.begin(), result.end(), std::back_inserter(entities),
+		std::ranges::transform(result, std::back_inserter(entities),
 			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; });
 		return entities;
 	}
@@ -142,7 +142,7 @@ namespace darmok
 		auto result = SceneDefinitionWrapper{ *_scene }.getEntities();
 		std::vector<LuaEntityDefinition> entities;
 		entities.reserve(result.size());
-		std::transform(result.begin(), result.end(), std::back_inserter(entities),
+		std::ranges::transform(result, std::back_inserter(entities),
 			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; });
 		return entities;
 	}
@@ -189,7 +189,7 @@ namespace darmok
 		auto result = SceneDefinitionWrapper{ *_scene }.getAssetPaths(typeId);
 		std::vector<std::string> paths;
 		paths.reserve(result.size());
-		std::transform(result.begin(), result.end(), std::back_inserter(paths),
+		std::ranges::transform(result, std::back_inserter(paths),
 			[](const auto& elm) { return elm.string(); });
 		return paths;
 	}

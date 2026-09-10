@@ -89,7 +89,7 @@ namespace darmok
         else
         {
             auto ptr = &_canvas.value();
-            auto itr = std::find_if(_canvases.begin(), _canvases.end(), [ptr](auto& canvas) { return &canvas.get() == ptr; });
+            auto itr = std::ranges::find_if(_canvases, [ptr](auto& canvas) { return &canvas.get() == ptr; });
             if (itr != _canvases.end())
             {
                 ++itr;

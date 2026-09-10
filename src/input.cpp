@@ -1134,43 +1134,31 @@ namespace darmok
 	bool InputImpl::removeListener(const std::string& tag, const IInputEventListener& listener) noexcept
 	{
 		const auto* ptr = &listener;
-		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&tag, ptr](auto& data)
+		const auto n = std::erase_if(_listeners, [&tag, ptr](auto& data)
 		{
 			return data.tag == tag && &data.listener.get() == ptr;
 		});
 
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
+        return n > 0;
 	}
 
 	bool InputImpl::removeListener(const IInputEventListener& listener) noexcept
 	{
 		const auto* ptr = &listener;
-		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [ptr](auto& data)
+		const auto n = std::erase_if(_listeners, [ptr](auto& data)
 		{
 			return &data.listener.get() == ptr;
 		});
-		if (itr == _listeners.end())
-		{
-			return false;
-		}
-		_listeners.erase(itr, _listeners.end());
-		return true;
+
+        return n > 0;
 	}
 
 	size_t InputImpl::removeListeners(const IInputEventListenerFilter& filter) noexcept
 	{
-		auto itr = std::remove_if(_listeners.begin(), _listeners.end(), [&filter](auto& data)
-			{
-				return filter(data.tag, data.listener.get());
-			});
-		auto count = std::distance(itr, _listeners.end());
-		_listeners.erase(itr, _listeners.end());
-		return count;
+		return std::erase_if(_listeners, [&filter](auto& data)
+        {
+			return filter(data.tag, data.listener.get());
+		});
 	}
 
 	bool InputImpl::checkEvents(const InputEvents& evs) const noexcept

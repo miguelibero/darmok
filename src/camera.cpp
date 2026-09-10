@@ -556,13 +556,13 @@ namespace darmok
 
     Camera::Components::iterator Camera::findComponent(entt::id_type type) noexcept
     {
-        return std::find_if(_components.begin(), _components.end(),
+        return std::ranges::find_if(_components,
             CameraComponentTypeHashFinder{ type });
     }
 
     Camera::Components::const_iterator Camera::findComponent(entt::id_type type) const noexcept
     {
-        return std::find_if(_components.begin(), _components.end(),
+        return std::ranges::find_if(_components,
             CameraComponentTypeHashFinder{ type });
     }
 

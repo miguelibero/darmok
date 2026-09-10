@@ -556,7 +556,7 @@ namespace darmok::editor
         {
             auto enumDesc = refl->GetEnum(msg, &field)->type();
             defaultOptions = protobuf::getEnumValues(*enumDesc);
-            std::transform(defaultOptions.begin(), defaultOptions.end(),
+            std::ranges::transform(defaultOptions,
                 defaultOptions.begin(), [](auto& v) { StringUtils::camelCaseToHumanReadable(v); return v; });
             options = defaultOptions;
         }

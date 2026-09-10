@@ -86,7 +86,7 @@ namespace darmok
                 if (auto path = std::get_if<std::filesystem::path>(&arg))
                 {
                     strArg = path->string();
-                    std::replace(strArg.begin(), strArg.end(), '\\', '/');
+                    std::ranges::replace(strArg, '\\', '/');
                 }
                 else if (auto constChar = std::get_if<const char*>(&arg))
                 {

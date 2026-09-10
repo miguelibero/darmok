@@ -533,7 +533,7 @@ namespace darmok
         static const std::string separators("\\/:");
         for (auto& chr : separators)
         {
-            std::replace(fileName.begin(), fileName.end(), chr, '-');
+            std::ranges::replace(fileName, chr, '-');
         }
         _cachePath = cachePath / (fileName + ".json");
         if (auto jsonResult = StreamUtils::parseJson(_cachePath))
@@ -677,7 +677,7 @@ namespace darmok
             }
             parentPath = parentPath.parent_path();
         }
-        std::reverse(configs.begin(), configs.end());
+        std::ranges::reverse(configs);
         return configs;
     }
 
@@ -855,7 +855,7 @@ namespace darmok
             }
             for (auto& dep : result.value().dependencies)
             {
-                if (std::find(deps.begin(), deps.end(), dep) == deps.end())
+                if (std::ranges::find(deps, dep) == deps.end())
                 {
                     deps.insert(dep);
                     baseDeps.insert(dep);
@@ -915,7 +915,7 @@ namespace darmok
             auto& opOutputs = opResult.value();
             for (auto& output : opOutputs)
             {
-                if (std::find(outputs.begin(), outputs.end(), output) != outputs.end())
+                if (std::ranges::find(outputs, output) != outputs.end())
                 {
                     return unexpected{ "multiple importers produce the same output: " + output.string() };
                 }
@@ -943,7 +943,7 @@ namespace darmok
                 auto groups = getPathGroups(opOutputs);
                 for (auto& [groupPath, paths] : groups)
                 {
-                    if (std::find(outputs.begin(), outputs.end(), groupPath) == outputs.end())
+                    if (std::ranges::find(outputs, groupPath) == outputs.end())
                     {
                         outputs.push_back(groupPath);
                     }
@@ -1474,7 +1474,7 @@ namespace darmok
                 }
                 return 0;
             }
-            
+
             PrefixStream log(std::cout, cli.get_name() + ": ");
             if (!_importer.import(cfg, log))
             {

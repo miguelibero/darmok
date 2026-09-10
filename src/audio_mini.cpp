@@ -458,10 +458,9 @@ namespace darmok
 
     void AudioSystemImpl::update() noexcept
     {
-        auto itr = std::remove_if(_sounds.begin(), _sounds.end(), [](auto& elm) {
+        std::erase_if(_sounds, [](auto& elm) {
             return elm.miniaudio.atEnd();
         });
-        _sounds.erase(itr, _sounds.end());
     }
 
     expected<std::reference_wrapper<MiniaudioSound>, std::string> AudioSystemImpl::createMiniaudioSound(const std::shared_ptr<Sound>& sound) noexcept

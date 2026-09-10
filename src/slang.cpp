@@ -735,9 +735,9 @@ namespace darmok
         {
             uint32_t hash = 0;
             std::vector<std::string> names(params.size());
-            std::transform(params.begin(), params.end(), names.begin(), [](const auto &p)
+            std::ranges::transform(params, names.begin(), [](const auto &p)
                            { return p.name; });
-            std::sort(names.begin(), names.end());
+            std::ranges::sort(names);
             std::hash<std::string> hasher;
             for (const auto &name : names)
             {
@@ -1148,9 +1148,9 @@ namespace darmok
 		, _searchPathStrings(config.includePaths.size())
         , _searchPathChars(config.includePaths.size())
     {
-        std::transform(config.includePaths.begin(), config.includePaths.end(),
+        std::ranges::transform(config.includePaths,
             _searchPathStrings.begin(), [](const std::filesystem::path& p) { return p.string(); });
-        std::transform(_searchPathStrings.begin(), _searchPathStrings.end(),
+        std::ranges::transform(_searchPathStrings,
             _searchPathChars.begin(), [](const std::string& str) { return str.c_str(); });
 
         _sessionDesc.defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR;
@@ -1175,7 +1175,7 @@ namespace darmok
         std::vector<slang::PreprocessorMacroDesc> macros;
 
         std::unordered_set<std::string> fdefines;
-        std::transform(defines.begin(), defines.end(), std::inserter(fdefines, fdefines.end()), [](const std::string &define)
+        std::ranges::transform(defines, std::inserter(fdefines, fdefines.end()), [](const std::string &define)
                        { return "DARMOK_VARIANT_" + define; });
         for (auto& define : fdefines)
         {
@@ -1289,7 +1289,7 @@ namespace darmok
         {
             for (auto& [renderer, target] : _rendererTargets)
             {
-                auto itr = std::find(_supportedTargets.begin(), _supportedTargets.end(), target);
+                auto itr = std::ranges::find(_supportedTargets, target);
                 if (itr == _supportedTargets.end())
                 {
                     continue;

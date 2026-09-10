@@ -445,7 +445,7 @@ namespace darmok
 	expected<bool, std::string> RenderChain::removeStep(const IRenderChainStep& step) noexcept
 	{
 		auto ptr = &step;
-		auto itr = std::find_if(_steps.begin(), _steps.end(),
+		auto itr = std::ranges::find_if(_steps,
 			[ptr](auto& elm) { return elm.get() == ptr; });
 		if (itr == _steps.end())
 		{

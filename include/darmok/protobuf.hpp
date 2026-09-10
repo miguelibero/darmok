@@ -89,7 +89,7 @@ namespace darmok
         template<class K, class V>
         std::vector<V> pairsToSortedVector(std::vector<std::pair<K, V>>& pairs)
         {
-            std::sort(pairs.begin(), pairs.end(), [](auto& a, auto& b) { return a.first < b.first; });
+            std::ranges::sort(pairs, [](const auto& a, const auto& b) { return a.first < b.first; });
             std::vector<V> values;
             values.reserve(pairs.size());
             for (const auto& [key, value] : pairs)

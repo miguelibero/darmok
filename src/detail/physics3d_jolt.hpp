@@ -98,7 +98,7 @@ namespace darmok::physics3d
         bool removeRefVector(std::vector<OptionalRef<T>>& vector, T& elm) noexcept
         {
             auto ptr = &elm;
-            auto itr = std::find_if(vector.begin(), vector.end(), [ptr](auto& ref) { return ref.ptr() == ptr; });
+            auto itr = std::ranges::find_if(vector, [ptr](auto& ref) { return ref.ptr() == ptr; });
             if (itr == vector.end())
             {
                 return false;

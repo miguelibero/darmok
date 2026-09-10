@@ -263,7 +263,7 @@ namespace darmok
         if (itr != _textures.end())
         {
             auto ptr = itr->second.get();
-            auto itr2 = std::find_if(_textureSources.begin(), _textureSources.end(),
+            auto itr2 = std::ranges::find_if(_textureSources,
                 [ptr](auto& elm) { return &elm.second.get() == ptr; });
             if (itr2 != _textureSources.end())
             {
@@ -1662,10 +1662,9 @@ namespace darmok
 
     void RmluiPlugin::OnDocumentUnload(Rml::ElementDocument* doc) noexcept
     {
-        auto itr = std::remove_if(_eventForwarders.begin(), _eventForwarders.end(), [doc](auto& fwd) {
+        std::erase_if(_eventForwarders, [doc](auto& fwd) {
             return fwd->getElement().GetOwnerDocument() == doc;
         });
-        _eventForwarders.erase(itr, _eventForwarders.end());
     }
 
     void RmluiPlugin::onCustomEvent(Rml::Event& event, const std::string& value, Rml::Element& element)
@@ -1684,14 +1683,7 @@ namespace darmok
     bool RmluiPlugin::removeComponent(const RmluiSceneComponentImpl& comp) noexcept
     {
         auto ptr = &comp;
-        auto itr = std::remove_if(_components.begin(), _components.end(),
-            [ptr](auto& ref) { return &ref.get() == ptr; });
-        if (itr == _components.end())
-        {
-            return false;
-        }
-        _components.erase(itr, _components.end());
-        return true;
+        return std::erase_if(_components, [ptr](auto& ref) { return &ref.get() == ptr; }) > 0;
     }
 
     bool RmluiPlugin::loadScript(Rml::ElementDocument& doc, std::string_view content, std::string_view sourcePath, int sourceLine)

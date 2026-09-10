@@ -563,7 +563,7 @@ namespace darmok
 
     OptionalRef<const ConstSkeletalAnimatorDefinitionWrapper::StateDefinition> ConstSkeletalAnimatorDefinitionWrapper::getState(std::string_view name) const noexcept
     {
-        auto itr = std::find_if(_def->states().begin(), _def->states().end(),
+        auto itr = std::ranges::find_if(_def->states(),
             [name](auto& stateDef) { return stateDef.name() == name; });
         if (itr == _def->states().end())
         {
@@ -575,22 +575,22 @@ namespace darmok
     OptionalRef<const ConstSkeletalAnimatorDefinitionWrapper::TransitionDefinition> ConstSkeletalAnimatorDefinitionWrapper::getTransition(std::string_view src, std::string_view dst) const noexcept
     {
         auto& ts = _def->transitions();
-        auto itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state() == src && trans.dst_state() == dst; });
+        auto itr = std::ranges::find_if(ts, [&](auto& trans) { return trans.src_state() == src && trans.dst_state() == dst; });
 		if (itr != ts.end())
 		{
 			return *itr;
 		}
-        itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state() == src && trans.dst_state().empty(); });
+        itr = std::ranges::find_if(ts, [&](auto& trans) { return trans.src_state() == src && trans.dst_state().empty(); });
         if (itr != ts.end())
         {
             return *itr;
         }
-        itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state().empty() && trans.dst_state() == dst; });
+        itr = std::ranges::find_if(ts, [&](auto& trans) { return trans.src_state().empty() && trans.dst_state() == dst; });
         if (itr != ts.end())
         {
             return *itr;
         }
-        itr = std::find_if(ts.begin(), ts.end(), [&](auto& trans) { return trans.src_state().empty() && trans.dst_state().empty(); });
+        itr = std::ranges::find_if(ts, [&](auto& trans) { return trans.src_state().empty() && trans.dst_state().empty(); });
         if (itr != ts.end())
         {
             return *itr;

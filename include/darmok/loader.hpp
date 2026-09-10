@@ -94,7 +94,7 @@ namespace darmok
                 {
                     continue;
                 }
-                auto itr = std::find(exts.begin(), exts.end(), ext);
+                auto itr = std::ranges::find(exts, ext);
                 if (itr == exts.end())
                 {
                     continue;
@@ -205,7 +205,7 @@ namespace darmok
 
         bool releaseResourceCache(const Resource& res) noexcept override
         {
-            auto itr = std::find_if(_cache.begin(), _cache.end(), [&res](auto& elm)
+            auto itr = std::ranges::find_if(_cache, [&res](auto& elm)
             {
                 return elm.second.lock() == &res;
             });
@@ -440,7 +440,7 @@ namespace darmok
         bool isDefinitionCached(const Definition& def) const noexcept override
         {
             auto ptr = &def;
-            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itr = std::ranges::find_if(_resCache,
                 [ptr](auto& elm) { return elm.first.get() == ptr; });
             return itr != _resCache.end();
         }
@@ -454,7 +454,7 @@ namespace darmok
         bool isResourceCached(const Resource& res) const noexcept override
         {
             auto ptr = &res;
-            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itr = std::ranges::find_if(_resCache,
                 [ptr](auto& elm) { return elm.second.lock().get() == ptr; });
             return itr != _resCache.end();
         }
@@ -480,7 +480,7 @@ namespace darmok
         std::shared_ptr<Resource> getResource(const Definition& def) const noexcept override
         {
             auto ptr = &def;
-            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itr = std::ranges::find_if(_resCache,
                 [ptr](auto& elm) { return elm.first.get() == ptr; });
             if (itr != _resCache.end())
             {
@@ -512,7 +512,7 @@ namespace darmok
         DefinitionResult reloadDefinition(const Definition& def) noexcept override
         {
             auto ptr = &def;
-            auto itr = std::find_if(_defCache.begin(), _defCache.end(),
+            auto itr = std::ranges::find_if(_defCache,
                 [ptr](auto& elm) { return elm.second.get() == ptr; });
             if (itr == _defCache.end())
             {
@@ -524,7 +524,7 @@ namespace darmok
         Result reloadResource(const Definition& def) noexcept override
         {
             auto ptr = &def;
-            auto itrRes = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itrRes = std::ranges::find_if(_resCache,
                 [ptr](auto& elm) { return elm.first.get() == ptr; });
             if(itrRes == _resCache.end())
             {
@@ -535,7 +535,7 @@ namespace darmok
             {
                 return nullptr;
 			}
-            auto itrDef = std::find_if(_defCache.begin(), _defCache.end(),
+            auto itrDef = std::ranges::find_if(_defCache,
                 [ptr](auto& elm) { return elm.second.get() == ptr; });
             if (itrDef == _defCache.end())
             {
@@ -563,7 +563,7 @@ namespace darmok
         std::shared_ptr<Definition> getDefinition(const Resource& res) const noexcept override
         {
             auto ptr = &res;
-            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itr = std::ranges::find_if(_resCache,
                 [ptr](auto& elm) {
                     return elm.second.lock().get() == ptr;
                 });
@@ -593,7 +593,7 @@ namespace darmok
         bool releaseResourceCache(const Resource& res) noexcept override
         {
             auto ptr = &res;
-            auto itr = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itr = std::ranges::find_if(_resCache,
                 [ptr](auto& elm) { return elm.second.lock().get() == ptr; });
             return itr != _resCache.end();
         }
@@ -601,14 +601,14 @@ namespace darmok
         bool releaseDefinitionCache(const Definition& def) noexcept override
         {
 			auto ptr = &def;
-            auto itr = std::find_if(_defCache.begin(), _defCache.end(),
+            auto itr = std::ranges::find_if(_defCache,
                 [ptr](auto& elm) { return elm.second.get() == ptr; });
             auto found = itr != _defCache.end();
             if (found)
             {
                 _defCache.erase(itr);
             }
-            auto itr2 = std::find_if(_resCache.begin(), _resCache.end(),
+            auto itr2 = std::ranges::find_if(_resCache,
 				[ptr](auto& elm) { return elm.first.get() == ptr; });
             ;
             if (itr2 != _resCache.end())

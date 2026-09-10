@@ -45,7 +45,7 @@ namespace darmok
 	{
 		std::vector<std::string> strArgs;
 		strArgs.reserve(args.size());
-		std::transform(args.begin(), args.end(), std::back_inserter(strArgs),
+		std::ranges::transform(args, std::back_inserter(strArgs),
 			[](const auto& arg) { return arg.template as<std::string>(); });
 		StreamUtils::log(StringUtils::join(", ", strArgs) + "\n");
 	}
@@ -54,7 +54,7 @@ namespace darmok
 	{
 		static const char sep = ';';
 		std::string fpath{ path };
-		std::replace(fpath.begin(), fpath.end(), ',', sep);
+		std::ranges::replace(fpath, ',', sep);
 		auto key = binary ? "cpath" : "path";
 		std::string current = lua["package"][key];
 

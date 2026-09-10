@@ -130,13 +130,13 @@ namespace darmok
 
     SceneImpl::Components::iterator SceneImpl::findSceneComponent(entt::id_type type) noexcept
     {
-        return std::find_if(_components.begin(), _components.end(),
+        return std::ranges::find_if(_components,
             SceneComponentTypeHashFinder{ type });
     }
 
     SceneImpl::Components::const_iterator SceneImpl::findSceneComponent(entt::id_type type) const noexcept
     {
-        return std::find_if(_components.begin(), _components.end(),
+        return std::ranges::find_if(_components,
             SceneComponentTypeHashFinder{ type });
     }
 

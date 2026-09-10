@@ -183,7 +183,7 @@ namespace darmok
 
     void* LuaRmluiVariableDefinition::getKeyPointer(const AbsTableKey& key) noexcept
     {
-        auto itr = std::find(_keys.begin(), _keys.end(), key);
+        auto itr = std::ranges::find(_keys, key);
         auto index = 0;
         if (itr != _keys.end())
         {

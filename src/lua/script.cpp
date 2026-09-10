@@ -185,7 +185,7 @@ end
 
 	bool LuaScriptRunner::updatingEntity(Entity entity) const noexcept
 	{
-		return std::find(_entities.begin(), _entities.end(), entity) != _entities.end();
+		return std::ranges::find(_entities, entity) != _entities.end();
 	}
 
 	expected<void, std::string> LuaScriptRunner::update(float deltaTime) noexcept

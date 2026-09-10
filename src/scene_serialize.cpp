@@ -73,13 +73,13 @@ namespace darmok
         {
             for (auto& [entityId, comp] : typeComps.components())
             {
-                if (std::find(entities.begin(), entities.end(), entityId) == entities.end())
+                if (std::ranges::find(entities, entityId) == entities.end())
                 {
                     entities.push_back(entityId);
                 }
             }
         }
-        std::sort(entities.begin(), entities.end());
+        std::ranges::sort(entities);
         return entities;
     }
 
@@ -105,7 +105,7 @@ namespace darmok
         }
         for (auto& entity : getEntities())
         {
-            if (std::find(entities.begin(), entities.end(), entity) != entities.end())
+            if (std::ranges::find(entities, entity) != entities.end())
             {
                 continue;
             }
@@ -114,7 +114,7 @@ namespace darmok
                 entities.push_back(entity);
             }
         }
-        std::sort(entities.begin(), entities.end());
+        std::ranges::sort(entities);
         return entities;
     }
 
@@ -208,7 +208,7 @@ namespace darmok
             return nullEntityId;
         }
 		auto& comps = typeComps->components();
-        auto itr = std::find_if(comps.begin(), comps.end(),
+        auto itr = std::ranges::find_if(comps,
             [&anyComp](const auto& pair) {
                 return &pair.second == &anyComp;
             });
@@ -321,7 +321,7 @@ namespace darmok
     {
         auto& assetPack = _def->assets();
 		auto& assets = assetPack.assets();
-        auto itr = std::find_if(assets.begin(), assets.end(),
+        auto itr = std::ranges::find_if(assets,
             [&anyAsset](const auto& pair) {
                 return &pair.second == &anyAsset;
 			});
@@ -596,7 +596,7 @@ namespace darmok
             return false;
         }
         auto& comps = *typeComps->mutable_components();
-        auto itr = std::find_if(comps.begin(), comps.end(),
+        auto itr = std::ranges::find_if(comps,
             [&anyComp](const auto& pair) {
                 return &pair.second == &anyComp;
 			});
@@ -670,7 +670,7 @@ namespace darmok
     {
 		auto anyStr = anyAsset.SerializeAsString();
         auto& assets = *_def->mutable_assets()->mutable_assets();
-        auto itr = std::find_if(assets.begin(), assets.end(),
+        auto itr = std::ranges::find_if(assets,
             [&anyAsset](const auto& pair) {
                 return &pair.second == &anyAsset;
             });
