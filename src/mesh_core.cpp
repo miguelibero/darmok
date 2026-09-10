@@ -338,7 +338,7 @@ namespace darmok
 			glm::vec4 indices{ -1 };
 			int j = 0;
 			auto weightVector = vertex.weights;
-			std::ranges::sort(weightVector, std::greater{}, &Vertex::value);
+            std::ranges::sort(weightVector, std::greater{}, &MeshDataWeight::value);
 			for (auto& weight : weightVector)
 			{
 				if (weight.value <= 0.f)

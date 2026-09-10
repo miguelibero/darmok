@@ -1134,7 +1134,7 @@ namespace darmok
             auto boneName = convert<std::string_view>(bone->mName);
             if (!_boneNames.empty())
             {
-                auto itr = std::ranges::find_if(_boneNames),
+                auto itr = std::ranges::find_if(_boneNames,
                     [&boneName](auto& elm) { return elm.first == boneName; });
                 if (itr == _boneNames.end())
                 {

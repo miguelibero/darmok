@@ -10,6 +10,7 @@
 #include <darmok/texture_pbr.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
+
 #include "detail/render_samplers.hpp"
 #include "generated/textures/albedo_lut.h"
 #include "generated/textures/brdf_lut.h"
@@ -24,7 +25,7 @@ namespace darmok
 	std::optional<std::string> ConstMaterialDefinitionWrapper::getTexturePath(TextureType textureType) noexcept
 	{
 		auto& textures = _def.textures();
-		auto itr = std::ranges::find(textures, &Material::TextureDefinition::type, textureType)
+        auto itr = std::ranges::find(textures, textureType, &Material::TextureDefinition::type);
 		if (itr != textures.end())
 		{
 			return itr->texture_path();
