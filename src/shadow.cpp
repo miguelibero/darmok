@@ -84,7 +84,7 @@ namespace darmok
         else
         {
             name += std::to_string(_lightEntity);
-            if (_part >= 0)
+            if (_part > 0)
             {
                 name += " part " + std::to_string(_part);
             }
@@ -489,13 +489,13 @@ namespace darmok
 
         for(auto entity : _cam->getEntities<DirectionalLight>())
         {
-            _dirShadowMapIndices[entity] = index;
             auto light = _scene->getComponent<const DirectionalLight>(entity);
             auto shadowType = light->getShadowType();
             if(shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
+            _dirShadowMapIndices[entity] = index;
             auto lightTrans = _scene->getComponent<const Transform>(entity);
             for(auto casc = 0; casc < _def.cascade_amount(); ++casc)
             {
@@ -505,13 +505,13 @@ namespace darmok
         }
         for(auto entity : _cam->getEntities<PointLight>())
         {
-            _pointShadowMapIndices[entity] = index;
             auto light = _scene->getComponent<const PointLight>(entity);
             auto shadowType = light->getShadowType();
             if(shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
+            _pointShadowMapIndices[entity] = index;
             auto lightTrans = _scene->getComponent<const Transform>(entity);
             for(auto face = 0; face < _pointLightFaceAmount; ++face)
             {
@@ -521,13 +521,13 @@ namespace darmok
         }
         for (auto entity : _cam->getEntities<SpotLight>())
         {
-            _spotShadowMapIndices[entity] = index;
             auto light = _scene->getComponent<const SpotLight>(entity);
             auto shadowType = light->getShadowType();
             if (shadowType == LightDefinition::NoShadow)
             {
                 continue;
             }
+            _spotShadowMapIndices[entity] = index;
             auto lightTrans = _scene->getComponent<const Transform>(entity);
             auto mtx = getSpotLightMapMatrix(light.value(), lightTrans);
             addElement(entity, mtx, ShadowLightType::Spot, shadowType);
@@ -605,7 +605,17 @@ namespace darmok
             mtx *= lightTrans->getWorldMatrix();
         }
         auto bb = Frustum{ mtx }.getBoundingBox();
-        bb.snap(_def.map_size());
+        // Only snap X/Y to shadow-map texel boundaries.
+        // Z is the depth range and has no correspondence to texels; snapping it
+        // introduces arbitrary frame-to-frame variation in near/far and can cause
+        // z-fighting at cascade edges.
+        auto snapSize = float(_def.map_size());
+        auto texelX = (bb.max.x - bb.min.x) / snapSize;
+        auto texelY = (bb.max.y - bb.min.y) / snapSize;
+        bb.min.x = glm::floor(bb.min.x / texelX) * texelX;
+        bb.max.x = glm::ceil(bb.max.x / texelX) * texelX;
+        bb.min.y = glm::floor(bb.min.y / texelY) * texelY;
+        bb.max.y = glm::ceil(bb.max.y / texelY) * texelY;
         return bb.getOrtho();
     }
 

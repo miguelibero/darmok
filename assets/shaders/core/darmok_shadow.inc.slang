@@ -66,60 +66,74 @@ float normalShadowBias(float3 norm, float3 lightDir)
 	return max(u_shadowNormalBias * (1.0f - dot(norm, lightDir)), u_shadowBias);
 }
 
-float doHardShadow(uint startIdx, uint countIdx, float3 fragPos, float3 texOffset)
+// Find which shadow map (cascade/face) a fragment belongs to, using the center position.
+int findShadowMap(uint startIdx, uint countIdx, float3 fragPos)
 {
 	for(uint i = startIdx; i < startIdx + countIdx; ++i)
 	{
 		float4x4 trans = getShadowTransform(i);
 		float4 shadowCoord = mul(trans, float4(fragPos, 1.0f));
 		float3 texCoord = shadowCoord.xyz / shadowCoord.w;
-		texCoord += texOffset;
 		if(!outsideShadowMap(texCoord))
 		{
-			return getShadowMapValue(i, texCoord);
+			return (int)i;
 		}
 	}
-	return 1.0f;
+	return -1;
 }
 
-float3 getShadowMapTextureBaseOffset()
+// Sample a specific shadow map with a UV+depth offset.
+float sampleShadowMap(uint mapIdx, float3 fragPos, float3 texOffset)
 {
-	float texelSize = u_shadowTexelSize;
-	return float3(texelSize, texelSize, 1.0f);
+	float4x4 trans = getShadowTransform(mapIdx);
+	float4 shadowCoord = mul(trans, float4(fragPos, 1.0f));
+	float3 texCoord = shadowCoord.xyz / shadowCoord.w;
+	texCoord += texOffset;
+	if(outsideShadowMap(texCoord))
+	{
+		return 1.0f;
+	}
+	return getShadowMapValue(mapIdx, texCoord);
 }
 
 float hardShadow(uint startIdx, uint countIdx, float3 fragPos, float bias)
 {
-	float3 offset = getShadowMapTextureBaseOffset();
-	return doHardShadow(startIdx, countIdx, fragPos, float3(0.0f, 0.0f, -bias) * offset);
+	int mapIdx = findShadowMap(startIdx, countIdx, fragPos);
+	if(mapIdx < 0) return 1.0f;
+	float texelSize = u_shadowTexelSize;
+	return sampleShadowMap((uint)mapIdx, fragPos, float3(0.0f, 0.0f, -bias));
 }
 
 // percentage closer filtering shadow
 // https://developer.download.nvidia.com/shaderlibrary/docs/shadow_PCSS.pdf
+// Cascade is selected once from the center position so all 16 taps use the same depth range.
 float softShadow(uint startIdx, uint countIdx, float3 fragPos, float bias)
 {
+	int mapIdx = findShadowMap(startIdx, countIdx, fragPos);
+	if(mapIdx < 0) return 1.0f;
+	uint idx = (uint)mapIdx;
+	float texelSize = u_shadowTexelSize;
+
 	float v = 0.0f;
-	float3 offset = getShadowMapTextureBaseOffset();
+	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize, -1.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize, -0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize,  0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize,  1.5f * texelSize, -bias));
 
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-1.5f, -1.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-1.5f, -0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-1.5f,  0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-1.5f,  1.5f, -bias) * offset);
+	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize, -1.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize, -0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize,  0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize,  1.5f * texelSize, -bias));
 
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-0.5f, -1.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-0.5f, -0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-0.5f,  0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(-0.5f,  1.5f, -bias) * offset);
+	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize, -1.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize, -0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize,  0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize,  1.5f * texelSize, -bias));
 
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(0.5f, -1.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(0.5f, -0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(0.5f,  0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(0.5f,  1.5f, -bias) * offset);
-
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(1.5f, -1.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(1.5f, -0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(1.5f,  0.5f, -bias) * offset);
-	v += doHardShadow(startIdx, countIdx, fragPos, float3(1.5f,  1.5f, -bias) * offset);
+	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize, -1.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize, -0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize,  0.5f * texelSize, -bias));
+	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize,  1.5f * texelSize, -bias));
 
 	return v / 16.0f;
 }
