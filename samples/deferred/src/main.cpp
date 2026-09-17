@@ -98,7 +98,7 @@ namespace
                                       .lookDir(glm::vec3{-0.4, -0.7, -0.5}, glm::vec3{0, 0, 1});
             auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
             dirLight.setShadowType(LightDefinition::SoftShadow);
-            scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
+            // scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
@@ -180,7 +180,7 @@ namespace
 				.lookAt(glm::vec3{ -7, 2, 0 });
 
 			auto shadowDef = ShadowRenderer::createDefinition();
-			shadowDef.set_cascade_amount(2);
+            shadowDef.set_map_size(4096);
 
 			cam.tryAddComponent<ForwardRenderer>();
 			// cam.tryAddComponent<OcclusionCuller>();

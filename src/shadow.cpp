@@ -182,7 +182,7 @@ namespace darmok
     ShadowRenderer::Definition ShadowRenderer::createDefinition() noexcept
     {
         Definition def;
-        def.set_map_size(512);
+        def.set_map_size(1024);
         def.set_cascade_margin(0.02F);
         def.set_cascade_easing(Easing::Definition::QuadraticIn);
         def.set_max_pass_amount(20);
