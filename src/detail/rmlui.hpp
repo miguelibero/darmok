@@ -80,36 +80,49 @@ namespace darmok
 	{
 	public:
 		RmluiRenderInterface(App& app, RmluiCanvasImpl& canvas) noexcept;
+
 		Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept override;
 		void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept override;
 		void ReleaseGeometry(Rml::CompiledGeometryHandle geometry) noexcept override;
 
+        Rml::TextureHandle LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept override;
+        Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept override;
+        void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
+
 		void EnableScissorRegion(bool enable) noexcept override;
 		void SetScissorRegion(Rml::Rectanglei region) noexcept override;
 
-		Rml::TextureHandle LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept override;
-		Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions) noexcept override;
-		void ReleaseTexture(Rml::TextureHandle texture) noexcept override;
+        void EnableClipMask(bool enable) noexcept override;
+        void RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation) noexcept override;
+
 		void SetTransform(const Rml::Matrix4f* transform) noexcept override;
 
-		/* https://mikke89.github.io/RmlUiDoc/pages/cpp_manual/interfaces/render.html
-		void RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans) noexcept override;
 		Rml::LayerHandle PushLayer() noexcept override;
 		void CompositeLayers(Rml::LayerHandle source, Rml::LayerHandle destination, Rml::BlendMode blendMode, Rml::Span<const Rml::CompiledFilterHandle> filters) noexcept override;
 		void PopLayer() noexcept override;
-		Rml::TextureHandle SaveLayerAsTexture() noexcept override;
-		Rml::CompiledFilterHandle SaveLayerAsMaskImage() noexcept override;
-		Rml::CompiledFilterHandle CompileFilter(const Rml::String& name, const Rml::Dictionary& params) noexcept override;
-		void ReleaseFilter(Rml::CompiledFilterHandle filter) noexcept override;
-		Rml::CompiledShaderHandle CompileShader(const Rml::String& name, const Rml::Dictionary& params) noexcept override;
-		void RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans, Rml::TextureHandle texture) noexcept override;
-		void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
-		*/
 
-		expected<void, std::string> renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		Rml::TextureHandle SaveLayerAsTexture() noexcept override;
+        Rml::CompiledFilterHandle SaveLayerAsMaskImage() noexcept override;
+
+        Rml::CompiledFilterHandle CompileFilter(const Rml::String& name, const Rml::Dictionary& params) noexcept override;
+        void ReleaseFilter(Rml::CompiledFilterHandle filter) noexcept override;
+
+        Rml::CompiledShaderHandle CompileShader(const Rml::String& name, const Rml::Dictionary& params) noexcept override;
+        void RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans, Rml::TextureHandle texture) noexcept override;
+        void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
+
+		expected<void, std::string> renderCanvas(bgfx::Encoder& encoder) noexcept;
 		expected<void, std::string> renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 
 	private:
+
+        struct Layer final
+        {
+            bgfx::ViewId viewId = 0;
+            FrameBuffer framebuffer;
+        };
+
 		App& _app;
 		RmluiCanvasImpl& _canvas;
 		std::unique_ptr<Program> _program;
@@ -121,10 +134,13 @@ namespace darmok
 		glm::mat4 _trans;
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
-		bgfx::ViewId _viewId;
 		OptionalRef<bgfx::Encoder> _encoder;
-		std::unordered_map<Rml::CompiledFilterHandle, Material> _filterMaterials;
-		std::unordered_map<Rml::CompiledShaderHandle, Material> _shaderMaterials;
+		std::unordered_map<Rml::CompiledFilterHandle, std::shared_ptr<Material>> _filterMaterials;
+        std::unordered_map<Rml::CompiledShaderHandle, std::shared_ptr<Material>> _shaderMaterials;
+        std::vector<Layer> _layers;
+
+        OptionalRef<Layer> getCurrentLayer() noexcept;
+        OptionalRef<const Layer> getCurrentLayer() const noexcept;
 
 		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
 		glm::mat4 getTransformMatrix(const glm::vec2& position) noexcept;
@@ -260,6 +276,8 @@ namespace darmok
 		uint64_t getTextureFlags(const std::string& source) const noexcept;
 		void setTextureFlags(const std::string& source, uint64_t flags) noexcept;
 
+        void configureView(bgfx::ViewId viewId) const noexcept;
+
 	private:
 		RmluiCanvas& _canvas;
 		std::unique_ptr<RmluiRenderInterface> _render;
@@ -281,7 +299,6 @@ namespace darmok
 		std::unique_ptr<IRmluiCanvasDelegate> _delegatePtr;
 		std::unordered_map<std::string, std::unique_ptr<Rml::DataTypeRegister>> _dataTypeRegisters;
 		OptionalRef<Rml::DataTypeRegister> _defaultDataTypeRegister;
-		std::optional<bgfx::ViewId> _viewId;
 		uint64_t _defaultTextureFlags;
 		std::unordered_map<std::string, uint64_t> _textureFlags;
 
@@ -290,11 +307,10 @@ namespace darmok
 
 		glm::mat4 getModelMatrix() const noexcept;
 		glm::mat4 getProjectionMatrix() const noexcept;
-		glm::mat4 getDefaultProjectionMatrix() const noexcept;
 		OptionalRef<Transform> getTransform() const noexcept;
-		void configureViewSize(bgfx::ViewId viewId) const noexcept;
-		void updateViewName() noexcept;
 		void doShutdown() noexcept;
+        std::string getViewName() const noexcept;
+        glm::mat4 getDefaultProjectionMatrix() const noexcept;
 	};
 
 	class Transform;

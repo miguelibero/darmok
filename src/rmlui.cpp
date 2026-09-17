@@ -62,7 +62,6 @@ namespace darmok
         , _scissorEnabled(false)
         , _scissor(0)
         , _trans(1.F)
-        , _viewId(0)
         , _textureUniform{ "s_texColor", bgfx::UniformType::Sampler }
         , _dataUniform{ "u_rmluiData", bgfx::UniformType::Vec4 }
     {
@@ -171,6 +170,12 @@ namespace darmok
             return;
         }
 
+        auto layer = getCurrentLayer();
+        if (!layer)
+        {
+            return;
+        }
+
         auto& encoder = _encoder.value();
 
         auto trans = getTransformMatrix(position);
@@ -186,13 +191,13 @@ namespace darmok
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_A
-            | BGFX_STATE_WRITE_Z
             | BGFX_STATE_MSAA
             | BGFX_STATE_BLEND_ALPHA
             ;
 
+        auto viewId = layer->viewId;
         encoder.setState(state);
-        encoder.submit(_viewId, _program->getHandle(defines));
+        encoder.submit(viewId, _program->getHandle(defines));
     }
 
     Rml::TextureHandle RmluiRenderInterface::LoadTexture(Rml::Vector2i& dimensions, const Rml::String& source) noexcept
@@ -281,66 +286,227 @@ namespace darmok
             _trans *= RmluiUtils::convert(*transform);
         }
     }
-    
-    /*
 
-    // https://github.com/mikke89/RmlUi/blob/master/Backends/RmlUi_Renderer_GL2.cpp#L163
-    void RmluiRenderInterface::RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f trans) noexcept
+    void RmluiRenderInterface::EnableClipMask(bool enable) noexcept
     {
-        if (!_context)
+        if(!_encoder)
         {
             return;
         }
-        auto& encoder = _context->getEncoder();
 
-        uint32_t failKeep = BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP;
+        auto& encoder = _encoder.value();
 
-        switch (operation)
+        if(!enable)
         {
-        case Rml::ClipMaskOperation::Set:
-            encoder.setStencil(failKeep | BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-        break;
-        case Rml::ClipMaskOperation::SetInverse:
-            encoder.setStencil(failKeep | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-        break;
-        case Rml::ClipMaskOperation::Intersect:
-            encoder.setStencil(failKeep | BGFX_STENCIL_OP_PASS_Z_INCR);
-        break;
+            encoder.setStencil(BGFX_STENCIL_NONE);
+            return;
         }
 
-        RenderGeometry(geometry, trans, {});
+        encoder.setStencil(
+            BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_FUNC_RMASK(0xff) | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+    }
+    
+    void RmluiRenderInterface::RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation) noexcept
+    {
+        if(!_encoder)
+        {
+            return;
+        }
+
+        auto layer = getCurrentLayer();
+        if (!layer)
+        {
+            onError("RenderToClipMask", "No active layer");
+            return;
+        }
+
+        auto meshItr = _meshes.find(geometry);
+        if(meshItr == _meshes.end())
+        {
+            return;
+        }
+
+        auto& encoder = _encoder.value();
+
+        auto renderResult = meshItr->second->render(encoder);
+        if(!renderResult)
+        {
+            onError("RenderToClipMask", renderResult.error());
+            return;
+        }
+
+        const auto position = RmluiUtils::convert(translation);
+        const auto trans = getTransformMatrix(position);
+
+        encoder.setTransform(glm::value_ptr(trans));
+
+        uint32_t stencil = 0;
+        auto viewId = layer->viewId;
+
+        switch(operation)
+        {
+        case Rml::ClipMaskOperation::Set:
+            stencil =
+                BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_FUNC_RMASK(0xff) | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE;
+            break;
+
+        case Rml::ClipMaskOperation::SetInverse:
+            encoder.setStencil(
+                BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_FUNC_RMASK(0xff) | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+
+            encoder.setState(
+                BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+
+            encoder.submit(viewId, _program->getHandle());
+
+            return;
+
+        case Rml::ClipMaskOperation::Intersect:
+            stencil =
+                BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_REF(1) | BGFX_STENCIL_FUNC_RMASK(0xff) | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_INCR;
+            break;
+        }
+
+        encoder.setStencil(stencil);
+
+        encoder.setState(
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_MSAA);
+
+        encoder.submit(viewId, _program->getHandle());
     }
 
     Rml::LayerHandle RmluiRenderInterface::PushLayer() noexcept
     {
-
+        Rml::LayerHandle handle = _layers.size();
+        _layers.push_back({});
+        _app.requestRenderReset();
+        return handle;
     }
 
     void RmluiRenderInterface::CompositeLayers(Rml::LayerHandle source, Rml::LayerHandle destination, Rml::BlendMode blendMode, Rml::Span<const Rml::CompiledFilterHandle> filters) noexcept
     {
+        if (!_encoder)
+        {
+            return;
+        }
+        if(_layers.size() <= source)
+        {
+            onError("CompositeLayers", "invalid source layer");
+            return;
+        }
+        if(_layers.size() <= destination)
+        {
+            onError("CompositeLayers", "invalid destination layer");
+            return;
+        }
+        auto& src = _layers.at(source);
+        auto& dst = _layers.at(destination);
 
+        const auto sourceTexture = src.framebuffer.getTexture();
+
+        if(!sourceTexture)
+        {
+            onError("CompositeLayers", "source layer does not have a texture");
+            return;
+        }
+
+        auto meshData = MeshData{Rectangle{_canvas.getCurrentSize()}};
+        meshData.type = Mesh::Definition::Transient;
+        auto meshResult = meshData.createMesh(_program->getVertexLayout());
+        if(!meshResult)
+        {
+            onError("CompositeLayers", meshResult.error());
+            return;
+        }
+
+        auto& encoder = *_encoder;
+
+        encoder.setTexture(
+            0,
+            _textureUniform,
+            sourceTexture->getHandle());
+
+        uint64_t state =
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_MSAA;
+
+        switch(blendMode)
+        {
+        case Rml::BlendMode::Blend:
+            state |= BGFX_STATE_BLEND_ALPHA;
+            break;
+
+        case Rml::BlendMode::Replace:
+            break;
+        }
+
+        encoder.setState(state);
+
+        auto renderResult = meshResult.value().render(encoder);
+        if(!renderResult)
+        {
+            onError("CompositeLayers", renderResult.error());
+            return;
+        }
+
+        encoder.submit(dst.viewId, _program->getHandle());
     }
 
     void RmluiRenderInterface::PopLayer() noexcept
     {
-
+        _layers.pop_back();
+        _app.requestRenderReset();
     }
 
     Rml::TextureHandle RmluiRenderInterface::SaveLayerAsTexture() noexcept
     {
-
+        auto layer = getCurrentLayer();
+        if (!layer)
+        {
+            return 0;
+        }
+        auto size = _canvas.getCurrentSize();
+        auto fbResult = FrameBuffer::load(size);
+        if(!fbResult)
+        {
+            onError("SaveLayerAsTexture", fbResult.error());
+            return 0;
+        }
+        layer->framebuffer = std::move(fbResult).value();
+        return layer->framebuffer.getTexture()->getHandle().idx() + 1;
     }
 
     Rml::CompiledFilterHandle RmluiRenderInterface::SaveLayerAsMaskImage() noexcept
     {
-
+        auto layer = getCurrentLayer();
+        if(!layer)
+        {
+            return 0;
+        }
+        auto size = _canvas.getCurrentSize();
+        auto fbResult = FrameBuffer::load(size, true);
+        if(!fbResult)
+        {
+            onError("CompiledFilterHandle", fbResult.error());
+            return 0;
+        }
+        layer->framebuffer = std::move(fbResult).value();
+        return layer->framebuffer.getDepthTexture()->getHandle().idx() + 1;
     }
 
-    Rml::CompiledFilterHandle RmluiRenderInterface::CompileFilter(const Rml::String& name, const Rml::Dictionary& params) noexcept
+    Rml::CompiledFilterHandle RmluiRenderInterface::CompileFilter(const Rml::String& name, const Rml::Dictionary& /* params */) noexcept
     {
-        auto prog = _app.getAssets().getProgramLoader()(name);
-        Rml::CompiledFilterHandle handle = randomIdType();
-        auto& mat = _filterMaterials.emplace(handle, prog).first->second;
+        auto result = _app.getAssets().getMaterialLoader()(name);
+
+        if(!result)
+        {
+            onError("CompileFilter", "failed to load filter material");
+            return 0;
+        }
+
+        const Rml::CompiledFilterHandle handle = _filterMaterials.size();
+
+        _filterMaterials.emplace(handle, result.value());
+
         return handle;
     }
 
@@ -349,58 +515,102 @@ namespace darmok
         _filterMaterials.erase(filter);
     }
 
-    Rml::CompiledShaderHandle RmluiRenderInterface::CompileShader(const Rml::String& name, const Rml::Dictionary& params) noexcept
+    Rml::CompiledShaderHandle RmluiRenderInterface::CompileShader(const Rml::String& name, const Rml::Dictionary& /* params */) noexcept
     {
-        auto prog = _app.getAssets().getProgramLoader()(name);
-        Rml::CompiledShaderHandle handle = randomIdType();
-        auto& mat = _shaderMaterials.emplace(handle, prog).first->second;
+        auto result = _app.getAssets().getMaterialLoader()(name);
+
+        if(!result)
+        {
+            onError("CompileShader", "failed to load shader program");
+            return 0;
+        }
+
+        const Rml::CompiledShaderHandle handle = _shaderMaterials.size();
+
+        _shaderMaterials.emplace(handle, result.value());
+
         return handle;
     }
     
     void RmluiRenderInterface::RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept
     {
-        if (!_context)
+        if(!_encoder)
         {
             return;
         }
+
+        auto layer = getCurrentLayer();
+        if(!layer)
+        {
+            onError("RenderShader", "No active layer");
+            return;
+        }
+
         auto meshItr = _meshes.find(geometry);
-        if (meshItr == _meshes.end())
+        if(meshItr == _meshes.end())
         {
             return;
         }
 
-        auto matItr = _shaderMaterials.find(shader);
-        if (matItr == _shaderMaterials.end())
+        auto materialItr = _shaderMaterials.find(shader);
+        if(materialItr == _shaderMaterials.end())
         {
             return;
         }
+        auto mat = materialItr->second;
 
-        auto& encoder = _context->getEncoder();
+        auto& encoder = _encoder.value();
 
-        meshItr->second->render(encoder);
-        auto viewId = _context->getViewId();
+        auto renderResult = meshItr->second->render(encoder);
+        if(!renderResult)
+        {
+            onError("RenderShader", renderResult.error());
+            return;
+        }
 
         OptionalRef<Texture> tex;
+
         auto texItr = _textures.find(texture);
-        if (texItr != _textures.end())
+        if(texItr != _textures.end())
         {
             tex = texItr->second.get();
         }
 
-        auto position = RmluiUtils::convert(translation);
-        auto trans = getTransformMatrix(position);
+        const auto position = RmluiUtils::convert(translation);
+        const auto trans = getTransformMatrix(position);
+
         encoder.setTransform(glm::value_ptr(trans));
 
-        auto& matComp = _app.getOrAddComponent<MaterialAppComponent>();
-        matComp.renderSubmit(viewId, encoder, matItr->second);
+        if(tex)
+        {
+            encoder.setTexture(
+                0,
+                _textureUniform,
+                tex->getHandle());
+        }
+
+        auto materialResult =
+            _app.getOrAddComponent<MaterialAppComponent>();
+
+        if(!materialResult)
+        {
+            onError("RenderShader", materialResult.error());
+            return;
+        }
+
+        auto viewId = layer->viewId;
+
+        auto& materialComp = materialResult.value().get();
+        materialComp.renderSubmit(
+            viewId,
+            encoder,
+            *mat);
     }
 
     void RmluiRenderInterface::ReleaseShader(Rml::CompiledShaderHandle shader) noexcept
     {
         _shaderMaterials.erase(shader);
     }
-
-    */
 
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position) noexcept
     {
@@ -414,13 +624,20 @@ namespace darmok
             return;
         }
         _scissorEnabled = enable;
+        auto layer = getCurrentLayer();
+        if(!layer)
+        {
+            return;
+        }
+        auto viewId = layer->viewId;
+
         if (enable)
         {
-            bgfx::setViewScissor(_viewId, _scissor.x, _scissor.y, _scissor.z, _scissor.w);
+            bgfx::setViewScissor(viewId, _scissor.x, _scissor.y, _scissor.z, _scissor.w);
         }
         else
         {
-            bgfx::setViewScissor(_viewId);
+            bgfx::setViewScissor(viewId);
         }
     }
 
@@ -433,9 +650,32 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> RmluiRenderInterface::renderCanvas(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    bgfx::ViewId RmluiRenderInterface::renderReset(bgfx::ViewId viewId) noexcept
     {
-        _viewId = viewId;
+        if (_layers.empty())
+        {
+            _layers.push_back({});
+        }
+
+        for(auto& layer : _layers)
+        {
+            layer.viewId = viewId;
+
+            _canvas.configureView(viewId);
+
+            if (layer.framebuffer)
+            {
+                layer.framebuffer.configureView(viewId);
+            }
+
+            ++viewId;
+        }
+
+        return viewId;
+    }    
+
+    expected<void, std::string> RmluiRenderInterface::renderCanvas(bgfx::Encoder& encoder) noexcept
+    {
         _encoder = encoder;
         _trans = glm::mat4(1.F);
 
@@ -501,6 +741,24 @@ namespace darmok
         encoder.submit(viewId, _program->getHandle());
 
         return {};
+    }
+
+    OptionalRef<RmluiRenderInterface::Layer> RmluiRenderInterface::getCurrentLayer() noexcept
+    {
+        if(_layers.empty())
+        {
+            return nullptr;
+        }
+        return _layers.back();
+    }
+
+    OptionalRef<const RmluiRenderInterface::Layer> RmluiRenderInterface::getCurrentLayer() const noexcept
+    {
+        if (_layers.empty())
+        {
+            return nullptr;
+        }
+        return _layers.back();
     }
 
     OptionalRef<Texture> RmluiRenderInterface::getSpriteTexture(const Rml::Sprite& sprite) noexcept
@@ -789,38 +1047,24 @@ namespace darmok
             updateCurrentSize();
         }
 
-        _viewId = viewId;
-        updateViewName();
-
-        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
-        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-        configureViewSize(viewId);
+        return _render->renderReset(viewId);
 
         return ++viewId;
     }
 
     void RmluiCanvasImpl::setCamera(const OptionalRef<Camera>& camera) noexcept
     {
-        if (_cam != camera)
-        {
-            _cam = camera;
-            updateViewName();
-        }
+        _cam = camera;
     }
 
-    void RmluiCanvasImpl::updateViewName() noexcept
+    std::string RmluiCanvasImpl::getViewName() const noexcept
     {
-        if (!_viewId)
-        {
-            return;
-        }
         auto name = "Rmlui Canvas: " + _name;
-        if (_cam)
+        if(_cam)
         {
             name = _cam->getViewName(name);
         }
-        bgfx::setViewName(_viewId.value(), name.c_str());
+        return name;
     }
 
     const OptionalRef<Camera>& RmluiCanvasImpl::getCamera() const noexcept
@@ -1165,14 +1409,6 @@ namespace darmok
 
     expected<void, std::string> RmluiCanvasImpl::render(bgfx::Encoder& encoder) noexcept
     {
-        if (!_viewId)
-        {
-            return unexpected<std::string>{"missing view id"};
-        }
-
-        auto viewId = _viewId.value();
-        encoder.touch(viewId);
-
         if (!_visible)
         {
             return {};
@@ -1183,12 +1419,7 @@ namespace darmok
             return unexpected<std::string>{"missing render interface"};
         }
 
-        if (!_size && updateCurrentSize())
-        {
-            configureViewSize(viewId);
-        }
-
-        return _render->renderCanvas(_viewId.value(), encoder);
+        return _render->renderCanvas(encoder);
     }
 
     expected<void, std::string> RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
@@ -1298,17 +1529,23 @@ namespace darmok
         return mtx;
     }
 
-    void RmluiCanvasImpl::configureViewSize(bgfx::ViewId viewId) const noexcept
+    void RmluiCanvasImpl::configureView(bgfx::ViewId viewId) const noexcept
     {
-        if (_frameBuffer)
+        if(_frameBuffer)
         {
             _frameBuffer->configureView(viewId);
         }
-
         auto size = getCurrentSize();
+        auto proj = getDefaultProjectionMatrix();
+        auto name = getViewName();
+
+        bgfx::setViewName(viewId, name.c_str());
+
+        static const uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+        bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
         Viewport(size).configureView(viewId);
-        auto proj = getDefaultProjectionMatrix();
 
         static const glm::vec3 invy(1.F, -1.F, 1.F);
         auto view = glm::translate(glm::mat4(1.F), glm::vec3(0.F, size.y, 0.F));
