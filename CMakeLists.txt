@@ -499,14 +499,17 @@ target_link_libraries(${LIB_NAME} PUBLIC ${CORE_LIB_NAME})
 # code analysis & clang tidy
 if(DARMOK_RUN_CODE_ANALYSIS)
   find_program(CLANG_TIDY_EXE NAMES "clang-tidy" NO_CACHE)
+  if(NOT CLANG_TIDY_EXE)
+    message(WARNING "DARMOK_RUN_CODE_ANALYSIS is ON but clang-tidy was not found")
+  endif()
 endif()
 
 macro(_darmok_analysis_setup TARGET)
-  if(DARMOK_RUN_CODE_ANALYSIS)
+  if(DARMOK_RUN_CODE_ANALYSIS AND CLANG_TIDY_EXE)
     set(CLANG_TIDY_CMD "${CLANG_TIDY_EXE}")
     if(MSVC)
       # clang-tidy header filter not working with vs
-      # set_target_properties(${LIB_NAME} PROPERTIES
+      # set_target_properties(${TARGET} PROPERTIES
       #   VS_GLOBAL_RunCodeAnalysis false
       #   VS_GLOBAL_EnableMicrosoftCodeAnalysis true
       #   VS_GLOBAL_EnableClangTidyCodeAnalysis true
@@ -514,9 +517,35 @@ macro(_darmok_analysis_setup TARGET)
       # # https://gitlab.kitware.com/cmake/cmake/-/issues/20512
       # set(CLANG_TIDY_CMD "${CLANG_TIDY_CMD};--extra-arg=/EHsc")
     endif()
-    set_target_properties(${LIB_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_CMD}")
+    set_target_properties(${TARGET} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_CMD}")
   endif()
 endmacro()
+
+# clang-format targets
+find_program(CLANG_FORMAT_EXE NAMES "clang-format" NO_CACHE)
+if(CLANG_FORMAT_EXE)
+  file(GLOB_RECURSE FORMAT_SOURCES
+    "${PROJECT_SOURCE_DIR}/src/*.cpp"
+    "${PROJECT_SOURCE_DIR}/src/*.hpp"
+    "${PROJECT_SOURCE_DIR}/include/darmok/*.hpp"
+    "${PROJECT_SOURCE_DIR}/tools/*.cpp"
+    "${PROJECT_SOURCE_DIR}/tools/*.hpp"
+  )
+  add_custom_target(clang-format
+    COMMAND ${CLANG_FORMAT_EXE} -i ${FORMAT_SOURCES}
+    COMMENT "Running clang-format on all sources"
+    VERBATIM
+  )
+  add_custom_target(clang-format-check
+    COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${FORMAT_SOURCES}
+    COMMENT "Checking clang-format on all sources"
+    VERBATIM
+  )
+  set_target_properties(clang-format clang-format-check PROPERTIES FOLDER "darmok/tools")
+  message(STATUS "clang-format found: ${CLANG_FORMAT_EXE} (targets: clang-format, clang-format-check)")
+else()
+  message(STATUS "clang-format not found, format targets disabled")
+endif()
 
 set(EXPORT_TARGETS "")
 macro(_darmok_lib_setup TARGET)
