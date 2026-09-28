@@ -495,8 +495,9 @@ namespace darmok
                        : glm::vec3(0.0f);
         }
 
-        // RG16F = 2 half-floats per pixel
-        using HalfFloatPixelArray2d = Array2d<glm::vec<2, uint16_t>, uint16_t>;
+        // RG16F = 2 half-floats per pixel. Use uint32_t for the length type so
+        // totalSize doesn't overflow (256*256=65536 > uint16_t max).
+        using HalfFloatPixelArray2d = Array2d<glm::vec<2, uint16_t>, uint32_t>;
 
         Definition createHalfFloatDefinition(const HalfFloatPixelArray2d& pixels, uint16_t size)
         {

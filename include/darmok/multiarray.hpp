@@ -127,7 +127,7 @@
                 strides[i] = _strides[i + 1];
             }
 
-            return MultiArrayView<const value_type, SubN, dimension_num>{
+            return MultiArrayView<const value_type, SubN, length_type>{
                 _data + index * _strides[0],
                 dimensions,
                 strides};
