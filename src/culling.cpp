@@ -173,15 +173,17 @@ namespace darmok
                 auto meshResult = meshData.createMesh(layout);
                 if (!meshResult)
                 {
-					errors.push_back(std::move(meshResult).error());
-				}
+                    errors.push_back(std::move(meshResult).error());
+                    continue;
+                }
                 auto renderResult = meshResult.value().render(encoder);
                 if (!renderResult)
                 {
                     errors.push_back(std::move(renderResult).error());
+                    continue;
                 }
+                encoder.setState(state);
                 auto occlusion = getQuery(entity);
-                bgfx::setCondition(occlusion, true);
                 encoder.submit(viewId, prog, occlusion);
             }
         }
