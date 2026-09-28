@@ -49,7 +49,7 @@ end
 			return unexpected<std::string>{ err.what() };
 		}
 		_obj = luaResult;
-		if (_obj.get_type() == sol::type::nil)
+		if (_obj.get_type() == sol::type::lua_nil)
 		{
 			_obj = env.as<sol::table>();
 		}

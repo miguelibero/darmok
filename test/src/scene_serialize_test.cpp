@@ -79,7 +79,7 @@ namespace
         auto result = protobuf::write(scene, out, protobuf::Format::Json);
         if (!result)
         {
-			throw std::exception{ result.error().c_str() };
+			throw std::runtime_error{ result.error() };
         }
         return data.view(0, out.tellp());
     }
@@ -90,7 +90,7 @@ namespace
         auto result = protobuf::read(scene, in, protobuf::Format::Json);
         if (!result)
         {
-            throw std::exception{ result.error().c_str() };
+            throw std::runtime_error{ result.error() };
         }
     }
 
@@ -100,7 +100,7 @@ namespace
         auto result = protobuf::write(scene, out, protobuf::Format::Json);
         if (!result)
         {
-            throw std::exception{ result.error().c_str() };
+            throw std::runtime_error{ result.error() };
         }
         return out.str();
     }
@@ -111,7 +111,7 @@ namespace
         auto result = protobuf::read(scene, in, protobuf::Format::Json);
         if (!result)
         {
-            throw std::exception{ result.error().c_str() };
+            throw std::runtime_error{ result.error() };
         }
     }
 

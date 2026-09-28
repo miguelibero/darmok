@@ -23,68 +23,61 @@ namespace darmok
             switch (type.basetype)
             {
             case T::Float:
-            {
                 switch (type.columns)
                 {
-                    case 1:
+                case 1:
+                    switch (type.vecsize)
                     {
-                        switch (type.vecsize)
-                        {
-                        case 1: return "float";
-                        case 2: return "vec2";
-                        case 3: return "vec3";
-                        case 4: return "vec4";
-                        }
+                    case 1: return "float";
+                    case 2: return "vec2";
+                    case 3: return "vec3";
+                    case 4: return "vec4";
+                    default: return "";
                     }
                 case 2: return "mat2";
                 case 3: return "mat3";
                 case 4: return "mat4";
+                default: return "";
                 }
-            }
             case T::Int:
-            {
                 switch (type.columns)
                 {
                 case 1:
-                {
                     switch (type.vecsize)
                     {
                     case 1: return "int";
                     case 2: return "ivec2";
                     case 3: return "ivec3";
                     case 4: return "ivec4";
+                    default: return "";
                     }
-                }
                 case 2: return "imat2";
                 case 3: return "imat3";
                 case 4: return "imat4";
+                default: return "";
                 }
-            }
             case T::UInt:
-            {
                 switch (type.columns)
                 {
                 case 1:
-                {
                     switch (type.vecsize)
                     {
                     case 1: return "uint";
                     case 2: return "uvec2";
                     case 3: return "uvec3";
                     case 4: return "uvec4";
+                    default: return "";
                     }
-                }
                 case 2: return "umat2";
                 case 3: return "umat3";
                 case 4: return "umat4";
+                default: return "";
                 }
-            }
             case T::Struct:
                 return compiler.get_name(type.self);
             default:
-                break;
+                return "";
             }
-            return "";
         }
 
         expected<std::string, std::string> stripGlslUbo(std::string glsl, spirv_cross::CompilerGLSL& compiler, const spirv_cross::SmallVector<spirv_cross::Resource>& ubos) noexcept
@@ -117,7 +110,7 @@ namespace darmok
                     StringUtils::replace(glsl, bufferName + "." + memberName, memberName);
                 }
                 StringUtils::replace(glsl, uniformsPlaceholder, out.str());
-                out.clear();
+                out.str("");
             }
 
             return glsl;
@@ -145,15 +138,6 @@ namespace darmok
             options.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
             compiler.set_common_options(options);
 
-            compiler.build_dummy_sampler_for_combined_images();
-            compiler.build_combined_image_samplers();
-            for (const auto &sampler : compiler.get_combined_image_samplers())
-            {
-                compiler.set_name(sampler.combined_id, compiler.get_name(sampler.image_id));
-            }
-
-            auto resources = compiler.get_shader_resources();
-
             auto fixResourceNames = [&compiler](auto& resources)
             {
                 for (auto& res : resources)
@@ -167,27 +151,37 @@ namespace darmok
                 }
             };
 
-            if (type == ShaderType::Vertex)
-            {
-                for (auto& input : resources.stage_inputs)
-                {
-                    std::string_view name = input.name;
-                    const auto lastDotPos = name.rfind('.');
-                    if (lastDotPos != std::string::npos)
-                    {
-                        name = name.substr(lastDotPos + 1);
-                        compiler.set_name(input.id, std::string{name});
-                    }
-                }
-                fixResourceNames(resources.stage_outputs);
-            }
-            else if (type == ShaderType::Fragment)
-            {
-                fixResourceNames(resources.stage_inputs);
-            }
-
             try
             {
+                compiler.build_dummy_sampler_for_combined_images();
+                compiler.build_combined_image_samplers();
+                for (const auto& sampler : compiler.get_combined_image_samplers())
+                {
+                    compiler.set_name(sampler.combined_id, compiler.get_name(sampler.image_id));
+                }
+
+                auto resources = compiler.get_shader_resources();
+                fixResourceNames(resources.sampled_images);
+
+                if (type == ShaderType::Vertex)
+                {
+                    for (auto& input : resources.stage_inputs)
+                    {
+                        std::string_view name = input.name;
+                        const auto lastDotPos = name.rfind('.');
+                        if (lastDotPos != std::string::npos)
+                        {
+                            name = name.substr(lastDotPos + 1);
+                            compiler.set_name(input.id, std::string{name});
+                        }
+                    }
+                    fixResourceNames(resources.stage_outputs);
+                }
+                else if (type == ShaderType::Fragment)
+                {
+                    fixResourceNames(resources.stage_inputs);
+                }
+
                 auto source = compiler.compile();
                 auto result = stripGlslUbo(source, compiler, resources.uniform_buffers);
                 if (!result)
@@ -195,7 +189,6 @@ namespace darmok
                     return unexpected{ "failed to strip glsl uniform buffer objects: " + result.error() };
                 }
                 source = std::move(result).value();
-
                 source = replaceStorageBufferTypes(source, options.version);
 
                 return source;

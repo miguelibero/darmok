@@ -26,15 +26,32 @@ SamplerComparisonState s_shadowMapCmp : register(s13);
 
 #endif
 
-// for each shadow map:
-//   mat4 transform
-[[vk::binding(14, 0)]]
-uniform StructuredBuffer<float4x4> b_shadowTrans : register(t14);
+// for each shadow map: mat4 transform stored as 4 consecutive float4 rows.
+// StructuredBuffer<float4x4> fails on Metal (Slang address-space bug), so we
+// store rows as float4 and reconstruct on read.
+#ifdef DARMOK_GLSL
+#define DARMOK_MAX_SHADOW_TRANSFORMS 64
+uniform float4x4 b_shadowTrans[DARMOK_MAX_SHADOW_TRANSFORMS];
 
 float4x4 getShadowTransform(uint shadowMapIndex)
 {
 	return b_shadowTrans[shadowMapIndex];
 }
+#else
+[[vk::binding(14, 0)]]
+uniform StructuredBuffer<float4> b_shadowTrans : register(t14);
+
+float4x4 getShadowTransform(uint shadowMapIndex)
+{
+	uint base = shadowMapIndex * 4u;
+	return float4x4(
+		b_shadowTrans[base],
+		b_shadowTrans[base + 1u],
+		b_shadowTrans[base + 2u],
+		b_shadowTrans[base + 3u]
+	);
+}
+#endif
 
 bool outsideShadowMap(float3 texCoord)
 {
@@ -140,11 +157,11 @@ float softShadow(uint startIdx, uint countIdx, float3 fragPos, float bias)
 
 float lightShadow(LightShadowData data, uint countMapIdx, float3 fragPos, float bias)
 {
-	if(data.shadowType == ShadowType::Hard)
+	if(data.shadowType == (uint)ShadowType::Hard)
 	{
 		return hardShadow(data.shadowMapIndex, countMapIdx, fragPos, bias);
 	}
-	if(data.shadowType == ShadowType::Soft)
+	if(data.shadowType == (uint)ShadowType::Soft)
 	{
 		return softShadow(data.shadowMapIndex, countMapIdx, fragPos, bias);
 	}
@@ -153,7 +170,7 @@ float lightShadow(LightShadowData data, uint countMapIdx, float3 fragPos, float 
 
 float dirLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3 dir)
 {
-	if(data.shadowType == ShadowType::None)
+	if(data.shadowType == (uint)ShadowType::None)
 	{
 		return 1.0f;
 	}
@@ -163,7 +180,7 @@ float dirLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3
 
 float spotLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3 dir)
 {
-	if(data.shadowType == ShadowType::None)
+	if(data.shadowType == (uint)ShadowType::None)
 	{
 		return 1.0f;
 	}
@@ -173,7 +190,7 @@ float spotLightShadow(LightShadowData data, float3 fragPos, float3 normal, float
 
 float pointLightShadow(LightShadowData data, float3 fragPos, float3 normal, float3 dir)
 {
-	if(data.shadowType == ShadowType::None)
+	if(data.shadowType == (uint)ShadowType::None)
 	{
 		return 1.0f;
 	}

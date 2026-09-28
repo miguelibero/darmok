@@ -94,7 +94,7 @@ namespace darmok
                 {
                     continue;
                 }
-                auto itr = std::ranges::find(exts, ext);
+                auto itr = std::ranges::find(exts, ext.string());
                 if (itr == exts.end())
                 {
                     continue;

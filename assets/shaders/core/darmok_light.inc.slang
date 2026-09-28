@@ -17,14 +17,24 @@ enum ShadowType
 
 struct LightShadowData
 {
-	ShadowType shadowType;
+	uint shadowType;
 	uint shadowMapIndex;
 };
 
+// Use a struct of scalars instead of float3 for StructuredBuffer elements.
+// Metal cannot resolve the address space of float3 in device buffers
+// (ambiguous between packed_float3 and float3), causing a Slang internal error.
+struct PackedVec3
+{
+    float x, y, z;
+};
+
+float3 toFloat3(PackedVec3 v) { return float3(v.x, v.y, v.z); }
+
 struct DirLight
 {
-    float3 direction;
-    float3 intensity;
+    PackedVec3 direction;
+    PackedVec3 intensity;
 
     LightShadowData shadow;
 };
@@ -34,8 +44,8 @@ uniform StructuredBuffer<DirLight> b_dirLights : register(t10);
 
 struct PointLight
 {
-    float3 position;
-    float3 intensity;
+    PackedVec3 position;
+    PackedVec3 intensity;
     float range;
 
     LightShadowData shadow;
@@ -46,9 +56,9 @@ uniform StructuredBuffer<PointLight> b_pointLights : register(t11);
 
 struct SpotLight
 {
-    float3 position;
-    float3 direction;
-    float3 intensity;
+    PackedVec3 position;
+    PackedVec3 direction;
+    PackedVec3 intensity;
     float range;
     float coneAngle;
     float innerConeAngle;
@@ -128,21 +138,21 @@ struct LightData
 LightData calcPointLight(PointLight light, float3 pos)
 {
     LightData data;
-    data.direction = light.position - pos;
+    data.direction = toFloat3(light.position) - pos;
     float dist = length(data.direction);
-    data.direction = data.direction /  max(dist, 1e-5);
+    data.direction = data.direction / max(dist, 1e-5);
     float attenuation = smoothAttenuation(dist, light.range);
-    data.radiance = light.intensity * attenuation;
+    data.radiance = toFloat3(light.intensity) * attenuation;
     return data;
 }
 
 LightData calcSpotLight(SpotLight light, float3 pos)
 {
-    LightData data; data.radiance = float3(0.0,0.0,0.0);
-    data.direction = light.position - pos;
+    LightData data; data.radiance = float3(0.0, 0.0, 0.0);
+    data.direction = toFloat3(light.position) - pos;
     float dist = length(data.direction);
     data.direction = data.direction / max(dist, 1e-5);
-    float cosTheta = dot(data.direction, -light.direction);
+    float cosTheta = dot(data.direction, -toFloat3(light.direction));
     float innerCutoff = cos(light.innerConeAngle);
     float outerCutoff = cos(light.coneAngle);
     if (cosTheta > outerCutoff)
@@ -152,7 +162,7 @@ LightData calcSpotLight(SpotLight light, float3 pos)
             max(innerCutoff - outerCutoff, 1e-5)
         );
         float attenuation = factor * smoothAttenuation(dist, light.range);
-        if(attenuation > 0.0) data.radiance = light.intensity * attenuation;
+        if(attenuation > 0.0) data.radiance = toFloat3(light.intensity) * attenuation;
     }
     return data;
 }
@@ -160,7 +170,7 @@ LightData calcSpotLight(SpotLight light, float3 pos)
 LightData calcDirLight(DirLight light)
 {
     LightData data;
-    data.direction = normalize(-light.direction);
-    data.radiance = light.intensity;
+    data.direction = normalize(-toFloat3(light.direction));
+    data.radiance = toFloat3(light.intensity);
     return data;
 }

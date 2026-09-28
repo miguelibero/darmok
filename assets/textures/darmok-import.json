@@ -3,7 +3,7 @@
     "headerVarPrefix": "darmok_texture_",
     "importers": {
         "generated_textures": {
-            "atest_albedoLut": {
+            "albedoLut": {
                 "outputPath": "albedo_lut.bin",
                 "size": 512,
                 "sampleCount": 2048
