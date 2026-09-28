@@ -1,4 +1,5 @@
 #include <darmok/mesh_core.hpp>
+#include <ranges>
 #include <darmok/vertex.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/data.hpp>
@@ -1122,7 +1123,7 @@ namespace darmok
 	}
 
 	MeshData::MeshData(const DataDefinition& def) noexcept
-	: indices{ def.indices().begin(), def.indices().end() }
+	: indices{ std::ranges::to<decltype(indices)>(def.indices()) }
 	{
 		std::unordered_map<size_t, std::vector<MeshDataWeight>> weightsByVertex;
 

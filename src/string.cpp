@@ -37,12 +37,12 @@ namespace darmok::StringUtils
 
 	bool contains(std::string_view sv, std::string_view part) noexcept
 	{
-		return sv.find(part) != std::string::npos;
+		return sv.contains(part);
 	}
 
 	bool contains(std::string_view sv, std::string_view::value_type part) noexcept
 	{
-		return sv.find(part) != std::string::npos;
+		return sv.contains(part);
 	}
 
 	std::vector<std::string> splitWords(std::string_view sv) noexcept

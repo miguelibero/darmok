@@ -1,5 +1,6 @@
 #include <darmok/stream.hpp>
 #include <bx/debug.h>
+#include <print>
 #include <bx/string.h>
 #include <bx/platform.h>
 #include <fstream>
@@ -59,11 +60,11 @@ namespace darmok
         {
             if (error)
             {
-                std::cerr << msg << std::endl;
+                std::println(stderr, "{}", msg);
             }
             else
             {
-                std::cout << msg << std::endl;
+                std::println("{}", msg);
             }
             bx::debugOutput(bx::StringView{ msg.data(), static_cast<int32_t>(msg.size()) });
         }

@@ -1,4 +1,5 @@
 #include "detail/physics3d_jolt.hpp"
+#include <print>
 #include "detail/physics3d_character_jolt.hpp"
 
 #include <darmok/physics3d.hpp>
@@ -18,7 +19,6 @@
 #include <thread>
 #include <cstdarg>
 #include <stdexcept>
-#include <iostream>
 #include <sstream>
 #include <utility>
 
@@ -510,7 +510,7 @@ namespace darmok::physics3d
         bx::vsnprintf(buffer, sizeof(buffer), fmt, list);
         va_end(list);
 
-        std::cout << buffer << std::endl;
+        std::println("{}", buffer);
     }
 
 #ifdef JPH_ENABLE_ASSERTS

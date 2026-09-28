@@ -1,4 +1,5 @@
 #include <darmok/text.hpp>
+#include <ranges>
 #include <darmok/text_freetype.hpp>
 #include <darmok/texture_atlas.hpp>
 #include <darmok/app.hpp>
@@ -285,7 +286,7 @@ namespace darmok
 		}
 		FreetypeFontAtlasGenerator generator{ _face, _library, _alloc };
 		generator.setImageFormat(bimg::TextureFormat::RGBA8);
-		auto result = generator(std::u32string{ chars.begin(), chars.end() });
+		auto result = generator(std::ranges::to<std::u32string>(chars));
 		if (!result)
 		{
 			return unexpected{ std::move(result).error() };

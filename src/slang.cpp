@@ -570,7 +570,7 @@ namespace darmok
 
         uint16_t layoutParamToId(const LayoutParam &param, SlangCompileTarget target)
         {
-            if (target == SLANG_SPIRV && param.name.find("data") != std::string::npos)
+            if (target == SLANG_SPIRV && param.name.contains("data"))
             {
                 return std::numeric_limits<uint16_t>::max();
             }

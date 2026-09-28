@@ -2,6 +2,7 @@
 
 #include <darmok/export.h>
 #include <iterator>
+#include <ranges>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,7 +21,7 @@ namespace darmok
         template<typename T>
         static std::vector<std::unordered_set<T>> combinations(const std::unordered_set<T>& set) noexcept
         {
-            std::vector<T> elms(set.begin(), set.end());
+            auto elms = std::ranges::to<std::vector<T>>(set);
             std::vector<std::unordered_set<T>> combs;
             size_t n = elms.size();
             size_t size = std::pow(2, n);

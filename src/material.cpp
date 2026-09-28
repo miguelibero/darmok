@@ -1,4 +1,5 @@
 #include <darmok/material.hpp>
+#include <ranges>
 #include <darmok/light.hpp>
 #include <darmok/asset.hpp>
 #include <darmok/texture.hpp>
@@ -151,7 +152,7 @@ namespace darmok
 			}
 		}
 
-		programDefines = ProgramDefines(def.program_defines().begin(), def.program_defines().end());
+		programDefines = std::ranges::to<ProgramDefines>(def.program_defines());
 		baseColor = convert<Color>(def.base_color());
 		emissiveColor = convert<Color3>(def.emissive_color());
 		metallicFactor = def.metallic_factor();

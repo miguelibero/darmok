@@ -1,4 +1,5 @@
 #include "detail/skeleton_ozz.hpp"
+#include <ranges>
 #include <darmok/skeleton_ozz.hpp>
 #include <darmok/data.hpp>
 #include <darmok/scene.hpp>
@@ -966,11 +967,11 @@ namespace darmok
             return glm::mat4(1);
         }
         auto jointNames = getOzz().joint_names();
-        for (size_t i = 0; i < jointNames.size() && i < _models.size(); i++)
+        for (auto [name, model] : std::views::zip(jointNames, _models))
         {
-            if (jointNames[i] == joint)
+            if (name == joint)
             {
-                return OzzUtils::convert(_models[i]);
+                return OzzUtils::convert(model);
             }
         }
         return glm::mat4(1);

@@ -1,4 +1,5 @@
 #include "lua/scene_serialize.hpp"
+#include <ranges>
 #include "lua/scene.hpp"
 #include "lua/protobuf.hpp"
 
@@ -67,11 +68,8 @@ namespace darmok
 		auto scene = getScene();
 		SceneDefinitionWrapper sceneWrapper{ *scene };
 		auto result = sceneWrapper.getChildren(_entity);
-		std::vector<LuaEntityDefinition> entities;
-		entities.reserve(result.size());
-		std::ranges::transform(result, std::back_inserter(entities),
-			[scene](const auto& entityId) { return LuaEntityDefinition{ entityId, scene }; });
-		return entities;
+		return result | std::views::transform([scene](const auto& entityId) { return LuaEntityDefinition{ entityId, scene }; })
+			| std::ranges::to<std::vector<LuaEntityDefinition>>();
 	}
 
 	std::vector<google::protobuf::Any*> LuaEntityDefinition::getComponents()
@@ -79,11 +77,8 @@ namespace darmok
 		auto scene = getScene();
 		SceneDefinitionWrapper sceneWrapper{ *scene };
 		auto result = sceneWrapper.getComponents(_entity);
-		std::vector<google::protobuf::Any*> comps;
-		comps.reserve(result.size());
-		std::ranges::transform(result, std::back_inserter(comps),
-			[](const auto& comp) { return &comp.get(); });
-		return comps;
+		return result | std::views::transform([](const auto& comp) { return &comp.get(); })
+			| std::ranges::to<std::vector<google::protobuf::Any*>>();
 	}
 
 	google::protobuf::Any* LuaEntityDefinition::getAnyComponent(const sol::object& type)
@@ -130,21 +125,15 @@ namespace darmok
 	std::vector<LuaEntityDefinition> LuaSceneDefinition::getRootEntities()
 	{
 		auto result = SceneDefinitionWrapper{ *_scene }.getRootEntities();
-		std::vector<LuaEntityDefinition> entities;
-		entities.reserve(result.size());
-		std::ranges::transform(result, std::back_inserter(entities),
-			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; });
-		return entities;
+		return result | std::views::transform([this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; })
+			| std::ranges::to<std::vector<LuaEntityDefinition>>();
 	}
 
 	std::vector<LuaEntityDefinition> LuaSceneDefinition::getEntities()
 	{
 		auto result = SceneDefinitionWrapper{ *_scene }.getEntities();
-		std::vector<LuaEntityDefinition> entities;
-		entities.reserve(result.size());
-		std::ranges::transform(result, std::back_inserter(entities),
-			[this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; });
-		return entities;
+		return result | std::views::transform([this](const auto& entityId) { return LuaEntityDefinition{ entityId, _scene }; })
+			| std::ranges::to<std::vector<LuaEntityDefinition>>();
 	}
 
 	std::unordered_map<EntityId, google::protobuf::Any*> LuaSceneDefinition::getAnyTypeComponents(const sol::object& type)
@@ -187,11 +176,8 @@ namespace darmok
 	{
 		auto typeId = LuaUtils::getTypeId(type).value();
 		auto result = SceneDefinitionWrapper{ *_scene }.getAssetPaths(typeId);
-		std::vector<std::string> paths;
-		paths.reserve(result.size());
-		std::ranges::transform(result, std::back_inserter(paths),
-			[](const auto& elm) { return elm.string(); });
-		return paths;
+		return result | std::views::transform([](const auto& elm) { return elm.string(); })
+			| std::ranges::to<std::vector<std::string>>();
 	}
 
 	LuaSceneDefinition::AssetMap LuaSceneDefinition::getAnyTypeAssets(const sol::object& type)

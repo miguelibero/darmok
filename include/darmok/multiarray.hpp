@@ -321,43 +321,23 @@
                 strides};
         }
 
-        template <size_t M = dimension_num>
+        template <size_t M = dimension_num, typename Self>
             requires(M == 1)
         [[nodiscard]]
-        constexpr value_type& operator[](length_type index) noexcept
+        constexpr auto& operator[](this Self& self, length_type index) noexcept
         {
-            assert(index < _size[0]);
-            return _data[index];
+            assert(index < self._size[0]);
+            return self._data[index];
         }
 
-        template <size_t M = dimension_num>
-            requires(M == 1)
-        [[nodiscard]]
-        constexpr const value_type& operator[](length_type index) const noexcept
-        {
-            assert(index < _size[0]);
-            return _data[index];
-        }
-
-        template <typename... Indices>
+        template <typename Self, typename... Indices>
             requires(
                 sizeof...(Indices) == dimension_num &&
                 (std::convertible_to<Indices, length_type> && ...))
         [[nodiscard]]
-        value_type& operator()(Indices... indices)
+        auto& operator()(this Self& self, Indices... indices)
         {
-            return _data[index(
-                static_cast<length_type>(indices)...)];
-        }
-
-        template <typename... Indices>
-            requires(
-                sizeof...(Indices) == dimension_num &&
-                (std::convertible_to<Indices, length_type> && ...))
-        [[nodiscard]]
-        const value_type& operator()(Indices... indices) const
-        {
-            return _data[index(
+            return self._data[self.index(
                 static_cast<length_type>(indices)...)];
         }
 

@@ -1,4 +1,5 @@
 #include <darmok/texture_atlas.hpp>
+#include <ranges>
 #include <darmok/data.hpp>
 #include <darmok/mesh.hpp>
 #include <darmok/anim.hpp>
@@ -400,7 +401,7 @@ namespace darmok
 				}
 				if (elm.indices_size() > 0)
 				{
-					std::vector<int> indices(elm.indices().begin(), elm.indices().end());
+					auto indices = std::ranges::to<std::vector<int>>(elm.indices());
 					xml.append_child("triangles").set_value(TextureAtlasDetail::writeIndexList(indices));
 				}
 			}

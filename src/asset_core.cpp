@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <print>
 #include <chrono>
 #include <queue>
 
@@ -1469,12 +1470,12 @@ namespace darmok
                 auto result = _importer.getOutputPaths(cfg);
                 if (!result)
                 {
-                    std::cerr << result.error() << std::endl;
+                    std::println(stderr, "{}", result.error());
                     return -1;
                 }
                 for (auto& outputPath : result.value())
                 {
-                    std::cout << outputPath.string() << std::endl;
+                    std::println("{}", outputPath.string());
                 }
                 return 0;
             }
@@ -1492,7 +1493,7 @@ namespace darmok
         }
         catch(const std::exception& ex)
         {
-            std::cerr << "error: " << ex.what() << std::endl;
+            std::println(stderr, "error: {}", ex.what());
             return -1;
         }
     }

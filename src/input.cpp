@@ -1,5 +1,6 @@
 
 #include "detail/input.hpp"
+#include <ranges>
 #include <bx/bx.h>
 #include <darmok/window.hpp>
 #include <darmok/string.hpp>
@@ -1678,13 +1679,13 @@ namespace darmok
 
 	void Input::addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, std::unique_ptr<IInputEventListener> listener) noexcept
 	{
-		std::vector<InputEvent> events{ evs.begin(), evs.end() };
+		auto events = std::ranges::to<std::vector<InputEvent>>(evs);
 		return addListener(tag, events, std::move(listener));
 	}
 
 	void Input::addListener(const std::string& tag, const google::protobuf::RepeatedPtrField<InputEvent>& evs, IInputEventListener& listener) noexcept
 	{
-		std::vector<InputEvent> events{ evs.begin(), evs.end() };
+		auto events = std::ranges::to<std::vector<InputEvent>>(evs);
 		return addListener(tag, events, listener);
 	}
 
@@ -1792,8 +1793,8 @@ namespace darmok
 
 	float Input::getAxis(const google::protobuf::RepeatedPtrField<InputDir>& negative, const google::protobuf::RepeatedPtrField<InputDir>& positive, const Sensitivity& sensitivity) const noexcept
 	{
-		std::vector<InputDir> negVec{ negative.begin(), negative.end() };
-		std::vector<InputDir> posVec{ positive.begin(), positive.end() };
+		auto negVec = std::ranges::to<std::vector<InputDir>>(negative);
+		auto posVec = std::ranges::to<std::vector<InputDir>>(positive);
 		return getAxis(negVec, posVec, sensitivity);
 	}
 

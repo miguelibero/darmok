@@ -1,4 +1,5 @@
 #include <darmok/shape.hpp>
+#include <ranges>
 #include <darmok/string.hpp>
 #include <darmok/math.hpp>
 #include <darmok/glm_serialize.hpp>
@@ -312,7 +313,7 @@ namespace darmok
     }
 
     Polygon::Polygon(const Definition& def) noexcept
-        : triangles{ def.triangles().begin(), def.triangles().end() }
+        : triangles{ std::ranges::to<decltype(triangles)>(def.triangles()) }
         , origin{ convert<glm::vec3>(def.origin()) }
     {
     }

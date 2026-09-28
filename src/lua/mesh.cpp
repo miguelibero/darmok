@@ -23,8 +23,14 @@ namespace darmok
 			"vertex_layout", sol::property(&Mesh::getVertexLayout),
 			"vertex_handle_index", sol::property(&Mesh::getVertexHandleIndex),
 			"empty", &Mesh::empty,
-			"update_vertices", &Mesh::updateVertices,
-			"updateIndices", &Mesh::updateIndices
+			"update_vertices", sol::overload(
+				[](Mesh& m, DataView data) { LuaUtils::unwrapExpected(m.updateVertices(data)); },
+				[](Mesh& m, DataView data, uint32_t offset) { LuaUtils::unwrapExpected(m.updateVertices(data, offset)); }
+			),
+			"updateIndices", sol::overload(
+				[](Mesh& m, DataView data) { LuaUtils::unwrapExpected(m.updateIndices(data)); },
+				[](Mesh& m, DataView data, uint32_t offset) { LuaUtils::unwrapExpected(m.updateIndices(data, offset)); }
+			)
 		);
 
 		LuaUtils::newEnum<Mesh::Type>(lua, "MeshType");

@@ -1,4 +1,5 @@
 #include "lua/app.hpp"
+#include <ranges>
 #include <darmok/app.hpp>
 #include <darmok/lua.hpp>
 #include <darmok/scene.hpp>
@@ -43,10 +44,8 @@ namespace darmok
 {	
 	void luaPrint(sol::variadic_args args) noexcept
 	{
-		std::vector<std::string> strArgs;
-		strArgs.reserve(args.size());
-		std::ranges::transform(args, std::back_inserter(strArgs),
-			[](const auto& arg) { return arg.template as<std::string>(); });
+		auto strArgs = args | std::views::transform([](const auto& arg) { return arg.template as<std::string>(); })
+			| std::ranges::to<std::vector<std::string>>();
 		StreamUtils::log(StringUtils::join(", ", strArgs) + "\n");
 	}
 

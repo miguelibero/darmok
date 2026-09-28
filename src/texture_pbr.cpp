@@ -858,7 +858,7 @@ namespace darmok
         size_t i = 0;
         for (auto& [texType, texConfig] : _textures)
         {
-            if(config.outputStreams.size() <= i || !config.outputStreams[i])
+            if (config.outputStreams.size() <= i || !config.outputStreams[i])
             {
                 ++i;
                 continue;
@@ -978,9 +978,9 @@ namespace darmok
         auto pixels = std::move(arrayResult).value();
 
         size_t i = 0;
-        for(auto& [texType, texConfig] : _textures)
+        for (auto& [texType, texConfig] : _textures)
         {
-            if(config.outputStreams.size() <= i || !config.outputStreams[i])
+            if (config.outputStreams.size() <= i || !config.outputStreams[i])
             {
                 ++i;
                 continue;

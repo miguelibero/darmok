@@ -1,4 +1,5 @@
 #include <darmok/program.hpp>
+#include <ranges>
 #include <darmok/program_core.hpp>
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
@@ -93,7 +94,7 @@ namespace darmok
 
         for (auto& shader : shaders)
         {
-            Defines defines{ shader.defines().begin(), shader.defines().end() };
+            auto defines = std::ranges::to<Defines>(shader.defines());
             auto shaderName = name;
             if (!defines.empty())
             {
