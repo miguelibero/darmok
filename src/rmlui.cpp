@@ -64,6 +64,8 @@ namespace darmok
         , _trans(1.F)
         , _textureUniform{ "s_texColor", bgfx::UniformType::Sampler }
         , _dataUniform{ "u_rmluiData", bgfx::UniformType::Vec4 }
+        , _gradientUniform{ "u_rmluiGradient", bgfx::UniformType::Vec4 }
+        , _maskUniform{ "s_texMask", bgfx::UniformType::Sampler }
     {
         if (auto result = Program::loadStaticMem(darmok_program_rmlui))
         {
@@ -378,8 +380,32 @@ namespace darmok
     Rml::LayerHandle RmluiRenderInterface::PushLayer() noexcept
     {
         Rml::LayerHandle handle = _layers.size();
-        _layers.push_back({});
-        _app.requestRenderReset();
+        Layer layer;
+        const size_t newDepth = _layers.size() + 1;
+
+        layer.viewId = _baseViewId + static_cast<bgfx::ViewId>(_layers.size());
+
+        // Each pushed layer beyond the base needs its own offscreen framebuffer
+        // so it can be composited back onto the layer below
+        auto size = _canvas.getCurrentSize();
+        auto fbResult = FrameBuffer::load(size);
+        if (fbResult)
+        {
+            layer.framebuffer = std::move(fbResult).value();
+            layer.framebuffer.configureView(layer.viewId);
+        }
+        else
+        {
+            _canvas.configureView(layer.viewId);
+        }
+
+        if (newDepth > _maxLayerDepth)
+        {
+            _maxLayerDepth = newDepth;
+            _app.requestRenderReset();
+        }
+
+        _layers.push_back(std::move(layer));
         return handle;
     }
 
@@ -421,10 +447,7 @@ namespace darmok
 
         auto& encoder = *_encoder;
 
-        encoder.setTexture(
-            0,
-            _textureUniform,
-            sourceTexture->getHandle());
+        encoder.setTexture(0, _textureUniform, sourceTexture->getHandle());
 
         uint64_t state =
             BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_MSAA;
@@ -448,13 +471,32 @@ namespace darmok
             return;
         }
 
-        encoder.submit(dst.viewId, _program->getHandle());
+        // Check for mask-image filter
+        ProgramDefines defines;
+        for (const auto filterHandle : filters)
+        {
+            auto it = _filters.find(filterHandle);
+            if (it == _filters.end())
+            {
+                continue;
+            }
+            if (it->second.type == FilterData::Type::MaskImage)
+            {
+                auto maskTexture = it->second.framebuffer.getTexture();
+                if (maskTexture)
+                {
+                    encoder.setTexture(1, _maskUniform, maskTexture->getHandle());
+                    defines.insert("MASK");
+                }
+            }
+        }
+
+        encoder.submit(dst.viewId, _program->getHandle(defines));
     }
 
     void RmluiRenderInterface::PopLayer() noexcept
     {
         _layers.pop_back();
-        _app.requestRenderReset();
     }
 
     Rml::TextureHandle RmluiRenderInterface::SaveLayerAsTexture() noexcept
@@ -464,6 +506,15 @@ namespace darmok
         {
             return 0;
         }
+        // PushLayer already created a framebuffer; reuse it to preserve rendered content
+        if (layer->framebuffer)
+        {
+            auto texture = layer->framebuffer.getTexture();
+            if (texture)
+            {
+                return texture->getHandle().idx() + 1;
+            }
+        }
         auto size = _canvas.getCurrentSize();
         auto fbResult = FrameBuffer::load(size);
         if(!fbResult)
@@ -472,67 +523,106 @@ namespace darmok
             return 0;
         }
         layer->framebuffer = std::move(fbResult).value();
+        layer->framebuffer.configureView(layer->viewId);
         return layer->framebuffer.getTexture()->getHandle().idx() + 1;
     }
 
     Rml::CompiledFilterHandle RmluiRenderInterface::SaveLayerAsMaskImage() noexcept
     {
         auto layer = getCurrentLayer();
-        if(!layer)
+        if (!layer || !layer->framebuffer)
         {
             return 0;
         }
-        auto size = _canvas.getCurrentSize();
-        auto fbResult = FrameBuffer::load(size, true);
-        if(!fbResult)
+        if (!layer->framebuffer.getTexture())
         {
-            onError("CompiledFilterHandle", fbResult.error());
             return 0;
         }
-        layer->framebuffer = std::move(fbResult).value();
-        return layer->framebuffer.getDepthTexture()->getHandle().idx() + 1;
+        Rml::CompiledFilterHandle handle = static_cast<Rml::CompiledFilterHandle>(_filters.size() + 1);
+        FilterData data;
+        data.type = FilterData::Type::MaskImage;
+        data.framebuffer = std::move(layer->framebuffer);  // transfer ownership to keep texture alive past PopLayer
+        _filters.emplace(handle, std::move(data));
+        return handle;
     }
 
     Rml::CompiledFilterHandle RmluiRenderInterface::CompileFilter(const Rml::String& name, const Rml::Dictionary& /* params */) noexcept
     {
-        auto result = _app.getAssets().getMaterialLoader()(name);
-
-        if(!result)
-        {
-            onError("CompileFilter", "failed to load filter material");
-            return 0;
-        }
-
-        const Rml::CompiledFilterHandle handle = _filterMaterials.size();
-
-        _filterMaterials.emplace(handle, result.value());
-
-        return handle;
+        // Return 0 for unsupported filters (RmlUI treats 0 as "unsupported, skip filter")
+        // mask-image filter is handled via SaveLayerAsMaskImage(), not here
+        return 0;
     }
 
     void RmluiRenderInterface::ReleaseFilter(Rml::CompiledFilterHandle filter) noexcept
     {
-        _filterMaterials.erase(filter);
+        _filters.erase(filter);
     }
 
-    Rml::CompiledShaderHandle RmluiRenderInterface::CompileShader(const Rml::String& name, const Rml::Dictionary& /* params */) noexcept
+    Rml::CompiledShaderHandle RmluiRenderInterface::CompileShader(const Rml::String& name, const Rml::Dictionary& params) noexcept
     {
-        auto result = _app.getAssets().getMaterialLoader()(name);
+        ShaderData data;
 
-        if(!result)
+        if (name == "linear-gradient" || name == "repeating-linear-gradient")
         {
-            onError("CompileShader", "failed to load shader program");
+            data.type = ShaderData::Type::LinearGradient;
+            data.repeating = (name == "repeating-linear-gradient");
+
+            auto p0It = params.find("p0");
+            if (p0It != params.end())
+            {
+                data.p0 = RmluiUtils::convert(p0It->second.Get<Rml::Vector2f>());
+            }
+            auto p1It = params.find("p1");
+            if (p1It != params.end())
+            {
+                data.p1 = RmluiUtils::convert(p1It->second.Get<Rml::Vector2f>());
+            }
+
+            std::vector<GradientStop> stops;
+            auto stopsIt = params.find("stop_colors");
+            if (stopsIt != params.end() && stopsIt->second.GetType() == Rml::Variant::COLORSTOPLIST)
+            {
+                const float gradientLength = glm::length(data.p1 - data.p0);
+                const auto& colorStops = stopsIt->second.GetReference<Rml::ColorStopList>();
+                for (const auto& cs : colorStops)
+                {
+                    GradientStop stop;
+                    float maxVal = 255.F;
+                    stop.color = glm::vec4(cs.color.red / maxVal, cs.color.green / maxVal, cs.color.blue / maxVal, cs.color.alpha / maxVal);
+                    if (cs.position.unit == Rml::Unit::PERCENT)
+                    {
+                        stop.position = cs.position.number * 0.01F;
+                    }
+                    else if (cs.position.unit == Rml::Unit::PX && gradientLength > 0.F)
+                    {
+                        stop.position = cs.position.number / gradientLength;
+                    }
+                    else
+                    {
+                        stop.position = cs.position.number;
+                    }
+                    stops.push_back(stop);
+                }
+            }
+
+            data.gradientTexture = bakeGradientTexture(stops, data.repeating);
+            if (!data.gradientTexture)
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            // Unsupported shader - return 0 to tell RmlUI to skip it
             return 0;
         }
 
-        const Rml::CompiledShaderHandle handle = _shaderMaterials.size();
-
-        _shaderMaterials.emplace(handle, result.value());
-
+        Rml::CompiledShaderHandle handle = static_cast<Rml::CompiledShaderHandle>(_shaders.size() + 1);
+        _shaders.emplace(handle, std::move(data));
         return handle;
     }
-    
-    void RmluiRenderInterface::RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) noexcept
+
+    void RmluiRenderInterface::RenderShader(Rml::CompiledShaderHandle shader, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle /* texture */) noexcept
     {
         if(!_encoder)
         {
@@ -552,12 +642,12 @@ namespace darmok
             return;
         }
 
-        auto materialItr = _shaderMaterials.find(shader);
-        if(materialItr == _shaderMaterials.end())
+        auto shaderItr = _shaders.find(shader);
+        if(shaderItr == _shaders.end())
         {
             return;
         }
-        auto mat = materialItr->second;
+        const auto& shaderData = shaderItr->second;
 
         auto& encoder = _encoder.value();
 
@@ -568,48 +658,86 @@ namespace darmok
             return;
         }
 
-        OptionalRef<Texture> tex;
-
-        auto texItr = _textures.find(texture);
-        if(texItr != _textures.end())
-        {
-            tex = texItr->second.get();
-        }
-
         const auto position = RmluiUtils::convert(translation);
         const auto trans = getTransformMatrix(position);
-
         encoder.setTransform(glm::value_ptr(trans));
 
-        if(tex)
+        static const uint64_t state = 0
+            | BGFX_STATE_WRITE_RGB
+            | BGFX_STATE_WRITE_A
+            | BGFX_STATE_MSAA
+            | BGFX_STATE_BLEND_ALPHA
+            ;
+
+        if (shaderData.type == ShaderData::Type::LinearGradient && shaderData.gradientTexture)
         {
-            encoder.setTexture(
-                0,
-                _textureUniform,
-                tex->getHandle());
+            encoder.setTexture(0, _textureUniform, shaderData.gradientTexture->getHandle());
+            const glm::vec4 gradientData{ shaderData.p0.x, shaderData.p0.y, shaderData.p1.x, shaderData.p1.y };
+            encoder.setUniform(_gradientUniform, glm::value_ptr(gradientData));
+            encoder.setState(state);
+            encoder.submit(layer->viewId, _program->getHandle(ProgramDefines{ "GRADIENT" }));
         }
-
-        auto materialResult =
-            _app.getOrAddComponent<MaterialAppComponent>();
-
-        if(!materialResult)
-        {
-            onError("RenderShader", materialResult.error());
-            return;
-        }
-
-        auto viewId = layer->viewId;
-
-        auto& materialComp = materialResult.value().get();
-        materialComp.renderSubmit(
-            viewId,
-            encoder,
-            *mat);
     }
 
     void RmluiRenderInterface::ReleaseShader(Rml::CompiledShaderHandle shader) noexcept
     {
-        _shaderMaterials.erase(shader);
+        _shaders.erase(shader);
+    }
+
+    std::unique_ptr<Texture> RmluiRenderInterface::bakeGradientTexture(
+        const std::vector<GradientStop>& stops, bool /* repeating */) noexcept
+    {
+        static const int kWidth = 256;
+        std::vector<uint8_t> pixels(kWidth * 4, 0);
+
+        if (!stops.empty())
+        {
+            for (int i = 0; i < kWidth; ++i)
+            {
+                float t = (i + 0.5F) / kWidth;
+                glm::vec4 color;
+
+                if (t <= stops.front().position)
+                {
+                    color = stops.front().color;
+                }
+                else if (t >= stops.back().position)
+                {
+                    color = stops.back().color;
+                }
+                else
+                {
+                    for (size_t j = 1; j < stops.size(); ++j)
+                    {
+                        if (t <= stops[j].position)
+                        {
+                            const float range = stops[j].position - stops[j - 1].position;
+                            const float s = range > 0 ? (t - stops[j - 1].position) / range : 0;
+                            color = glm::mix(stops[j - 1].color, stops[j].color, s);
+                            break;
+                        }
+                    }
+                }
+
+                pixels[i * 4 + 0] = static_cast<uint8_t>(glm::clamp(color.r, 0.F, 1.F) * 255);
+                pixels[i * 4 + 1] = static_cast<uint8_t>(glm::clamp(color.g, 0.F, 1.F) * 255);
+                pixels[i * 4 + 2] = static_cast<uint8_t>(glm::clamp(color.b, 0.F, 1.F) * 255);
+                pixels[i * 4 + 3] = static_cast<uint8_t>(glm::clamp(color.a, 0.F, 1.F) * 255);
+            }
+        }
+
+        Texture::Config config;
+        config.set_format(Texture::Definition::RGBA8);
+        *config.mutable_size() = convert<protobuf::Uvec2>(glm::uvec2{ kWidth, 1 });
+
+        DataView data{ pixels.data(), pixels.size() };
+        auto texResult = Texture::load(data, config,
+            BGFX_TEXTURE_NONE | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+        if (!texResult)
+        {
+            return nullptr;
+        }
+        return std::make_unique<Texture>(std::move(texResult).value());
     }
 
     glm::mat4 RmluiRenderInterface::getTransformMatrix(const glm::vec2& position) noexcept
@@ -652,27 +780,38 @@ namespace darmok
 
     bgfx::ViewId RmluiRenderInterface::renderReset(bgfx::ViewId viewId) noexcept
     {
+        _baseViewId = viewId;
+
+        // Restore the base layer, clearing transient layers left over from rendering
         if (_layers.empty())
         {
-            _layers.push_back({});
+            _layers.resize(1);
+        }
+        else
+        {
+            _layers.resize(1);
         }
 
-        for(auto& layer : _layers)
+        // Pre-allocate viewIds for the maximum layer depth we've seen so far
+        for (size_t i = 0; i < _maxLayerDepth; ++i)
         {
-            layer.viewId = viewId;
+            auto vid = viewId + static_cast<bgfx::ViewId>(i);
+            _canvas.configureView(vid);
+        }
 
-            _canvas.configureView(viewId);
-
+        // Assign viewId to the base layer (and any currently active layers)
+        for (size_t i = 0; i < _layers.size(); ++i)
+        {
+            auto& layer = _layers[i];
+            layer.viewId = viewId + static_cast<bgfx::ViewId>(i);
             if (layer.framebuffer)
             {
-                layer.framebuffer.configureView(viewId);
+                layer.framebuffer.configureView(layer.viewId);
             }
-
-            ++viewId;
         }
 
-        return viewId;
-    }    
+        return viewId + static_cast<bgfx::ViewId>(_maxLayerDepth);
+    }
 
     expected<void, std::string> RmluiRenderInterface::renderCanvas(bgfx::Encoder& encoder) noexcept
     {
@@ -1048,8 +1187,6 @@ namespace darmok
         }
 
         return _render->renderReset(viewId);
-
-        return ++viewId;
     }
 
     void RmluiCanvasImpl::setCamera(const OptionalRef<Camera>& camera) noexcept

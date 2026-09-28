@@ -123,11 +123,36 @@ namespace darmok
             FrameBuffer framebuffer;
         };
 
+        struct FilterData final
+        {
+            enum class Type { MaskImage };
+            Type type = Type::MaskImage;
+            FrameBuffer framebuffer;  // owns the framebuffer to keep the texture alive
+        };
+
+        struct GradientStop final
+        {
+            glm::vec4 color{ 0 };
+            float position = 0;
+        };
+
+        struct ShaderData final
+        {
+            enum class Type { LinearGradient, Unknown };
+            Type type = Type::Unknown;
+            glm::vec2 p0{ 0 };
+            glm::vec2 p1{ 0 };
+            bool repeating = false;
+            std::unique_ptr<Texture> gradientTexture;
+        };
+
 		App& _app;
 		RmluiCanvasImpl& _canvas;
 		std::unique_ptr<Program> _program;
 		UniformHandle _textureUniform;
 		UniformHandle _dataUniform;
+        UniformHandle _gradientUniform;
+        UniformHandle _maskUniform;
 		std::unordered_map<Rml::String, std::reference_wrapper<Texture>> _textureSources;
 		std::unordered_map<Rml::TextureHandle, std::unique_ptr<Texture>> _textures;
 		std::unordered_map<Rml::CompiledGeometryHandle, std::unique_ptr<Mesh>> _meshes;
@@ -135,12 +160,17 @@ namespace darmok
 		glm::ivec4 _scissor;
 		bool _scissorEnabled;
 		OptionalRef<bgfx::Encoder> _encoder;
-		std::unordered_map<Rml::CompiledFilterHandle, std::shared_ptr<Material>> _filterMaterials;
-        std::unordered_map<Rml::CompiledShaderHandle, std::shared_ptr<Material>> _shaderMaterials;
+		std::unordered_map<Rml::CompiledFilterHandle, FilterData> _filters;
+        std::unordered_map<Rml::CompiledShaderHandle, ShaderData> _shaders;
         std::vector<Layer> _layers;
+        size_t _maxLayerDepth = 1;
+        bgfx::ViewId _baseViewId = 0;
 
         OptionalRef<Layer> getCurrentLayer() noexcept;
         OptionalRef<const Layer> getCurrentLayer() const noexcept;
+
+        static std::unique_ptr<Texture> bakeGradientTexture(
+            const std::vector<GradientStop>& stops, bool repeating) noexcept;
 
 		OptionalRef<Texture> getSpriteTexture(const Rml::Sprite& sprite) noexcept;
 		glm::mat4 getTransformMatrix(const glm::vec2& position) noexcept;
