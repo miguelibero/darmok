@@ -25,7 +25,7 @@ if(PROJECT_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
   )
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")
@@ -688,10 +688,6 @@ target_link_libraries(${CORE_LIB_NAME} PUBLIC nlohmann_json::nlohmann_json)
 # magic_enum
 find_package(magic_enum CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PRIVATE magic_enum::magic_enum)
-
-# tl-expected
-find_package(tl-expected CONFIG REQUIRED)
-target_link_libraries(${CORE_LIB_NAME} PUBLIC tl::expected)
 
 # protobuf
 find_package(Protobuf CONFIG REQUIRED)

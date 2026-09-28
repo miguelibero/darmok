@@ -1,14 +1,14 @@
 #pragma once
 
-#include <tl/expected.hpp>
+#include <expected>
 
 namespace darmok
 {
     template<class T, class E>
-    using expected = tl::expected<T, E>;
+    using expected = std::expected<T, E>;
 
     template<class E>
-    using unexpected = tl::unexpected<E>;
+    using unexpected = std::unexpected<E>;
 }
 
 #define DARMOK_TRY_VALUE_PREFIX(value, failable, prefix)                        \

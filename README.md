@@ -29,7 +29,6 @@ currently using:
 * [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
 * [cli11](https://github.com/CLIUtils/CLI11) - command line parser
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/) - native file dialogs
-* [tl-expected](https://github.com/TartanLlama/expected) - expected for C++20
 * [magic_enum](https://github.com/Neargye/magic_enum) automatically convert enum types
 * [fmt](https://github.com/fmtlib/fmt) for string formatting
 * [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
