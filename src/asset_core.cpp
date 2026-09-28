@@ -540,7 +540,17 @@ namespace darmok
         {
             for (auto& [relPath, cacheTime] : jsonResult->items())
             {
-                addFileCachePath(_inputPath / relPath, cacheTime);
+                auto fullPath = _inputPath / relPath;
+                auto normPath = normalizePath(fullPath);
+                if (!std::filesystem::exists(normPath))
+                {
+                    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+                    _fileCache.emplace(normPath, FileCacheData{ now, std::time_t(cacheTime) });
+                }
+                else
+                {
+                    addFileCachePath(fullPath, cacheTime);
+                }
             }
         }
     }
@@ -1094,13 +1104,7 @@ namespace darmok
             return result;
         }
 
-        auto cachedPath = op.input.path;
-        if(std::filesystem::is_directory(cachedPath))
-        {
-            cachedPath = DirConfig::getPath(cachedPath);
-        }
-
-        result.inputCached = isCached(cachedPath);
+        result.inputCached = isCached(op.input.path);
         size_t i = 0;
         auto relInput = std::filesystem::relative(op.input.path, _inputPath);
         FileImportConfig config;
