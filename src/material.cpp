@@ -216,7 +216,7 @@ namespace darmok
 		return 0;
 	}
 
-	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
+	void Material::renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
 	{
 		std::optional<RenderConfig> defConfig;
 		if (!optConfig)
@@ -225,7 +225,7 @@ namespace darmok
 		}
 		auto& config = optConfig ? *optConfig : *defConfig;
 		glm::vec4 hasTextures{ 0 };
-        uint8_t maxTextureMips = 0;
+		uint8_t maxTextureMips = 0;
 
 		for (const auto& [type, key] : config.textureUniformKeys)
 		{
@@ -242,21 +242,21 @@ namespace darmok
 			}
 			if (tex)
 			{
-                maxTextureMips = std::max(maxTextureMips, tex->getMipsCount());
+				maxTextureMips = std::max(maxTextureMips, tex->getMipsCount());
 				config.uniformHandles.configure(encoder, key, tex->getHandle());
 			}
 		}
 
-		for(auto& fixedConfig : config.fixedTextures)
-        {
-            auto tex = fixedConfig.texture ? fixedConfig.texture : config.defaultTexture;
-            encoder.setTexture(fixedConfig.stage, fixedConfig.uniform, tex->getHandle());
-        }
+		for (auto& fixedConfig : config.fixedTextures)
+		{
+			auto tex = fixedConfig.texture ? fixedConfig.texture : config.defaultTexture;
+			encoder.setTexture(fixedConfig.stage, fixedConfig.uniform, tex->getHandle());
+		}
 		auto val = Colors::normalize(baseColor);
 		encoder.setUniform(config.baseColorUniform, glm::value_ptr(val));
 		val = glm::vec4{ metallicFactor, roughnessFactor, normalScale, occlusionStrength };
 		encoder.setUniform(config.metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
-        val = glm::vec4{Colors::normalize(emissiveColor), maxTextureMips - 1 };
+		val = glm::vec4{ Colors::normalize(emissiveColor), maxTextureMips - 1 };
 		encoder.setUniform(config.emissiveColorUniform, glm::value_ptr(val));
 		val = glm::vec4{ multipleScattering ? 1.F : 0.F, whiteFurnanceFactor, 0, 0 };
 		encoder.setUniform(config.multipleScatteringUniform, glm::value_ptr(val));
@@ -296,6 +296,11 @@ namespace darmok
 		}
 
 		encoder.setState(state);
+	}
+
+	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config) const noexcept
+	{
+		renderBind(encoder, config);
 		auto prog = program->getHandle(programDefines);
 		encoder.submit(viewId, prog);
 	}
@@ -398,6 +403,14 @@ namespace darmok
 	{
 		_renderConfig.reset();
 		return {};
+	}
+
+	void MaterialAppComponent::renderBind(bgfx::Encoder& encoder, const Material& material) const noexcept
+	{
+		if (_renderConfig)
+		{
+			material.renderBind(encoder, *_renderConfig);
+		}
 	}
 
 	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept

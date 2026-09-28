@@ -1,5 +1,7 @@
 #pragma once
 
+#include <darmok_brdf.inc.slang>
+
 [[vk::binding(0, 0)]]
 uniform Texture2D s_texBaseColor : register(t0);
 [[vk::binding(0, 0)]]
@@ -66,25 +68,6 @@ uniform float4 u_multipleScatteringVec;
 #define u_multipleScattering   (u_multipleScatteringVec.x != 0.0)
 #define u_whiteFurnaceRadiance (u_multipleScatteringVec.y)
 #define u_whiteFurnace         (u_whiteFurnaceRadiance > 0.0)
-
-#define PI     (3.14159265359)
-#define INV_PI (0.31830988618)
-
-struct Material
-{
-    float4 albedo;
-    float metallic;
-    float roughness;
-    float3 normal;
-    float occlusion;
-    float3 emissive;
-
-    // calculated from the above
-
-    float3 diffuse; // this becomes black for higher metalness
-    float3 F0; // Fresnel reflectance at normal incidence
-    float a; // remapped roughness (^2)
-};
 
 float4 materialAlbedoValue(float2 texcoord)
 {
@@ -156,28 +139,6 @@ float3 materialEmissiveValue(float2 texcoord)
     }
 }
 
-Material initMaterial(Material mat)
-{
-    // Taken directly from GLTF 2.0 specs
-    // this can be precalculated instead of evaluating it in the BRDF for every light
-
-    const float3 dielectricSpecular = float3(0.04, 0.04, 0.04);
-    const float3 black = float3(0.0, 0.0, 0.0);
-
-    // metals have no diffuse reflection so the albedo value stores F0 (reflectance at normal incidence) instead
-    // dielectrics are assumed to have F0 = 0.04 which equals an IOR of 1.5
-  
-    mat.diffuse = lerp(mat.albedo.rgb * (float3(1.0,1.0,1.0) - dielectricSpecular), black, mat.metallic);
-    mat.F0 = lerp(dielectricSpecular, mat.albedo.rgb, mat.metallic);
-    
-    // perceptual roughness to roughness
-    mat.a = mat.roughness * mat.roughness;
-
-    // prevent division by 0
-    mat.a = max(mat.a, 0.01);
-    return mat;
-}
-
 Material getMaterial(float2 texcoord)
 {
     Material mat;
@@ -195,88 +156,6 @@ Material getMaterial(float2 texcoord)
     mat = initMaterial(mat);
 
     return mat;
-}
-
-// Reduce specular aliasing by producing a modified roughness value
-// Tokuyoshi et al. 2019. Improved Geometric Specular Antialiasing.
-// http://www.jp.square-enix.com/tech/library/pdf/ImprovedGeometricSpecularAA.pdf
-float specularAntiAliasing(float3 N, float a)
-{
-    // normal-based isotropic filtering
-    // this is originally meant for deferred rendering but is a bit simpler to implement than the forward version
-    // saves us from calculating uv offsets and sampling textures for every light
-
-    const float SIGMA2 = 0.25; // squared std dev of pixel filter kernel (in pixels)
-    const float KAPPA  = 0.18; // clamping threshold
-    float3 dndu = ddx(N);
-    float3 dndv = ddy(N);
-    float variance = SIGMA2 * (dot(dndu, dndu) + dot(dndv, dndv));
-    float kernelRoughness2 = min(2.0 * variance, KAPPA);
-    return saturate(a + kernelRoughness2);
-}
-
-// Physically based shading
-// Metallic + roughness workflow (GLTF 2.0 core material spec)
-// BRDF, no sub-surface scattering
-// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#metallic-roughness-material
-// Some GLSL code taken from
-// https://google.github.io/filament/Filament.md.html
-// and
-// https://learnopengl.com/PBR/Lighting
-
-// Schlick approximation to Fresnel equation
-float3 F_Schlick(float VoH, float3 F0)
-{
-    float f = pow(1.0 - VoH, 5.0);
-    return f + F0 * (1.0 - f);
-}
-
-// Normal Distribution Function
-// (aka specular distribution)
-// distribution of microfacets
-
-// Bruce Walter et al. 2007. Microfacet Models for Refraction through Rough Surfaces.
-// equivalent to Trowbridge-Reitz
-float D_GGX(float NoH, float a)
-{
-    float a2 = a * a;
-    float f = NoH * NoH * (a2 - 1.0) + 1.0;
-    return a2 / (PI * f * f);
-}
-
-// Visibility function
-// = Geometric Shadowing/Masking Function G, divided by the denominator of the Cook-Torrance BRDF (4 NoV NoL)
-// G is the probability of the microfacet being visible in the outgoing (masking) or incoming (shadowing) direction
-
-// Heitz 2014. Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs.
-// http://jcgt.org/published/0003/02/03/paper.pdf
-// based on height-correlated Smith-GGX
-float V_SmithGGXCorrelated(float NoV, float NoL, float a)
-{
-    float a2 = a * a;
-    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
-    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
-    return 0.5 / (GGXV + GGXL);
-}
-
-// version without height-correlation
-float V_SmithGGX(float NoV, float NoL, float a)
-{
-    float a2 = a * a;
-    float GGXV = NoV + sqrt(NoV * NoV * (1.0 - a2) + a2);
-    float GGXL = NoL + sqrt(NoL * NoL * (1.0 - a2) + a2);
-    return 1.0 / (GGXV * GGXL);
-}
-
-
-// Lambertian diffuse BRDF
-// uniform color
-float Fd_Lambert()
-{
-    // normalize to conserve energy
-    // cos integrates to pi over the hemisphere
-    // incoming light is multiplied by cos and BRDF
-    return INV_PI;
 }
 
 // Account for multiple scattering across microfacets
@@ -319,30 +198,6 @@ float3 whiteFurnace(float NoV, Material mat)
     float2 Es = s_albedoLut.Sample(s_albedoLutState, float2(NoV, mat.a)).xy;
     float E = lerp(Es.y, Es.x, mat.metallic);
     return E * float3(u_whiteFurnaceRadiance, u_whiteFurnaceRadiance, u_whiteFurnaceRadiance);
-}
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#appendix-b-brdf-implementation
-float3 BRDF(float3 v, float3 l, float3 n, float NoV, float NoL, Material mat)
-{
-    // V is the normalized vector from the shading location to the eye
-    // L is the normalized vector from the shading location to the light
-    // N is the surface normal in the same space as the above values
-    // H is the half vector, where H = normalize(L+V)
-
-    float3 h = normalize(l + v);
-    float NoH = saturate(dot(n, h));
-    float VoH = saturate(dot(v, h));
-
-    // specular BRDF
-    float D = D_GGX(NoH, mat.a);
-    float3 F = F_Schlick(VoH, mat.F0);
-    float V = V_SmithGGXCorrelated(NoV, NoL, mat.a);
-    float3 Fr = F * (V * D);
-
-    // diffuse BRDF
-    float3 Fd = mat.diffuse * Fd_Lambert();
-
-    return Fr + (1.0 - F) * Fd;
 }
 
 float3 calcAmbientIBL(

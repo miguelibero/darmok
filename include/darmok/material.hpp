@@ -164,6 +164,7 @@ namespace darmok
         expected<void, std::string> load(const Definition& def, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
 
         [[nodiscard]] static Definition createDefinition() noexcept;
+        void renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         static uint16_t getDepthTestFlag(Definition::DepthTest) noexcept;
     };
@@ -176,6 +177,7 @@ namespace darmok
         expected<void, std::string> init(App& app) noexcept override;
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
+        void renderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept;
     private:
         std::optional<RenderConfig> _renderConfig;
