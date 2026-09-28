@@ -25,7 +25,7 @@ currently using:
 * [miniaudio](https://miniaud.io/) for audio
 * [taskflow](https://github.com/taskflow/taskflow) for multithreading
 * [tiny-process-lib](https://gitlab.com/eidheim/tiny-process-library) to run os processes
-* [mikktspace](http://www.mikktspace.com/) - to calculate tangents
+* [meshoptimizer](https://github.com/zeux/meshoptimizer) - to calculate tangents and optimize meshes
 * [middleclass](https://github.com/kikito/middleclass) - small object orientation lua lib
 * [cli11](https://github.com/CLIUtils/CLI11) - command line parser
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/) - native file dialogs
@@ -34,7 +34,6 @@ currently using:
 * [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
 
 planned to use:
-* [meshoptimizer](https://github.com/zeux/meshoptimizer) to replace `mikktspace`
 * [recast navigation](http://recastnav.com/) for pathfinding
 * [BehaviorTree.CPP](https://www.behaviortree.dev/) for behavior trees
 * [Box2D](https://box2d.org/) 2D physics
@@ -153,7 +152,6 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * [Cluster](https://github.com/pezcode/Cluster) - PBR shaders for bgfx
 * [dome engine](https://github.com/domeengine/dome) - minimalist engine with wren as the scripting language
 * [RaZ engine](https://github.com/Razakhel/RaZ) - C++17 game engine
-* [meshoptimizer](https://github.com/zeux/meshoptimizer)
 * [forward+](https://www.3dgep.com/forward-plus/) - description of tiled forward renderer in DirectX 11
 
 ## Example code

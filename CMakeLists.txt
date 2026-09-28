@@ -749,9 +749,9 @@ target_link_libraries(${CORE_LIB_NAME} PRIVATE tiny-process-library::tiny-proces
 find_package(tinyfiledialogs CONFIG REQUIRED)
 target_link_libraries(${LIB_NAME} PRIVATE tinyfiledialogs::tinyfiledialogs)
 
-# mikktspace
-find_package(mikktspace CONFIG REQUIRED)
-target_link_libraries(${CORE_LIB_NAME} PRIVATE mikktspace::mikktspace)
+# meshoptimizer
+find_package(meshoptimizer CONFIG REQUIRED)
+target_link_libraries(${CORE_LIB_NAME} PRIVATE meshoptimizer::meshoptimizer)
 
 # glfw
 if(DARMOK_PLATFORM STREQUAL "glfw")

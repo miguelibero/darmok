@@ -7,6 +7,7 @@
 #include <glm/gtx/component_wise.hpp>
 
 #include "detail/mesh_core.hpp"
+#include <meshoptimizer.h>
 
 namespace darmok
 {
@@ -1345,100 +1346,49 @@ namespace darmok
 	}
 
 
-	MeshDataCalcTangentsOperation::MeshDataCalcTangentsOperation() noexcept
-		: _iface{}
-	{
-		_iface.m_getNumFaces = getNumFaces;
-		_iface.m_getNumVerticesOfFace = getNumFaceVertices;
-		_iface.m_getNormal = getNormal;
-		_iface.m_getPosition = getPosition;
-		_iface.m_getTexCoord = getTexCoords;
-		_iface.m_setTSpaceBasic = setTangent;
-		_iface.m_setTSpace = nullptr;
-		_context.m_pInterface = &_iface;
-	}
-
-	void MeshDataCalcTangentsOperation::operator()(MeshData& mesh) noexcept
-	{
-		_context.m_pUserData = &mesh;
-		genTangSpaceDefault(&_context);
-	}
-
-	MeshData& MeshDataCalcTangentsOperation::getMeshDataFromContext(const SMikkTSpaceContext* context) noexcept
-	{
-		return *static_cast<MeshData*>(context->m_pUserData);
-	}
-
-	int MeshDataCalcTangentsOperation::getVertexIndex(const SMikkTSpaceContext* context, int iFace, int iVert) noexcept
-	{
-		MeshData& mesh = getMeshDataFromContext(context);
-		auto faceSize = getNumFaceVertices(context, iFace);
-		auto index = (iFace * faceSize) + iVert;
-		if (mesh.indices.empty())
-		{
-			return index;
-		}
-		return mesh.indices[index];
-	}
-
-	int MeshDataCalcTangentsOperation::getNumFaces(const SMikkTSpaceContext* context) noexcept
-	{
-		MeshData& mesh = getMeshDataFromContext(context);
-		if (mesh.indices.empty())
-		{
-			return static_cast<int>(mesh.vertices.size()) / 3;
-		}
-		return static_cast<int>(mesh.indices.size()) / 3;
-	}
-
-	int MeshDataCalcTangentsOperation::getNumFaceVertices(const SMikkTSpaceContext* context, int iFace) noexcept
-	{
-		return 3;
-	}
-
-	void MeshDataCalcTangentsOperation::getPosition(const SMikkTSpaceContext* context, float outpos[], int iFace, int iVert) noexcept
-	{
-		MeshData& mesh = getMeshDataFromContext(context);
-		auto index = getVertexIndex(context, iFace, iVert);
-		auto& vert = mesh.vertices[index];
-		outpos[0] = vert.position.x;
-		outpos[1] = vert.position.y;
-		outpos[2] = vert.position.z;
-	}
-
-	void MeshDataCalcTangentsOperation::getNormal(const SMikkTSpaceContext* context, float outnormal[], int iFace, int iVert) noexcept
-	{
-		MeshData& mesh = getMeshDataFromContext(context);
-		auto index = getVertexIndex(context, iFace, iVert);
-		auto& vert = mesh.vertices[index];
-		outnormal[0] = vert.normal.x;
-		outnormal[1] = vert.normal.y;
-		outnormal[2] = vert.normal.z;
-	}
-
-	void MeshDataCalcTangentsOperation::getTexCoords(const SMikkTSpaceContext* context, float outuv[], int iFace, int iVert) noexcept
-	{
-		MeshData& mesh = getMeshDataFromContext(context);
-		auto index = getVertexIndex(context, iFace, iVert);
-		auto& vert = mesh.vertices[index];
-		outuv[0] = vert.texCoord.x;
-		outuv[1] = vert.texCoord.y;
-	}
-
-	void MeshDataCalcTangentsOperation::setTangent(const SMikkTSpaceContext* context, const float tangentu[], float fSign, int iFace, int iVert) noexcept
-	{
-		MeshData& mesh = getMeshDataFromContext(context);
-		auto index = getVertexIndex(context, iFace, iVert);
-		auto& vert = mesh.vertices[index];
-		vert.tangent.x = tangentu[0];
-		vert.tangent.y = tangentu[1];
-		vert.tangent.z = tangentu[2];
-	}
-
 	MeshData& MeshData::calcTangents() noexcept
 	{
-		MeshDataCalcTangentsOperation op;
-		op(*this);
+		auto vertCount = vertices.size();
+		auto idxCount = indices.empty() ? vertCount : indices.size();
+
+		std::vector<float> positions(vertCount * 3);
+		std::vector<float> normals(vertCount * 3);
+		std::vector<float> uvs(vertCount * 2);
+		for (size_t i = 0; i < vertCount; ++i)
+		{
+			auto& v = vertices[i];
+			positions[i * 3 + 0] = v.position.x;
+			positions[i * 3 + 1] = v.position.y;
+			positions[i * 3 + 2] = v.position.z;
+			normals[i * 3 + 0] = v.normal.x;
+			normals[i * 3 + 1] = v.normal.y;
+			normals[i * 3 + 2] = v.normal.z;
+			uvs[i * 2 + 0] = v.texCoord.x;
+			uvs[i * 2 + 1] = v.texCoord.y;
+		}
+
+		std::vector<float> tangents(idxCount * 4);
+		meshopt_generateTangents(
+			tangents.data(),
+			indices.empty() ? nullptr : indices.data(), idxCount,
+			positions.data(), vertCount, sizeof(float) * 3,
+			normals.data(), sizeof(float) * 3,
+			uvs.data(), sizeof(float) * 2,
+			0
+		);
+
+		for (size_t i = 0; i < idxCount; ++i)
+		{
+			auto vertIdx = indices.empty() ? i : static_cast<size_t>(indices[i]);
+			auto& vert = vertices[vertIdx];
+			auto tx = tangents[i * 4 + 0];
+			auto ty = tangents[i * 4 + 1];
+			auto tz = tangents[i * 4 + 2];
+			auto tw = tangents[i * 4 + 3];
+			vert.tangent = glm::vec3(tx, ty, tz);
+			vert.bitangent = glm::cross(vert.normal, vert.tangent) * tw;
+		}
+
 		return *this;
 	}
 

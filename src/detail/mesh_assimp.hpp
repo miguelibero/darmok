@@ -2,7 +2,6 @@
 
 #include <darmok/mesh_assimp.hpp>
 #include <darmok/optional_ref.hpp>
-#include <mikktspace.h>
 #include <glm/glm.hpp>
 
 #include <vector>
