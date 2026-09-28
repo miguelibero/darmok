@@ -841,29 +841,12 @@ namespace darmok
             else if (slangCtx.target == SlangCompileTarget::SLANG_METAL)
             {
                 // bgfx Metal renderer looks for a function named "xlatMtlMain" via newFunctionWithName.
-                // Slang keeps the original entry point name, so we rename it in the MSL text.
+                // NoMangle preserves all other source names; only the entry point name needs patching.
                 std::string entryName = entryPoint->getName();
                 auto pos = shaderData.find(entryName + "(");
                 if (pos != std::string::npos)
                 {
                     shaderData.replace(pos, entryName.size(), "xlatMtlMain");
-                }
-
-                // bgfx reads vertex attribute names from MTLVertexAttribute.name and matches them
-                // against its table (e.g. "a_position", "a_normal"). Slang adds a "_0" suffix to
-                // every identifier; strip it for vertex-stage inputs so bgfx can match the attributes
-                // and build a valid vertex descriptor (without which pipeline state creation fails).
-                if (stage == SLANG_STAGE_VERTEX)
-                {
-                    for (const auto& param : inputParams)
-                    {
-                        const auto oldName = param.name + "_0";
-                        size_t p = 0;
-                        while ((p = shaderData.find(oldName, p)) != std::string::npos)
-                        {
-                            shaderData.replace(p, oldName.size(), param.name);
-                        }
-                    }
                 }
             }
 
@@ -1071,6 +1054,12 @@ namespace darmok
                         {.intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE}});
                 }
             }
+
+            // bgfx reads uniform and vertex-attribute names from compiled shader reflection
+            // and matches them against its own tables (e.g. "u_model", "a_position"). Slang
+            // adds a "_0" suffix to every identifier by default; NoMangle preserves source
+            // names so bgfx lookups succeed on all backends.
+            options.push_back(Entry{Option::NoMangle, {.intValue0 = 1}});
 
             if (renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
             {
