@@ -22,9 +22,6 @@ namespace
 {
 	using namespace darmok;
 
-	template<typename T>
-	using unexpected = tl::unexpected<T>;
-
 	struct Culling2D final
 	{
 		bool v; // entt does not accept empty structs

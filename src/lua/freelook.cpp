@@ -23,7 +23,8 @@ namespace darmok
                 &LuaFreelookController::addSceneComponent1,
                 &LuaFreelookController::addSceneComponent2
             ),
-            "enabled", sol::property(&FreelookController::isEnabled, &FreelookController::setEnabled)
+            "enabled", sol::property(&FreelookController::isEnabled,
+                [](FreelookController& self, bool enabled) { LuaUtils::unwrapExpected(self.setEnabled(enabled)); })
         );
     }
 

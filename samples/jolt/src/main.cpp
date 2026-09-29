@@ -31,9 +31,6 @@ namespace
 	using namespace darmok;
 	using namespace darmok::physics3d;
 
-	template<typename T>
-	using unexpected = tl::unexpected<T>;
-
 	class JoltSampleAppDelegate final : public IAppDelegate, public ICollisionListener, public ICharacterDelegate, public IImguiRenderer
 	{
 	public:

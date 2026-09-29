@@ -12,9 +12,6 @@ namespace
 {
 	using namespace darmok;
 
-	template<typename T>
-	using unexpected = tl::unexpected<T>;
-
 	class AudioSampleAppDelegate final : public IAppDelegate, public IImguiRenderer
 	{
 	public:
