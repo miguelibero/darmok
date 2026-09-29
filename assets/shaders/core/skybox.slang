@@ -13,11 +13,11 @@ struct VSOutput
     float3 v_texcoord0 : TEXCOORD0;
 };
 
-[[vk::binding(1, 0)]]
-uniform TextureCube<float4> s_texColor : register(t1);
+[[vk::binding(0, 0)]]
+uniform TextureCube<float4> s_texColor : register(t0);
 
-[[vk::binding(1, 0)]]
-uniform SamplerState s_texColorState : register(s1);
+[[vk::binding(0, 0)]]
+uniform SamplerState s_texColorState : register(s0);
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

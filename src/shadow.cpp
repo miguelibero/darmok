@@ -607,17 +607,12 @@ namespace darmok
         auto frust = Frustum{ mtx };
         auto center = frust.getCenter();
 
-        // Bounding sphere radius is stable under camera translation (only changes
-        // on rotation), so using it as the snap basis prevents shadow swimming.
         float radius = 0.f;
         for (auto& corner : frust.corners)
         {
             radius = glm::max(radius, glm::distance(center, corner));
         }
 
-        // Snap the projection center's X/Y to the stable texel grid.
-        // Using the sphere diameter gives a constant texel size under translation.
-        // Z (depth range) is not snapped — it has no correspondence to texels.
         auto snapSize = float(_def.map_size());
         auto texelSize = (2.f * radius) / snapSize;
         auto snappedX = glm::round(center.x / texelSize) * texelSize;

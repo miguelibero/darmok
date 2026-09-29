@@ -17,6 +17,7 @@
 #include <darmok/culling.hpp>
 #include <darmok/shape.hpp>
 #include <darmok/scene_serialize.hpp>
+#include <darmok/environment.hpp>
 
 namespace
 {
@@ -27,7 +28,7 @@ namespace
 	class RotateUpdater final : public ISceneComponent
 	{
 	public:
-		RotateUpdater(Transform& trans, float speed = 50.f) noexcept
+		RotateUpdater(Transform& trans, float speed = 20.f) noexcept
 			: _trans{ trans }
 			, _speed{ speed }
 		{
@@ -83,8 +84,11 @@ namespace
             _freeCam = createCamera(*scene, _cam);
 
             OptionalRef<FreelookController> freelookRef;
-            DARMOK_TRY_VALUE_PREFIX(freelookRef, scene->addSceneComponent<FreelookController>(*_freeCam), "adding freelook component");
-            freelookRef->addListener(*this);
+
+            DARMOK_TRY_VALUE_PREFIX(freelookRef, scene->addSceneComponent<FreelookController>(*_cam), "adding debug freelook component");
+            DARMOK_TRY_PREFIX(freelookRef->setEnabled(true), "enable freelook");
+
+            DARMOK_TRY_PREFIX(_cam->addComponent<SkyboxRenderer>(envPrefiltered), "adding skybox component");
 
             std::shared_ptr<Program> prog;
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
@@ -94,15 +98,14 @@ namespace
             scene->addComponent<AmbientLight>(lightEntity, 0.05);
 
             auto dirLightEntity = scene->createEntity();
-            auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0})
-                                      .lookDir(glm::vec3{-0.4, -0.7, -0.5}, glm::vec3{0, 0, 1});
+            auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0});
             auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
             dirLight.setShadowType(LightDefinition::SoftShadow);
-            // scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
+            scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
-            auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
+            auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
             scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)
@@ -171,9 +174,8 @@ namespace
 		{
 			auto entity = scene.createEntity();
 
-			auto farPlane = mainCamera ? 40 : 20;
 			auto& cam = scene.addComponent<Camera>(entity);
-			cam.setPerspective(glm::radians(60.f), 0.3, farPlane);
+            cam.setPerspective(glm::radians(60.f), 0.3, 40);
 
 			scene.addComponent<Transform>(entity)
 				.setPosition(glm::vec3{ 0, 1, 0 })
