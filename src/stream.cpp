@@ -130,6 +130,11 @@ namespace darmok
         return _buffer->sputc(ch);
     }
 
+    int PrefixBuffer::sync()
+    {
+        return _buffer->pubsync();
+    }
+
     PrefixStream::PrefixStream(std::ostream& os, const std::string& prefix) noexcept
       : std::ostream(&_buffer)
       , _buffer(os.rdbuf(), prefix)

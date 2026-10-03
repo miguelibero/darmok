@@ -31,7 +31,9 @@ namespace darmok
         LuaFrameBuffer::bind(lua);
         LuaScreenSpaceRenderPass::bind(lua);
         lua.new_usertype<RenderChain>("RenderChain", sol::no_constructor,
-            "output", sol::property(&RenderChain::getOutput, &RenderChain::setOutput),
+            "output", sol::property(&RenderChain::getOutput, [](RenderChain& chain, const std::shared_ptr<FrameBuffer>& fb) {
+                LuaUtils::unwrapExpected(chain.setOutput(fb));
+            }),
             "input", sol::property(&LuaRenderChain::getInput),
             "remove_step", &RenderChain::removeStep
         );

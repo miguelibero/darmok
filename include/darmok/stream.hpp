@@ -31,6 +31,7 @@ namespace darmok
         PrefixBuffer(OptionalRef<std::streambuf> buffer, const std::string& prefix) noexcept;
     protected:
         int overflow(int ch) override;
+        int sync() override;
     private:
         OptionalRef<std::streambuf> _buffer;
         std::string _prefix;

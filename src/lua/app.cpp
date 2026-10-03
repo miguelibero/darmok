@@ -306,7 +306,9 @@ namespace darmok
 			"get_reset_flag", &App::getResetFlag,
 			"toggle_reset_flag", &App::toggleResetFlag,
 			"set_debug_flag", sol::overload(&App::setResetFlag, &LuaApp::setResetFlag),
-			"renderer_type", sol::property(&App::setRendererType),
+			"renderer_type", sol::property([](App& app, bgfx::RendererType::Enum renderer) {
+				LuaUtils::unwrapExpected(app.setRendererType(renderer));
+			}),
 			"quit", &App::quit
 		);
 	}

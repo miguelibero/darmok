@@ -470,6 +470,7 @@ namespace darmok
             {
                 _dirs.emplace(path, config);
                 addFileCachePath(config.path);
+                addFileCachePath(path);
             }
         }
         else

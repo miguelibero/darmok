@@ -18,9 +18,6 @@ namespace
     using namespace darmok;
     using namespace entt::literals;
 
-    template<class T>
-    using unexpected = tl::unexpected<T>;
-
     struct TestComponent
     {
         int value;

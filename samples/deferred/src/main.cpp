@@ -22,8 +22,6 @@
 namespace
 {
 	using namespace darmok;
-	template<typename T>
-	using unexpected = tl::unexpected<T>;
 
 	class RotateUpdater final : public ISceneComponent
 	{
