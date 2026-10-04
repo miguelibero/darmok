@@ -139,7 +139,7 @@ namespace darmok::editor
         
         if (dataSrc.vertices_size() > 0)
         {
-            auto desc = fmt::format("{} vertices, {} indices, {} bones",
+            auto desc = std::format("{} vertices, {} indices, {} bones",
                 dataSrc.vertices_size(),
                 dataSrc.indices_size(),
                 dataSrc.bones_size());

@@ -3,7 +3,7 @@ darmok
 
 ![Dathon trying to explain the importance of Darmok](logo.png)
 
-C++ game engine combining opensource libraries & tools that I like
+C++23 game engine combining opensource libraries & tools that I like
 
 currently using:
 
@@ -30,7 +30,6 @@ currently using:
 * [cli11](https://github.com/CLIUtils/CLI11) - command line parser
 * [tinyfiledialogs](https://sourceforge.net/projects/tinyfiledialogs/) - native file dialogs
 * [magic_enum](https://github.com/Neargye/magic_enum) automatically convert enum types
-* [fmt](https://github.com/fmtlib/fmt) for string formatting
 * [utfcpp](https://github.com/nemtrif/utfcpp) for unicode string encoding
 
 planned to use:

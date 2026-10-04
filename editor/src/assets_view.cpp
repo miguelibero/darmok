@@ -11,7 +11,7 @@
 #include <darmok/text_freetype.hpp>
 
 #include <imgui.h>
-#include <fmt/format.h>
+#include <format>
 
 namespace darmok::editor
 {

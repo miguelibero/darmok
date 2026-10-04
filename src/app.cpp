@@ -15,7 +15,7 @@
 #include <bx/timer.h>
 #include <bx/file.h>
 #include <bimg/bimg.h>
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum_format.hpp>
 
 #if BX_PLATFORM_EMSCRIPTEN
@@ -1237,7 +1237,7 @@ namespace darmok
 			}
 			return;
 		}
-		StreamUtils::log(fmt::format("{} {}", code, str), true);
+		StreamUtils::log(std::format("{} {}", code, str), true);
 	}
 
 	void BgfxCallbacks::traceVargs(
@@ -1338,7 +1338,7 @@ namespace darmok
 			bx::close(&writer);
 			if (!err.isOk())
 			{
-				StreamUtils::log(fmt::format("screenshot error: {}", err.getMessage().getCPtr()));
+				StreamUtils::log(std::format("screenshot error: {}", err.getMessage().getCPtr()));
 			}
 		}
 	}

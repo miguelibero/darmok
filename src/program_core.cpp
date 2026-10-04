@@ -5,7 +5,7 @@
 #include <darmok/stream.hpp>
 #include "detail/program_core.hpp"
 
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum_format.hpp>
 
 namespace darmok
@@ -71,7 +71,7 @@ namespace darmok
                 return rendererProgram;
             }
         }
-        return unexpected{ fmt::format("renderer {} not found", render) };
+        return unexpected{ std::format("renderer {} not found", render) };
     }
 
     ProgramDefinitionWrapper::ProgramDefinitionWrapper(Definition& def) noexcept
@@ -758,17 +758,17 @@ namespace darmok
                 auto compileResult = shaderCompiler(op);
                 if (!compileResult)
                 {
-                    return fmt::format("compiling {} profile {}: {}", shaderConfig.type, op.profile, compileResult.error());
+                    return std::format("compiling {} profile {}: {}", shaderConfig.type, op.profile, compileResult.error());
                 }
                 auto shaderResult = ShaderParser::getShader(def, shaderConfig.type, op);
                 if(!shaderResult)
                 {
-                    return fmt::format("getting shader {} profile {}: {}", shaderConfig.type, op.profile, shaderResult.error());
+                    return std::format("getting shader {} profile {}: {}", shaderConfig.type, op.profile, shaderResult.error());
 				}
                 auto readResult = StreamUtils::readString(op.outputPath);
 				if (!readResult)
 				{
-					return fmt::format("reading file {}: {}", op.outputPath.string(), readResult.error());
+					return std::format("reading file {}: {}", op.outputPath.string(), readResult.error());
 				}
 				auto& shader = shaderResult.value().get();
                 *shader.mutable_data() = std::move(readResult).value();

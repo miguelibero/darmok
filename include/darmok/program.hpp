@@ -79,7 +79,7 @@ namespace darmok
 			auto result = protobuf::readStaticMem(def, mem);
 			if (!result)
 			{
-				unexpected<std::string>{ std::move(result).error() };
+				return unexpected<std::string>{ std::move(result).error() };
 			}
 			return load(def);
 		}

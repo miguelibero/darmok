@@ -86,7 +86,9 @@ namespace
             DARMOK_TRY_VALUE_PREFIX(freelookRef, scene->addSceneComponent<FreelookController>(*_cam), "adding debug freelook component");
             DARMOK_TRY_PREFIX(freelookRef->setEnabled(true), "enable freelook");
 
-            DARMOK_TRY_PREFIX(_cam->addComponent<SkyboxRenderer>(envPrefiltered), "adding skybox component");
+            std::shared_ptr<Texture> envSkybox;
+            DARMOK_TRY_VALUE_PREFIX(envSkybox, _app.getAssets().getTextureLoader()("skybox.bin"), "loading skybox texture");
+            DARMOK_TRY_PREFIX(_cam->addComponent<SkyboxRenderer>(envSkybox), "adding skybox component");
 
             std::shared_ptr<Program> prog;
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
@@ -183,7 +185,8 @@ namespace
             shadowDef.set_map_size(4096);
 
 			cam.tryAddComponent<ForwardRenderer>();
-			// cam.tryAddComponent<OcclusionCuller>();
+            // cam.tryAddComponent<DeferredRenderer>();
+            // cam.tryAddComponent<OcclusionCuller>();
 			cam.tryAddComponent<FrustumCuller>();
 			cam.tryAddComponent<LightingRenderComponent>();
 			cam.tryAddComponent<ShadowRenderer>(shadowDef);

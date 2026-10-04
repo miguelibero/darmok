@@ -7,7 +7,7 @@
 #include <darmok/data_stream.hpp>
 #include <darmok/slang.hpp>
 #include <darmok/stream.hpp>
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum_format.hpp>
 
 #define SLANG_TRY(desc, failable)                             \
@@ -68,7 +68,7 @@ namespace darmok
             {
                 if (semanticIndex >= max)
                 {
-                    return unexpected{fmt::format("unsupported index {} for attrib type {}", semanticIndex, base)};
+                    return unexpected{std::format("unsupported index {} for attrib type {}", semanticIndex, base)};
                 }
                 return static_cast<protobuf::Bgfx::Attrib>(static_cast<int>(base) + semanticIndex);
             };
@@ -175,7 +175,7 @@ namespace darmok
                 auto bgfxAttribResult = getBgfxAttrib(semanticName, field->getSemanticIndex());
                 if (!bgfxAttribResult)
                 {
-                    return unexpected<std::string>{fmt::format("unsupported attrib {} in vertex field {}: {}", semanticName, name, bgfxAttribResult.error())};
+                    return unexpected<std::string>{std::format("unsupported attrib {} in vertex field {}: {}", semanticName, name, bgfxAttribResult.error())};
                 }
                 auto& bgfxAttrib = bgfxAttribResult.value();
                 if (!bgfxAttrib)
@@ -185,7 +185,7 @@ namespace darmok
                 auto bgfxAttribType = getBgfxAttribType(fieldType->getScalarType());
                 if (!bgfxAttribType)
                 {
-                    return unexpected<std::string>{fmt::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), name)};
+                    return unexpected<std::string>{std::format("unsupported attrib type {} in vertex field {}", fieldType->getScalarType(), name)};
                 }
 
                 auto &vertexAttrib = *vertexLayout.add_attributes();
@@ -368,7 +368,7 @@ namespace darmok
                     {
                         return bgfx::UniformType::Vec4;
                     }
-                    return unexpected{fmt::format("unsupported uniform vector count {}", count)};
+                    return unexpected{std::format("unsupported uniform vector count {}", count)};
                 }
                 case slang::TypeReflection::Kind::Matrix:
                 {
@@ -380,10 +380,10 @@ namespace darmok
                     case 4:
                         return bgfx::UniformType::Mat4;
                     }
-                    return unexpected{fmt::format("unsupported uniform matrix count {}", count)};
+                    return unexpected{std::format("unsupported uniform matrix count {}", count)};
                 }
             default:
-                return unexpected{fmt::format("unsupported uniform kind {}", kind)};
+                return unexpected{std::format("unsupported uniform kind {}", kind)};
             }
         }
 
@@ -593,7 +593,7 @@ namespace darmok
                     auto subparams = getLayoutParams(*field, subprefix);
                     if (!subparams)
                     {
-                        return unexpected{fmt::format("failed in field {}: {}", subprefix, subparams.error())};
+                        return unexpected{std::format("failed in field {}: {}", subprefix, subparams.error())};
                     }
                     params.insert(params.end(), subparams->begin(), subparams->end());
                 }
@@ -604,12 +604,12 @@ namespace darmok
             {
                 if (layout.getSemanticName() == nullptr)
                 {
-                    return unexpected{fmt::format("no semantic name specified for var: {}", layout.getName())};
+                    return unexpected{std::format("no semantic name specified for var: {}", layout.getName())};
                 }
                 auto attribResult = getBgfxAttrib(layout.getSemanticName(), layout.getSemanticIndex());
                 if (!attribResult)
                 {
-                    return unexpected{fmt::format("unsupported semantic name: {}", layout.getSemanticName())};
+                    return unexpected{std::format("unsupported semantic name: {}", layout.getSemanticName())};
                 }
                 if (auto &attrib = attribResult.value())
                 {
@@ -618,7 +618,7 @@ namespace darmok
                 break;
             }
             default:
-                return unexpected{fmt::format("Unsupported type of param: {}", layout.getName())};
+                return unexpected{std::format("Unsupported type of param: {}", layout.getName())};
             }
             return params;
         }
@@ -645,7 +645,7 @@ namespace darmok
                     auto fieldResult = getUniforms(subparam, stage);
                     if (!fieldResult)
                     {
-                        return unexpected{fmt::format("getting uniform for field {}: {}", subparam.getName(), fieldResult.error())};
+                        return unexpected{std::format("getting uniform for field {}: {}", subparam.getName(), fieldResult.error())};
                     }
                     uniforms.insert(uniforms.end(), fieldResult->begin(), fieldResult->end());
                 }
@@ -657,7 +657,7 @@ namespace darmok
             auto convertResult = convertUniformType(elementType, isCompute);
             if (!convertResult)
             {
-                return unexpected{fmt::format("faied to convert param {}: {}", paramName, convertResult.error())};
+                return unexpected{std::format("faied to convert param {}: {}", paramName, convertResult.error())};
             }
             auto convertedType = *convertResult;
             if (convertedType == bgfx::UniformType::Count)
@@ -722,7 +722,7 @@ namespace darmok
                 auto fieldResult = getUniforms(param, stage);
                 if (!fieldResult)
                 {
-                    return unexpected{fmt::format("getting uniform for field {}: {}", param.getName(), fieldResult.error())};
+                    return unexpected{std::format("getting uniform for field {}: {}", param.getName(), fieldResult.error())};
                 }
                 data.uniforms.insert(data.uniforms.end(), fieldResult->begin(), fieldResult->end());
             }
@@ -794,7 +794,7 @@ namespace darmok
                     auto result = getLayoutParams(*varLayout);
                     if (!result)
                     {
-                        return unexpected<std::string>{fmt::format("could not get input param {} layout: {}", i, result.error())};
+                        return unexpected<std::string>{std::format("could not get input param {} layout: {}", i, result.error())};
                     }
                     inputParams.insert(inputParams.begin(), result->begin(), result->end());
                 }
@@ -810,7 +810,7 @@ namespace darmok
                 auto result = getLayoutParams(*varLayout);
                 if (!result)
                 {
-                    return unexpected<std::string>{fmt::format("could not get result layout: {}", result.error())};
+                    return unexpected<std::string>{std::format("could not get result layout: {}", result.error())};
                 }
                 outputParams = std::move(result).value();
             }
@@ -824,7 +824,7 @@ namespace darmok
             auto uniformsResult = getUniforms(*programLayout, stage);
             if (!uniformsResult)
             {
-                return unexpected{fmt::format("getting uniforms: {}", uniformsResult.error())};
+                return unexpected{std::format("getting uniforms: {}", uniformsResult.error())};
             }
             auto uniformData = std::move(uniformsResult).value();
 
@@ -834,7 +834,7 @@ namespace darmok
                 auto bgfxResult = GlslCompiler::compileToBgfx(shaderData, convertShaderType(stage), profile);
                 if (!bgfxResult)
                 {
-                    return unexpected{fmt::format("failed to compile bgfx glsl profile {}: {}", profile, bgfxResult.error())};
+                    return unexpected{std::format("failed to compile bgfx glsl profile {}: {}", profile, bgfxResult.error())};
                 }
                 shaderData = std::move(bgfxResult).value();
             }
@@ -960,7 +960,7 @@ namespace darmok
             auto result = createShader(linkedProgram, darmokCtx, slangCtx);
             if (!result)
             {
-                return unexpected{fmt::format("failed to create shader: {}", result.error())};
+                return unexpected{std::format("failed to create shader: {}", result.error())};
             }
             auto shader = std::move(result).value();
             google::protobuf::RepeatedPtrField<protobuf::Shader>* shaders = nullptr;
@@ -993,13 +993,13 @@ namespace darmok
             auto result = updateShader(rendererProg, linkedProgram, slangCtx, darmokCtx);
             if (!result)
             {
-                return unexpected{fmt::format("failed to update vertex shader: {}", result.error())};
+                return unexpected{std::format("failed to update vertex shader: {}", result.error())};
             }
             slangCtx.entryPointIdx = darmokCtx.fragEntryPointIdx;
             result = updateShader(rendererProg, linkedProgram, slangCtx, darmokCtx);
             if (!result)
             {
-                return unexpected{fmt::format("failed to update fragment shader: {}", result.error())};
+                return unexpected{std::format("failed to update fragment shader: {}", result.error())};
             }
             return {};
         }
@@ -1055,10 +1055,6 @@ namespace darmok
                 }
             }
 
-            // bgfx reads uniform and vertex-attribute names from compiled shader reflection
-            // and matches them against its own tables (e.g. "u_model", "a_position"). Slang
-            // adds a "_0" suffix to every identifier by default; NoMangle preserves source
-            // names so bgfx lookups succeed on all backends.
             options.push_back(Entry{Option::NoMangle, {.intValue0 = 1}});
 
             if (renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
@@ -1217,7 +1213,7 @@ namespace darmok
         auto itr = _rendererTargets.find(renderer);
         if (itr == _rendererTargets.end())
         {
-            return unexpected{fmt::format("unsupported renderer: {}", renderer)};
+            return unexpected{std::format("unsupported renderer: {}", renderer)};
         }
         auto target = itr->second;
         slang::TargetDesc targetDesc{.format = target};
@@ -1246,20 +1242,20 @@ namespace darmok
         auto itr = _rendererTargets.find(renderer);
         if (itr == _rendererTargets.end())
         {
-            return unexpected{fmt::format("unsupported renderer: {}", renderer)};
+            return unexpected{std::format("unsupported renderer: {}", renderer)};
         }
         auto target = itr->second;
 
         auto sessionResult = createSession(renderer, defines);
         if (!sessionResult)
         {
-            return unexpected{fmt::format("failed to create session: {}", sessionResult.error())};
+            return unexpected{std::format("failed to create session: {}", sessionResult.error())};
         }
         auto session = sessionResult.value();
         auto compileResult = compileProgram(src, *session, _config.log);
         if (!compileResult)
         {
-            return unexpected{fmt::format("failed to compile program: {}", compileResult.error())};
+            return unexpected{std::format("failed to compile program: {}", compileResult.error())};
         }
         auto linkedProgram = std::move(compileResult).value();
         auto layout = linkedProgram->getLayout();
@@ -1267,7 +1263,7 @@ namespace darmok
         auto varyingResult = updateVarying(*progDef.mutable_varying(), *layout);
         if (!varyingResult)
         {
-            return unexpected{fmt::format("failed to update varying: {}", varyingResult.error())};
+            return unexpected{std::format("failed to update varying: {}", varyingResult.error())};
         }
 
         auto darmokCtx = std::move(varyingResult).value();
@@ -1282,7 +1278,7 @@ namespace darmok
         auto result = updateRendererProgram(rendererProg, *linkedProgram, slangCtx, darmokCtx);
         if (!result)
         {
-            return unexpected{fmt::format("failed to update program for renderer {}: {}", renderer, result.error())};
+            return unexpected{std::format("failed to update program for renderer {}: {}", renderer, result.error())};
         }
         return {};
     }
@@ -1314,7 +1310,7 @@ namespace darmok
                 auto result = compileRendererProgram(src, programDef, renderer, defineComb);
                 if (!result)
                 {
-                    return unexpected{fmt::format("failed to compile for renderer {}: {}", renderer, result.error())};
+                    return unexpected{std::format("failed to compile for renderer {}: {}", renderer, result.error())};
                 }
             }
         }

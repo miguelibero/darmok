@@ -12,7 +12,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/norm.hpp>
-#include <fmt/format.h>
+#include <format>
 #include <bx/bx.h>
 #include <bgfx/bgfx.h>
 
@@ -52,7 +52,7 @@ namespace darmok
 
     std::string Rectangle::toString() const noexcept
     {
-        return fmt::format("Rectangle(size={}, origin={})", size, origin);
+        return std::format("Rectangle(size={}, origin={})", size, origin);
     }
 
     std::vector<Line> Rectangle::toLines() const noexcept
@@ -106,7 +106,7 @@ namespace darmok
 
     std::string Circle::toString() const noexcept
     {
-        return fmt::format("Circle(radius={}, origin={})", radius, origin);
+        return std::format("Circle(radius={}, origin={})", radius, origin);
     }
 
     const Circle& Circle::standard() noexcept
@@ -171,7 +171,7 @@ namespace darmok
 
     std::string Cube::toString() const noexcept
     {
-        return fmt::format("Cube(size={}, origin={})", size, origin);
+        return std::format("Cube(size={}, origin={})", size, origin);
     }
 
     Cube& Cube::operator*=(float scale) noexcept
@@ -218,7 +218,7 @@ namespace darmok
 
     std::string Triangle::toString() const noexcept
     {
-        return fmt::format("Triangle({}, {}, {})", vertices[0], vertices[1], vertices[2]);
+        return std::format("Triangle({}, {}, {})", vertices[0], vertices[1], vertices[2]);
     }
 
     glm::vec3 Triangle::getNormal() const
@@ -287,7 +287,7 @@ namespace darmok
 
     std::string TextureTriangle::toString() const noexcept
     {
-        return fmt::format("TextureTriangle({}, {}, {})", coordinates[0], coordinates[1], coordinates[2]);
+        return std::format("TextureTriangle({}, {}, {})", coordinates[0], coordinates[1], coordinates[2]);
     }
 
     TextureTriangle& TextureTriangle::operator*=(float scale) noexcept
@@ -340,7 +340,7 @@ namespace darmok
 
     std::string Polygon::toString() const noexcept
     {
-        return fmt::format("Polygon({}, origin={})", StringUtils::join(", ", triangles), origin);
+        return std::format("Polygon({}, origin={})", StringUtils::join(", ", triangles), origin);
     }
 
     Polygon& Polygon::operator*=(float scale) noexcept
@@ -398,7 +398,7 @@ namespace darmok
 
     std::string Sphere::toString() const noexcept
     {
-        return fmt::format("Sphere(radius={}, origin={})", radius, origin);
+        return std::format("Sphere(radius={}, origin={})", radius, origin);
     }
 
     Sphere& Sphere::operator*=(float scale) noexcept
@@ -501,7 +501,7 @@ namespace darmok
 
     std::string Plane::toString() const noexcept
     {
-        return fmt::format("Plane(normal={}, distance={})", normal, distance);
+        return std::format("Plane(normal={}, distance={})", normal, distance);
     }
 
     Line Plane::getNormalLine() const noexcept
@@ -565,7 +565,7 @@ namespace darmok
 
     std::string Ray::toString() const noexcept
     {
-        return fmt::format("Ray(origin={}, direction={})", origin, direction);
+        return std::format("Ray(origin={}, direction={})", origin, direction);
     }
 
     Line Ray::toLine() const noexcept
@@ -650,7 +650,7 @@ namespace darmok
 
     std::string Line::toString() const noexcept
     {
-        return fmt::format("Line({}, {})", points[0], points[1]);
+        return std::format("Line({}, {})", points[0], points[1]);
     }
 
     Ray Line::toRay() const noexcept
@@ -681,12 +681,12 @@ namespace darmok
 
     std::string NormalIntersection::toString() const noexcept
     {
-        return fmt::format("NormalIntersection(position={}, normal={})", position, normal);
+        return std::format("NormalIntersection(position={}, normal={})", position, normal);
     }
 
     std::string DistanceIntersection::toString() const noexcept
     {
-        return fmt::format("DistanceIntersection(position={}, distance={})", position, distance);
+        return std::format("DistanceIntersection(position={}, distance={})", position, distance);
     }
 
     std::optional<glm::vec3> Line::intersect(const Triangle& tri) const noexcept
@@ -728,7 +728,7 @@ namespace darmok
 
     std::string Grid::toString() const noexcept
     {
-        return fmt::format("Grid(separation={}, amount={}, normal={}, origin={})",
+        return std::format("Grid(separation={}, amount={}, normal={}, origin={})",
             separation, amount, normal, origin);
     }
 
@@ -762,7 +762,7 @@ namespace darmok
 
     std::string Capsule::toString() const noexcept
     {
-        return fmt::format("Capsule(cylinderHeight={}, radius={}, origin={})",
+        return std::format("Capsule(cylinderHeight={}, radius={}, origin={})",
             cylinderHeight, radius, origin);
     }
 
@@ -822,7 +822,7 @@ namespace darmok
 
     std::string Cylinder::toString() const noexcept
     {
-        return fmt::format("Cylinder(height={}, radius={}, origin={})", height, radius, origin);
+        return std::format("Cylinder(height={}, radius={}, origin={})", height, radius, origin);
     }
 
     const Cylinder& Cylinder::standard() noexcept
@@ -876,7 +876,7 @@ namespace darmok
 
     std::string Cone::toString() const noexcept
     {
-        return fmt::format("Cone(height={}, radius={}, origin={})", height, radius, origin);
+        return std::format("Cone(height={}, radius={}, origin={})", height, radius, origin);
     }
 
     const Cone& Cone::standard() noexcept
@@ -1131,7 +1131,7 @@ namespace darmok
 
     std::string BoundingBox::toString() const noexcept
     {
-		return fmt::format("BoundingBox(min={}, max={})", min, max);
+		return std::format("BoundingBox(min={}, max={})", min, max);
     }
 
     glm::mat4 BoundingBox::getOrtho() const noexcept

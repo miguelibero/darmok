@@ -318,8 +318,9 @@ namespace darmok
 		_importer.addTypeImporter<FreetypeFontFileImporter>();
 #endif
 		_importer.addTypeImporter<CopyFileImporter>();
-		_importer.addTypeImporter<TexturePackerAtlasFileImporter>();
         _importer.addTypeImporter<ImageFileImporter>(_alloc);
+        _importer.addTypeImporter<TextureFileImporter>();
+		_importer.addTypeImporter<TexturePackerAtlasFileImporter>();
         _importer.addTypeImporter<EnvironmentTextureFileImporter>(_alloc);
 	}
 

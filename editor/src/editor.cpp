@@ -118,7 +118,7 @@ namespace darmok::editor
                 return result;
             }
         }
-        ImGui::Text(fmt::format("[{}]", typeUrl).c_str());
+        ImGui::Text(std::format("[{}]", typeUrl).c_str());
         return unexpected<std::string>{"could not find an editor to render"};
     }
 

@@ -1,7 +1,7 @@
 #include "detail/glsl.hpp"
 #include <darmok/stream.hpp>
 #include <darmok/string.hpp>
-#include <fmt/format.h>
+#include <format>
 #include <regex>
 #include <spirv_glsl.hpp>
 
@@ -103,7 +103,7 @@ namespace darmok
                     auto typeStr = typeToString(memberType, compiler);
                     if (typeStr.empty())
                     {
-                        return unexpected{ fmt::format("failed to convert uniform {} to string", memberName) };
+                        return unexpected{ std::format("failed to convert uniform {} to string", memberName) };
                     }
                     out << "uniform " << typeStr << " " << memberName << ";\n";
 

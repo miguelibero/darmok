@@ -33,7 +33,7 @@ namespace darmok
 		auto sceneDefResult = ctxt.getAssets().getSceneDefinitionLoader()(def.scene_path());
 		if(!sceneDefResult)
 		{
-			return unexpected<std::string>(fmt::format("loading prefab scene definition: {}", sceneDefResult.error()));
+			return unexpected<std::string>(std::format("loading prefab scene definition: {}", sceneDefResult.error()));
 		}
 
 		auto sceneDef = sceneDefResult.value();
@@ -46,7 +46,7 @@ namespace darmok
 		auto loadResult = loader(*sceneDef, scene);
 		if (!loadResult)
 		{
-			return unexpected<std::string>(fmt::format("loading prefab scene: {}", loadResult.error()));
+			return unexpected<std::string>(std::format("loading prefab scene: {}", loadResult.error()));
 		}
 		_scenePath = def.scene_path();
 

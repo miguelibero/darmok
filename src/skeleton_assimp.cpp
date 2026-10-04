@@ -921,7 +921,7 @@ namespace darmok
                 auto animResult = readAnimation(input.path, animName);
                 if (!animResult)
                 {
-                    return unexpected<std::string>{ fmt::format("failed to read animation {}: {}", animName, animResult.error()) };
+                    return unexpected<std::string>{ std::format("failed to read animation {}: {}", animName, animResult.error()) };
                 }
                 AssimpOzzUtils::writeToStream(animResult.value(), *out, _bufferSize);
             }

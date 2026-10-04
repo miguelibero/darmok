@@ -1,7 +1,7 @@
 #pragma once
 
 #include <bgfx/bgfx.h>
-#include <fmt/format.h>
+#include <format>
 
 namespace darmok
 {
@@ -135,25 +135,22 @@ namespace std
     }
 }
 
-namespace fmt
+template<typename T>
+struct std::formatter<darmok::BaseBgfxHandle<T>> : public formatter<uint16_t>
 {
-    template<typename T>
-    struct formatter<darmok::BaseBgfxHandle<T>> : public formatter<uint16_t>
+    template <typename FormatContext>
+    auto format(const darmok::BaseBgfxHandle<T>& handle, FormatContext& ctx) const
     {
-        template <typename FormatContext>
-        auto format(const darmok::BaseBgfxHandle<T>& handle, FormatContext& ctx) const
-        {
-            return formatter<uint16_t>::format(handle.idx(), ctx);
-        }
-    };
+        return formatter<uint16_t>::format(handle.idx(), ctx);
+    }
+};
 
-    template<typename T>
-    struct formatter<darmok::BaseBgfxOwnedHandle<T>> : public formatter<uint16_t>
+template<typename T>
+struct std::formatter<darmok::BaseBgfxOwnedHandle<T>> : public formatter<uint16_t>
+{
+    template <typename FormatContext>
+    auto format(const darmok::BaseBgfxOwnedHandle<T>& handle, FormatContext& ctx) const
     {
-        template <typename FormatContext>
-        auto format(const darmok::BaseBgfxOwnedHandle<T>& handle, FormatContext& ctx) const
-        {
-            return formatter<uint16_t>::format(handle.idx(), ctx);
-        }
-    };
-}
+        return formatter<uint16_t>::format(handle.idx(), ctx);
+    }
+};

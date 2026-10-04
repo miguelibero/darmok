@@ -12,6 +12,10 @@
             }
         },
         "environment.exr": {
+            "texture": {
+                "outputPath": "skybox.bin",
+                "convertCubemap": true
+            },
             "env_texture": {
                 "irradiance": {
                     "outputPath": "env_irradiance.bin",

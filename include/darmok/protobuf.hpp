@@ -646,6 +646,7 @@ namespace darmok
         ProtobufFileImporter(Loader& loader, const std::string& name) noexcept
             : _loader{ loader }
             , _outputFormat{ protobuf::Format::Binary }
+            , _name{ name }
         {
         }
 
@@ -681,7 +682,7 @@ namespace darmok
             auto loadResult = _loader(input.path);
             if (!loadResult)
             {
-                return unexpected{ loadResult.error() };
+                return unexpected{ std::move(loadResult).error() };
             }
             auto& msg = loadResult.value();
             if (!msg)
@@ -697,7 +698,7 @@ namespace darmok
                 auto result = protobuf::write(*msg, *out, _outputFormat);
                 if (!result)
                 {
-                    return unexpected{ result.error() };
+                    return unexpected{ std::move(result).error() };
                 }
             }
             return {};

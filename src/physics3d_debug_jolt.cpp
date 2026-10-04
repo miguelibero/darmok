@@ -236,7 +236,7 @@ namespace darmok::physics3d
 
     void JoltPhysicsDebugRenderer::onError(std::string_view prefix, std::string_view message) noexcept
     {
-        StreamUtils::log(fmt::format("JoltPhysicsDebugRenderer::{}: {}", prefix, message), true);
+        StreamUtils::log(std::format("JoltPhysicsDebugRenderer::{}: {}", prefix, message), true);
 	}
 
     void JoltPhysicsDebugRenderer::DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg color, ECastShadow castShadow) noexcept
@@ -400,7 +400,7 @@ namespace darmok::physics3d
             auto fontResult = _app->getAssets().getFontLoader()(fontPath);
             if (!fontResult)
             {
-                return unexpected<std::string>{ fmt::format("failed to load font '{}': {}", fontPath, fontResult.error()) };
+                return unexpected<std::string>{ std::format("failed to load font '{}': {}", fontPath, fontResult.error()) };
             }
             _font = fontResult.value();
         }

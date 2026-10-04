@@ -174,6 +174,8 @@ namespace darmok
         std::unordered_set<std::filesystem::path> _rootPaths;
 		OptionalRef<bx::AllocatorI> _alloc;
         bool _absolutePathsAllowed;
+
+        static bool isSubpath(const std::filesystem::path& base, const std::filesystem::path& path) noexcept;
 	};
 }
 

@@ -9,7 +9,7 @@
 #include <darmok/string.hpp>
 
 #include <glm/gtc/type_ptr.hpp>
-#include <fmt/format.h>
+#include <format>
 
 #include "detail/camera.hpp"
 
@@ -42,7 +42,7 @@ namespace darmok
         {
             return _name;
         }
-        return fmt::format("{:X}", getId());
+        return std::format("{:X}", getId());
     }
 
     expected<void, std::string> SceneImpl::addSceneComponent(std::unique_ptr<ISceneComponent>&& component) noexcept

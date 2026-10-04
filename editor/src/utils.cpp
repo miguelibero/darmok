@@ -12,7 +12,7 @@
 #include <darmok/render_chain.hpp>
 
 #include <imgui_stdlib.h>
-#include <fmt/format.h>
+#include <format>
 #include <assimp/scene.h>
 
 namespace darmok::editor
@@ -155,7 +155,7 @@ namespace darmok::editor
             }
             if (name.empty())
             {
-                name = fmt::format("Missing {}", entt::to_integral(entity));
+                name = std::format("Missing {}", entt::to_integral(entity));
             }
         }
 
@@ -707,7 +707,7 @@ namespace darmok::editor
                 name = name.substr(prefix.size());
             }
         }
-        drawError(fmt::format("{}: {}",name , error).c_str());
+        drawError(std::format("{}: {}",name , error).c_str());
     }
 
     namespace ImguiUtils

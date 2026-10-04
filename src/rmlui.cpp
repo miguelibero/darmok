@@ -75,7 +75,7 @@ namespace darmok
 
     void RmluiRenderInterface::onError(std::string_view prefix, std::string_view msg) noexcept
     {
-        StreamUtils::log(fmt::format("RmluiRenderInterface::{}: {}", prefix, msg), true);
+        StreamUtils::log(std::format("RmluiRenderInterface::{}: {}", prefix, msg), true);
     }
 
     Rml::CompiledGeometryHandle RmluiRenderInterface::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) noexcept
@@ -2317,7 +2317,7 @@ namespace darmok
             auto result = canvas->getImpl().init(_app.value(), *this);
             if(!result)
             {
-                StreamUtils::log(fmt::format("rmlui canvas init {}: {}", entt::to_integral(entity), result.error()), true);
+                StreamUtils::log(std::format("rmlui canvas init {}: {}", entt::to_integral(entity), result.error()), true);
 			}
         }
     }
@@ -2333,7 +2333,7 @@ namespace darmok
             auto result = canvas->getImpl().shutdown();
             if (!result)
             {
-                StreamUtils::log(fmt::format("rmlui canvas shutdown {}: {}", entity, result.error()), true);
+                StreamUtils::log(std::format("rmlui canvas shutdown {}: {}", entity, result.error()), true);
             }
         }
     }

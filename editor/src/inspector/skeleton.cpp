@@ -7,7 +7,7 @@
 
 #include <assimp/scene.h>
 #include <assimp/mesh.h>
-#include <fmt/format.h>
+#include <format>
 
 namespace darmok::editor
 {
@@ -43,7 +43,7 @@ namespace darmok::editor
 
         if (armature.joints_size() > 0)
         {
-            auto desc = fmt::format("{} joints", armature.joints_size());
+            auto desc = std::format("{} joints", armature.joints_size());
             ImGui::Text("%s", desc.c_str());
         }
 
@@ -113,7 +113,7 @@ namespace darmok::editor
         ImguiUtils::endFrame();
         if(animator.states_size() > 0 || animator.transitions_size() > 0)
         {
-            auto desc = fmt::format("{} states, {} transitions", animator.states_size(), animator.transitions_size());
+            auto desc = std::format("{} states, {} transitions", animator.states_size(), animator.transitions_size());
             ImGui::Text("%s", desc.c_str());
 		}
         return changed;

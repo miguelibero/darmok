@@ -24,7 +24,7 @@
 #include <darmok/shadow.hpp>
 #include <darmok/prefab.hpp>
 
-#include <fmt/format.h>
+#include <format>
 
 namespace darmok
 {
@@ -419,7 +419,7 @@ namespace darmok
         auto i = 0;
         while (itr != assets.end())
         {
-            path = fmt::format("{}_{}", pathPrefix.string(), ++i);
+            path = std::format("{}_{}", pathPrefix.string(), ++i);
             itr = assets.find(path);
         }
         if (protobuf::isAny(asset))
@@ -1123,7 +1123,7 @@ namespace darmok
             auto result = progCompiler(progSrc);
             if (!result)
             {
-                return unexpected{ fmt::format("failed to compile program {}: {}", path.string(), result.error())};
+                return unexpected{ std::format("failed to compile program {}: {}", path.string(), result.error())};
             }
             scene.setAsset(path, result.value());
         }
@@ -1134,7 +1134,7 @@ namespace darmok
             auto result = TextureDefinitionWrapper{ def }.loadSource(texSrc, alloc, _config.generateTextureMips);
             if (!result)
             {
-                return unexpected{ fmt::format("failed to load texture {}: {}", path.string(), result.error()) };
+                return unexpected{ std::format("failed to load texture {}: {}", path.string(), result.error()) };
             }
             scene.setAsset(path, def);
         }
@@ -1145,7 +1145,7 @@ namespace darmok
             auto progResult = Program::loadRefVarying(progRef, _progLoader);
             if (!progResult)
             {
-                return unexpected{ fmt::format("failed to load varying for mesh {}: {}", path.string(), progResult.error()) };
+                return unexpected{ std::format("failed to load varying for mesh {}: {}", path.string(), progResult.error()) };
             }
             auto varying = progResult.value();
             auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();

@@ -671,12 +671,6 @@ if (WIN32)
   copy_d3d_file(DXCOMPILER dxcompiler.dll)
 endif()
 
-# fmt
-find_package(fmt CONFIG REQUIRED)
-target_link_libraries(${CORE_LIB_NAME} PUBLIC fmt::fmt)
-# target_compile_definitions(${CORE_LIB_NAME} PUBLIC FMT_UNICODE=0)
-# target_compile_definitions(${LIB_NAME} PUBLIC FMT_UNICODE=0)
-
 # pugixml
 find_package(pugixml CONFIG REQUIRED)
 target_link_libraries(${CORE_LIB_NAME} PUBLIC pugixml::pugixml)

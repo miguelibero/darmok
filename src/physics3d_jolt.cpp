@@ -14,7 +14,7 @@
 
 #include <bx/allocator.h>
 #include <glm/gtx/quaternion.hpp>
-#include <fmt/format.h>
+#include <format>
 
 #include <thread>
 #include <cstdarg>
@@ -344,7 +344,7 @@ namespace darmok::physics3d
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
         task.name(_prefix + " " + job->GetName());
 #else
-        task.name(_prefix + " " + fmt::to_string(fmt::ptr(job)));
+        task.name(_prefix + " " + std::to_string(std::ptr(job)));
 #endif   
     }
 

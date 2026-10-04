@@ -15,7 +15,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <fmt/format.h>
+#include <format>
 
 namespace darmok
 {
@@ -725,15 +725,12 @@ namespace darmok
     };
 }
 
-namespace fmt
+template<>
+struct std::formatter<darmok::Entity> : public formatter<entt::entt_traits<darmok::Entity>::entity_type>
 {
-    template<>
-    struct formatter<darmok::Entity> : public formatter<entt::entt_traits<darmok::Entity>::entity_type>
+    template <typename FormatContext>
+    auto format(const darmok::Entity& v, FormatContext& ctx) const
     {
-        template <typename FormatContext>
-        auto format(const darmok::Entity& v, FormatContext& ctx) const
-        {
-            return formatter<entt::entt_traits<darmok::Entity>::entity_type>::format(entt::to_integral(v), ctx);
-        }
-    };
-}
+        return formatter<entt::entt_traits<darmok::Entity>::entity_type>::format(entt::to_integral(v), ctx);
+    }
+};

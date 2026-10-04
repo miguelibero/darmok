@@ -16,7 +16,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <bx/math.h>
-#include <fmt/format.h>
+#include <format>
 
 using namespace entt::literals;
 
@@ -124,7 +124,7 @@ namespace darmok
         {
             return trans->getName();
         }
-        return fmt::format("{:X}", getId());
+        return std::format("{:X}", getId());
     }
 
     std::string Camera::toString() const noexcept
