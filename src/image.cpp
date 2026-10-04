@@ -648,21 +648,24 @@ namespace darmok
             return unexpected{"image already has mipmaps"};
         }
 
-        if(_container->m_format != bimg::TextureFormat::RGBA32F)
+        auto convertResult = convertFormat(bimg::TextureFormat::RGBA32F);
+        if(!convertResult)
         {
-            return unexpected{"mipmap generation only supports RGBA32F"};
+            return unexpected{"failed to convert to RGBA32F: " + convertResult.error()};
         }
 
+        auto srcImage = std::move(convertResult).value();
+        auto srcContainer = srcImage._container;
         const auto numMips = getMaxMipCount();
 
         auto* container = bimg::imageAlloc(
-            _container->m_allocator,
-            _container->m_format,
-            _container->m_width,
-            _container->m_height,
-            _container->m_depth,
-            _container->m_numLayers,
-            _container->m_cubeMap,
+            srcContainer->m_allocator,
+            srcContainer->m_format,
+            srcContainer->m_width,
+            srcContainer->m_height,
+            srcContainer->m_depth,
+            srcContainer->m_numLayers,
+            srcContainer->m_cubeMap,
             true);
 
         if(!container)
@@ -672,14 +675,14 @@ namespace darmok
 
         Image image{container};
 
-        const auto sideCount = _container->m_cubeMap
-                                   ? _container->m_numLayers * 6
-                                   : _container->m_numLayers;
+        const auto sideCount = srcContainer->m_cubeMap
+                                   ? srcContainer->m_numLayers * 6
+                                   : srcContainer->m_numLayers;
 
         // Copy the original image into mip 0.
         for(uint16_t side = 0; side < sideCount; ++side)
         {
-            auto src = getMip(side, 0);
+            auto src = srcImage.getMip(side, 0);
             auto dst = image.getMip(side, 0);
 
             if(!src || !dst)
@@ -988,8 +991,7 @@ namespace darmok
             }
             img = Image{cubemapResult.value(), alloc};
         }
-
-        if(_generateMips && img.getMipCount() == 1)
+        else if(_generateMips && img.getMipCount() == 1)
         {
             auto mipsResult = img.generateMips();
             if(!mipsResult)
