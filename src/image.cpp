@@ -35,6 +35,7 @@ namespace darmok
 		std::vector<Image> faces;
 		bimg::TextureFormat::Enum fformat;
 		glm::uvec2 size;
+        std::optional<bool> hasMips;
 		for (auto& faceData : facesData)
 		{
 			auto result = load(faceData, alloc, format);
@@ -60,19 +61,28 @@ namespace darmok
 				size = face.getSize();
 			}
 			faces.push_back(std::move(face));
+            bool faceHasMips = faces.back().getMipCount() > 1;
+            if(!hasMips.has_value())
+            {
+                hasMips = faceHasMips;
+            }
+            else if(hasMips.value() != faceHasMips)
+            {
+                return unexpected<std::string>{"all faces should have the same mip count"};
+            }
 		}
 
-		auto container = bimg::imageAlloc(&alloc, fformat, size.x, size.y, 1, 1, true, false);
-
-		// Copy each face into the cubemap
+		auto container = bimg::imageAlloc(&alloc, fformat, size.x, size.y, 1, 1, true, *hasMips);
 		auto ptr = static_cast<uint8_t*>(container->m_data);
-		auto memSize = faces[0].getData().size();
-		size_t i = 0;
-		for (auto& face : faces)
-		{
-			std::memcpy(ptr + memSize * i, face.getData().ptr(), memSize);
-			++i;
-		}
+        const auto faceSize = faces[0].getData().size();
+        for(size_t i = 0; i < faces.size(); ++i)
+        {
+            std::memcpy(
+                ptr + faceSize * i,
+                faces[i].getData().ptr(),
+                faceSize);
+        }
+
 		return Image{ container };
 	}
 
@@ -146,7 +156,7 @@ namespace darmok
 		auto info = other.getTextureInfo();
 
 		_container = bimg::imageAlloc(
-            other._container->m_allocator, format, size.x, size.y, info.depth, info.cubeMap, info.numLayers, info.numMips > 0
+            other._container->m_allocator, format, size.x, size.y, info.depth, info.numLayers, info.cubeMap, info.numMips > 1
 		);
 
 		auto bpp = info.bitsPerPixel / 8;
@@ -476,26 +486,35 @@ namespace darmok
             return unexpected{"image is not a cubemap"};
         }
 
-        if(_container->m_numMips != 1)
+        auto face = getPixels(0, lod);
+        if(!face)
         {
-            return unexpected{"image has mipmaps"};
+            return unexpected{
+                std::format("failed to get cubemap face: {}", face.error())};
         }
 
-        auto size = getSize();
+        const auto& facePixels = face.value();
+
         PixelArray3d pixels{
             6,
-            size.y,
-            size.x};
+            facePixels.extent(1),
+            facePixels.extent(0)};
 
-        for(glm::uint face = 0; face < 6; ++face)
+        pixels[0] = std::move(face).value();
+
+        for(glm::uint faceIndex = 1; faceIndex < 6; ++faceIndex)
         {
-            auto result = getPixels(face, lod);
+            auto result = getPixels(faceIndex, lod);
             if(!result)
             {
                 return unexpected{
-                    std::format("failed to get cubemap face {}: {}", face, result.error())};
+                    std::format(
+                        "failed to get cubemap face {}: {}",
+                        faceIndex,
+                        result.error())};
             }
-            pixels[face] = std::move(result).value();
+
+            pixels[faceIndex] = std::move(result).value();
         }
 
         return pixels;
