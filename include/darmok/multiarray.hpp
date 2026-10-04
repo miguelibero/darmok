@@ -8,8 +8,11 @@
 #include <concepts>
 #include <vector>
 
-    namespace darmok
+namespace darmok
 {
+
+    template <typename T, size_t N, typename L = glm::uint>
+    class MultiArray;
 
     template <typename T, size_t N, typename L = glm::uint>
     class MultiArrayView
@@ -21,6 +24,9 @@
         using length_type = L;
         static constexpr size_t dimension_num = N;
         using size_type = glm::vec<dimension_num, length_type>;
+
+        using iterator = T*;
+        using const_iterator = const T*;
 
         constexpr MultiArrayView() noexcept = default;
 
@@ -38,6 +44,18 @@
         constexpr length_type length() const noexcept
         {
             return _size[0] * _strides[0];
+        }
+
+        size_t numElements() const noexcept
+        {
+            size_t result = 1;
+
+            for(glm::length_t i = 0; i < N; ++i)
+            {
+                result *= _size[i];
+            }
+
+            return result;
         }
 
         [[nodiscard]]
@@ -75,6 +93,36 @@
         constexpr const value_type* data() const noexcept
         {
             return _data;
+        }
+
+        iterator begin() noexcept
+        {
+            return _data;
+        }
+
+        iterator end() noexcept
+        {
+            return _data + numElements();
+        }
+
+        const_iterator begin() const noexcept
+        {
+            return _data;
+        }
+
+        const_iterator end() const noexcept
+        {
+            return _data + numElements();
+        }
+
+        const_iterator cbegin() const noexcept
+        {
+            return begin();
+        }
+
+        const_iterator cend() const noexcept
+        {
+            return end();
         }
 
         [[nodiscard]]
@@ -151,13 +199,29 @@
             return _data[index * _strides[0]];
         }
 
+        template <class U>
+        MultiArrayView& operator=(const MultiArray<U, N, L>& other)
+        {
+            assert(size() == other.size());
+            std::copy(other.begin(), other.end(), begin());
+            return *this;
+        }
+
+        template <class U>
+        MultiArrayView& operator=(MultiArray<U, N, L>&& other)
+        {
+            assert(size() == other.size());
+            std::move(other.begin(), other.end(), begin());
+            return *this;
+        }
+
       private:
         value_type* _data = nullptr;
         size_type _size{};
         size_type _strides{};
     };
 
-    template <typename T, size_t N, typename L = glm::uint>
+    template <typename T, size_t N, typename L>
     class MultiArray
     {
         static_assert(N > 0);

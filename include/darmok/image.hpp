@@ -74,11 +74,12 @@ namespace darmok
 		[[nodiscard]] expected<void, std::string> write(ImageEncoding encoding, std::ostream& stream) const noexcept;
 
 		[[nodiscard]] expected<void, std::string> update(const glm::uvec2& pos, const glm::uvec2& size, DataView data, size_t elmOffset = 0, size_t elmSize = 1) noexcept;
-        [[nodiscard]] expected<bimg::ImageMip, std::string> getMip(uint16_t side, uint8_t lod) const noexcept;
+        [[nodiscard]] expected<bimg::ImageMip, std::string> getMip(uint16_t face, uint8_t lod) const noexcept;
         [[nodiscard]] expected<Image, std::string> convertFormat(bimg::TextureFormat::Enum format) const noexcept;
         [[nodiscard]] expected<Image, std::string> generateMips() const noexcept;
 
-        [[nodiscard]] expected<PixelArray2d, std::string> getPixels() const noexcept;
+        [[nodiscard]] expected<PixelArray2d, std::string> getPixels(uint8_t face = 0, uint8_t lod = 0) const noexcept;
+        [[nodiscard]] expected<PixelArray3d, std::string> getCubemapPixels(uint8_t lod = 0) const noexcept;
 
 		[[nodiscard]] static bimg::TextureFormat::Enum readFormat(std::string_view name) noexcept;
         [[nodiscard]] static ImageEncoding readEncoding(std::string_view name) noexcept;
@@ -87,6 +88,9 @@ namespace darmok
         [[nodiscard]] static glm::vec4 sampleBilinear(const PixelArray2d& pixels, glm::vec2 uv) noexcept;
         [[nodiscard]] static expected<PixelArray2d, std::string> loadMipData(const bimg::ImageMip& mip) noexcept;
         [[nodiscard]] static expected<PixelArray3d, std::string> convertEquirectangularCubemap(const PixelArray2d& pixels) noexcept;
+
+        [[nodiscard]] static void downsampleMip(const bimg::ImageMip& srcMip, bimg::ImageMip& dstMip) noexcept;
+        [[nodiscard]] static void copyMip(const bimg::ImageMip& srcMip, bimg::ImageMip& dstMip) noexcept;
 		
 	private:
 		bimg::ImageContainer* _container;

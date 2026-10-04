@@ -97,7 +97,7 @@ namespace darmok
             bimg::TextureFormat::RGBA32F,
             pixels.extent(0),
             pixels.extent(1),
-            0,
+            1,
             1,
             false,
             false,
@@ -113,7 +113,7 @@ namespace darmok
                   bimg::TextureFormat::RGBA32F,
                   cubePixels.extent(1),
                   cubePixels.extent(2),
-                  0,
+                  1,
                   1,
                   true,
                   false,
@@ -143,11 +143,12 @@ namespace darmok
 		auto size = other.getSize();
 		auto format = other.getFormat();
 
+		auto info = other.getTextureInfo();
+
 		_container = bimg::imageAlloc(
-			other._container->m_allocator, format, size.x, size.y, 0, 1, false, false
+            other._container->m_allocator, format, size.x, size.y, info.depth, info.cubeMap, info.numLayers, info.numMips > 0
 		);
 
-		auto info = other.getTextureInfo();
 		auto bpp = info.bitsPerPixel / 8;
 		uint32_t pitch = bpp * size.x;
 		bimg::imageCopy(_container->m_data, size.x, size.y, info.depth, info.bitsPerPixel, pitch, other._container->m_data);
@@ -443,14 +444,14 @@ namespace darmok
         return PixelArray2d::load(DataView{mip.m_data, mip.m_size}, {mip.m_width, mip.m_height});
     }
 
-    expected<PixelArray2d, std::string> Image::getPixels() const noexcept
+    expected<PixelArray2d, std::string> Image::getPixels(uint8_t face, uint8_t lod) const noexcept
     {
         auto convertResult = convertFormat(bimg::TextureFormat::RGBA32F);
         if(!convertResult)
         {
             return unexpected{std::format("Failed to convert image: {}", convertResult.error())};
         }
-        auto mipResult = convertResult->getMip(0, 0);
+        auto mipResult = convertResult->getMip(face, lod);
         if(!mipResult)
         {
             return unexpected{std::format("Failed to get image mip: {}", mipResult.error())};
@@ -461,6 +462,43 @@ namespace darmok
             return unexpected{std::format("Failed to convert image mip to array: {}", arrayResult.error())};
         }
         return arrayResult;
+    }
+
+    expected<PixelArray3d, std::string> Image::getCubemapPixels(uint8_t lod) const noexcept
+    {
+        if(!_container)
+        {
+            return unexpected{"image is empty"};
+        }
+
+        if(!_container->m_cubeMap)
+        {
+            return unexpected{"image is not a cubemap"};
+        }
+
+        if(_container->m_numMips != 1)
+        {
+            return unexpected{"image has mipmaps"};
+        }
+
+        auto size = getSize();
+        PixelArray3d pixels{
+            6,
+            size.y,
+            size.x};
+
+        for(glm::uint face = 0; face < 6; ++face)
+        {
+            auto result = getPixels(face, lod);
+            if(!result)
+            {
+                return unexpected{
+                    std::format("failed to get cubemap face {}: {}", face, result.error())};
+            }
+            pixels[face] = std::move(result).value();
+        }
+
+        return pixels;
     }
 
     glm::vec4 Image::sampleBilinear(const PixelArray2d& pixels, glm::vec2 uv) noexcept
@@ -540,88 +578,122 @@ namespace darmok
         return result;
     }
 
+    void Image::downsampleMip(
+        const bimg::ImageMip& srcMip,
+        bimg::ImageMip& dstMip) noexcept
+    {
+        const auto* src = reinterpret_cast<const glm::vec4*>(srcMip.m_data);
+        auto* dst = reinterpret_cast<glm::vec4*>(const_cast<uint8_t*>(dstMip.m_data));
+
+        const uint32_t srcWidth = srcMip.m_width;
+        const uint32_t srcHeight = srcMip.m_height;
+        const uint32_t dstWidth = dstMip.m_width;
+        const uint32_t dstHeight = dstMip.m_height;
+
+        for(uint32_t y = 0; y < dstHeight; ++y)
+        {
+            const uint32_t sy0 = y * 2;
+            const uint32_t sy1 = std::min(sy0 + 1, srcHeight - 1);
+
+            for(uint32_t x = 0; x < dstWidth; ++x)
+            {
+                const uint32_t sx0 = x * 2;
+                const uint32_t sx1 = std::min(sx0 + 1, srcWidth - 1);
+
+                const auto a = src[sy0 * srcWidth + sx0];
+                const auto b = src[sy0 * srcWidth + sx1];
+                const auto c = src[sy1 * srcWidth + sx0];
+                const auto d = src[sy1 * srcWidth + sx1];
+
+                dst[y * dstWidth + x] = (a + b + c + d) * 0.25f;
+            }
+        }
+    }
+
+    void Image::copyMip(
+        const bimg::ImageMip& srcMip,
+        bimg::ImageMip& dstMip) noexcept
+    {
+        std::memcpy(const_cast<uint8_t*>(dstMip.m_data), srcMip.m_data, srcMip.m_size);
+    }
+
     expected<Image, std::string> Image::generateMips() const noexcept
     {
         if(!_container)
         {
             return unexpected{"image is empty"};
         }
-        if (_container->m_numMips != 1)
+
+        if(_container->m_numMips != 1)
         {
-            return unexpected{"image already has mips"};
+            return unexpected{"image already has mipmaps"};
         }
 
-        auto convertResult = convertFormat(bimg::TextureFormat::RGBA8);
-        if (!convertResult)
+        if(_container->m_format != bimg::TextureFormat::RGBA32F)
         {
-            return convertResult;
+            return unexpected{"mipmap generation only supports RGBA32F"};
         }
 
-        auto rgba = std::move(convertResult).value();
+        const auto numMips = getMaxMipCount();
 
-        const uint8_t numMips = rgba.getMaxMipCount();
-
-        bimg::ImageContainer* dstContainer = bimg::imageAlloc(
+        auto* container = bimg::imageAlloc(
             _container->m_allocator,
-            bimg::TextureFormat::RGBA8,
-            rgba.getSize().x,
-            rgba.getSize().y,
-            rgba.getDepth(),
-            rgba.getLayerCount(),
-            rgba.isCubeMap(),
+            _container->m_format,
+            _container->m_width,
+            _container->m_height,
+            _container->m_depth,
+            _container->m_numLayers,
+            _container->m_cubeMap,
             true);
 
-        if(!dstContainer)
+        if(!container)
         {
-            return unexpected{"failed to allocate mipmap chain"};
+            return unexpected{"failed to allocate mipmaps"};
         }
 
-        dstContainer->m_numMips = numMips;
-        dstContainer->m_hasAlpha = rgba._container->m_hasAlpha;
-        dstContainer->m_srgb = rgba._container->m_srgb;
-        dstContainer->m_orientation = rgba._container->m_orientation;
-        Image dst{dstContainer};
+        Image image{container};
 
-        auto srcMip = rgba.getMip(0, 0);
-        if(!srcMip)
+        const auto sideCount = _container->m_cubeMap
+                                   ? _container->m_numLayers * 6
+                                   : _container->m_numLayers;
+
+        // Copy the original image into mip 0.
+        for(uint16_t side = 0; side < sideCount; ++side)
         {
-            return unexpected{"failed to get source mip level 0"};
+            auto src = getMip(side, 0);
+            auto dst = image.getMip(side, 0);
+
+            if(!src || !dst)
+            {
+                return unexpected{
+                    std::format("failed to access mip 0, side {}", side)};
+            }
+
+            copyMip(*src, *dst);
         }
 
-        auto dstMip = dst.getMip(0, 0);
-        if(!dstMip)
-        {
-            return unexpected{"failed to get destination mip level 0"};
-        }
-
-        std::memcpy(const_cast<uint8_t*>(dstMip->m_data), srcMip->m_data, srcMip->m_size);
-
-        // Generate the remaining mips.
+        // Generate the remaining mip levels from the previous level.
         for(uint8_t level = 1; level < numMips; ++level)
         {
-            srcMip = dst.getMip(0, level - 1);
-            if(!srcMip)
+            for(uint16_t side = 0; side < sideCount; ++side)
             {
-                return unexpected{"failed to get source mip"};
-            }
+                auto src = image.getMip(side, level - 1);
+                auto dst = image.getMip(side, level);
 
-            dstMip = dst.getMip(0, level);
-            if(!dstMip)
-            {
-                return unexpected{"failed to get destination mip"};
-            }
+                if(!src || !dst)
+                {
+                    return unexpected{
+                        std::format(
+                            "failed to access mip {}, side {}",
+                            level,
+                            side)};
+                }
 
-            bimg::imageRgba8Downsample2x2(
-                const_cast<uint8_t*>(dstMip->m_data),
-                srcMip->m_width,
-                srcMip->m_height,
-                srcMip->m_depth,
-                srcMip->m_width * 4,
-                dstMip->m_width * 4,
-                srcMip->m_data);
+                downsampleMip(*src, *dst);
+            }
         }
 
-        return dst;
+        return image;
     }
 
     uint8_t Image::getMipCountForSize(glm::uint size)
@@ -672,7 +744,7 @@ namespace darmok
             return 0;
         }
         return bimg::imageGetNumMips(
-            bimg::TextureFormat::RGBA8,
+            _container->m_format,
             _container->m_width,
             _container->m_height,
             _container->m_depth);

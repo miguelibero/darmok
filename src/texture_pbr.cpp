@@ -508,7 +508,7 @@ namespace darmok
             config.set_format(Texture::Definition::RG16F);
             config.set_type(Texture::Definition::Texture2D);
             config.set_mips(false);
-            config.set_depth(0);
+            config.set_depth(1);
             config.set_layers(1);
 
             return def;
@@ -637,7 +637,7 @@ namespace darmok
             config.set_format(Texture::Definition::RGBA32F);
             config.set_type(Texture::Definition::CubeMap);
             config.set_mips(false);
-            config.set_depth(0);
+            config.set_depth(1);
             config.set_layers(1);
 
             return def;
@@ -746,7 +746,7 @@ namespace darmok
             config.set_format(Texture::Definition::RGBA32F);
             config.set_type(Texture::Definition::CubeMap);
             config.set_mips(true);
-            config.set_depth(0);
+            config.set_depth(1);
             config.set_layers(1);
 
             return def;
