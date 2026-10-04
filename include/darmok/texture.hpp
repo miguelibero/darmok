@@ -189,21 +189,24 @@ namespace darmok
 	class TextureDefinitionFromSourceLoader final : public FromDefinitionLoader<ITextureDefinitionFromSourceLoader, ITextureSourceLoader>
 	{
 	public:
-		TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept;
+        TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, OptionalRef<bx::AllocatorI> alloc = {}) noexcept;
 	private:
 		Result create(std::shared_ptr<protobuf::TextureSource> src) noexcept override;
-		bx::AllocatorI& _alloc;
+        OptionalRef<bx::AllocatorI> _alloc;
+        bx::DefaultAllocator _defaultAlloc;
+
 	};
 
-	class DARMOK_EXPORT TextureFileImporter final : public ProtobufFileImporter<ImageTextureDefinitionLoader>
+	class DARMOK_EXPORT TextureFileImporter final : public IFileTypeImporter
 	{
 	public:
-		TextureFileImporter();
+        TextureFileImporter(OptionalRef<bx::AllocatorI> alloc = {});
+        const std::string& getName() const noexcept override;
+        expected<Effect, std::string> prepare(const Input& input) noexcept override;
+        expected<void, std::string> operator()(const Input& input, Config& config) noexcept override;
 	private:
-		bx::DefaultAllocator _alloc;
-		FileDataLoader _dataLoader;
-		ImageLoader _imgLoader;
-		ImageTextureDefinitionLoader _defLoader;
+        BaseImageFileImporter _imgImporter;
+        protobuf::Format _outputFormat;
 	};
 
 	namespace protobuf

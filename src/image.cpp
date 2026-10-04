@@ -7,11 +7,13 @@
 #include <darmok/texture.hpp>
 #include <darmok/string.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/math.hpp>
+#include <darmok/multiarray.hpp>
 
 #include <stdexcept>
 #include <bx/readerwriter.h>
 #include <bimg/decode.h>
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum.hpp>
 #include <magic_enum/magic_enum_format.hpp>
 
@@ -88,6 +90,37 @@ namespace darmok
 	{
 		std::memset(_container->m_data, 0, _container->m_size);
 	}
+
+    Image::Image(const PixelArray2d& pixels, bx::AllocatorI& alloc) noexcept
+        : _container{bimg::imageAlloc(
+            &alloc,
+            bimg::TextureFormat::RGBA32F,
+            pixels.extent(0),
+            pixels.extent(1),
+            1,
+            1,
+            false,
+            false,
+            pixels.data())
+        }
+    {
+    }
+
+    Image::Image(const PixelArray3d& cubePixels, bx::AllocatorI& alloc) noexcept
+        : _container{
+              bimg::imageAlloc(
+                  &alloc,
+                  bimg::TextureFormat::RGBA32F,
+                  cubePixels.extent(2),
+                  cubePixels.extent(1),
+                  cubePixels.extent(0),
+                  1,
+                  true,
+                  false,
+                  cubePixels.data())
+        }
+    {
+    }
 
 	Image::Image(const Image& other) noexcept
 		: _container{ nullptr }
@@ -231,7 +264,7 @@ namespace darmok
 			bimg::imageWriteKtx(&writer, format, isCubeMap(), size.x, size.y, getDepth(), getMipCount(), getLayerCount(), srgb, ptr, &err);
 			break;
 		default:
-			return unexpected{ fmt::format("cannot encode encoding {}", encoding) };
+			return unexpected{ std::format("cannot encode encoding {}", encoding) };
 		}
 		if (auto errMsg = checkError(err))
 		{
@@ -399,6 +432,112 @@ namespace darmok
             return unexpected{"failed to convert image"};
         }
         return Image{converted};
+    }
+
+    expected<PixelArray2d, std::string> Image::loadMipData(const bimg::ImageMip& mip) noexcept
+    {
+        if(mip.m_format != bimg::TextureFormat::RGBA32F)
+        {
+            return unexpected{"format is not RGBA32F"};
+        }
+        return PixelArray2d::load(DataView{mip.m_data, mip.m_size}, {mip.m_width, mip.m_height});
+    }
+
+    expected<PixelArray2d, std::string> Image::getPixels() const noexcept
+    {
+        auto convertResult = convertFormat(bimg::TextureFormat::RGBA32F);
+        if(!convertResult)
+        {
+            return unexpected{std::format("Failed to convert image: {}", convertResult.error())};
+        }
+        auto mipResult = convertResult->getMip(0, 0);
+        if(!mipResult)
+        {
+            return unexpected{std::format("Failed to get image mip: {}", mipResult.error())};
+        }
+        auto arrayResult = loadMipData(mipResult.value());
+        if(!arrayResult)
+        {
+            return unexpected{std::format("Failed to convert image mip to array: {}", arrayResult.error())};
+        }
+        return arrayResult;
+    }
+
+    glm::vec4 Image::sampleBilinear(const PixelArray2d& pixels, glm::vec2 uv) noexcept
+    {
+        uv.x = glm::fract(uv.x);
+        uv.y = glm::clamp(uv.y, 0.0f, 1.0f);
+
+        const glm::vec2 pos =
+            uv * glm::vec2(pixels.size()) - 0.5f;
+
+        const glm::ivec2 p = glm::ivec2(glm::floor(pos));
+        const glm::vec2 f = glm::fract(pos);
+
+        const auto x = [&pixels](int x)
+        {
+            return static_cast<glm::uint>(
+                (x % static_cast<int>(pixels.extent(0)) +
+                 static_cast<int>(pixels.extent(0))) %
+                static_cast<int>(pixels.extent(0)));
+        };
+
+        const auto y = [&pixels](int y)
+        {
+            return static_cast<glm::uint>(
+                std::clamp(
+                    y,
+                    0,
+                    static_cast<int>(pixels.extent(1)) - 1));
+        };
+
+        const auto a = pixels(x(p.x), y(p.y));
+        const auto b = pixels(x(p.x + 1), y(p.y));
+        const auto c = pixels(x(p.x), y(p.y + 1));
+        const auto d = pixels(x(p.x + 1), y(p.y + 1));
+
+        return glm::mix(
+            glm::mix(a, b, f.x),
+            glm::mix(c, d, f.x),
+            f.y);
+    }
+
+    expected<PixelArray3d, std::string> Image::convertEquirectangularCubemap(const PixelArray2d& pixels) noexcept
+    {
+        if(pixels.extent(0) != pixels.extent(1) * 2)
+        {
+            return std::unexpected{"invalid equirectangular image dimensions"};
+        }
+
+        const auto faceSize = pixels.extent(0) / 4;
+
+        PixelArray3d result{6, faceSize, faceSize};
+
+        for(glm::uint face = 0; face < 6; ++face)
+        {
+            for(glm::uint y = 0; y < faceSize; ++y)
+            {
+                for(glm::uint x = 0; x < faceSize; ++x)
+                {
+                    const glm::vec2 uv =
+                        (glm::vec2(x, y) + 0.5f) /
+                        static_cast<float>(faceSize);
+
+                    const glm::vec2 p = uv * 2.0f - 1.0f;
+
+                    const auto direction =
+                        Math::cubeDirection(face, p);
+
+                    const auto sourceUV =
+                        Math::equirectangularUV(direction);
+
+                    result(face, y, x) =
+                        sampleBilinear(pixels, sourceUV);
+                }
+            }
+        }
+
+        return result;
     }
 
     expected<Image, std::string> Image::generateMips() const noexcept
@@ -588,12 +727,29 @@ namespace darmok
 		return config;
 	}
 
-	ImageLoader::ImageLoader(IDataLoader& dataLoader, bx::AllocatorI& alloc, bool generateMips) noexcept
+	ImageLoader::ImageLoader(IDataLoader& dataLoader, OptionalRef<bx::AllocatorI> alloc) noexcept
 		: _dataLoader{ dataLoader }
 		, _alloc{ alloc }
-        , _generateMips{ generateMips }
 	{
 	}
+
+    ImageLoader& ImageLoader::addConverter(IImageConverter& converter) noexcept
+    {
+        _converters.emplace_back(&converter);
+        return *this;
+    }
+
+    bool ImageLoader::removeConverter(IImageConverter& converter) noexcept
+    {
+        auto itr = std::ranges::find_if(_converters, [&converter](auto c)
+                                        { return c.ptr() == &converter; });
+        if(itr != _converters.end())
+        {
+            _converters.erase(itr);
+            return true;
+        }
+        return false;
+    }
 
 	ImageLoader::Result ImageLoader::operator()(std::filesystem::path path) noexcept
 	{
@@ -602,132 +758,206 @@ namespace darmok
 		{
 			return unexpected{ std::move(dataResult).error() };
 		}
-		auto loadResult = Image::load(dataResult.value(), _alloc);
+        auto& alloc = _alloc ? *_alloc : _defaultAlloc;
+		auto loadResult = Image::load(dataResult.value(), alloc);
 		if (!loadResult)
 		{
 			return unexpected{ std::move(loadResult).error() };
 		}
         auto img = std::move(loadResult).value();
-        if (_generateMips && img.getMipCount() == 1)
+        for(auto& converter : _converters)
+        {
+            auto convertResult = (*converter)(img);
+            if(!convertResult)
+            {
+                return unexpected{std::move(convertResult).error()};
+            }
+            img = std::move(convertResult).value();
+        }
+        
+		return std::make_shared<Image>(img);
+	}
+
+    expected<Image, std::string> GenerateMipsImageConverter::operator()(const Image& source) noexcept
+    {
+        return source.generateMips();
+    }
+
+    BaseImageFileImporter::BaseImageFileImporter(OptionalRef<bx::AllocatorI> alloc)
+        : _alloc{alloc}
+        , _convertCubemap{false}
+        , _generateMips{true}
+        , _format{bimg::TextureFormat::Count}
+    {
+    }
+
+    expected<void, std::string> BaseImageFileImporter::prepare(const Input& input) noexcept
+    {
+        _cubemapFaces.reset();
+
+        auto itr = input.config.find("cubemap");
+        if(itr != input.config.end())
+        {
+            auto& faces = _cubemapFaces.emplace();
+            size_t i = 0;
+            for(auto& elm : *itr)
+            {
+                auto path = input.basePath / elm.get<std::filesystem::path>();
+                faces[i] = path;
+                ++i;
+            }
+        }
+        itr = input.config.find("convertCubemap");
+        if(itr != input.config.end())
+        {
+            _convertCubemap = itr->get<bool>();
+        }
+        itr = input.config.find("generateMips");
+        if(itr != input.config.end())
+        {
+            _generateMips = itr->get<bool>();
+        }
+
+        static constexpr std::string_view formatKey = "outputFormat";
+        std::string formatStr;
+        itr = input.config.find(formatKey);
+        if(itr != input.config.end())
+        {
+            formatStr = *itr;
+        }
+        else
+        {
+            itr = input.dirConfig.find(formatKey);
+            if(itr != input.dirConfig.end())
+            {
+                formatStr = *itr;
+            }
+        }
+        _format = Image::readFormat(formatStr);
+
+        return {};
+    }
+
+    FileImportDependencies BaseImageFileImporter::getDependencies() const noexcept
+    {
+        return _cubemapFaces ? FileImportDependencies(_cubemapFaces->begin(), _cubemapFaces->end()) : FileImportDependencies{};
+    }
+
+    expected<Image, std::string> BaseImageFileImporter::operator()(const Input& input) noexcept
+    {        
+        expected<Image, std::string> loadResult = std::unexpected{""};
+        auto& alloc = _alloc ? *_alloc : _defaultAlloc;
+        if(_cubemapFaces)
+        {
+            std::array<Data, 6> faceData;
+            std::array<DataView, 6> faceDataView;
+            size_t i = 0;
+            for(auto& facePath : _cubemapFaces.value())
+            {
+                auto readResult = Data::fromFile(facePath);
+                if(!readResult)
+                {
+                    return unexpected{"failed to read face data: " + readResult.error()};
+                }
+                faceData[i] = readResult.value();
+                faceDataView[i] = faceData[i];
+                ++i;
+            }
+            loadResult = Image::load(faceDataView, alloc, _format);
+        }
+        else
+        {
+            auto readResult = Data::fromFile(input.path);
+            if(!readResult)
+            {
+                return unexpected{"failed to read data: " + readResult.error()};
+            }
+
+            loadResult = Image::load(readResult.value(), alloc, _format);
+        }
+
+        if(!loadResult)
+        {
+            return unexpected{"failed to load image " + loadResult.error()};
+        }
+
+        auto img = std::move(loadResult).value();
+
+        if(_convertCubemap)
+        {
+            auto pixelsResult = img.getPixels();
+            if(!pixelsResult)
+            {
+                return unexpected{"failed to get pixels: " + pixelsResult.error()};
+            }
+            auto cubemapResult = Image::convertEquirectangularCubemap(pixelsResult.value());
+            if(!cubemapResult)
+            {
+                return unexpected{"failed to convert equirectangular to cubemap: " + cubemapResult.error()};
+            }
+            img = Image{cubemapResult.value(), alloc};
+        }
+
+        if(_generateMips && img.getMipCount() == 1)
         {
             auto mipsResult = img.generateMips();
-            if (!mipsResult)
+            if(!mipsResult)
             {
                 return unexpected{std::move(mipsResult).error()};
             }
             img = std::move(mipsResult).value();
         }
-		return std::make_shared<Image>(img);
-	}
+
+        return img;
+    }
 
 	ImageFileImporter::ImageFileImporter(OptionalRef<bx::AllocatorI> alloc) noexcept
-		: _alloc{alloc}
-        , _outputEncoding{ ImageEncoding::Count }
+        : _base{alloc}
 	{
 	}
 
 	expected<ImageFileImporter::Effect, std::string> ImageFileImporter::prepare(const Input& input) noexcept
 	{
-		Effect effect;
-		if (input.config.is_null())
-		{
-			return effect;
-		}
+        Effect effect;
+        if(input.config.is_null())
+        {
+            return effect;
+        }
 
-		auto outputPath = input.getOutputPath(".ktx");
-		_outputEncoding = Image::getEncodingForPath(outputPath);
-		if (_outputEncoding == ImageEncoding::Count)
-		{
-			return unexpected{ "unknown output encoding" };
-		}
+        auto baseResult = _base.prepare(input);
+        if(!baseResult)
+        {
+            return unexpected{std::move(baseResult).error()};
+        }
+        effect.dependencies = _base.getDependencies();
 
-		effect.outputs.emplace_back(outputPath, true);
+        auto outputPath = input.getOutputPath(".ktx");
+        _outputEncoding = Image::getEncodingForPath(outputPath);
+        if(_outputEncoding == ImageEncoding::Count)
+        {
+            return unexpected{"unknown output encoding"};
+        }
 
-		_cubemapFaces.reset();
+        effect.outputs.emplace_back(outputPath, true);
 
-		auto itr = input.config.find("cubemap");
-		if (itr != input.config.end())
-		{
-			auto& faces = _cubemapFaces.emplace();
-			size_t i = 0;
-			for (auto& elm : *itr)
-			{
-				auto path = input.basePath / elm.get<std::filesystem::path>();
-				effect.dependencies.insert(path);
-				faces[i] = path;
-				++i;
-			}
-		}
-
-		return effect;
+        return effect;
 	}
 
 	expected<void, std::string> ImageFileImporter::operator()(const Input& input, Config& config) noexcept
 	{
-		static constexpr std::string_view formatKey = "outputFormat";
-		std::string formatStr;
-		auto itr = input.config.find(formatKey);
-		if (itr != input.config.end())
-		{
-			formatStr = *itr;
-		}
-		else
-		{
-			itr = input.dirConfig.find(formatKey);
-			if (itr != input.dirConfig.end())
-			{
-				formatStr = *itr;
-			}
-		}
-		auto format = Image::readFormat(formatStr);
-        auto& alloc = _alloc ? *_alloc : _defaultAlloc;
-		for (auto& optOut : config.outputStreams)
-		{
-			if (!optOut)
-			{
-				continue;
-			}
-			auto& out = *optOut;
-			expected<void, std::string> writeResult;
-			if (_cubemapFaces)
-			{
-				std::array<Data, 6> faceData;
-				std::array<DataView, 6> faceDataView;
-				size_t i = 0;
-				for (auto& facePath : _cubemapFaces.value())
-				{
-					auto readResult = Data::fromFile(facePath);
-					if (!readResult)
-					{
-						return unexpected{ "failed to read face data: " + readResult.error() };
-					}
-					faceData[i] = readResult.value();
-					faceDataView[i] = faceData[i];
-					++i;
-				}
-				auto imgResult = Image::load(faceDataView, alloc, format);
-				if (!imgResult)
-				{
-					return unexpected{ "failed to load image " + imgResult.error() };
-				}
-				writeResult = imgResult.value().write(_outputEncoding, out);
-			}
-			else
-			{
-				auto readResult = Data::fromFile(input.path);
-				if (readResult)
-				{
-					return unexpected{ "failed to read data: " + readResult.error() };
-				}
-
-				auto loadResult = Image::load(readResult.value(), alloc, format);
-				if (loadResult)
-				{
-					return unexpected{ "failed to load image: " + loadResult.error() };
-				}
-				writeResult = loadResult.value().write(_outputEncoding, out);
-			}
-
+        auto loadResult = _base(input);
+        if(!loadResult)
+        {
+            return unexpected{"failed to load image: " + loadResult.error()};
+        }
+        auto img = std::move(loadResult).value();
+        for(auto& optOut : config.outputStreams)
+        {
+            if(!optOut)
+            {
+                continue;
+            }
+            auto writeResult = img.write(_outputEncoding, *optOut);
 			if (!writeResult)
 			{
 				return unexpected{ "failed to write image: " + writeResult.error() };

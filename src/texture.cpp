@@ -619,7 +619,7 @@ namespace darmok
 		return key;
 	}
 
-	TextureDefinitionFromSourceLoader::TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, bx::AllocatorI& alloc) noexcept
+	TextureDefinitionFromSourceLoader::TextureDefinitionFromSourceLoader(ITextureSourceLoader& srcLoader, OptionalRef<bx::AllocatorI> alloc) noexcept
 		: FromDefinitionLoader(srcLoader)
 		, _alloc{ alloc }
 	{
@@ -628,7 +628,8 @@ namespace darmok
 	TextureDefinitionFromSourceLoader::Result TextureDefinitionFromSourceLoader::create(std::shared_ptr<protobuf::TextureSource> src) noexcept
 	{
 		auto def = std::make_shared<protobuf::Texture>();
-		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, _alloc);
+        auto& alloc = _alloc ? *_alloc : _defaultAlloc;
+		auto result = TextureDefinitionWrapper{ *def }.loadSource(*src, alloc);
 		if(!result)
 		{
 			return unexpected{ result.error() };
@@ -636,11 +637,81 @@ namespace darmok
 		return def;
 	}
 
-	TextureFileImporter::TextureFileImporter()
-		: _dataLoader{ _alloc }
-		, _imgLoader{ _dataLoader, _alloc }
-		, _defLoader{ _imgLoader }
-		, ProtobufFileImporter<ImageTextureDefinitionLoader>(_defLoader, "texture")
+	TextureFileImporter::TextureFileImporter(OptionalRef<bx::AllocatorI> alloc)
+        : _imgImporter{alloc}
+        , _outputFormat{protobuf::Format::Binary}
 	{
 	}
+
+    const std::string& TextureFileImporter::getName() const noexcept
+    {
+        static const std::string name = "texture";
+        return name;
+    }
+
+    expected<TextureFileImporter::Effect, std::string> TextureFileImporter::prepare(const Input& input) noexcept
+    {
+        Effect effect;
+        if(input.config.is_null())
+        {
+            return effect;
+        }
+
+        auto imgResult = _imgImporter.prepare(input);
+        if(!imgResult)
+        {
+            return unexpected{std::move(imgResult).error()};
+        }
+        effect.dependencies = _imgImporter.getDependencies();
+
+        auto outputPath = input.getOutputPath(".pb");
+        std::optional<protobuf::Format> outputFormat;
+        if(auto jsonOutputFormat = input.getConfigField("outputFormat"))
+        {
+            outputFormat = protobuf::getFormat(jsonOutputFormat->get<std::string_view>());
+        }
+        if(outputFormat)
+        {
+            _outputFormat = *outputFormat;
+        }
+        else
+        {
+            _outputFormat = protobuf::getPathFormat(outputPath);
+        }
+        auto binary = _outputFormat == protobuf::Format::Binary;
+        effect.outputs.emplace_back(outputPath, binary);
+        return effect;
+    }
+
+    expected<void, std::string> TextureFileImporter::operator()(const Input& input, Config& config) noexcept
+    {
+        auto imgResult = _imgImporter(input);
+        if(!imgResult)
+        {
+            return unexpected{std::move(imgResult).error()};
+        }
+        auto img = std::move(imgResult).value();
+
+        Texture::Definition def;
+        auto loadResult = TextureDefinitionWrapper{def}.loadImage(img);
+        if(!loadResult)
+        {
+            return unexpected{loadResult.error()};
+        }
+
+        for(auto& out : config.outputStreams)
+        {
+            if(!out)
+            {
+                continue;
+            }
+            auto result = protobuf::write(def, *out, _outputFormat);
+            if(!result)
+            {
+                return unexpected{result.error()};
+            }
+        }
+        return {};
+    }
 }
+

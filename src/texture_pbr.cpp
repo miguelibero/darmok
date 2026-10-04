@@ -1,6 +1,7 @@
 #include <darmok/texture_pbr.hpp>
 #include <darmok/multiarray.hpp>
-#include <fmt/format.h>
+#include <darmok/math.hpp>
+#include <format>
 #include <magic_enum/magic_enum_format.hpp>
 
 namespace darmok
@@ -268,9 +269,6 @@ namespace darmok
 
             return {u, v};
         }
-
-        using PixelArray2d = Array2d<glm::vec4, uint32_t>;
-        using PixelArray3d = Array3d<glm::vec4, uint32_t>;
 
         glm::vec3 sampleEquirectangular(
             const PixelArray2d& pixels,
@@ -605,43 +603,6 @@ namespace darmok
             return createHalfFloatDefinition(std::move(pixels), size);
         }
 
-        expected<PixelArray2d, std::string> loadMipData(const bimg::ImageMip& mip)
-        {
-            if (mip.m_format != bimg::TextureFormat::RGBA32F)
-            {
-                return unexpected{"format is not RGBA32F"};
-            }
-            return PixelArray2d::load(DataView{mip.m_data, mip.m_size}, {mip.m_width, mip.m_height});
-        }
-
-        glm::vec3 cubeDirection(
-            uint32_t face,
-            uint32_t x,
-            uint32_t y,
-            uint32_t size)
-        {
-            float a = 2.0f * (float(x) + 0.5f) / float(size) - 1.0f;
-            float b = 2.0f * (float(y) + 0.5f) / float(size) - 1.0f;
-
-            switch(face)
-            {
-            case 0:
-                return glm::normalize(glm::vec3(1.0f, -b, -a)); // +X
-            case 1:
-                return glm::normalize(glm::vec3(-1.0f, -b, a)); // -X
-            case 2:
-                return glm::normalize(glm::vec3(a, 1.0f, b)); // +Y
-            case 3:
-                return glm::normalize(glm::vec3(a, -1.0f, -b)); // -Y
-            case 4:
-                return glm::normalize(glm::vec3(a, -b, 1.0f)); // +Z
-            case 5:
-                return glm::normalize(glm::vec3(-a, -b, -1.0f)); // -Z
-            default:
-                return {};
-            }
-        }
-
         Definition createEnvironmentIrradianceDefinition(const PixelArray2d& source, uint32_t size, uint32_t sampleCount)
         {
             // 6 faces × width × height × RGBA
@@ -654,7 +615,7 @@ namespace darmok
                     for(uint32_t x = 0; x < size; ++x)
                     {
                         glm::vec3 N =
-                            cubeDirection(face, x, y, size);
+                            Math::cubeDirection(face, x, y, size);
 
                         glm::vec3 irradiance =
                             integrateIrradiance(
@@ -708,7 +669,7 @@ namespace darmok
                         for(uint32_t x = 0; x < mipSize; ++x)
                         {
                             glm::vec3 N =
-                                cubeDirection(
+                                Math::cubeDirection(
                                     face,
                                     x,
                                     y,
@@ -952,27 +913,17 @@ namespace darmok
         auto dataResult = Data::fromFile(input.path, alloc);
         if(!dataResult)
         {
-            return unexpected{fmt::format("Failed to read file: {}", dataResult.error())};
+            return unexpected{std::format("Failed to read file: {}", dataResult.error())};
         }
         auto imgResult = Image::load(dataResult.value(), alloc);
         if (!imgResult)
         {
-            return unexpected{fmt::format("Failed to load image: {}", imgResult.error())};
+            return unexpected{std::format("Failed to load image: {}", imgResult.error())};
         }
-        auto convertResult = imgResult->convertFormat(bimg::TextureFormat::RGBA32F);
-        if(!convertResult)
-        {
-            return unexpected{fmt::format("Failed to convert image: {}", convertResult.error())};
-        }
-        auto mipResult = convertResult->getMip(0, 0);
-        if(!mipResult)
-        {
-            return unexpected{fmt::format("Failed to get image mip: {}", mipResult.error())};
-        }
-        auto arrayResult = loadMipData(mipResult.value());
+        auto arrayResult = imgResult->getPixels();
         if(!arrayResult)
         {
-            return unexpected{fmt::format("Failed to convert image mip to array: {}", arrayResult.error())};
+            return unexpected{std::format("Failed to convert image mip to array: {}", arrayResult.error())};
         }
 
         auto pixels = std::move(arrayResult).value();

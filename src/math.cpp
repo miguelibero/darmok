@@ -35,12 +35,6 @@ namespace darmok
         return hd ? -1.F : 0.F;
     }
 
-    const float Math::defaultPerspNear = 0.1F;
-    const float Math::defaultPerspFar = 1000.F;
-
-    const float Math::defaultOrthoNear = -0.1F;
-    const float Math::defaultOrthoFar = 1000.F;
-
     glm::mat4 Math::perspective(float fovy, float aspect, float near, float far) noexcept
     {
         glm::mat4 v;
@@ -217,5 +211,49 @@ namespace darmok
         return glm::slerp(current, target, t);
 
         return target;
+    }
+
+    glm::vec3 Math::cubeDirection(
+        uint32_t face,
+        uint32_t x,
+        uint32_t y,
+        uint32_t size) noexcept
+    {
+        float a = 2.0f * (float(x) + 0.5f) / float(size) - 1.0f;
+        float b = 2.0f * (float(y) + 0.5f) / float(size) - 1.0f;
+
+        return cubeDirection(face, glm::vec2(a, b));
+    }
+
+    glm::vec3 Math::cubeDirection(
+        uint32_t face,
+        const glm::vec2& uv) noexcept
+    {
+        switch(face)
+        {
+        case 0:
+            return glm::normalize(glm::vec3(1.0f, -uv.y, -uv.x)); // +X
+        case 1:
+            return glm::normalize(glm::vec3(-1.0f, -uv.y, uv.x)); // -X
+        case 2:
+            return glm::normalize(glm::vec3(uv.x, 1.0f, uv.y)); // +Y
+        case 3:
+            return glm::normalize(glm::vec3(uv.x, -1.0f, -uv.y)); // -Y
+        case 4:
+            return glm::normalize(glm::vec3(uv.x, -uv.y, 1.0f)); // +Z
+        case 5:
+            return glm::normalize(glm::vec3(-uv.x, -uv.y, -1.0f)); // -Z
+        default:
+            return {};
+        }
+    }
+
+    glm::vec2 Math::equirectangularUV(const glm::vec3& dir) noexcept
+    {
+        constexpr auto pi = glm::pi<float>();
+
+        return {
+            std::atan2(dir.z, dir.x) / (2.0f * pi) + 0.5f,
+            0.5f - std::asin(glm::clamp(dir.y, -1.0f, 1.0f)) / pi};
     }
 }

@@ -505,7 +505,7 @@ namespace darmok
 
     FileDataLoader::FileDataLoader(const OptionalRef<bx::AllocatorI>& alloc)
         : _alloc{ alloc }
-        , _absolutePathsAllowed{ false }
+        , _absolutePathsAllowed{ true }
     {
     }
 
@@ -543,15 +543,36 @@ namespace darmok
         _absolutePathsAllowed = allowed;
     }
 
+    bool FileDataLoader::isSubpath(const std::filesystem::path& base, const std::filesystem::path& path) noexcept
+    {
+        auto rel = path.lexically_relative(base);
+
+        if (rel.empty())
+        {
+            return false;
+        }
+
+        auto itr = rel.begin();
+        return itr == rel.end() || *itr != "..";
+    }
+
     expected<Data, std::string> FileDataLoader::operator()(const std::filesystem::path& path) noexcept
     {
         if (path.is_absolute())
         {
-            if (!_absolutePathsAllowed)
+            if (_absolutePathsAllowed)
             {
-                return unexpected{ "absolute paths not allowed"};
+                return Data::fromFile(path, _alloc);
             }
-            return Data::fromFile(path, _alloc);
+            for(auto& rootPath : _rootPaths)
+            {
+                auto basePath = rootPath / _basePath;
+                if(isSubpath(basePath, path))
+                {
+                    return Data::fromFile(path, _alloc);
+                }
+            }
+            return unexpected{"paths outside of root"};
         }
         auto fpath = (_basePath / path).relative_path();
         for (auto& rootPath : _rootPaths)
