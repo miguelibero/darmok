@@ -337,7 +337,7 @@ namespace darmok::editor
         cam.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
 
         std::shared_ptr<Texture> skybox;
-        DARMOK_TRY_VALUE(skybox, _app.getAssets().getTextureLoader()("cubemap.ktx"));
+        DARMOK_TRY_VALUE(skybox, _app.getAssets().getTextureLoader()("skybox.bin"));
         DARMOK_TRY(cam.addComponent<SkyboxRenderer>(skybox));
         DARMOK_TRY(cam.addComponent<GridRenderer>());
         DARMOK_TRY(cam.addComponent<LightingRenderComponent>());

@@ -2,8 +2,9 @@
     "files": {
         "noto.ttf": "copy",
         "MaterialIcons-Regular.ttf": "copy",
-        "cubemap.ktx": {
-            "image": {
+        "skybox": {
+            "texture": {
+                "outputPath": "skybox.bin",
                 "cubemap": [
                     "cubemap_0.png",
                     "cubemap_1.png",
