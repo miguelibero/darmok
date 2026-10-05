@@ -144,7 +144,14 @@ namespace darmok::editor
 		{
 			changed = true;
 		}
-			
+        if(renderTextureInput(mat, Material::TextureDefinition::EnvironmentIrradiance))
+        {
+            changed = true;
+        }
+        if(renderTextureInput(mat, Material::TextureDefinition::EnvironmentPrefiltered))
+        {
+            changed = true;
+        }
 		return changed;
 	}
 }

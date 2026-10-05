@@ -184,8 +184,8 @@ namespace
 			auto shadowDef = ShadowRenderer::createDefinition();
             shadowDef.set_map_size(4096);
 
-			cam.tryAddComponent<ForwardRenderer>();
-            // cam.tryAddComponent<DeferredRenderer>();
+			// cam.tryAddComponent<ForwardRenderer>();
+            cam.tryAddComponent<DeferredRenderer>();
             // cam.tryAddComponent<OcclusionCuller>();
 			cam.tryAddComponent<FrustumCuller>();
 			cam.tryAddComponent<LightingRenderComponent>();

@@ -21,18 +21,31 @@ namespace darmok
     class Mesh;
     class DeferredRenderer;
 
-    struct DARMOK_EXPORT DeferredGBuffer final
+    struct DARMOK_EXPORT DeferredGeoBuffer final
     {
-        std::shared_ptr<Texture> albedoMetallicTex;
-        std::shared_ptr<Texture> normalRoughnessOcclusionTex;
-        std::shared_ptr<Texture> emissiveTex;
-        std::shared_ptr<Texture> depthTex;
-        FrameBufferOwnedHandle handle;
-        glm::uvec2 size;
+        DeferredGeoBuffer(
+            Texture albedoMetallicTex,
+            Texture normalRoughnessOcclusionTex,
+            Texture emissiveTex,
+            Texture depthTex
+        ) noexcept;
 
-        static expected<DeferredGBuffer, std::string> load(const glm::uvec2& size) noexcept;
-        bool valid() const noexcept { return handle.valid(); }
+        static expected<DeferredGeoBuffer, std::string> load(const glm::uvec2& size) noexcept;
         void configureView(bgfx::ViewId viewId) const noexcept;
+        expected<void, std::string> render(bgfx::Encoder& encoder) const noexcept;
+        glm::uvec2 getSize() const noexcept;
+
+    private:
+        Texture _albedoMetallicTex;
+        Texture _normalRoughnessOcclusionTex;
+        Texture _emissiveTex;
+        Texture _depthTex;
+        FrameBufferOwnedHandle _handle;
+
+        UniformHandle _albedoMetallicUniform;
+        UniformHandle _normalRoughnessOcclusionUniform;
+        UniformHandle _emissiveUniform;
+        UniformHandle _depthUniform;
     };
 
     class DARMOK_EXPORT DeferredLightingRenderStep final : public IRenderChainStep
@@ -47,8 +60,8 @@ namespace darmok
         expected<void, std::string> render(bgfx::Encoder& encoder) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
 
-        void setCam(OptionalRef<Camera> cam) noexcept;
-        void setGBuffer(const DeferredGBuffer& gbuffer) noexcept;
+        void setCamera(OptionalRef<Camera> cam) noexcept;
+        void setGeoBuffer(const DeferredGeoBuffer& gbuffer) noexcept;
 
     private:
         std::shared_ptr<Program> _prog;
@@ -57,17 +70,7 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<FrameBuffer> _writeBuffer;
         std::optional<bgfx::ViewId> _viewId;
-
-        UniformHandle _albedoMetallicUniform;
-        UniformHandle _normalRoughnessOcclusionUniform;
-        UniformHandle _emissiveUniform;
-        UniformHandle _depthUniform;
-
-        std::shared_ptr<Texture> _albedoMetallicTex;
-        std::shared_ptr<Texture> _normalRoughnessOcclusionTex;
-        std::shared_ptr<Texture> _emissiveTex;
-        std::shared_ptr<Texture> _depthTex;
-
+        OptionalRef<const DeferredGeoBuffer> _gbuffer;
         BasicUniforms _basicUniforms;
     };
 
@@ -94,8 +97,8 @@ namespace darmok
 
         std::shared_ptr<Program> _geometryProg;
         std::optional<bgfx::ViewId> _viewId;
-        DeferredGBuffer _gbuffer;
+        std::optional<DeferredGeoBuffer> _gbuffer;
 
-        expected<void, std::string> recreateGBuffer() noexcept;
+        expected<void, std::string> recreateGeoBuffer() noexcept;
     };
 }

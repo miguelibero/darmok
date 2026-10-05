@@ -16,66 +16,93 @@
 
 namespace darmok
 {
-    // -------------------------------------------------------------------------
-    // DeferredGBuffer
-    // -------------------------------------------------------------------------
+    DeferredGeoBuffer::DeferredGeoBuffer(
+        Texture albedoMetallicTex,
+        Texture normalRoughnessOcclusionTex,
+        Texture emissiveTex,
+        Texture depthTex
+    ) noexcept
+        : _albedoMetallicTex{std::move(albedoMetallicTex)}
+        , _normalRoughnessOcclusionTex{std::move(normalRoughnessOcclusionTex)}
+        , _emissiveTex{std::move(emissiveTex)}
+        , _depthTex{std::move(depthTex)}
+        , _albedoMetallicUniform{"s_gbufferAlbedoMetallic",bgfx::UniformType::Sampler}
+        , _normalRoughnessOcclusionUniform{"s_gbufferNormalRoughnessOcclusion", bgfx::UniformType::Sampler}
+        , _emissiveUniform{"s_gbufferEmissive", bgfx::UniformType::Sampler}
+        , _depthUniform{"s_gbufferDepth", bgfx::UniformType::Sampler}
+    {
+        bgfx::TextureHandle handles[] = {_albedoMetallicTex.getHandle(),
+                                         _normalRoughnessOcclusionTex.getHandle(),
+                                         _emissiveTex.getHandle(),
+                                         _depthTex.getHandle()};
 
-    static Texture::Config makeGBufferColorConfig(const glm::uvec2& size, Texture::Format format) noexcept
+        _handle = bgfx::createFrameBuffer(4, handles);
+    }
+
+    glm::uvec2 DeferredGeoBuffer::getSize() const noexcept
+    {
+        return _albedoMetallicTex.getSize();
+    }
+
+    expected<DeferredGeoBuffer, std::string> DeferredGeoBuffer::load(const glm::uvec2& size) noexcept
     {
         Texture::Config cfg;
         *cfg.mutable_size() = convert<protobuf::Uvec2>(size);
-        cfg.set_format(format);
         cfg.set_type(Texture::Definition::Texture2D);
-        return cfg;
-    }
 
-    expected<DeferredGBuffer, std::string> DeferredGBuffer::load(const glm::uvec2& size) noexcept
-    {
-        DeferredGBuffer gb;
-        gb.size = size;
-
-        auto loadTex = [&](Texture::Format fmt) -> expected<std::shared_ptr<Texture>, std::string>
+        auto loadTexture = [&](Texture::Format format)
         {
-            auto r = Texture::load(makeGBufferColorConfig(size, fmt), BGFX_TEXTURE_RT);
-            if (!r) return unexpected{ std::move(r).error() };
-            return std::make_shared<Texture>(std::move(r).value());
+            cfg.set_format(format);
+            return Texture::load(cfg, BGFX_TEXTURE_RT);
         };
 
-        auto r0 = loadTex(Texture::Definition::RGBA8);
-        if (!r0) return unexpected{ r0.error() };
-        gb.albedoMetallicTex = std::move(r0).value();
+        auto albedoResult = loadTexture(Texture::Definition::RGBA8);
+        if(!albedoResult)
+        {
+            return unexpected{std::move(albedoResult).error()};
+        }
+        auto normalTesult = loadTexture(Texture::Definition::RGBA8);
+        if(!normalTesult)
+        {
+            return unexpected{std::move(normalTesult).error()};
+        }
+        auto emissiveResult = loadTexture(Texture::Definition::RGBA16F);
+        if(!emissiveResult)
+        {
+            return unexpected{std::move(emissiveResult).error()};
+        }
+        auto depthResult = loadTexture(Texture::Definition::D16F);
+        if(!depthResult)
+        {
+            return unexpected{std::move(depthResult).error()};
+        }
 
-        auto r1 = loadTex(Texture::Definition::RGBA8);
-        if (!r1) return unexpected{ r1.error() };
-        gb.normalRoughnessOcclusionTex = std::move(r1).value();
-
-        auto r2 = loadTex(Texture::Definition::RGBA16F);
-        if (!r2) return unexpected{ r2.error() };
-        gb.emissiveTex = std::move(r2).value();
-
-        auto r3 = loadTex(Texture::Definition::D16F);
-        if (!r3) return unexpected{ r3.error() };
-        gb.depthTex = std::move(r3).value();
-
-        bgfx::TextureHandle handles[] = {
-            gb.albedoMetallicTex->getHandle(),
-            gb.normalRoughnessOcclusionTex->getHandle(),
-            gb.emissiveTex->getHandle(),
-            gb.depthTex->getHandle(),
-        };
-        gb.handle = bgfx::createFrameBuffer(4, handles);
-
-        return gb;
+        return DeferredGeoBuffer{
+            std::move(*albedoResult),
+            std::move(*normalTesult),
+            std::move(*emissiveResult),
+            std::move(*depthResult)};
     }
 
-    void DeferredGBuffer::configureView(bgfx::ViewId viewId) const noexcept
+    void DeferredGeoBuffer::configureView(bgfx::ViewId viewId) const noexcept
     {
-        bgfx::setViewFrameBuffer(viewId, handle);
+        bgfx::setViewFrameBuffer(viewId, _handle);
     }
 
-    // -------------------------------------------------------------------------
-    // DeferredLightingRenderStep
-    // -------------------------------------------------------------------------
+    expected<void, std::string> DeferredGeoBuffer::render(bgfx::Encoder& encoder) const noexcept
+    {
+        // Reuse material sampler slots 0-3 (unused in the lighting pass)
+        encoder.setTexture(RenderSamplers::DEFERRED_ALBEDO_METALLIC,
+                           _albedoMetallicUniform, _albedoMetallicTex.getHandle());
+        encoder.setTexture(RenderSamplers::DEFERRED_NORMAL_ROUGHNESS_OCCLUSION,
+                           _normalRoughnessOcclusionUniform, _normalRoughnessOcclusionTex.getHandle());
+        encoder.setTexture(RenderSamplers::DEFERRED_EMISSIVE,
+                           _emissiveUniform, _emissiveTex.getHandle());
+        encoder.setTexture(RenderSamplers::DEFERRED_DEPTH,
+                           _depthUniform, _depthTex.getHandle());
+
+        return {};
+    }
 
     DeferredLightingRenderStep::DeferredLightingRenderStep(const std::shared_ptr<Program>& prog) noexcept
         : _prog{ prog }
@@ -87,11 +114,6 @@ namespace darmok
     expected<void, std::string> DeferredLightingRenderStep::init(RenderChain& chain) noexcept
     {
         _chain = chain;
-
-        _albedoMetallicUniform            = { "s_gbufferAlbedoMetallic",           bgfx::UniformType::Sampler };
-        _normalRoughnessOcclusionUniform  = { "s_gbufferNormalRoughnessOcclusion", bgfx::UniformType::Sampler };
-        _emissiveUniform                  = { "s_gbufferEmissive",                 bgfx::UniformType::Sampler };
-        _depthUniform                     = { "s_gbufferDepth",                    bgfx::UniformType::Sampler };
 
         static const Rectangle screen{ glm::uvec2{2} };
         auto meshResult = MeshData{ screen }.createMesh(_prog->getVertexLayout());
@@ -109,10 +131,7 @@ namespace darmok
         _mesh.reset();
         _chain.reset();
         _cam.reset();
-        _albedoMetallicTex.reset();
-        _normalRoughnessOcclusionTex.reset();
-        _emissiveTex.reset();
-        _depthTex.reset();
+        _gbuffer.reset();
         return {};
     }
 
@@ -136,17 +155,14 @@ namespace darmok
         return ++viewId;
     }
 
-    void DeferredLightingRenderStep::setCam(OptionalRef<Camera> cam) noexcept
+    void DeferredLightingRenderStep::setCamera(OptionalRef<Camera> cam) noexcept
     {
         _cam = cam;
     }
 
-    void DeferredLightingRenderStep::setGBuffer(const DeferredGBuffer& gbuffer) noexcept
+    void DeferredLightingRenderStep::setGeoBuffer(const DeferredGeoBuffer& gbuffer) noexcept
     {
-        _albedoMetallicTex           = gbuffer.albedoMetallicTex;
-        _normalRoughnessOcclusionTex = gbuffer.normalRoughnessOcclusionTex;
-        _emissiveTex                 = gbuffer.emissiveTex;
-        _depthTex                    = gbuffer.depthTex;
+        _gbuffer = gbuffer;
     }
 
     expected<void, std::string> DeferredLightingRenderStep::render(bgfx::Encoder& encoder) noexcept
@@ -157,7 +173,7 @@ namespace darmok
         }
         auto viewId = *_viewId;
 
-        if (!_mesh || !_prog || !_albedoMetallicTex)
+        if (!_mesh || !_prog || !_gbuffer)
         {
             encoder.touch(viewId);
             return {};
@@ -166,27 +182,30 @@ namespace darmok
         if (_cam)
         {
             auto result = _cam->beforeRenderView(viewId, encoder);
-            if (!result) return result;
-            // Bind per-camera uniforms (camera pos, light buffers, shadows).
-            // entt::null is used because the lighting pass has no entity transform.
+            if(!result)
+            {
+                return result;
+            }
             result = _cam->beforeRenderEntity(entt::null, viewId, encoder);
-            if (!result) return result;
+            if(!result)
+            {
+                return result;
+            }
+        }
+
+        _basicUniforms.configure(encoder);
+
+        auto gbufferResult = _gbuffer->render(encoder);
+        if(!gbufferResult)
+        {
+            return gbufferResult;
         }
 
         auto meshResult = _mesh->render(encoder);
-        if (!meshResult) return meshResult;
-
-        // Reuse material sampler slots 0-3 (unused in the lighting pass)
-        encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO,
-            _albedoMetallicUniform, _albedoMetallicTex->getHandle());
-        encoder.setTexture(RenderSamplers::MATERIAL_SPECULAR,
-            _normalRoughnessOcclusionUniform, _normalRoughnessOcclusionTex->getHandle());
-        encoder.setTexture(RenderSamplers::MATERIAL_METALLIC_ROUGHNESS,
-            _emissiveUniform, _emissiveTex->getHandle());
-        encoder.setTexture(RenderSamplers::MATERIAL_NORMAL,
-            _depthUniform, _depthTex->getHandle());
-
-        _basicUniforms.configure(encoder);
+        if(!meshResult)
+        {
+            return meshResult;
+        }
 
         uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_DEPTH_TEST_MASK;
         state |= BGFX_STATE_DEPTH_TEST_ALWAYS;
@@ -196,10 +215,6 @@ namespace darmok
 
         return {};
     }
-
-    // -------------------------------------------------------------------------
-    // DeferredRenderer
-    // -------------------------------------------------------------------------
 
     DeferredRenderer::Definition DeferredRenderer::createDefinition() noexcept
     {
@@ -220,12 +235,12 @@ namespace darmok
         }
         _materials = matResult.value().get();
 
-        auto geomResult = Program::loadStaticMem(darmok_program_darmok_deferred_geo);
-        if (!geomResult)
+        auto geoResult = Program::loadStaticMem(darmok_program_darmok_deferred_geo);
+        if (!geoResult)
         {
-            return unexpected{ "deferred geometry program: " + std::move(geomResult).error() };
+            return unexpected{ "deferred geometry program: " + std::move(geoResult).error() };
         }
-        _geometryProg = std::make_shared<Program>(std::move(geomResult).value());
+        _geometryProg = std::make_shared<Program>(std::move(geoResult).value());
 
         auto lightResult = Program::loadStaticMem(darmok_program_darmok_deferred_light);
         if (!lightResult)
@@ -241,7 +256,7 @@ namespace darmok
             return unexpected{ std::move(stepResult).error() };
         }
         _lightingStep = stepResult.value().get();
-        _lightingStep->setCam(cam);
+        _lightingStep->setCamera(cam);
 
         return {};
     }
@@ -251,7 +266,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> DeferredRenderer::recreateGBuffer() noexcept
+    expected<void, std::string> DeferredRenderer::recreateGeoBuffer() noexcept
     {
         if (!_cam)
         {
@@ -259,11 +274,11 @@ namespace darmok
         }
         auto vp = _cam->getCombinedViewport();
         auto size = vp.origin + vp.size;
-        if (size == _gbuffer.size && _gbuffer.valid())
+        if(_gbuffer && size == _gbuffer->getSize())
         {
             return {};
         }
-        auto result = DeferredGBuffer::load(size);
+        auto result = DeferredGeoBuffer::load(size);
         if (!result)
         {
             return unexpected{ std::move(result).error() };
@@ -271,7 +286,7 @@ namespace darmok
         _gbuffer = std::move(result).value();
         if (_lightingStep)
         {
-            _lightingStep->setGBuffer(_gbuffer);
+            _lightingStep->setGeoBuffer(*_gbuffer);
         }
         return {};
     }
@@ -284,7 +299,7 @@ namespace darmok
             return unexpected<std::string>{ "camera not loaded" };
         }
 
-        auto gbResult = recreateGBuffer();
+        auto gbResult = recreateGeoBuffer();
         if (!gbResult)
         {
             return unexpected{ std::move(gbResult).error() };
@@ -294,7 +309,7 @@ namespace darmok
         bgfx::setPaletteColor(0, 0.0f, 0.0f, 0.0f, 0.0f);
         uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(viewId, clearFlags, 1.f, 0U, 0, 0, 0);
-        _gbuffer.configureView(viewId);
+        _gbuffer->configureView(viewId);
         auto vp = _cam->getCombinedViewport();
         vp.configureView(viewId);
         _cam->setViewTransform(viewId);
@@ -384,7 +399,7 @@ namespace darmok
         _app.reset();
         _materials.reset();
         _geometryProg.reset();
-        _gbuffer = {};
+        _gbuffer.reset();
         return {};
     }
 }

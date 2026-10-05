@@ -24,5 +24,10 @@ namespace darmok
 
         static const uint8_t SHADOW_MAP = 13;
         static const uint8_t SHADOW_TRANS = 14;
+
+        static const uint8_t DEFERRED_ALBEDO_METALLIC = 0;
+        static const uint8_t DEFERRED_NORMAL_ROUGHNESS_OCCLUSION = 1;
+        static const uint8_t DEFERRED_EMISSIVE = 2;
+        static const uint8_t DEFERRED_DEPTH = 3;
     };
 }
