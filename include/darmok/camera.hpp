@@ -259,12 +259,13 @@ namespace darmok
         [[nodiscard]] expected<bool, std::string> setRenderOutputSize(const glm::uvec2& size) noexcept;
         [[nodiscard]] std::shared_ptr<FrameBuffer> getRenderOutput() const noexcept;
         
-        void configureView(bgfx::ViewId viewId, const std::string& name) const;
+        void configureView(bgfx::ViewId viewId, const std::string& name, uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL) const noexcept;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder, std::optional<glm::mat4> additionalTransform = std::nullopt) const noexcept;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
 
         // serialization
         using Definition = protobuf::Camera;

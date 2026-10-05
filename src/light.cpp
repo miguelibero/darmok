@@ -540,13 +540,6 @@ namespace darmok
 
     expected<void, std::string> LightingRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
-        encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
-        encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);
-        encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
-        encoder.setBuffer(RenderSamplers::LIGHTS_SPOT, _spotLightBuffer, bgfx::Access::Read);
-        encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
-
         glm::mat3 normalMatrix{ 1.f };
         if (auto trans = _scene->getComponent<Transform>(entity))
         {
@@ -556,4 +549,17 @@ namespace darmok
 
         return {};
     }
+
+    expected<void, std::string> LightingRenderComponent::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
+        encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
+        encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);
+        encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
+        encoder.setBuffer(RenderSamplers::LIGHTS_SPOT, _spotLightBuffer, bgfx::Access::Read);
+        encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
+
+        return {};
+    }
+
 }

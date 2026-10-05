@@ -10,6 +10,7 @@
 #include <darmok/scene_filter.hpp>
 #include <darmok/string.hpp>
 #include <darmok/glm_serialize.hpp>
+#include <darmok/light.hpp>
 #include "detail/render_samplers.hpp"
 #include "generated/shaders/darmok_deferred_geo.h"
 #include "generated/shaders/darmok_deferred_light.h"
@@ -84,12 +85,12 @@ namespace darmok
             std::move(*depthResult)};
     }
 
-    void DeferredGeoBuffer::configureView(bgfx::ViewId viewId) const noexcept
+    void DeferredGeoBuffer::configureGeoView(bgfx::ViewId viewId) const noexcept
     {
         bgfx::setViewFrameBuffer(viewId, _handle);
     }
 
-    expected<void, std::string> DeferredGeoBuffer::render(bgfx::Encoder& encoder) const noexcept
+    expected<void, std::string> DeferredGeoBuffer::beforeRenderLights(bgfx::Encoder& encoder) const noexcept
     {
         // Reuse material sampler slots 0-3 (unused in the lighting pass)
         encoder.setTexture(RenderSamplers::DEFERRED_ALBEDO_METALLIC,
@@ -100,118 +101,6 @@ namespace darmok
                            _emissiveUniform, _emissiveTex.getHandle());
         encoder.setTexture(RenderSamplers::DEFERRED_DEPTH,
                            _depthUniform, _depthTex.getHandle());
-
-        return {};
-    }
-
-    DeferredLightingRenderStep::DeferredLightingRenderStep(const std::shared_ptr<Program>& prog) noexcept
-        : _prog{ prog }
-    {
-    }
-
-    DeferredLightingRenderStep::~DeferredLightingRenderStep() noexcept = default;
-
-    expected<void, std::string> DeferredLightingRenderStep::init(RenderChain& chain) noexcept
-    {
-        _chain = chain;
-
-        static const Rectangle screen{ glm::uvec2{2} };
-        auto meshResult = MeshData{ screen }.createMesh(_prog->getVertexLayout());
-        if (!meshResult)
-        {
-            return unexpected{ std::move(meshResult).error() };
-        }
-        _mesh = std::make_unique<Mesh>(std::move(meshResult).value());
-        return {};
-    }
-
-    expected<void, std::string> DeferredLightingRenderStep::shutdown() noexcept
-    {
-        _viewId.reset();
-        _mesh.reset();
-        _chain.reset();
-        _cam.reset();
-        _gbuffer.reset();
-        return {};
-    }
-
-    expected<void, std::string> DeferredLightingRenderStep::updateRenderChain(FrameBuffer& read, OptionalRef<FrameBuffer> write) noexcept
-    {
-        _writeBuffer = write;
-        if (write && _viewId)
-        {
-            write->configureView(*_viewId);
-        }
-        return {};
-    }
-
-    expected<bgfx::ViewId, std::string> DeferredLightingRenderStep::renderReset(bgfx::ViewId viewId) noexcept
-    {
-        if (_chain)
-        {
-            _chain->configureView(viewId, "Deferred Lighting", _writeBuffer);
-        }
-        _viewId = viewId;
-        return ++viewId;
-    }
-
-    void DeferredLightingRenderStep::setCamera(OptionalRef<Camera> cam) noexcept
-    {
-        _cam = cam;
-    }
-
-    void DeferredLightingRenderStep::setGeoBuffer(const DeferredGeoBuffer& gbuffer) noexcept
-    {
-        _gbuffer = gbuffer;
-    }
-
-    expected<void, std::string> DeferredLightingRenderStep::render(bgfx::Encoder& encoder) noexcept
-    {
-        if (!_viewId)
-        {
-            return unexpected<std::string>{ "no view id" };
-        }
-        auto viewId = *_viewId;
-
-        if (!_mesh || !_prog || !_gbuffer)
-        {
-            encoder.touch(viewId);
-            return {};
-        }
-
-        if (_cam)
-        {
-            auto result = _cam->beforeRenderView(viewId, encoder);
-            if(!result)
-            {
-                return result;
-            }
-            result = _cam->beforeRenderEntity(entt::null, viewId, encoder);
-            if(!result)
-            {
-                return result;
-            }
-        }
-
-        _basicUniforms.configure(encoder);
-
-        auto gbufferResult = _gbuffer->render(encoder);
-        if(!gbufferResult)
-        {
-            return gbufferResult;
-        }
-
-        auto meshResult = _mesh->render(encoder);
-        if(!meshResult)
-        {
-            return meshResult;
-        }
-
-        uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_DEPTH_TEST_MASK;
-        state |= BGFX_STATE_DEPTH_TEST_ALWAYS;
-        state &= ~BGFX_STATE_WRITE_Z;
-        encoder.setState(state);
-        encoder.submit(viewId, _prog->getHandle());
 
         return {};
     }
@@ -240,23 +129,22 @@ namespace darmok
         {
             return unexpected{ "deferred geometry program: " + std::move(geoResult).error() };
         }
-        _geometryProg = std::make_shared<Program>(std::move(geoResult).value());
+        _geoProg = std::move(geoResult).value();
 
         auto lightResult = Program::loadStaticMem(darmok_program_darmok_deferred_light);
         if (!lightResult)
         {
             return unexpected{ "deferred lighting program: " + std::move(lightResult).error() };
         }
-        auto lightProg = std::make_shared<Program>(std::move(lightResult).value());
+        _lightProg = std::move(lightResult).value();
 
-        auto& chain = cam.getRenderChain();
-        auto stepResult = chain.addStep<DeferredLightingRenderStep>(lightProg);
-        if (!stepResult)
+        static const Rectangle screen{glm::uvec2{2}};
+        auto meshResult = MeshData{screen}.createMesh(_lightProg->getVertexLayout());
+        if(!meshResult)
         {
-            return unexpected{ std::move(stepResult).error() };
+            return unexpected{std::move(meshResult).error()};
         }
-        _lightingStep = stepResult.value().get();
-        _lightingStep->setCamera(cam);
+        _lightMesh = std::move(meshResult).value();
 
         return {};
     }
@@ -284,10 +172,6 @@ namespace darmok
             return unexpected{ std::move(result).error() };
         }
         _gbuffer = std::move(result).value();
-        if (_lightingStep)
-        {
-            _lightingStep->setGeoBuffer(*_gbuffer);
-        }
         return {};
     }
 
@@ -305,16 +189,23 @@ namespace darmok
             return unexpected{ std::move(gbResult).error() };
         }
 
-        bgfx::setViewName(viewId, _cam->getViewName("Deferred Geometry").c_str());
-        bgfx::setPaletteColor(0, 0.0f, 0.0f, 0.0f, 0.0f);
+        _viewId = viewId;
+
         uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
-        bgfx::setViewClear(viewId, clearFlags, 1.f, 0U, 0, 0, 0);
-        _gbuffer->configureView(viewId);
+        bgfx::setViewName(viewId, _cam->getViewName("Deferred Geometry").c_str());
+        bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
+
         auto vp = _cam->getCombinedViewport();
         vp.configureView(viewId);
-        _cam->setViewTransform(viewId);
+        if (_gbuffer)
+        {
+            _gbuffer->configureGeoView(viewId);
+        }
 
-        _viewId = viewId;
+        ++viewId;
+
+        _cam->configureView(viewId, "Deferred Lighting", clearFlags);
+
         return ++viewId;
     }
 
@@ -375,8 +266,40 @@ namespace darmok
             {
                 material.renderBind(encoder);
             }
-            encoder.submit(viewId, _geometryProg->getHandle());
+            encoder.submit(viewId, _geoProg->getHandle());
         }
+
+        ++viewId;
+
+        if(!_lightMesh || !_lightProg || !_gbuffer)
+        {
+            encoder.touch(viewId);
+            return unexpected<std::string>{"lighting not initialized"};
+        }
+
+        auto gbufferResult = _gbuffer->beforeRenderLights(encoder);
+        if(!gbufferResult)
+        {
+            return gbufferResult;
+        }
+
+        auto lightResult = _cam->beforeRenderLight(viewId, encoder);
+        if(!lightResult)
+        {
+            return lightResult;
+        }
+
+        auto meshResult = _lightMesh->render(encoder);
+        if(!meshResult)
+        {
+            return meshResult;
+        }
+
+        uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_DEPTH_TEST_MASK;
+        state |= BGFX_STATE_DEPTH_TEST_ALWAYS;
+        state &= ~BGFX_STATE_WRITE_Z;
+        encoder.setState(state);
+        encoder.submit(viewId, _lightProg->getHandle());
 
         bgfx::end(&encoder);
         return StringUtils::joinExpectedErrors(errors);
@@ -389,16 +312,13 @@ namespace darmok
 
     expected<void, std::string> DeferredRenderer::shutdown() noexcept
     {
-        if (_lightingStep && _cam)
-        {
-            (void)_cam->getRenderChain().removeStep(*_lightingStep);
-        }
-        _lightingStep.reset();
         _cam.reset();
         _scene.reset();
         _app.reset();
         _materials.reset();
-        _geometryProg.reset();
+        _geoProg.reset();
+        _lightProg.reset();
+        _lightMesh.reset();
         _gbuffer.reset();
         return {};
     }

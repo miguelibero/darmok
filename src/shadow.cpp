@@ -704,7 +704,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> ShadowRenderer::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> ShadowRenderer::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         configureUniforms(encoder);
         return {};

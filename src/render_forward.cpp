@@ -108,6 +108,12 @@ namespace darmok
 				errors.push_back(std::move(result).error());
 				continue;
 			}
+            auto lightResult = _cam->beforeRenderLight(viewId, encoder);
+            if(!lightResult)
+            {
+                errors.push_back(std::move(lightResult).error());
+                continue;
+            }
 			if (!renderable->render(encoder))
 			{
 				continue;

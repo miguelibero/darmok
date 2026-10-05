@@ -143,7 +143,7 @@ namespace darmok
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime)  noexcept override;
         expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
-
+        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
 
     private:

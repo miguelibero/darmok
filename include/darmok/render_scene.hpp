@@ -37,6 +37,7 @@ namespace darmok
         virtual bool shouldEntityBeCulled(Entity entity) { return false; }
         virtual expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
         virtual expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
+        virtual expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
         virtual void onCameraTransformChanged() noexcept {}
         // virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };

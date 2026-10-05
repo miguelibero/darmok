@@ -75,6 +75,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
         * unlit, gui
         * basic phong
         * PBR metallic-roughness
+    * deferred render
+        * PBR metallic-roughness
     * cascaded shadow mapping
         * ambient, directional, spot & point light shadows
     * camera culling (frustum, occlusion seems to be broken)
@@ -113,8 +115,8 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * frame limiting
 * more renderer features
     * bloom
-    * deferred, clustered
     * SSAO
+    * clustered renderer
 * text improvements
     * finish all the TextRenderConfig options
     * dynamic distance field rendering with border support
@@ -144,7 +146,7 @@ I'm still learning CMake, so if you see something that should be fixed please le
 * more sound options (spatialization, effects)
 * animation root motion & inverse kinematics
 * [openusd](https://github.com/PixarAnimationStudios/OpenUSD) scene format support
-* async/await style wrapper for taskflow
+* async/await C++ coroutines like in Unity3d
 
 ## Interesting Related Projects
 * [SuperNovaEngine](https://github.com/skaarj1989/SupernovaEngine) a very similar engine but much more advanced

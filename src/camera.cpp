@@ -431,10 +431,9 @@ namespace darmok
         return name;
     }
 
-    void Camera::configureView(bgfx::ViewId viewId, const std::string& name) const
+    void Camera::configureView(bgfx::ViewId viewId, const std::string& name, uint16_t clearFlags) const noexcept
     {
         bgfx::setViewName(viewId, getViewName(name).c_str());
-        uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
         auto writeBuffer = _renderChain.getInput();
         if (writeBuffer)
@@ -511,6 +510,20 @@ namespace darmok
             }
         }
 		return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> Camera::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    {
+        std::vector<std::string> errors;
+        for(auto& comp : copyComponents())
+        {
+            auto result = comp->beforeRenderLight(viewId, encoder);
+            if(!result)
+            {
+                errors.push_back(std::move(result).error());
+            }
+        }
+        return StringUtils::joinExpectedErrors(errors);
     }
 
     expected<void, std::string> Camera::addComponent(std::unique_ptr<ICameraComponent> component) noexcept

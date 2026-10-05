@@ -53,7 +53,7 @@ namespace darmok
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> render() noexcept override;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
 
         bool isEnabled() const noexcept;
 
