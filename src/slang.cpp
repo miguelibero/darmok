@@ -848,6 +848,37 @@ namespace darmok
                 {
                     shaderData.replace(pos, entryName.size(), "xlatMtlMain");
                 }
+
+                // NoMangle prevents "_0" on top-level identifiers but struct fields still get the
+                // suffix. bgfx's Metal backend reads vertex attribute names from Metal reflection
+                // (MTLVertexAttribute.name) and matches against its s_attribName table which uses
+                // the canonical names without suffix. Rename them here so the match succeeds and
+                // bgfx can populate the vertex descriptor correctly.
+                static const std::array<std::string_view, 18> kBgfxAttribNames = {
+                    "a_position", "a_normal", "a_tangent", "a_bitangent",
+                    "a_color0", "a_color1", "a_color2", "a_color3",
+                    "a_indices", "a_weight",
+                    "a_texcoord0", "a_texcoord1", "a_texcoord2", "a_texcoord3",
+                    "a_texcoord4", "a_texcoord5", "a_texcoord6", "a_texcoord7",
+                };
+                for (auto attrib : kBgfxAttribNames)
+                {
+                    std::string mangled{ attrib };
+                    mangled += "_0";
+                    size_t p = 0;
+                    while ((p = shaderData.find(mangled, p)) != std::string::npos)
+                    {
+                        char next = (p + mangled.size() < shaderData.size()) ? shaderData[p + mangled.size()] : '\0';
+                        if (!std::isalnum(static_cast<unsigned char>(next)) && next != '_')
+                        {
+                            shaderData.replace(p, mangled.size(), attrib);
+                        }
+                        else
+                        {
+                            p += mangled.size();
+                        }
+                    }
+                }
             }
 
             Data bgfxShaderData;

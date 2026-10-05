@@ -525,33 +525,30 @@ namespace darmok
         uv.x = glm::fract(uv.x);
         uv.y = glm::clamp(uv.y, 0.0f, 1.0f);
 
-        const glm::vec2 pos =
-            uv * glm::vec2(pixels.size()) - 0.5f;
+        // extent(0) = width, extent(1) = height; raw data is row-major from bimg
+        const auto width = static_cast<int>(pixels.extent(0));
+        const auto height = static_cast<int>(pixels.extent(1));
 
+        const glm::vec2 pos = uv * glm::vec2(width, height) - 0.5f;
         const glm::ivec2 p = glm::ivec2(glm::floor(pos));
         const glm::vec2 f = glm::fract(pos);
 
-        const auto x = [&pixels](int x)
-        {
-            return static_cast<glm::uint>(
-                (x % static_cast<int>(pixels.extent(0)) +
-                 static_cast<int>(pixels.extent(0))) %
-                static_cast<int>(pixels.extent(0)));
+        const auto* data = pixels.data();
+
+        const auto wrapX = [width](int x) {
+            return (x % width + width) % width;
+        };
+        const auto clampY = [height](int y) {
+            return std::clamp(y, 0, height - 1);
+        };
+        const auto fetch = [&](int x, int y) -> Pixel {
+            return data[clampY(y) * width + wrapX(x)];
         };
 
-        const auto y = [&pixels](int y)
-        {
-            return static_cast<glm::uint>(
-                std::clamp(
-                    y,
-                    0,
-                    static_cast<int>(pixels.extent(1)) - 1));
-        };
-
-        const auto a = pixels(x(p.x), y(p.y));
-        const auto b = pixels(x(p.x + 1), y(p.y));
-        const auto c = pixels(x(p.x), y(p.y + 1));
-        const auto d = pixels(x(p.x + 1), y(p.y + 1));
+        const auto a = fetch(p.x, p.y);
+        const auto b = fetch(p.x + 1, p.y);
+        const auto c = fetch(p.x, p.y + 1);
+        const auto d = fetch(p.x + 1, p.y + 1);
 
         return glm::mix(
             glm::mix(a, b, f.x),
@@ -990,6 +987,15 @@ namespace darmok
                 return unexpected{"failed to convert equirectangular to cubemap: " + cubemapResult.error()};
             }
             img = Image{cubemapResult.value(), alloc};
+            if(_generateMips)
+            {
+                auto mipsResult = img.generateMips();
+                if(!mipsResult)
+                {
+                    return unexpected{std::move(mipsResult).error()};
+                }
+                img = std::move(mipsResult).value();
+            }
         }
         else if(_generateMips && img.getMipCount() == 1)
         {

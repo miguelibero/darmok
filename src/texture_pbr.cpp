@@ -281,31 +281,31 @@ namespace darmok
 
             uv.y = glm::clamp(uv.y, 0.0f, 1.0f);
 
-            const float x =
-                uv.x * static_cast<float>(pixels.size().x - 1);
+            // extent(0) = width, extent(1) = height; raw data is row-major from bimg
+            const auto width = pixels.size().x;
+            const auto height = pixels.size().y;
 
-            const float y =
-                uv.y * static_cast<float>(pixels.size().y - 1);
+            const float x = uv.x * static_cast<float>(width - 1);
+            const float y = uv.y * static_cast<float>(height - 1);
 
-            const uint32_t x0 =
-                static_cast<uint32_t>(x);
+            const uint32_t x0 = static_cast<uint32_t>(x);
+            const uint32_t y0 = static_cast<uint32_t>(y);
 
-            const uint32_t y0 =
-                static_cast<uint32_t>(y);
-
-            const uint32_t x1 =
-                (x0 + 1) % pixels.size().x;
-
-            const uint32_t y1 =
-                std::min(y0 + 1, pixels.size().y - 1);
+            const uint32_t x1 = (x0 + 1) % width;
+            const uint32_t y1 = std::min(y0 + 1, height - 1);
 
             const float tx = x - static_cast<float>(x0);
             const float ty = y - static_cast<float>(y0);
 
-            const auto c00 = pixels(x0, y0);
-            const auto c10 = pixels(x1, y0);
-            const auto c01 = pixels(x0, y1);
-            const auto c11 = pixels(x1, y1);
+            const auto* data = pixels.data();
+            const auto fetch = [&](uint32_t px, uint32_t py) -> glm::vec3 {
+                return glm::vec3(data[py * width + px]);
+            };
+
+            const auto c00 = fetch(x0, y0);
+            const auto c10 = fetch(x1, y0);
+            const auto c01 = fetch(x0, y1);
+            const auto c11 = fetch(x1, y1);
 
             return glm::mix(
                 glm::mix(c00, c10, tx),

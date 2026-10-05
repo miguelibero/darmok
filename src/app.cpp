@@ -1238,6 +1238,7 @@ namespace darmok
 			return;
 		}
 		StreamUtils::log(std::format("{} {}", code, str), true);
+		std::abort();
 	}
 
 	void BgfxCallbacks::traceVargs(

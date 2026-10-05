@@ -89,8 +89,8 @@ namespace darmok
         [[nodiscard]] static expected<PixelArray2d, std::string> loadMipData(const bimg::ImageMip& mip) noexcept;
         [[nodiscard]] static expected<PixelArray3d, std::string> convertEquirectangularCubemap(const PixelArray2d& pixels) noexcept;
 
-        [[nodiscard]] static void downsampleMip(const bimg::ImageMip& srcMip, bimg::ImageMip& dstMip) noexcept;
-        [[nodiscard]] static void copyMip(const bimg::ImageMip& srcMip, bimg::ImageMip& dstMip) noexcept;
+        static void downsampleMip(const bimg::ImageMip& srcMip, bimg::ImageMip& dstMip) noexcept;
+        static void copyMip(const bimg::ImageMip& srcMip, bimg::ImageMip& dstMip) noexcept;
 		
 	private:
 		bimg::ImageContainer* _container;
