@@ -46,7 +46,7 @@ Trying to target the following platforms:
 * mobile (iOS, Android) (pending)
 
 Some philosofical decisions (could be controversial)
-* use modern C++ (20) patterns where possible
+* use modern C++ patterns where possible
 * use as much stl as possible (need to look into memory management at some point)
 * no naked pointers
 * return `expected` for error handling (everything noexcept if possible)
