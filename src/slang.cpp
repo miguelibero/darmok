@@ -1,8 +1,10 @@
 #include "detail/slang.hpp"
 #include "detail/glsl.hpp"
+#include "detail/metal.hpp"
 #include "detail/program_core.hpp"
 #include <bx/bx.h>
 #include <algorithm>
+#include <iostream>
 #include <darmok/data.hpp>
 #include <darmok/data_stream.hpp>
 #include <darmok/slang.hpp>
@@ -840,45 +842,13 @@ namespace darmok
             }
             else if (slangCtx.target == SlangCompileTarget::SLANG_METAL)
             {
-                // bgfx Metal renderer looks for a function named "xlatMtlMain" via newFunctionWithName.
-                // NoMangle preserves all other source names; only the entry point name needs patching.
                 std::string entryName = entryPoint->getName();
-                auto pos = shaderData.find(entryName + "(");
-                if (pos != std::string::npos)
+                auto metalResult = MetalCompiler::postProcess(std::move(shaderData), entryName);
+                if (!metalResult)
                 {
-                    shaderData.replace(pos, entryName.size(), "xlatMtlMain");
+                    return unexpected{ std::format("Metal MSL post-process failed: {}", metalResult.error()) };
                 }
-
-                // NoMangle prevents "_0" on top-level identifiers but struct fields still get the
-                // suffix. bgfx's Metal backend reads vertex attribute names from Metal reflection
-                // (MTLVertexAttribute.name) and matches against its s_attribName table which uses
-                // the canonical names without suffix. Rename them here so the match succeeds and
-                // bgfx can populate the vertex descriptor correctly.
-                static const std::array<std::string_view, 18> kBgfxAttribNames = {
-                    "a_position", "a_normal", "a_tangent", "a_bitangent",
-                    "a_color0", "a_color1", "a_color2", "a_color3",
-                    "a_indices", "a_weight",
-                    "a_texcoord0", "a_texcoord1", "a_texcoord2", "a_texcoord3",
-                    "a_texcoord4", "a_texcoord5", "a_texcoord6", "a_texcoord7",
-                };
-                for (auto attrib : kBgfxAttribNames)
-                {
-                    std::string mangled{ attrib };
-                    mangled += "_0";
-                    size_t p = 0;
-                    while ((p = shaderData.find(mangled, p)) != std::string::npos)
-                    {
-                        char next = (p + mangled.size() < shaderData.size()) ? shaderData[p + mangled.size()] : '\0';
-                        if (!std::isalnum(static_cast<unsigned char>(next)) && next != '_')
-                        {
-                            shaderData.replace(p, mangled.size(), attrib);
-                        }
-                        else
-                        {
-                            p += mangled.size();
-                        }
-                    }
-                }
+                shaderData = std::move(metalResult).value();
             }
 
             Data bgfxShaderData;

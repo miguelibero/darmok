@@ -154,6 +154,7 @@ set(CORE_SOURCES
   program_core.cpp
   slang.cpp
   glsl.cpp
+  metal.cpp
   asset_core.cpp
   easing.cpp
   protobuf.cpp
