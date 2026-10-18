@@ -12,8 +12,8 @@
 #include <darmok/glm_serialize.hpp>
 #include <darmok/light.hpp>
 #include "detail/render_samplers.hpp"
-#include "generated/shaders/darmok_deferred_geo.h"
-#include "generated/shaders/darmok_deferred_light.h"
+#include "generated/shaders/deferred_geo.h"
+#include "generated/shaders/deferred_light.h"
 
 namespace darmok
 {
@@ -90,7 +90,7 @@ namespace darmok
         bgfx::setViewFrameBuffer(viewId, _handle);
     }
 
-    expected<void, std::string> DeferredGeoBuffer::beforeRenderLights(bgfx::Encoder& encoder) const noexcept
+    expected<void, std::string> DeferredGeoBuffer::beforeRenderLight(bgfx::Encoder& encoder) const noexcept
     {
         // Reuse material sampler slots 0-3 (unused in the lighting pass)
         encoder.setTexture(RenderSamplers::DEFERRED_ALBEDO_METALLIC,
@@ -124,14 +124,14 @@ namespace darmok
         }
         _materials = matResult.value().get();
 
-        auto geoResult = Program::loadStaticMem(darmok_program_darmok_deferred_geo);
+        auto geoResult = Program::loadStaticMem(darmok_program_deferred_geo);
         if (!geoResult)
         {
             return unexpected{ "deferred geometry program: " + std::move(geoResult).error() };
         }
         _geoProg = std::move(geoResult).value();
 
-        auto lightResult = Program::loadStaticMem(darmok_program_darmok_deferred_light);
+        auto lightResult = Program::loadStaticMem(darmok_program_deferred_light);
         if (!lightResult)
         {
             return unexpected{ "deferred lighting program: " + std::move(lightResult).error() };
@@ -144,7 +144,7 @@ namespace darmok
         {
             return unexpected{std::move(meshResult).error()};
         }
-        _lightMesh = std::move(meshResult).value();
+        _screenMesh = std::move(meshResult).value();
 
         return {};
     }
@@ -271,28 +271,34 @@ namespace darmok
 
         ++viewId;
 
-        if(!_lightMesh || !_lightProg || !_gbuffer)
+        if(!_screenMesh || !_lightProg || !_gbuffer)
         {
             encoder.touch(viewId);
             return unexpected<std::string>{"lighting not initialized"};
         }
 
-        auto gbufferResult = _gbuffer->beforeRenderLights(encoder);
-        if(!gbufferResult)
+        result = _gbuffer->beforeRenderLight(encoder);
+        if(!result)
         {
-            return gbufferResult;
+            return result;
         }
 
-        auto lightResult = _cam->beforeRenderLight(viewId, encoder);
-        if(!lightResult)
+        result = _cam->beforeRenderLight(viewId, encoder);
+        if(!result)
         {
-            return lightResult;
+            return result;
         }
 
-        auto meshResult = _lightMesh->render(encoder);
-        if(!meshResult)
+        result = _materials->beforeRenderLight(viewId, encoder);
+        if(!result)
         {
-            return meshResult;
+            return result;
+        }
+
+        result = _screenMesh->render(encoder);
+        if(!result)
+        {
+            return result;
         }
 
         uint64_t state = BGFX_STATE_DEFAULT & ~BGFX_STATE_DEPTH_TEST_MASK;
@@ -318,7 +324,7 @@ namespace darmok
         _materials.reset();
         _geoProg.reset();
         _lightProg.reset();
-        _lightMesh.reset();
+        _screenMesh.reset();
         _gbuffer.reset();
         return {};
     }

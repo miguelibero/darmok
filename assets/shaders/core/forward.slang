@@ -1,5 +1,5 @@
 #include <darmok_skinning.inc.slang>
-#include <darmok_forward.inc.slang>
+#include <darmok_pbr.inc.slang>
 
 struct VSInput
 {
@@ -56,5 +56,8 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    return forwardFragment(IN.v_viewDir, IN.v_normal, IN.v_tangent, IN.v_position, IN.v_texcoord0);
+    Material mat = getMaterial(IN.v_texcoord0);
+    // convert normal map from tangent space -> world space (= space of tangent, etc.)
+    float3 N = convertTangentNormal(IN.v_normal, IN.v_tangent, mat.normal);
+    return applyFragmentLights(IN.v_viewDir, N, IN.v_position, mat);
 }

@@ -32,7 +32,7 @@ namespace darmok
 
         static expected<DeferredGeoBuffer, std::string> load(const glm::uvec2& size) noexcept;
         void configureGeoView(bgfx::ViewId viewId) const noexcept;
-        expected<void, std::string> beforeRenderLights(bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderLight(bgfx::Encoder& encoder) const noexcept;
         glm::uvec2 getSize() const noexcept;
 
     private:
@@ -73,7 +73,7 @@ namespace darmok
         std::optional<DeferredGeoBuffer> _gbuffer;
 
         std::optional<Program> _lightProg;
-        std::optional<Mesh> _lightMesh;
+        std::optional<Mesh> _screenMesh;
 
         expected<void, std::string> recreateGeoBuffer() noexcept;
     };

@@ -21,7 +21,7 @@ namespace darmok
 
         static Definition createDefinition() noexcept;
 
-        ForwardRenderer() noexcept;
+        ForwardRenderer(bool pbr = true) noexcept;
         ~ForwardRenderer() noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def) noexcept;
@@ -30,6 +30,7 @@ namespace darmok
         expected<void, std::string> shutdown() noexcept override;
 
     private:
+        bool _pbr = true;
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;

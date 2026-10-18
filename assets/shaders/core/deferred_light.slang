@@ -5,6 +5,7 @@
 #include <darmok_brdf.inc.slang>
 #include <darmok_light.inc.slang>
 #include <darmok_shadow.inc.slang>
+#include <darmok_pbr.inc.slang>
 #include <darmok.inc.slang>
 
 // G-buffer (reusing material slots 0-3, which are not needed in this pass)
@@ -91,46 +92,7 @@ float4 frag(VSOutput IN) : SV_Target
     mat = initMaterial(mat);
     mat.a = specularAntiAliasing(N, mat.a);
 
-    float3 V = normalize(u_camPos.xyz - worldPos);
-    float NoV = abs(dot(N, V)) + 1e-5;
+    float3 V = u_camPos.xyz - worldPos;
 
-    float3 radianceOut = float3(0.0, 0.0, 0.0);
-
-    uint numPointLights = pointLightCount();
-    for (uint i = 0; i < numPointLights; ++i)
-    {
-        PointLight light = getPointLight(i);
-        LightData data = calcPointLight(light, worldPos);
-        float visibility = pointLightShadow(light.shadow, worldPos, N, data.direction);
-        if (visibility <= 0.0) continue;
-        radianceOut += calcLightRadiance(data, V, N, NoV, mat) * visibility;
-    }
-
-    uint numSpotLights = spotLightCount();
-    for (uint i = 0; i < numSpotLights; ++i)
-    {
-        SpotLight light = getSpotLight(i);
-        LightData data = calcSpotLight(light, worldPos);
-        float visibility = spotLightShadow(light.shadow, worldPos, N, data.direction);
-        if (visibility <= 0.0) continue;
-        radianceOut += calcLightRadiance(data, V, N, NoV, mat) * visibility;
-    }
-
-    uint numDirLights = dirLightCount();
-    for (uint i = 0; i < numDirLights; ++i)
-    {
-        DirLight light = getDirLight(i);
-        LightData data = calcDirLight(light);
-        float visibility = dirLightShadow(light.shadow, worldPos, N, data.direction);
-        if (visibility <= 0.0) continue;
-        radianceOut += calcLightRadiance(data, V, N, NoV, mat) * visibility;
-    }
-
-    // Ambient (diffuse only; IBL can be added via a future DeferredRenderer::setIBL API)
-    AmbientLight ambient = getAmbientLight();
-    radianceOut += mat.diffuse * ambient.irradiance * mat.occlusion;
-
-    radianceOut += mat.emissive;
-
-    return float4(radianceOut, 1.0);
+    return applyFragmentLights(V, N, worldPos, mat);
 }

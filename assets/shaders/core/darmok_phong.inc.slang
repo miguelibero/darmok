@@ -11,7 +11,7 @@ float3 calcLightRadiance(LightData data, float3 V, float3 N, Material mat)
     return (diffuse * mat.diffuse.xyz) + (specular * mat.specular);
 }
 
-static inline float4 forwardFragment(float3 V, float3 N, float3 fragPos, float2 texCoord)
+static inline float4 applyFragmentLights(float3 V, float3 N, float3 fragPos, float2 texCoord)
 {
     V = normalize(V);
     N = normalize(N);

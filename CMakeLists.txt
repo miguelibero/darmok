@@ -111,8 +111,8 @@ darmok_process_assets(
     darmok_light.inc.slang
     darmok_material.inc.slang
     darmok_material_basic.inc.slang
-    darmok_forward.inc.slang
-    darmok_forward_basic.inc.slang
+    darmok_pbr.inc.slang
+    darmok_phong.inc.slang
     darmok_skinning.inc.slang
     darmok-import.json
     forward.slang
@@ -120,8 +120,8 @@ darmok_process_assets(
     tonemap.slang
     gui.slang
     unlit.slang
-    darmok_deferred_geo.slang
-    darmok_deferred_light.slang
+    deferred_geo.slang
+    deferred_light.slang
 )
 set(CORE_TEXTURES_TARGET darmok-core-textures)
 darmok_process_assets(

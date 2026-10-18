@@ -19,7 +19,8 @@ namespace darmok
 		return def;
 	}
 
-	ForwardRenderer::ForwardRenderer() noexcept
+	ForwardRenderer::ForwardRenderer(bool pbr) noexcept
+        : _pbr{pbr}
 	{
 	}
 
@@ -30,7 +31,7 @@ namespace darmok
 		_cam = cam;
 		_scene = scene;
 		_app = app;
-		auto result = app.getOrAddComponent<MaterialAppComponent>();
+        auto result = app.getOrAddComponent<MaterialAppComponent>(Material::RenderConfig::createDefault(_pbr));
 		if (!result)
 		{
 			return unexpected{std::move(result).error()};

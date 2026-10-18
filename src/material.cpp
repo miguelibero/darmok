@@ -326,6 +326,9 @@ namespace darmok
             (void)config.addFixedTexture("s_brdfLut", RenderSamplers::PBR_BRDF_LUT, darmok_texture_brdf_lut);
         }
 
+        (void)config.addDefaultColorCubemap(Material::TextureDefinition::EnvironmentIrradiance, Colors::white());
+        (void)config.addDefaultColorCubemap(Material::TextureDefinition::EnvironmentPrefiltered, Colors::white());
+
 		config.baseColorUniform = { "u_baseColorFactor", bgfx::UniformType::Vec4 };
 		config.specularColorUniform = { "u_specularFactorVec", bgfx::UniformType::Vec4 };
 		config.metallicRoughnessNormalOcclusionUniform = { "u_metallicRoughnessNormalOcclusionFactor", bgfx::UniformType::Vec4 };
@@ -336,6 +339,36 @@ namespace darmok
 		return config;
 	}
 
+    expected<std::shared_ptr<Texture>, std::string> MaterialRenderConfig::addDefaultColorCubemap(TextureType type, const Color& color, OptionalRef<bx::AllocatorI> alloc)
+    {
+        PixelArray3d pixels{6, 1, 1};
+        auto v = Colors::normalize(color);
+        for(auto side = 0; side < 6; ++side)
+        {
+            pixels[side][0][0] = v;
+        }
+
+        bx::DefaultAllocator defAlloc;
+        Image img{pixels, alloc ? *alloc : defAlloc};
+
+        auto texResult = Texture::load(img);
+        if (!texResult)
+        {
+            return unexpected{ std::move(texResult).error() };
+        }
+        auto ptr = std::make_shared<Texture>(std::move(texResult).value());
+        defaultTextures[type] = ptr;
+        return ptr;
+    }
+
+    void MaterialRenderConfig::setDefaultTextures(bgfx::Encoder& encoder) const noexcept
+    {
+        for(auto& fixedConfig : fixedTextures)
+        {
+            auto tex = fixedConfig.texture ? fixedConfig.texture : defaultTexture;
+            encoder.setTexture(fixedConfig.stage, fixedConfig.uniform, tex->getHandle());
+        }
+    }
 
 	void MaterialRenderConfig::reset() noexcept
 	{
@@ -420,5 +453,14 @@ namespace darmok
 		{
 			material.renderSubmit(viewId, encoder, *_renderConfig);
 		}
+	}
+
+	expected<void, std::string> MaterialAppComponent::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+	{
+		if (_renderConfig)
+		{
+			_renderConfig->setDefaultTextures(encoder);
+		}
+        return {};
 	}
 }

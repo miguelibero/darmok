@@ -104,7 +104,7 @@ namespace
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.tryAddSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
-			scene.addComponent<AmbientLight>(lightEntity, 5);
+			scene.addComponent<AmbientLight>(lightEntity, 0.5);
 
 			auto skel = _app.getAssets().getSkeletonLoader()("skeleton.ozz").value();
 

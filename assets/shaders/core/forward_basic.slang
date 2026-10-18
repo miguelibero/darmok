@@ -1,5 +1,5 @@
 #include <darmok_skinning.inc.slang>
-#include <darmok_forward_basic.inc.slang>
+#include <darmok_phong.inc.slang>
 
 struct VSInput
 {
@@ -45,5 +45,5 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    return forwardFragment(IN.v_viewDir, IN.v_normal, IN.v_position, IN.v_texcoord0);
+    return applyFragmentLights(IN.v_viewDir, IN.v_normal, IN.v_position, IN.v_texcoord0);
 }

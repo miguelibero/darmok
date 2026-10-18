@@ -87,6 +87,8 @@ namespace darmok
 
         static MaterialRenderConfig createDefault(bool pbr = false) noexcept;
 
+        expected<std::shared_ptr<Texture>, std::string> addDefaultColorCubemap(TextureType type, const Color& color, OptionalRef<bx::AllocatorI> alloc = {});
+
         template<typename T>
         expected<std::reference_wrapper<FixedTextureConfig>, std::string> addFixedTexture(const std::string& name, uint8_t stage, const T& mem)
         {
@@ -111,6 +113,8 @@ namespace darmok
             });
             return fixedTextures.back();
         };
+
+        void setDefaultTextures(bgfx::Encoder& encoder) const noexcept;
 
         void reset() noexcept;
     };
@@ -179,6 +183,7 @@ namespace darmok
         expected<void, std::string> shutdown() noexcept override;
         void renderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept;
+        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
     private:
         std::optional<RenderConfig> _renderConfig;
     };

@@ -68,6 +68,7 @@ namespace
 
             auto matConfig = MaterialRenderConfig::createDefault(true);
 
+            /*
             std::shared_ptr<Texture> envIrradiance;
             DARMOK_TRY_VALUE_PREFIX(envIrradiance, _app.getAssets().getTextureLoader()("env_irradiance.bin"), "loading env irradiance texture");
             matConfig.defaultTextures[Material::TextureDefinition::EnvironmentIrradiance] = envIrradiance;
@@ -75,6 +76,7 @@ namespace
             std::shared_ptr<Texture> envPrefiltered;
             DARMOK_TRY_VALUE_PREFIX(envPrefiltered, _app.getAssets().getTextureLoader()("env_prefiltered.bin"), "loading env prefiltered texture");
             matConfig.defaultTextures[Material::TextureDefinition::EnvironmentPrefiltered] = envPrefiltered;
+            */
 
             DARMOK_TRY_PREFIX(_app.addComponent<MaterialAppComponent>(std::move(matConfig)), "adding material component");
 
