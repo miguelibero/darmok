@@ -266,6 +266,7 @@ namespace darmok
             {
                 material.renderBind(encoder);
             }
+
             encoder.submit(viewId, _geoProg->getHandle());
         }
 
@@ -280,24 +281,28 @@ namespace darmok
         result = _gbuffer->beforeRenderLight(encoder);
         if(!result)
         {
+            bgfx::end(&encoder);
             return result;
         }
 
         result = _cam->beforeRenderLight(viewId, encoder);
         if(!result)
         {
+            bgfx::end(&encoder);
             return result;
         }
 
         result = _materials->beforeRenderLight(viewId, encoder);
         if(!result)
         {
+            bgfx::end(&encoder);
             return result;
         }
 
         result = _screenMesh->render(encoder);
         if(!result)
         {
+            bgfx::end(&encoder);
             return result;
         }
 

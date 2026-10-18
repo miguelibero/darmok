@@ -1,6 +1,6 @@
+#include <darmok.inc.slang>
 #include <darmok_skinning.inc.slang>
 #include <darmok_material.inc.slang>
-#include <darmok.inc.slang>
 
 struct VSInput
 {
@@ -26,11 +26,6 @@ struct PSOutput
     float4 rt1 : SV_Target1;  // packNormal(viewN).xy + roughness + occlusion
     float4 rt2 : SV_Target2;  // emissive.rgb
 };
-
-uniform float3x3 u_normalMatrix;
-uniform float4x4 u_model[32];
-uniform float4x4 u_viewProj;
-uniform float4x4 u_view;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

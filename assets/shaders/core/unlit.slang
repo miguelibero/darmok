@@ -1,8 +1,7 @@
+#include <darmok.inc.slang>
 #include <darmok_skinning.inc.slang>
 #include <darmok_material_basic.inc.slang>
-#include <darmok.inc.slang>
 
-uniform float4x4 u_modelViewProj;
 uniform Texture2D s_texColor;
 SamplerState samplerState;
 

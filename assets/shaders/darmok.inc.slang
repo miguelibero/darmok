@@ -1,7 +1,19 @@
 #pragma once
 
+// bgfx defined uniforms
 uniform float4 u_viewRect;
+uniform float4x4 u_view;
+uniform float4x4 u_invView;
+uniform float4x4 u_proj;
 uniform float4x4 u_invProj;
+uniform float4x4 u_viewProj;
+uniform float4x4 u_invViewProj;
+uniform float4x4 u_modelViewProj;
+uniform float4x4 u_model[32];
+
+// darmok defined uniforms
+uniform float3x3 u_normalMatrix;
+uniform float4 u_camPos;
 
 [__AttributeUsage(_AttributeTargets.Var)]
 struct DarmokVertexNormalizeAttribute

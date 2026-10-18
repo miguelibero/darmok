@@ -19,11 +19,6 @@ struct VSOutput
     float3 v_viewDir : VIEWDIR;
 };
 
-uniform float4 u_camPos;
-uniform float3x3 u_normalMatrix;
-uniform float4x4 u_model[32];
-uniform float4x4 u_viewProj;
-
 [shader("vertex")]
 VSOutput vert(VSInput IN)
 {

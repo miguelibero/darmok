@@ -217,6 +217,36 @@ namespace darmok
 		return 0;
 	}
 
+    uint64_t Material::getRenderState() const noexcept
+    {
+        uint64_t state = BGFX_STATE_DEFAULT;
+        state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | getDepthTestFlag(depthTest);
+        if(twoSided)
+        {
+            state &= ~BGFX_STATE_CULL_MASK;
+        }
+        if(primitiveType == Material::Definition::Line)
+        {
+            state &= ~BGFX_STATE_MSAA;
+            state |= BGFX_STATE_PT_LINES;
+            state |= BGFX_STATE_LINEAA;
+        }
+        auto opa = opacityType;
+        if(opa == Material::Definition::Transparent || opa == Material::Definition::Mask)
+        {
+            state |= BGFX_STATE_BLEND_ALPHA;
+        }
+        else
+        {
+            state &= ~BGFX_STATE_WRITE_A;
+        }
+        if(!writeDepth)
+        {
+            state &= ~BGFX_STATE_WRITE_Z;
+        }
+        return state;
+    }
+
 	void Material::renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
 	{
 		std::optional<RenderConfig> defConfig;
@@ -269,39 +299,12 @@ namespace darmok
 		encoder.setUniform(config.hasTexturesUniform, glm::value_ptr(hasTextures));
 		config.basicUniforms.configure(encoder);
 		config.uniformHandles.configure(encoder, uniformValues);
-
-		uint64_t state = BGFX_STATE_DEFAULT;
-		state = (state & ~BGFX_STATE_DEPTH_TEST_MASK) | getDepthTestFlag(depthTest);
-		if (twoSided)
-		{
-			state &= ~BGFX_STATE_CULL_MASK;
-		}
-		if (primitiveType == Material::Definition::Line)
-		{
-			state &= ~BGFX_STATE_MSAA;
-			state |= BGFX_STATE_PT_LINES;
-			state |= BGFX_STATE_LINEAA;
-		}
-		auto opa = opacityType;
-		if (opa == Material::Definition::Transparent || opa == Material::Definition::Mask)
-		{
-			state |= BGFX_STATE_BLEND_ALPHA;
-		}
-		else
-		{
-			state &= ~BGFX_STATE_WRITE_A;
-		}
-		if (!writeDepth)
-		{
-			state &= ~BGFX_STATE_WRITE_Z;
-		}
-
-		encoder.setState(state);
 	}
 
 	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config) const noexcept
 	{
 		renderBind(encoder, config);
+        encoder.setState(getRenderState());
 		auto prog = program->getHandle(programDefines);
 		encoder.submit(viewId, prog);
 	}
@@ -361,13 +364,40 @@ namespace darmok
         return ptr;
     }
 
-    void MaterialRenderConfig::setDefaultTextures(bgfx::Encoder& encoder) const noexcept
+    void MaterialRenderConfig::renderBind(bgfx::Encoder& encoder) const noexcept
     {
+        glm::vec4 hasTextures{0};
+        uint8_t maxTextureMips = 0;
+
+        for(const auto& [type, key] : textureUniformKeys)
+        {
+            auto itr = defaultTextures.find(type);
+            if(itr == defaultTextures.end())
+            {
+                continue;
+            }
+            auto tex = itr->second;
+            maxTextureMips = std::max(maxTextureMips, tex->getMipsCount());
+            uniformHandles.configure(encoder, key, tex->getHandle());
+        }
         for(auto& fixedConfig : fixedTextures)
         {
             auto tex = fixedConfig.texture ? fixedConfig.texture : defaultTexture;
             encoder.setTexture(fixedConfig.stage, fixedConfig.uniform, tex->getHandle());
         }
+        auto val = Colors::normalize(Colors::white());
+        encoder.setUniform(baseColorUniform, glm::value_ptr(val));
+        val = glm::vec4{0};
+        encoder.setUniform(metallicRoughnessNormalOcclusionUniform, glm::value_ptr(val));
+        val = glm::vec4{Colors::normalize(Colors::white3()), maxTextureMips - 1};
+        encoder.setUniform(emissiveColorUniform, glm::value_ptr(val));
+        val = glm::vec4{0};
+        encoder.setUniform(multipleScatteringUniform, glm::value_ptr(val));
+        val = glm::vec4{Colors::normalize(Colors::white3()), 0};
+        encoder.setUniform(specularColorUniform, glm::value_ptr(val));
+        val = glm::vec4{0};
+        encoder.setUniform(hasTexturesUniform, glm::value_ptr(hasTextures));
+        basicUniforms.configure(encoder);
     }
 
 	void MaterialRenderConfig::reset() noexcept
@@ -459,7 +489,7 @@ namespace darmok
 	{
 		if (_renderConfig)
 		{
-			_renderConfig->setDefaultTextures(encoder);
+            _renderConfig->renderBind(encoder);
 		}
         return {};
 	}

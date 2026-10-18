@@ -16,7 +16,6 @@ struct VSOutput
     float4 v_color0 : COLOR0;
 };
 
-uniform float4x4 u_modelViewProj;
 uniform float4 u_imageLodEnabled; // x = lod, y = enabled
 uniform Texture2D s_texColor;
 SamplerState s_texColorState;

@@ -70,7 +70,7 @@ struct SpotLight
 uniform StructuredBuffer<SpotLight> b_spotLights : register(t12);
 
 uniform float4 u_lightCountVec;
-uniform float4 u_ambientLightIrradiance;
+uniform float4 u_ambientLight;
 
 #define u_dirLightCount   uint(u_lightCountVec.x)
 #define u_pointLightCount uint(u_lightCountVec.y)
@@ -125,7 +125,7 @@ DirLight getDirLight(uint i)
 AmbientLight getAmbientLight()
 {
     AmbientLight l;
-    l.irradiance = u_ambientLightIrradiance.xyz;
+    l.irradiance = u_ambientLight.xyz;
     return l;
 }
 

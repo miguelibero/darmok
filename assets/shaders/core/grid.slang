@@ -1,8 +1,5 @@
 #include <darmok.inc.slang>
 
-uniform float4x4 u_invViewProj;
-uniform float4x4 u_viewProj;
-
 uniform float4 u_gridColor1;
 uniform float4 u_gridColor2;
 uniform float4 u_xAxisColor;

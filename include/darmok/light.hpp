@@ -151,7 +151,7 @@ namespace darmok
         OptionalRef<Camera> _cam;
 
         UniformHandle _lightCountUniform;
-        UniformHandle _lightDataUniform;
+        UniformHandle _ambientLightUniform;
         UniformHandle _camPosUniform;
         UniformHandle _normalMatrixUniform;
         DynamicVertexBuffer _pointLightBuffer;
@@ -163,7 +163,7 @@ namespace darmok
         bgfx::VertexLayout _spotLightsLayout;
 
         glm::vec4 _lightCount;
-        glm::vec4 _lightData;
+        glm::vec4 _ambientLightData;
         glm::vec4 _camPos;
 
         size_t updatePointLights() noexcept;

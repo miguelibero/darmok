@@ -286,7 +286,7 @@ namespace darmok
 
     LightingRenderComponent::LightingRenderComponent() noexcept
         : _lightCount{ 0 }
-        , _lightData{ 0 }
+        , _ambientLightData{ 0 }
         , _camPos{ 0 }
     {
 
@@ -338,7 +338,7 @@ namespace darmok
         _dirLightBuffer = { 1, _dirLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
         _spotLightBuffer = { 1, _spotLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
         _lightCountUniform = { "u_lightCountVec", bgfx::UniformType::Vec4 };
-        _lightDataUniform = { "u_ambientLightIrradiance", bgfx::UniformType::Vec4 };
+        _ambientLightUniform = {"u_ambientLight", bgfx::UniformType::Vec4};
         _camPosUniform = { "u_camPos", bgfx::UniformType::Vec4 };
         _normalMatrixUniform = { "u_normalMatrix", bgfx::UniformType::Mat3 };
     }
@@ -346,7 +346,7 @@ namespace darmok
     void LightingRenderComponent::destroyHandles() noexcept
     {
         _lightCountUniform.reset();
-        _lightDataUniform.reset();
+        _ambientLightUniform.reset();
         _camPosUniform.reset();
         _normalMatrixUniform.reset();
         _pointLightBuffer.reset();
@@ -497,12 +497,12 @@ namespace darmok
     void LightingRenderComponent::updateAmbientLights() noexcept
     {
         auto entities = _cam->getEntities<AmbientLight>();
-        _lightData = glm::vec4{ 0.f };
+        _ambientLightData = glm::vec4{ 0.f };
         for (auto entity : entities)
         {
             const auto& ambientLight = _scene->getComponent<const AmbientLight>(entity).value();
             auto c = Colors::normalize(ambientLight.getColor()) * ambientLight.getIntensity();
-            _lightData += glm::vec4{ c, 0.f };
+            _ambientLightData += glm::vec4{c, 0.f};
         }
     }
 
@@ -552,11 +552,12 @@ namespace darmok
 
     expected<void, std::string> LightingRenderComponent::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
-        encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
-        encoder.setUniform(_lightDataUniform, glm::value_ptr(_lightData));
         encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);
         encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
         encoder.setBuffer(RenderSamplers::LIGHTS_SPOT, _spotLightBuffer, bgfx::Access::Read);
+
+        encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
+        encoder.setUniform(_ambientLightUniform, glm::value_ptr(_ambientLightData));
         encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
 
         return {};

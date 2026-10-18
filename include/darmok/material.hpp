@@ -114,7 +114,7 @@ namespace darmok
             return fixedTextures.back();
         };
 
-        void setDefaultTextures(bgfx::Encoder& encoder) const noexcept;
+        void renderBind(bgfx::Encoder& encoder) const noexcept;
 
         void reset() noexcept;
     };
@@ -168,6 +168,7 @@ namespace darmok
         expected<void, std::string> load(const Definition& def, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
 
         [[nodiscard]] static Definition createDefinition() noexcept;
+        uint64_t getRenderState() const noexcept;
         void renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         static uint16_t getDepthTestFlag(Definition::DepthTest) noexcept;

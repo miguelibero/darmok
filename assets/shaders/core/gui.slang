@@ -1,6 +1,5 @@
 #include <darmok.inc.slang>
 
-uniform float4x4 u_modelViewProj;
 uniform float4 u_color;
 uniform Texture2D s_texColor;
 SamplerState samplerState;

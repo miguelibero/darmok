@@ -1,6 +1,4 @@
-
-uniform float4x4 u_view;
-uniform float4x4 u_proj;
+#include <darmok.inc.slang>
 
 struct VSInput
 {

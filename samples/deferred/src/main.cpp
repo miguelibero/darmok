@@ -68,7 +68,6 @@ namespace
 
             auto matConfig = MaterialRenderConfig::createDefault(true);
 
-            /*
             std::shared_ptr<Texture> envIrradiance;
             DARMOK_TRY_VALUE_PREFIX(envIrradiance, _app.getAssets().getTextureLoader()("env_irradiance.bin"), "loading env irradiance texture");
             matConfig.defaultTextures[Material::TextureDefinition::EnvironmentIrradiance] = envIrradiance;
@@ -76,7 +75,6 @@ namespace
             std::shared_ptr<Texture> envPrefiltered;
             DARMOK_TRY_VALUE_PREFIX(envPrefiltered, _app.getAssets().getTextureLoader()("env_prefiltered.bin"), "loading env prefiltered texture");
             matConfig.defaultTextures[Material::TextureDefinition::EnvironmentPrefiltered] = envPrefiltered;
-            */
 
             DARMOK_TRY_PREFIX(_app.addComponent<MaterialAppComponent>(std::move(matConfig)), "adding material component");
 
@@ -93,11 +91,11 @@ namespace
             DARMOK_TRY_PREFIX(_cam->addComponent<SkyboxRenderer>(envSkybox), "adding skybox component");
 
             std::shared_ptr<Program> prog;
-            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
-            DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
+            // DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
+            // DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
 
             auto lightEntity = scene->createEntity();
-            scene->addComponent<AmbientLight>(lightEntity, 0.05);
+            scene->addComponent<AmbientLight>(lightEntity, 0.5);
 
             auto dirLightEntity = scene->createEntity();
             auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0});

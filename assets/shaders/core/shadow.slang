@@ -1,4 +1,5 @@
 
+#include <darmok.inc.slang>
 #include <darmok_skinning.inc.slang>
 
 struct VSInput
@@ -12,8 +13,6 @@ struct VSOutput
 {
     float4 position : SV_Position;
 };
-
-uniform float4x4 u_modelViewProj;
 
 [shader("vertex")]
 VSOutput vert(VSInput IN)

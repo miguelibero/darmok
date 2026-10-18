@@ -18,7 +18,6 @@ struct VSOutput
     float2 v_docPosition : TEXCOORD1;
 };
 
-uniform float4x4 u_modelViewProj;
 uniform float4 u_rmluiData;
 
 #define u_rmluiForceDepth ((int(u_rmluiData.x) & 1 << 0) != 0)

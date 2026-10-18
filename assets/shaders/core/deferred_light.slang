@@ -2,11 +2,11 @@
 // Material texture slots 0-3 are unused in this pass; we reuse them for G-buffer.
 // Light (10-12) and shadow (13-14) slots are shared with the forward renderer.
 
+#include <darmok.inc.slang>
 #include <darmok_brdf.inc.slang>
 #include <darmok_light.inc.slang>
 #include <darmok_shadow.inc.slang>
 #include <darmok_pbr.inc.slang>
-#include <darmok.inc.slang>
 
 // G-buffer (reusing material slots 0-3, which are not needed in this pass)
 [[vk::binding(0, 0)]]
@@ -28,12 +28,6 @@ SamplerState s_gbufferEmissiveState : register(s2);
 uniform Texture2D<float> s_gbufferDepth : register(t3);
 [[vk::binding(3, 0)]]
 SamplerState s_gbufferDepthState : register(s3);
-
-// bgfx built-in: inverse view matrix (camera space -> world space)
-uniform float4x4 u_invView;
-
-// Set by LightingRenderComponent::beforeRenderEntity
-uniform float4 u_camPos;
 
 struct VSInput
 {
