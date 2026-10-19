@@ -153,6 +153,7 @@ namespace darmok
 		whiteFurnanceFactor = def.white_furnance_factor();
 		specularColor = convert<Color3>(def.specular_color());
 		shininess = def.shininess();
+		alphaCutoff = def.alpha_cutoff();
 		depthTest = def.depth_test();
 		opacityType = def.opacity_type();
 		twoSided = def.twosided();
@@ -174,6 +175,7 @@ namespace darmok
 		*def.mutable_base_color() = convert<protobuf::Color>(Colors::white());
 		def.set_opacity_type(Material::Definition::Opaque);
 		def.set_shininess(32.0f);
+		def.set_alpha_cutoff(0.5f);
 		def.set_depth_test(Material::Definition::DepthLess);
 		return def;
 	}
@@ -221,7 +223,8 @@ namespace darmok
             state |= BGFX_STATE_LINEAA;
         }
         auto opa = opacityType;
-        if(opa == Material::Definition::Transparent || opa == Material::Definition::Mask)
+        // mask materials are cut out in the shader, they stay opaque
+        if(opa == Material::Definition::Transparent)
         {
             state |= BGFX_STATE_BLEND_ALPHA;
         }
@@ -285,6 +288,8 @@ namespace darmok
 		val = glm::vec4{ Colors::normalize(specularColor), shininess };
 		encoder.setUniform(config.specularColorUniform, glm::value_ptr(val));
 
+		// the second component is the alpha cutoff, 0 disables the alpha test
+		hasTextures.y = opacityType == Material::Definition::Mask ? alphaCutoff : 0.F;
 		encoder.setUniform(config.hasTexturesUniform, glm::value_ptr(hasTextures));
 		config.basicUniforms.configure(encoder);
 		config.uniformHandles.configure(encoder, uniformValues);

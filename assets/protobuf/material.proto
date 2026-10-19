@@ -89,4 +89,7 @@ message Material {
 
     Color3 specular_color = 18;
     uint32 shininess = 19;
+
+    // pixels with alpha below this value are discarded when opacity_type is Mask
+    float alpha_cutoff = 21;
 }

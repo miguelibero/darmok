@@ -16,6 +16,7 @@ static inline float4 applyFragmentLights(float3 V, float3 N, float3 fragPos, flo
     V = normalize(V);
     N = normalize(N);
     Material mat = getMaterial(texCoord);
+    discardBelowAlphaCutoff(mat.diffuse.a);
     float3 radianceOut = float3(0.0f, 0.0f, 0.0f);
 
     uint pointLights = pointLightCount();

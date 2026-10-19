@@ -174,8 +174,10 @@ namespace darmok
                 continue;
             }
 
+            auto& material = *renderable->getMaterial();
+            _renderer->beforeRenderMaterial(encoder, material);
             encoder.setState(renderState);
-            encoder.submit(viewId, _renderer->getProgramHandle());
+            encoder.submit(viewId, _renderer->getProgramHandle(material));
         }
     }
 
@@ -307,6 +309,7 @@ namespace darmok
         _cam.reset();
         _scene.reset();
         _app.reset();
+        _materials.reset();
 
         return {};
     }
@@ -549,6 +552,28 @@ namespace darmok
     ProgramHandle ShadowRenderer::getProgramHandle() const noexcept
     {
         return _program->getHandle();
+    }
+
+    ProgramHandle ShadowRenderer::getProgramHandle(const Material& material) const noexcept
+    {
+        if (material.opacityType == Material::Definition::Mask)
+        {
+            auto handle = _program->getHandle({ "ALPHA_MASK_ENABLED" });
+            if (handle.valid())
+            {
+                return handle;
+            }
+        }
+        return getProgramHandle();
+    }
+
+    void ShadowRenderer::beforeRenderMaterial(bgfx::Encoder& encoder, const Material& material) const noexcept
+    {
+        // the mask variant reads the base color texture and alpha cutoff
+        if (_materials && material.opacityType == Material::Definition::Mask)
+        {
+            _materials->renderBind(encoder, material);
+        }
     }
 
     TextureHandle ShadowRenderer::getTextureHandle() const noexcept

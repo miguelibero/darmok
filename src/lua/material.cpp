@@ -144,6 +144,7 @@ namespace darmok
 			"emissive_color", &Material::emissiveColor,
 			"two_sided", &Material::twoSided,
 			"multiple_scattering", &Material::multipleScattering,
+			"alpha_cutoff", &Material::alphaCutoff,
 			"white_furnance_factor", &Material::whiteFurnanceFactor
 		);
 	}

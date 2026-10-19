@@ -55,6 +55,7 @@ float4 frag(VSOutput IN) : SV_Target
 {
     discardIfHiddenBySceneDepth(IN.position);
     Material mat = getMaterial(IN.v_texcoord0);
+    discardBelowAlphaCutoff(mat.albedo.a);
     // convert normal map from tangent space -> world space (= space of tangent, etc.)
     float3 N = convertTangentNormal(IN.v_normal, IN.v_tangent, mat.normal);
     return applyFragmentLights(IN.v_viewDir, N, IN.v_position, mat);

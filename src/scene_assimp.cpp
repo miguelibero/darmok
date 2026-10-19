@@ -613,6 +613,9 @@ namespace darmok
                 else if (alphaMode == "MASK")
                 {
                     matDef.set_opacity_type(Material::Definition::Mask);
+                    float cutoff = 0.5F;
+                    assimpMat.Get(AI_MATKEY_GLTF_ALPHACUTOFF, cutoff);
+                    matDef.set_alpha_cutoff(cutoff);
                 }
                 else
                 {

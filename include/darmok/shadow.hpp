@@ -15,6 +15,8 @@ namespace darmok
     class Texture;
     class Transform;
     class ShadowRenderer;
+    class Material;
+    class MaterialAppComponent;
     class SpotLight;
     class PointLight;
 
@@ -75,6 +77,9 @@ namespace darmok
 
         const Definition& getDefinition() const noexcept;
         ProgramHandle getProgramHandle() const noexcept;
+        // variant used to render the material as a shadow caster
+        ProgramHandle getProgramHandle(const Material& material) const noexcept;
+        void beforeRenderMaterial(bgfx::Encoder& encoder, const Material& material) const noexcept;
         TextureHandle getTextureHandle() const noexcept;
         OptionalRef<Camera> getCamera() noexcept;
         OptionalRef<Scene> getScene() noexcept;
@@ -91,6 +96,7 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
+        OptionalRef<MaterialAppComponent> _materials;
         std::unique_ptr<Program> _program;
         std::vector<ShadowRenderPass> _passes;
         std::unique_ptr<Texture> _tex;

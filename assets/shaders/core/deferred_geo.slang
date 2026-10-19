@@ -55,6 +55,7 @@ PSOutput frag(VSOutput IN)
 {
     PSOutput OUT;
     Material mat = getMaterial(IN.v_texcoord0);
+    discardBelowAlphaCutoff(mat.albedo.a);
 
     // Apply normal map: tangent space -> world space
     float3 N = convertTangentNormal(IN.v_normal, IN.v_tangent, mat.normal);

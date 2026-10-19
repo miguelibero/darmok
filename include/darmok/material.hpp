@@ -152,6 +152,9 @@ namespace darmok
         Color3 specularColor = {};
         uint16_t shininess = 32;
 
+        // alpha below this value is discarded when opacityType is Mask
+        float alphaCutoff = 0.5F;
+
         std::unordered_map<TextureType, std::shared_ptr<Texture>> textures;
 
         DepthTest depthTest = Definition::DepthLessEqual;

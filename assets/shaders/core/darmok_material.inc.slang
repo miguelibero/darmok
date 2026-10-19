@@ -44,6 +44,15 @@ uniform float4 u_hasTextures;
 #define u_emissiveFactor          (u_emissiveFactorVec.xyz)
 #define u_environmentMaxMip       (u_emissiveFactorVec.w)
 
+// alpha test for mask materials, u_hasTextures.y holds the cutoff (0 = disabled)
+void discardBelowAlphaCutoff(float alpha)
+{
+    float cutoff = u_hasTextures.y;
+    if (cutoff > 0.0 && alpha < cutoff)
+    {
+        discard;
+    }
+}
 
 float4 materialAlbedoValue(float2 texcoord)
 {

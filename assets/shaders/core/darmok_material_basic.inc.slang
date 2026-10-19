@@ -30,6 +30,16 @@ struct Material
     float shininess;
 };
 
+// alpha test for mask materials, u_hasTextures.y holds the cutoff (0 = disabled)
+void discardBelowAlphaCutoff(float alpha)
+{
+    float cutoff = u_hasTextures.y;
+    if (cutoff > 0.0 && alpha < cutoff)
+    {
+        discard;
+    }
+}
+
 float4 materialDiffuseValue(float2 texcoord)
 {
     if(u_hasBaseColorTexture)
