@@ -16,7 +16,6 @@ namespace darmok
     class Transform;
     class ShadowRenderer;
     class Material;
-    class MaterialAppComponent;
     class SpotLight;
     class PointLight;
 
@@ -29,7 +28,7 @@ namespace darmok
         void configure(Entity entity = entt::null, uint8_t part = 0) noexcept;
 
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
-        void render(bgfx::Encoder& encoder) noexcept;
+        void render(bgfx::Encoder& encoder, OptionalRef<MaterialAppComponent> materials) noexcept;
     private:
         std::optional<bgfx::ViewId> _viewId;
         Entity _lightEntity;
@@ -37,7 +36,7 @@ namespace darmok
         bgfx::FrameBufferHandle _fb;
         OptionalRef<ShadowRenderer> _renderer;
 
-        void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        void renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<MaterialAppComponent> materials) noexcept;
         void configureView() noexcept;
     };
 
@@ -79,7 +78,6 @@ namespace darmok
         ProgramHandle getProgramHandle() const noexcept;
         // variant used to render the material as a shadow caster
         ProgramHandle getProgramHandle(const Material& material) const noexcept;
-        void beforeRenderMaterial(bgfx::Encoder& encoder, const Material& material) const noexcept;
         TextureHandle getTextureHandle() const noexcept;
         OptionalRef<Camera> getCamera() noexcept;
         OptionalRef<Scene> getScene() noexcept;
@@ -96,7 +94,6 @@ namespace darmok
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
-        OptionalRef<MaterialAppComponent> _materials;
         std::unique_ptr<Program> _program;
         std::vector<ShadowRenderPass> _passes;
         std::unique_ptr<Texture> _tex;

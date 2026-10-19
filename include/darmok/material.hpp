@@ -172,7 +172,7 @@ namespace darmok
         [[nodiscard]] static Definition createDefinition() noexcept;
         uint64_t getRenderState() const noexcept;
         void renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, ProgramHandle prog, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
+        void shadowRenderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         static uint16_t getDepthTestFlag(Definition::DepthTest) noexcept;
     };
 
@@ -185,7 +185,7 @@ namespace darmok
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         void renderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, ProgramHandle prog, const Material& material) const noexcept;
+        void shadowRenderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
         expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
     private:
         std::optional<RenderConfig> _renderConfig;

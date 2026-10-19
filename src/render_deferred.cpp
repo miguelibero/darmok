@@ -302,6 +302,7 @@ namespace darmok
                 material.renderBind(encoder);
             }
 
+            encoder.setState(material.getRenderState());
             encoder.submit(viewId, _geoProg->getHandle());
         }
 
@@ -408,8 +409,9 @@ namespace darmok
             auto& material = *renderable->getMaterial();
             auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _forwardProg;
             auto matDefines = material.programDefines;
-            matDefines.insert(defines.begin(), defines.end());
-            _materials->renderSubmit(viewId, encoder, prog->getHandle(matDefines), material);
+            _materials->renderBind(encoder, material);
+            encoder.setState(material.getRenderState());
+            encoder.submit(viewId, prog->getHandle(material.programDefines));
         }
         return StringUtils::joinExpectedErrors(errors);
     }

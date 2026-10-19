@@ -29,7 +29,6 @@ namespace darmok
         static const uint8_t DEFERRED_NORMAL_ROUGHNESS_OCCLUSION = 1;
         static const uint8_t DEFERRED_EMISSIVE = 2;
         static const uint8_t DEFERRED_DEPTH = 3;
-        // depth of the deferred G-buffer, read by forward passes drawn over it
         static const uint8_t DEFERRED_SCENE_DEPTH = 15;
     };
 }

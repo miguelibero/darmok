@@ -239,6 +239,19 @@ namespace darmok
         return state;
     }
 
+    void Material::shadowRenderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
+    {
+        std::optional<RenderConfig> defConfig;
+        if(!optConfig)
+        {
+            defConfig = RenderConfig::createDefault();
+        }
+        auto& config = optConfig ? *optConfig : *defConfig;
+        glm::vec4 hasTextures{0};
+        hasTextures.y = opacityType == Material::Definition::Mask ? alphaCutoff : 0.F;
+        encoder.setUniform(config.hasTexturesUniform, glm::value_ptr(hasTextures));
+    }
+
 	void Material::renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> optConfig) const noexcept
 	{
 		std::optional<RenderConfig> defConfig;
@@ -288,22 +301,10 @@ namespace darmok
 		val = glm::vec4{ Colors::normalize(specularColor), shininess };
 		encoder.setUniform(config.specularColorUniform, glm::value_ptr(val));
 
-		// the second component is the alpha cutoff, 0 disables the alpha test
 		hasTextures.y = opacityType == Material::Definition::Mask ? alphaCutoff : 0.F;
 		encoder.setUniform(config.hasTexturesUniform, glm::value_ptr(hasTextures));
 		config.basicUniforms.configure(encoder);
 		config.uniformHandles.configure(encoder, uniformValues);
-	}
-
-	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, ProgramHandle prog, OptionalRef<const RenderConfig> config) const noexcept
-	{
-		if (!prog.valid())
-		{
-			return;
-		}
-		renderBind(encoder, config);
-        encoder.setState(getRenderState());
-		encoder.submit(viewId, prog);
 	}
 
 	MaterialRenderConfig MaterialRenderConfig::createDefault(bool pbr) noexcept
@@ -473,13 +474,13 @@ namespace darmok
 		}
 	}
 
-	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, ProgramHandle prog, const Material& material) const noexcept
-	{
-		if (_renderConfig)
-		{
-			material.renderSubmit(viewId, encoder, prog, *_renderConfig);
-		}
-	}
+    void MaterialAppComponent::shadowRenderBind(bgfx::Encoder& encoder, const Material& material) const noexcept
+    {
+        if(_renderConfig)
+        {
+            material.shadowRenderBind(encoder, *_renderConfig);
+        }
+    }
 
 	expected<void, std::string> MaterialAppComponent::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
 	{

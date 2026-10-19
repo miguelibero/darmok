@@ -101,7 +101,7 @@ namespace darmok
         bgfx::setViewClear(viewId, BGFX_CLEAR_DEPTH);
     }
 
-    void ShadowRenderPass::render(bgfx::Encoder& encoder) noexcept
+    void ShadowRenderPass::render(bgfx::Encoder& encoder, OptionalRef<MaterialAppComponent> materials) noexcept
     {
         if (!_viewId)
         {
@@ -138,10 +138,10 @@ namespace darmok
         }
         bgfx::setViewTransform(viewId, glm::value_ptr(view), glm::value_ptr(proj));
 
-        renderEntities(viewId, encoder);
+        renderEntities(viewId, encoder, materials);
     }
 
-    void ShadowRenderPass::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    void ShadowRenderPass::renderEntities(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<MaterialAppComponent> materials) noexcept
     {
         static const uint64_t renderState =
             BGFX_STATE_WRITE_Z
@@ -174,10 +174,19 @@ namespace darmok
                 continue;
             }
 
-            auto& material = *renderable->getMaterial();
-            _renderer->beforeRenderMaterial(encoder, material);
+            auto prog = _renderer->getProgramHandle();
+
+            if (auto material = renderable->getMaterial())
+            {
+                prog = _renderer->getProgramHandle(*material);
+                if(materials)
+                {
+                    materials->shadowRenderBind(encoder, *material);
+                }
+            }
+
             encoder.setState(renderState);
-            encoder.submit(viewId, _renderer->getProgramHandle(material));
+            encoder.submit(viewId, prog);
         }
     }
 
@@ -309,7 +318,6 @@ namespace darmok
         _cam.reset();
         _scene.reset();
         _app.reset();
-        _materials.reset();
 
         return {};
     }
@@ -567,15 +575,6 @@ namespace darmok
         return getProgramHandle();
     }
 
-    void ShadowRenderer::beforeRenderMaterial(bgfx::Encoder& encoder, const Material& material) const noexcept
-    {
-        // the mask variant reads the base color texture and alpha cutoff
-        if (_materials && material.opacityType == Material::Definition::Mask)
-        {
-            _materials->renderBind(encoder, material);
-        }
-    }
-
     TextureHandle ShadowRenderer::getTextureHandle() const noexcept
     {
         return _tex->getHandle();
@@ -648,9 +647,6 @@ namespace darmok
         bb.max.x = snappedX + radius;
         bb.min.y = snappedY - radius;
         bb.max.y = snappedY + radius;
-        // the frustum slice only bounds the receivers; occluders can sit between
-        // the light and the slice and would be clipped by the ortho near plane,
-        // making shadows pop in and out as the camera rotates
         bb.min.z -= radius * 2.f;
         return bb.getOrtho();
     }
@@ -723,10 +719,11 @@ namespace darmok
 
     expected<void, std::string> ShadowRenderer::render() noexcept
     {
+        auto materials = _app->getComponent<MaterialAppComponent>();
         auto encoder = bgfx::begin();
         for (auto& pass : _passes)
         {
-            pass.render(*encoder);
+            pass.render(*encoder, materials);
         }
         bgfx::end(encoder);
 

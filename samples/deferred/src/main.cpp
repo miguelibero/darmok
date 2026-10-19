@@ -101,7 +101,7 @@ namespace
             auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0});
             auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
             dirLight.setShadowType(LightDefinition::SoftShadow);
-            // scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
+            scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
@@ -112,7 +112,7 @@ namespace
 			{
 				auto entity = scene->createEntity();
 				auto& light = scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
-				// light.setShadowType(LightDefinition::HardShadow);
+				light.setShadowType(LightDefinition::HardShadow);
 				scene->addComponent<Transform>(entity, lightConfig.position);
 			}
 
