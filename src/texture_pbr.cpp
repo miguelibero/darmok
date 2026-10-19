@@ -262,10 +262,12 @@ namespace darmok
                     (2.0f * glm::pi<float>()) +
                 0.5f;
 
+            // v=0 is the top of the image (sky), v=1 is the bottom (ground);
+            // matches Math::equirectangularUV convention
             const float v =
+                0.5f -
                 std::asin(glm::clamp(dir.y, -1.0f, 1.0f)) /
-                    glm::pi<float>() +
-                0.5f;
+                    glm::pi<float>();
 
             return {u, v};
         }

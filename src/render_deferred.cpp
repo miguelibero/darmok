@@ -302,7 +302,9 @@ namespace darmok
                 material.renderBind(encoder);
             }
 
-            encoder.setState(material.getRenderState());
+            // getRenderState() drops alpha writes for opaque materials, but the G-buffer
+            // stores metallic and occlusion in the alpha channels
+            encoder.setState(material.getRenderState() | BGFX_STATE_WRITE_A);
             encoder.submit(viewId, _geoProg->getHandle());
         }
 
