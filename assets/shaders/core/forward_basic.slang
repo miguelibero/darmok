@@ -40,5 +40,6 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
+    discardIfHiddenBySceneDepth(IN.position.xyz);
     return applyFragmentLights(IN.v_viewDir, IN.v_normal, IN.v_position, IN.v_texcoord0);
 }

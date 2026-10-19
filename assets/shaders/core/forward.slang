@@ -49,29 +49,10 @@ VSOutput vert(VSInput IN)
     return OUT;
 }
 
-#ifdef DARMOK_VARIANT_SCENE_DEPTH_ENABLED
-
-[[vk::binding(15, 0)]]
-uniform Texture2D<float> s_sceneDepth : register(t15);
-
-#endif
-
-void discardIfHiddenBySceneDepth(float4 fragCoord)
-{
-#ifdef DARMOK_VARIANT_SCENE_DEPTH_ENABLED
-    float sceneDepth = s_sceneDepth.Load(int3(int2(fragCoord.xy), 0));
-    if (fragCoord.z > sceneDepth)
-    {
-        discard;
-    }
-#endif
-}
-
-
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    discardIfHiddenBySceneDepth(IN.position);
+    discardIfHiddenBySceneDepth(IN.position.xyz);
     Material mat = getMaterial(IN.v_texcoord0);
     discardBelowAlphaCutoff(mat.albedo.a);
     // convert normal map from tangent space -> world space (= space of tangent, etc.)

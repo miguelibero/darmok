@@ -81,6 +81,8 @@ float4 frag(VSOutput IN) : SV_Target
 {
     float t = -IN.v_nearPoint.y / (IN.v_farPoint.y - IN.v_nearPoint.y);
     float3 pos = IN.v_nearPoint + t * (IN.v_farPoint - IN.v_nearPoint);
+    discardIfHiddenBySceneDepth(pos);
+    
     float ft = float(t > 0.0);
     float alpha1 = ft * grid(pos.xz, u_gridScale1);
     float alpha2 = ft * grid(pos.xz, u_gridScale2);

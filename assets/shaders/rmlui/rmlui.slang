@@ -57,6 +57,8 @@ SamplerState s_texMaskState;
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
+    discardIfHiddenBySceneDepth(IN.position.xyz);
+    
 #ifdef DARMOK_VARIANT_GRADIENT
     float2 p0 = u_rmluiGradient.xy;
     float2 p1 = u_rmluiGradient.zw;

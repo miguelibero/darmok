@@ -1,23 +1,5 @@
 #include <darmok.inc.slang>
 
-#ifdef DARMOK_VARIANT_SCENE_DEPTH_ENABLED
-
-[[vk::binding(15, 0)]]
-uniform Texture2D<float> s_sceneDepth : register(t15);
-
-#endif
-
-void discardIfHiddenBySceneDepth(float4 fragCoord)
-{
-#ifdef DARMOK_VARIANT_SCENE_DEPTH_ENABLED
-    float sceneDepth = s_sceneDepth.Load(int3(int2(fragCoord.xy), 0));
-    if (fragCoord.z > sceneDepth)
-    {
-        discard;
-    }
-#endif
-}
-
 struct VSInput
 {
     float3 a_position : POSITION;
@@ -67,7 +49,7 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    discardIfHiddenBySceneDepth(IN.position);
+    discardIfHiddenBySceneDepth(IN.position.xyz);
     return s_texColor.Sample(s_texColorState, IN.v_texcoord0);
 }
 

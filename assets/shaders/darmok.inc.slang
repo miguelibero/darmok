@@ -15,6 +15,8 @@ uniform float4x4 u_model[32];
 uniform float3x3 u_normalMatrix;
 uniform float4 u_camPos;
 
+#define u_hasSceneDepth uint(u_camPos.w) != 0
+
 [__AttributeUsage(_AttributeTargets.Var)]
 struct DarmokVertexNormalizeAttribute
 {
@@ -106,4 +108,19 @@ float3 unpackNormal(float2 encoded)
     float f = dot(fenc, fenc);
     float g = sqrt(1.0 - f * 0.25);
     return float3(fenc * g, -(1.0 - f * 0.5));
+}
+
+[[vk::binding(15, 0)]]
+uniform Texture2D<float> s_sceneDepth : register(t15);
+
+void discardIfHiddenBySceneDepth(float3 fragCoord)
+{
+    if(u_hasSceneDepth)
+    {
+        float sceneDepth = s_sceneDepth.Load(int3(int2(fragCoord.xy), 0));
+        if (fragCoord.z > sceneDepth)
+        {
+            discard;
+        }
+    }
 }

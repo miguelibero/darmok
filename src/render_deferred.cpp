@@ -404,7 +404,6 @@ namespace darmok
         }
 
         ProgramDefines defines;
-        defines.insert("SCENE_DEPTH_ENABLED");
         if(_cam->getComponent<ShadowRenderer>())
         {
             defines.insert("SHADOW_ENABLED");
