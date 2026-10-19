@@ -1,5 +1,23 @@
 #include <darmok.inc.slang>
 
+#ifdef DARMOK_VARIANT_SCENE_DEPTH_ENABLED
+
+[[vk::binding(15, 0)]]
+uniform Texture2D<float> s_sceneDepth : register(t15);
+
+#endif
+
+void discardIfHiddenBySceneDepth(float4 fragCoord)
+{
+#ifdef DARMOK_VARIANT_SCENE_DEPTH_ENABLED
+    float sceneDepth = s_sceneDepth.Load(int3(int2(fragCoord.xy), 0));
+    if (fragCoord.z > sceneDepth)
+    {
+        discard;
+    }
+#endif
+}
+
 struct VSInput
 {
     float3 a_position : POSITION;
@@ -22,22 +40,25 @@ VSOutput vert(VSInput IN)
 {    
     VSOutput OUT;
 
-	float4x4 view = u_view;
-	
-#ifdef DARMOK_GLSL	
-	view[3][0] = 0.0;
-	view[3][1] = 0.0;
-	view[3][2] = 0.0;
+	// Strip translation: replace each row/col with its xyz and a zero w.
+	// Avoid double-index element writes (view[i][j]=0) which generate SPIRV
+	// that trips a spirv-cross bug — use whole-vector replacement instead.
+#ifdef DARMOK_GLSL
+	// Column-major path: view[c] is a column; column 3 holds translation.
+	float4x4 view = float4x4(u_view[0], u_view[1], u_view[2],
+	                          float4(0.0, 0.0, 0.0, u_view[3].w));
 #else
-	view[0][3] = 0.0;
-	view[1][3] = 0.0;
-	view[2][3] = 0.0;
+	// Row-major path: view[r] is a row; rows 0-2 have translation in .w.
+	float4x4 view = float4x4(float4(u_view[0].xyz, 0.0),
+	                          float4(u_view[1].xyz, 0.0),
+	                          float4(u_view[2].xyz, 0.0),
+	                          u_view[3]);
 #endif
 
 	float4x4 viewProj = mul(u_proj, view);
 	float4 pos = mul(viewProj, float4(IN.a_position, 1.0));
 
-	OUT.position = pos.xyww;
+	OUT.position = float4(pos.xy, pos.w, pos.w);
 	OUT.v_texcoord0 = IN.a_position;
 
     return OUT;
@@ -46,6 +67,7 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
+    discardIfHiddenBySceneDepth(IN.position);
     return s_texColor.Sample(s_texColorState, IN.v_texcoord0);
 }
 

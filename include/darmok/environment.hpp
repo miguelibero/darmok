@@ -4,6 +4,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/color.hpp>
 #include <darmok/mesh.hpp>
+#include <darmok/program.hpp>
 #include <darmok/protobuf/camera.pb.h>
 
 #include <memory>
@@ -24,6 +25,7 @@ namespace darmok
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        void setDefines(const ProgramDefines& defines) noexcept;
 
         static Definition createDefinition() noexcept;
     private:
@@ -32,6 +34,7 @@ namespace darmok
         UniformHandle _texUniform;
         std::shared_ptr<Texture> _texture;
         std::unique_ptr<Program> _program;
+        ProgramDefines _defines;
     };
 
 
