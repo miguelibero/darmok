@@ -18,7 +18,7 @@ namespace darmok
 		, _progLoader{ _dataProgDefLoader }
 		, _texLoader{ _texDefLoader }
 		, _dataMatDefLoader{ getDataLoader() }
-		, _materialLoader{ _dataMatDefLoader, _progLoader, _texLoader }
+		, _materialLoader{ _dataMatDefLoader, _texLoader }
 		, _meshLoader{ _dataMeshDefLoader }
 		, _dataArmDefLoader{ getDataLoader() }
 		, _armatureLoader{ _dataArmDefLoader }

@@ -35,6 +35,8 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
         OptionalRef<MaterialAppComponent> _materials;
+        std::shared_ptr<Program> _litProg;
+        std::shared_ptr<Program> _unlitProg;
         std::optional<bgfx::ViewId> _viewId;
     };
 }

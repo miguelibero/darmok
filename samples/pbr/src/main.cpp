@@ -150,7 +150,7 @@ namespace
 			scene.tryAddSceneComponent<CircleUpdater>(pointLightTrans);
 			auto& pointLight = scene.addComponent<PointLight>(pointLightEntity, 100);
 			pointLight.setShadowType(LightDefinition::HardShadow);
-			scene.addComponent<Renderable>(pointLightEntity, debugSphereMesh, unlitProg, Colors::green());
+			scene.addComponent<Renderable>(pointLightEntity, debugSphereMesh, std::make_shared<Material>(Colors::green(), Material::Definition::Unlit));
 			scene.addComponent<BoundingBox>(pointLightEntity, debugSphereMeshData.getBounds());
 
 			auto dirLightEntity = scene.createEntity();
@@ -159,7 +159,7 @@ namespace
 			auto& dirLight = scene.addComponent<DirectionalLight>(dirLightEntity, 1);
 			dirLight.setShadowType(LightDefinition::SoftShadow);
 			_rotateUpdaters.emplace_back(*scene.tryAddSceneComponent<RotateUpdater>(dirLightTrans));
-			scene.addComponent<Renderable>(dirLightEntity, debugArrowMesh, unlitProg, Colors::magenta());
+			scene.addComponent<Renderable>(dirLightEntity, debugArrowMesh, std::make_shared<Material>(Colors::magenta(), Material::Definition::Unlit));
 			scene.addComponent<BoundingBox>(dirLightEntity, debugArrowMeshData.getBounds());
 
 			auto spotLightEntity = scene.createEntity();
@@ -167,16 +167,16 @@ namespace
 				.lookAt(glm::vec3{ 0.f });
 			auto& spotLight = scene.addComponent<SpotLight>(spotLightEntity, 100).setConeAngle(glm::radians(15.f));
 			spotLight.setShadowType(LightDefinition::HardShadow);
-			scene.addComponent<Renderable>(spotLightEntity, debugArrowMesh, unlitProg, Colors::cyan());
+			scene.addComponent<Renderable>(spotLightEntity, debugArrowMesh, std::make_shared<Material>(Colors::cyan(), Material::Definition::Unlit));
 			scene.addComponent<BoundingBox>(spotLightEntity, debugArrowMeshData.getBounds());
 			_rotateUpdaters.emplace_back(*scene.tryAddSceneComponent<RotateUpdater>(spotLightTrans, -50.f));
 
 			auto ambientLightEntity = scene.createEntity();
 			scene.addComponent<AmbientLight>(ambientLightEntity, 0.2);
 
-			auto greenMat = std::make_shared<Material>(prog, Colors::green());
+			auto greenMat = std::make_shared<Material>(Colors::green());
 
-			auto goldMat = std::make_shared<Material>(prog, Colors::denormalize({ 0.944f, 0.776f, 0.373f, 1.f }));
+			auto goldMat = std::make_shared<Material>(Colors::denormalize({ 0.944f, 0.776f, 0.373f, 1.f }));
 			goldMat->metallicFactor = 0.5f;
 
 			Cube cubeShape;
@@ -214,7 +214,7 @@ namespace
 			}
 			auto floorMesh = floorMeshResult.value();
 
-			auto floorMat = std::make_shared<Material>(prog, Colors::red());
+			auto floorMat = std::make_shared<Material>(Colors::red());
 			floorMat->programDefines.insert("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 			scene.addComponent<BoundingBox>(floorEntity, floorShape);

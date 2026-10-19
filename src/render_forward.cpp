@@ -37,6 +37,19 @@ namespace darmok
 			return unexpected{std::move(result).error()};
 		}
 		_materials = result.value().get();
+
+		auto litResult = StandardProgramLoader::load(_pbr ? Program::Standard::Forward : Program::Standard::ForwardBasic);
+		if (!litResult)
+		{
+			return unexpected{ "failed to load forward program: " + std::move(litResult).error() };
+		}
+		_litProg = std::move(litResult).value();
+		auto unlitResult = StandardProgramLoader::load(Program::Standard::Unlit);
+		if (!unlitResult)
+		{
+			return unexpected{ "failed to load unlit program: " + std::move(unlitResult).error() };
+		}
+		_unlitProg = std::move(unlitResult).value();
 		return {};
 	}
 
@@ -62,6 +75,9 @@ namespace darmok
 		_cam.reset();
 		_scene.reset();
 		_app.reset();
+		_materials.reset();
+		_litProg.reset();
+		_unlitProg.reset();
 		return {};
 	}
 
@@ -119,7 +135,9 @@ namespace darmok
 			{
 				continue;
 			}
-			_materials->renderSubmit(viewId, encoder, *renderable->getMaterial());
+			auto& material = *renderable->getMaterial();
+			auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _litProg;
+			_materials->renderSubmit(viewId, encoder, *prog, material);
 		}
 		bgfx::end(&encoder);
 		return StringUtils::joinExpectedErrors(errors);

@@ -22,7 +22,7 @@ namespace darmok
 		, _programLoader{ _multiProgramDefLoader }
 		, _textureLoader{ _multiTextureDefLoader }
 		, _meshLoader{ _multiMeshDefLoader }
-		, _materialLoader{ _matDefLoader, _multiProgramLoader, _multiTextureLoader }
+		, _materialLoader{ _matDefLoader, _multiTextureLoader }
 		, _armatureLoader{ _armDefLoader }
 		, _multiProgramDefLoader{ _progDefLoader, _progDefFromSrcLoader }
 		, _multiTextureDefLoader{ _texDefLoader, _texDefFromSrcLoader }

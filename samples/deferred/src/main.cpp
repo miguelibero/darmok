@@ -106,7 +106,7 @@ namespace
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
             auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
-            scene->addComponent<Renderable>(dirLightEntity, arrowMesh, prog, Colors::magenta());
+            scene->addComponent<Renderable>(dirLightEntity, arrowMesh, Colors::magenta());
 
 			for (auto& lightConfig : _pointLights)
 			{

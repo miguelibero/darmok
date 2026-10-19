@@ -3,7 +3,6 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "math.proto";
-import "program.proto";
 import "texture.proto";
 
 message UniformValue {
@@ -36,8 +35,15 @@ message MaterialTexture {
 
 message Material {
     string name = 1;
-    ProgramRef program = 2;
+    reserved 2;
     repeated string program_defines = 3;
+
+    enum ShadingModel {
+        Lit = 0;
+        Unlit = 1;
+    }
+
+    ShadingModel shading_model = 20;
     
     repeated MaterialTexture textures = 4;
     map<string, UniformValue> uniform_values = 5;

@@ -105,31 +105,21 @@ namespace darmok
 		return setTexturePath(textures, itr, texturePath);
 	}
 
-	bool Material::valid() const noexcept
-	{
-		return program && program->getHandle(programDefines).valid();
-	}
-
-	Material::Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept
-		: program{ prog }
+	Material::Material(std::shared_ptr<Texture> tex, ShadingModel shading) noexcept
+		: shadingModel{ shading }
 		, textures{ { Material::TextureDefinition::BaseColor, tex} }
 	{
 	}
 
-	Material::Material(std::shared_ptr<Program> prog, const Color& color) noexcept
-		: program{ prog }
+	Material::Material(const Color& color, ShadingModel shading) noexcept
+		: shadingModel{ shading }
 		, baseColor{ color }
 	{
 	}
 
-	expected<void, std::string> Material::load(const Definition& def, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
+	expected<void, std::string> Material::load(const Definition& def, ITextureLoader& texLoader) noexcept
 	{
-		auto progResult = Program::loadRef(def.program(), progLoader);
-		if (!progResult)
-		{
-			return unexpected{ "failed to load program: " + progResult.error() };
-		}
-		program = progResult.value();
+		shadingModel = def.shading_model();
 		textures.clear();
 		textures.reserve(def.textures_size());
 		uniformTextures.clear();
@@ -181,7 +171,6 @@ namespace darmok
 	Material::Definition Material::createDefinition() noexcept
 	{
 		Definition def;
-		def.mutable_program()->set_standard(Program::Standard::Forward);
 		*def.mutable_base_color() = convert<protobuf::Color>(Colors::white());
 		def.set_opacity_type(Material::Definition::Opaque);
 		def.set_shininess(32.0f);
@@ -301,11 +290,15 @@ namespace darmok
 		config.uniformHandles.configure(encoder, uniformValues);
 	}
 
-	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config) const noexcept
+	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Program& program, OptionalRef<const RenderConfig> config) const noexcept
 	{
+		auto prog = program.getHandle(programDefines);
+		if (!prog.valid())
+		{
+			return;
+		}
 		renderBind(encoder, config);
         encoder.setState(getRenderState());
-		auto prog = program->getHandle(programDefines);
 		encoder.submit(viewId, prog);
 	}
 
@@ -415,9 +408,8 @@ namespace darmok
 		uniformHandles.clear();
 	}
 
-	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept
+	MaterialLoader::MaterialLoader(IMaterialDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept
 		: FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>(defLoader)
-		, _progLoader{ progLoader }
 		, _texLoader{ texLoader }
 	{
 	}
@@ -429,7 +421,7 @@ namespace darmok
 			return unexpected{ "null definition pointer" };
 		}
 		auto mat = std::make_shared<Material>();
-		auto result = mat->load(*def, _progLoader, _texLoader);
+		auto result = mat->load(*def, _texLoader);
 		if (!result)
 		{
 			return unexpected{ std::move(result).error() };
@@ -477,11 +469,11 @@ namespace darmok
 		}
 	}
 
-	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept
+	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Program& program, const Material& material) const noexcept
 	{
 		if (_renderConfig)
 		{
-			material.renderSubmit(viewId, encoder, *_renderConfig);
+			material.renderSubmit(viewId, encoder, program, *_renderConfig);
 		}
 	}
 

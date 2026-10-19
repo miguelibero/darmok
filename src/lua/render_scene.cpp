@@ -25,14 +25,14 @@ namespace darmok
 		return entity.addComponent<Renderable>(mesh, material);
 	}
 
-	Renderable& LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& texture) noexcept
+	Renderable& LuaRenderable::addEntityComponent4(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept
 	{
-		return entity.addComponent<Renderable>(mesh, prog, texture);
+		return entity.addComponent<Renderable>(mesh, texture);
 	}
 
-	Renderable& LuaRenderable::addEntityComponent5(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& prog, const Color& color) noexcept
+	Renderable& LuaRenderable::addEntityComponent5(LuaEntity& entity, const std::shared_ptr<Mesh>& mesh, const Color& color) noexcept
 	{
-		return entity.addComponent<Renderable>(mesh, prog, color);
+		return entity.addComponent<Renderable>(mesh, color);
 	}
 
 	OptionalRef<Renderable>::std_t LuaRenderable::getEntityComponent(LuaEntity& entity) noexcept

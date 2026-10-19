@@ -508,7 +508,10 @@ namespace darmok
     {
         matDef.set_name(convert<std::string>(assimpMat.GetName()));
 
-        *matDef.mutable_program() = _config.program();
+        if (_config.program().has_standard() && _config.program().standard() == protobuf::StandardProgram::Unlit)
+        {
+            matDef.set_shading_model(MaterialDefinition::Unlit);
+        }
         for (auto& define : _config.program_defines())
         {
 			auto itr = std::find(matDef.program_defines().begin(), matDef.program_defines().end(), define);

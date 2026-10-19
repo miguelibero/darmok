@@ -87,7 +87,7 @@ namespace
 				return unexpected{ std::move(unlitProgResult).error() };
 			}
 			auto unlitProg = unlitProgResult.value();
-			auto debugMat = std::make_shared<Material>(unlitProg, Colors::magenta());
+			auto debugMat = std::make_shared<Material>(Colors::magenta(), Material::Definition::Unlit);
 
 			auto lightRootEntity = scene.createEntity();
 			auto& lightRootTrans = scene.addComponent<Transform>(lightRootEntity, glm::vec3{ 0, 1.5, -1 });
@@ -122,7 +122,7 @@ namespace
 			auto& skelTrans = scene.addComponent<Transform>(skelEntity, glm::vec3{ -1, 0, 0 });
 			skelTrans.setParent(animTrans);
 			
-			auto boneMat = std::make_shared<Material>(prog, Colors::grey());
+			auto boneMat = std::make_shared<Material>(Colors::grey());
 
 			auto boneMeshResult = RenderableSkeleton::createBoneMesh(prog->getVertexLayout());
 			if (!boneMeshResult)
@@ -142,7 +142,7 @@ namespace
 			auto normalTex = texLoader("BasicMotions_DummyType01-Normal.png").value();
 			auto ambientTex = texLoader("BasicMotions_DummyType01-AmbientOcclusion.png").value();
 
-			auto mat = std::make_shared<Material>(prog, Colors::fromNumber(0xFAB137FF));
+			auto mat = std::make_shared<Material>(Colors::fromNumber(0xFAB137FF));
 			mat->programDefines = { "SKINNING_ENABLED" };
 			mat->textures[Material::TextureDefinition::BaseColor] = baseTex;
 			mat->textures[Material::TextureDefinition::MetallicRoughness] = metalTex;

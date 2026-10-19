@@ -136,7 +136,7 @@ namespace
 				.setCullingFilter<Culling2D>()
 				.tryAddComponent<ForwardRenderer>();
 
-			_debugMaterial = std::make_shared<Material>(_prog, Colors::red());
+			_debugMaterial = std::make_shared<Material>(Colors::red(), Material::Definition::Unlit);
 			_debugMaterial->primitiveType = Material::Definition::Line;
 
 			createBouncingSprite(scene);
@@ -160,7 +160,7 @@ namespace
 
 			auto meshResult = meshData.createMesh(_prog->getVertexLayout());
 			auto mesh = std::make_shared<Mesh>(std::move(meshResult).value());
-			auto mat = std::make_shared<Material>(_prog, tex);
+			auto mat = std::make_shared<Material>(tex, Material::Definition::Unlit);
 			mat->opacityType = Material::Definition::Transparent;
 			scene.addComponent<Renderable>(sprite, std::move(mesh), mat);
 
@@ -195,7 +195,7 @@ namespace
 			config.scale = glm::vec3{ 2.f } *glm::vec3{ win.getFramebufferScale(), 1.f };
 			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1f, config);
 			
-			auto material = std::make_shared<Material>(_prog, texAtlas->texture);
+			auto material = std::make_shared<Material>(texAtlas->texture, Material::Definition::Unlit);
 			material->opacityType = Material::Definition::Transparent;
 			auto& renderable = scene.addComponent<Renderable>(anim, material);
 			scene.addComponent<FrameAnimation>(anim, frames, renderable);
@@ -208,7 +208,7 @@ namespace
 		void createRotatingCube(Scene& scene) noexcept
 		{
 			auto texture = _app.getAssets().getTextureLoader()("brick.png").value();
-			auto material = std::make_shared<Material>(_prog, texture);
+			auto material = std::make_shared<Material>(texture, Material::Definition::Unlit);
 			material->baseColor = Colors::red();
 
 			auto meshData = MeshData{ Cube{} };

@@ -19,11 +19,10 @@ namespace darmok
 		using MaterialTextureType = protobuf::MaterialTexture::Type;
 		using MaterialPrimitiveType = protobuf::Material::PrimitiveType;
 		using MaterialOpacityType = protobuf::Material::OpacityType;
+		using MaterialShadingModel = protobuf::Material::ShadingModel;
 
-		static std::shared_ptr<Material> create1(const std::shared_ptr<Program>& prog) noexcept;
-		static std::shared_ptr<Material> create2(const std::shared_ptr<Texture>& tex) noexcept;
-		static std::shared_ptr<Material> create3(const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& tex) noexcept;
-		static std::shared_ptr<Material> create4(const std::shared_ptr<Program>& prog, const VarLuaTable<Color>& color) noexcept;
+		static std::shared_ptr<Material> create1(const std::shared_ptr<Texture>& tex) noexcept;
+		static std::shared_ptr<Material> create2(const VarLuaTable<Color>& color) noexcept;
 
 		static void setTexture1(Material& mat, const std::shared_ptr<Texture>& tex) noexcept;
 		static void setTexture2(Material& mat, MaterialTextureType type, const std::shared_ptr<Texture>& tex) noexcept;

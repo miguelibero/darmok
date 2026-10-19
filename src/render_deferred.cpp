@@ -11,6 +11,7 @@
 #include <darmok/string.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/light.hpp>
+#include <darmok/shadow.hpp>
 #include "detail/render_samplers.hpp"
 #include "generated/shaders/deferred_geo.h"
 #include "generated/shaders/deferred_light.h"
@@ -310,7 +311,14 @@ namespace darmok
         state |= BGFX_STATE_DEPTH_TEST_ALWAYS;
         state &= ~BGFX_STATE_WRITE_Z;
         encoder.setState(state);
-        encoder.submit(viewId, _lightProg->getHandle());
+
+        // the shadow code is only compiled into the SHADOW_ENABLED program variant
+        ProgramDefines defines;
+        if (_cam->getComponent<ShadowRenderer>())
+        {
+            defines.insert("SHADOW_ENABLED");
+        }
+        encoder.submit(viewId, _lightProg->getHandle(defines));
 
         bgfx::end(&encoder);
         return StringUtils::joinExpectedErrors(errors);

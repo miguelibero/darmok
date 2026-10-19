@@ -125,11 +125,12 @@ namespace darmok
         using PrimitiveType = protobuf::Material::PrimitiveType;
         using DepthTest = protobuf::Material::DepthTest;
         using OpacityType = protobuf::Material::OpacityType;
+        using ShadingModel = protobuf::Material::ShadingModel;
         using Definition = protobuf::Material;
         using TextureDefinition = protobuf::MaterialTexture;
         using RenderConfig = MaterialRenderConfig;
 
-        std::shared_ptr<Program> program;
+        ShadingModel shadingModel = Definition::Lit;
         ProgramDefines programDefines;
 
         UniformValueMap uniformValues;
@@ -159,18 +160,16 @@ namespace darmok
         PrimitiveType primitiveType = Definition::Triangle;
         bool writeDepth = true;
 
-        bool valid() const noexcept;
-
         Material() = default;
-        Material(std::shared_ptr<Program> prog, std::shared_ptr<Texture> tex) noexcept;
-        Material(std::shared_ptr<Program> prog, const Color& color) noexcept;
+        Material(std::shared_ptr<Texture> tex, ShadingModel shading = Definition::Lit) noexcept;
+        Material(const Color& color, ShadingModel shading = Definition::Lit) noexcept;
 
-        expected<void, std::string> load(const Definition& def, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
+        expected<void, std::string> load(const Definition& def, ITextureLoader& texLoader) noexcept;
 
         [[nodiscard]] static Definition createDefinition() noexcept;
         uint64_t getRenderState() const noexcept;
         void renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Program& program, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         static uint16_t getDepthTestFlag(Definition::DepthTest) noexcept;
     };
 
@@ -183,7 +182,7 @@ namespace darmok
         expected<void, std::string> update(float deltaTime) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
         void renderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
-        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Material& material) const noexcept;
+        void renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Program& program, const Material& material) const noexcept;
         expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
     private:
         std::optional<RenderConfig> _renderConfig;
@@ -196,10 +195,9 @@ namespace darmok
     class DARMOK_EXPORT MaterialLoader final : public FromDefinitionLoader<IMaterialFromDefinitionLoader, IMaterialDefinitionLoader>
     {
     public:
-        MaterialLoader(IMaterialDefinitionLoader& defLoader, IProgramLoader& progLoader, ITextureLoader& texLoader) noexcept;
+        MaterialLoader(IMaterialDefinitionLoader& defLoader, ITextureLoader& texLoader) noexcept;
     private:
         Result create(std::shared_ptr<Definition> def) noexcept override;
-        IProgramLoader& _progLoader;
         ITextureLoader& _texLoader;
     };
 

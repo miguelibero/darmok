@@ -1,7 +1,7 @@
 function init()
     local program = StandardProgramLoader.load(StandardProgramType.Forward)
     local cubeMesh = MeshData.new_cube():create_mesh(program.vertex_layout)
-    local greenMat = Material.new(program, Color.green)
+    local greenMat = Material.new(Color.green)
 
     local scene = app:add_component(SceneAppComponent).scene
 

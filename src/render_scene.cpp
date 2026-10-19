@@ -20,13 +20,13 @@ namespace darmok
 	{
 	}
 
-	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept
-		: Renderable(mesh, std::make_shared<Material>(program, texture))
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept
+		: Renderable(mesh, std::make_shared<Material>(texture))
 	{
 	}
 
-	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept
-		: Renderable(mesh, std::make_shared<Material>(program, color))
+	Renderable::Renderable(const std::shared_ptr<Mesh>& mesh, const Color& color) noexcept
+		: Renderable(mesh, std::make_shared<Material>(color))
 	{
 	}
 
@@ -68,22 +68,9 @@ namespace darmok
 		return *this;
 	}
 
-	bgfx::VertexLayout Renderable::getVertexLayout() const noexcept
-	{
-		if (!_material)
-		{
-			return {};
-		}
-		if (!_material->program)
-		{
-			return {};
-		}
-		return _material->program->getVertexLayout();
-	}
-
 	bool Renderable::valid() const noexcept
 	{
-		return _mesh != nullptr && _material != nullptr && _material->valid();
+		return _mesh != nullptr && _material != nullptr;
 	}
 
 	expected<void, std::string> Renderable::render(bgfx::Encoder& encoder) const noexcept

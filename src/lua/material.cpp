@@ -10,32 +10,16 @@
 
 namespace darmok
 {
-	std::shared_ptr<Material> LuaMaterial::create1(const std::shared_ptr<Program>& prog) noexcept
-	{
-		auto mat = std::make_shared<Material>();
-		mat->program = prog;
-		return mat;
-	}
-
-	std::shared_ptr<Material> LuaMaterial::create2(const std::shared_ptr<Texture>& tex) noexcept
+	std::shared_ptr<Material> LuaMaterial::create1(const std::shared_ptr<Texture>& tex) noexcept
 	{
 		auto mat = std::make_shared<Material>();
 		mat->textures[Material::TextureDefinition::BaseColor] = tex;
 		return mat;
 	}
 
-	std::shared_ptr<Material> LuaMaterial::create3(const std::shared_ptr<Program>& prog, const std::shared_ptr<Texture>& tex) noexcept
+	std::shared_ptr<Material> LuaMaterial::create2(const VarLuaTable<Color>& color) noexcept
 	{
 		auto mat = std::make_shared<Material>();
-		mat->program = prog;
-		mat->textures[Material::TextureDefinition::BaseColor] = tex;
-		return mat;
-	}
-
-	std::shared_ptr<Material> LuaMaterial::create4(const std::shared_ptr<Program>& prog, const VarLuaTable<Color>& color) noexcept
-	{
-		auto mat = std::make_shared<Material>();
-		mat->program = prog;
 		mat->baseColor = LuaGlm::tableGet(color);
 		return mat;
 	}
@@ -106,6 +90,7 @@ namespace darmok
 		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
 		LuaUtils::newEnum<MaterialTextureType>(lua, "MaterialTextureType");
 		LuaUtils::newEnum<MaterialOpacityType>(lua, "MaterialOpacityType");
+		LuaUtils::newEnum<MaterialShadingModel>(lua, "MaterialShadingModel");
 
 		auto def = lua.new_usertype<Material::Definition>("MaterialDefinition",
 			sol::factories(
@@ -117,7 +102,6 @@ namespace darmok
 			}
 		);
 		LuaProtobufBinding{ std::move(def) }
-			.protobufProperty<protobuf::ProgramRef>("program")
 			.protobufProperty<protobuf::MaterialTexture>("textures")
 			.protobufProperty<protobuf::UniformValue>("uniform_values")
 			.convertProtobufProperty<Color, protobuf::Color>("base_color")
@@ -128,11 +112,9 @@ namespace darmok
 			sol::factories(
 				[]() { return std::make_shared<Material>();  },
 				&LuaMaterial::create1,
-				&LuaMaterial::create2,
-				&LuaMaterial::create3,
-				&LuaMaterial::create4
+				&LuaMaterial::create2
 			),
-			"program", &Material::program,
+			"shading_model", &Material::shadingModel,
 			"primitive_type", &Material::primitiveType,
 			"set_texture", sol::overload(
 				&LuaMaterial::setTexture1,

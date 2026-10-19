@@ -61,8 +61,8 @@ namespace darmok
     {
     public:
         Renderable(const std::shared_ptr<Mesh>& mesh = nullptr, const std::shared_ptr<Material>& material = nullptr) noexcept;
-        Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const std::shared_ptr<Texture>& texture) noexcept;
-        Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Program>& program, const Color& color) noexcept;
+        Renderable(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Texture>& texture) noexcept;
+        Renderable(const std::shared_ptr<Mesh>& mesh, const Color& color) noexcept;
         Renderable(const std::shared_ptr<Material>& material) noexcept;
         std::shared_ptr<Mesh> getMesh() const noexcept;
         Renderable& setMesh(const std::shared_ptr<Mesh>& mesh) noexcept;
@@ -70,7 +70,6 @@ namespace darmok
         Renderable& setMaterial(const std::shared_ptr<Material>& material) noexcept;
         bool isEnabled() const noexcept;
         Renderable& setEnabled(bool enabled) noexcept;
-        bgfx::VertexLayout getVertexLayout() const noexcept;
 
         bool valid() const noexcept;
         expected<void, std::string> render(bgfx::Encoder& encoder) const noexcept;
