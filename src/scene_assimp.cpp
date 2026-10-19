@@ -508,10 +508,7 @@ namespace darmok
     {
         matDef.set_name(convert<std::string>(assimpMat.GetName()));
 
-        if (_config.program().has_standard() && _config.program().standard() == protobuf::StandardProgram::Unlit)
-        {
-            matDef.set_shading_model(MaterialDefinition::Unlit);
-        }
+        matDef.set_shading_model(_config.shading_model());
         for (auto& define : _config.program_defines())
         {
 			auto itr = std::find(matDef.program_defines().begin(), matDef.program_defines().end(), define);
@@ -649,7 +646,10 @@ namespace darmok
             return false;
         }
         
-        *meshSrc.mutable_program() = _config.program();
+        meshSrc.mutable_program()->set_standard(
+            _config.shading_model() == MaterialDefinition::Unlit
+            ? protobuf::StandardProgram::Unlit
+            : protobuf::StandardProgram::Forward);
 
         AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
         auto convertResult = converter();
@@ -822,25 +822,16 @@ namespace darmok
 
     void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config)
     {
-        auto itr = json.find("programPath");
-        auto& progRef = *config.mutable_program();
-        if (itr != json.end())
-        {
-            progRef.set_path(itr->get<std::string>());
-        }
-        itr = json.find("program");
+        auto itr = json.find("shadingModel");
         if (itr != json.end())
         {
             auto val = itr->get<std::string>();
-            StandardProgramLoader::Type standard;
-            if (Program::Standard::Type_Parse(val, &standard))
+            protobuf::Material::ShadingModel model;
+            if (!protobuf::Material::ShadingModel_Parse(val, &model))
             {
-                progRef.set_standard(standard);
+                throw std::invalid_argument{ "invalid shading model: " + val };
             }
-            else
-            {
-                progRef.set_path(val);
-            }
+            config.set_shading_model(model);
         }
         itr = json.find("programDefines");
         if (itr != json.end())
@@ -1052,10 +1043,6 @@ namespace darmok
                 effect.dependencies.insert(basePath / depPath);
             }
         }
-        if (_currentConfig->program().has_path())
-        {
-            effect.dependencies.insert(basePath / _currentConfig->program().path());
-        }
         return effect;
     }
 
@@ -1093,17 +1080,6 @@ namespace darmok
 
         addRootPath(input.basePath);
         _dataLoader.setBasePath(basePath);
-
-        // set program path if it was compiled in a previous step
-        if (_currentConfig->program().has_path())
-        {
-            auto programPath = _currentConfig->program().path();
-            auto itr = config.dependencyOutputs.find(programPath);
-            if (itr != config.dependencyOutputs.end())
-            {
-                _currentConfig->mutable_program()->set_path(itr->second.string());
-            }
-        }
 
         AssimpSceneDefinitionConverter converter{ *_currentScene, def, *_currentConfig, _alloc, texLoader };
         auto convertResult = converter();

@@ -3,7 +3,6 @@
         "sponza/Sponza.gltf": {
             "scene": {
                 "outputPath": "../Sponza.dsc",
-                "program": "Forward",
                 "embedTextures": true,
                 "shadowType": "Soft",
                 "textureFlags": ["BGFX_TEXTURE_MSAA_SAMPLE", "MIN_ANISOTROPIC", "MAG_ANISOTROPIC"],

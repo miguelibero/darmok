@@ -2,12 +2,11 @@ syntax = "proto3";
 
 package darmok.protobuf;
 
-import "program.proto";
 import "material.proto";
 import "light.proto";
 
 message AssimpSceneImportConfig {
-    ProgramRef program = 1;
+    Material.ShadingModel shading_model = 1;
     repeated string program_defines = 2;
     bool embed_textures = 3;
     string default_texture_path = 4;

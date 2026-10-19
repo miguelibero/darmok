@@ -1,7 +1,6 @@
 {
     "scene": {
         "outputPath": "human.dsc",
-        "program": "ForwardBasic",
         "shadowType": "Soft"
     },
     "copy": {}
