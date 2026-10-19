@@ -1,6 +1,7 @@
 #include <darmok.inc.slang>
 #include <darmok_skinning.inc.slang>
 #include <darmok_pbr.inc.slang>
+#include <darmok_scene_depth.inc.slang>
 
 struct VSInput
 {
@@ -52,6 +53,7 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
+    discardIfHiddenBySceneDepth(IN.position);
     Material mat = getMaterial(IN.v_texcoord0);
     // convert normal map from tangent space -> world space (= space of tangent, etc.)
     float3 N = convertTangentNormal(IN.v_normal, IN.v_tangent, mat.normal);

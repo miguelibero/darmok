@@ -6,9 +6,11 @@
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/uniform.hpp>
+#include <darmok/program_core.hpp>
 #include <darmok/protobuf/camera.pb.h>
 
 #include <memory>
+#include <vector>
 #include <optional>
 #include <bgfx/bgfx.h>
 
@@ -33,6 +35,7 @@ namespace darmok
         static expected<DeferredGeoBuffer, std::string> load(const glm::uvec2& size) noexcept;
         void configureGeoView(bgfx::ViewId viewId) const noexcept;
         expected<void, std::string> beforeRenderLight(bgfx::Encoder& encoder) const noexcept;
+        void beforeRenderTransparent(bgfx::Encoder& encoder) const noexcept;
         glm::uvec2 getSize() const noexcept;
 
     private:
@@ -46,6 +49,7 @@ namespace darmok
         UniformHandle _normalRoughnessOcclusionUniform;
         UniformHandle _emissiveUniform;
         UniformHandle _depthUniform;
+        UniformHandle _sceneDepthUniform;
     };
 
     class DARMOK_EXPORT DeferredRenderer final : public ITypeCameraComponent<DeferredRenderer>
@@ -72,9 +76,14 @@ namespace darmok
         std::optional<bgfx::ViewId> _viewId;
         std::optional<DeferredGeoBuffer> _gbuffer;
 
+        std::shared_ptr<Program> _forwardProg;
+        std::shared_ptr<Program> _unlitProg;
+
         std::optional<Program> _lightProg;
         std::optional<Mesh> _screenMesh;
 
         expected<void, std::string> recreateGeoBuffer() noexcept;
+        expected<void, std::string> renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
+            const std::vector<Entity>& entities, const ProgramDefines& lightDefines) noexcept;
     };
 }

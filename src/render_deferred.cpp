@@ -32,6 +32,7 @@ namespace darmok
         , _normalRoughnessOcclusionUniform{"s_gbufferNormalRoughnessOcclusion", bgfx::UniformType::Sampler}
         , _emissiveUniform{"s_gbufferEmissive", bgfx::UniformType::Sampler}
         , _depthUniform{"s_gbufferDepth", bgfx::UniformType::Sampler}
+        , _sceneDepthUniform{"s_sceneDepth", bgfx::UniformType::Sampler}
     {
         bgfx::TextureHandle handles[] = {_albedoMetallicTex.getHandle(),
                                          _normalRoughnessOcclusionTex.getHandle(),
@@ -106,6 +107,12 @@ namespace darmok
         return {};
     }
 
+    void DeferredGeoBuffer::beforeRenderTransparent(bgfx::Encoder& encoder) const noexcept
+    {
+        encoder.setTexture(RenderSamplers::DEFERRED_SCENE_DEPTH,
+                           _sceneDepthUniform, _depthTex.getHandle());
+    }
+
     DeferredRenderer::Definition DeferredRenderer::createDefinition() noexcept
     {
         Definition def;
@@ -138,6 +145,20 @@ namespace darmok
             return unexpected{ "deferred lighting program: " + std::move(lightResult).error() };
         }
         _lightProg = std::move(lightResult).value();
+
+        // transparent objects are forward shaded over the lit deferred scene
+        auto forwardResult = StandardProgramLoader::load(Program::Standard::Forward);
+        if (!forwardResult)
+        {
+            return unexpected{ "forward program: " + std::move(forwardResult).error() };
+        }
+        _forwardProg = std::move(forwardResult).value();
+        auto unlitResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        if (!unlitResult)
+        {
+            return unexpected{ "unlit program: " + std::move(unlitResult).error() };
+        }
+        _unlitProg = std::move(unlitResult).value();
 
         static const Rectangle screen{glm::uvec2{2}};
         auto meshResult = MeshData{screen}.createMesh(_lightProg->getVertexLayout());
@@ -207,6 +228,12 @@ namespace darmok
 
         _cam->configureView(viewId, "Deferred Lighting", clearFlags);
 
+        ++viewId;
+
+        // keep the lit color and depth, draw transparent objects back to front
+        _cam->configureView(viewId, "Deferred Transparent", BGFX_CLEAR_NONE);
+        bgfx::setViewMode(viewId, bgfx::ViewMode::DepthDescending);
+
         return ++viewId;
     }
 
@@ -236,6 +263,7 @@ namespace darmok
         }
 
         std::vector<std::string> errors;
+        std::vector<Entity> transparentEntities;
         auto entities = _cam->getEntities<Renderable>();
         for (auto entity : entities)
         {
@@ -248,6 +276,13 @@ namespace darmok
             {
                 continue;
             }
+            auto& material = *renderable->getMaterial();
+            if (material.opacityType == Material::Definition::Transparent)
+            {
+                // drawn after lighting, they can't be stored in the G-buffer
+                transparentEntities.push_back(entity);
+                continue;
+            }
             auto entityResult = _cam->beforeRenderEntity(entity, viewId, encoder);
             if (!entityResult)
             {
@@ -258,7 +293,6 @@ namespace darmok
             {
                 continue;
             }
-            auto& material = *renderable->getMaterial();
             if (_materials)
             {
                 _materials->renderBind(encoder, material);
@@ -276,6 +310,7 @@ namespace darmok
         if(!_screenMesh || !_lightProg || !_gbuffer)
         {
             encoder.touch(viewId);
+            bgfx::end(&encoder);
             return unexpected<std::string>{"lighting not initialized"};
         }
 
@@ -320,7 +355,62 @@ namespace darmok
         }
         encoder.submit(viewId, _lightProg->getHandle(defines));
 
+        ++viewId;
+        auto transResult = renderTransparent(viewId, encoder, transparentEntities, defines);
+        if (!transResult)
+        {
+            errors.push_back(std::move(transResult).error());
+        }
+
         bgfx::end(&encoder);
+        return StringUtils::joinExpectedErrors(errors);
+    }
+
+    expected<void, std::string> DeferredRenderer::renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
+        const std::vector<Entity>& entities, const ProgramDefines& lightDefines) noexcept
+    {
+        if (entities.empty())
+        {
+            encoder.touch(viewId);
+            return {};
+        }
+        auto result = _cam->beforeRenderView(viewId, encoder);
+        if (!result)
+        {
+            return result;
+        }
+
+        // opaque depth lives in the G-buffer, the shader discards fragments behind it
+        ProgramDefines defines = lightDefines;
+        defines.insert("SCENE_DEPTH_ENABLED");
+
+        std::vector<std::string> errors;
+        for (auto entity : entities)
+        {
+            auto renderable = _scene->getComponent<const Renderable>(entity);
+            auto entityResult = _cam->beforeRenderEntity(entity, viewId, encoder);
+            if (!entityResult)
+            {
+                errors.push_back(std::move(entityResult).error());
+                continue;
+            }
+            auto lightResult = _cam->beforeRenderLight(viewId, encoder);
+            if (!lightResult)
+            {
+                errors.push_back(std::move(lightResult).error());
+                continue;
+            }
+            _gbuffer->beforeRenderTransparent(encoder);
+            if (!renderable->render(encoder))
+            {
+                continue;
+            }
+            auto& material = *renderable->getMaterial();
+            auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _forwardProg;
+            auto matDefines = material.programDefines;
+            matDefines.insert(defines.begin(), defines.end());
+            _materials->renderSubmit(viewId, encoder, prog->getHandle(matDefines), material);
+        }
         return StringUtils::joinExpectedErrors(errors);
     }
 
@@ -337,6 +427,8 @@ namespace darmok
         _materials.reset();
         _geoProg.reset();
         _lightProg.reset();
+        _forwardProg.reset();
+        _unlitProg.reset();
         _screenMesh.reset();
         _gbuffer.reset();
         return {};

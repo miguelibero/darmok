@@ -137,7 +137,7 @@ namespace darmok
 			}
 			auto& material = *renderable->getMaterial();
 			auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _litProg;
-			_materials->renderSubmit(viewId, encoder, *prog, material);
+			_materials->renderSubmit(viewId, encoder, prog->getHandle(material.programDefines), material);
 		}
 		bgfx::end(&encoder);
 		return StringUtils::joinExpectedErrors(errors);

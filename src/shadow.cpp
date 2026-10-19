@@ -623,6 +623,10 @@ namespace darmok
         bb.max.x = snappedX + radius;
         bb.min.y = snappedY - radius;
         bb.max.y = snappedY + radius;
+        // the frustum slice only bounds the receivers; occluders can sit between
+        // the light and the slice and would be clipped by the ortho near plane,
+        // making shadows pop in and out as the camera rotates
+        bb.min.z -= radius * 2.f;
         return bb.getOrtho();
     }
 

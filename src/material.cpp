@@ -290,9 +290,8 @@ namespace darmok
 		config.uniformHandles.configure(encoder, uniformValues);
 	}
 
-	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Program& program, OptionalRef<const RenderConfig> config) const noexcept
+	void Material::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, ProgramHandle prog, OptionalRef<const RenderConfig> config) const noexcept
 	{
-		auto prog = program.getHandle(programDefines);
 		if (!prog.valid())
 		{
 			return;
@@ -469,11 +468,11 @@ namespace darmok
 		}
 	}
 
-	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, const Program& program, const Material& material) const noexcept
+	void MaterialAppComponent::renderSubmit(bgfx::ViewId viewId, bgfx::Encoder& encoder, ProgramHandle prog, const Material& material) const noexcept
 	{
 		if (_renderConfig)
 		{
-			material.renderSubmit(viewId, encoder, program, *_renderConfig);
+			material.renderSubmit(viewId, encoder, prog, *_renderConfig);
 		}
 	}
 
