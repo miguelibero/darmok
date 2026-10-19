@@ -625,7 +625,7 @@ namespace darmok
                                 N,
                                 sampleCount);
 
-                        result[face][x][y] = glm::vec4{irradiance, 1.0f};
+                        result[face][y][x] = glm::vec4{irradiance, 1.0f};
                     }
                 }
             }
@@ -727,7 +727,7 @@ namespace darmok
                                 prefilteredColor /= totalWeight;
                             }
 
-                            mip[face][x][y] = glm::vec4(prefilteredColor, 1.0f);
+                            mip[face][y][x] = glm::vec4(prefilteredColor, 1.0f);
                         }
                     }
                 }
