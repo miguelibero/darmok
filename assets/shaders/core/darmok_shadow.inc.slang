@@ -63,6 +63,12 @@ bool outsideShadowMap(float3 texCoord)
 
 float getShadowMapValue(uint shadowMapIndex, float3 texCoord)
 {
+	// Treat outside coords as lit
+	if(outsideShadowMap(texCoord))
+	{
+		return 1.0f;
+	}
+
 	// SampleCmp expects float3 coords: (u,v,layer) and a comparison value
 	float cmp = texCoord.z;
 	float3 coord = float3(texCoord.xy, (float)shadowMapIndex);
@@ -90,6 +96,9 @@ int findShadowMap(uint startIdx, uint countIdx, float3 fragPos)
 	{
 		float4x4 trans = getShadowTransform(i);
 		float4 shadowCoord = mul(trans, float4(fragPos, 1.0f));
+		// If w <= 0 the fragment is behind the light/camera projection, treat as outside
+		if(shadowCoord.w <= 0.0f) continue;
+
 		float3 texCoord = shadowCoord.xyz / shadowCoord.w;
 		if(!outsideShadowMap(texCoord))
 		{
@@ -104,6 +113,12 @@ float sampleShadowMap(uint mapIdx, float3 fragPos, float3 texOffset)
 {
 	float4x4 trans = getShadowTransform(mapIdx);
 	float4 shadowCoord = mul(trans, float4(fragPos, 1.0f));
+	// If w <= 0 the fragment is behind the light/camera projection, treat as outside
+	if(shadowCoord.w <= 0.0f)
+	{
+		return 1.0f;
+	}
+
 	float3 texCoord = shadowCoord.xyz / shadowCoord.w;
 	texCoord += texOffset;
 	if(outsideShadowMap(texCoord))
@@ -130,27 +145,32 @@ float softShadow(uint startIdx, uint countIdx, float3 fragPos, float bias)
 	if(mapIdx < 0) return 1.0f;
 	uint idx = (uint)mapIdx;
 	float texelSize = u_shadowTexelSize;
+	// Precompute base texCoord once to avoid rebuilding the transform for each tap
+	float4x4 trans = getShadowTransform(idx);
+	float4 shadowCoord = mul(trans, float4(fragPos, 1.0f));
+	if(shadowCoord.w <= 0.0f) return 1.0f;
+	float3 baseTex = shadowCoord.xyz / shadowCoord.w;
 
 	float v = 0.0f;
-	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize, -1.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize, -0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize,  0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(-1.5f * texelSize,  1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-1.5f * texelSize, -1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-1.5f * texelSize, -0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-1.5f * texelSize,  0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-1.5f * texelSize,  1.5f * texelSize, -bias));
 
-	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize, -1.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize, -0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize,  0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(-0.5f * texelSize,  1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-0.5f * texelSize, -1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-0.5f * texelSize, -0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-0.5f * texelSize,  0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(-0.5f * texelSize,  1.5f * texelSize, -bias));
 
-	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize, -1.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize, -0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize,  0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(0.5f * texelSize,  1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(0.5f * texelSize, -1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(0.5f * texelSize, -0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(0.5f * texelSize,  0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(0.5f * texelSize,  1.5f * texelSize, -bias));
 
-	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize, -1.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize, -0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize,  0.5f * texelSize, -bias));
-	v += sampleShadowMap(idx, fragPos, float3(1.5f * texelSize,  1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(1.5f * texelSize, -1.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(1.5f * texelSize, -0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(1.5f * texelSize,  0.5f * texelSize, -bias));
+	v += getShadowMapValue(idx, baseTex + float3(1.5f * texelSize,  1.5f * texelSize, -bias));
 
 	return v / 16.0f;
 }

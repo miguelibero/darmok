@@ -514,6 +514,8 @@ namespace darmok
 
     expected<void, std::string> Camera::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
     {
+        setViewTransform(viewId);
+
         std::vector<std::string> errors;
         for(auto& comp : copyComponents())
         {

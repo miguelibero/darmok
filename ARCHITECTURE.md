@@ -1,4 +1,45 @@
 
+# App
+
+The main class of a darmok app is called `darmok::App`.
+To create a new app, implement the `darmok::IAppDelegate` interface
+and pass it to the `DARMOK_RUN_APP` macro. See `darmok/app.hpp`
+for all the available app delegate methods.
+
+```c++
+#include <darmok/app.hpp>
+
+class MyAppDelegate final : public darmok::IAppDelegate
+{
+public:
+    expected<void, std::string> init() noexcept override
+    {
+        // add stuff
+        return {};
+    }
+
+    expected<void, std::string> update(float deltaTime) noexcept override
+    {
+        // update stuff
+        return {};
+    }
+};
+
+DARMOK_RUN_APP(MyAppDelegate);
+```
+
+## App Components
+
+The app contains a list of components that can be added or removed. Right now
+darmok supports the following
+
+* imgui: add imgui support
+* scene: adds a entt scene 
+
+# Scene
+
+
+
 # Assets
 
 Each asset type can be loaded using a loader. The loader accepts a path parameter
@@ -46,5 +87,7 @@ See the `IAssetContext` interface in `darmok/asset.hpp` for a full list of asset
 * skeletal animator
 * sound
 * music
+
+ 
 
 # Entities & Components

@@ -1071,7 +1071,7 @@ namespace darmok
 
     glm::vec3 BoundingBox::getCenter() const noexcept
     {
-        return min + size();
+        return min + (size() * 0.5f);
     }
 
     BoundingBox& BoundingBox::operator*=(const glm::mat4& trans) noexcept
