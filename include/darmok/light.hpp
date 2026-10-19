@@ -142,8 +142,8 @@ namespace darmok
         expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
         expected<void, std::string> update(float deltaTime)  noexcept override;
-        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
-        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept override;
+        expected<void, std::string> beforeRenderLight(const RenderContext& ctx) noexcept override;
 
 
     private:
@@ -152,7 +152,6 @@ namespace darmok
 
         UniformHandle _lightCountUniform;
         UniformHandle _ambientLightUniform;
-        UniformHandle _camPosUniform;
         UniformHandle _normalMatrixUniform;
         DynamicVertexBuffer _pointLightBuffer;
         DynamicVertexBuffer _dirLightBuffer;
@@ -170,7 +169,6 @@ namespace darmok
         size_t updateSpotLights() noexcept;
         size_t updateDirLights() noexcept;
         void updateAmbientLights() noexcept;
-        void updateCamera() noexcept;
 
         void createHandles() noexcept;
         void destroyHandles() noexcept;

@@ -9,6 +9,7 @@
 #include <darmok/render_scene.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/scene_filter.hpp>
+#include <darmok/shadow.hpp>
 #include "detail/render_samplers.hpp"
 
 namespace darmok
@@ -16,11 +17,13 @@ namespace darmok
 	ForwardRenderer::Definition ForwardRenderer::createDefinition() noexcept
 	{
 		Definition def;
+        def.set_pbr(true);
 		return def;
 	}
 
-	ForwardRenderer::ForwardRenderer(bool pbr) noexcept
+	ForwardRenderer::ForwardRenderer(bool pbr, const std::string& name) noexcept
         : _pbr{pbr}
+        , _name{name}
 	{
 	}
 
@@ -65,7 +68,7 @@ namespace darmok
 		{
 			return unexpected<std::string>{"camera not loaded"};
 		}
-		_cam->configureView(viewId, "Forward");
+		_cam->configureView(viewId, _name);
 		_viewId = viewId;
 		return ++viewId;
 	}
@@ -81,12 +84,23 @@ namespace darmok
 		return {};
 	}
 
-	expected<void, std::string> ForwardRenderer::render() noexcept
+    expected<void, std::string> ForwardRenderer::render() noexcept
+    {
+        if(!_viewId)
+        {
+            return unexpected<std::string>{"view not initialized"};
+        }
+        auto entitiesView = _cam->getEntities<Renderable>();
+        std::vector<Entity> entities(entities.begin(), entities.end());
+        auto& encoder = *bgfx::begin();
+        RenderContext ctx{*_viewId, encoder};
+        auto result = render(entities, ctx);
+        bgfx::end(&encoder);
+        return result;
+    }
+
+	expected<void, std::string> ForwardRenderer::render(const std::vector<Entity>& entities, const RenderContext& ctx) noexcept
 	{
-		if (!_viewId)
-		{
-			return {};
-		}
 		if (!_scene)
 		{
 			return unexpected<std::string>{"scene not loaded"};
@@ -95,19 +109,16 @@ namespace darmok
 		{
 			return unexpected<std::string>{"camera not loaded"};
 		}
-		if (!_cam->isEnabled())
-		{
-			return {};
-		}
-		auto viewId = _viewId.value();
-		auto& encoder = *bgfx::begin();
-		auto result = _cam->beforeRenderView(viewId, encoder);
+        auto result = _cam->beforeRenderView(ctx);
 		if (!result)
 		{
 			return result;
 		}
+
+        ProgramDefines defines;
+        auto hasShadows = _cam->getComponent<ShadowRenderer>();
+
 		std::vector<std::string> errors;
-		auto entities = _cam->getEntities<Renderable>();
 		for (auto entity : entities)
 		{
 			auto renderable = _scene->getComponent<const Renderable>(entity);
@@ -119,29 +130,35 @@ namespace darmok
 			{
 				continue;
 			}
-			auto result = _cam->beforeRenderEntity(entity, viewId, encoder);
+            auto result = _cam->beforeRenderEntity(entity, ctx);
 			if (!result)
 			{
 				errors.push_back(std::move(result).error());
 				continue;
 			}
-            auto lightResult = _cam->beforeRenderLight(viewId, encoder);
+            auto lightResult = _cam->beforeRenderLight(ctx);
             if(!lightResult)
             {
                 errors.push_back(std::move(lightResult).error());
                 continue;
             }
-			if (!renderable->render(encoder))
+			if (!renderable->render(ctx.encoder))
 			{
 				continue;
 			}
 			auto& material = *renderable->getMaterial();
 			auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _litProg;
-			_materials->renderBind(encoder, material);
-            encoder.setState(material.getRenderState());
-            encoder.submit(viewId, prog->getHandle(material.programDefines));
+			_materials->renderBind(ctx.encoder, material);
+            ctx.encoder.setState(material.getRenderState());
+
+            auto defines = material.programDefines;
+            if(hasShadows)
+            {
+                defines.insert("SHADOW_ENABLED");
+            }
+
+            ctx.encoder.submit(ctx.viewId, prog->getHandle(defines));
 		}
-		bgfx::end(&encoder);
 		return StringUtils::joinExpectedErrors(errors);
 	}
 }

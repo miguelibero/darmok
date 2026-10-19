@@ -338,7 +338,7 @@ namespace darmok
     public:
 		using Definition = protobuf::SkeletalAnimationRenderComponent;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
-        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept override;
         expected<void, std::string> shutdown() noexcept override;
 
         static Definition createDefinition() noexcept;

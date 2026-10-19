@@ -159,7 +159,7 @@ namespace darmok
 		expected<void, std::string> shutdown() noexcept override;
 		expected<void, std::string> render() noexcept override;
 		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
-		expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+		expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept override;
 	private:
 		std::unique_ptr<RmluiRendererImpl> _impl;
 	};

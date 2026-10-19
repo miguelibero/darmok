@@ -482,7 +482,7 @@ namespace darmok
         }
     }
 
-	expected<void, std::string> MaterialAppComponent::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+	expected<void, std::string> MaterialAppComponent::beforeRenderLight(bgfx::Encoder& encoder) const noexcept
 	{
 		if (_renderConfig)
 		{

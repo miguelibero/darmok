@@ -41,5 +41,7 @@ VSOutput vert(VSInput IN)
 float4 frag(VSOutput IN) : SV_Target
 {
     discardIfHiddenBySceneDepth(IN.position.xyz);
-    return applyFragmentLights(IN.v_viewDir, IN.v_normal, IN.v_position, IN.v_texcoord0);
+    Material mat = getMaterial(IN.v_texcoord0);
+    discardBelowAlphaCutoff(mat.diffuse.a);
+    return applyFragmentLights(IN.v_viewDir, IN.v_normal, IN.v_position, mat);
 }

@@ -61,28 +61,32 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> SkyboxRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> SkyboxRenderer::beforeRenderView(const RenderContext& ctx) noexcept
     {
         if (!_mesh || !_program || !_texture)
         {
             return unexpected<std::string>{"not initialized"};
         }
 
-        auto renderResult = _mesh->render(encoder);
+        auto renderResult = _mesh->render(ctx.encoder);
         if(!renderResult)
         {
             return unexpected{ std::move(renderResult).error() };
 		}
 
-        encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO, _texUniform, _texture->getHandle());
+        ctx.encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO, _texUniform, _texture->getHandle());
+        if (_cam)
+        {
+            _cam->setUniforms(ctx);
+        }
 
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_Z
             | BGFX_STATE_DEPTH_TEST_LEQUAL
             ;
-        encoder.setState(state);
-        encoder.submit(viewId, _program->getHandle(_defines));
+        ctx.encoder.setState(state);
+        ctx.encoder.submit(ctx.viewId, _program->getHandle(_defines));
 
         return {};
     }
@@ -165,14 +169,18 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> GridRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> GridRenderer::beforeRenderView(const RenderContext& ctx) noexcept
     {
         if (!_mesh || !_program)
         {
             return unexpected<std::string>{"uninitialized"};
         }
+        if (_cam)
+        {
+            _cam->setUniforms(ctx);
+        }
 
-        auto result = _mesh->render(encoder);
+        auto result = _mesh->render(ctx.encoder);
         if (!result)
         {
             return result;
@@ -183,9 +191,9 @@ namespace darmok
 
         auto color1 = Colors::normalize(convert<Color>(_def.grid1().color()));
         auto color2 = Colors::normalize(convert<Color>(_def.grid2().color()));
-        encoder.setUniform(_color1Uniform, glm::value_ptr(color1));
-        encoder.setUniform(_color2Uniform, glm::value_ptr(color2));
-        encoder.setUniform(_dataUniform, glm::value_ptr(data));
+        ctx.encoder.setUniform(_color1Uniform, glm::value_ptr(color1));
+        ctx.encoder.setUniform(_color2Uniform, glm::value_ptr(color2));
+        ctx.encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
@@ -194,8 +202,8 @@ namespace darmok
             | BGFX_STATE_BLEND_ALPHA
             | BGFX_STATE_DEPTH_TEST_LESS
             ;
-        encoder.setState(state);
-        encoder.submit(viewId, _program->getHandle());
+        ctx.encoder.setState(state);
+        ctx.encoder.submit(ctx.viewId, _program->getHandle());
         return {};
     }
 }

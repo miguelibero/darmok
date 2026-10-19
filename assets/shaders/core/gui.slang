@@ -33,8 +33,9 @@ VSOutput vert(VSInput IN)
 }
 
 [shader("fragment")]
-float4 frag(VSOutput input) : SV_Target
+float4 frag(VSOutput IN) : SV_Target
 {
-    float4 texColor = s_texColor.Sample(samplerState, input.v_texcoord0);
-    return texColor * input.v_color0;
+    discardIfHiddenBySceneDepth(IN.position.xyz);
+    float4 texColor = s_texColor.Sample(samplerState, IN.v_texcoord0);
+    return texColor * IN.v_color0;
 }

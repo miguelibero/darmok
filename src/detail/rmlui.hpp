@@ -112,7 +112,7 @@ namespace darmok
         void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
 
 		expected<void, std::string> renderCanvas(bgfx::Encoder& encoder) noexcept;
-		expected<void, std::string> renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        expected<void, std::string> renderFrame(const CameraRenderContext& ctx) noexcept;
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 
 	private:
@@ -241,7 +241,7 @@ namespace darmok
 		bool update(float deltaTime) noexcept;
 		bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 		expected<void, std::string> render(bgfx::Encoder& encoder) noexcept;
-		expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> beforeRenderView(const CameraRenderContext& ctx) noexcept;
 
 		void setCamera(const OptionalRef<Camera>& camera) noexcept;
 		const OptionalRef<Camera>& getCamera() const noexcept;
@@ -455,7 +455,7 @@ namespace darmok
 		expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept;
 		expected<void, std::string> shutdown() noexcept;
 		expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
-		expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+		expected<void, std::string> beforeRenderView(const CameraRenderContext& ctx) noexcept;
 		expected<void, std::string> render() noexcept;
 
 	private:

@@ -186,7 +186,7 @@ namespace darmok
         expected<void, std::string> shutdown() noexcept override;
         void renderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
         void shadowRenderBind(bgfx::Encoder& encoder, const Material& material) const noexcept;
-        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderLight(bgfx::Encoder& encoder) const noexcept;
     private:
         std::optional<RenderConfig> _renderConfig;
     };

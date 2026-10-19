@@ -113,9 +113,16 @@ namespace darmok
                            _sceneDepthUniform, _depthTex.getHandle());
     }
 
+    DeferredRenderer::DeferredRenderer(bool pbr) noexcept
+        : _pbr(pbr)
+        , _transparentRenderer(pbr, "Deferred Transparent")
+    {
+    }
+
     DeferredRenderer::Definition DeferredRenderer::createDefinition() noexcept
     {
         Definition def;
+        def.set_pbr(true);
         return def;
     }
 
@@ -147,18 +154,11 @@ namespace darmok
         _lightProg = std::move(lightResult).value();
 
         // transparent objects are forward shaded over the lit deferred scene
-        auto forwardResult = StandardProgramLoader::load(Program::Standard::Forward);
+        auto forwardResult = _transparentRenderer.init(cam, scene, app);
         if (!forwardResult)
         {
-            return unexpected{ "forward program: " + std::move(forwardResult).error() };
+            return unexpected{ "forward: " + std::move(forwardResult).error() };
         }
-        _forwardProg = std::move(forwardResult).value();
-        auto unlitResult = StandardProgramLoader::load(Program::Standard::Unlit);
-        if (!unlitResult)
-        {
-            return unexpected{ "unlit program: " + std::move(unlitResult).error() };
-        }
-        _unlitProg = std::move(unlitResult).value();
 
         static const Rectangle screen{glm::uvec2{2}};
         auto meshResult = MeshData{screen}.createMesh(_lightProg->getVertexLayout());
@@ -231,10 +231,8 @@ namespace darmok
         ++viewId;
 
         // keep the lit color and depth, draw transparent objects back to front
-        _cam->configureView(viewId, "Deferred Transparent", BGFX_CLEAR_NONE);
-        bgfx::setViewMode(viewId, bgfx::ViewMode::DepthDescending);
-
-        return ++viewId;
+        // BGFX_CLEAR_NONE, bgfx::ViewMode::DepthDescending
+        return _transparentRenderer.renderReset(viewId);
     }
 
     expected<void, std::string> DeferredRenderer::render() noexcept
@@ -286,6 +284,8 @@ namespace darmok
 
         encoder.touch(viewId);
 
+        CameraRenderContext ctx{viewId, encoder};
+
         _cam->setViewTransform(viewId);
 
         std::vector<std::string> errors;
@@ -308,7 +308,7 @@ namespace darmok
                 output.transparentEntities.push_back(entity);
                 continue;
             }
-            auto entityResult = _cam->beforeRenderEntity(entity, viewId, encoder);
+            auto entityResult = _cam->beforeRenderEntity(entity, ctx);
             if(!entityResult)
             {
                 errors.push_back(std::move(entityResult).error());
@@ -352,13 +352,14 @@ namespace darmok
             return result;
         }
 
-        result = _cam->beforeRenderLight(viewId, encoder);
+        CameraRenderContext ctx{viewId, encoder};
+        result = _cam->beforeRenderLight(ctx);
         if(!result)
         {
             return result;
         }
 
-        result = _materials->beforeRenderLight(viewId, encoder);
+        result = _materials->beforeRenderLight(encoder);
         if(!result)
         {
             return result;
@@ -377,7 +378,7 @@ namespace darmok
 
 
         ProgramDefines defines;
-        if(_cam->getComponent<ShadowRenderer>())
+        if(_cam->hasComponent<ShadowRenderer>())
         {
             defines.insert("SHADOW_ENABLED");
         }
@@ -390,54 +391,7 @@ namespace darmok
     expected<void, std::string> DeferredRenderer::renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
         const std::vector<Entity>& entities) noexcept
     {
-        encoder.touch(viewId);
-
-        auto result = _cam->beforeRenderView(viewId, encoder);
-        if(!result)
-        {
-            return result;
-        }
-
-        if (entities.empty())
-        {
-            return {};
-        }
-
-        ProgramDefines defines;
-        if(_cam->getComponent<ShadowRenderer>())
-        {
-            defines.insert("SHADOW_ENABLED");
-        }
-
-        std::vector<std::string> errors;
-        for (auto entity : entities)
-        {
-            auto renderable = _scene->getComponent<const Renderable>(entity);
-            auto entityResult = _cam->beforeRenderEntity(entity, viewId, encoder);
-            if (!entityResult)
-            {
-                errors.push_back(std::move(entityResult).error());
-                continue;
-            }
-            auto lightResult = _cam->beforeRenderLight(viewId, encoder);
-            if (!lightResult)
-            {
-                errors.push_back(std::move(lightResult).error());
-                continue;
-            }
-            _gbuffer->beforeRenderTransparent(encoder);
-            if (!renderable->render(encoder))
-            {
-                continue;
-            }
-            auto& material = *renderable->getMaterial();
-            auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _forwardProg;
-            auto matDefines = material.programDefines;
-            _materials->renderBind(encoder, material);
-            encoder.setState(material.getRenderState());
-            encoder.submit(viewId, prog->getHandle(material.programDefines));
-        }
-        return StringUtils::joinExpectedErrors(errors);
+        return _transparentRenderer.render(entities, CameraRenderContext{ viewId, encoder, true});
     }
 
     expected<void, std::string> DeferredRenderer::update(float deltaTime) noexcept
@@ -453,10 +407,9 @@ namespace darmok
         _materials.reset();
         _geoProg.reset();
         _lightProg.reset();
-        _forwardProg.reset();
-        _unlitProg.reset();
+        auto result = _transparentRenderer.shutdown();
         _screenMesh.reset();
         _gbuffer.reset();
-        return {};
+        return result;
     }
 }

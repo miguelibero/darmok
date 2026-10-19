@@ -93,7 +93,7 @@ namespace darmok::physics3d
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept;
         expected<void, std::string> shutdown() noexcept;
-        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        expected<void, std::string> beforeRenderView(const CameraRenderContext& ctx) noexcept;
 
         expected<void, std::string> onInputEvent(const std::string& tag) noexcept override;
 

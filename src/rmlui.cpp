@@ -834,7 +834,7 @@ namespace darmok
         return result;
     }
 
-    expected<void, std::string> RmluiRenderInterface::renderFrame(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRenderInterface::renderFrame(const CameraRenderContext& ctx) noexcept
     {
         auto tex = _canvas.getFrameTexture();
         if (!tex)
@@ -842,9 +842,9 @@ namespace darmok
             return unexpected<std::string>{"missing frame texture"};
         }
         auto model = _canvas.getRenderMatrix();
-        encoder.setTransform(glm::value_ptr(model));
+        ctx.encoder.setTransform(glm::value_ptr(model));
 
-        encoder.setTexture(0, _textureUniform, tex->getHandle());
+        ctx.encoder.setTexture(0, _textureUniform, tex->getHandle());
 
         glm::vec3 data{ 0 };
         if (auto depth = _canvas.getForcedDepth())
@@ -852,7 +852,7 @@ namespace darmok
             data.x = 1.F;
             data.y = depth.value();
         }
-        encoder.setUniform(_dataUniform, glm::value_ptr(data));
+        ctx.encoder.setUniform(_dataUniform, glm::value_ptr(data));
 
         auto meshData = MeshData{ Rectangle{_canvas.getCurrentSize()} };
         meshData.type = Mesh::Definition::Transient;
@@ -870,14 +870,14 @@ namespace darmok
             | BGFX_STATE_BLEND_ALPHA
             ;
 
-        auto renderResult = meshResult.value().render(encoder);
+        auto renderResult = meshResult.value().render(ctx.encoder);
         if (!renderResult)
         {
             return unexpected{ std::move(renderResult).error() };
         }
 
-        encoder.setState(state);
-        encoder.submit(viewId, _program->getHandle());
+        ctx.encoder.setState(state);
+        ctx.encoder.submit(ctx.viewId, _program->getHandle());
 
         return {};
     }
@@ -1559,11 +1559,11 @@ namespace darmok
         return _render->renderCanvas(encoder);
     }
 
-    expected<void, std::string> RmluiCanvasImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiCanvasImpl::beforeRenderView(const CameraRenderContext& ctx) noexcept
     {
         if (_render)
         {
-            return _render->renderFrame(viewId, encoder);
+            return _render->renderFrame(ctx);
         }
         return {};
     }
@@ -2652,13 +2652,13 @@ namespace darmok
         return viewId;
     }
 
-    expected<void, std::string> RmluiRendererImpl::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRendererImpl::beforeRenderView(const CameraRenderContext& ctx) noexcept
     {
 		std::vector<std::string> errors;
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
-            auto result = canvas.getImpl().beforeRenderView(viewId, encoder);
+            auto result = canvas.getImpl().beforeRenderView(ctx);
             if (!result)
             {
 				errors.push_back(std::move(result).error());
@@ -2705,9 +2705,9 @@ namespace darmok
         return _impl->renderReset(viewId);
     }
 
-    expected<void, std::string> RmluiRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> RmluiRenderer::beforeRenderView(const RenderContext& ctx) noexcept
     {
-        return _impl->beforeRenderView(viewId, encoder);
+        return _impl->beforeRenderView(ctx);
     }
 
 }

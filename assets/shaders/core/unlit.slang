@@ -37,6 +37,7 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
+    discardIfHiddenBySceneDepth(IN.position.xyz);
 	Material mat = getMaterial(IN.v_texcoord0);
 	discardBelowAlphaCutoff(mat.diffuse.a);
 	return mat.diffuse * IN.v_color0;

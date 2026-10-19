@@ -21,9 +21,11 @@ message FrameAnimationUpdater {
 }
 
 message ForwardRenderer {
+    bool pbr = 1;
 }
 
 message DeferredRenderer {
+    bool pbr = 1;
 }
 
 message OcclusionCuller {   

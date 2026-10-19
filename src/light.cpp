@@ -339,7 +339,6 @@ namespace darmok
         _spotLightBuffer = { 1, _spotLightsLayout, BGFX_BUFFER_COMPUTE_READ | BGFX_BUFFER_ALLOW_RESIZE };
         _lightCountUniform = { "u_lightCountVec", bgfx::UniformType::Vec4 };
         _ambientLightUniform = {"u_ambientLight", bgfx::UniformType::Vec4};
-        _camPosUniform = { "u_camPos", bgfx::UniformType::Vec4 };
         _normalMatrixUniform = { "u_normalMatrix", bgfx::UniformType::Mat3 };
     }
 
@@ -347,7 +346,6 @@ namespace darmok
     {
         _lightCountUniform.reset();
         _ambientLightUniform.reset();
-        _camPosUniform.reset();
         _normalMatrixUniform.reset();
         _pointLightBuffer.reset();
         _dirLightBuffer.reset();
@@ -506,23 +504,6 @@ namespace darmok
         }
     }
 
-    void LightingRenderComponent::updateCamera() noexcept
-    {
-        _camPos = glm::vec4{ 0.f };
-        if (!_cam || !_scene)
-        {
-            return;
-        }
-        auto camEntity = _scene->getEntity(_cam.value());
-        if (camEntity != entt::null)
-        {
-            if (auto camTrans = _scene->getComponent<const Transform>(camEntity))
-            {
-                _camPos = glm::vec4{ camTrans->getWorldPosition(), 0.f };
-            }
-        }
-    }
-
     expected<void, std::string> LightingRenderComponent::update(float deltaTime) noexcept
     {
         if (!_scene)
@@ -534,31 +515,29 @@ namespace darmok
         _lightCount.y = static_cast<float>(updatePointLights());
         _lightCount.z = static_cast<float>(updateSpotLights());
         updateAmbientLights();
-        updateCamera();
         return {};
     }
 
-    expected<void, std::string> LightingRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> LightingRenderComponent::beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept
     {
         glm::mat3 normalMatrix{ 1.f };
         if (auto trans = _scene->getComponent<Transform>(entity))
         {
             normalMatrix = glm::transpose(glm::adjugate(glm::mat3(trans->getWorldMatrix())));
         }
-        encoder.setUniform(_normalMatrixUniform, glm::value_ptr(normalMatrix));
+        ctx.encoder.setUniform(_normalMatrixUniform, glm::value_ptr(normalMatrix));
 
         return {};
     }
 
-    expected<void, std::string> LightingRenderComponent::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> LightingRenderComponent::beforeRenderLight(const RenderContext& ctx) noexcept
     {
-        encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);
-        encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
-        encoder.setBuffer(RenderSamplers::LIGHTS_SPOT, _spotLightBuffer, bgfx::Access::Read);
+        ctx.encoder.setBuffer(RenderSamplers::LIGHTS_POINT, _pointLightBuffer, bgfx::Access::Read);
+        ctx.encoder.setBuffer(RenderSamplers::LIGHTS_DIR, _dirLightBuffer, bgfx::Access::Read);
+        ctx.encoder.setBuffer(RenderSamplers::LIGHTS_SPOT, _spotLightBuffer, bgfx::Access::Read);
 
-        encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
-        encoder.setUniform(_ambientLightUniform, glm::value_ptr(_ambientLightData));
-        encoder.setUniform(_camPosUniform, glm::value_ptr(_camPos));
+        ctx.encoder.setUniform(_lightCountUniform, glm::value_ptr(_lightCount));
+        ctx.encoder.setUniform(_ambientLightUniform, glm::value_ptr(_ambientLightData));
 
         return {};
     }

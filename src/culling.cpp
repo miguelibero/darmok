@@ -222,12 +222,12 @@ namespace darmok
         return std::nullopt;
     }
 
-    expected<void, std::string> OcclusionCuller::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> OcclusionCuller::beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept
     {
         auto itr = _queries.find(entity);
         if (itr != _queries.end())
         {
-            encoder.setCondition(itr->second, true);
+            ctx.encoder.setCondition(itr->second, true);
         }
         return {};
     }
@@ -321,7 +321,7 @@ namespace darmok
         return _debugRender.shutdown();
     }
 
-    expected<void, std::string> CullingDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> CullingDebugRenderer::beforeRenderView(const RenderContext& ctx) noexcept
     {
         uint8_t debugColor = 0;
         MeshData meshData;
@@ -333,7 +333,7 @@ namespace darmok
             for (auto& plane : frust.getPlanes())
             {
                 meshData += MeshData{plane, Mesh::Definition::FillOutline};
-                auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, false);
+                auto renderResult = _debugRender.renderMesh(meshData, ctx.viewId, ctx.encoder, debugColor, false);
                 if (!renderResult)
                 {
 					return unexpected{ std::move(renderResult).error() };
@@ -351,8 +351,8 @@ namespace darmok
                 if (auto bbox = CullingUtils::getEntityBounds(scene, entity))
                 {
                     meshData += MeshData{ Cube{ *bbox }, Mesh::Definition::FillOutline };
-                    _cam->setEntityTransform(entity, encoder);
-                    auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+                    _cam->setEntityTransform(entity, ctx.encoder);
+                    auto renderResult = _debugRender.renderMesh(meshData, ctx.viewId, ctx.encoder, debugColor, true);
                     if (!renderResult)
                     {
 						return unexpected{ std::move(renderResult).error() };

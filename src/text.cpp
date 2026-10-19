@@ -410,7 +410,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	expected<void, std::string> TextRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+	expected<void, std::string> TextRenderer::beforeRenderView(const RenderContext& ctx) noexcept
 	{
 		if (!_scene || !_cam)
 		{
@@ -425,6 +425,8 @@ namespace darmok
 			| BGFX_STATE_BLEND_ALPHA
 			;
 
+        std::vector<std::string> errors;
+
 		for (auto entity : entities)
 		{
 			auto text = _scene->getComponent<Text>(entity);
@@ -433,20 +435,25 @@ namespace darmok
 				continue;
 			}
 
-			_cam->setEntityTransform(entity, encoder);
-			if (!text->render(viewId, encoder))
+			auto result = _cam->beforeRenderEntity(entity, ctx);
+            if(!result)
+            {
+                errors.push_back(std::move(result).error());
+                continue;
+            }
+			if (!text->render(ctx.viewId, ctx.encoder))
 			{
 				continue;
 			}
 			auto v = Colors::normalize(text->getColor());
-			encoder.setUniform(_colorUniform, glm::value_ptr(v));
-			encoder.setTexture(0, _textureUniform, text->getFont()->getTexture()->getHandle());
+			ctx.encoder.setUniform(_colorUniform, glm::value_ptr(v));
+			ctx.encoder.setTexture(0, _textureUniform, text->getFont()->getTexture()->getHandle());
 
-			encoder.setState(state);
-			encoder.submit(viewId, _prog->getHandle());
+			ctx.encoder.setState(state);
+			ctx.encoder.submit(ctx.viewId, _prog->getHandle());
 		}
 
-		return {};
+		return StringUtils::joinExpectedErrors(errors);
 	}
 
 	TextureAtlasFont::TextureAtlasFont(const std::shared_ptr<TextureAtlas>& atlas) noexcept

@@ -33,7 +33,7 @@ namespace darmok
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> render() noexcept override;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept override;
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
@@ -81,7 +81,7 @@ namespace darmok
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept override;
     private:
         OptionalRef<const Camera> _mainCam;
         OptionalRef<Camera> _cam;

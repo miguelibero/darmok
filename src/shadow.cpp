@@ -730,9 +730,9 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> ShadowRenderer::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> ShadowRenderer::beforeRenderLight(const RenderContext& ctx) noexcept
     {
-        configureUniforms(encoder);
+        configureUniforms(ctx.encoder);
         return {};
     }
 
@@ -777,7 +777,7 @@ namespace darmok
         return _debugRender.shutdown();
     }
 
-    expected<void, std::string> ShadowDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> ShadowDebugRenderer::beforeRenderView(const RenderContext& ctx) noexcept
     {
         if (!_scene || !_cam)
         {
@@ -800,7 +800,7 @@ namespace darmok
             auto cascProjView = renderer->getCameraProjMatrix(casc);
             meshData += MeshData{ Frustum{cascProjView}, Mesh::Definition::FillOutline };
         }
-        auto renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+        auto renderResult = _debugRender.renderMesh(meshData, ctx.viewId, ctx.encoder, debugColor, true);
         if (!renderResult)
         {
             return renderResult;
@@ -825,7 +825,7 @@ namespace darmok
             }
             meshData += MeshData{ Sphere{0.01f, lightPos}, 8 };
 
-            renderResult = _debugRender.renderMesh(meshData, viewId, encoder, debugColor, true);
+            renderResult = _debugRender.renderMesh(meshData, ctx.viewId, ctx.encoder, debugColor, true);
             if (!renderResult)
             {
                 return renderResult;

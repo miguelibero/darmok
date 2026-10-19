@@ -23,10 +23,12 @@ namespace darmok
     class App;
     class Scene;
     class IComponentLoadContext;
+    struct CameraRenderContext;
 
     class DARMOK_EXPORT BX_NO_VTABLE ICameraComponent
     {
     public:
+        using RenderContext = CameraRenderContext;
         virtual ~ICameraComponent() = default;
         virtual std::optional<entt::type_info> getCameraComponentType() const noexcept { return std::nullopt; }
         virtual expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept { return {}; }
@@ -35,9 +37,9 @@ namespace darmok
         virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
         virtual expected<void, std::string> shutdown() noexcept { return {}; }
         virtual bool shouldEntityBeCulled(Entity entity) { return false; }
-        virtual expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
-        virtual expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
-        virtual expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept { return {}; }
+        virtual expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept { return {}; }
+        virtual expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept { return {}; }
+        virtual expected<void, std::string> beforeRenderLight(const RenderContext& ctx) noexcept { return {}; }
         virtual void onCameraTransformChanged() noexcept {}
         // virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };

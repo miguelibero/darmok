@@ -47,6 +47,13 @@ namespace darmok
         float far = Math::defaultOrthoFar;
     };
 
+    struct DARMOK_EXPORT CameraRenderContext final
+    {
+        bgfx::ViewId viewId = bgfx::kInvalidHandle;
+        bgfx::Encoder& encoder;
+        bool hasSceneDepth = false;
+    };
+
     class DARMOK_EXPORT ConstCameraDefinitionWrapper
     {
     public:
@@ -104,6 +111,8 @@ namespace darmok
     class DARMOK_EXPORT Camera final : IRenderChainDelegate
     {
     public:
+        using RenderContext = CameraRenderContext;
+
         Camera(const glm::mat4& projMatrix = {}) noexcept;
         Camera(Camera&& other) noexcept;
 
@@ -262,10 +271,11 @@ namespace darmok
         void configureView(bgfx::ViewId viewId, const std::string& name, uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL) const noexcept;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder, std::optional<glm::mat4> additionalTransform = std::nullopt) const noexcept;
-        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderView(const RenderContext& ctx) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
-        expected<void, std::string> beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
-        expected<void, std::string> beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept;
+        expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) const noexcept;
+        expected<void, std::string> beforeRenderLight(const RenderContext& ctx) const noexcept;
+        void setUniforms(const RenderContext& ctx) const noexcept;
 
         // serialization
         using Definition = protobuf::Camera;
@@ -280,6 +290,7 @@ namespace darmok
         CameraProjectionData _projData;
         std::optional<Viewport> _baseViewport;
         glm::vec4 _viewport;
+        UniformHandle _posUniform;
 
 		RenderChain _renderChain;
 

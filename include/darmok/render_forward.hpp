@@ -21,12 +21,13 @@ namespace darmok
 
         static Definition createDefinition() noexcept;
 
-        ForwardRenderer(bool pbr = true) noexcept;
+        ForwardRenderer(bool pbr = true, const std::string& name = "Forward") noexcept;
         ~ForwardRenderer() noexcept;
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def) noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
         expected<void, std::string> render() noexcept override;
+        expected<void, std::string> render(const std::vector<Entity>& entities, const RenderContext& ctx) noexcept;
         expected<void, std::string> shutdown() noexcept override;
 
     private:
@@ -38,5 +39,6 @@ namespace darmok
         std::shared_ptr<Program> _litProg;
         std::shared_ptr<Program> _unlitProg;
         std::optional<bgfx::ViewId> _viewId;
+        std::string _name;
     };
 }

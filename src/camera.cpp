@@ -92,6 +92,7 @@ namespace darmok
         , _renderChain{ *this }
         , _enabled{ true }
         , _transformChanged{ false }
+        , _posUniform{"u_camPos", bgfx::UniformType::Vec4}
     {
     }
 
@@ -418,6 +419,7 @@ namespace darmok
             _transformChanged = false;
             onTransformChanged();
         }
+
 		return StringUtils::joinExpectedErrors(errors);
     }
 
@@ -470,13 +472,13 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> Camera::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    expected<void, std::string> Camera::beforeRenderView(const RenderContext& ctx) const noexcept
     {
-        setViewTransform(viewId);
+        setViewTransform(ctx.viewId);
 		std::vector<std::string> errors;
         for (auto& comp : copyComponents())
         {
-            auto result = comp->beforeRenderView(viewId, encoder);
+            auto result = comp->beforeRenderView(ctx);
             if (!result)
             {
 				errors.push_back(std::move(result).error());
@@ -497,13 +499,25 @@ namespace darmok
         return false;
     }
 
-    expected<void, std::string> Camera::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    void Camera::setUniforms(const RenderContext& ctx) const noexcept
     {
-        setEntityTransform(entity, encoder);
+        glm::vec4 pos{0, 0, 0, ctx.hasSceneDepth ? 1 : 0};
+        if(auto trans = getTransform())
+        {
+            pos = glm::vec4(trans->getWorldPosition(), pos.w);
+        }
+        ctx.encoder.setUniform(_posUniform, glm::value_ptr(pos));
+    }
+
+    expected<void, std::string> Camera::beforeRenderEntity(Entity entity, const RenderContext& ctx) const noexcept
+    {
+        setEntityTransform(entity, ctx.encoder);
+        setUniforms(ctx);
+
 		std::vector<std::string> errors;
         for (auto& comp : copyComponents())
         {
-            auto result = comp->beforeRenderEntity(entity, viewId, encoder);
+            auto result = comp->beforeRenderEntity(entity, ctx);
             if (!result)
             {
 				errors.push_back(std::move(result).error());    
@@ -512,14 +526,14 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
     }
 
-    expected<void, std::string> Camera::beforeRenderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) const noexcept
+    expected<void, std::string> Camera::beforeRenderLight(const RenderContext& ctx) const noexcept
     {
-        setViewTransform(viewId);
+        setViewTransform(ctx.viewId);
 
         std::vector<std::string> errors;
         for(auto& comp : copyComponents())
         {
-            auto result = comp->beforeRenderLight(viewId, encoder);
+            auto result = comp->beforeRenderLight(ctx);
             if(!result)
             {
                 errors.push_back(std::move(result).error());

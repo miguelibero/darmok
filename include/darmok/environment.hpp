@@ -24,7 +24,7 @@ namespace darmok
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def, IComponentLoadContext& context) noexcept;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept override;
         void setDefines(const ProgramDefines& defines) noexcept;
 
         static Definition createDefinition() noexcept;
@@ -49,7 +49,7 @@ namespace darmok
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept override;
+        expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept override;
     private:
         Definition _def;
         OptionalRef<Camera> _cam;

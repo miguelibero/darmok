@@ -220,7 +220,7 @@ namespace darmok
         return _scene->getComponentInParent<SkeletalAnimator>(entity);
     }
 
-    expected<void, std::string> SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> SkeletalAnimationRenderComponent::beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept
     {
         auto skinnable = _scene->getComponent<Skinnable>(entity);
         if (!skinnable)
@@ -246,7 +246,7 @@ namespace darmok
                 _skinning.push_back(model * joint.inverseBindPose);
             }
         }
-        encoder.setUniform(_skinningUniform, &_skinning.front(), static_cast<uint16_t>(_skinning.size()));
+        ctx.encoder.setUniform(_skinningUniform, &_skinning.front(), static_cast<uint16_t>(_skinning.size()));
         return {};
     }
 

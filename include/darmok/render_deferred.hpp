@@ -3,6 +3,7 @@
 #include <darmok/export.h>
 #include <darmok/render_scene.hpp>
 #include <darmok/render_chain.hpp>
+#include <darmok/render_forward.hpp>
 #include <darmok/optional_ref.hpp>
 #include <darmok/texture.hpp>
 #include <darmok/uniform.hpp>
@@ -57,6 +58,8 @@ namespace darmok
     public:
         using Definition = protobuf::DeferredRenderer;
 
+        DeferredRenderer(bool pbr = true) noexcept;
+
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def) noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept override;
@@ -71,15 +74,15 @@ namespace darmok
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
         OptionalRef<MaterialAppComponent> _materials;
+        ForwardRenderer _transparentRenderer;
 
+        bool _pbr = true;
         std::optional<Program> _geoProg;
+        std::optional<Program> _lightProg;
+
         std::optional<bgfx::ViewId> _viewId;
         std::optional<DeferredGeoBuffer> _gbuffer;
 
-        std::shared_ptr<Program> _forwardProg;
-        std::shared_ptr<Program> _unlitProg;
-
-        std::optional<Program> _lightProg;
         std::optional<Mesh> _screenMesh;
 
         struct GeoPassOutput final
