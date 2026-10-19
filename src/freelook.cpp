@@ -12,7 +12,7 @@ namespace darmok
 {
     FreelookController::FreelookController(OptionalRef<Camera> cam, const Definition& def) noexcept
         : _def{ def }
-        , _enabled{ false }
+        , _enabled{ false }, _updateTransformFromCam{ false }
         , _winCursorMode{ WindowCursorMode::Normal }
         , _cam{ cam }
         , _pos{ 0 }
@@ -115,12 +115,9 @@ namespace darmok
             }
         }
 
-        if (enabled && _cam)
+        if (enabled)
         {
-            if (auto trans = _cam->getTransform())
-            {
-                Math::decompose(trans->getLocalMatrix(), _pos, _rot, _scale);
-            }
+            _updateTransformFromCam = true;
         }
         std::vector<std::string> errors;
         for (auto& listener : _listeners)
@@ -145,6 +142,14 @@ namespace darmok
         if (!_enabled || !_cam)
         {
             return {};
+        }
+        if (_updateTransformFromCam)
+        {
+            if(auto trans = _cam->getTransform())
+            {
+                Math::decompose(trans->getLocalMatrix(), _pos, _rot, _scale);
+            }
+            _updateTransformFromCam = false;
         }
         auto& lookDirs = _def.look();
         glm::vec2 lookRot{

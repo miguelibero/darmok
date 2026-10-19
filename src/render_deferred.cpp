@@ -255,45 +255,70 @@ namespace darmok
         auto viewId = *_viewId;
         auto& encoder = *bgfx::begin();
 
-        auto result = _cam->beforeRenderView(viewId, encoder);
-        if (!result)
+        auto geoResult = renderGeometry(viewId, encoder);
+        if(!geoResult)
         {
             bgfx::end(&encoder);
-            return result;
+            return unexpected{std::move(geoResult).error()};
         }
 
+        ++viewId;
+
+        auto lightResult = renderLight(viewId, encoder);
+        if (!lightResult)
+        {
+            bgfx::end(&encoder);
+            return unexpected{std::move(lightResult).error()};
+        }
+        
+        ++viewId;
+
+        auto transResult = renderTransparent(viewId, encoder, geoResult->transparentEntities);
+
+        bgfx::end(&encoder);
+
+        return transResult;
+    }
+
+    expected<DeferredRenderer::GeoPassOutput, std::string> DeferredRenderer::renderGeometry(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        GeoPassOutput output;
+
+        encoder.touch(viewId);
+
+        _cam->setViewTransform(viewId);
+
         std::vector<std::string> errors;
-        std::vector<Entity> transparentEntities;
         auto entities = _cam->getEntities<Renderable>();
-        for (auto entity : entities)
+        for(auto entity : entities)
         {
             auto renderable = _scene->getComponent<const Renderable>(entity);
-            if (!renderable->valid())
+            if(!renderable->valid())
             {
                 continue;
             }
-            if (_cam->shouldEntityBeCulled(entity))
+            if(_cam->shouldEntityBeCulled(entity))
             {
                 continue;
             }
             auto& material = *renderable->getMaterial();
-            if (material.opacityType == Material::Definition::Transparent)
+            if(material.opacityType == Material::Definition::Transparent)
             {
                 // drawn after lighting, they can't be stored in the G-buffer
-                transparentEntities.push_back(entity);
+                output.transparentEntities.push_back(entity);
                 continue;
             }
             auto entityResult = _cam->beforeRenderEntity(entity, viewId, encoder);
-            if (!entityResult)
+            if(!entityResult)
             {
                 errors.push_back(std::move(entityResult).error());
                 continue;
             }
-            if (!renderable->render(encoder))
+            if(!renderable->render(encoder))
             {
                 continue;
             }
-            if (_materials)
+            if(_materials)
             {
                 _materials->renderBind(encoder, material);
             }
@@ -302,46 +327,46 @@ namespace darmok
                 material.renderBind(encoder);
             }
 
-            // getRenderState() drops alpha writes for opaque materials, but the G-buffer
-            // stores metallic and occlusion in the alpha channels
             encoder.setState(material.getRenderState() | BGFX_STATE_WRITE_A);
             encoder.submit(viewId, _geoProg->getHandle());
         }
+        if(!errors.empty())
+        {
+            return unexpected{StringUtils::joinErrors(errors)};
+        }
+        return output;
+    }
 
-        ++viewId;
+    expected<void, std::string> DeferredRenderer::renderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    {
+        encoder.touch(viewId);
 
         if(!_screenMesh || !_lightProg || !_gbuffer)
         {
-            encoder.touch(viewId);
-            bgfx::end(&encoder);
             return unexpected<std::string>{"lighting not initialized"};
         }
 
-        result = _gbuffer->beforeRenderLight(encoder);
+        auto result = _gbuffer->beforeRenderLight(encoder);
         if(!result)
         {
-            bgfx::end(&encoder);
             return result;
         }
 
         result = _cam->beforeRenderLight(viewId, encoder);
         if(!result)
         {
-            bgfx::end(&encoder);
             return result;
         }
 
         result = _materials->beforeRenderLight(viewId, encoder);
         if(!result)
         {
-            bgfx::end(&encoder);
             return result;
         }
 
         result = _screenMesh->render(encoder);
         if(!result)
         {
-            bgfx::end(&encoder);
             return result;
         }
 
@@ -350,42 +375,40 @@ namespace darmok
         state &= ~BGFX_STATE_WRITE_Z;
         encoder.setState(state);
 
-        // the shadow code is only compiled into the SHADOW_ENABLED program variant
+
         ProgramDefines defines;
-        if (_cam->getComponent<ShadowRenderer>())
+        if(_cam->getComponent<ShadowRenderer>())
         {
             defines.insert("SHADOW_ENABLED");
         }
+
         encoder.submit(viewId, _lightProg->getHandle(defines));
 
-        ++viewId;
-        auto transResult = renderTransparent(viewId, encoder, transparentEntities, defines);
-        if (!transResult)
-        {
-            errors.push_back(std::move(transResult).error());
-        }
-
-        bgfx::end(&encoder);
-        return StringUtils::joinExpectedErrors(errors);
+        return {};
     }
 
     expected<void, std::string> DeferredRenderer::renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
-        const std::vector<Entity>& entities, const ProgramDefines& lightDefines) noexcept
+        const std::vector<Entity>& entities) noexcept
     {
-        if (entities.empty())
-        {
-            encoder.touch(viewId);
-            return {};
-        }
+        encoder.touch(viewId);
+
         auto result = _cam->beforeRenderView(viewId, encoder);
-        if (!result)
+        if(!result)
         {
             return result;
         }
 
-        // opaque depth lives in the G-buffer, the shader discards fragments behind it
-        ProgramDefines defines = lightDefines;
+        if (entities.empty())
+        {
+            return {};
+        }
+
+        ProgramDefines defines;
         defines.insert("SCENE_DEPTH_ENABLED");
+        if(_cam->getComponent<ShadowRenderer>())
+        {
+            defines.insert("SHADOW_ENABLED");
+        }
 
         std::vector<std::string> errors;
         for (auto entity : entities)

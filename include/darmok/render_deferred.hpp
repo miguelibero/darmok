@@ -82,8 +82,15 @@ namespace darmok
         std::optional<Program> _lightProg;
         std::optional<Mesh> _screenMesh;
 
+        struct GeoPassOutput final
+        {
+            std::vector<Entity> transparentEntities;
+        };
+
         expected<void, std::string> recreateGeoBuffer() noexcept;
+        expected<GeoPassOutput, std::string> renderGeometry(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
+        expected<void, std::string> renderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
         expected<void, std::string> renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
-            const std::vector<Entity>& entities, const ProgramDefines& lightDefines) noexcept;
+            const std::vector<Entity>& entities) noexcept;
     };
 }

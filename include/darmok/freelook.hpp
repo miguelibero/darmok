@@ -71,6 +71,7 @@ namespace darmok
         glm::vec3 _pos;
         glm::vec3 _scale;
         bool _enabled;
+        bool _updateTransformFromCam;
         Definition _def;
         OwnRefCollection<IFreelookListener> _listeners;
 

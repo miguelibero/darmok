@@ -46,7 +46,7 @@ namespace
 	};
 
 
-	class DeferredSampleAppDelegate final : public IAppDelegate, IFreelookListener
+	class DeferredSampleAppDelegate final : public IAppDelegate
 	{
 	public:
 		DeferredSampleAppDelegate(App& app) noexcept
@@ -79,7 +79,6 @@ namespace
             DARMOK_TRY_PREFIX(_app.addComponent<MaterialAppComponent>(std::move(matConfig)), "adding material component");
 
     		_cam = createCamera(*scene);
-            _freeCam = createCamera(*scene, _cam);
 
             OptionalRef<FreelookController> freelookRef;
 
@@ -95,15 +94,16 @@ namespace
             // DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
 
             auto lightEntity = scene->createEntity();
-            scene->addComponent<AmbientLight>(lightEntity, 0.5);
+            scene->addComponent<AmbientLight>(lightEntity, 0.1);
+
+            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
             auto dirLightEntity = scene->createEntity();
             auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0});
+            dirLightTrans.lookAt(glm::vec3{-7.5, 0, 0.2});
             auto& dirLight = scene->addComponent<DirectionalLight>(dirLightEntity, 0.5);
             dirLight.setShadowType(LightDefinition::SoftShadow);
             scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
-
-            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
             auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
             scene->addComponent<Renderable>(dirLightEntity, arrowMesh, Colors::magenta());
@@ -145,7 +145,6 @@ namespace
 		App& _app;
 		glm::vec2 _mouseVel;
 		OptionalRef<Camera> _cam;
-		OptionalRef<Camera> _freeCam;
 
 		struct PointLightConfig final
 		{
@@ -157,20 +156,7 @@ namespace
 
 		static const std::vector<PointLightConfig> _pointLights;
 
-		expected<void, std::string> onFreelookEnable(bool enabled) noexcept override
-		{
-			if (_freeCam)
-			{
-				_freeCam->setEnabled(enabled);
-			}
-			if (_cam)
-			{
-				_cam->setEnabled(!enabled);
-			}
-			return {};
-		}
-
-		Camera& createCamera(Scene& scene, OptionalRef<Camera> mainCamera = nullptr)
+		Camera& createCamera(Scene& scene)
 		{
 			auto entity = scene.createEntity();
 
@@ -191,21 +177,14 @@ namespace
 			cam.tryAddComponent<LightingRenderComponent>();
 			cam.tryAddComponent<ShadowRenderer>(shadowDef);
 
-			if (mainCamera)
-			{
-				cam.tryAddComponent<CullingDebugRenderer>(mainCamera);
-				cam.tryAddComponent<ShadowDebugRenderer>(mainCamera);
-				cam.setEnabled(false);
-			}
-
 			return cam;
 		}
 	};
 
 	const std::vector<DeferredSampleAppDelegate::PointLightConfig> DeferredSampleAppDelegate::_pointLights = {
-        {{0.0f, 8.0f, 0.0f}, 0.5f},
+        // {{0.0f, 8.0f, 0.0f}, 0.5f},
         {{0.0f, 3.0f, 0.0f}, 0.5f},
-        {{0.0f, 1.0f, 5.0f}, 0.1f},
+        // {{0.0f, 1.0f, 5.0f}, 0.1f},
 	};
 }
 
