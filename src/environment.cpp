@@ -82,9 +82,14 @@ namespace darmok
             | BGFX_STATE_DEPTH_TEST_LEQUAL
             ;
         encoder.setState(state);
-        encoder.submit(viewId, _program->getHandle());
+        encoder.submit(viewId, _program->getHandle(_defines));
 
         return {};
+    }
+
+    void SkyboxRenderer::setDefines(const ProgramDefines& defines) noexcept
+    {
+        _defines = defines;
     }
 
     SkyboxRenderer::Definition SkyboxRenderer::createDefinition() noexcept
