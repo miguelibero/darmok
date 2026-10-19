@@ -272,7 +272,6 @@ namespace darmok
         ++viewId;
 
         auto transResult = renderTransparent(viewId, encoder, geoResult->transparentEntities);
-
         bgfx::end(&encoder);
 
         return transResult;
@@ -391,6 +390,11 @@ namespace darmok
     expected<void, std::string> DeferredRenderer::renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
         const std::vector<Entity>& entities) noexcept
     {
+        if(!_gbuffer)
+        {
+            return unexpected<std::string>{"missing geo buffer"};
+        }
+        _gbuffer->beforeRenderTransparent(encoder);
         return _transparentRenderer.render(entities, CameraRenderContext{ viewId, encoder, true});
     }
 

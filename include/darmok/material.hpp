@@ -164,8 +164,8 @@ namespace darmok
         bool writeDepth = true;
 
         Material() = default;
-        Material(std::shared_ptr<Texture> tex, ShadingModel shading = Definition::Lit) noexcept;
-        Material(const Color& color, ShadingModel shading = Definition::Lit) noexcept;
+        Material(std::shared_ptr<Texture> tex, ShadingModel shading = Definition::Unlit) noexcept;
+        Material(const Color& color, ShadingModel shading = Definition::Unlit) noexcept;
 
         expected<void, std::string> load(const Definition& def, ITextureLoader& texLoader) noexcept;
 

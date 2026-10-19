@@ -94,7 +94,7 @@ namespace
             // DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
 
             auto lightEntity = scene->createEntity();
-            scene->addComponent<AmbientLight>(lightEntity, 0.1);
+            scene->addComponent<AmbientLight>(lightEntity, 0.2);
 
             DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
@@ -108,12 +108,15 @@ namespace
             auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
             scene->addComponent<Renderable>(dirLightEntity, arrowMesh, Colors::magenta());
 
+            auto sphereMesh = std::make_shared<Mesh>(MeshData{Sphere{0.05}}.createMesh(prog->getVertexLayout()).value());
+
 			for (auto& lightConfig : _pointLights)
 			{
 				auto entity = scene->createEntity();
 				auto& light = scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
 				light.setShadowType(LightDefinition::HardShadow);
 				scene->addComponent<Transform>(entity, lightConfig.position);
+                scene->addComponent<Renderable>(entity, sphereMesh, Colors::magenta());
 			}
 
             std::shared_ptr<Scene::Definition> sceneDef;
@@ -150,7 +153,7 @@ namespace
 		{
 			glm::vec3 position;
 			float intensity = 1.F;
-			float radius = 1000.F;
+			float radius = 100.F;
 			Color3 color = Colors::white3();
 		};
 
@@ -182,9 +185,9 @@ namespace
 	};
 
 	const std::vector<DeferredSampleAppDelegate::PointLightConfig> DeferredSampleAppDelegate::_pointLights = {
-        // {{0.0f, 8.0f, 0.0f}, 0.5f},
-        {{0.0f, 3.0f, 0.0f}, 0.5f},
-        // {{0.0f, 1.0f, 5.0f}, 0.1f},
+        {{-6.0f, 1.0f, 0.0f}, 5.f, 100.f, Colors::red3()},
+        {{-3.0f, 1.0f, 0.0f}, 5.f, 100.f, Colors::green3()},
+        {{0.0f, 1.0f, 5.0f}, 5.f, 100.f, Colors::blue3()},
 	};
 }
 

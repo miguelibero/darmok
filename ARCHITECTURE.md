@@ -34,10 +34,38 @@ The app contains a list of components that can be added or removed. Right now
 darmok supports the following
 
 * imgui: add imgui support
-* scene: adds a entt scene 
+* scene: adds scene rendering
 
 # Scene
 
+The scene can be accessed by adding the scene app component.
+
+```cpp
+    expected<void, std::string> init() noexcept override
+    {
+        OptionalRef<SceneAppComponent> sceneComp;
+        DARMOK_TRY_VALUE_PREFIX(sceneComp, _app.addComponent<SceneAppComponent>(), "adding scene component");
+        auto scene = sceneComp->getScene();
+    }
+```
+
+The scene behaves similarly to a scene in Unity3d but using [entt](https://github.com/skypjack/entt) as de backend.
+In the scene contains a list of entities, each entity can have multiple components of different types.
+The following components are implemented:
+
+* Transform
+* Camera
+* Renderable
+* lights
+    * AmbientLight
+    * DirectionalLight
+    * PointLight
+    * SpotLight
+
+## Scene Components
+
+
+#
 
 
 # Assets
