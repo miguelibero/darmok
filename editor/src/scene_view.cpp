@@ -29,7 +29,7 @@ namespace darmok::editor
         _scene = scene;
         _renderer = renderer;
 
-        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };
@@ -272,7 +272,7 @@ namespace darmok::editor
         _cam = cam;
         _scene = scene;
 
-        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };

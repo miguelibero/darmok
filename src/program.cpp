@@ -5,89 +5,13 @@
 #include <darmok/collection.hpp>
 #include <darmok/protobuf.hpp>
 #include "generated/shaders/gui.h"
-#include "generated/shaders/unlit.h"
 #include "generated/shaders/forward.h"
 #include "generated/shaders/forward_basic.h"
+#include "generated/shaders/shadow.h"
 #include "generated/shaders/tonemap.h"
 
 namespace darmok
 {    
-    expected<protobuf::Varying, std::string> Program::loadRefVarying(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader) noexcept
-    {
-        if (ref.has_standard())
-        {
-            auto def = StandardProgramLoader::loadDefinition(ref.standard());
-            if (!def)
-            {
-                return unexpected{ "standard program error: " + std::move(def).error() };
-            }
-            return def.value()->varying();
-        }
-        if (ref.has_path())
-        {
-            if (!loader)
-            {
-                return unexpected{ "no program definition loader provided" };
-            }
-            auto result = (*loader)(ref.path());
-            if (!result)
-            {
-                return unexpected{ "program " + ref.path() + ": " + result.error()};
-            }
-            auto def = result.value();
-            if(!def)
-            {
-                return unexpected{ "empty program definition" };
-            }
-            return def->varying();
-        }
-        return unexpected{ "empty program ref" };
-    }
-
-    ILoader<Program::Definition>::Result Program::loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader) noexcept
-    {
-        if (ref.has_standard())
-        {
-            return StandardProgramLoader::loadDefinition(ref.standard());
-        }
-        if (ref.has_path())
-        {
-            if (!loader)
-            {
-				return unexpected{ "no program definition loader provided" };
-            }
-            auto result = (*loader)(ref.path());
-            if (!result)
-            {
-                return unexpected{ "program " + ref.path() + ": " + result.error() };
-            }
-            return result.value();
-        }
-        return nullptr;
-    }
-
-    ILoader<Program>::Result Program::loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader) noexcept
-    {
-        if (ref.has_standard())
-        {
-            return StandardProgramLoader::load(ref.standard());
-        }
-        if (ref.has_path())
-        {
-            if (!loader)
-            {
-                return unexpected{ "no program loader provided" };
-            }
-            auto result = (*loader)(ref.path());
-            if (!result)
-            {
-                return unexpected{ "program " + ref.path() + ": " + result.error() };
-            }
-            return result.value();
-        }
-        return nullptr;
-    }
-
     expected<Program::ShaderHandles, std::string> Program::createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name) noexcept
     {		
         ShaderHandles handles;
@@ -265,18 +189,28 @@ namespace darmok
         {
         case protobuf::StandardProgram::Gui:
             return protobuf::readStaticMem(def, darmok_program_gui);
-        case protobuf::StandardProgram::Unlit:
-            return protobuf::readStaticMem(def, darmok_program_unlit);
         case protobuf::StandardProgram::Forward:
             return protobuf::readStaticMem(def, darmok_program_forward);
         case protobuf::StandardProgram::ForwardBasic:
             return protobuf::readStaticMem(def, darmok_program_forward_basic);
+        case protobuf::StandardProgram::Shadow:
+            return protobuf::readStaticMem(def, darmok_program_shadow);
         case protobuf::StandardProgram::Tonemap:
             return protobuf::readStaticMem(def, darmok_program_tonemap);
         default:
             break;
         }
         return unexpected{"undefined standar program type"};
+    }
+
+    expected<bgfx::VertexLayout, std::string> StandardProgramLoader::loadDefaultVertexLayout() noexcept
+    {
+        auto result = loadDefinition(protobuf::StandardProgram::Forward);
+        if(!result)
+        {
+            return unexpected{std::move(result).error()};
+        }
+        return ConstVertexLayoutWrapper{result.value()->varying().vertex()}.getBgfx();
     }
 
     expected<std::shared_ptr<Program::Definition>, std::string> StandardProgramLoader::loadDefinition(Type type) noexcept

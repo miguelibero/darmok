@@ -4,9 +4,9 @@
 
 namespace darmok
 {
-    MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progLoader) noexcept
+    MeshDefinitionFromSourceLoader::MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader) noexcept
 		: FromDefinitionLoader(srcLoader)
-		, _progLoader{ progLoader }
+
 	{
 	}
 
@@ -16,17 +16,24 @@ namespace darmok
 		{
 			return unexpected<std::string>{ "Mesh source is null" };
 		}
+        bgfx::VertexLayout vertexLayout;
 
-		auto progResult = Program::loadRefVarying(src->program(), _progLoader);
-		if (!progResult)
-		{
-			return unexpected{ progResult.error() };
-		}
-		auto varying = progResult.value();
-		auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
+        if (src->has_vertex_layout())
+        {
+            vertexLayout = ConstVertexLayoutWrapper{src->vertex_layout()}.getBgfx();
+        }
+        else
+        {
+            auto layoutResult = StandardProgramLoader::loadDefaultVertexLayout();
+            if(!layoutResult)
+            {
+                return unexpected{layoutResult.error()};
+            }
+            vertexLayout = std::move(layoutResult).value();
+        }
+
 		MeshConfig config{ .index32 = src->index32() };
-
-		auto def = MeshData{ *src }.createSharedDefinition(layout, config);
+		auto def = MeshData{*src}.createSharedDefinition(vertexLayout, config);
 		return def;
 	}
 }

@@ -47,7 +47,6 @@ namespace darmok
 			}
 		);
 		LuaProtobufBinding{ std::move(src) }
-			.protobufProperty<protobuf::ProgramRef>("program")
 			.protobufProperty<protobuf::DataMeshSource>("data")
 			.protobufProperty<protobuf::CubeMeshSource>("cube")
 			.protobufProperty<protobuf::SphereMeshSource>("sphere")

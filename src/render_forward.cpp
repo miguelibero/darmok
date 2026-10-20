@@ -41,18 +41,12 @@ namespace darmok
 		}
 		_materials = result.value().get();
 
-		auto litResult = StandardProgramLoader::load(_pbr ? Program::Standard::Forward : Program::Standard::ForwardBasic);
-		if (!litResult)
+		auto progResult = StandardProgramLoader::load(_pbr ? Program::Standard::Forward : Program::Standard::ForwardBasic);
+        if(!progResult)
 		{
-			return unexpected{ "failed to load forward program: " + std::move(litResult).error() };
+            return unexpected{"failed to load forward program: " + std::move(progResult).error()};
 		}
-		_litProg = std::move(litResult).value();
-		auto unlitResult = StandardProgramLoader::load(Program::Standard::Unlit);
-		if (!unlitResult)
-		{
-			return unexpected{ "failed to load unlit program: " + std::move(unlitResult).error() };
-		}
-		_unlitProg = std::move(unlitResult).value();
+        _prog = std::move(progResult).value();
 		return {};
 	}
 
@@ -79,8 +73,7 @@ namespace darmok
 		_scene.reset();
 		_app.reset();
 		_materials.reset();
-		_litProg.reset();
-		_unlitProg.reset();
+		_prog.reset();
 		return {};
 	}
 
@@ -91,7 +84,12 @@ namespace darmok
             return unexpected<std::string>{"view not initialized"};
         }
         auto entitiesView = _cam->getEntities<Renderable>();
-        std::vector<Entity> entities(entities.begin(), entities.end());
+        std::vector<Entity> entities;
+        // TODO: check why the constructor of the vector is not working with the view
+        for(auto entity : entitiesView)
+        {
+            entities.push_back(entity);
+        }
         auto& encoder = *bgfx::begin();
         RenderContext ctx{*_viewId, encoder};
         auto result = render(entities, ctx);
@@ -136,28 +134,33 @@ namespace darmok
 				errors.push_back(std::move(result).error());
 				continue;
 			}
-            auto lightResult = _cam->beforeRenderLight(ctx);
-            if(!lightResult)
+            auto material = renderable->getMaterial();
+            if (material && material->shadingModel != Material::Definition::Unlit)
             {
-                errors.push_back(std::move(lightResult).error());
-                continue;
+                auto lightResult = _cam->beforeRenderLight(ctx);
+                if(!lightResult)
+                {
+                    errors.push_back(std::move(lightResult).error());
+                    continue;
+                }
             }
 			if (!renderable->render(ctx.encoder))
 			{
 				continue;
 			}
-			auto& material = *renderable->getMaterial();
-			auto& prog = material.shadingModel == Material::Definition::Unlit ? _unlitProg : _litProg;
-			_materials->renderBind(ctx.encoder, material);
-            ctx.encoder.setState(material.getRenderState());
-
-            auto defines = material.programDefines;
+            ProgramDefines defines;
+            if (material)
+            {
+                _materials->renderBind(ctx.encoder, *material);
+                ctx.encoder.setState(material->getRenderState());
+                defines = material->programDefines;
+            }
             if(hasShadows)
             {
                 defines.insert("SHADOW_ENABLED");
             }
 
-            ctx.encoder.submit(ctx.viewId, prog->getHandle(defines));
+            ctx.encoder.submit(ctx.viewId, _prog->getHandle(defines));
 		}
 		return StringUtils::joinExpectedErrors(errors);
 	}

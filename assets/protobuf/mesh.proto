@@ -4,7 +4,6 @@ package darmok.protobuf;
 
 import "varying.proto";
 import "shape.proto";
-import "program.proto";
 import "math.proto";
 
 message CubeMeshSource {
@@ -65,7 +64,7 @@ message MeshSource {
     string name = 1;
     Mesh.Type type = 2;
     bool index32 = 3;
-    ProgramRef program = 4;
+    optional VertexLayout vertex_layout = 4;
     oneof value {
         DataMeshSource data = 5;
         CubeMeshSource cube = 6;

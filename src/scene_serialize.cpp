@@ -1138,19 +1138,26 @@ namespace darmok
             }
             scene.setAsset(path, def);
         }
+
+        bgfx::VertexLayout vertexLayout;
+        if (_config.vertexLayout)
+        {
+            vertexLayout = *_config.vertexLayout;
+        }
+        else
+        {
+            auto layoutResult = StandardProgramLoader::loadDefaultVertexLayout();
+            if(!layoutResult)
+            {
+                return unexpected{std::format("failed to load vertex layout: {}", layoutResult.error())};
+            }
+            vertexLayout = std::move(layoutResult).value();
+        }
+
         for (auto& [path, meshSrc] : scene.getAssets<Mesh::Source>())
         {
-            auto& progRef = meshSrc.program();
-
-            auto progResult = Program::loadRefVarying(progRef, _progLoader);
-            if (!progResult)
-            {
-                return unexpected{ std::format("failed to load varying for mesh {}: {}", path.string(), progResult.error()) };
-            }
-            auto varying = progResult.value();
-            auto layout = ConstVertexLayoutWrapper{ varying.vertex() }.getBgfx();
             MeshConfig config{ .index32 = meshSrc.index32() };
-            auto def = MeshData{ meshSrc }.createDefinition(layout, config);
+            auto def = MeshData{meshSrc}.createDefinition(vertexLayout, config);
             scene.setAsset(path, def);
         }
 

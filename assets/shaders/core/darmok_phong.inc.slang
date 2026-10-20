@@ -13,6 +13,10 @@ float3 calcLightRadiance(LightData data, float3 V, float3 N, Material mat)
 
 static inline float4 applyFragmentLights(float3 V, float3 N, float3 fragPos, Material mat)
 {
+    if(!mat.applyLight)
+    {
+        return mat.diffuse;
+    }
     V = normalize(V);
     N = normalize(N);
     discardBelowAlphaCutoff(mat.diffuse.a);
@@ -51,5 +55,3 @@ static inline float4 applyFragmentLights(float3 V, float3 N, float3 fragPos, Mat
     radianceOut += getAmbientLight().irradiance * mat.diffuse.xyz;
     return float4(radianceOut, mat.diffuse.w);
 }
-
-

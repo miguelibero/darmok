@@ -22,10 +22,14 @@ message FrameAnimationUpdater {
 
 message ForwardRenderer {
     bool pbr = 1;
+    optional string program_path = 2;
 }
 
 message DeferredRenderer {
     bool pbr = 1;
+    optional string geo_program_path = 2;
+    optional string light_program_path = 3;
+    optional string trans_program_path = 4;
 }
 
 message OcclusionCuller {   
@@ -39,6 +43,7 @@ message CullingDebugRenderer {
 
 message SkyboxRenderer {
     string texture_path = 1;
+    optional string program_path = 2;    
 }
 
 message GridRenderer {

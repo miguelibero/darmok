@@ -142,7 +142,6 @@ namespace darmok
 			}
 		}
 
-		programDefines = std::ranges::to<ProgramDefines>(def.program_defines());
 		baseColor = convert<Color>(def.base_color());
 		emissiveColor = convert<Color3>(def.emissive_color());
 		metallicFactor = def.metallic_factor();
@@ -302,6 +301,7 @@ namespace darmok
 		encoder.setUniform(config.specularColorUniform, glm::value_ptr(val));
 
 		hasTextures.y = opacityType == Material::Definition::Mask ? alphaCutoff : 0.F;
+        hasTextures.z = shadingModel == Material::Definition::Lit ? 1.F : 0.F;
 		encoder.setUniform(config.hasTexturesUniform, glm::value_ptr(hasTextures));
 		config.basicUniforms.configure(encoder);
 		config.uniformHandles.configure(encoder, uniformValues);

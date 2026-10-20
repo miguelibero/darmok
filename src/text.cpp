@@ -333,7 +333,6 @@ namespace darmok
 	TextRenderer::Definition TextRenderer::createDefinition() noexcept
 	{
 		Definition def;
-		def.mutable_program()->set_standard(Program::Standard::Unlit);
 		return def;
 	}
 

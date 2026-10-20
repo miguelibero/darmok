@@ -17,8 +17,9 @@ uniform float4 u_baseColorFactor;
 uniform float4 u_specularFactorVec;
 uniform float4 u_hasTextures;
 
-#define u_hasBaseColorTexture getBitfieldValue(u_hasTextures, 0)
-#define u_hasSpecularTexture  getBitfieldValue(u_hasTextures, 1)
+#define u_hasBaseColorTexture getBitfieldValue(u_hasTextures.x, 0)
+#define u_hasSpecularTexture  getBitfieldValue(u_hasTextures.x, 5)
+#define u_applyLight          (uint(u_hasTextures.z) != 0)
 
 #define u_specularFactor (u_specularFactorVec.xyz)
 #define u_shininess      (u_specularFactorVec.w)
@@ -28,6 +29,7 @@ struct Material
     float4 diffuse;
     float3 specular;
     float shininess;
+    bool applyLight;
 };
 
 // alpha test for mask materials, u_hasTextures.y holds the cutoff (0 = disabled)
@@ -70,6 +72,7 @@ Material getMaterial(float2 texcoord)
     mat.diffuse = materialDiffuseValue(texcoord);
     mat.specular = materialSpecularValue(texcoord);
     mat.shininess = u_shininess;
+    mat.applyLight = u_applyLight;
     return mat;
 }
 

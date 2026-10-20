@@ -32,17 +32,18 @@ uniform float4 u_metallicRoughnessNormalOcclusionFactor;
 uniform float4 u_emissiveFactorVec;
 uniform float4 u_hasTextures;
 
-#define u_hasBaseColorTexture         ((uint(u_hasTextures.x) & (1 << 0)) != 0)
-#define u_hasMetallicRoughnessTexture ((uint(u_hasTextures.x) & (1 << 2)) != 0)
-#define u_hasNormalTexture            ((uint(u_hasTextures.x) & (1 << 3)) != 0)
-#define u_hasOcclusionTexture         ((uint(u_hasTextures.x) & (1 << 4)) != 0)
-#define u_hasEmissiveTexture          ((uint(u_hasTextures.x) & (1 << 5)) != 0)
+#define u_hasBaseColorTexture           getBitfieldValue(u_hasTextures.x, 0)
+#define u_hasMetallicRoughnessTexture   getBitfieldValue(u_hasTextures.x, 1)
+#define u_hasNormalTexture              getBitfieldValue(u_hasTextures.x, 2)
+#define u_hasOcclusionTexture           getBitfieldValue(u_hasTextures.x, 3)
+#define u_hasEmissiveTexture            getBitfieldValue(u_hasTextures.x, 4)
 
 #define u_metallicRoughnessFactor (u_metallicRoughnessNormalOcclusionFactor.xy)
 #define u_normalScale             (u_metallicRoughnessNormalOcclusionFactor.z)
 #define u_occlusionStrength       (u_metallicRoughnessNormalOcclusionFactor.w)
 #define u_emissiveFactor          (u_emissiveFactorVec.xyz)
 #define u_environmentMaxMip       (u_emissiveFactorVec.w)
+#define u_applyLight                (uint(u_hasTextures.z) != 0)
 
 // alpha test for mask materials, u_hasTextures.y holds the cutoff (0 = disabled)
 void discardBelowAlphaCutoff(float alpha)
@@ -137,6 +138,7 @@ Material getMaterial(float2 texcoord)
     mat.normal = materialNormalValue(texcoord);
     mat.occlusion = materialOcclusionValue(texcoord);
     mat.emissive = materialEmissiveValue(texcoord);
+    mat.applyLight = u_applyLight;
 
     mat = initMaterial(mat);
 

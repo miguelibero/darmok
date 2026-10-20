@@ -94,7 +94,7 @@ namespace
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::Definition::Static);
 				if (auto floorMeshResult = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout()))
 				{
-					_scene->addComponent<Renderable>(floorEntity, floorMeshResult.value(), Colors::grey());
+					_scene->addComponent<Renderable>(floorEntity, floorMeshResult.value(), std::make_shared<Material>(Colors::grey(), Material::Definition::Lit));
 				}
 			}
 
@@ -110,8 +110,8 @@ namespace
 					.setPosition({ 2.f, 0.f, 2.f })
 					.setEulerAngles(glm::radians(glm::vec3{ 0, 90, 0 }));
 
-				_doorMat = std::make_shared<Material>(Color{ 255, 100, 100, 255 });
-				_triggerDoorMat = std::make_shared<Material>(Colors::red());
+				_doorMat = std::make_shared<Material>(Color{255, 100, 100, 255}, Material::Definition::Lit);
+                _triggerDoorMat = std::make_shared<Material>(Colors::red(), Material::Definition::Lit);
 				if (auto doorMeshResult = MeshData{ doorShape }.createSharedMesh(prog->getVertexLayout()))
 				{
 					_scene->addComponent<Renderable>(doorEntity, doorMeshResult.value(), _doorMat);
@@ -119,8 +119,8 @@ namespace
 			}
 
 			{ // cubes
-				_cubeMat = std::make_shared<Material>(Color{ 100, 255, 100, 255 });
-				_touchedCubeMat = std::make_shared<Material>(Colors::green());
+                _cubeMat = std::make_shared<Material>(Color{100, 255, 100, 255}, Material::Definition::Lit);
+                _touchedCubeMat = std::make_shared<Material>(Colors::green(), Material::Definition::Lit);
 				if (auto meshResult = MeshData{ _cubeShape }.createSharedMesh(prog->getVertexLayout()))
 				{
 					_cubeMesh = meshResult.value();
@@ -150,7 +150,7 @@ namespace
 
 				if (auto playerMeshResult = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout()))
 				{
-					_scene->addComponent<Renderable>(playerEntity, playerMeshResult.value(), Colors::red());
+                    _scene->addComponent<Renderable>(playerEntity, playerMeshResult.value(), std::make_shared<Material>(Colors::red(), Material::Definition::Lit));
 					_characterTrans = _scene->getOrAddComponent<Transform>(playerEntity);
 				}
 			}

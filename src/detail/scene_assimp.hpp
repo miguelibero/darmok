@@ -175,7 +175,6 @@ namespace darmok
 
 		using ReadProgramCompilerConfig = ProgramCompilerConfig::ReadConfig;
 
-        void loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config);
-        static expected<protobuf::VertexLayout, std::string> loadVertexLayout(const nlohmann::ordered_json& json);
+        expected<void, std::string> loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config) noexcept;
     };
 }

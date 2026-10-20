@@ -1,6 +1,7 @@
 #pragma once
 
 #include <expected>
+#include <string>
 
 namespace darmok
 {
@@ -9,14 +10,19 @@ namespace darmok
 
     template<class E>
     using unexpected = std::unexpected<E>;
+
+    inline unexpected<std::string> prefixError(std::string_view prefix, const std::string& error) noexcept
+    {
+        return unexpected<std::string>{std::string(prefix) + ": " + error};
+    }
 }
 
-#define DARMOK_TRY_VALUE_PREFIX(value, failable, prefix)                        \
-    do {                                                                        \
-        auto result = (failable);                                               \
-        if (!result)                                                            \
-            return darmok::unexpected{ std::string{prefix} + result.error() };  \
-        value = std::move(*result);                                             \
+#define DARMOK_TRY_VALUE_PREFIX(value, failable, prefix)            \
+    do {                                                            \
+        auto result = (failable);                                   \
+        if (!result)                                                \
+            return darmok::prefixError(prefix, result.error());     \
+        value = std::move(*result);                                 \
     } while (false)
 
 #define DARMOK_TRY_VALUE(value, failable)                           \
@@ -27,11 +33,11 @@ namespace darmok
         value = std::move(*result);                                 \
     } while (false)
 
-#define DARMOK_TRY_PREFIX(failable, prefix)                                     \
-    do {                                                                        \
-        auto result = (failable);                                               \
-        if (!result)                                                            \
-            return darmok::unexpected{ std::string{prefix} + result.error() };  \
+#define DARMOK_TRY_PREFIX(failable, prefix)                         \
+    do {                                                            \
+        auto result = (failable);                                   \
+        if (!result)                                                \
+            return darmok::prefixError(prefix, result.error());     \
     } while (false)
 
 #define DARMOK_TRY(failable)                                        \

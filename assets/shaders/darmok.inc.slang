@@ -32,9 +32,9 @@ struct DarmokVertexAsIntAttribute
 #define mul(M, v) ::mul(v, M)
 #endif
 
-inline bool getBitfieldValue(float4 field, int pos)
+inline bool getBitfieldValue(float field, int pos)
 {
-    return ((uint(field.x) & (1u << pos)) != 0u);
+    return ((uint(field) & (1u << pos)) != 0u);
 }
 
 // from screen coordinates (gl_FragCoord) to eye space

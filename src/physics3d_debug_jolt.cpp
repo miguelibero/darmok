@@ -46,7 +46,7 @@ namespace darmok::physics3d
         , _solidMeshData{Mesh::Definition::Transient}
         , _wireMeshData{Mesh::Definition::Transient}
     {
-        if (auto result = StandardProgramLoader::load(Program::Standard::Unlit))
+        if (auto result = StandardProgramLoader::load(Program::Standard::ForwardBasic))
         {
             _program = result.value();
         }

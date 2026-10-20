@@ -119,7 +119,6 @@ darmok_process_assets(
     forward_basic.slang
     tonemap.slang
     gui.slang
-    unlit.slang
     deferred_geo.slang
     deferred_light.slang
 )

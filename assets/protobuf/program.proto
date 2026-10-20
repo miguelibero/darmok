@@ -6,18 +6,11 @@ import "varying.proto";
 
 message StandardProgram {
     enum Type {
-        Unlit = 0;
-        ForwardBasic = 1;
-        Forward = 2;
-        Gui = 3;
+        ForwardBasic = 0;
+        Forward = 1;
+        Gui = 2;
+        Shadow = 3;
         Tonemap = 4;
-    }
-}
-
-message ProgramRef {
-    oneof program {
-        string path = 1;
-        StandardProgram.Type standard = 2;
     }
 }
 

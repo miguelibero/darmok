@@ -3,7 +3,6 @@ syntax = "proto3";
 package darmok.protobuf;
 
 import "math.proto";
-import "program.proto";
 
 message FreetypeFont {
     bytes data = 1;
@@ -11,7 +10,6 @@ message FreetypeFont {
 }
 
 message TextRenderer {
-    ProgramRef program = 1;
 }
 
 message Text {

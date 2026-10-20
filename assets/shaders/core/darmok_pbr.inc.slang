@@ -114,6 +114,10 @@ float3 calcAmbientIBL(
 
 float4 applyFragmentLights(float3 V, float3 N, float3 fragPos, Material mat)
 {
+    if(!mat.applyLight)
+    {
+        return mat.albedo;
+    }
     V = normalize(V);
     mat.a = specularAntiAliasing(N, mat.a);
 

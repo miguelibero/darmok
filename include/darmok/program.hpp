@@ -52,7 +52,6 @@ namespace darmok
 		using Definition = protobuf::Program;
 		using Source = protobuf::ProgramSource;
 		using Standard = protobuf::StandardProgram;
-		using Ref = protobuf::ProgramRef;
 
 		struct Handles final
 		{
@@ -86,9 +85,6 @@ namespace darmok
 
 		[[nodiscard]] static Source createSource() noexcept;
 		[[nodiscard]] static Definition createDefinition() noexcept;
-        [[nodiscard]] static expected<protobuf::Varying, std::string> loadRefVarying(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader = nullptr) noexcept;
-		[[nodiscard]] static ILoader<Program::Definition>::Result loadRefDefinition(const Ref& ref, OptionalRef<IProgramDefinitionLoader> loader = nullptr) noexcept;
-		[[nodiscard]] static ILoader<Program>::Result loadRef(const Ref& ref, OptionalRef<IProgramLoader> loader = nullptr) noexcept;
 	private:
 
 		static expected<ShaderHandles, std::string> createShaders(const google::protobuf::RepeatedPtrField<protobuf::Shader>& shaders, const std::string& name) noexcept;
@@ -109,6 +105,8 @@ namespace darmok
 		using Definition = protobuf::Program;
 		static expected<std::shared_ptr<Program>, std::string> load(Type type) noexcept;
 		static expected<std::shared_ptr<Definition>, std::string> loadDefinition(Type type) noexcept;
+        static expected<bgfx::VertexLayout, std::string> loadDefaultVertexLayout() noexcept;
+
 		static std::optional<Type> getType(const std::shared_ptr<Program>& prog) noexcept;
 		static std::optional<Type> getType(const std::shared_ptr<Definition>& def) noexcept;
 	private:

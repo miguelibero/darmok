@@ -1,6 +1,7 @@
 #pragma once
 
 #include <darmok/mesh_core.hpp>
+#include <optional>
 
 namespace bx
 {
@@ -9,14 +10,11 @@ namespace bx
 
 namespace darmok
 {
-    class IProgramDefinitionLoader;
-
     class DARMOK_EXPORT MeshDefinitionFromSourceLoader final : public FromDefinitionLoader<IMeshDefinitionFromSourceLoader, IMeshSourceLoader>
     {
     public:
-        MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader, IProgramDefinitionLoader& progLoader) noexcept;
+        MeshDefinitionFromSourceLoader(IMeshSourceLoader& srcLoader) noexcept;
     private:
-        IProgramDefinitionLoader& _progLoader;
         Result create(std::shared_ptr<Mesh::Source> src) noexcept override;
     };
 }

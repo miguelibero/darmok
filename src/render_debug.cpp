@@ -9,7 +9,7 @@ namespace darmok
 {
     expected<void, std::string> DebugRenderer::init(App& app) noexcept 
     {
-        auto result = StandardProgramLoader::load(Program::Standard::Unlit);
+        auto result = StandardProgramLoader::load(Program::Standard::ForwardBasic);
         if (!result)
         {
             return unexpected{ std::move(result).error() };

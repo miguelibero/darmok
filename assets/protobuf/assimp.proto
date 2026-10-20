@@ -4,10 +4,11 @@ package darmok.protobuf;
 
 import "material.proto";
 import "light.proto";
+import "varying.proto";
 
 message AssimpSceneImportConfig {
     Material.ShadingModel shading_model = 1;
-    repeated string program_defines = 2;
+    optional VertexLayout vertex_layout = 2;
     bool embed_textures = 3;
     string default_texture_path = 4;
     repeated string skip_meshes_regex = 5;

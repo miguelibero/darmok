@@ -114,7 +114,7 @@ namespace
 			scene.tryAddSceneComponent<FrameAnimationUpdater>();
 
 
-			auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+			auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
 			if (!progResult)
 			{
 				return unexpected{ std::move(progResult).error() };

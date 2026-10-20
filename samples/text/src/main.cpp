@@ -29,7 +29,7 @@ namespace
 
 		expected<void, std::string> init() noexcept override
 		{
-			auto& imgui = *_app.tryAddComponent<darmok::ImguiAppComponent>(*this);
+			auto& imgui = *_app.tryAddComponent<ImguiAppComponent>(*this);
 
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 

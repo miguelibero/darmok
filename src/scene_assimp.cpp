@@ -508,16 +508,6 @@ namespace darmok
     {
         matDef.set_name(convert<std::string>(assimpMat.GetName()));
 
-        matDef.set_shading_model(_config.shading_model());
-        for (auto& define : _config.program_defines())
-        {
-			auto itr = std::find(matDef.program_defines().begin(), matDef.program_defines().end(), define);
-            if (itr == matDef.program_defines().end())
-            {
-                *matDef.mutable_program_defines()->Add() = define;
-            }
-        }
-
         auto& textures = *matDef.mutable_textures();
         for (auto& elm : _materialTextures)
         {
@@ -649,11 +639,6 @@ namespace darmok
             return false;
         }
         
-        meshSrc.mutable_program()->set_standard(
-            _config.shading_model() == MaterialDefinition::Unlit
-            ? protobuf::StandardProgram::Unlit
-            : protobuf::StandardProgram::Forward);
-
         AssimpMeshSourceConverter converter{ assimpMesh, *meshSrc.mutable_data() };
         auto convertResult = converter();
         if(!convertResult)
@@ -823,7 +808,7 @@ namespace darmok
         // TODO
     }
 
-    void AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config)
+    expected<void, std::string> AssimpSceneFileImporterImpl::loadConfig(const nlohmann::ordered_json& json, const ReadProgramCompilerConfig& progReadConfig, AssimpConfig& config) noexcept
     {
         auto itr = json.find("shadingModel");
         if (itr != json.end())
@@ -832,17 +817,9 @@ namespace darmok
             protobuf::Material::ShadingModel model;
             if (!protobuf::Material::ShadingModel_Parse(val, &model))
             {
-                throw std::invalid_argument{ "invalid shading model: " + val };
+                return unexpected("invalid shading model: " + val);
             }
             config.set_shading_model(model);
-        }
-        itr = json.find("programDefines");
-        if (itr != json.end())
-        {
-            for (auto& elm : *itr)
-            {
-                config.add_program_defines(elm.get<std::string>());
-            }
         }
         itr = json.find("defaultTexture");
         if (itr != json.end())
@@ -860,10 +837,11 @@ namespace darmok
         {
             auto val = itr->get<std::string>();
             Material::OpacityType opacity;
-            if (Material::Definition::OpacityType_Parse(val, &opacity))
+            if (!Material::Definition::OpacityType_Parse(val, &opacity))
             {
-                config.set_opacity(opacity);
+                return unexpected("invalid opacity: " + val);
             }
+            config.set_opacity(opacity);
         }
         auto addRegexes = [](auto& repeated, const auto& json)
         {
@@ -933,30 +911,14 @@ namespace darmok
                 val += suffix;
             }
             protobuf::Light::ShadowType shadowType;
-            if(protobuf::Light::ShadowType_Parse(val, &shadowType))
+            if(!protobuf::Light::ShadowType_Parse(val, &shadowType))
             {
-                config.set_shadow_type(shadowType);
+                return unexpected("invalid shadow type: " + val);
             }
+            config.set_shadow_type(shadowType);
         }
-    }
 
-    expected<protobuf::VertexLayout, std::string> AssimpSceneFileImporterImpl::loadVertexLayout(const nlohmann::ordered_json& json)
-    {
-        protobuf::VertexLayout layout;
-        expected<void, std::string> result;
-        if (json.is_string())
-        {
-			result = protobuf::read(layout, json.get<std::filesystem::path>());
-        }
-        else
-        {
-            result = VertexLayoutWrapper{ layout }.read(json);
-        }
-        if (!result)
-        {
-            return unexpected(result.error());
-        }
-        return layout;
+        return {};
     }
 
     expected<AssimpSceneFileImporterImpl::Effect, std::string> AssimpSceneFileImporterImpl::prepare(const Input& input) noexcept
@@ -973,6 +935,9 @@ namespace darmok
         _compilerConfig = _defaultCompilerConfig;
 
         auto& config = _currentConfig.emplace();
+        config.set_shading_model(Material::Definition::Lit);
+        config.set_texture_flags(defaultTextureLoadFlags);
+
         nlohmann::json configJson = input.config;
         if (!input.dirConfig.empty())
         {
@@ -983,7 +948,11 @@ namespace darmok
 			.rootPath = input.basePath,
             .basePath = input.path.parent_path(),
         };
-        loadConfig(configJson, readProgConfig, config);
+        auto loadResult = loadConfig(configJson, readProgConfig, config);
+        if(!loadResult)
+        {
+            return unexpected(loadResult.error());
+        }
 
         std::filesystem::path outputPath;
         auto itr = configJson.find("outputPath");

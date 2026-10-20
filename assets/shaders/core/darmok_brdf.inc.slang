@@ -11,6 +11,7 @@ struct Material
     float3 normal;
     float  occlusion;
     float3 emissive;
+    bool applyLight;
 
     // calculated from the above
     float3 diffuse; // becomes black for higher metalness

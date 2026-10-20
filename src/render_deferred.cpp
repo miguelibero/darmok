@@ -230,8 +230,6 @@ namespace darmok
 
         ++viewId;
 
-        // keep the lit color and depth, draw transparent objects back to front
-        // BGFX_CLEAR_NONE, bgfx::ViewMode::DepthDescending
         return _transparentRenderer.renderReset(viewId);
     }
 
@@ -300,8 +298,8 @@ namespace darmok
             {
                 continue;
             }
-            auto& material = *renderable->getMaterial();
-            if(material.opacityType == Material::Definition::Transparent)
+            auto material = renderable->getMaterial();
+            if(material && material->opacityType == Material::Definition::Transparent)
             {
                 // drawn after lighting, they can't be stored in the G-buffer
                 output.transparentEntities.push_back(entity);
@@ -317,16 +315,21 @@ namespace darmok
             {
                 continue;
             }
-            if(_materials)
+            uint64_t state = BGFX_STATE_DEFAULT;
+            if (material)
             {
-                _materials->renderBind(encoder, material);
-            }
-            else
-            {
-                material.renderBind(encoder);
+                if(_materials)
+                {
+                    _materials->renderBind(encoder, *material);
+                }
+                else
+                {
+                    material->renderBind(encoder);
+                }
+                state = material->getRenderState() | BGFX_STATE_WRITE_A;
             }
 
-            encoder.setState(material.getRenderState() | BGFX_STATE_WRITE_A);
+            encoder.setState(state);
             encoder.submit(viewId, _geoProg->getHandle());
         }
         if(!errors.empty())
@@ -374,7 +377,6 @@ namespace darmok
         state |= BGFX_STATE_DEPTH_TEST_ALWAYS;
         state &= ~BGFX_STATE_WRITE_Z;
         encoder.setState(state);
-
 
         ProgramDefines defines;
         if(_cam->hasComponent<ShadowRenderer>())

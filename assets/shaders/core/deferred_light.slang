@@ -83,6 +83,7 @@ float4 frag(VSOutput IN) : SV_Target
     mat.occlusion = normalRoughnessOcclusion.a;
     mat.emissive = emissiveData.rgb;
     mat.normal = N;
+    mat.applyLight = true;
     mat = initMaterial(mat);
     mat.a = specularAntiAliasing(N, mat.a);
 

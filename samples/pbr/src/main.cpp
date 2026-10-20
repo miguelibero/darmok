@@ -103,7 +103,7 @@ namespace
 				return unexpected{ std::move(progResult).error() };
 			}
 			auto prog = progResult.value();
-			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::Unlit);
+			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
 			if (!progResult)
 			{
 				return unexpected{ std::move(unlitProgResult).error() };

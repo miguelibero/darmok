@@ -33,7 +33,6 @@ namespace darmok::editor
 	enum class EditorStandardProgramType
 	{
 		Custom,
-		Unlit,
 		ForwardBasic,
 		Forward,
 		Gui,

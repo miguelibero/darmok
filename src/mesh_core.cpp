@@ -188,7 +188,6 @@ namespace darmok
 	Mesh::Source Mesh::createSource() noexcept
 	{
 		Source src;
-		src.mutable_program()->set_standard(protobuf::StandardProgram::Forward);
 		src.set_name("Default Shape");
 		auto& sphere = *src.mutable_sphere();
 		sphere.mutable_shape()->set_radius(1.f);

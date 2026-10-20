@@ -81,7 +81,7 @@ namespace
 			cam.tryAddComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = *scene.tryAddSceneComponent<FreelookController>(cam);
 
-			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::Unlit);
+			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
 			if (!unlitProgResult)
 			{
 				return unexpected{ std::move(unlitProgResult).error() };

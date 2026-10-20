@@ -53,20 +53,57 @@ The scene behaves similarly to a scene in Unity3d but using [entt](https://githu
 In the scene contains a list of entities, each entity can have multiple components of different types.
 The following components are implemented:
 
-* Transform
-* Camera
-* Renderable
+* transform
+* camera
+* renderable
 * lights
     * AmbientLight
     * DirectionalLight
     * PointLight
     * SpotLight
+* text
+* skeletal animation
+    * armature
+    * animator
+* rmlui canvas
 
 ## Scene Components
 
+The same way as the app has components, the scene has components too, inheriting from `ISceneComponent`.
 
-#
+Provided scene components are:
 
+* frame animator
+* freelook controller
+* lua
+    * script runner
+    * component
+* physics system (jolt)
+* rmlui system
+* skeletal animation system (ozz)
+
+## Camera
+
+The camera entity component tries to have a similar api to the Unity3d camera. 
+
+The following events are passed from the renderers to the camera components:
+
+* `beforeRenderView` called before the final view is rendered
+* `shouldEntityBeCulled` called to check if an entity should be culled
+* `beforeRenderEntity` called before an entity is rendered
+* `beforeRenderLight` called before the light is rendered
+
+### Camera Components
+
+* forward renderer
+* deferred renderer
+* skybox renderer
+* light renderer
+* physics debug renderer
+* rmlui renderer
+* shadow renderer
+* text renderer
+* skeletal animation
 
 # Assets
 

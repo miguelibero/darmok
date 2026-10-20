@@ -708,6 +708,7 @@ namespace darmok
         ProgramCompilerConfig progCompiler;
         OptionalRef<bx::AllocatorI> alloc;
         bool generateTextureMips = false;
+        std::optional<bgfx::VertexLayout> vertexLayout;
     };
 
     class DARMOK_EXPORT SceneDefinitionCompiler final

@@ -59,7 +59,7 @@ namespace darmok
     {
         _cam = cam;
         _scene = scene;
-        auto progResult = StandardProgramLoader::load(Program::Standard::Unlit);
+        auto progResult = StandardProgramLoader::load(Program::Standard::Shadow);
         if (!progResult)
         {
             return unexpected{ std::move(progResult).error() };
