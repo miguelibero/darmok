@@ -271,7 +271,7 @@ namespace darmok
         void configureView(bgfx::ViewId viewId, const std::string& name, uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL) const noexcept;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder, std::optional<glm::mat4> additionalTransform = std::nullopt) const noexcept;
-        expected<void, std::string> beforeRenderView(const RenderContext& ctx) const noexcept;
+        expected<void, std::string> afterRender(const RenderContext& ctx) const noexcept;
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) const noexcept;
         expected<void, std::string> beforeRenderLight(const RenderContext& ctx) const noexcept;

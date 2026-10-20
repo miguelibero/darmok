@@ -35,8 +35,6 @@ namespace darmok
 		static void setUniform1(Material& mat, const std::string& name, const VarLuaTable<glm::vec4>& val);
 		static void setUniform2(Material& mat, const std::string& name, const VarLuaTable<glm::mat4>& val);
 		static void setUniform3(Material& mat, const std::string& name, const VarLuaTable<glm::mat3>& val);
-			
-		static void setDefine(Material& mat, const std::string& define);
 	};
 
 }

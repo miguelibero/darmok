@@ -113,14 +113,6 @@ namespace
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
 			scene.tryAddSceneComponent<FrameAnimationUpdater>();
 
-
-			auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-			if (!progResult)
-			{
-				return unexpected{ std::move(progResult).error() };
-			}
-			_prog = progResult.value();
-
 			auto cam3d = scene.createEntity();
 			scene.addComponent<Transform>(cam3d)
 				.setPosition(glm::vec3{ 0.f, 2.f, -2.f })
@@ -131,10 +123,12 @@ namespace
 				.tryAddComponent<ForwardRenderer>();
 
 			auto cam2d = scene.createEntity();
-			scene.addComponent<Camera>(cam2d)
+			auto renderer = scene.addComponent<Camera>(cam2d)
 				.setOrtho(glm::vec2{ 0.f })
 				.setCullingFilter<Culling2D>()
-				.tryAddComponent<ForwardRenderer>();
+				.tryAddComponent<ForwardRenderer>(false);
+
+            _vertexLayout = renderer->getVertexLayout();
 
 			_debugMaterial = std::make_shared<Material>(Colors::red(), Material::Definition::Unlit);
 			_debugMaterial->primitiveType = Material::Definition::Line;
@@ -158,7 +152,7 @@ namespace
 			MeshData meshData{ Rectangle{tex->getSize()}};
 			meshData.scalePositions(glm::vec3{ 0.5f } * glm::vec3{ fbScale, 1.f });
 
-			auto meshResult = meshData.createMesh(_prog->getVertexLayout());
+			auto meshResult = meshData.createMesh(_vertexLayout);
 			auto mesh = std::make_shared<Mesh>(std::move(meshResult).value());
 			auto mat = std::make_shared<Material>(tex, Material::Definition::Unlit);
 			mat->opacityType = Material::Definition::Transparent;
@@ -168,7 +162,7 @@ namespace
 			auto size = scale * glm::vec2{ tex->getSize() } *fbScale;
 			meshData = MeshData{ Rectangle::standard(), Mesh::Definition::FillOutline };
 			meshData.scalePositions(glm::vec3{ size, 0.f });
-			meshResult = meshData.createMesh(_prog->getVertexLayout());
+            meshResult = meshData.createMesh(_vertexLayout);
 			auto debugMesh = std::make_shared<Mesh>(std::move(meshResult).value());
 
 			scene.addComponent<Renderable>(spriteBorder, std::move(debugMesh), _debugMaterial);
@@ -193,7 +187,7 @@ namespace
 			TextureAtlasMeshConfig config;
 			config.offset = -glm::vec3{ animBounds.size.x, animBounds.size.y, 0.f } / 2.f;
 			config.scale = glm::vec3{ 2.f } *glm::vec3{ win.getFramebufferScale(), 1.f };
-			auto frames = texAtlas->createAnimation(_prog->getVertexLayout(), animNamePrefix, 0.1f, config);
+            auto frames = texAtlas->createAnimation(_vertexLayout, animNamePrefix, 0.1f, config);
 			
 			auto material = std::make_shared<Material>(texAtlas->texture, Material::Definition::Unlit);
 			material->opacityType = Material::Definition::Transparent;
@@ -213,7 +207,7 @@ namespace
 
 			auto meshData = MeshData{ Cube{} };
 			meshData.subdivideDensity(0.25F);
-			auto cubeMesh = std::make_shared<Mesh>(meshData.createMesh(_prog->getVertexLayout()).value());
+            auto cubeMesh = std::make_shared<Mesh>(meshData.createMesh(_vertexLayout).value());
 
 			auto cube = scene.createEntity();
 			scene.addComponent<Culling3D>(cube);
@@ -224,7 +218,7 @@ namespace
 	private:
 		App& _app;
 		std::shared_ptr<Material> _debugMaterial;
-		std::shared_ptr<Program> _prog;
+        bgfx::VertexLayout _vertexLayout;
 	};
 }
 

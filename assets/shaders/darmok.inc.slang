@@ -37,6 +37,18 @@ inline bool getBitfieldValue(float field, int pos)
     return ((uint(field) & (1u << pos)) != 0u);
 }
 
+inline float setBitfieldValue(float field, int pos, bool value)
+{
+    uint bits = uint(field);
+    uint mask = 1u << pos;
+
+    bits = value
+        ? (bits | mask)
+        : (bits & ~mask);
+
+    return float(bits);
+}
+
 // from screen coordinates (gl_FragCoord) to eye space
 float4 screen2Eye(float4 coord)
 {

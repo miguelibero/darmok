@@ -43,7 +43,7 @@ uniform float4 u_hasTextures;
 #define u_occlusionStrength       (u_metallicRoughnessNormalOcclusionFactor.w)
 #define u_emissiveFactor          (u_emissiveFactorVec.xyz)
 #define u_environmentMaxMip       (u_emissiveFactorVec.w)
-#define u_applyLight                (uint(u_hasTextures.z) != 0)
+#define u_applyLight              (uint(u_hasTextures.z) != 0)
 
 // alpha test for mask materials, u_hasTextures.y holds the cutoff (0 = disabled)
 void discardBelowAlphaCutoff(float alpha)

@@ -81,12 +81,6 @@ namespace
 			cam.tryAddComponent<SkeletalAnimationRenderComponent>();
 			_freeLook = *scene.tryAddSceneComponent<FreelookController>(cam);
 
-			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-			if (!unlitProgResult)
-			{
-				return unexpected{ std::move(unlitProgResult).error() };
-			}
-			auto unlitProg = unlitProgResult.value();
 			auto debugMat = std::make_shared<Material>(Colors::magenta(), Material::Definition::Unlit);
 
 			auto lightRootEntity = scene.createEntity();
@@ -95,7 +89,7 @@ namespace
 			auto& lightTrans = scene.addComponent<Transform>(lightEntity, glm::vec3{ 0, 1, 0 });
 			lightTrans.setParent(lightRootTrans);
 
-			auto lightMeshResult = MeshData{ Sphere{0.01} }.createMesh(unlitProg->getVertexLayout());
+			auto lightMeshResult = MeshData{ Sphere{0.01} }.createMesh(prog->getVertexLayout());
 			if (!lightMeshResult)
 			{
 				return unexpected{ std::move(lightMeshResult).error() };
@@ -143,7 +137,6 @@ namespace
 			auto ambientTex = texLoader("BasicMotions_DummyType01-AmbientOcclusion.png").value();
 
 			auto mat = std::make_shared<Material>(Colors::fromNumber(0xFAB137FF));
-			mat->programDefines = { "SKINNING_ENABLED" };
 			mat->textures[Material::TextureDefinition::BaseColor] = baseTex;
 			mat->textures[Material::TextureDefinition::MetallicRoughness] = metalTex;
 			mat->textures[Material::TextureDefinition::Normal] = normalTex;

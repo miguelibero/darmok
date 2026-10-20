@@ -97,22 +97,11 @@ namespace
 			_app.setResetFlag(BGFX_RESET_VSYNC);
 
 			auto& scene = *_app.tryAddComponent<SceneAppComponent>()->getScene();
-			auto progResult = StandardProgramLoader::load(Program::Standard::Forward);
-			if (!progResult)
-			{
-				return unexpected{ std::move(progResult).error() };
-			}
-			auto prog = progResult.value();
-			auto unlitProgResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-			if (!progResult)
-			{
-				return unexpected{ std::move(unlitProgResult).error() };
-			}
-			auto unlitProg = unlitProgResult.value();
-			auto& layout = prog->getVertexLayout();
 
 			_cam = createCamera(scene);
 			_freeCam = createCamera(scene, _cam);
+
+            auto layout = _cam->getCameraComponent<ForwardRenderer>()->getVertexLayout();
 
 			_freelook = scene.tryAddSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);

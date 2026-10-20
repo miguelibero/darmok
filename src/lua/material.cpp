@@ -79,12 +79,6 @@ namespace darmok
 		mat.uniformValues[name] = LuaGlm::tableGet(val);
 	}
 
-	void LuaMaterial::setDefine(Material& mat, const std::string& define)
-	{
-		mat.programDefines.insert(define);
-	}
-
-
 	void LuaMaterial::bind(sol::state_view& lua) noexcept
 	{
 		LuaUtils::newEnum<MaterialPrimitiveType>(lua, "MaterialPrimitiveType");
@@ -131,10 +125,6 @@ namespace darmok
 				&LuaMaterial::setUniform2,
 				&LuaMaterial::setUniform3
 			),
-			"set_define", sol::overload(
-				&LuaMaterial::setDefine
-			),
-			"defines", & Material::programDefines,
 			"base_color", &Material::baseColor,
 			"specular_color", &Material::specularColor,
 			"metallic_factor", &Material::metallicFactor,

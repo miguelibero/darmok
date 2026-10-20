@@ -65,8 +65,11 @@ PSOutput frag(VSOutput IN)
     // packNormal encodes the hemisphere facing the camera correctly in view space.
     float3 viewN = normalize(mul(float3x3(u_view), N));
 
+    float matFlags = 0.0;
+    matFlags = setBitfieldValue(matFlags, 0, mat.applyLight);
+
     OUT.rt0 = float4(mat.albedo.rgb, mat.metallic);
     OUT.rt1 = float4(packNormal(viewN), mat.roughness, mat.occlusion);
-    OUT.rt2 = float4(mat.emissive, 0.0);
+    OUT.rt2 = float4(mat.emissive, matFlags);
     return OUT;
 }

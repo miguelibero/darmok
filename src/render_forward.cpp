@@ -10,6 +10,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/scene_filter.hpp>
 #include <darmok/shadow.hpp>
+#include <darmok/skeleton.hpp>
 #include "detail/render_samplers.hpp"
 
 namespace darmok
@@ -28,6 +29,15 @@ namespace darmok
 	}
 
 	ForwardRenderer::~ForwardRenderer() noexcept = default;
+
+    bgfx::VertexLayout ForwardRenderer::getVertexLayout() const noexcept
+    {
+        if(_prog)
+        {
+            return _prog->getVertexLayout();
+        }
+        return {};
+    }
 
 	expected<void, std::string> ForwardRenderer::init(Camera& cam, Scene& scene, App& app) noexcept
 	{
@@ -107,15 +117,17 @@ namespace darmok
 		{
 			return unexpected<std::string>{"camera not loaded"};
 		}
-        auto result = _cam->beforeRenderView(ctx);
-		if (!result)
-		{
-			return result;
-		}
 
         ProgramDefines defines;
-        auto hasShadows = _cam->getComponent<ShadowRenderer>();
-
+        if(_cam->hasComponent<ShadowRenderer>())
+        {
+            defines.insert("SHADOW_ENABLED");
+        }
+        if (_cam->hasComponent<SkeletalAnimationRenderComponent>())
+        {
+            defines.insert("SKINNING_ENABLED");
+        }
+        auto prog = _prog->getHandle(defines);
 		std::vector<std::string> errors;
 		for (auto entity : entities)
 		{
@@ -153,15 +165,16 @@ namespace darmok
             {
                 _materials->renderBind(ctx.encoder, *material);
                 ctx.encoder.setState(material->getRenderState());
-                defines = material->programDefines;
             }
-            if(hasShadows)
-            {
-                defines.insert("SHADOW_ENABLED");
-            }
-
-            ctx.encoder.submit(ctx.viewId, _prog->getHandle(defines));
+            ctx.encoder.submit(ctx.viewId, prog);
 		}
+
+        auto afterResult = _cam->afterRender(ctx);
+        if(!afterResult)
+        {
+            errors.push_back(std::move(afterResult).error());
+        }
+
 		return StringUtils::joinExpectedErrors(errors);
 	}
 }

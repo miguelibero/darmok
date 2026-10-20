@@ -78,25 +78,43 @@ namespace
 
             DARMOK_TRY_PREFIX(_app.addComponent<MaterialAppComponent>(std::move(matConfig)), "adding material component");
 
-    		_cam = createCamera(*scene);
+            auto camEntity = scene->createEntity();
+
+            auto& cam = scene->addComponent<Camera>(camEntity);
+            cam.setPerspective(glm::radians(60.f), 0.3, 40);
+
+            scene->addComponent<Transform>(camEntity)
+                .setPosition(glm::vec3{0, 1, 0})
+                .lookAt(glm::vec3{-7, 2, 0});
+
+            auto shadowDef = ShadowRenderer::createDefinition();
+            shadowDef.set_map_size(4096);
+
+            // cam.tryAddComponent<ForwardRenderer>();
+            auto renderer = cam.tryAddComponent<DeferredRenderer>();
+            // cam.tryAddComponent<OcclusionCuller>();
+            cam.tryAddComponent<FrustumCuller>();
+            cam.tryAddComponent<LightingRenderComponent>();
+            cam.tryAddComponent<ShadowRenderer>(shadowDef);
+
+            auto vertexLayout = renderer->getVertexLayout();
+
 
             OptionalRef<FreelookController> freelookRef;
 
-            DARMOK_TRY_VALUE_PREFIX(freelookRef, scene->addSceneComponent<FreelookController>(*_cam), "adding debug freelook component");
+            DARMOK_TRY_VALUE_PREFIX(freelookRef, scene->addSceneComponent<FreelookController>(cam), "adding debug freelook component");
             DARMOK_TRY_PREFIX(freelookRef->setEnabled(true), "enable freelook");
 
             std::shared_ptr<Texture> envSkybox;
             DARMOK_TRY_VALUE_PREFIX(envSkybox, _app.getAssets().getTextureLoader()("skybox.bin"), "loading skybox texture");
-            DARMOK_TRY_PREFIX(_cam->addComponent<SkyboxRenderer>(envSkybox), "adding skybox component");
+            DARMOK_TRY_PREFIX(cam.addComponent<SkyboxRenderer>(envSkybox), "adding skybox component");
 
             std::shared_ptr<Program> prog;
-            // DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
-            // DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
+            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::Tonemap), "loading tonemap program");
+            DARMOK_TRY_PREFIX(scene->getRenderChain().addStep<ScreenSpaceRenderPass>(prog, "Tonemap"), "adding tonemap step");
 
             auto lightEntity = scene->createEntity();
             scene->addComponent<AmbientLight>(lightEntity, 0.2);
-
-            DARMOK_TRY_VALUE_PREFIX(prog, StandardProgramLoader::load(Program::Standard::ForwardBasic), "loading forward basic program");
 
             auto dirLightEntity = scene->createEntity();
             auto& dirLightTrans = scene->addComponent<Transform>(dirLightEntity, glm::vec3{-7.5, 3.5, 0});
@@ -105,10 +123,10 @@ namespace
             dirLight.setShadowType(LightDefinition::SoftShadow);
             scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
-            auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(prog->getVertexLayout()).value());
+            auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(vertexLayout).value());
             scene->addComponent<Renderable>(dirLightEntity, arrowMesh, Colors::magenta());
 
-            auto sphereMesh = std::make_shared<Mesh>(MeshData{Sphere{0.05}}.createMesh(prog->getVertexLayout()).value());
+            auto sphereMesh = std::make_shared<Mesh>(MeshData{Sphere{0.05}}.createMesh(vertexLayout).value());
 
 			for (auto& lightConfig : _pointLights)
 			{
@@ -147,7 +165,7 @@ namespace
 	private:
 		App& _app;
 		glm::vec2 _mouseVel;
-		OptionalRef<Camera> _cam;
+        bgfx::VertexLayout _vertexLayout;
 
 		struct PointLightConfig final
 		{
@@ -158,36 +176,12 @@ namespace
 		};
 
 		static const std::vector<PointLightConfig> _pointLights;
-
-		Camera& createCamera(Scene& scene)
-		{
-			auto entity = scene.createEntity();
-
-			auto& cam = scene.addComponent<Camera>(entity);
-            cam.setPerspective(glm::radians(60.f), 0.3, 40);
-
-			scene.addComponent<Transform>(entity)
-				.setPosition(glm::vec3{ 0, 1, 0 })
-				.lookAt(glm::vec3{ -7, 2, 0 });
-
-			auto shadowDef = ShadowRenderer::createDefinition();
-            shadowDef.set_map_size(4096);
-
-			// cam.tryAddComponent<ForwardRenderer>();
-            cam.tryAddComponent<DeferredRenderer>();
-            // cam.tryAddComponent<OcclusionCuller>();
-			cam.tryAddComponent<FrustumCuller>();
-			cam.tryAddComponent<LightingRenderComponent>();
-			cam.tryAddComponent<ShadowRenderer>(shadowDef);
-
-			return cam;
-		}
 	};
 
 	const std::vector<DeferredSampleAppDelegate::PointLightConfig> DeferredSampleAppDelegate::_pointLights = {
-        {{-6.0f, 1.0f, 0.0f}, 5.f, 100.f, Colors::red3()},
-        {{-3.0f, 1.0f, 0.0f}, 5.f, 100.f, Colors::green3()},
-        {{0.0f, 1.0f, 5.0f}, 5.f, 100.f, Colors::blue3()},
+        {{-6.0f, 1.0f, 0.0f}, 10.f, 100.f, Colors::red3()},
+        {{-3.0f, 1.0f, 0.0f}, 10.f, 100.f, Colors::green3()},
+        {{0.0f, 1.0f, 5.0f}, 10.f, 100.f, Colors::blue3()},
 	};
 }
 

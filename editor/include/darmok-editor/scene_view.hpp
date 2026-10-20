@@ -94,6 +94,8 @@ namespace darmok::editor
         EditorApp& getEditorApp() noexcept;
         const EditorApp& getEditorApp() const noexcept;
 
+        bgfx::VertexLayout getVertexLayout() const noexcept;
+
         expected<void, std::string> add(std::unique_ptr<ISceneGizmo> gizmo) noexcept;
 
         template<typename T, typename... A>

@@ -430,7 +430,7 @@ namespace darmok::physics3d
         return {};
     }
 
-    expected<void, std::string> PhysicsDebugRendererImpl::beforeRenderView(const CameraRenderContext& ctx) noexcept
+    expected<void, std::string> PhysicsDebugRendererImpl::afterRender(const CameraRenderContext& ctx) noexcept
     {
         if (!_enabled)
         {
@@ -502,9 +502,9 @@ namespace darmok::physics3d
         return *this;
     }
 
-    expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+    expected<void, std::string> PhysicsDebugRenderer::afterRender(const RenderContext& ctx) noexcept
     {
-        return _impl->beforeRenderView(ctx);
+        return _impl->afterRender(ctx);
     }
 }
 
@@ -539,7 +539,7 @@ namespace darmok::physics3d
         return *this;
     }
 
-    expected<void, std::string> PhysicsDebugRenderer::beforeRenderView(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
+    expected<void, std::string> PhysicsDebugRenderer::afterRender(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
         return {};
     }

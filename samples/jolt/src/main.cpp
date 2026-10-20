@@ -44,12 +44,7 @@ namespace
 			_scene = _app.tryAddComponent<SceneAppComponent>()->getScene();
 			_scene->tryAddSceneComponent<PhysicsSystem>(_app.getAssets().getAllocator());
 
-			auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-			if (!progResult)
-			{
-				return unexpected{ std::move(progResult).error() };
-			}
-			auto prog = progResult.value();
+            bgfx::VertexLayout vertexLayout;
 
 			// camera
 			{
@@ -61,7 +56,7 @@ namespace
 				_cam = _scene->addComponent<Camera>(camEntity)
 					.setPerspective(glm::radians(60.f), 0.3f, 1000.f);
 
-				_cam->tryAddComponent<ForwardRenderer>();
+				vertexLayout = _cam->tryAddComponent<ForwardRenderer>()->getVertexLayout();
 				_cam->tryAddComponent<LightingRenderComponent>();
 
 
@@ -92,7 +87,7 @@ namespace
 				auto floorEntity = _scene->createEntity();
 				Cube floorShape{ {10.f, .5f, 10.f}, {0.f, -0.25f, 0.f} };
 				_floorBody = _scene->addComponent<PhysicsBody>(floorEntity, floorShape, PhysicsBody::Definition::Static);
-				if (auto floorMeshResult = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout()))
+                if(auto floorMeshResult = MeshData{floorShape}.createSharedMesh(vertexLayout))
 				{
 					_scene->addComponent<Renderable>(floorEntity, floorMeshResult.value(), std::make_shared<Material>(Colors::grey(), Material::Definition::Lit));
 				}
@@ -112,7 +107,7 @@ namespace
 
 				_doorMat = std::make_shared<Material>(Color{255, 100, 100, 255}, Material::Definition::Lit);
                 _triggerDoorMat = std::make_shared<Material>(Colors::red(), Material::Definition::Lit);
-				if (auto doorMeshResult = MeshData{ doorShape }.createSharedMesh(prog->getVertexLayout()))
+                if(auto doorMeshResult = MeshData{doorShape}.createSharedMesh(vertexLayout))
 				{
 					_scene->addComponent<Renderable>(doorEntity, doorMeshResult.value(), _doorMat);
 				}
@@ -121,7 +116,7 @@ namespace
 			{ // cubes
                 _cubeMat = std::make_shared<Material>(Color{100, 255, 100, 255}, Material::Definition::Lit);
                 _touchedCubeMat = std::make_shared<Material>(Colors::green(), Material::Definition::Lit);
-				if (auto meshResult = MeshData{ _cubeShape }.createSharedMesh(prog->getVertexLayout()))
+                if(auto meshResult = MeshData{_cubeShape}.createSharedMesh(vertexLayout))
 				{
 					_cubeMesh = meshResult.value();
 				}
@@ -148,7 +143,7 @@ namespace
 				_characterBody = _scene->addComponent<PhysicsBody>(playerEntity, charDef);
 				_characterBody->addListener(*this);
 
-				if (auto playerMeshResult = MeshData{ playerShape }.createSharedMesh(prog->getVertexLayout()))
+				if(auto playerMeshResult = MeshData{playerShape}.createSharedMesh(vertexLayout))
 				{
                     _scene->addComponent<Renderable>(playerEntity, playerMeshResult.value(), std::make_shared<Material>(Colors::red(), Material::Definition::Lit));
 					_characterTrans = _scene->getOrAddComponent<Transform>(playerEntity);

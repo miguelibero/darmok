@@ -69,6 +69,8 @@ namespace darmok
 
         static Definition createDefinition() noexcept;
 
+        bgfx::VertexLayout getVertexLayout() const noexcept;
+
     private:
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;

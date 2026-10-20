@@ -30,6 +30,8 @@ namespace darmok
         expected<void, std::string> render(const std::vector<Entity>& entities, const RenderContext& ctx) noexcept;
         expected<void, std::string> shutdown() noexcept override;
 
+        bgfx::VertexLayout getVertexLayout() const noexcept;
+
     private:
         bool _pbr = true;
         OptionalRef<Camera> _cam;

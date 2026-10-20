@@ -36,12 +36,12 @@ namespace darmok
         virtual expected<void, std::string> render() noexcept { return {}; }
         virtual expected<void, std::string> update(float deltaTime) noexcept { return {}; }
         virtual expected<void, std::string> shutdown() noexcept { return {}; }
+
         virtual bool shouldEntityBeCulled(Entity entity) { return false; }
-        virtual expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept { return {}; }
         virtual expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept { return {}; }
         virtual expected<void, std::string> beforeRenderLight(const RenderContext& ctx) noexcept { return {}; }
+        virtual expected<void, std::string> afterRender(const RenderContext& ctx) noexcept { return {}; }
         virtual void onCameraTransformChanged() noexcept {}
-        // virtual expected<void, std::string> afterLoad() noexcept { return {}; }
     };
 
     template<typename T>

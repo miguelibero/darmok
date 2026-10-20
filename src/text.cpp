@@ -409,7 +409,7 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
 	}
 
-	expected<void, std::string> TextRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+	expected<void, std::string> TextRenderer::afterRender(const RenderContext& ctx) noexcept
 	{
 		if (!_scene || !_cam)
 		{

@@ -1,4 +1,3 @@
-
 float4x4 u_modelViewProj;
 
 struct VSInput
@@ -16,11 +15,30 @@ struct VSOutput
 uniform Texture2D s_texColor;
 SamplerState s_texColorState;
 
+// Linear RGB -> sRGB display encoding.
+float3 linearToSRGB(float3 color)
+{
+    color = max(color, float3(0.0));
+
+    float3 low = color * 12.92;
+    float3 high =
+        1.055 * pow(color, float3(1.0 / 2.4)) - 0.055;
+
+    return lerp(
+        low,
+        high,
+        step(float3(0.0031308), color)
+    );
+}
+
 [shader("vertex")]
 VSOutput vert(VSInput IN)
 {
     VSOutput OUT;
-    OUT.position = mul(u_modelViewProj, float4(IN.a_position,0.0,1.0));
+    OUT.position = mul(
+        u_modelViewProj,
+        float4(IN.a_position, 0.0, 1.0)
+    );
     OUT.v_texcoord0 = IN.a_texcoord0;
     return OUT;
 }
@@ -28,15 +46,18 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    float4 baseColor = s_texColor.Sample(s_texColorState, IN.v_texcoord0);
-    float3 hdrColor = baseColor.rgb;
-  
-    // reinhard tone mapping
-    float3 mapped = hdrColor / (hdrColor + float3(1.0));
-    
-    // gamma correction
-    const float gamma = 2.2;
-    mapped = pow(abs(mapped), float3(1.0 / gamma));
-  
+    float4 baseColor =
+        s_texColor.Sample(s_texColorState, IN.v_texcoord0);
+
+    // Exposure adjustment; lower this to darken the image.
+    const float exposure = 0.5;
+    float3 hdrColor = max(baseColor.rgb, float3(0.0)) * exposure;
+
+    // Reinhard tone mapping.
+    float3 mapped = hdrColor / (float3(1.0) + hdrColor);
+
+    // Convert linear output to display sRGB.
+    mapped = linearToSRGB(mapped);
+
     return float4(mapped, baseColor.a);
 }

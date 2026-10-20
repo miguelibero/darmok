@@ -12,6 +12,7 @@
 #include <darmok/glm_serialize.hpp>
 #include <darmok/light.hpp>
 #include <darmok/shadow.hpp>
+#include <darmok/skeleton.hpp>
 #include "detail/render_samplers.hpp"
 #include "generated/shaders/deferred_geo.h"
 #include "generated/shaders/deferred_light.h"
@@ -117,6 +118,15 @@ namespace darmok
         : _pbr(pbr)
         , _transparentRenderer(pbr, "Deferred Transparent")
     {
+    }
+
+    bgfx::VertexLayout DeferredRenderer::getVertexLayout() const noexcept
+    {
+        if(_geoProg)
+        {
+            return _geoProg->getVertexLayout();
+        }
+        return {};
     }
 
     DeferredRenderer::Definition DeferredRenderer::createDefinition() noexcept
@@ -285,9 +295,15 @@ namespace darmok
 
         _cam->setViewTransform(viewId);
 
+        ProgramDefines defines;
+        if(_cam->hasComponent<SkeletalAnimationRenderComponent>())
+        {
+            defines.insert("SKINNING_ENABLED");
+        }
+        auto prog = _geoProg->getHandle(defines);
+
         std::vector<std::string> errors;
-        auto entities = _cam->getEntities<Renderable>();
-        for(auto entity : entities)
+        for(auto entity : _cam->getEntities<Renderable>())
         {
             auto renderable = _scene->getComponent<const Renderable>(entity);
             if(!renderable->valid())
@@ -330,7 +346,7 @@ namespace darmok
             }
 
             encoder.setState(state);
-            encoder.submit(viewId, _geoProg->getHandle());
+            encoder.submit(viewId, prog);
         }
         if(!errors.empty())
         {

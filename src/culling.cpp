@@ -321,7 +321,7 @@ namespace darmok
         return _debugRender.shutdown();
     }
 
-    expected<void, std::string> CullingDebugRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+    expected<void, std::string> CullingDebugRenderer::afterRender(const RenderContext& ctx) noexcept
     {
         uint8_t debugColor = 0;
         MeshData meshData;

@@ -81,7 +81,7 @@ namespace darmok
         expected<void, std::string> init(Camera& cam, Scene& scene, App& app) noexcept override;
         expected<void, std::string> load(const Definition& def) noexcept;
         expected<void, std::string> shutdown() noexcept override;
-        expected<void, std::string> beforeRenderView(const RenderContext& ctx) noexcept override;
+        expected<void, std::string> afterRender(const RenderContext& ctx) noexcept override;
     private:
         OptionalRef<const Camera> _mainCam;
         OptionalRef<Camera> _cam;

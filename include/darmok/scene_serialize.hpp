@@ -707,7 +707,7 @@ namespace darmok
     {
         ProgramCompilerConfig progCompiler;
         OptionalRef<bx::AllocatorI> alloc;
-        bool generateTextureMips = false;
+        bool generateTextureMips = true;
         std::optional<bgfx::VertexLayout> vertexLayout;
     };
 

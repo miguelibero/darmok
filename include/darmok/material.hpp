@@ -131,7 +131,6 @@ namespace darmok
         using RenderConfig = MaterialRenderConfig;
 
         ShadingModel shadingModel = Definition::Lit;
-        ProgramDefines programDefines;
 
         UniformValueMap uniformValues;
         UniformTextureMap uniformTextures;

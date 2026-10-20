@@ -1559,7 +1559,7 @@ namespace darmok
         return _render->renderCanvas(encoder);
     }
 
-    expected<void, std::string> RmluiCanvasImpl::beforeRenderView(const CameraRenderContext& ctx) noexcept
+    expected<void, std::string> RmluiCanvasImpl::afterRender(const CameraRenderContext& ctx) noexcept
     {
         if (_render)
         {
@@ -2652,13 +2652,13 @@ namespace darmok
         return viewId;
     }
 
-    expected<void, std::string> RmluiRendererImpl::beforeRenderView(const CameraRenderContext& ctx) noexcept
+    expected<void, std::string> RmluiRendererImpl::afterRender(const CameraRenderContext& ctx) noexcept
     {
 		std::vector<std::string> errors;
         for (auto entity : _cam->getEntities<RmluiCanvas>())
         {
             auto& canvas = _scene->getComponent<RmluiCanvas>(entity).value();
-            auto result = canvas.getImpl().beforeRenderView(ctx);
+            auto result = canvas.getImpl().afterRender(ctx);
             if (!result)
             {
 				errors.push_back(std::move(result).error());
@@ -2705,9 +2705,9 @@ namespace darmok
         return _impl->renderReset(viewId);
     }
 
-    expected<void, std::string> RmluiRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+    expected<void, std::string> RmluiRenderer::afterRender(const RenderContext& ctx) noexcept
     {
-        return _impl->beforeRenderView(ctx);
+        return _impl->afterRender(ctx);
     }
 
 }

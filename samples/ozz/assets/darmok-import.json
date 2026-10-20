@@ -13,6 +13,9 @@
         "BasicMotions_DummyModel.fbx": {
             "scene": {
                 "outputPath": "scene.dsc",
+                "embedTextures": true,
+                "textureFlags": ["BGFX_TEXTURE_MSAA_SAMPLE", "MIN_ANISOTROPIC", "MAG_ANISOTROPIC"],
+                "generateTextureMips": true,                
                 "skipNodes": [
                     "Rig",
                     "DummyType02",

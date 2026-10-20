@@ -29,13 +29,7 @@ namespace darmok::editor
         _scene = scene;
         _renderer = renderer;
 
-        auto progResult = StandardProgramLoader::load(Program::Standard::ForwardBasic);
-        if (!progResult)
-        {
-            return unexpected{ std::move(progResult).error() };
-        }
-        auto prog = progResult.value();
-        auto& layout = prog->getVertexLayout();
+        auto layout = _renderer->getVertexLayout();
 
         {
             auto meshResult = MeshData{ Line{}, Mesh::Definition::Arrow }.createMesh(layout);
@@ -289,6 +283,15 @@ namespace darmok::editor
             }
         }
         return StringUtils::joinExpectedErrors(errors);
+    }
+
+    bgfx::VertexLayout SceneGizmosRenderer::getVertexLayout() const noexcept
+    {
+        if(_program)
+        {
+            return _program->getVertexLayout();
+        }
+        return {};
     }
 
     expected<void, std::string> SceneGizmosRenderer::update(float deltaTime) noexcept

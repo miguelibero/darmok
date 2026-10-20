@@ -88,22 +88,28 @@ The camera entity component tries to have a similar api to the Unity3d camera.
 
 The following events are passed from the renderers to the camera components:
 
-* `beforeRenderView` called before the final view is rendered
 * `shouldEntityBeCulled` called to check if an entity should be culled
 * `beforeRenderEntity` called before an entity is rendered
 * `beforeRenderLight` called before the light is rendered
+* `afterRender` called on the final forward render pass
 
 ### Camera Components
 
-* forward renderer
-* deferred renderer
-* skybox renderer
-* light renderer
-* physics debug renderer
-* rmlui renderer
-* shadow renderer
-* text renderer
-* skeletal animation
+* renderers
+    * forward renderer
+    * deferred renderer
+* components
+    * light renderer
+    * shadow renderer
+    * skybox renderer
+    * physics debug renderer
+    * rmlui renderer
+    * text renderer
+    * skeletal animation
+
+### Render Chain
+
+The camera has a render chain that allows the engine to add postprocessing passes.
 
 # Assets
 

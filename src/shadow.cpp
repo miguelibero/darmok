@@ -777,7 +777,7 @@ namespace darmok
         return _debugRender.shutdown();
     }
 
-    expected<void, std::string> ShadowDebugRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+    expected<void, std::string> ShadowDebugRenderer::afterRender(const RenderContext& ctx) noexcept
     {
         if (!_scene || !_cam)
         {

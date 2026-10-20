@@ -61,7 +61,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> SkyboxRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+    expected<void, std::string> SkyboxRenderer::afterRender(const RenderContext& ctx) noexcept
     {
         if (!_mesh || !_program || !_texture)
         {
@@ -169,7 +169,7 @@ namespace darmok
         return {};
     }
 
-    expected<void, std::string> GridRenderer::beforeRenderView(const RenderContext& ctx) noexcept
+    expected<void, std::string> GridRenderer::afterRender(const RenderContext& ctx) noexcept
     {
         if (!_mesh || !_program)
         {

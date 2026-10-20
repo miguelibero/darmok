@@ -472,13 +472,13 @@ namespace darmok
         }
     }
 
-    expected<void, std::string> Camera::beforeRenderView(const RenderContext& ctx) const noexcept
+    expected<void, std::string> Camera::afterRender(const RenderContext& ctx) const noexcept
     {
         setViewTransform(ctx.viewId);
 		std::vector<std::string> errors;
         for (auto& comp : copyComponents())
         {
-            auto result = comp->beforeRenderView(ctx);
+            auto result = comp->afterRender(ctx);
             if (!result)
             {
 				errors.push_back(std::move(result).error());
