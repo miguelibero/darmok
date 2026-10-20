@@ -2,6 +2,7 @@
     "files": {
         "cubemap.ktx": {
             "image": {
+                "generateMips": false,
                 "cubemap": [
                     "cubemap_0.png",
                     "cubemap_1.png",

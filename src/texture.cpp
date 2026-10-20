@@ -442,7 +442,7 @@ namespace darmok
 
 	expected<Texture, std::string> Texture::load(const DataView& data, const Config& cfg, uint64_t flags) noexcept
 	{
-		// copying the memory of the image becauyse bgfx needs to maintain the memory for some frames
+		// copying the memory of the image because bgfx needs to maintain the memory for some frames
 		const auto mem = data.copyMem();
 		auto result = createTextureHandle(cfg, flags, mem);
 		if (!result)

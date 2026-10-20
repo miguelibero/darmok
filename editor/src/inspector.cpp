@@ -51,7 +51,6 @@ namespace darmok::editor
         DARMOK_TRY(addEditor<CylinderInspectorEditor>());
         DARMOK_TRY(addEditor<MaterialInspectorEditor>());
         DARMOK_TRY(addEditor<ProgramSourceInspectorEditor>());
-        DARMOK_TRY(addEditor<ProgramRefInspectorEditor>());
         DARMOK_TRY(addEditor<MeshSourceInspectorEditor>());
         DARMOK_TRY(addEditor<TextureInspectorEditor>());
 

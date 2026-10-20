@@ -98,7 +98,7 @@ namespace
 			scene.addComponent<Renderable>(lightEntity, lightMesh, debugMat);
 			scene.tryAddSceneComponent<CircleUpdater>(lightTrans);
 			scene.addComponent<PointLight>(lightEntity, 5).setRange(5);
-			scene.addComponent<AmbientLight>(lightEntity, 0.5);
+			scene.addComponent<AmbientLight>(lightEntity, 1);
 
 			auto skel = _app.getAssets().getSkeletonLoader()("skeleton.ozz").value();
 
@@ -136,7 +136,7 @@ namespace
 			auto normalTex = texLoader("BasicMotions_DummyType01-Normal.png").value();
 			auto ambientTex = texLoader("BasicMotions_DummyType01-AmbientOcclusion.png").value();
 
-			auto mat = std::make_shared<Material>(Colors::fromNumber(0xFAB137FF));
+			auto mat = std::make_shared<Material>(Colors::fromNumber(0xFAB137FF), Material::Definition::Lit);
 			mat->textures[Material::TextureDefinition::BaseColor] = baseTex;
 			mat->textures[Material::TextureDefinition::MetallicRoughness] = metalTex;
 			mat->textures[Material::TextureDefinition::Normal] = normalTex;

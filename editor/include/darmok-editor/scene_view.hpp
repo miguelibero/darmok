@@ -111,7 +111,6 @@ namespace darmok::editor
             return std::ref(ref);
         }
 
-        const bgfx::VertexLayout& getVertexLayout() const noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform = std::nullopt) noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, std::optional<glm::mat4> transform = std::nullopt) noexcept;
         expected<void, std::string> renderMesh(Entity entity, const Mesh& mesh, const Color& color, Material::PrimitiveType prim, std::optional<glm::mat4> transform = std::nullopt) noexcept;

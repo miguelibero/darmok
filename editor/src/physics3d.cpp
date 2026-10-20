@@ -74,7 +74,7 @@ namespace darmok::editor
         {
             return unexpected<std::string>{"renderer not initialized"};
         }
-        auto& layout = _renderer->getVertexLayout();
+        auto layout = _renderer->getVertexLayout();
         if (layout.getStride() == 0)
         {
             return unexpected<std::string>{"empty vertex layout"};

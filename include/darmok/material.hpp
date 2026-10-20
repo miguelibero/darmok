@@ -163,8 +163,8 @@ namespace darmok
         bool writeDepth = true;
 
         Material() = default;
-        Material(std::shared_ptr<Texture> tex, ShadingModel shading = Definition::Unlit) noexcept;
-        Material(const Color& color, ShadingModel shading = Definition::Unlit) noexcept;
+        Material(std::shared_ptr<Texture> tex, ShadingModel shading = Definition::Lit) noexcept;
+        Material(const Color& color, ShadingModel shading = Definition::Lit) noexcept;
 
         expected<void, std::string> load(const Definition& def, ITextureLoader& texLoader) noexcept;
 
@@ -172,6 +172,7 @@ namespace darmok
         uint64_t getRenderState() const noexcept;
         void renderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
         void shadowRenderBind(bgfx::Encoder& encoder, OptionalRef<const RenderConfig> config = nullptr) const noexcept;
+
         static uint16_t getDepthTestFlag(Definition::DepthTest) noexcept;
     };
 

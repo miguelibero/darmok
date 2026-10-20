@@ -20,7 +20,7 @@
 #include <darmok/environment.hpp>
 #include <darmok/light.hpp>
 #include <darmok/shadow.hpp>
-#include <darmok/render_forward.hpp>
+#include <darmok/render_deferred.hpp>
 #include <darmok/culling.hpp>
 #include <darmok/shape.hpp>
 
@@ -342,7 +342,7 @@ namespace darmok::editor
         DARMOK_TRY(cam.addComponent<GridRenderer>());
         DARMOK_TRY(cam.addComponent<LightingRenderComponent>());
         DARMOK_TRY(cam.addComponent<ShadowRenderer>());
-        DARMOK_TRY(cam.addComponent<ForwardRenderer>());
+        DARMOK_TRY(cam.addComponent<DeferredRenderer>());
         DARMOK_TRY(cam.addComponent<FrustumCuller>());
         _cam = cam;
         return {};

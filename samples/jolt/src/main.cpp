@@ -77,9 +77,9 @@ namespace
 				_scene->addComponent<Transform>(light)
 					.setPosition({ 1, 2, -2 })
 					.lookDir({ -1, -1, 0 });
-				_scene->addComponent<PointLight>(light, 0.5f)
+				_scene->addComponent<PointLight>(light, 0.3f)
 					.setRange(5);
-				_scene->addComponent<DirectionalLight>(light, 0.5f);
+				_scene->addComponent<DirectionalLight>(light, 0.8f);
 				_scene->addComponent<AmbientLight>(_scene->createEntity(), 0.5);
 			}
 

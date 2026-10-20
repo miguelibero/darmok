@@ -65,13 +65,6 @@ namespace darmok::editor
 	{
 		auto changed = false;
 
-		auto progResult = renderChild(*mat.mutable_program());
-		if(!progResult)
-		{
-			return unexpected{ std::move(progResult).error() };
-		}
-		changed |= *progResult;
-
 		if (ImguiUtils::drawProtobufInput("Base color", "base_color", mat))
 		{
 			changed = true;

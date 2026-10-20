@@ -198,6 +198,11 @@ namespace darmok
         {
             return {};
         }
+        _gbuffer.reset();
+        if (size.x == 0 || size.y == 0)
+        {
+            return {};
+        }
         auto result = DeferredGeoBuffer::load(size);
         if (!result)
         {
@@ -359,19 +364,22 @@ namespace darmok
     {
         encoder.touch(viewId);
 
-        if(!_screenMesh || !_lightProg || !_gbuffer)
+        if(!_screenMesh || !_lightProg)
         {
             return unexpected<std::string>{"lighting not initialized"};
         }
 
-        auto result = _gbuffer->beforeRenderLight(encoder);
-        if(!result)
+        if (_gbuffer)
         {
-            return result;
+            auto result = _gbuffer->beforeRenderLight(encoder);
+            if(!result)
+            {
+                return result;
+            }
         }
 
         CameraRenderContext ctx{viewId, encoder};
-        result = _cam->beforeRenderLight(ctx);
+        auto result = _cam->beforeRenderLight(ctx);
         if(!result)
         {
             return result;
@@ -408,11 +416,10 @@ namespace darmok
     expected<void, std::string> DeferredRenderer::renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
         const std::vector<Entity>& entities) noexcept
     {
-        if(!_gbuffer)
+        if(_gbuffer)
         {
-            return unexpected<std::string>{"missing geo buffer"};
+            _gbuffer->beforeRenderTransparent(encoder);
         }
-        _gbuffer->beforeRenderTransparent(encoder);
         return _transparentRenderer.render(entities, CameraRenderContext{ viewId, encoder, true});
     }
 

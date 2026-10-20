@@ -273,7 +273,15 @@ namespace darmok
 			}
 			else
 			{
-				tex = config.defaultTexture;
+                itr = config.defaultTextures.find(type);
+                if (itr != config.defaultTextures.end())
+                {
+                    tex = itr->second;
+                }
+                else
+                {
+                    tex = config.defaultTexture;
+                }
 			}
 			if (tex)
 			{

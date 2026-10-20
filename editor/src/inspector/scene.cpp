@@ -55,7 +55,7 @@ namespace darmok::editor
             auto& assets = getProject().getAssets();
             AssimpSceneDefinitionConverter::ImportConfig importConfig;
             importConfig.set_embed_textures(true);
-            importConfig.mutable_program()->set_standard(Program::Standard::Forward);
+            importConfig.set_shading_model(Material::Definition::Lit);
             FileDataLoader dataLoader;
             dataLoader.setAbsolutePathsAllowed(true);
             dataLoader.setBasePath(_fileInput.path.parent_path());

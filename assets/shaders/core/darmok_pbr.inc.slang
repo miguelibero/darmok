@@ -31,6 +31,9 @@ uniform float4 u_multipleScatteringVec;
 #define u_whiteFurnaceRadiance (u_multipleScatteringVec.y)
 #define u_whiteFurnace         (u_whiteFurnaceRadiance > 0.0)
 
+#define u_hasIrradianceTexture          getBitfieldValue(u_hasTextures.x, 6)
+#define u_hasPrefilteredEnvTexture      getBitfieldValue(u_hasTextures.x, 7)
+
 bool whiteFurnaceEnabled()
 {
     return u_whiteFurnace;
@@ -45,7 +48,6 @@ float3 whiteFurnace(float NoV, Material mat)
     float E = lerp(Es.y, Es.x, mat.metallic);
     return E * float3(u_whiteFurnaceRadiance, u_whiteFurnaceRadiance, u_whiteFurnaceRadiance);
 }
-
 
 // Turquin. 2018. Practical multiple scattering compensation for microfacet models.
 // https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
@@ -77,38 +79,39 @@ float3 calcLightRadiance(LightData data, float3 V, float3 N, float NoV, float3 m
     return BRDF(V, data.direction, N, NoV, NoL, mat) * msFactor * data.radiance * NoL;
 }
 
-float3 calcAmbientIBL(
-    Material mat,
-    float3 N,
-    float3 V,
-    float NoV)
+float3 materialIrradianceValue(float3 texcoord)
 {
-    float3 irradiance =
-        s_irradiance.Sample(s_irradianceState, N).rgb;
+    if(u_hasIrradianceTexture)
+    {
+        return s_irradiance.Sample(s_irradianceState, texcoord).rgb;
+    }
+    else
+    {
+        return float3(1.0, 1.0, 1.0);
+    }
+}
 
-    float3 diffuse =
-        irradiance * mat.diffuse;
+float3 materialPrefilteredEnvValue(float3 texcoord, float mip)
+{
+    if(u_hasPrefilteredEnvTexture)
+    {
+        return s_prefilteredEnv.SampleLevel(s_prefilteredEnvState, texcoord, mip).rgb;
+    }
+    else
+    {
+        return float3(1.0, 1.0, 1.0);
+    }
+}
 
+float3 calcAmbientIBL(Material mat, float3 N, float3 V, float NoV)
+{
+    float3 irradiance = materialIrradianceValue(N);
+    float3 diffuse = irradiance * mat.diffuse;
     float3 R = reflect(-V, N);
-
     float mip = mat.roughness * u_environmentMaxMip;
-
-    float3 environment =
-        s_prefilteredEnv.SampleLevel(
-            s_prefilteredEnvState,
-            R,
-            mip
-        ).rgb;
-
-    float2 brdf =
-        s_brdfLut.Sample(
-            s_brdfLutState,
-            float2(NoV, mat.roughness)
-        );
-
-    float3 specular =
-        environment * (mat.F0 * brdf.x + brdf.y);
-
+    float3 environment = materialPrefilteredEnvValue(R, mip);
+    float2 brdf = s_brdfLut.Sample(s_brdfLutState, float2(NoV, mat.roughness));
+    float3 specular = environment * (mat.F0 * brdf.x + brdf.y);
     return diffuse + specular;
 }
 
@@ -119,6 +122,7 @@ float4 applyFragmentLights(float3 V, float3 N, float3 fragPos, Material mat)
         return mat.albedo;
     }
     V = normalize(V);
+    N = normalize(N);
     mat.a = specularAntiAliasing(N, mat.a);
 
     float NoV = abs(dot(N, V)) + 1e-5;

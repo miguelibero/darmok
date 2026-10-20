@@ -35,13 +35,6 @@ namespace darmok::editor
             changed = true;
         }
 
-        auto progResult = renderChild(*src.mutable_program());
-        if (!progResult)
-        {
-            return unexpected{ std::move(progResult).error() };
-        }
-        changed |= *progResult;
-
         MeshSourceValueType type = MeshSourceValueType::Data;
         if (src.has_capsule())
         {

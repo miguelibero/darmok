@@ -33,7 +33,7 @@ namespace darmok
 	expected<Image, std::string> Image::load(const std::array<DataView, 6>& facesData, bx::AllocatorI& alloc, bimg::TextureFormat::Enum format) noexcept
 	{
 		std::vector<Image> faces;
-		bimg::TextureFormat::Enum fformat;
+        auto fformat = bimg::TextureFormat::Unknown;
 		glm::uvec2 size;
         std::optional<bool> hasMips;
 		for (auto& faceData : facesData)
@@ -78,7 +78,7 @@ namespace darmok
         for(size_t i = 0; i < faces.size(); ++i)
         {
             std::memcpy(
-                ptr + faceSize * i,
+                ptr + (faceSize * i),
                 faces[i].getData().ptr(),
                 faceSize);
         }

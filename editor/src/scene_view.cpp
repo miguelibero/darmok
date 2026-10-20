@@ -236,7 +236,7 @@ namespace darmok::editor
         {
             return unexpected<std::string>{"scene not initialized"};
         }
-        auto& layout = _renderer->getVertexLayout();
+        auto layout = _renderer->getVertexLayout();
         if (layout.getStride() == 0)
         {
             return unexpected<std::string>{"empty vertex layout"};
@@ -372,25 +372,21 @@ namespace darmok::editor
         return _app.getProject().getComponentLoadContext().getEntity(entityId);
     }
 
-    const bgfx::VertexLayout& SceneGizmosRenderer::getVertexLayout() const noexcept
-    {
-        if (!_program)
-        {
-            static const bgfx::VertexLayout layout;
-            return layout;
-        }
-        return _program->getVertexLayout();
-    }
-
     expected<void, std::string> SceneGizmosRenderer::renderMesh(Entity entity, const Mesh& mesh, const Material& material, std::optional<glm::mat4> transform) noexcept
     {
+        if (!_encoder || !_viewId || !_program)
+        {
+            return unexpected<std::string>{"renderer not initialized"};
+        }
         _cam->setEntityTransform(entity, *_encoder, transform);
         auto result = mesh.render(*_encoder);
         if (!result)
         {
             return result;
         }
-        material.renderSubmit(*_viewId, *_encoder);
+        material.renderBind(*_encoder);
+        _encoder->setState(material.getRenderState());
+        _encoder->submit(*_viewId, _program->getHandle());
         return {};
     }
 
@@ -401,11 +397,7 @@ namespace darmok::editor
 
     expected<void, std::string> SceneGizmosRenderer::renderMesh(Entity entity, const Mesh& mesh, const Color& color, Material::PrimitiveType prim, std::optional<glm::mat4> transform) noexcept
     {
-        if (!_program)
-        {
-            unexpected<std::string>{"program not loaded"};
-        }
-        Material material{ _program, color };
+        Material material{ color, Material::Definition::Unlit };
         material.depthTest = Material::Definition::DepthNoTest;
         material.writeDepth = false;
         material.primitiveType = prim;

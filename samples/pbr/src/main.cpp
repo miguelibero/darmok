@@ -101,7 +101,7 @@ namespace
 			_cam = createCamera(scene);
 			_freeCam = createCamera(scene, _cam);
 
-            auto layout = _cam->getCameraComponent<ForwardRenderer>()->getVertexLayout();
+            auto layout = _cam->getComponent<ForwardRenderer>()->getVertexLayout();
 
 			_freelook = scene.tryAddSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
@@ -115,7 +115,7 @@ namespace
 				tonemapResult.value(), "Tonemap");
 
 			MeshData debugArrowMeshData{ Line{}, Mesh::Definition::Arrow };
-			auto debugArrowMeshResult = debugArrowMeshData.createSharedMesh(unlitProg->getVertexLayout());
+			auto debugArrowMeshResult = debugArrowMeshData.createSharedMesh(layout);
 			if(!debugArrowMeshResult)
 			{
 				return unexpected{ std::move(debugArrowMeshResult).error() };
@@ -123,7 +123,7 @@ namespace
 			auto debugArrowMesh = debugArrowMeshResult.value();
 
 			MeshData debugSphereMeshData{ Sphere{0.02f} };
-			auto debugSphereMeshResult = debugSphereMeshData.createSharedMesh(unlitProg->getVertexLayout());
+            auto debugSphereMeshResult = debugSphereMeshData.createSharedMesh(layout);
 			if (!debugSphereMeshResult)
 			{
 				return unexpected{ std::move(debugSphereMeshResult).error() };
@@ -196,7 +196,7 @@ namespace
 
 			auto floorEntity = scene.createEntity();
 			Cube floorShape(glm::vec3{ 10.f, .5f, 10.f }, glm::vec3{ 0, -0.25, 2 });
-			auto floorMeshResult = MeshData{ floorShape }.createSharedMesh(prog->getVertexLayout());
+            auto floorMeshResult = MeshData{floorShape}.createSharedMesh(layout);
 			if (!floorMeshResult)
 			{
 				return unexpected{ std::move(floorMeshResult).error() };
@@ -204,7 +204,6 @@ namespace
 			auto floorMesh = floorMeshResult.value();
 
 			auto floorMat = std::make_shared<Material>(Colors::red());
-			floorMat->programDefines.insert("SHADOW_ENABLED");
 			scene.addComponent<Renderable>(floorEntity, std::move(floorMesh), floorMat);
 			scene.addComponent<BoundingBox>(floorEntity, floorShape);
 
