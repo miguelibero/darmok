@@ -106,7 +106,7 @@ set(CORE_SHADERS_TARGET darmok-core-shaders)
 darmok_process_assets(
   TARGET ${CORE_SHADERS_TARGET} CORE
   INPUT ${PROJECT_SOURCE_DIR}/assets/shaders/core
-  OUTPUT include/private/generated/shaders
+  OUTPUT include/private/generated/shaders/core
   ASSETS
     darmok_light.inc.slang
     darmok_material.inc.slang
@@ -756,10 +756,6 @@ if(DARMOK_PLATFORM STREQUAL "glfw")
     target_link_libraries(${LIB_NAME} PRIVATE wayland-egl)
   endif()
 endif()
-
-# taskflow
-find_package(Taskflow CONFIG REQUIRED)
-target_link_libraries(${LIB_NAME} PRIVATE Taskflow::Taskflow)
 
 # freetype
 if(DARMOK_BUILD_FREETYPE)

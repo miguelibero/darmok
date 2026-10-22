@@ -4,11 +4,11 @@
 #include <darmok/string.hpp>
 #include <darmok/collection.hpp>
 #include <darmok/protobuf.hpp>
-#include "generated/shaders/gui.h"
-#include "generated/shaders/forward.h"
-#include "generated/shaders/forward_basic.h"
-#include "generated/shaders/shadow.h"
-#include "generated/shaders/tonemap.h"
+#include "generated/shaders/core/gui.h"
+#include "generated/shaders/core/forward.h"
+#include "generated/shaders/core/forward_basic.h"
+#include "generated/shaders/core/shadow.h"
+#include "generated/shaders/core/tonemap.h"
 
 namespace darmok
 {    

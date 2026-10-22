@@ -8,8 +8,8 @@
 #include <darmok/color.hpp>
 #include <darmok/glm_serialize.hpp>
 #include <darmok/scene_serialize.hpp>
-#include "generated/shaders/skybox.h"
-#include "generated/shaders/grid.h"
+#include "generated/shaders/core/skybox.h"
+#include "generated/shaders/core/grid.h"
 #include "detail/render_samplers.hpp"
 
 namespace darmok
@@ -175,10 +175,6 @@ namespace darmok
         {
             return unexpected<std::string>{"uninitialized"};
         }
-        if (_cam)
-        {
-            _cam->setUniforms(ctx);
-        }
 
         auto result = _mesh->render(ctx.encoder);
         if (!result)
@@ -194,6 +190,10 @@ namespace darmok
         ctx.encoder.setUniform(_color1Uniform, glm::value_ptr(color1));
         ctx.encoder.setUniform(_color2Uniform, glm::value_ptr(color2));
         ctx.encoder.setUniform(_dataUniform, glm::value_ptr(data));
+        if(_cam)
+        {
+            _cam->setUniforms(ctx);
+        }
 
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB

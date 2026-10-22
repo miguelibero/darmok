@@ -423,9 +423,9 @@ namespace darmok
 		return StringUtils::joinExpectedErrors(errors);
     }
 
-    std::string Camera::getViewName(const std::string& baseName) const noexcept
+    std::string Camera::getViewName(std::string_view baseName) const noexcept
     {
-        auto name = "Camera " + getName() + ": " + baseName;
+        auto name = "Camera " + getName() + ": " + std::string{baseName};
         if (_scene)
         {
             name = "Scene " + _scene->getImpl().getDescName() + ": " + name;
@@ -433,7 +433,7 @@ namespace darmok
         return name;
     }
 
-    void Camera::configureView(bgfx::ViewId viewId, const std::string& name, uint16_t clearFlags) const noexcept
+    void Camera::configureView(bgfx::ViewId viewId, std::string_view name, uint16_t clearFlags) const noexcept
     {
         bgfx::setViewName(viewId, getViewName(name).c_str());
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);

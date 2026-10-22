@@ -1041,10 +1041,12 @@ namespace darmok
                         {.intValue0 = SlangDebugInfoFormat::SLANG_DEBUG_INFO_FORMAT_PDB}});
                 }
                 auto mode = SlangLineDirectiveMode::SLANG_LINE_DIRECTIVE_MODE_STANDARD;
+                /*
                 if(renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
                 {
                     mode = SlangLineDirectiveMode::SLANG_LINE_DIRECTIVE_MODE_GLSL;
                 }
+                */
                 options.push_back(Entry{
                     Option::LineDirectiveMode,
                     {.intValue0 = int(mode)}});

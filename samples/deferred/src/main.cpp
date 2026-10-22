@@ -124,7 +124,8 @@ namespace
             scene->tryAddSceneComponent<RotateUpdater>(dirLightTrans);
 
             auto arrowMesh = std::make_shared<Mesh>(MeshData{Line{glm::vec3{0}, glm::vec3{0, 0, 1}}, Mesh::Definition::Arrow}.createMesh(vertexLayout).value());
-            scene->addComponent<Renderable>(dirLightEntity, arrowMesh, Colors::magenta());
+            auto debugMat = std::make_shared<Material>(Colors::magenta(), Material::Definition::Unlit);
+            scene->addComponent<Renderable>(dirLightEntity, arrowMesh, debugMat);
 
             auto sphereMesh = std::make_shared<Mesh>(MeshData{Sphere{0.05}}.createMesh(vertexLayout).value());
 
@@ -134,7 +135,7 @@ namespace
 				auto& light = scene->addComponent<PointLight>(entity, lightConfig.intensity, lightConfig.color, lightConfig.radius);
 				light.setShadowType(LightDefinition::HardShadow);
 				scene->addComponent<Transform>(entity, lightConfig.position);
-                scene->addComponent<Renderable>(entity, sphereMesh, Colors::magenta());
+                scene->addComponent<Renderable>(entity, sphereMesh, debugMat);
 			}
 
             std::shared_ptr<Scene::Definition> sceneDef;

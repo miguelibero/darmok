@@ -127,7 +127,7 @@ namespace darmok
 
         entt::id_type getId() const noexcept;
         std::string getName() const noexcept;
-        std::string getViewName(const std::string& baseName) const noexcept;
+        std::string getViewName(std::string_view baseName) const noexcept;
         std::string toString() const noexcept;
 
         const glm::mat4& getProjectionMatrix() const noexcept;
@@ -268,7 +268,7 @@ namespace darmok
         [[nodiscard]] expected<bool, std::string> setRenderOutputSize(const glm::uvec2& size) noexcept;
         [[nodiscard]] std::shared_ptr<FrameBuffer> getRenderOutput() const noexcept;
         
-        void configureView(bgfx::ViewId viewId, const std::string& name, uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL) const noexcept;
+        void configureView(bgfx::ViewId viewId, std::string_view name, uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL) const noexcept;
         void setViewTransform(bgfx::ViewId viewId) const noexcept;
         void setEntityTransform(Entity entity, bgfx::Encoder& encoder, std::optional<glm::mat4> additionalTransform = std::nullopt) const noexcept;
         expected<void, std::string> afterRender(const RenderContext& ctx) const noexcept;

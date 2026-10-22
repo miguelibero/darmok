@@ -76,12 +76,17 @@ float computeDepth(float3 pos)
     return (p.z / p.w);
 }
 
+struct PSOutput
+{
+    float4 color : SV_Target0;
+    float depth : SV_Depth;
+};
+
 [shader("fragment")]
-float4 frag(VSOutput IN) : SV_Target
+PSOutput frag(VSOutput IN) : SV_Target
 {
     float t = -IN.v_nearPoint.y / (IN.v_farPoint.y - IN.v_nearPoint.y);
     float3 pos = IN.v_nearPoint + t * (IN.v_farPoint - IN.v_nearPoint);
-    discardIfHiddenBySceneDepth(pos);
     
     float ft = float(t > 0.0);
     float alpha1 = ft * grid(pos.xz, u_gridScale1);
@@ -90,11 +95,18 @@ float4 frag(VSOutput IN) : SV_Target
     float4 color2 = float4(u_gridColor2.xyz, u_gridColor2.w * alpha2);
     float4 outColor = color1 + color2;
 
+    if(outColor.a < 0.001)
+    {
+        discard;
+    }
+
     float depth = computeDepth(pos);
     float eyeDepth = screen2EyeDepth(depth, u_nearPlane, u_farPlane);
     float linDepth = eyeDepth / u_farPlane;
     float fading = max(0, (u_fadeFactor - linDepth));
-    outColor.a *= fading;
-    // gl_FragDepth equivalent not directly set here
-    return outColor;
+
+    PSOutput OUT;
+    OUT.color = outColor * fading;
+    OUT.depth = depth;
+    return OUT;
 }

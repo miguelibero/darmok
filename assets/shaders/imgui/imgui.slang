@@ -33,8 +33,6 @@ VSOutput vert(VSInput IN)
 [shader("fragment")]
 float4 frag(VSOutput IN) : SV_Target
 {
-    discardIfHiddenBySceneDepth(IN.position.xyz);
-    
 #ifdef DARMOK_VARIANT_LOD_ENABLED
     float3 color = s_texColor.SampleLevel(s_texColorState, IN.v_texcoord0, u_imageLodEnabled.x).xyz;
     float alpha = 0.2 + 0.8 * u_imageLodEnabled.y;

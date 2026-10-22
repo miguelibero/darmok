@@ -369,7 +369,7 @@ namespace darmok
             { bgfx::RendererType::Direct3D12,   "s_5_0"},
             { bgfx::RendererType::Metal,        "metal"},
             { bgfx::RendererType::OpenGLES,     "300_es"},
-            { bgfx::RendererType::OpenGL,       "150"},
+            { bgfx::RendererType::OpenGL,       "430"},
             { bgfx::RendererType::Vulkan,       "spirv"},
     };
 

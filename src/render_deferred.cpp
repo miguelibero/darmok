@@ -14,8 +14,8 @@
 #include <darmok/shadow.hpp>
 #include <darmok/skeleton.hpp>
 #include "detail/render_samplers.hpp"
-#include "generated/shaders/deferred_geo.h"
-#include "generated/shaders/deferred_light.h"
+#include "generated/shaders/core/deferred_geo.h"
+#include "generated/shaders/core/deferred_light.h"
 
 namespace darmok
 {
@@ -228,7 +228,7 @@ namespace darmok
 
         _viewId = viewId;
 
-        uint16_t clearFlags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
+        uint16_t clearFlags = BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL;
         bgfx::setViewName(viewId, _cam->getViewName("Deferred Geometry").c_str());
         bgfx::setViewClear(viewId, clearFlags, 1.F, 0U);
 
