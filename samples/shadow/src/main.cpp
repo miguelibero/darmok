@@ -84,10 +84,10 @@ namespace
 		bool _paused;
 	};
 
-	class PbrSampleAppDelegate : public IAppDelegate, IFreelookListener, IInputEventListener
+	class ShadowSampleAppDelegate : public IAppDelegate, IFreelookListener, IInputEventListener
 	{
 	public:
-		PbrSampleAppDelegate(App& app) noexcept
+		ShadowSampleAppDelegate(App& app) noexcept
 			: _app{ app }
 		{
 			// app.setRendererType(bgfx::RendererType::Direct3D12);
@@ -304,4 +304,4 @@ namespace
 
 }
 
-DARMOK_RUN_APP(PbrSampleAppDelegate);
+DARMOK_RUN_APP(ShadowSampleAppDelegate);
