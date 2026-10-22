@@ -48,8 +48,11 @@ message SkyboxRenderer {
 
 message GridRenderer {
     Color x_color = 1;
-    Color y_color = 2;
-    Color z_color = 3;
+    Color z_color = 2;
+
+    float axis_width = 3;
+    float fade_start = 4;
+    float fade_end = 5;
 
     message Config {
         float separation = 1;
@@ -57,8 +60,9 @@ message GridRenderer {
         float width = 3;
     }
 
-    Config grid1 = 4;
-    Config grid2 = 5;
+    Config grid1 = 6;
+    Config grid2 = 7;
+
 }
 
 message ShadowRenderer {

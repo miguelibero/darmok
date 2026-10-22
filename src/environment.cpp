@@ -111,8 +111,10 @@ namespace darmok
     {
         Definition def;
         *def.mutable_x_color() = convert<protobuf::Color>(Colors::red());
-        *def.mutable_y_color() = convert<protobuf::Color>(Colors::green());
         *def.mutable_z_color() = convert<protobuf::Color>(Colors::blue());
+        def.set_fade_start(20.0F);
+        def.set_fade_end(100.0F);
+        def.set_axis_width(0.01F);
 
         auto& smallGrid = *def.mutable_grid1();
         smallGrid.set_separation(1.0F);
@@ -142,9 +144,13 @@ namespace darmok
         }
         _program = std::make_unique<Program>(std::move(progResult).value());
 
-        _color1Uniform = { "u_gridColor1", bgfx::UniformType::Vec4 };
-        _color2Uniform = { "u_gridColor2", bgfx::UniformType::Vec4 };
-        _dataUniform = { "u_data", bgfx::UniformType::Vec4 };
+        _majorColorUniform = {"u_majorGridColor", bgfx::UniformType::Vec4};
+        _minorColorUniform = {"u_minorGridColor", bgfx::UniformType::Vec4};
+        _xColorUniform = { "u_axisXColor", bgfx::UniformType::Vec4 };
+        _zColorUniform = {"u_axisZColor", bgfx::UniformType::Vec4};
+        _gridParamsUniform = { "u_gridParams", bgfx::UniformType::Vec4 };
+        _depthParamsUniform = {"u_depthParams", bgfx::UniformType::Vec4};
+        _fadeParamsUniform = {"u_fadeParams", bgfx::UniformType::Vec4};
 
         static const Rectangle rect{ glm::vec2{2.0f} };
         MeshData meshData{ rect };
@@ -163,9 +169,13 @@ namespace darmok
         _program.reset();
         _mesh.reset();
         _cam.reset();
-        _color1Uniform.reset();
-        _color2Uniform.reset();
-        _dataUniform.reset();
+        _majorColorUniform.reset();
+        _minorColorUniform.reset();
+        _xColorUniform.reset();
+        _zColorUniform.reset();
+        _gridParamsUniform.reset();
+        _depthParamsUniform.reset();
+        _fadeParamsUniform.reset();
         return {};
     }
 
@@ -181,15 +191,36 @@ namespace darmok
         {
             return result;
         }
+
+        auto majorColor = Colors::normalize(convert<Color>(_def.grid1().color()));
+        auto minorColor = Colors::normalize(convert<Color>(_def.grid2().color()));
+        auto xColor = Colors::normalize(convert<Color>(_def.x_color()));
+        auto zColor = Colors::normalize(convert<Color>(_def.z_color()));
+        ctx.encoder.setUniform(_majorColorUniform, glm::value_ptr(majorColor));
+        ctx.encoder.setUniform(_minorColorUniform, glm::value_ptr(minorColor));
+        ctx.encoder.setUniform(_xColorUniform, glm::value_ptr(xColor));
+        ctx.encoder.setUniform(_zColorUniform, glm::value_ptr(zColor));
+
+        glm::vec4 data;
+
+        data.x = _def.grid1().separation();
+        data.y = _def.grid2().separation();
+        data.z = _def.grid1().width();
+        data.w = _def.grid2().width();
+        ctx.encoder.setUniform(_gridParamsUniform, glm::value_ptr(data));
+
         auto& proj = _cam->getProjectionMatrix();
         auto depthRange = Math::projDepthRange(proj);
-        glm::vec4 data{ depthRange, _def.grid1().separation(), _def.grid2().separation()};
+        data.x = depthRange.x;
+        data.y = depthRange.y;
+        data.z = 0.01;
+        ctx.encoder.setUniform(_depthParamsUniform, glm::value_ptr(data));
 
-        auto color1 = Colors::normalize(convert<Color>(_def.grid1().color()));
-        auto color2 = Colors::normalize(convert<Color>(_def.grid2().color()));
-        ctx.encoder.setUniform(_color1Uniform, glm::value_ptr(color1));
-        ctx.encoder.setUniform(_color2Uniform, glm::value_ptr(color2));
-        ctx.encoder.setUniform(_dataUniform, glm::value_ptr(data));
+        data.x = _def.fade_start();
+        data.y = _def.fade_end();
+        data.z = _def.axis_width();
+        ctx.encoder.setUniform(_fadeParamsUniform, glm::value_ptr(data));
+
         if(_cam)
         {
             _cam->setUniforms(ctx);
@@ -200,7 +231,7 @@ namespace darmok
             | BGFX_STATE_WRITE_A
             | BGFX_STATE_WRITE_Z
             | BGFX_STATE_BLEND_ALPHA
-            | BGFX_STATE_DEPTH_TEST_LESS
+            | BGFX_STATE_DEPTH_TEST_LEQUAL
             ;
         ctx.encoder.setState(state);
         ctx.encoder.submit(ctx.viewId, _program->getHandle());

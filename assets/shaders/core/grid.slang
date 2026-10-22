@@ -1,80 +1,14 @@
 #include <darmok.inc.slang>
 
-uniform float4 u_gridColor1;
-uniform float4 u_gridColor2;
-uniform float4 u_xAxisColor;
-uniform float4 u_zAxisColor;
-uniform float4 u_data;
-
 struct VSInput
 {
-    float2 a_position : POSITION;
+    float3 a_position : POSITION;
 };
 
 struct VSOutput
 {
-    float4 position: SV_Position;
-    float3 v_nearPoint: POSITION0;
-    float3 v_farPoint: POSITION1;
-    float2 v_texcoord0 : TEXCOORD0;
+    float4 position : SV_Position;
 };
-
-float3 unproject(float3 pos)
-{
-    float4 p = mul(u_invViewProj, float4(pos, 1.0));
-    return p.xyz / p.w;
-}
-
-[shader("vertex")]
-VSOutput vert(VSInput IN)
-{
-	float4 pos = float4(IN.a_position, 0.0, 1.0);
-    VSOutput OUT;
-	OUT.v_nearPoint = unproject(float3(IN.a_position, 0.0));
-    OUT.v_farPoint = unproject(float3(IN.a_position, 1.0));
-	OUT.v_texcoord0 = IN.a_position;
-	OUT.position = pos;
-    return OUT;
-}
-
-#define u_nearPlane u_data.x
-#define u_farPlane u_data.y
-#define u_gridScale1 u_data.z
-#define u_gridScale2 u_data.w
-#define u_fadeFactor 0.9
-
-// http://asliceofrendering.com/scene%20helper/2020/01/05/InfiniteGrid/
-// https://bgolus.medium.com/the-best-darn-grid-shader-yet-727f9278b9d8
-
-float pristineGrid(float2 uv, float scale, float lineWidth)
-{
-    uv /= scale;
-    lineWidth = saturate(lineWidth / scale);
-    float2 duv = abs(ddx(uv)); // approximate fwidth
-    bool invertLine = lineWidth > 0.5;
-    float targetWidth = invertLine ? 1.0 - lineWidth : lineWidth;
-    float2 targetWidth2 = float2(targetWidth, targetWidth);
-    float2 drawWidth = clamp(targetWidth2, duv, float2(0.5,0.5));
-    float2 lineAA = max(duv, float2(0.000001,0.000001)) * 1.5;
-    float2 gridUV = abs(frac(uv) * 2.0 - 1.0);
-    gridUV = invertLine ? gridUV : 1.0 - gridUV;
-    float2 grid2 = smoothstep(drawWidth + lineAA, drawWidth - lineAA, gridUV);
-    grid2 *= saturate(targetWidth2 / drawWidth);
-    grid2 = lerp(grid2, targetWidth2, saturate(duv * 2.0 - 1.0));
-    grid2 = invertLine ? 1.0 - grid2 : grid2;
-    return lerp(grid2.x, 1.0, grid2.y);
-}
-
-float grid(float2 uv, float scale)
-{
-    return pristineGrid(uv, scale, 0.01);
-}
-
-float computeDepth(float3 pos)
-{
-    float4 p = mul(u_viewProj, float4(pos.xyz, 1.0));
-    return (p.z / p.w);
-}
 
 struct PSOutput
 {
@@ -82,31 +16,176 @@ struct PSOutput
     float depth : SV_Depth;
 };
 
-[shader("fragment")]
-PSOutput frag(VSOutput IN) : SV_Target
-{
-    float t = -IN.v_nearPoint.y / (IN.v_farPoint.y - IN.v_nearPoint.y);
-    float3 pos = IN.v_nearPoint + t * (IN.v_farPoint - IN.v_nearPoint);
-    
-    float ft = float(t > 0.0);
-    float alpha1 = ft * grid(pos.xz, u_gridScale1);
-    float alpha2 = ft * grid(pos.xz, u_gridScale2);
-    float4 color1 = float4(u_gridColor1.xyz, u_gridColor1.w * alpha1);
-    float4 color2 = float4(u_gridColor2.xyz, u_gridColor2.w * alpha2);
-    float4 outColor = color1 + color2;
+float4 u_minorGridColor;
+float4 u_majorGridColor;
+float4 u_axisXColor;
+float4 u_axisZColor;
 
-    if(outColor.a < 0.001)
+float4 u_gridParams;
+float4 u_depthParams;
+float4 u_fadeParams;
+
+#define u_minorSpacing  u_gridParams.x
+#define u_majorSpacing  u_gridParams.y
+#define u_minorWidth    u_gridParams.z
+#define u_majorWidth    u_gridParams.w
+
+#define u_nearPlane     u_depthParams.x
+#define u_farPlane      u_depthParams.y
+#define u_depthEpsilon  u_depthParams.z
+
+#define u_fadeStart     u_fadeParams.x
+#define u_fadeEnd       u_fadeParams.y
+#define u_axisWidth     u_fadeParams.z
+
+void discardIfHiddenBySceneDepth(float3 fragCoord);
+
+[shader("vertex")]
+VSOutput vs_main(VSInput input)
+{
+    VSOutput output;
+    output.position = float4(input.a_position.xy, 0.0, 1.0);
+    return output;
+}
+
+float3 getCameraPosition()
+{
+    return mul(
+        u_invView,
+        float4(0.0, 0.0, 0.0, 1.0)
+    ).xyz;
+}
+
+float3 reconstructWorldRay(float2 pixelPosition)
+{
+    float2 uv = (pixelPosition - u_viewRect.xy) / u_viewRect.zw;
+
+    float2 ndc = float2(
+        uv.x * 2.0 - 1.0,
+        1.0 - uv.y * 2.0
+    );
+
+    float4 farWorld = mul(
+        u_invViewProj,
+        float4(ndc, 1.0, 1.0)
+    );
+
+    farWorld.xyz /= farWorld.w;
+    float3 cameraPosition = getCameraPosition();
+    return normalize(farWorld.xyz - cameraPosition);
+}
+
+float gridLine(float2 coord, float spacing, float width)
+{
+    float2 derivative = max(
+        fwidth(coord),
+        float2(1e-6, 1e-6)
+    );
+
+    float2 distanceToLine =
+        abs(frac(coord / spacing + 0.5) - 0.5) * spacing;
+
+    float2 line = 1.0 - smoothstep(
+        width * 0.5 - derivative,
+        width * 0.5 + derivative,
+        distanceToLine
+    );
+
+    return max(line.x, line.y);
+}
+
+[shader("fragment")]
+PSOutput fs_main(VSOutput input)
+{
+    PSOutput output;
+
+    float3 cameraPosition = getCameraPosition();
+    float3 rayDirection = reconstructWorldRay(input.position.xy);
+
+    if (abs(rayDirection.y) < 1e-6)
     {
         discard;
     }
 
-    float depth = computeDepth(pos);
-    float eyeDepth = screen2EyeDepth(depth, u_nearPlane, u_farPlane);
-    float linDepth = eyeDepth / u_farPlane;
-    float fading = max(0, (u_fadeFactor - linDepth));
+    float t = -cameraPosition.y / rayDirection.y;
 
-    PSOutput OUT;
-    OUT.color = outColor * fading;
-    OUT.depth = depth;
-    return OUT;
+    if (t <= 0.0)
+    {
+        discard;
+    }
+
+    float3 worldPos = cameraPosition + rayDirection * t;
+
+    float4 gridClip = mul(
+        u_viewProj,
+        float4(worldPos, 1.0)
+    );
+
+    if (gridClip.w <= 0.0)
+        discard;
+
+    float gridDepth = gridClip.z / gridClip.w;
+
+    discardIfHiddenBySceneDepth(
+        float3(input.position.xy, gridDepth)
+    );
+
+    float spacing = max(u_minorSpacing, 1e-5);
+    float majorInterval = max(u_majorSpacing, 1.0);
+
+    float minor = gridLine(
+        worldPos.xz,
+        spacing,
+        u_minorWidth
+    );
+
+    float major = gridLine(
+        worldPos.xz,
+        spacing * majorInterval,
+        u_majorWidth
+    );
+
+    float axisX = 1.0 - smoothstep(
+        u_axisWidth,
+        u_axisWidth + max(fwidth(worldPos.z), 1e-6),
+        abs(worldPos.z)
+    );
+
+    float axisZ = 1.0 - smoothstep(
+        u_axisWidth,
+        u_axisWidth + max(fwidth(worldPos.x), 1e-6),
+        abs(worldPos.x)
+    );
+
+    float3 color = u_minorGridColor.rgb;
+    float alpha = minor * u_minorGridColor.a;
+
+    color = lerp(color, u_majorGridColor.rgb, major);
+    alpha = max(alpha, major * u_majorGridColor.a);
+
+    color = lerp(color, u_axisXColor.rgb, axisX);
+    color = lerp(color, u_axisZColor.rgb, axisZ);
+
+    alpha = max(alpha, axisX * u_axisXColor.a);
+    alpha = max(alpha, axisZ * u_axisZColor.a);
+
+    float distanceToCamera = length(worldPos - cameraPosition);
+
+    float fade = 1.0 - smoothstep(
+        u_fadeStart,
+        max(u_fadeEnd, u_fadeStart + 1e-5),
+        distanceToCamera
+    );
+
+    alpha *= fade;
+
+    if (alpha < 0.001)
+    {
+        discard;
+    }
+
+    output.color = float4(color, alpha);
+    output.depth = gridDepth;
+
+    return output;
 }

@@ -55,9 +55,13 @@ namespace darmok
         OptionalRef<Camera> _cam;
         std::unique_ptr<Program> _program;
         std::unique_ptr<Mesh> _mesh;
-        UniformHandle _color1Uniform;
-        UniformHandle _color2Uniform;
-        UniformHandle _dataUniform;
+        UniformHandle _majorColorUniform;
+        UniformHandle _minorColorUniform;
+        UniformHandle _xColorUniform;
+        UniformHandle _zColorUniform;
+        UniformHandle _gridParamsUniform;
+        UniformHandle _depthParamsUniform;
+        UniformHandle _fadeParamsUniform;
     };
 
     class DARMOK_EXPORT EnvironmentMap final
