@@ -112,7 +112,7 @@ namespace darmok
         void ReleaseShader(Rml::CompiledShaderHandle shader) noexcept override;
 
 		expected<void, std::string> renderCanvas(bgfx::Encoder& encoder) noexcept;
-        expected<void, std::string> renderFrame(const CameraRenderContext& ctx) noexcept;
+        expected<void, std::string> renderFrame(const CameraRenderContext& ctx, OptionalRef<Camera> cam = nullptr) noexcept;
         bgfx::ViewId renderReset(bgfx::ViewId viewId) noexcept;
 
 	private:

@@ -72,6 +72,7 @@ namespace darmok
         bgfx::VertexLayout getVertexLayout() const noexcept;
 
     private:
+
         OptionalRef<Camera> _cam;
         OptionalRef<Scene> _scene;
         OptionalRef<App> _app;
@@ -86,6 +87,7 @@ namespace darmok
         std::optional<DeferredGeoBuffer> _gbuffer;
 
         std::optional<Mesh> _screenMesh;
+        bool _inTransparentPass = false;
 
         struct GeoPassOutput final
         {
@@ -97,5 +99,8 @@ namespace darmok
         expected<void, std::string> renderLight(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept;
         expected<void, std::string> renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
             const std::vector<Entity>& entities) noexcept;
+
+        void beforeRenderSubmit(const RenderContext& ctx) noexcept override;
+
     };
 }

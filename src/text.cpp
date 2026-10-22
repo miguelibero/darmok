@@ -449,6 +449,7 @@ namespace darmok
 			ctx.encoder.setTexture(0, _textureUniform, text->getFont()->getTexture()->getHandle());
 
 			ctx.encoder.setState(state);
+            _cam->beforeRenderSubmit(ctx);
 			ctx.encoder.submit(ctx.viewId, _prog->getHandle());
 		}
 

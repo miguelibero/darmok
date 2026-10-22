@@ -40,6 +40,7 @@ namespace darmok
         virtual bool shouldEntityBeCulled(Entity entity) { return false; }
         virtual expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) noexcept { return {}; }
         virtual expected<void, std::string> beforeRenderLight(const RenderContext& ctx) noexcept { return {}; }
+        virtual void beforeRenderSubmit(const RenderContext& ctx) noexcept { }
         virtual expected<void, std::string> afterRender(const RenderContext& ctx) noexcept { return {}; }
         virtual void onCameraTransformChanged() noexcept {}
     };

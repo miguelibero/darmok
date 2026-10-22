@@ -834,7 +834,7 @@ namespace darmok
         return result;
     }
 
-    expected<void, std::string> RmluiRenderInterface::renderFrame(const CameraRenderContext& ctx) noexcept
+    expected<void, std::string> RmluiRenderInterface::renderFrame(const CameraRenderContext& ctx, OptionalRef<Camera> cam) noexcept
     {
         auto tex = _canvas.getFrameTexture();
         if (!tex)
@@ -877,6 +877,10 @@ namespace darmok
         }
 
         ctx.encoder.setState(state);
+        if (cam)
+        {
+            cam->beforeRenderSubmit(ctx);
+        }
         ctx.encoder.submit(ctx.viewId, _program->getHandle());
 
         return {};
@@ -1563,7 +1567,7 @@ namespace darmok
     {
         if (_render)
         {
-            return _render->renderFrame(ctx);
+            return _render->renderFrame(ctx, getCurrentCamera());
         }
         return {};
     }

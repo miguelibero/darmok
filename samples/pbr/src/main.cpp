@@ -15,6 +15,7 @@
 #include <darmok/texture.hpp>
 #include <darmok/render_scene.hpp>
 #include <darmok/render_forward.hpp>
+#include <darmok/render_deferred.hpp>
 #include <darmok/render_chain.hpp>
 #include <darmok/freelook.hpp>
 #include <darmok/shape.hpp>
@@ -101,7 +102,7 @@ namespace
 			_cam = createCamera(scene);
 			_freeCam = createCamera(scene, _cam);
 
-            auto layout = _cam->getComponent<ForwardRenderer>()->getVertexLayout();
+            auto layout = _cam->getComponent<DeferredRenderer>()->getVertexLayout();
 
 			_freelook = scene.tryAddSceneComponent<FreelookController>(*_freeCam);
 			_freelook->addListener(*this);
@@ -286,7 +287,7 @@ namespace
 			auto shadowDef = ShadowRenderer::createDefinition();
 			shadowDef.set_cascade_amount(3);
 			cam.tryAddComponent<ShadowRenderer>(shadowDef);
-			cam.tryAddComponent<ForwardRenderer>();
+			cam.tryAddComponent<DeferredRenderer>();
 			cam.tryAddComponent<FrustumCuller>();
 			// cam.tryAddComponent<OcclusionCuller>();
 

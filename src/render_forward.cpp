@@ -166,6 +166,7 @@ namespace darmok
                 _materials->renderBind(ctx.encoder, *material);
                 ctx.encoder.setState(material->getRenderState());
             }
+            _cam->beforeRenderSubmit(ctx);
             ctx.encoder.submit(ctx.viewId, prog);
 		}
 

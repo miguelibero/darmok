@@ -75,17 +75,18 @@ namespace darmok
 		}
 
         ctx.encoder.setTexture(RenderSamplers::MATERIAL_ALBEDO, _texUniform, _texture->getHandle());
-        if (_cam)
-        {
-            _cam->setUniforms(ctx);
-        }
-
+        
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_Z
             | BGFX_STATE_DEPTH_TEST_LEQUAL
             ;
         ctx.encoder.setState(state);
+
+        if(_cam)
+        {
+            _cam->beforeRenderSubmit(ctx);
+        }
         ctx.encoder.submit(ctx.viewId, _program->getHandle(_defines));
 
         return {};
@@ -221,11 +222,6 @@ namespace darmok
         data.z = _def.axis_width();
         ctx.encoder.setUniform(_fadeParamsUniform, glm::value_ptr(data));
 
-        if(_cam)
-        {
-            _cam->setUniforms(ctx);
-        }
-
         static const uint64_t state = 0
             | BGFX_STATE_WRITE_RGB
             | BGFX_STATE_WRITE_A
@@ -234,6 +230,11 @@ namespace darmok
             | BGFX_STATE_DEPTH_TEST_LEQUAL
             ;
         ctx.encoder.setState(state);
+
+        if(_cam)
+        {
+            _cam->beforeRenderSubmit(ctx);
+        }
         ctx.encoder.submit(ctx.viewId, _program->getHandle());
         return {};
     }

@@ -499,7 +499,7 @@ namespace darmok
         return false;
     }
 
-    void Camera::setUniforms(const RenderContext& ctx) const noexcept
+    void Camera::beforeRenderSubmit(const RenderContext& ctx) const noexcept
     {
         glm::vec4 pos{0, 0, 0, ctx.hasSceneDepth ? 1 : 0};
         if(auto trans = getTransform())
@@ -507,12 +507,15 @@ namespace darmok
             pos = glm::vec4(trans->getWorldPosition(), pos.w);
         }
         ctx.encoder.setUniform(_posUniform, glm::value_ptr(pos));
+        for(auto& comp : copyComponents())
+        {
+            comp->beforeRenderSubmit(ctx);
+        }
     }
 
     expected<void, std::string> Camera::beforeRenderEntity(Entity entity, const RenderContext& ctx) const noexcept
     {
         setEntityTransform(entity, ctx.encoder);
-        setUniforms(ctx);
 
 		std::vector<std::string> errors;
         for (auto& comp : copyComponents())

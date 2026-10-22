@@ -91,6 +91,7 @@ The following events are passed from the renderers to the camera components:
 * `shouldEntityBeCulled` called to check if an entity should be culled
 * `beforeRenderEntity` called before an entity is rendered
 * `beforeRenderLight` called before the light is rendered
+* `beforeRenderSubmit` called before any render submit (draw call)
 * `afterRender` called on the final forward render pass
 
 ### Camera Components

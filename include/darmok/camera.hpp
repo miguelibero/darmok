@@ -275,7 +275,7 @@ namespace darmok
         bool shouldEntityBeCulled(Entity entity) const noexcept;
         expected<void, std::string> beforeRenderEntity(Entity entity, const RenderContext& ctx) const noexcept;
         expected<void, std::string> beforeRenderLight(const RenderContext& ctx) const noexcept;
-        void setUniforms(const RenderContext& ctx) const noexcept;
+        void beforeRenderSubmit(const RenderContext& ctx) const noexcept;
 
         // serialization
         using Definition = protobuf::Camera;

@@ -141,6 +141,7 @@ namespace darmok
         _cam   = cam;
         _scene = scene;
         _app   = app;
+        _inTransparentPass = false;
 
         auto matResult = app.getOrAddComponent<MaterialAppComponent>();
         if (!matResult)
@@ -292,6 +293,11 @@ namespace darmok
 
     expected<DeferredRenderer::GeoPassOutput, std::string> DeferredRenderer::renderGeometry(bgfx::ViewId viewId, bgfx::Encoder& encoder) noexcept
     {
+        if (!_cam)
+        {
+            return unexpected<std::string>{"missing camera"};
+        }
+
         GeoPassOutput output;
 
         encoder.touch(viewId);
@@ -322,7 +328,6 @@ namespace darmok
             auto material = renderable->getMaterial();
             if(material && material->opacityType == Material::Definition::Transparent)
             {
-                // drawn after lighting, they can't be stored in the G-buffer
                 output.transparentEntities.push_back(entity);
                 continue;
             }
@@ -351,6 +356,7 @@ namespace darmok
             }
 
             encoder.setState(state);
+            _cam->beforeRenderSubmit(ctx);
             encoder.submit(viewId, prog);
         }
         if(!errors.empty())
@@ -403,7 +409,7 @@ namespace darmok
         encoder.setState(state);
 
         ProgramDefines defines;
-        if(_cam->hasComponent<ShadowRenderer>())
+        if(_cam && _cam->hasComponent<ShadowRenderer>())
         {
             defines.insert("SHADOW_ENABLED");
         }
@@ -416,12 +422,20 @@ namespace darmok
     expected<void, std::string> DeferredRenderer::renderTransparent(bgfx::ViewId viewId, bgfx::Encoder& encoder,
         const std::vector<Entity>& entities) noexcept
     {
-        if(_gbuffer)
-        {
-            _gbuffer->beforeRenderTransparent(encoder);
-        }
-        return _transparentRenderer.render(entities, CameraRenderContext{ viewId, encoder, true});
+        _inTransparentPass = true;
+        auto result = _transparentRenderer.render(entities, CameraRenderContext{ viewId, encoder, true});
+        _inTransparentPass = false;
+        return result;
     }
+
+    void DeferredRenderer::beforeRenderSubmit(const RenderContext& ctx) noexcept
+    {
+        if (_inTransparentPass && _gbuffer)
+        {
+            _gbuffer->beforeRenderTransparent(ctx.encoder);
+        }
+    }
+
 
     expected<void, std::string> DeferredRenderer::update(float deltaTime) noexcept
     {
@@ -439,6 +453,7 @@ namespace darmok
         auto result = _transparentRenderer.shutdown();
         _screenMesh.reset();
         _gbuffer.reset();
+        _inTransparentPass = false;
         return result;
     }
 }
