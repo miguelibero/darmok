@@ -279,7 +279,7 @@ namespace
 			auto& cam = scene.addComponent<Camera>(entity)
 				.setPerspective(glm::radians(60.f), 0.3f, farPlane);
 
-			auto skyboxTex = _app.getAssets().getTextureLoader()("cubemap.ktx").value();
+			auto skyboxTex = _app.getAssets().getTextureLoader()("skybox.bin").value();
 			cam.tryAddComponent<SkyboxRenderer>(skyboxTex);
 			cam.tryAddComponent<GridRenderer>();
 			cam.tryAddComponent<LightingRenderComponent>();

@@ -159,13 +159,13 @@ namespace darmok::editor
                 return result;
             }
             glm::quat rot{ glm::radians(glm::vec3{-90, 0, -90}) };
-            result = _renderer->renderMesh(entity, *mesh, Colors::red(), glm::mat4_cast(rot));
+            result = _renderer->renderMesh(entity, *mesh, Colors::blue(), glm::mat4_cast(rot));
             if (!result)
             {
                 return result;
             }
             rot = glm::quat{ glm::radians(glm::vec3{90, 90, 0}) };
-            return _renderer->renderMesh(entity, *mesh, Colors::blue(), glm::mat4_cast(rot));
+            return _renderer->renderMesh(entity, *mesh, Colors::red(), glm::mat4_cast(rot));
         };
 
         auto renderPlanes = [this, entity](const std::unique_ptr<Mesh>& mesh) -> expected<void, std::string>
@@ -174,7 +174,7 @@ namespace darmok::editor
             {
                 return unexpected<std::string>{"missing mesh"};
             }
-            auto result = _renderer->renderMesh(entity, *mesh, Colors::red(), Material::Definition::Line);
+            auto result = _renderer->renderMesh(entity, *mesh, Colors::green(), Material::Definition::Line);
             if (!result)
             {
                 return result;
@@ -186,7 +186,7 @@ namespace darmok::editor
                 return result;
             }
             rot = glm::quat{ glm::radians(glm::vec3{90, 0, 0}) };
-            return _renderer->renderMesh(entity, *mesh, Colors::green(), Material::Definition::Line, glm::mat4_cast(rot));
+            return _renderer->renderMesh(entity, *mesh, Colors::red(), Material::Definition::Line, glm::mat4_cast(rot));
         };
 
         switch (_mode)
@@ -378,7 +378,10 @@ namespace darmok::editor
         {
             return unexpected<std::string>{"renderer not initialized"};
         }
-        _cam->setEntityTransform(entity, *_encoder, transform);
+        if (_cam)
+        {
+            _cam->setEntityTransform(entity, *_encoder, transform);
+        }
         auto result = mesh.render(*_encoder);
         if (!result)
         {
@@ -386,6 +389,10 @@ namespace darmok::editor
         }
         material.renderBind(*_encoder);
         _encoder->setState(material.getRenderState());
+        if (_cam)
+        {
+            _cam->beforeRenderSubmit({*_viewId, *_encoder});
+        }
         _encoder->submit(*_viewId, _program->getHandle());
         return {};
     }

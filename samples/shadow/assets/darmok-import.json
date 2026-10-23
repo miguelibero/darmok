@@ -1,8 +1,8 @@
 {
     "files": {
         "cubemap.ktx": {
-            "image": {
-                "generateMips": false,
+            "texture": {
+                "outputPath": "skybox.bin",
                 "cubemap": [
                     "cubemap_0.png",
                     "cubemap_1.png",
