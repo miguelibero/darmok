@@ -132,8 +132,9 @@ namespace darmok
             spirv_cross::CompilerGLSL::Options options;
             options.version = std::stoi(profile);
             options.es = profile.ends_with("_es");
-            options.emit_uniform_buffer_as_plain_uniforms = true;
             options.enable_420pack_extension = true;
+            // options.flatten_multidimensional_arrays = true;
+            // options.emit_uniform_buffer_as_plain_uniforms = true;
             options.enable_row_major_load_workaround = false;
             options.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
             options.vulkan_semantics = false;
@@ -163,10 +164,6 @@ namespace darmok
 
                 auto resources = compiler.get_shader_resources();
                 fixResourceNames(resources.sampled_images);
-                for (const auto& ubo : resources.uniform_buffers)
-                {
-                    
-                }
 
                 if (type == ShaderType::Vertex)
                 {
