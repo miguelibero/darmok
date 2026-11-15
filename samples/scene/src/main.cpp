@@ -120,7 +120,7 @@ namespace
 			scene.addComponent<Camera>(cam3d)
 				.setPerspective(glm::radians(60.f), 0.3f, 1000.f)
 				.setCullingFilter<Culling3D>()
-				.tryAddComponent<ForwardRenderer>();
+				.tryAddComponent<ForwardRenderer>(false);
 
 			auto cam2d = scene.createEntity();
 			auto renderer = scene.addComponent<Camera>(cam2d)

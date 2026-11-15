@@ -359,7 +359,10 @@ namespace darmok
         }
         else
         {
-            component.PackFrom(comp);
+            if (!component.PackFrom(comp))
+            {
+                return false;
+            }
         }
         return result.second;
     }
@@ -404,12 +407,15 @@ namespace darmok
 		}
         else
         {
-            result.first->second.PackFrom(asset);
+            if (!result.first->second.PackFrom(asset))
+            {
+                return false;
+            }
         }
         return result.second;
     }
 
-    std::filesystem::path SceneDefinitionWrapper::addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept
+    std::expected<std::filesystem::path, std::string> SceneDefinitionWrapper::addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept
     {
         auto typeId = protobuf::getTypeId(asset);
         auto& assetPack = *_def->mutable_assets();
@@ -428,7 +434,10 @@ namespace darmok
         }
         else
         {
-            assets.emplace(path, Any{}).first->second.PackFrom(asset);
+            if (!assets.emplace(path, Any{}).first->second.PackFrom(asset))
+            {
+                return std::unexpected{"failed to pack asset"};
+            }
         }
 
         return path;
@@ -514,7 +523,10 @@ namespace darmok
         }
         else
         {
-            result.first->second.PackFrom(comp);
+            if (!result.first->second.PackFrom(comp))
+            {
+                return false;
+            }
         }
         return result.second;
     }

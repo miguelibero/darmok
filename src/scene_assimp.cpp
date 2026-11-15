@@ -487,7 +487,10 @@ namespace darmok
         }
         texSrc.set_flags(_config.texture_flags());
         _texturePaths.insert(path);
-		_scene.addAsset(path, texSrc);
+        if (!_scene.addAsset(path, texSrc))
+        {
+            return false;
+        }
         return true;
     }
 
@@ -671,7 +674,7 @@ namespace darmok
         auto result = updateMesh(meshSrc, *assimpMesh);
         if(!result)
         {
-            return unexpected{ result.error() };
+            return unexpected{ std::move(result).error() };
 		}
         if (!result.value())
         {
@@ -683,8 +686,12 @@ namespace darmok
             meshSrc.set_name(convert<std::string>(assimpMesh->mName));
         }
         _meshPaths.emplace(assimpMesh, path);
-		_scene.addAsset(path, meshSrc);
-        return path;
+		auto assetResult = _scene.addAsset(path, meshSrc);
+        if(!assetResult)
+        {
+            return unexpected{std::move(assetResult).error()};
+        }
+        return assetResult->string();
     }
 
     std::string AssimpSceneDefinitionConverterImpl::getArmature(int index) noexcept
@@ -711,8 +718,12 @@ namespace darmok
             armDef.set_name(path);
         }
         _armaturePaths.emplace(assimpMesh, path);
-        _scene.addAsset(path, armDef);
-        return path;
+        auto assetResult = _scene.addAsset(path, armDef);
+        if (!assetResult)
+        {
+            return {};
+        }
+        return assetResult->string();
     }
 
     std::string AssimpSceneDefinitionConverterImpl::getMaterial(int index) noexcept
@@ -735,7 +746,10 @@ namespace darmok
             matDef.set_name(path);
 		}
         _materialPaths.emplace(assimpMat, path);
-		_scene.addAsset(path, matDef);
+        if (!_scene.addAsset(path, matDef))
+        {
+            return {};
+        }
         return path;
     }
 

@@ -257,7 +257,7 @@ namespace darmok
 
         EntityId createEntity() noexcept;
         bool setAsset(const std::filesystem::path& path, const Message& asset) noexcept;
-        std::filesystem::path addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept;
+        std::expected<std::filesystem::path, std::string> addAsset(const std::filesystem::path& pathPrefix, const Message& asset) noexcept;
         bool setComponent(EntityId entity, const Message& comp) noexcept;
         std::vector<std::reference_wrapper<Any>> getComponents(EntityId entity) noexcept;
         OptionalRef<RegistryComponents> getTypeComponents(IdType typeId) noexcept;

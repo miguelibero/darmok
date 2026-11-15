@@ -68,7 +68,10 @@ namespace darmok
         }
         else
         {
-            component.PackFrom(comp);
+            if (!component.PackFrom(comp))
+            {
+                return false;
+            }
         }
         return result.second;
     }

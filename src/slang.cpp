@@ -999,15 +999,16 @@ namespace darmok
             SlangStage stage,
             const SlangProgramCompilerConfig& config) noexcept
         {
-            constexpr int slangShiftKindUnorderedAccess = 0;
+            constexpr int slangShiftKindConstantBuffer = 0;
             constexpr int slangShiftKindSampler = 1;
             constexpr int slangShiftKindShaderResource = 2;
-            constexpr int slangShiftKindConstantBuffer = 3;
+            constexpr int slangShiftKindUnorderedAccess = 3;
 
-            constexpr int vulkanVertexCBufferShift = 0;
-            constexpr int vulkanFragmentCBufferShift = 1;
+            constexpr int vulkanVertexGlobalsBinding = 0;
+            constexpr int vulkanFragmentGlobalsBinding = 1;
+            constexpr int vulkanConstantBufferShift = 0;
+            constexpr int vulkanSamplerShift = 2;
             constexpr int vulkanTextureShift = 2;
-            constexpr int vulkanSamplerShift = 18;
 
             using Option = slang::CompilerOptionName;
             using Entry = slang::CompilerOptionEntry;
@@ -1023,25 +1024,31 @@ namespace darmok
                      .intValue1 = value1}});
             };
 
-            if(renderer == bgfx::RendererType::Vulkan)
+            const auto addVulkanShift =
+                [&addIntOption](int kind, int shift)
             {
-                const int cbufferShift =
+                addIntOption(Option::VulkanBindShift, kind << 8, shift);
+            };
+
+            if(renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
+            {
+                addVulkanShift(slangShiftKindConstantBuffer, 0);
+                addVulkanShift(slangShiftKindSampler, 0);
+                addVulkanShift(slangShiftKindShaderResource, 0);
+                addVulkanShift(slangShiftKindUnorderedAccess, 0);
+            }
+            else if(renderer == bgfx::RendererType::Vulkan)
+            {
+                const int globalsBinding =
                     stage == SLANG_STAGE_FRAGMENT
-                        ? vulkanFragmentCBufferShift
-                        : vulkanVertexCBufferShift;
+                        ? vulkanFragmentGlobalsBinding
+                        : vulkanVertexGlobalsBinding;
+                addIntOption(Option::VulkanBindGlobals, 0, globalsBinding);
 
-                const auto addVulkanShift =
-                    [&addIntOption](int kind, int shift)
-                {
-                    addIntOption(Option::VulkanBindShiftAll, kind, shift);
-                };
-
-                addVulkanShift(slangShiftKindConstantBuffer, cbufferShift);
+                addVulkanShift(slangShiftKindConstantBuffer, vulkanConstantBufferShift);
                 addVulkanShift(slangShiftKindSampler, vulkanSamplerShift);
                 addVulkanShift(slangShiftKindShaderResource, vulkanTextureShift);
                 addVulkanShift(slangShiftKindUnorderedAccess, vulkanTextureShift);
-
-                addIntOption(Option::VulkanBindGlobals, 0);
             }
 
             return options;
@@ -1210,10 +1217,9 @@ namespace darmok
 
         addLog("loading program source...");
         Slang::ComPtr<slang::IModule> module{session.loadModuleFromSourceString(src.name().c_str(), path.c_str(), src.data().c_str(), diagnostics.writeRef())};
-        std::string msg = getDiagnosticsString(diagnostics);
         if(!module)
         {
-            return std::unexpected{std::move(msg)};
+            return std::unexpected{getDiagnosticsString(diagnostics)};
         }
 
         SlangLinkedPrograms programs;
@@ -1223,20 +1229,18 @@ namespace darmok
         {
             Slang::ComPtr<slang::IEntryPoint> entryPoint;
             SlangResult result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
-            msg = getDiagnosticsString(diagnostics);
             if(SLANG_FAILED(result))
             {
-                return unexpected{msg};
+                return unexpected{getDiagnosticsString(diagnostics)};
             }
 
             std::vector<slang::IComponentType*> components{module, entryPoint};
             Slang::ComPtr<slang::IComponentType> composite;
             result =
                 session.createCompositeComponentType(components.data(), components.size(), composite.writeRef(), diagnostics.writeRef());
-            msg = getDiagnosticsString(diagnostics);
             if(SLANG_FAILED(result))
             {
-                return std::unexpected{std::move(msg)};
+                return std::unexpected{getDiagnosticsString(diagnostics)};
             }
 
             auto* layout = composite->getLayout();
@@ -1256,10 +1260,9 @@ namespace darmok
                 options.data(),
                 diagnostics.writeRef());
 
-            msg = getDiagnosticsString(diagnostics);
             if(SLANG_FAILED(result))
             {
-                return std::unexpected{std::move(msg)};
+                return std::unexpected{getDiagnosticsString(diagnostics)};
             }
             if (stage == SLANG_STAGE_VERTEX)
             {

@@ -2,29 +2,24 @@
 
 #include <darmok_brdf.inc.slang>
 
-[[vk::binding(0, 0)]]
-uniform Texture2D s_texBaseColor : register(t0);
-[[vk::binding(0, 0)]]
-SamplerState s_texBaseColorState : register(s0);
+[[vk::binding(3, 0)]]
+uniform Texture2D s_texBaseColor : register(t1);
+SamplerState s_texBaseColorState : register(s1);
 
-[[vk::binding(2, 0)]]
+[[vk::binding(4, 0)]]
 uniform Texture2D s_texMetallicRoughness : register(t2);
-[[vk::binding(2, 0)]]
 SamplerState s_texMetallicRoughnessState : register(s2);
 
-[[vk::binding(3, 0)]]
+[[vk::binding(5, 0)]]
 uniform Texture2D s_texNormal : register(t3);
-[[vk::binding(3, 0)]]
 SamplerState s_texNormalState : register(s3);
 
-[[vk::binding(4, 0)]]
+[[vk::binding(6, 0)]]
 uniform Texture2D s_texOcclusion : register(t4);
-[[vk::binding(4, 0)]]
 SamplerState s_texOcclusionState : register(s4);
 
-[[vk::binding(5, 0)]]
+[[vk::binding(7, 0)]]
 uniform Texture2D s_texEmissive : register(t5);
-[[vk::binding(5, 0)]]
 SamplerState s_texEmissiveState : register(s5);
 
 uniform float4 u_baseColorFactor;

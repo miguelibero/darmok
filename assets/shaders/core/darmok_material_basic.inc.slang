@@ -3,15 +3,13 @@
 #include <darmok_sampler.inc.slang>
 #include <darmok.inc.slang>
 
-[[vk::binding(0, 0)]]
-uniform Texture2D s_texBaseColor : register(t0);
-[[vk::binding(0, 0)]]
-SamplerState s_texBaseColorState : register(s0);
+[[vk::binding(3, 0)]]
+uniform Texture2D s_texBaseColor : register(t1);
+SamplerState s_texBaseColorState : register(s1);
 
-[[vk::binding(1, 0)]]
-uniform Texture2D s_texSpecular : register(t1);
-[[vk::binding(1, 0)]]
-SamplerState s_texSpecularState : register(s1);
+[[vk::binding(4, 0)]]
+uniform Texture2D s_texSpecular : register(t2);
+SamplerState s_texSpecularState : register(s2);
 
 uniform float4 u_baseColorFactor;
 uniform float4 u_specularFactorVec;

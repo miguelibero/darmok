@@ -2,14 +2,17 @@
 
 // bgfx defined uniforms
 uniform float4 u_viewRect;
+uniform float4 u_viewTexel;
 uniform float4x4 u_view;
 uniform float4x4 u_invView;
 uniform float4x4 u_proj;
 uniform float4x4 u_invProj;
 uniform float4x4 u_viewProj;
 uniform float4x4 u_invViewProj;
-uniform float4x4 u_modelViewProj;
 uniform float4x4 u_model[32];
+uniform float4x4 u_modelView;
+uniform float4x4 u_modelViewProj;
+uniform float4 u_alphaRef4;
 
 // darmok defined uniforms
 uniform float3x3 u_normalMatrix;
@@ -122,8 +125,8 @@ float3 unpackNormal(float2 encoded)
     return float3(fenc * g, -(1.0 - f * 0.5));
 }
 
-[[vk::binding(15, 0)]]
-uniform Texture2D<float> s_sceneDepth : register(t15);
+[[vk::binding(18, 0)]]
+uniform Texture2D<float> s_sceneDepth : register(t16);
 
 void discardIfHiddenBySceneDepth(float3 fragCoord)
 {

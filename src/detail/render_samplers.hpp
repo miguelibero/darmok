@@ -6,8 +6,9 @@ namespace darmok
     {
         // these should be the same as in the shaders
 
-        static const uint8_t MATERIAL_ALBEDO = 0;
-        static const uint8_t MATERIAL_SPECULAR = 1;
+        static const uint8_t MATERIAL_DIFFUSE = 1;
+        static const uint8_t MATERIAL_SPECULAR = 2;
+        static const uint8_t MATERIAL_ALBEDO = 1;
         static const uint8_t MATERIAL_METALLIC_ROUGHNESS = 2;
         static const uint8_t MATERIAL_NORMAL = 3;
         static const uint8_t MATERIAL_OCCLUSION = 4;
@@ -25,10 +26,10 @@ namespace darmok
         static const uint8_t SHADOW_MAP = 13;
         static const uint8_t SHADOW_TRANS = 14;
 
-        static const uint8_t DEFERRED_ALBEDO_METALLIC = 0;
-        static const uint8_t DEFERRED_NORMAL_ROUGHNESS_OCCLUSION = 1;
-        static const uint8_t DEFERRED_EMISSIVE = 2;
-        static const uint8_t DEFERRED_DEPTH = 3;
+        static const uint8_t DEFERRED_ALBEDO_METALLIC = 1;
+        static const uint8_t DEFERRED_NORMAL_ROUGHNESS_OCCLUSION = 2;
+        static const uint8_t DEFERRED_EMISSIVE = 3;
+        static const uint8_t DEFERRED_DEPTH = 4;
         static const uint8_t DEFERRED_SCENE_DEPTH = 15;
     };
 }
