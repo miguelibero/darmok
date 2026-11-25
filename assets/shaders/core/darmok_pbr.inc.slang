@@ -5,19 +5,15 @@
 #include <darmok_shadow.inc.slang>
 #include <darmok.inc.slang>
 
-[[vk::binding(8, 0)]]
 TextureCube<float4> s_irradiance : register(t6);
 uniform SamplerState s_irradianceState : register(s6);
 
-[[vk::binding(9, 0)]]
 TextureCube<float4> s_prefilteredEnv : register(t7);
 uniform SamplerState s_prefilteredEnvState : register(s7);
 
-[[vk::binding(10, 0)]]
 uniform Texture2D s_albedoLut : register(t8);
 SamplerState s_albedoLutState : register(s8);
 
-[[vk::binding(11, 0)]]
 uniform Texture2D<float2> s_brdfLut : register(t9);
 uniform SamplerState s_brdfLutState : register(s9);
 

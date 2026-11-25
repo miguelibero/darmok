@@ -925,24 +925,8 @@ namespace darmok
             return true;
         }
 
-        expected<void, std::string> updateRendererProgram(protobuf::RendererProgram& rendererProg, SlangLinkedPrograms& linkedPrograms, bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept
-        {
-            auto result = updateShader(rendererProg, *linkedPrograms.vertex, SLANG_STAGE_VERTEX, renderer, defines);
-            if (!result)
-            {
-                return unexpected{std::format("failed to update vertex shader: {}", result.error())};
-            }
-            result = updateShader(rendererProg, *linkedPrograms.fragment, SLANG_STAGE_FRAGMENT, renderer, defines);
-            if (!result)
-            {
-                return unexpected{std::format("failed to update fragment shader: {}", result.error())};
-            }
-            return {};
-        }
-
         std::vector<slang::CompilerOptionEntry> getSessionCompilerOptions(
-            bgfx::RendererType::Enum renderer,
-            SlangStage stage,
+            bgfx::RendererType::Enum renderer, SlangStage stage,
             const SlangProgramCompilerConfig& config) noexcept
         {
             using Option = slang::CompilerOptionName;
@@ -957,6 +941,15 @@ namespace darmok
                     {.kind = slang::CompilerOptionValueKind::Int,
                      .intValue0 = value0,
                      .intValue1 = value1}});
+            };
+
+            const auto addStringOption = [&options](Option name, const char* value0, const char* value1 = nullptr)
+            {
+                options.push_back(Entry{
+                    name,
+                    {.kind = slang::CompilerOptionValueKind::String,
+                     .stringValue0 = value0,
+                     .stringValue1 = value1}});
             };
 
             if(config.optimizationLevel)
@@ -991,14 +984,6 @@ namespace darmok
 
             addIntOption(Option::NoMangle, 1);
 
-            return options;
-        }
-
-        std::vector<slang::CompilerOptionEntry> getStageCompilerOptions(
-            bgfx::RendererType::Enum renderer,
-            SlangStage stage,
-            const SlangProgramCompilerConfig& config) noexcept
-        {
             constexpr int slangShiftKindConstantBuffer = 0;
             constexpr int slangShiftKindSampler = 1;
             constexpr int slangShiftKindShaderResource = 2;
@@ -1010,24 +995,10 @@ namespace darmok
             constexpr int vulkanSamplerShift = 2;
             constexpr int vulkanTextureShift = 2;
 
-            using Option = slang::CompilerOptionName;
-            using Entry = slang::CompilerOptionEntry;
-
-            std::vector<Entry> options;
-
-            const auto addIntOption = [&options](Option name, int value0, int value1 = 0)
-            {
-                options.push_back(Entry{
-                    name,
-                    {.kind = slang::CompilerOptionValueKind::Int,
-                     .intValue0 = value0,
-                     .intValue1 = value1}});
-            };
-
             const auto addVulkanShift =
                 [&addIntOption](int kind, int shift)
             {
-                addIntOption(Option::VulkanBindShift, kind << 8, shift);
+                addIntOption(Option::VulkanBindShiftAll, kind, shift);
             };
 
             if(renderer == bgfx::RendererType::OpenGL || renderer == bgfx::RendererType::OpenGLES)
@@ -1043,7 +1014,7 @@ namespace darmok
                     stage == SLANG_STAGE_FRAGMENT
                         ? vulkanFragmentGlobalsBinding
                         : vulkanVertexGlobalsBinding;
-                addIntOption(Option::VulkanBindGlobals, 0, globalsBinding);
+                addIntOption(Option::VulkanBindGlobals, globalsBinding);
 
                 addVulkanShift(slangShiftKindConstantBuffer, vulkanConstantBufferShift);
                 addVulkanShift(slangShiftKindSampler, vulkanSamplerShift);
@@ -1051,42 +1022,37 @@ namespace darmok
                 addVulkanShift(slangShiftKindUnorderedAccess, vulkanTextureShift);
             }
 
+            if(stage == SLANG_STAGE_VERTEX)
+            {
+                addStringOption(slang::CompilerOptionName::MacroDefine, "DARMOK_STAGE_VERTEX", "1");
+            }
+            else if(stage == SLANG_STAGE_FRAGMENT)
+            {
+                addStringOption(slang::CompilerOptionName::MacroDefine, "DARMOK_STAGE_FRAGMENT", "1");
+            }
+
             return options;
         }
 
-        expected<void, std::string> updateVarying(protobuf::Varying& varying, SlangLinkedPrograms& linkedPrograms)
+        expected<void, std::string> updateVarying(protobuf::Varying& varying, slang::EntryPointReflection& entryPoint, SlangStage stage)
         {
-            const SlangUInt entryPointIdx = 0;
-            if (linkedPrograms.vertex)
+            if (stage == SLANG_STAGE_VERTEX)
             {
-                auto layout = linkedPrograms.vertex->getLayout();
-                auto entryPoint = layout->getEntryPointByIndex(entryPointIdx);
-                auto result = createVertexLayout(*entryPoint);
+                auto result = createVertexLayout(entryPoint);
                 if(!result)
                 {
                     return unexpected<std::string>{"failed to create vertex layout: " + result.error()};
                 }
                 *varying.mutable_vertex() = std::move(result).value();
             }
-            else
+            else if(stage == SLANG_STAGE_FRAGMENT)
             {
-                return unexpected<std::string>{"missing vertex entry point"};
-
-            }
-            if (linkedPrograms.fragment)
-            {
-                auto layout = linkedPrograms.fragment->getLayout();
-                auto entryPoint = layout->getEntryPointByIndex(entryPointIdx);
-                auto result = createFragmentLayout(*entryPoint);
+                auto result = createFragmentLayout(entryPoint);
                 if(!result)
                 {
                     return unexpected<std::string>{"failed to create fragment layout: " + result.error()};
                 }
                 *varying.mutable_fragment() = std::move(result).value();
-            }
-            else
-            {
-                return unexpected<std::string>{"missing fragment entry point"};
             }
             return {};
         }
@@ -1146,7 +1112,7 @@ namespace darmok
 		return SlangProgramCompilerImpl{ std::move(globalSession), config };
     }
 
-    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept
+    expected<Slang::ComPtr<slang::ISession>, std::string> SlangProgramCompilerImpl::createSession(bgfx::RendererType::Enum renderer, SlangStage stage, const std::unordered_set<std::string>& defines) noexcept
     {
         using namespace SlangBgfxShaderUtils;
         auto sessionDesc = _sessionDesc;
@@ -1167,11 +1133,15 @@ namespace darmok
         {
             macros.emplace_back("DARMOK_GLSL", "1");
         }
+        else if(renderer == bgfx::RendererType::Vulkan)
+        {
+            macros.emplace_back("DARMOK_VULKAN", "1");
+        }
 
         sessionDesc.preprocessorMacroCount = macros.size();
         sessionDesc.preprocessorMacros = macros.data();
 
-        auto options = getSessionCompilerOptions(renderer, SlangStage::SLANG_STAGE_FRAGMENT, _config);
+        auto options = getSessionCompilerOptions(renderer, stage, _config);
         sessionDesc.compilerOptionEntryCount = options.size();
         sessionDesc.compilerOptionEntries = options.data();
 
@@ -1208,7 +1178,7 @@ namespace darmok
         }
     };
 
-    expected<SlangLinkedPrograms, std::string> SlangProgramCompilerImpl::linkPrograms(const Source& src, bgfx::RendererType::Enum renderer, slang::ISession& session) noexcept
+    expected<Slang::ComPtr<slang::IComponentType>, std::string> SlangProgramCompilerImpl::linkProgram(const Source& src, bgfx::RendererType::Enum renderer, SlangStage stage, slang::ISession& session) noexcept
     {
         using namespace SlangBgfxShaderUtils;
 
@@ -1222,9 +1192,7 @@ namespace darmok
             return std::unexpected{getDiagnosticsString(diagnostics)};
         }
 
-        SlangLinkedPrograms programs;
         auto entryPointCount = module->getDefinedEntryPointCount();
-
         for(SlangInt32 i = 0; i < entryPointCount; i++)
         {
             Slang::ComPtr<slang::IEntryPoint> entryPoint;
@@ -1232,6 +1200,22 @@ namespace darmok
             if(SLANG_FAILED(result))
             {
                 return unexpected{getDiagnosticsString(diagnostics)};
+            }
+
+            auto* layout = entryPoint->getLayout();
+
+            if(!layout || layout->getEntryPointCount() == 0)
+            {
+                return std::unexpected{
+                    std::format("invalid layout for entry point {}", i)};
+            }
+
+            const SlangStage entryPointStage =
+                layout->getEntryPointByIndex(0)->getStage();
+
+            if(entryPointStage != stage)
+            {
+                continue;
             }
 
             std::vector<slang::IComponentType*> components{module, entryPoint};
@@ -1243,38 +1227,21 @@ namespace darmok
                 return std::unexpected{getDiagnosticsString(diagnostics)};
             }
 
-            auto* layout = composite->getLayout();
-            if(!layout || layout->getEntryPointCount() == 0)
-            {
-                return std::unexpected{std::format("invalid layout for entry point {}", i)};
-            }
-            const SlangStage stage = layout->getEntryPointByIndex(0)->getStage();
-            auto options = getStageCompilerOptions(renderer, stage, _config);
-
             addLog(std::format("linking program for entry point {} stage {}...", i, stage));
 
             Slang::ComPtr<slang::IComponentType> program;
-            result = composite->linkWithOptions(
+            result = composite->link(
                 program.writeRef(),
-                static_cast<SlangInt>(options.size()),
-                options.data(),
                 diagnostics.writeRef());
 
             if(SLANG_FAILED(result))
             {
                 return std::unexpected{getDiagnosticsString(diagnostics)};
             }
-            if (stage == SLANG_STAGE_VERTEX)
-            {
-                programs.vertex = program;
-            }
-            else if(stage == SLANG_STAGE_FRAGMENT)
-            {
-                programs.fragment = program;
-            }
+            return program;
         }
 
-        return programs;
+        return std::unexpected{std::format("could not find entry point for stage {}...", stage)};
     }
 
     expected<void, std::string> SlangProgramCompilerImpl::compileProgram(const Source& src, protobuf::Program& progDef, bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept
@@ -1293,30 +1260,49 @@ namespace darmok
         }
         auto target = itr->second;
 
-        auto sessionResult = createSession(renderer, defines);
-        if (!sessionResult)
-        {
-            return unexpected{std::format("failed to create session: {}", sessionResult.error())};
-        }
-        auto session = sessionResult.value();
-        auto linkResult = linkPrograms(src, renderer, *session);
-        if(!linkResult)
-        {
-            return unexpected{std::format("failed to link programs: {}", linkResult.error())};
-        }
-        auto linkedPrograms = std::move(linkResult).value();
-
-        auto varyingResult = updateVarying(*progDef.mutable_varying(), linkedPrograms);
-        if (!varyingResult)
-        {
-            return unexpected{std::format("failed to update varying: {}", varyingResult.error())};
-        }
-
+        std::vector<SlangStage> stages{SLANG_STAGE_VERTEX, SLANG_STAGE_FRAGMENT};
         auto& rendererProg = ProgramDefinitionWrapper{progDef}.getRendererProgram(renderer);
-        auto result = updateRendererProgram(rendererProg, linkedPrograms, renderer, defines);
-        if (!result)
+        Slang::ComPtr<slang::IBlob> diagnostics;
+
+        for (auto stage : stages)
         {
-            return unexpected{std::format("failed to update program for renderer {}: {}", renderer, result.error())};
+            auto sessionResult = createSession(renderer, stage, defines);
+            if(!sessionResult)
+            {
+                return unexpected{std::format("failed to create session for stage {}: {}", stage, sessionResult.error())};
+            }
+            auto session = sessionResult.value();
+            auto linkResult = linkProgram(src, renderer, stage, *session);
+            if(!linkResult)
+            {
+                return unexpected{std::format("failed to link program for stage {}: {}", stage, linkResult.error())};
+            }
+            auto linkedProgram = std::move(linkResult).value();
+            auto* layout = linkedProgram->getLayout(0, diagnostics.writeRef());
+            if(!layout)
+            {
+                return unexpected{
+                    std::format("failed to get linked program layout: {}",
+                                getDiagnosticsString(diagnostics))};
+            }
+            if(layout->getEntryPointCount() != 1)
+            {
+                return unexpected{
+                    std::format("expected one entry point, got {}",
+                                layout->getEntryPointCount())};
+            }
+
+            auto entryPoint = layout->getEntryPointByIndex(0);
+            auto varyingResult = updateVarying(*progDef.mutable_varying(), *entryPoint, stage);
+            if(!varyingResult)
+            {
+                return unexpected{std::format("failed to update varying: {}", varyingResult.error())};
+            }
+            auto shaderResult = updateShader(rendererProg, *linkedProgram, stage, renderer, defines);
+            if(!shaderResult)
+            {
+                return unexpected{std::format("failed to update {} shader: {}", stage,shaderResult.error())};
+            }
         }
         return {};
     }

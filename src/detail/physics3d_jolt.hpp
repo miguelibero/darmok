@@ -121,6 +121,7 @@ namespace darmok::physics3d
 
         int GetMaxConcurrency() const noexcept override;
         JobHandle CreateJob(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JPH::uint32 numDependencies = 0) noexcept override;
+        void CreateJobs(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JobHandle* jobs, JPH::uint32 numJobs, JPH::uint32 numDependencies = 0) noexcept override;
         void QueueJob(Job* job) noexcept override;
         void QueueJobs(Job** jobs, JPH::uint numJobs) noexcept override;
         void FreeJob(Job* job) noexcept override;

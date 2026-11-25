@@ -38,10 +38,8 @@ float4 u_fadeParams;
 #define u_fadeEnd       u_fadeParams.y
 #define u_axisWidth     u_fadeParams.z
 
-void discardIfHiddenBySceneDepth(float3 fragCoord);
-
 [shader("vertex")]
-VSOutput vs_main(VSInput input)
+VSOutput vert(VSInput input)
 {
     VSOutput output;
     output.position = float4(input.a_position.xy, 0.0, 1.0);
@@ -95,7 +93,7 @@ float gridLine(float2 coord, float spacing, float width)
 }
 
 [shader("fragment")]
-PSOutput fs_main(VSOutput input)
+PSOutput frag(VSOutput input)
 {
     PSOutput output;
 

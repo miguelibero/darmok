@@ -5,7 +5,6 @@
 // Bindings and uniforms match the material includes so that
 // Material::renderBind can be used to feed them.
 
-[[vk::binding(3, 0)]]
 uniform Texture2D s_texBaseColor : register(t1);
 SamplerState s_texBaseColorState : register(s1);
 

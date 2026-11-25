@@ -6,11 +6,6 @@
 
 namespace darmok
 {
-    struct SlangLinkedPrograms final
-    {
-        Slang::ComPtr<slang::IComponentType> vertex;
-        Slang::ComPtr<slang::IComponentType> fragment;
-    };
 
     class SlangProgramCompilerImpl final
     {
@@ -28,9 +23,9 @@ namespace darmok
         std::vector<std::string> _searchPathStrings;
         std::vector<const char*> _searchPathChars;
 
-        expected<Slang::ComPtr<slang::ISession>, std::string> createSession(bgfx::RendererType::Enum renderer, const std::unordered_set<std::string>& defines) noexcept;
+        expected<Slang::ComPtr<slang::ISession>, std::string> createSession(bgfx::RendererType::Enum renderer, SlangStage stage, const std::unordered_set<std::string>& defines) noexcept;
         expected<void, std::string> compileProgram(const Source& src, protobuf::Program& progDef, bgfx::RendererType::Enum renderer, const std::unordered_set<std::string> &defines) noexcept;
-        expected<SlangLinkedPrograms, std::string> linkPrograms(const Source& src, bgfx::RendererType::Enum renderer, slang::ISession& session) noexcept;
+        expected<Slang::ComPtr<slang::IComponentType>, std::string> linkProgram(const Source& src, bgfx::RendererType::Enum renderer, SlangStage stage, slang::ISession& session) noexcept;
         void addLog(const std::string& msg) noexcept;
     };
 

@@ -39,7 +39,6 @@ struct DirLight
     LightShadowData shadow;
 };
 
-[[vk::binding(12, 0)]]
 uniform StructuredBuffer<DirLight> b_dirLights : register(t10);
 
 struct PointLight
@@ -51,7 +50,6 @@ struct PointLight
     LightShadowData shadow;
 };
 
-[[vk::binding(13, 0)]]
 uniform StructuredBuffer<PointLight> b_pointLights : register(t11);
 
 struct SpotLight
@@ -66,7 +64,6 @@ struct SpotLight
     LightShadowData shadow;
 };
 
-[[vk::binding(14, 0)]]
 uniform StructuredBuffer<SpotLight> b_spotLights : register(t12);
 
 uniform float4 u_lightCountVec;

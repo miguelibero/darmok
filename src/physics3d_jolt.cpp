@@ -337,6 +337,14 @@ namespace darmok::physics3d
         return JobHandle{ new Job{name, color, this, jobFunction, numDependencies} };
     }
 
+    void JoltJobSystemTaskflow::CreateJobs(const char* name, JPH::ColorArg color, const JobFunction& jobFunction, JobHandle* jobs, JPH::uint32 numJobs, JPH::uint32 numDependencies) noexcept
+    {
+        for (JPH::uint32 i = 0; i < numJobs; ++i)
+        {
+            jobs[i] = CreateJob(name, color, jobFunction, numDependencies);
+        }
+    }
+
     void JoltJobSystemTaskflow::QueueJob(Job* job) noexcept
     {
         auto task = _taskflow.emplace([job]() { job->Execute();  });

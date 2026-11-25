@@ -10,19 +10,15 @@
 
 // G-buffer (reusing material slots 0-3, which are not needed in this pass)
 
-[[vk::binding(3, 0)]]
 uniform Texture2D s_gbufferAlbedoMetallic : register(t1);
 SamplerState s_gbufferAlbedoMetallicState : register(s1);
 
-[[vk::binding(4, 0)]]
 uniform Texture2D s_gbufferNormalRoughnessOcclusion : register(t2);
 SamplerState s_gbufferNormalRoughnessOcclusionState : register(s2);
 
-[[vk::binding(5, 0)]]
 uniform Texture2D s_gbufferEmissive : register(t3);
 SamplerState s_gbufferEmissiveState : register(s3);
 
-[[vk::binding(6, 0)]]
 uniform Texture2D<float> s_gbufferDepth : register(t4);
 SamplerState s_gbufferDepthState : register(s4);
 

@@ -125,7 +125,6 @@ float3 unpackNormal(float2 encoded)
     return float3(fenc * g, -(1.0 - f * 0.5));
 }
 
-[[vk::binding(18, 0)]]
 uniform Texture2D<float> s_sceneDepth : register(t16);
 
 void discardIfHiddenBySceneDepth(float3 fragCoord)

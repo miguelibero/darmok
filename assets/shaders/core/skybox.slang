@@ -11,7 +11,6 @@ struct VSOutput
     float3 v_texcoord0 : TEXCOORD0;
 };
 
-[[vk::binding(3, 0)]]
 uniform TextureCube<float4> s_texColor : register(t1);
 uniform SamplerState s_texColorState : register(s1);
 

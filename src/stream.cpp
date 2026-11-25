@@ -26,12 +26,14 @@ namespace darmok
 
             input.seekg(0, std::ios::end);
             auto size = input.tellg();
-            input.seekg(0, std::ios::beg);
-
             std::string str(size, '\0');
-            if (!input.read(&str.front(), size))
+            if (size > 0)
             {
-                return unexpected{ "could not read input stream" };
+                input.seekg(0, std::ios::beg);
+                if(!input.read(&str.front(), size))
+                {
+                    return unexpected{"could not read input stream"};
+                }
             }
 
             return str;
