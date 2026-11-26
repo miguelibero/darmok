@@ -36,15 +36,15 @@ jobs:
             c_compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
 
     - name: Install ubuntu dependencies
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y ninja-build libx11-dev libxrandr-dev libxkbcommon-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libwayland-dev wayland-protocols
+      run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake libtool pkg-config ninja-build libx11-dev libxrandr-dev libxkbcommon-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libwayland-dev wayland-protocols
       
-    - uses: lukka/get-cmake@v4.1.1
-    - uses: lukka/run-vcpkg@v11
-    - uses: lukka/run-cmake@v10
+    - uses: lukka/get-cmake@latest
+    - uses: lukka/run-vcpkg@v11.6
+    - uses: lukka/run-cmake@v10.9
       with:
         configurePreset: 'release'
         # configurePresetAdditionalArgs: "['-DENABLE_YOUR_FEATURE=1']"
