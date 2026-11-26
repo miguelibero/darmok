@@ -111,17 +111,34 @@ namespace darmok
 	}
 
 	RenderChain::RenderChain(IRenderChainDelegate& dlg) noexcept
-		: _delegate{ dlg }
+		: _delegateRef{ dlg }
 		, _running{ false }
 	{
 	}
 
 	RenderChain::RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept
-		: _delegate{ *dlg }
-		, _delegatePointer{ std::move(dlg) }
+		: _delegatePtr{ std::move(dlg) }
 		, _running{ false }
 	{
 	}
+
+    OptionalRef<IRenderChainDelegate> RenderChain::getDelegate() noexcept
+    {
+        if(_delegatePtr)
+        {
+            return *_delegatePtr;
+        }
+        return _delegateRef;
+    }
+
+    OptionalRef<const IRenderChainDelegate> RenderChain::getDelegate() const noexcept
+    {
+        if(_delegatePtr)
+        {
+            return *_delegatePtr;
+        }
+        return _delegateRef;
+    }
 
 	expected<void, std::string> RenderChain::init() noexcept
 	{
@@ -274,7 +291,11 @@ namespace darmok
 
 	std::string RenderChain::getViewName(const std::string& baseName) const noexcept
 	{
-		return _delegate.getRenderChainViewName("Render Chain: " + baseName);
+        if(auto delegate = getDelegate())
+        {
+            return delegate->getRenderChainViewName("Render Chain: " + baseName);
+        }
+        return {};
 	}
 
 	expected<bgfx::ViewId, std::string> RenderChain::renderReset(bgfx::ViewId viewId) noexcept
@@ -307,7 +328,12 @@ namespace darmok
 		{
 			return false;
 		}
-		auto vp = _delegate.getRenderChainViewport();
+        auto delegate = getDelegate();
+        if(!delegate)
+        {
+            return false;
+        }
+        auto vp = delegate->getRenderChainViewport();
 		vp.configureView(*_viewId);
 		return true;
 	}
@@ -344,10 +370,13 @@ namespace darmok
 		{
 			return *_output;
 		}
-		if (auto parent = _delegate.getRenderChainParent())
-		{
-			return parent->getInput();
-		}
+        if(auto delegate = getDelegate())
+        {
+            if(auto parent = delegate->getRenderChainParent())
+            {
+                return parent->getInput();
+            }
+        }
 		return nullptr;
 	}
 
@@ -361,10 +390,13 @@ namespace darmok
 		{
 			return *_output;
 		}
-		if (auto parent = _delegate.getRenderChainParent())
-		{
-			return parent->getInput();
-		}
+        if(auto delegate = getDelegate())
+        {
+            if(auto parent = delegate->getRenderChainParent())
+            {
+                return parent->getInput();
+            }
+        }
 		return nullptr;
 	}
 
@@ -377,13 +409,20 @@ namespace darmok
 		{
 			writeBuffer->configureView(viewId);
 		}
-		auto vp = _delegate.getRenderChainViewport();
-		vp.configureView(viewId);
+        if(auto delegate = getDelegate())
+        {
+            delegate->getRenderChainViewport().configureView(viewId);
+        }
 	}
 
 	expected<std::reference_wrapper<FrameBuffer>, std::string> RenderChain::addBuffer() noexcept
 	{
-		auto vp = _delegate.getRenderChainViewport();
+        auto delegate = getDelegate();
+        if(!delegate)
+        {
+            return unexpected{ "No render chain delegate available" };
+        }
+        auto vp = delegate->getRenderChainViewport();
 		auto size = vp.origin + vp.size;
 		auto fbResult = FrameBuffer::load(size, true);
 		if(!fbResult)
@@ -428,7 +467,10 @@ namespace darmok
 				return result;
 			}
 		}
-		_delegate.onRenderChainChanged();
+        if(auto delegate = getDelegate())
+        {
+            delegate->onRenderChainChanged();
+        }
 		return {};
 	}
 
@@ -486,7 +528,10 @@ namespace darmok
 				return unexpected{ std::move(result).error() };
 			}
 		}
-		_delegate.onRenderChainChanged();
+        if(auto delegate = getDelegate())
+        {
+            delegate->onRenderChainChanged();
+        }
 		return true;
 	}
 

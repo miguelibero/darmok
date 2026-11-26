@@ -108,7 +108,35 @@ namespace darmok
 
     using CameraProjectionData = std::variant<CameraPerspectiveData, CameraOrthoData>;
 
-    class DARMOK_EXPORT Camera final : IRenderChainDelegate
+    class BaseCamera
+    {
+    public:
+        BaseCamera(const glm::mat4& projMatrix = {}) noexcept;
+
+    protected:
+        glm::mat4 _view;
+        glm::mat4 _proj;
+        glm::mat4 _projInv;
+        CameraProjectionData _projData;
+        std::optional<Viewport> _baseViewport;
+        glm::vec4 _viewport;
+        UniformHandle _posUniform;
+
+        bool _enabled;
+        std::optional<bool> _updateEnabled;
+        bool _transformChanged;
+
+        EntityFilter _cullingFilter;
+
+        using Components = std::vector<std::shared_ptr<ICameraComponent>>;
+        Components _components;
+
+        OptionalRef<Scene> _scene;
+        OptionalRef<App> _app;
+
+    };
+
+    class DARMOK_EXPORT Camera final : BaseCamera, IRenderChainDelegate
     {
     public:
         using RenderContext = CameraRenderContext;
@@ -284,27 +312,7 @@ namespace darmok
 		static Definition createDefinition();
 
     private:
-        glm::mat4 _view;
-        glm::mat4 _proj;
-        glm::mat4 _projInv;
-        CameraProjectionData _projData;
-        std::optional<Viewport> _baseViewport;
-        glm::vec4 _viewport;
-        UniformHandle _posUniform;
-
-		RenderChain _renderChain;
-
-        bool _enabled;
-        std::optional<bool> _updateEnabled;
-        bool _transformChanged;
-
-        EntityFilter _cullingFilter;
-
-        using Components = std::vector<std::shared_ptr<ICameraComponent>>;
-        Components _components;
-
-        OptionalRef<Scene> _scene;
-        OptionalRef<App> _app;
+        RenderChain _renderChain;
 
         bool updateProjection() noexcept;
 

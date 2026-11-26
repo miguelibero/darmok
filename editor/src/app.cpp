@@ -379,8 +379,16 @@ namespace darmok::editor
         if (ImGui::MenuItem(name))
         {
             auto path = _assetsView.getNewAssetPath(asset);
-            path = _proj.addAsset(path, asset);
-            return true;
+            auto addResult = _proj.addAsset(path, asset);
+            if (addResult)
+            {
+                path = std::move(addResult).value();
+                return true;
+            }
+            else
+            {
+                return unexpected{std::move(addResult).error()};
+            }
         }
         return false;
     }

@@ -348,10 +348,13 @@ namespace darmok::editor
         return {};
     }
 
-    std::filesystem::path EditorProject::addAsset(const std::filesystem::path& path, const Message& asset) noexcept
+    std::expected<std::filesystem::path, std::string> EditorProject::addAsset(const std::filesystem::path& path, const Message& asset) noexcept
     {
-		auto fpath = _sceneDefWrapper.addAsset(path, asset);
-        _sceneLoader.reload();
-        return fpath;
+		auto result = _sceneDefWrapper.addAsset(path, asset);
+        if (result)
+        {
+            _sceneLoader.reload();
+        }
+        return result;
     }
 }

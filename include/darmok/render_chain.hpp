@@ -86,11 +86,6 @@ namespace darmok
         RenderChain(IRenderChainDelegate& dlg) noexcept;
         RenderChain(std::unique_ptr<IRenderChainDelegate>&& dlg) noexcept;
 
-		RenderChain(const RenderChain& other) = delete;
-		RenderChain& operator=(const RenderChain& other) = delete;
-        RenderChain(RenderChain&& other) = delete;
-		RenderChain& operator=(RenderChain&& other) = delete;
-
         expected<void, std::string> init() noexcept;
         expected<bgfx::ViewId, std::string> beforeRenderReset(bgfx::ViewId viewId) noexcept;
         expected<bgfx::ViewId, std::string> renderReset(bgfx::ViewId viewId) noexcept;
@@ -136,8 +131,8 @@ namespace darmok
         bool empty() const noexcept;
         bool valid() const noexcept;
     private:
-        IRenderChainDelegate& _delegate;
-        std::unique_ptr<IRenderChainDelegate> _delegatePointer;
+        OptionalRef<IRenderChainDelegate> _delegateRef;
+        std::unique_ptr<IRenderChainDelegate> _delegatePtr;
         bool _running;
         std::vector<std::unique_ptr<IRenderChainStep>> _steps;
         std::vector<std::unique_ptr<FrameBuffer>> _buffers;
@@ -148,6 +143,8 @@ namespace darmok
         OptionalRef<FrameBuffer> getWriteBuffer(size_t i) const noexcept;
         expected<std::reference_wrapper<FrameBuffer>, std::string> addBuffer() noexcept;
         expected<void, std::string> updateStep(size_t i) noexcept;
+        OptionalRef<IRenderChainDelegate> getDelegate() noexcept;
+        OptionalRef<const IRenderChainDelegate> getDelegate() const noexcept;
     };
 
     class Program;

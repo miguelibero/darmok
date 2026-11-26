@@ -134,7 +134,7 @@ namespace darmok
             options.es = profile.ends_with("_es");
             options.enable_420pack_extension = true;
             // options.flatten_multidimensional_arrays = true;
-            // options.emit_uniform_buffer_as_plain_uniforms = true;
+            options.emit_uniform_buffer_as_plain_uniforms = true;
             options.enable_row_major_load_workaround = false;
             options.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
             options.vulkan_semantics = false;

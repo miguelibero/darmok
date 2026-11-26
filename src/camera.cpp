@@ -86,34 +86,27 @@ namespace darmok
         return protobuf::mapToSortedVector(*_def->mutable_components());
     }
 
-    Camera::Camera(const glm::mat4& projMatrix) noexcept
+    BaseCamera::BaseCamera(const glm::mat4& projMatrix) noexcept
         : _view{ 1.F }
         , _proj{ projMatrix }
         , _projInv{ glm::inverse(projMatrix) }
         , _projData{ CameraOrthoData{} }
         , _viewport{ 0.F, 0.F, 1.F, 1.F }
-        , _renderChain{ *this }
         , _enabled{ true }
         , _transformChanged{ false }
         , _posUniform{"u_camPos", bgfx::UniformType::Vec4}
     {
     }
 
+    Camera::Camera(const glm::mat4& projMatrix) noexcept
+        : BaseCamera(projMatrix)
+            , _renderChain{*this}
+    {
+    }
+
     Camera::Camera(Camera&& other) noexcept
-        : _view{ std::move(other._view) }
-		, _proj{ std::move(other._proj) }
-		, _projInv{ std::move(other._projInv) }
-		, _projData{ std::move(other._projData) }
-		, _baseViewport{ std::move(other._baseViewport) }
-		, _viewport{ std::move(other._viewport) }
-		, _renderChain{ *this }
-		, _enabled{ other._enabled }
-		, _updateEnabled{ std::move(other._updateEnabled) }
-		, _transformChanged{ other._transformChanged }
-		, _cullingFilter{ std::move(other._cullingFilter) }
-		, _components{ std::move(other._components) }
-		, _scene{ std::move(other._scene) }
-		, _app{ std::move(other._app) }
+        : BaseCamera(std::move(other))
+        , _renderChain{ *this }
     {
     }
 

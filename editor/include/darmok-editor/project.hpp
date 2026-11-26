@@ -7,6 +7,7 @@
 #include <darmok/scene_serialize.hpp>
 #include <darmok/asset_pack.hpp>
 #include <darmok/window.hpp>
+#include <darmok/expected.hpp>
 
 #include <filesystem>
 #include <unordered_map>
@@ -218,7 +219,7 @@ namespace darmok::editor
             return SceneArchive::loadComponent(compResult.value().get(), def, context);
         }
 
-        std::filesystem::path addAsset(const std::filesystem::path& path, const Message& asset) noexcept;
+        expected<std::filesystem::path, std::string> addAsset(const std::filesystem::path& path, const Message& asset) noexcept;
 
         std::shared_ptr<Scene> getScene() noexcept;
         std::shared_ptr<const Scene> getScene() const noexcept;
